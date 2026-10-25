@@ -150,14 +150,21 @@ continues as before, one ray at a time, so compositing stays in order.
 
 ### Step 4 — An upload that returns at once
 
-**Open.** ADR first. An upload submits and returns, and the staging buffer is retired when the
-frame ring says the copy is done. The consumer's barrier is checked under synchronization
-validation.
+**Done.** [ADR-0108](../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
+chose a submission of its own per upload, on the graphics queue, over copies recorded into the
+frame and over a transfer queue. `Uploader::submit(record, keep)` replaces `oneShot` and does not
+wait. The Uploader takes the ring, and retires the staging buffer it is handed with the command
+buffer it used. Its pool is shared with those retirements, so an Uploader can go before its
+uploads have run.
 
-- `DeviceBuffer`, `TextureFactory` and `MeshRegistry::poll` use it. `RenderTarget`'s layout
-  transition may keep the waiting form, and the step says why if it does.
-- Tests: an upload's data is right in the next frame, against the spec-exact textured quad
-  picture. The staging buffer outlives the copy. The device suite runs clean with
+- `DeviceBuffer` and `TextureFactory` hand over their staging buffers, and `MeshRegistry::poll`
+  uploads through them. `RenderTarget`'s layout transition uses the same path, with an Uploader
+  of its own, so there is no waiting form left.
+- Each upload in a poll is its own submission. Step 6 measures the poll as it is.
+- The textured quad picture covers an upload drawn in the next frame. New device cases check
+  that the staging buffer is held until its frame has finished, that an Uploader can go first,
+  and that a buffer upload reads back whole in the next frame. With the buffer's barrier taken
+  out by hand, synchronization validation fails that case. The device suites run clean with
   `VK_LAYER_VALIDATE_SYNC=1`.
 
 ### Step 5 — A texture request

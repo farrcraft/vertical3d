@@ -10,6 +10,9 @@
 
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+
 #include "Allocator.h"
 #include "Buffer.h"
 #include "Uploader.h"
@@ -103,20 +106,22 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
         throw std::runtime_error("An upload ran off the end of a device local vulkan buffer");
     }
 
-    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
-    staging.write(data, bytes);
+    const boost::shared_ptr<Buffer> staging = boost::make_shared<Buffer>(device_,
+        BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
+    staging->write(data, bytes);
 
-    VkBuffer source = staging.handle();
+    VkBuffer source = staging->handle();
     VkBuffer destination = buffer_;
-    uploader_->oneShot([source, destination, bytes, offset](VkCommandBuffer commands) {
+    // the uploader holds the staging buffer until the copy has run
+    uploader_->submit([source, destination, bytes, offset](VkCommandBuffer commands) {
         VkBufferCopy copy{};
         copy.srcOffset = 0;
         copy.dstOffset = offset;
         copy.size = bytes;
         vkCmdCopyBuffer(commands, source, destination, 1, &copy);
 
-        // waiting on the upload orders the copy against what comes after it, but does not
-        // make its writes visible to a later read. The barrier does that
+        // the queue orders the copy before every later submission, but does not make its
+        // writes visible to a later read. The barrier does that
         VkBufferMemoryBarrier2 barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT;
@@ -135,8 +140,7 @@ void DeviceBuffer::upload(const void* data, VkDeviceSize bytes, VkDeviceSize off
         dependency.pBufferMemoryBarriers = &barrier;
 
         vkCmdPipelineBarrier2(commands, &dependency);
-    });
-    // the copy has run by the time oneShot returns, so the staging buffer can go
+    }, staging);
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

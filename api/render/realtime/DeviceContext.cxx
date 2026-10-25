@@ -36,7 +36,7 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
     resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
-    uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
+    uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_, ring_);
     textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
     frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that

@@ -76,12 +76,6 @@ library.
 - A worker job that decodes the image, and a completion that calls `Textures::texture(image)`,
   covers the need meanwhile.
 
-[] **An upload still waits for its copy.**
-
-- `memory::Uploader::oneShot` waits on its own fence, so the caller can free its staging buffer
-  when it returns. Frames in flight keep running, and the main thread waits only for the copy.
-- An upload that returned at once would retire its staging buffer through the frame ring.
-
 [] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
 4 MiB, chosen without measuring a region's upload. Measure it against a region-sized set of
 meshes and set it from that.

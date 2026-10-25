@@ -53,6 +53,7 @@ content went. Numbers are never reused.
 | [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
 | [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
 | [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
+| [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
 
 ## Offline rendering
 

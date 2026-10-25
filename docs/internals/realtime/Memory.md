@@ -93,16 +93,28 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 - `Buffer::grow(bytes)` doubles until large enough and **replaces the allocation**, invalidating
   `handle()`. It waits for the device first. `Buffer::read()` is slow (coherent, not cached), so
   use it for one-off readback only.
-- `DeviceBuffer::upload()` waits for the copy and not for frames in flight, so no frame may be
-  reading the buffer. The constructors are its only callers, and fill a buffer nothing has read.
-- `memory::Uploader::oneShot(record)` records, submits on the graphics queue, and waits on a fence
-  for that submission alone. Because it waits, a staging allocation never outlives the function
-  that made it. Frames in flight go on running, so an upload during play does not stall them,
-  and an upload does not mean any frame has finished. An object a frame may still read is
-  retired through the ring. It reuses one command buffer and one fence.
+- `DeviceBuffer::upload()` submits its copy and returns, so no frame may be reading the buffer.
+  The constructors are its only callers, and fill a buffer nothing has read.
+- **`memory::Uploader::submit(record, keep)` does not wait.** It records a command buffer of its
+  own, submits it on the graphics queue and returns. `keep`, the staging buffer, is retired
+  through the ring with the command buffer, so both are freed once the frame being recorded has
+  finished. That frame's fence covers every submission made before it.
+- **An upload ends in a barrier.** The queue orders the copy before every later submission, but
+  only a barrier makes its writes visible to them. A buffer's barrier reaches every stage, and a
+  texture's leaves it in `SHADER_READ_ONLY_OPTIMAL` for the fragment shader.
+- An upload does not mean any frame has finished. An object a frame may still read is retired
+  through the ring.
+- Nothing an upload holds is freed until frames are begun, so code that uploads and never draws,
+  such as a test, holds every staging buffer until the context is destroyed.
+- Command buffers are reused once their frame has finished, from a pool the retirements share,
+  so an `Uploader` may be destroyed while its uploads are in flight. `RenderTarget` makes one of
+  its own for its layout transitions this way. Uploads are made from the thread that begins
+  frames.
 - `Mesh` is filled once. Changing geometry means building a new mesh, because a refill would have
   to wait for every frame still drawing the old one. `Mesh::describe(&item)` fills an item's
   buffers, index type and counts.
+
+Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
 
 **`vulkan::frame::StreamRing`** is how the renderers stream per-frame geometry. It keeps a list of
 `Buffer` pairs per frame in flight.

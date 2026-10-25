@@ -52,7 +52,7 @@ for the grade's target, so they decode the result before an `_SRGB` target store
 belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::oneShot`, which waits for that upload and not for frames in flight. `Grade`'s
+`Uploader::submit`, which does not wait for the upload. `Grade`'s
 destructor releases its table and every source still in the map, before its `FullScreen` goes.
 `source()` releases the scene's registration if binding the material throws.
 
