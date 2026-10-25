@@ -8,10 +8,10 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
+#include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
 #include <odyssey/tile/Map.h>
-#include <odyssey/tile/Sight.h>
 
 #include <cstddef>
 #include <optional>
@@ -63,6 +63,12 @@ class World final {
     static constexpr int DEPART = 10;
 
     /**
+     * How far the player sees, in tiles. On a board twenty tiles wide, a range of seven leaves
+     * the far side unseen until the player walks towards it.
+     **/
+    static constexpr int SIGHT_RANGE = 7;
+
+    /**
      * @param logger where a malformed document or a region that does not load is reported
      * @param assets where the region maps are read from, on the worker thread as well as this one
      * @param worker loads every region but the start region, on its own thread
@@ -106,7 +112,7 @@ class World final {
      * @return what the player can see of a region, and remembers of it. It outlives the region's
      *         map, so a region released and loaded again is remembered as it was
      **/
-    const Sight& sight(std::size_t region) const;
+    const v3d::grid::Sight& sight(std::size_t region) const;
 
     /**
      * @return a region's corner in world tiles
@@ -177,7 +183,7 @@ class World final {
         v3d::grid::TileCoord corner;
         v3d::grid::TileCoord size;
         boost::shared_ptr<const Map> map;
-        Sight sight;
+        v3d::grid::Sight sight{SIGHT_RANGE};
         bool loading = false;
         /**
          * Its map could not be read, so it is not asked for again until the player has gone

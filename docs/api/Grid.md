@@ -1,13 +1,14 @@
 # Tile grids
 
 This page is for someone writing an app against the api. It covers `api/grid`: tile boards,
-coordinates, movement and pathfinding, line of sight, building a board from a picture, and the
+coordinates, movement and pathfinding, line of sight and fog of war, building a board from a picture, and the
 geometry for drawing an overlay. Terms are defined in the [glossary](README.md#glossary).
 
 - [What the library is](#what-the-library-is)
 - [The board and its coordinates](#the-board-and-its-coordinates)
 - [Movement](#movement)
 - [Line of sight](#line-of-sight)
+- [Remembered sight](#remembered-sight)
 - [Building a board from a picture](#building-a-board-from-a-picture)
 - [Drawing an overlay](#drawing-an-overlay)
 - [An example: odyssey](#an-example-odyssey)
@@ -143,8 +144,27 @@ the arguments reverses the result exactly. It is empty when either endpoint is o
 **Do not test `sightLine()` tiles to decide whether sight is clear.** Where the line squeezes
 through a corner, the two tiles beside it are not in the list. Call `hasLineOfSight()` instead.
 
-How far a unit can see, and what it remembers seeing, are the game's. The grid answers only
-about two tiles.
+### Remembered sight
+
+`Sight` ([api/grid/Sight.h](../../api/grid/Sight.h)) is fog of war: what a viewer can see now,
+and what it has seen before.
+
+```cpp
+v3d::grid::Sight sight(7);                  // the range, in tiles
+sight.look(grid, player);                   // and a SightBlocker, if the game has one
+if (sight.visible(tile)) { /* draw it */ }
+else if (sight.remembered(tile)) { /* draw it dimmed */ }
+```
+
+- **Each tile is in sight, remembered, or neither.** `look()` replaces what is in sight and adds
+  to what is remembered. `blind()` puts every tile out of sight and forgets nothing, for a board
+  the viewer is not on.
+- **The range is given to the constructor**, in Chebyshev steps, so the tiles within it form a
+  square, as a movement budget does. A range below zero sees nothing.
+- Sight within the range is `hasLineOfSight()`, so it is symmetric and takes the same blocker.
+- Every `look()` traces again, even from the same tile, so a change to the board shows at once.
+- A board of another size is a different board: the first look at it forgets everything.
+- A tile off the board is neither in sight nor remembered, so no bounds test is needed first.
 
 ## Building a board from a picture
 
@@ -218,5 +238,6 @@ odyssey is the app that uses this library:
 - A region is loaded on a worker as the player approaches it and released once the player is
   far away. A step crosses the seam between two loaded regions.
 - A click routes the player with `findPath()`.
-- `tile::Sight` calls `hasLineOfSight()` to find what the player can see.
-- The map format, how far the player sees and what the player remembers are odyssey's own.
+- Each region keeps a `Sight`, which outlives the region's map, so a region released and loaded
+  again is remembered as it was.
+- The map format and how far the player sees are odyssey's own.

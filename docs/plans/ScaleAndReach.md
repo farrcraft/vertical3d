@@ -178,9 +178,11 @@ the machine are written beside the constant.
 
 ### Step 7 — Remembered sight in `api/grid`
 
-**Open.** `odyssey/tile/Sight` moves to `api/grid` as `v3d::grid::Sight`, with its range given to
-the constructor. Its test moves to the grid suite. odyssey uses the library's.
-[Grid.md](../api/Grid.md) describes it.
+**Done.** `v3d::grid::Sight` is in `api/grid/Sight.h`, with its range given to the constructor.
+`look()` also takes the `SightBlocker` that `hasLineOfSight()` takes, so a game's smoke reaches
+it. The test moved to the grid suite, building its rows with `setCover()` instead of odyssey's
+map reader, and gained a case for the blocker and for a second range. odyssey's range is
+`World::SIGHT_RANGE`. [Grid.md](../api/Grid.md#remembered-sight) describes it.
 
 ### Step 8 — Routes and sight across regions
 

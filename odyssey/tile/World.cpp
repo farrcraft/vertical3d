@@ -9,12 +9,12 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
+#include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 #include <api/type/Checked.h>
 
-#include "Sight.h"
 
 #include <algorithm>
 #include <cmath>
@@ -209,7 +209,7 @@ boost::shared_ptr<const Map> World::map(std::size_t region) const {
 
 /**
  **/
-const Sight& World::sight(std::size_t region) const {
+const v3d::grid::Sight& World::sight(std::size_t region) const {
     return regions_->at(region).sight;
 }
 

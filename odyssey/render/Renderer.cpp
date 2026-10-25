@@ -7,6 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
+#include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
@@ -15,7 +16,6 @@
 #include <odyssey/engine/Player.h>
 #include <odyssey/engine/Unit.h>
 #include <odyssey/tile/Map.h>
-#include <odyssey/tile/Sight.h>
 #include <odyssey/tile/Tile.h>
 #include <odyssey/tile/World.h>
 
@@ -165,7 +165,7 @@ void Renderer::drawWorld(v3d::grid::TileCoord view) {
         if (!map) {
             continue;
         }
-        const odyssey::tile::Sight& sight = world_->sight(region);
+        const v3d::grid::Sight& sight = world_->sight(region);
         const v3d::grid::TileGrid& grid = *map->grid();
         for (int y = 0; y < grid.height(); y++) {
             for (int x = 0; x < grid.width(); x++) {

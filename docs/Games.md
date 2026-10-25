@@ -258,16 +258,16 @@ tile is 64 × 64 pixels, so one 20 × 12 region fills the 1280 × 768 window.
 | `sample.png` | The player sprite |
 | `player.json` | Not read |
 
-**Sight.** `tile::Sight` reaches 7 tiles, measured as a square (Chebyshev distance), and
-remembers every tile it has seen. Each region keeps its own, and keeps it while the region is
+**Sight.** Each region's `grid::Sight` reaches 7 tiles, `World::SIGHT_RANGE`, measured as a
+square (Chebyshev distance), and remembers every tile it has seen. Each region keeps its own, and keeps it while the region is
 released. The renderer does not draw tiles never seen and dims remembered ones that are out of
 sight.
 
 **What odyssey is the reference for:**
 
 - **`api/grid`.** Each region's map is parsed with `grid::fromPicture` into a `grid::TileGrid`
-  placed by its corner. A click is routed with `grid::findPath`, and `tile::Sight` asks
-  `grid::hasLineOfSight` what is visible. The tile kinds and the file formats are odyssey's own;
+  placed by its corner. A click is routed with `grid::findPath`, and `grid::Sight` remembers
+  what the player has seen. The tile kinds and the file formats are odyssey's own;
   the grid stores only passability and cover. See [api/Grid.md](api/Grid.md).
 - **Regions loaded while the game runs.** `tile::World` reads a region on an `asset::Worker` and
   hands it over in `tick()`. See [api/Assets.md](api/Assets.md#loading-on-a-worker-thread).

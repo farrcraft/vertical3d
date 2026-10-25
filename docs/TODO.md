@@ -36,7 +36,7 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
 
 ## Tile grids
 
-[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 7 and 8.
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 8.
 
 `api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
 terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
@@ -49,13 +49,6 @@ library.
 - `findPath` and `hasLineOfSight` each take one grid, so odyssey's clicked routes and its sight
   stay within the region the player stands in. The next region is dark until the player crosses.
 - Joining them needs a search over several grids, or a game that stitches one together.
-
-[] **Remembered sight belongs in `api/grid`.**
-
-- Fog of war that keeps seen ground revealed is in odyssey's
-  [tile/Sight.h](../odyssey/tile/Sight.h), but nothing about it is specific to odyssey.
-- Move it to `api/grid`, and have odyssey use it from there.
-- Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
 
 ## Lit scenes
 
