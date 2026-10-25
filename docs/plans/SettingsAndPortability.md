@@ -98,8 +98,10 @@ as it already is for a `TextBox`. `typing()` says whether a field has the keyboa
 
 ### Step 2 — A segment on the canvas
 
-**Open.** `Canvas` draws a segment between two points as one quad, its long sides parallel to the
+**Done.** `Canvas` draws a segment between two points as one quad, its long sides parallel to the
 segment at half the width either side. It is untextured, so it joins the open untextured batch.
+`Canvas::segment()` takes a `Segment` of two points and a width, as `arc()` and `ring()` take a
+struct.
 
 - Tests: the four corners of a segment at 30 degrees match the perpendicular offset. A test of a
   horizontal segment alone would pass against a `rect()`. A segment under `translate()` and

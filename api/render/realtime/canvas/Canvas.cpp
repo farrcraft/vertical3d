@@ -263,6 +263,28 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 
 /**
  **/
+void Canvas::segment(const Segment& shape, const glm::vec4& colour) {
+    const glm::vec2 along = shape.to - shape.from;
+    const float length = std::hypot(along.x, along.y);
+    if (length <= 0.0F || shape.width <= 0.0F) {
+        return;
+    }
+    // the side the corners are offset to, half the width long. It is the line's direction
+    // turned a quarter, so for a line drawn left to right it points down the canvas, and the
+    // corners go in the order rect() puts them
+    const glm::vec2 side = glm::vec2(-along.y, along.x) * (shape.width * 0.5F / length);
+    open(TextureHandle());
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    vertex({.position = shape.from - side, .uv = glm::vec2(0.0F, 0.0F), .colour = colour});
+    vertex({.position = shape.from + side, .uv = glm::vec2(0.0F, 1.0F), .colour = colour});
+    vertex({.position = shape.to + side, .uv = glm::vec2(1.0F, 1.0F), .colour = colour});
+    vertex({.position = shape.to - side, .uv = glm::vec2(1.0F, 0.0F), .colour = colour});
+    quad(first);
+}
+
+/**
+ **/
 void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour) {
     arc({.centre = centre, .radius = radius, .sides = sides, .start = 0.0F, .sweep = FULL_TURN}, colour);
 }

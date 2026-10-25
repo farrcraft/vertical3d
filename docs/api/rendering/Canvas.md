@@ -19,6 +19,7 @@ canvas.rect(min, max, uv0, uv1, glm::vec4(1.0F), textureHandle); // textured; co
 canvas.circle(centre, radius, 32, colour);
 canvas.arc(centre, radius, 16, start, sweep, colour);           // a filled wedge
 canvas.ring(centre, outer, inner, 16, start, sweep, colour);    // a band between two radii
+canvas.segment({.from = a, .to = b, .width = 2.0F}, colour);  // a band between two points, at any angle
 
 canvas.push();
 canvas.translate(glm::vec2(100.0F, 50.0F));
@@ -31,6 +32,10 @@ renderer_->quads()->submit(canvas, pass.get());
 
 - Coordinates are pixels with the origin at the top left and y down.
 - Angles for `arc` and `ring` are radians. Zero points right and a quarter turn points down.
+- A segment is one quad whose long sides run parallel to the line between its points, half the
+  width either side. Its ends are square. It is untextured, so it joins the open untextured
+  batch. A segment with no length or no width draws nothing. The transform stack has no
+  rotation, so a segment is the way to draw a connector or a route at an angle.
 - An untextured quad is drawn against a 1×1 white texture, so it costs no extra draw.
 - The canvas cuts a new draw only when the texture, the text flag or the clip changes. Group
   quads that share a texture to keep draws down.
