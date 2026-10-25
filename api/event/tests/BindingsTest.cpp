@@ -8,7 +8,9 @@
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 
+#include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json.hpp>
@@ -137,6 +139,130 @@ BOOST_FIXTURE_TEST_CASE(bindings_list_their_commands_test, Fixture) {
     BOOST_REQUIRE_EQUAL(commands.size(), 2U);
     BOOST_TEST(commands[0] == "game::up");
     BOOST_TEST(commands[1] == "ui::quit");
+}
+
+/**
+ * The names of a command's sources, in name order, for comparing what a rebind left.
+ **/
+std::vector<std::string> names(const v3d::event::Bindings& bindings, std::string_view command) {
+    std::vector<std::string> found;
+    for (const v3d::event::Event& source : bindings.sources(command)) {
+        found.emplace_back(source.name());
+    }
+    std::sort(found.begin(), found.end());
+    return found;
+}
+
+/**
+ * A rebind of a command bound to two keys binds it to one. The mapping that fires on either
+ * edge covers the one that fires on a press, so only it is installed, and a press of the new
+ * key sends the command once.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_rebind_every_source_to_one_key_test, Fixture) {
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_REQUIRE(bindings.rebind("game::up", "e"));
+
+    const std::vector<v3d::event::Event> up = bindings.sources("game::up");
+    BOOST_REQUIRE_EQUAL(up.size(), 1U);
+    BOOST_TEST(up[0].name() == "e");
+    BOOST_CHECK(up[0].state() == v3d::event::State::Any);
+}
+
+/**
+ * Two sources on the same edge rebound to one key leave one mapping, not two that would each
+ * send the command.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_collapse_two_sources_on_one_edge_test, Fixture) {
+    BOOST_REQUIRE(bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "w", "context": "keyboard"}, "destination": {"name": "up", "context": "game"}},
+        {"source": {"name": "arrow_up", "context": "keyboard"}, "destination": {"name": "up", "context": "game"}}
+    ]})").as_object()));
+    BOOST_REQUIRE(bindings.rebind("game::up", "e"));
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"e"}));
+}
+
+/**
+ * A rebind of one source leaves the command's other source as the document bound it, and
+ * keeps the edge the document gave the one it replaced. A source the document does not bind
+ * the command to cannot be rebound.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_rebind_one_source_test, Fixture) {
+    BOOST_TEST(!bindings.rebind("game::up", "w", "e"));
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+
+    BOOST_REQUIRE(bindings.rebind("game::up", "w", "e"));
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"arrow_up", "e"}));
+    for (const v3d::event::Event& source : bindings.sources("game::up")) {
+        if (source.name() == "e") {
+            BOOST_CHECK(source.state() == v3d::event::State::Pressed);
+        }
+    }
+
+    // named by the document's name however often it has been rebound
+    BOOST_REQUIRE(bindings.rebind("game::up", "w", "r"));
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"arrow_up", "r"}));
+
+    BOOST_TEST(!bindings.rebind("game::up", "q", "e"));
+    BOOST_TEST(!bindings.rebind("game::up", "e", "f"));
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"arrow_up", "r"}));
+}
+
+/**
+ * A reset of one command puts it back as the document binds it and leaves the others rebound.
+ * A reset of everything puts every command back.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_reset_test, Fixture) {
+    BOOST_TEST(!bindings.reset());
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_REQUIRE(bindings.rebind("ui::quit", "escape"));
+    BOOST_REQUIRE(bindings.rebind("game::up", "e"));
+
+    BOOST_REQUIRE(bindings.reset("ui::quit"));
+    BOOST_CHECK(names(bindings, "ui::quit") == std::vector<std::string>({"q"}));
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"e"}));
+    BOOST_TEST(bindings.overrides().size() == 1U);
+
+    BOOST_REQUIRE(bindings.reset());
+    BOOST_CHECK(names(bindings, "game::up") == std::vector<std::string>({"arrow_up", "w"}));
+    BOOST_TEST(bindings.overrides().empty());
+}
+
+/**
+ * The overrides are what an app saves, and restoring them over the same document binds every
+ * command as it was bound when they were saved. An override naming a source the document no
+ * longer binds is dropped.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_restore_saved_overrides_test, Fixture) {
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_REQUIRE(bindings.rebind("game::up", "w", "e"));
+    BOOST_REQUIRE(bindings.rebind("ui::quit", "escape"));
+    std::vector<v3d::event::Bindings::Override> saved = bindings.overrides();
+    BOOST_REQUIRE_EQUAL(saved.size(), 2U);
+    saved.push_back(v3d::event::Bindings::Override{.command = "game::up", .source = "gone", .name = "x"});
+
+    const Fixture fresh;
+    v3d::event::Bindings restored(fresh.events, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(restored.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_REQUIRE(restored.restore(saved));
+
+    BOOST_CHECK(names(restored, "game::up") == names(bindings, "game::up"));
+    BOOST_CHECK(names(restored, "ui::quit") == std::vector<std::string>({"escape"}));
+    BOOST_CHECK(restored.overrides() == bindings.overrides());
+}
+
+/**
+ * What a key fires is read with the overrides applied, so a controls screen can say what a
+ * key is already bound to before it is rebound.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_say_what_a_key_fires_test, Fixture) {
+    BOOST_TEST(bindings.bound("q").empty());
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_CHECK(bindings.bound("q") == std::vector<std::string>({"ui::quit"}));
+    BOOST_TEST(bindings.bound("e").empty());
+
+    BOOST_REQUIRE(bindings.rebind("game::up", "w", "q"));
+    BOOST_CHECK(bindings.bound("q") == std::vector<std::string>({"game::up", "ui::quit"}));
+    BOOST_TEST(bindings.bound("w").empty());
 }
 
 };  // namespace

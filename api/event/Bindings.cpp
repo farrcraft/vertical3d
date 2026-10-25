@@ -13,10 +13,12 @@
 #include "State.h"
 #include "Type.h"
 
-#include <map>
+#include <algorithm>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <boost/json.hpp>
@@ -45,8 +47,62 @@ bool Bindings::rebind(const std::string& command, const std::string& name) {
     if (!document_) {
         return false;
     }
-    rebindings_[command] = name;
+    // this override covers every source, so any earlier one of the command would be shadowed
+    std::erase_if(overrides_, [&command](const Override& made) { return made.command == command; });
+    overrides_.push_back(Override{.command = command, .source = std::string(), .name = name});
     return build();
+}
+
+bool Bindings::rebind(const std::string& command, const std::string& source, const std::string& name) {
+    if (!document_ || source.empty() || !binds(command, source)) {
+        return false;
+    }
+    std::erase_if(overrides_, [&command, &source](const Override& made) {
+        return made.command == command && made.source == source;
+    });
+    overrides_.push_back(Override{.command = command, .source = source, .name = name});
+    return build();
+}
+
+bool Bindings::reset(const std::string& command) {
+    if (!document_) {
+        return false;
+    }
+    std::erase_if(overrides_, [&command](const Override& made) { return made.command == command; });
+    return build();
+}
+
+bool Bindings::reset() {
+    if (!document_) {
+        return false;
+    }
+    overrides_.clear();
+    return build();
+}
+
+const std::vector<Bindings::Override>& Bindings::overrides() const noexcept {
+    return overrides_;
+}
+
+bool Bindings::restore(const std::vector<Override>& overrides) {
+    if (!document_) {
+        return false;
+    }
+    overrides_.clear();
+    for (const Override& made : overrides) {
+        if (binds(made.command, made.source)) {
+            overrides_.push_back(made);
+        } else {
+            logger_->get()->warn("A saved binding of {} names a source the bindings no longer have, so it is dropped", made.command);
+        }
+    }
+    return build();
+}
+
+bool Bindings::binds(std::string_view command, std::string_view source) const {
+    return std::ranges::any_of(declared_, [command, source](const std::pair<std::string, std::string>& binding) {
+        return binding.first == command && (source.empty() || binding.second == source);
+    });
 }
 
 std::vector<Event> Bindings::sources(std::string_view command) const {
@@ -63,6 +119,19 @@ std::vector<std::string> Bindings::commands() const {
     return mapper_->destinations();
 }
 
+std::vector<std::string> Bindings::bound(std::string_view name) const {
+    std::vector<std::string> found;
+    for (const std::string& command : commands()) {
+        const std::vector<Event> sources = mapper_->sources(command);
+        const bool fires = std::ranges::any_of(sources, [name](const Event& source) { return source.name() == name; });
+        if (fires) {
+            // commands() is in name order and holds each once, so found is too
+            found.push_back(command);
+        }
+    }
+    return found;
+}
+
 bool Bindings::build() {
     // read every member through the checked reads in api/asset/Json.h. Each returns nothing for
     // a member that is missing or of the wrong type. A malformed document returns false here,
@@ -75,6 +144,8 @@ bool Bindings::build() {
     }
 
     const boost::shared_ptr<Mapper> mapper = boost::make_shared<Mapper>("global");
+    std::vector<std::pair<std::string, std::string>> declared;
+    std::vector<std::pair<Event, Event>> installed;
     for (const boost::json::value& item : *mappings) {
         if (!item.is_object()) {
             logger_->get()->error("Unrecognized mapping");
@@ -86,24 +157,63 @@ bool Bindings::build() {
         if (!readSource(mapping, &source) || !readDestination(mapping, &destination)) {
             return false;
         }
-        // a rebound command keeps the context and the edge the document gave it, and takes
-        // only its name from what the player chose
-        const std::map<std::string, std::string>::const_iterator rebound = rebindings_.find(destination.str());
-        if (rebound != rebindings_.end()) {
-            Event replacement(rebound->second, source.context());
-            replacement.type(Type::Source);
-            replacement.state(source.state());
-            source = replacement;
-        }
+        const std::string command = destination.str();
+        declared.emplace_back(command, std::string(source.name()));
+        source = rebound(source, command);
         if (known_ && !known_(source)) {
-            logger_->get()->warn("{} is bound to {}, which no device sends, so it never fires", destination.str(), source.str());
+            logger_->get()->warn("{} is bound to {}, which no device sends, so it never fires", command, source.str());
         }
-        mapper->map(source, destination);
+        install(&installed, source, destination);
+    }
+    for (const std::pair<Event, Event>& mapping : installed) {
+        mapper->map(mapping.first, mapping.second);
     }
     // addMapper stores mappers by name, so this replaces the previous "global" mapper
     events_->addMapper(mapper);
     mapper_ = mapper;
+    declared_ = std::move(declared);
     return true;
+}
+
+void Bindings::install(std::vector<std::pair<Event, Event>>* installed, const Event& source, const Event& destination) {
+    // two keys of one command rebound to the same key can leave two mappings that a press
+    // matches both of, and the mapper would send the command once for each. A mapping on
+    // either edge covers one on a single edge, so the wider one is kept
+    const auto covers = [&destination](const std::pair<Event, Event>& wide, const Event& narrow) {
+        return wide.second.str() == destination.str() && wide.second.data() == destination.data() &&
+            wide.first.str() == narrow.str() && (wide.first.state() == narrow.state() || wide.first.state() == State::Any);
+    };
+    const bool covered = std::ranges::any_of(*installed,
+        [&covers, &source](const std::pair<Event, Event>& mapped) { return covers(mapped, source); });
+    if (covered) {
+        return;
+    }
+    const std::pair<Event, Event> mapping(source, destination);
+    std::erase_if(*installed, [&covers, &mapping](const std::pair<Event, Event>& mapped) {
+        return covers(mapping, mapped.first) && mapped.second.str() == mapping.second.str() &&
+            mapped.second.data() == mapping.second.data();
+    });
+    installed->push_back(mapping);
+}
+
+Event Bindings::rebound(const Event& source, std::string_view command) const {
+    // a rebound source keeps the context and the edge the document gave it, and takes only its
+    // name from what the player chose. The overrides apply in the order they were made, and
+    // each one matches by the document's name, so a later one wins
+    const std::string_view named = source.name();
+    std::optional<std::string> name;
+    for (const Override& made : overrides_) {
+        if (made.command == command && (made.source.empty() || made.source == named)) {
+            name = made.name;
+        }
+    }
+    if (!name) {
+        return source;
+    }
+    Event replacement(*name, source.context());
+    replacement.type(Type::Source);
+    replacement.state(source.state());
+    return replacement;
 }
 
 bool Bindings::readSource(const boost::json::object& mapping, Event* event) {

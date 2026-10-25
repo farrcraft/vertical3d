@@ -44,6 +44,7 @@ class TestEngine final : public v3d::engine::Engine {
     }
 
     using Engine::rebind;
+    using Engine::bindings;
 
     bool onEvent(const SDL_Event& event) override {
         offered_.push_back(event.type);
@@ -469,12 +470,31 @@ BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
 }
 
 /**
- * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false.
+ * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false,
+ * and there are no bindings to hand out.
  **/
 BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
     TestEngine engine(appPath("good"), v3d::engine::Feature::KeyboardInput);
     BOOST_REQUIRE(engine.initialize());
     BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
+    BOOST_CHECK(!engine.bindings());
+}
+
+/**
+ * The bindings an app is handed are the ones the keys go through, so a reset through them
+ * puts back the key the engine holds the command by.
+ **/
+BOOST_AUTO_TEST_CASE(engine_hands_out_the_bindings_it_reads_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    const boost::shared_ptr<v3d::event::Bindings> bindings = engine.bindings();
+    BOOST_REQUIRE(bindings);
+    BOOST_REQUIRE(engine.rebind("pong::leftPaddleUp", "arrow_up"));
+    BOOST_CHECK(bindings->bound("arrow_up") == std::vector<std::string>({"pong::leftPaddleUp"}));
+
+    BOOST_REQUIRE(bindings->reset());
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
 }
 
 /**

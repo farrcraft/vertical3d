@@ -117,6 +117,29 @@ rebinding screen. The command keeps the context and the edge the document gave i
 lasts only as long as the process. To keep it, store it in [Settings](Files.md#settings-and-the-players-files)
 and apply it again at startup, as pong's `applyStoredBindings()` does.
 
+`Engine::bindings()` returns the `event::Bindings` the keys go through, or null without a binding
+config. A controls screen reads and changes them there:
+
+| Call | Does |
+|---|---|
+| `sources(command)` | the sources a command is bound to now, with the rebindings applied |
+| `bound(key)` | the commands a key fires now, in name order. Ask it before a rebind to find a conflict |
+| `rebind(command, key)` | binds every source of the command to the key, so a command bound to two keys is bound to one |
+| `rebind(command, source, key)` | binds one source, named as the document names it, and leaves the command's others |
+| `reset(command)`, `reset()` | puts one command, or every command, back as the document binds it |
+| `overrides()` | every rebinding, as `{command, source, name}`, in the order they apply. A `source` that is empty means every source |
+| `restore(overrides)` | replaces every rebinding with a saved list, and rebuilds once |
+
+- A source keeps the edge the document gave it, whichever key it is rebound to.
+- Rebindings apply in the order they were made, so a later one wins where two name the same
+  source. A rebind of every source replaces the command's earlier rebindings.
+- A rebind leaves one mapping where it would leave two that a press matches both of, so the
+  command fires once. A mapping on either edge covers one on a single edge, and is the one kept.
+- `restore()` drops a rebinding that names a command or a source the document no longer binds.
+  A list saved by an older build therefore cannot keep a dead entry.
+- A rebinding is saved by the app. Store `overrides()` in [Settings](Files.md#settings-and-the-players-files)
+  when it changes, and `restore()` it at startup.
+
 ### Commands
 
 **Every command an app handles is registered by name.** `Engine::commands()` returns the app's

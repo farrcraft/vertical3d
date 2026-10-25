@@ -303,6 +303,15 @@ class Engine {
     bool rebind(const std::string& command, const std::string& key);
 
     /**
+     * The bindings the binding config installed, for an app's controls screen: what a command
+     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
+     * the overrides to save and restore.
+     *
+     * @return null when the app has no binding config
+     **/
+    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
+
+    /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
      *
      * eventLoop() renders, and cannot run in a test. This is a separate function so that a

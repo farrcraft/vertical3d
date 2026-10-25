@@ -88,6 +88,10 @@ bool Engine::rebind(const std::string& command, const std::string& key) {
     return bindings_ && bindings_->rebind(command, key);
 }
 
+boost::shared_ptr<v3d::event::Bindings> Engine::bindings() const noexcept {
+    return bindings_;
+}
+
 /**
  **/
 bool Engine::initialize() {

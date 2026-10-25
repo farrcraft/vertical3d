@@ -110,7 +110,11 @@ struct.
 
 ### Step 3 — Reading, resetting and saving key bindings
 
-**Open.** `Engine` gives an app a read-only view of its `Bindings`, with the overrides applied.
+**Done.** `Engine::bindings()` hands an app the `Bindings` the keys go through, not a read-only
+view, because a reset and a restore change them. `Bindings` gained `rebind(command, source,
+key)` for one source of several, `reset`, `overrides`, `restore` and `bound`. A rebind of a
+command bound to two keys now leaves it bound to one: before, the two mappings it left were
+both matched by a press, and the command fired twice.
 
 - Reset one command's override, and reset all of them, back to the binding document.
 - List the overrides, so an app can save them, and apply a saved list at start.
