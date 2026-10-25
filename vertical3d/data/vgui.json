@@ -394,31 +394,31 @@
               "items": [
                 {
                   "label": "Truck",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "truck"
                 },
                 {
                   "label": "Dolly",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "dolly"
                 },
                 {
                   "label": "Zoom",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "zoom"
                 },
                 {
                   "label": "Pan",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "pan"
                 },
                 {
                   "label": "Pitch",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "pitch"
                 }

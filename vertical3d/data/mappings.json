@@ -7,7 +7,7 @@
       },
       "destination": {
         "context": "view",
-        "name": "camera::zoom"
+        "name": "camera::dolly"
       }
     },
     {

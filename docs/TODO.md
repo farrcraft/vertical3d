@@ -159,7 +159,7 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-38 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
+33 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
 
 [] **Shading and culling modes** (`view::shade::*`, `view::cull::*`, `view::rendermode::*`) need a
@@ -182,8 +182,5 @@ waits on an ADR deciding what the editor animates.
 [] **The Render menu** (`render::view`, `render::batch`, `render::settings`) would hand the scene to
 moya. The RIB export already writes it.
 
-[] **Groups and scene cameras** (`create::group`, `create::ortho::camera`,
-`create::perspective::camera`, and the Camera Manipulators menu's `camera::*` items). A group
-needs a scene that holds a hierarchy, and a camera in the scene needs the scene to hold
-something other than meshes.
+[] **Groups** (`create::group`). A group needs a scene that holds a hierarchy.
 

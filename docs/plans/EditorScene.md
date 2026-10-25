@@ -220,12 +220,18 @@ eye, facing the way it looks, through the command stack. Create > Light gives `l
 
 ### Step 5 — Camera Manipulators
 
-**Open.** The `camera::*` items latch a camera move on the left button, so a mouse with no
-modifier can truck, dolly, zoom, pan and pitch. `CameraControlTool` gains dolly and pitch. On a
+**Closed.** The `camera::*` items latch a camera move on the left button, so a mouse with no
+modifier can truck, dolly, zoom, pan and pitch. `CameraControlTool` gained dolly and pitch. On a
 perspective view zoom changes the field of view and dolly moves the camera.
 
-- Relies on `CameraControlTool::deactivate` ending only the move it names, so that a latched
-  move and a held move do not cancel each other.
+- The tool keeps a held move and a latched one. The held move wins while it is held, and the
+  latch lasts until its item is chosen again or a transform mode is chosen. The menu items are
+  checks, and show the latch.
+- Left Alt was bound to `zoom`, which dollied a perspective view. Zoom now changes the angle of
+  view, so Left Alt is bound to the new held `view::camera::dolly`, and does what it did.
+- An orthographic dolly zooms, and an orthographic pitch does nothing, as an orthographic pan
+  does.
+- Tests: the latch and the held move together, zoom and dolly in each projection, and pitch.
 
 ### Step 6 — Shaded views
 

@@ -88,14 +88,40 @@ drawn in the `ui` pass as a one-pixel outline in window pixels.
 **One button, three tools.** `Controller::drag()` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
-2. If a camera modifier (Alt or Ctrl) is held, the drag drives the camera. A release
-   with a modifier held still goes to `TransformTool` and `SelectTool` as well, so a handle drag
-   or a rubber band that a modifier pressed mid-way ends.
+2. If a camera move is in force, held by a modifier (Alt or Ctrl) or latched from the Camera
+   Manipulators menu, the drag drives the camera. A release while a move is in force still goes
+   to `TransformTool` and `SelectTool` as well, so a handle drag or a rubber band that a move
+   began mid-way ends.
 3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
 4. Otherwise `SelectTool` picks.
 
 The middle button drives the camera alone. Holding it turns the camera with the arcball, and
 letting it go ends the drag, whatever the left button is doing.
+
+### Driving a camera
+
+`CameraControlTool` drives the camera of the view a drag starts in. Its move is chosen two ways:
+
+- **Held.** `view::camera::dolly` (Left Alt), `view::camera::truck` (Left Ctrl) and
+  `view::camera::pan` (the middle button) last while they are held. `view::camera::zoom` is a
+  held command with no binding.
+- **Latched.** The Camera Manipulators menu's `camera::truck`, `dolly`, `zoom`, `pan` and `pitch`
+  latch a move, which lasts until the same item is chosen again or a transform mode is chosen.
+  The menu checks the latched move.
+
+A held move wins while it is held, and the latched one comes back when it is let go. Releasing
+a held move ends that move only.
+
+| Move | Perspective view | Orthographic view |
+|---|---|---|
+| Zoom | A drag right narrows the angle of view, from 1 to 170 degrees | A drag right shows less |
+| Dolly | A drag right moves the eye forward along the view | As zoom: the picture is the same from anywhere along the view |
+| Truck | Moves the eye sideways and up or down | The same, scaled to the view |
+| Pan | Turns the camera with an arcball | Nothing |
+| Pitch | A drag up turns the camera to look up | Nothing |
+
+An orthographic view is not turned, because the fixed views are orthographic and a turn would
+leave them showing something else.
 
 Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 

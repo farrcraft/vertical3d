@@ -252,6 +252,12 @@ void Controller::syncUi() {
     mark("select::mask::vertex", mask == SelectMask::Vertex);
     mark("select::mask::edge", mask == SelectMask::Edge);
     mark("select::mask::face", mask == SelectMask::Face);
+    const CameraControlTool::CameraMode latched = cameraTool_->latched();
+    mark("camera::truck", latched == CameraControlTool::CAMERA_MODE_TRUCK);
+    mark("camera::dolly", latched == CameraControlTool::CAMERA_MODE_DOLLY);
+    mark("camera::zoom", latched == CameraControlTool::CAMERA_MODE_ZOOM);
+    mark("camera::pan", latched == CameraControlTool::CAMERA_MODE_PAN);
+    mark("camera::pitch", latched == CameraControlTool::CAMERA_MODE_PITCH);
     mark("select::mask::mesh", mask == SelectMask::Mesh);
     mark("select::mask::light", mask == SelectMask::Light);
     mark("select::mask::camera", mask == SelectMask::Camera);
@@ -328,6 +334,11 @@ void Controller::registerCommands() {
     press("select::mask::light", [this]() { selectMask("light"); });
     press("select::mask::camera", [this]() { selectMask("camera"); });
 
+    // the Camera Manipulators menu latches a move, so a drag with no modifier drives the
+    // camera until the move is chosen again or a transform mode is
+    for (const char* move : { "truck", "dolly", "zoom", "pan", "pitch" }) {
+        press(std::string("camera::") + move, [this, move]() { cameraTool_->latch(move); });
+    }
     press("transform::select", [this]() { transformMode("select"); });
     press("transform::translate", [this]() { transformMode("translate"); });
     press("transform::rotate", [this]() { transformMode("rotate"); });
@@ -347,10 +358,13 @@ void Controller::registerCommands() {
     // shows it and nothing here reads it back
     press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
-    // zoom and truck are held rather than latched: the modifier going down chooses what a
-    // drag of the primary button performs and it coming up puts the tool back to none
+    // these are held: the modifier going down chooses what a drag of the primary button
+    // performs, and it coming up puts the tool back to whatever is latched
     hold("view::camera::zoom", [this](const v3d::event::Event& event) {
         cameraMode("zoom", event.state() != v3d::event::State::Released);
+    });
+    hold("view::camera::dolly", [this](const v3d::event::Event& event) {
+        cameraMode("dolly", event.state() != v3d::event::State::Released);
     });
     hold("view::camera::truck", [this](const v3d::event::Event& event) {
         cameraMode("truck", event.state() != v3d::event::State::Released);
@@ -689,6 +703,8 @@ void Controller::toggleProjection() {
 /**
  **/
 void Controller::transformMode(const std::string& name) {
+    // choosing a manipulator asks for the handles, so a latched camera move lets them go
+    cameraTool_->unlatch();
     transformTool_->activate(name);
 }
 
