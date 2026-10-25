@@ -94,6 +94,16 @@ class Resources final {
     bool release(const TextureHandle& handle);
 
     /**
+     * Put another texture behind a handle, which goes on naming it.
+     *
+     * Draw items queued before now may read what the handle named, so that is destroyed once
+     * the frame Ring::recording() names has finished.
+     *
+     * @return whether the handle referred to a texture not released
+     **/
+    bool replace(const TextureHandle& handle, const Texture& texture);
+
+    /**
      * @return the pipeline the handle refers to, or nullptr
      **/
     const Pipeline* pipeline(const PipelineHandle& handle) const;

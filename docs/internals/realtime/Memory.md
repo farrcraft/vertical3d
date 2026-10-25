@@ -224,6 +224,14 @@ frees a released slot through the ring, so a frame queued before the release sti
 texture there, and hands out the lowest free slot first. A slot nothing holds names whatever it
 named last, which no draw reads.
 
+**A requested texture fills behind its handle.** `request(path)` registers a handle that names
+the white texture's image and has no slot of its own, so `slot()` gives the white texture's.
+The image is decoded on the worker. `poll()` uploads it, takes a slot for it, and puts it
+behind the handle with `Resources::replace()`, which retires the white entry it replaced
+through the ring. Items queued before the poll were given the white slot and draw white, and
+every one submitted after reads the texture's. A texture made and then refused a slot is
+retired through the ring rather than destroyed, because its upload may still be running.
+
 `Quad`, `World`, `Lit`, `Grade` and `MeshRegistry` all take `Textures`, so one uploaded atlas
 serves every primitive from one pool.
 

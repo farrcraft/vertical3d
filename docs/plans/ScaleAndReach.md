@@ -169,16 +169,23 @@ uploads have run.
 
 ### Step 5 — A texture request
 
-**In progress.** [ADR-0109](../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
+**Done.** [ADR-0109](../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 chose one bindless array of textures, which a draw indexes by slot, over swapping the image
 behind a stable handle and over a pending material. The binding model has moved: every texture
 is a slot of `pipeline::TextureArray` at set 1, quads and world quads push their slot, and a lit
 object carries its albedo's. Device selection now requires the descriptor indexing features.
 Full-screen passes keep their own sets. Every reference picture is unchanged.
 
-Still to do: `Textures::request(path)` returns a handle at once. A worker decodes the image and
-`poll()` uploads it under the same budget as meshes. Until then the handle reads the white
-texture's slot.
+`Textures::request(path)` returns a handle at once. `requestFrom(assets, worker, logger)` tells
+it where to read and what to decode on, since the context that owns it has neither. The handle
+names the white texture's image and reads its slot until `poll()` uploads the image, takes a
+slot for it, and puts it behind the handle with the new `Resources::replace()`. A request
+released before its image arrives is dropped, and a missing file is logged and draws white. The
+budget constant moved to `Textures::DEFAULT_UPLOAD_BUDGET`, which `MeshRegistry` shares, so
+step 6 sets one number.
+
+- Device cases draw a requested texture white and then blue after a poll, and cover a path
+  asked for twice, a request released early, a missing file and a request with no worker.
 
 - Tests: a requested texture draws its placeholder, then its pixels after a poll. Releasing a
   pending request abandons it. A missing file logs and leaves the placeholder.

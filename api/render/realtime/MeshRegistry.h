@@ -9,6 +9,7 @@
 #include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/memory/Mesh.h>
 #include <api/type/Model.h>
 
@@ -103,7 +104,7 @@ class MeshRegistry final {
     /**
      * The most bytes poll() uploads by default before it leaves the rest for the next call.
      **/
-    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = Textures::DEFAULT_UPLOAD_BUDGET;
 
     /**
      * @param logger where a texture that could not be found is reported

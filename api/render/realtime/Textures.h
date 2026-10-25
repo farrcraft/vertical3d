@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/asset/Worker.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -17,8 +20,13 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <deque>
+#include <exception>
+#include <expected>
 #include <map>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 
@@ -43,6 +51,12 @@ class RenderTarget;
  **/
 class Textures final {
  public:
+    /**
+     * The most bytes poll() uploads by default before it leaves the rest for the next call.
+     * MeshRegistry's poll() takes the same.
+     **/
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
+
     /**
      * @param uploader the context's Uploader, which copies every texture
      * @throw std::runtime_error if the white texture cannot be uploaded
@@ -72,6 +86,44 @@ class Textures final {
      **/
     TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
         const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
+
+    /**
+     * Where request() reads an image from and decodes it: the asset manager a path is relative
+     * to, and the worker it is decoded on. Until this is called, request() throws.
+     *
+     * @param logger where an image that could not be read or uploaded is reported
+     **/
+    void requestFrom(const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker,
+        const boost::shared_ptr<log::Logger>& logger);
+
+    /**
+     * An image read and decoded on the worker, and uploaded by a later poll().
+     *
+     * The handle can be drawn at once. Until poll() uploads the image it reads the white
+     * texture's slot, and resolves to a texture holding the white image. Asking for a path again
+     * returns the same handle, uploaded or not. An image that cannot be read or uploaded is
+     * reported in the log, and its handle reads white until it is released. Releasing a request
+     * before its image arrives drops what the worker decodes for it.
+     *
+     * @param path relative to the asset manager's root
+     * @param encoding and sampler as texture() takes them
+     * @throw std::logic_error if requestFrom() has not been called
+     **/
+    TextureHandle request(const std::string& path,
+        vulkan::memory::TextureFactory::Encoding encoding = vulkan::memory::TextureFactory::Encoding::Display,
+        const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
+
+    /**
+     * Upload the requested images whose decoding has finished, in the order they were requested.
+     *
+     * It uploads at least one when any is ready, and stops once the bytes uploaded reach the
+     * budget. Call it once a frame, after polling the worker. A handle uploaded here reads its
+     * own slot from the next draw that is submitted.
+     *
+     * @param budget the bytes of texels to upload before stopping
+     * @return how many images were uploaded
+     **/
+    std::size_t poll(std::size_t budget = DEFAULT_UPLOAD_BUDGET);
 
     /**
      * Register a render target so that a draw can sample what a pass drew into it.
@@ -150,6 +202,7 @@ class Textures final {
  private:
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::memory::TextureFactory> factory_;
     boost::shared_ptr<vulkan::pipeline::TextureArray> array_;  /**< set 1, which every textured draw reads through **/
     MaterialHandle material_;  /**< what binds array_ **/
@@ -168,6 +221,47 @@ class Textures final {
 
     /** Register a texture, and give it a slot. **/
     TextureHandle add(const vulkan::pipeline::Texture& texture);
+
+    /**
+     * A slot for a texture just made. A texture that has none is retired through the ring, not
+     * destroyed, because its upload may still be running.
+     *
+     * @throw std::runtime_error if every slot is taken
+     **/
+    uint32_t place(const vulkan::pipeline::Texture& texture);
+
+    /**
+     * What a request() asked for, kept while its handle is held. It is pending until its image
+     * is uploaded or fails.
+     **/
+    struct Request final {
+        std::string path;
+        vulkan::memory::TextureFactory::Encoding encoding;
+        vulkan::pipeline::Sampler::Spec sampler;
+        bool pending = true;
+    };
+
+    /**
+     * An image the worker has finished with, waiting for poll(): the image, null for a file
+     * that held none, or what reading it threw.
+     **/
+    struct Arrival final {
+        TextureHandle handle;
+        std::expected<boost::shared_ptr<image::Image>, std::exception_ptr> result;
+    };
+    using Inbox = std::deque<Arrival>;
+
+    /** Upload an arrival into its request's handle, and say how many bytes it cost. **/
+    std::size_t fill(const Arrival& arrival, Request* request);
+
+    boost::shared_ptr<asset::Manager> assets_;
+    boost::shared_ptr<asset::Worker> worker_;
+    boost::shared_ptr<log::Logger> logger_;
+    /** Held by every completion as a weak pointer, so one that runs after the Textures is gone drops its image. **/
+    boost::shared_ptr<Inbox> inbox_;
+    std::map<TextureHandle, Request> requests_;
+    /** The handle each requested path was given. **/
+    std::map<std::string, TextureHandle> requested_;
 };
 
 };  // namespace v3d::render::realtime

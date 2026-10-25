@@ -99,7 +99,8 @@ void MyApp::tick(unsigned int delta) {
   handle.
 - **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops
   once the vertex, index and albedo bytes reach the budget. The default is
-  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 4 MiB. The rest wait for the next poll.
+  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 4 MiB, the same as a texture poll's. The rest wait for
+  the next poll.
 - **`pending(handle)` is true while a request is decoding or waiting for a poll.** A handle that
   is not pending and resolves to nothing failed or was released.
 - **A file that cannot be read or uploaded is reported in the log.** Its handle resolves to
@@ -109,8 +110,34 @@ void MyApp::tick(unsigned int delta) {
 - `count()` leaves out pending requests, and `pending()` counts them.
 - A registry made without a worker throws `std::logic_error` from `request()`.
 
-A texture has no request of its own. Decode the image in a worker job and register it with
-`Textures::texture(image)` in the job's completion.
+### Requesting a texture
+
+`Textures` can request an image by path in the same way, once it is told where to read from and
+what to decode on.
+
+```cpp
+textures->requestFrom(assets(), worker_, logger());
+TextureHandle sky = textures->request("textures/sky.png");  // draws white for now
+
+void MyApp::tick(unsigned int delta) {
+    worker_->poll();     // the decoded images arrive
+    textures->poll();    // and are uploaded, up to a byte budget
+}
+```
+
+- **A requested handle can be drawn at once, and draws white until a poll uploads it.** Its
+  slot is the white texture's until then, and the texture's own from the next draw submitted
+  after the poll. A canvas or a mesh naming the handle needs no change when it fills.
+- **`poll(budget)` uploads in request order**, at least one image when any is ready, and stops
+  once the texel bytes reach the budget. The default is `Textures::DEFAULT_UPLOAD_BUDGET`,
+  which `MeshRegistry` shares.
+- Asking for a path again returns the same handle, uploaded or not.
+- **A file that cannot be read or uploaded is reported in the log**, and its handle draws white
+  until it is released.
+- **Releasing a pending handle** drops what the worker decodes for it, and the path can be
+  requested again as a new handle.
+- `request()` takes the same encoding and sampler as `texture()`. Without `requestFrom()` it
+  throws `std::logic_error`.
 
 A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
 and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A

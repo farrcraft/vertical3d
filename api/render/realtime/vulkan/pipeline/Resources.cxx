@@ -110,6 +110,19 @@ bool Resources::release(const TextureHandle& handle) {
 
 /**
  **/
+bool Resources::replace(const TextureHandle& handle, const Texture& texture) {
+    Texture* held = held_->textures.resolve(handle);
+    if (held == nullptr || held_->retiringTextures.count(handle) > 0) {
+        return false;
+    }
+    // the texture replaced is destroyed as the callback returns
+    ring_->retire([replaced = *held]() {});
+    *held = texture;
+    return true;
+}
+
+/**
+ **/
 std::size_t Resources::textureCount() const noexcept {
     return held_->textures.count();
 }

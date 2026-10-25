@@ -66,19 +66,11 @@ library.
 
 ## Loading
 
-[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 4 to 6.
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 6.
 
-[] **A texture has no request of its own.**
-
-- `MeshRegistry::request` returns a mesh handle at once and fills it later. A texture handle
-  cannot do the same, because `pipeline::Resources` would have to swap the image behind a live
-  handle and rewrite its descriptor set.
-- A worker job that decodes the image, and a completion that calls `Textures::texture(image)`,
-  covers the need meanwhile.
-
-[] **The upload budget's default is not measured.** `MeshRegistry::DEFAULT_UPLOAD_BUDGET` is
-4 MiB, chosen without measuring a region's upload. Measure it against a region-sized set of
-meshes and set it from that.
+[] **The upload budget's default is not measured.** `Textures::DEFAULT_UPLOAD_BUDGET`, which
+`MeshRegistry` shares, is 4 MiB, chosen without measuring a region's upload. Measure it against
+a region-sized set of meshes and set it from that.
 
 ## Audio
 
