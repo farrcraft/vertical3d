@@ -4,6 +4,7 @@
  **/
 
 #include <api/config/Type.h>
+#include <api/event/Bindings.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>

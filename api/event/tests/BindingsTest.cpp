@@ -6,6 +6,7 @@
 #include <api/event/Bindings.h>
 #include <api/event/Engine.h>
 #include <api/event/Event.h>
+#include <api/event/State.h>
 #include <api/log/Logger.h>
 
 #include <algorithm>
