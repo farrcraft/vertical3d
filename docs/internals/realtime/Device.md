@@ -23,6 +23,12 @@ aspect of a combined depth and stencil format, and every depth barrier does that
 features struct and `pEnabledFeatures` are mutually exclusive, so the base features travel in
 the chain too. `wideLines` is not requested, so lines are one pixel wide.
 
+`fillModeNonSolid` is requested only where the gpu offers it, and a device without it is still
+chosen. It lets a pipeline draw a triangle as its edges or its corners, with
+`VK_POLYGON_MODE_LINE` or `VK_POLYGON_MODE_POINT`. `Device::nonSolidFill()` says whether it is
+on, and a pipeline built without it must draw filled, or validation reports it. A pipeline that
+draws in point mode also needs its vertex stage to write `gl_PointSize`.
+
 A device given no surface is headless: it selects on the graphics family alone, enables no
 swapchain extension, and has no present queue. Everything that draws works on it; `Swapchain` and
 `Presenter` need a presenting device.

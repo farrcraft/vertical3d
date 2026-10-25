@@ -44,12 +44,14 @@
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/Triangulation.h>
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <utility>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -220,7 +222,7 @@ void Controller::syncUi() {
     if (!menu_) {
         return;
     }
-    auto mark = [this](const char* command, bool on) {
+    auto mark = [this](const std::string& command, bool on) {
         const boost::shared_ptr<v3d::ui::component::menu::Item> item = menu_->find(command);
         if (item) {
             item->checked(on);
@@ -241,12 +243,24 @@ void Controller::syncUi() {
         mark("view::show::light", activeView_->shows(ViewPort::SHOW_LIGHT));
         mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
         mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
+        const ViewPort::Display& shown = activeView_->display();
+        mark("view::shade::flat", shown.shading == Shading::Flat);
+        mark("view::shade::smooth", shown.shading == Shading::Smooth);
+        mark("view::cull::none", shown.cull == ViewPort::Cull::None);
+        mark("view::cull::front", shown.cull == ViewPort::Cull::Front);
+        mark("view::cull::back", shown.cull == ViewPort::Cull::Back);
+        mark("view::cull::both", shown.cull == ViewPort::Cull::Both);
+        for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
+            { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
+            mark(std::string("view::rendermode::front::") + name, shown.front == fill);
+            mark(std::string("view::rendermode::back::") + name, shown.back == fill);
+        }
 
         // a view laid out from a profile the menu does not offer, such as a second
         // perspective, marks none of the fixed views
         const v3d::type::camera::Camera& camera = *activeView_->camera();
         for (const FixedView& view : fixedViews()) {
-            mark(view.command.c_str(), camera.profile().name() == view.profile);
+            mark(view.command, camera.profile().name() == view.profile);
         }
         mark("view::camera::orthographic", camera.orthographic());
     }
@@ -348,6 +362,25 @@ void Controller::registerCommands() {
     press("transform::rotate", [this]() { transformMode("rotate"); });
     press("transform::scale", [this]() { transformMode("scale"); });
 
+    // how the active view shades its meshes. Each view keeps its own
+    const auto display = [this](const std::function<void(ViewPort::Display*)>& change) {
+        if (activeView_) {
+            change(&activeView_->display());
+        }
+    };
+    press("view::shade::flat", [display]() { display([](ViewPort::Display* shown) { shown->shading = Shading::Flat; }); });
+    press("view::shade::smooth", [display]() { display([](ViewPort::Display* shown) { shown->shading = Shading::Smooth; }); });
+    for (const auto& [name, cull] : std::vector<std::pair<const char*, ViewPort::Cull>>{ { "none", ViewPort::Cull::None },
+        { "front", ViewPort::Cull::Front }, { "back", ViewPort::Cull::Back }, { "both", ViewPort::Cull::Both } }) {
+        press(std::string("view::cull::") + name, [display, cull]() { display([cull](ViewPort::Display* shown) { shown->cull = cull; }); });
+    }
+    for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
+        { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
+        press(std::string("view::rendermode::front::") + name,
+            [display, fill]() { display([fill](ViewPort::Display* shown) { shown->front = fill; }); });
+        press(std::string("view::rendermode::back::") + name,
+            [display, fill]() { display([fill](ViewPort::Display* shown) { shown->back = fill; }); });
+    }
     press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
     press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
     press("view::show::camera", [this]() { toggleShow(ViewPort::SHOW_CAMERA); });

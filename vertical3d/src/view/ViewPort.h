@@ -13,6 +13,7 @@
 #include <string>
 
 #include "ConstructionPlane.h"
+#include "Triangulation.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
@@ -43,6 +44,32 @@ class ViewPort final {
         SHOW_LIGHT = (1 << 3),
         SHOW_MESH = (1 << 4)
     } VisibleFilter;
+
+    /**
+     * Which side of a mesh's triangles the shaded pass leaves out. Front is the side a face's
+     * outward normal points to.
+     **/
+    enum class Cull : std::uint8_t { None, Front, Back, Both };
+
+    /**
+     * How the shaded pass draws one side of the triangles: as points at their corners, as their
+     * edges, or filled.
+     **/
+    enum class Fill : std::uint8_t { Points, Lines, Fill };
+
+    /**
+     * How the view shades the scene's meshes, under its wireframe.
+     *
+     * The front of each triangle is drawn in the front fill and the back in the back fill,
+     * unless the cull leaves that side out. The default draws the front filled and leaves the
+     * back out, because the back of a closed surface is never seen.
+     **/
+    struct Display {
+        Shading shading = Shading::Flat;
+        Cull cull = Cull::Back;
+        Fill front = Fill::Fill;
+        Fill back = Fill::Fill;
+    };
 
     /**
      * @param name what the view is called, which is also its pass name
@@ -103,6 +130,12 @@ class ViewPort final {
     bool shows(VisibleFilter filter) const noexcept;
 
     /**
+     * How the view shades the meshes it shows. Each view has its own.
+     **/
+    const Display& display() const noexcept;
+    Display& display() noexcept;
+
+    /**
      * @return the grid this view measures against
      **/
     ConstructionPlane& grid() noexcept;
@@ -137,6 +170,7 @@ class ViewPort final {
     ConstructionPlane grid_;
     glm::vec4 region_;
     unsigned int showFlags_;
+    Display display_;
 };
 
 };  // namespace v3d::editor

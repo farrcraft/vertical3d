@@ -235,7 +235,7 @@ perspective view zoom changes the field of view and dolly moves the camera.
 
 ### Step 6 — Shaded views
 
-**Open.** A mesh is triangulated by fanning each face loop, with a flat normal from the face or a
+**Closed.** A mesh is triangulated by fanning each face loop, with a flat normal from the face or a
 smooth normal averaged at each vertex, and its winding reversed to counter-clockwise. A shaded
 pass per view draws the triangles before the lines and shares the depth buffer.
 
@@ -246,6 +246,14 @@ pass per view draws the triangles before the lines and shares the depth buffer.
   its own.
 - Tests: the triangulation of a quad, a pentagon and a concave face; normals flat and smooth;
   the revision bumps on each command. A validation log that stays silent in every mode.
+- What landed differs in four ways. Faces are cut by ear clipping, not fanned, because a fan
+  covers area outside a concave face. The surfaces go into each view's scene pass ahead of its
+  lines rather than into a pass of their own, which shares the pass's clear and its depth
+  exactly. The device turns on `fillModeNonSolid` where it is offered, and a view on a device
+  without it draws a points or lines side filled. A new suite, `vertical3d_device`, draws the
+  pass on a headless device. It checks which side is the front under the editor's camera, that
+  every fill and shading draws without a validation message, and that an upload is made again
+  only when the geometry changes. The editor started with validation on and logged nothing.
 
 ### Step 7 — Import
 

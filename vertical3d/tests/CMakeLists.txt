@@ -6,6 +6,7 @@ v3d_add_test(vertical3d
 
 	"view/ViewLayoutTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
+	"view/TriangulationTest.cxx"
 	"view/ViewPortTest.cxx"
 
 	"scene/ItemTest.cxx"
@@ -34,6 +35,8 @@ v3d_add_test(vertical3d
 	"../src/view/ViewLayout.cxx"
 	"../src/view/ViewPort.cxx"
 	"../src/view/ConstructionPlane.cxx"
+	"../src/view/Triangulation.cxx"
+	"../src/view/ShadedPass.cxx"
 	"../src/scene/Item.cxx"
 	"../src/scene/Mesh.cxx"
 	"../src/scene/Camera.cxx"
@@ -80,3 +83,35 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_ui)
 
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
+
+# the controller's renderer builds the shaded pass, whose stages are compiled in
+v3d_add_shader(v3dtest_vertical3d "../shaders/shaded.vert")
+v3d_add_shader(v3dtest_vertical3d "../shaders/shaded.frag")
+
+# The cases that draw on a device: the shaded pass, through the render device suite's headless
+# device. Where there is no device the binary exits with 77, which ctest reports as a skip.
+v3d_add_test(vertical3d_device
+	"device/TestMain.cxx"
+	"device/ShadedPassTest.cxx"
+
+	"../../api/render/tests/device/Headless.cpp"
+	"../src/view/ShadedPass.cxx"
+	"../src/view/Triangulation.cxx"
+	"../src/scene/Item.cxx"
+	"../src/scene/Mesh.cxx"
+	"../src/scene/Camera.cxx"
+	"../src/scene/Light.cxx"
+	"../src/scene/Scene.cxx"
+	"../src/scene/CreatePoly.cxx")
+
+v3d_add_shader(v3dtest_vertical3d_device "../shaders/shaded.vert")
+v3d_add_shader(v3dtest_vertical3d_device "../shaders/shaded.frag")
+
+target_link_libraries(v3dtest_vertical3d_device PRIVATE
+	v3dlib_brep
+	v3dlib_dag
+	v3dlib_image
+	v3dlib_log
+	v3dlib_render
+	v3dlib_type)
+set_tests_properties(vertical3d_device PROPERTIES SKIP_RETURN_CODE 77)

@@ -10,6 +10,7 @@
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/view/Triangulation.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <boost/make_shared.hpp>
@@ -72,6 +73,23 @@ BOOST_AUTO_TEST_CASE(viewport_shows_cameras_and_lights_test) {
     BOOST_CHECK_EQUAL(drawn(), 3U);
     view.show(v3d::editor::ViewPort::SHOW_LIGHT, false);
     BOOST_CHECK_EQUAL(drawn(), 0U);
+}
+
+BOOST_AUTO_TEST_CASE(viewport_display_test) {
+    const v3d::type::camera::Profile profile("Perspective");
+    v3d::editor::ViewPort first("first", profile);
+    const v3d::editor::ViewPort second("second", profile);
+
+    // a view shades flat, fills the front of a surface and leaves its back out
+    BOOST_CHECK(first.display().shading == v3d::editor::Shading::Flat);
+    BOOST_CHECK(first.display().cull == v3d::editor::ViewPort::Cull::Back);
+    BOOST_CHECK(first.display().front == v3d::editor::ViewPort::Fill::Fill);
+
+    // and each view keeps its own
+    first.display().shading = v3d::editor::Shading::Smooth;
+    first.display().cull = v3d::editor::ViewPort::Cull::None;
+    BOOST_CHECK(second.display().shading == v3d::editor::Shading::Flat);
+    BOOST_CHECK(second.display().cull == v3d::editor::ViewPort::Cull::Back);
 }
 
 };  // namespace

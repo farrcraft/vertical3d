@@ -74,7 +74,8 @@ Device::Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::s
     device_(VK_NULL_HANDLE),
     graphicsQueue_(VK_NULL_HANDLE),
     presentQueue_(VK_NULL_HANDLE),
-    timestampPeriod_(0.0F) {
+    timestampPeriod_(0.0F),
+    nonSolidFill_(false) {
     selectPhysical();
     createLogical();
     try {
@@ -151,6 +152,12 @@ VkQueue Device::presentQueue() const noexcept {
  **/
 const Device::Description& Device::description() const noexcept {
     return description_;
+}
+
+/**
+ **/
+bool Device::nonSolidFill() const noexcept {
+    return nonSolidFill_;
 }
 
 /**
@@ -310,6 +317,9 @@ void Device::selectPhysical() {
     }
 
     timestampPeriod_ = selectedProperties.limits.timestampPeriod;
+    VkPhysicalDeviceFeatures offered{};
+    vkGetPhysicalDeviceFeatures(physical_, &offered);
+    nonSolidFill_ = offered.fillModeNonSolid == VK_TRUE;
     description_.name = selectedProperties.deviceName;
     description_.apiMajor = VK_API_VERSION_MAJOR(selectedProperties.apiVersion);
     description_.apiMinor = VK_API_VERSION_MINOR(selectedProperties.apiVersion);
@@ -358,6 +368,9 @@ void Device::createLogical() {
     VkPhysicalDeviceFeatures2 features{};
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     features.pNext = &features12;
+    // drawing a triangle as its edges or its corners. Asked for only where it is offered, so a
+    // device without it is still chosen
+    features.features.fillModeNonSolid = nonSolidFill_ ? VK_TRUE : VK_FALSE;
 
     const std::vector<const char*> extensions = deviceExtensions(presenting());
 

@@ -102,6 +102,18 @@ bool ViewPort::shows(VisibleFilter filter) const noexcept {
 
 /**
  **/
+const ViewPort::Display& ViewPort::display() const noexcept {
+    return display_;
+}
+
+/**
+ **/
+ViewPort::Display& ViewPort::display() noexcept {
+    return display_;
+}
+
+/**
+ **/
 ConstructionPlane& ViewPort::grid() noexcept {
     return grid_;
 }

@@ -49,6 +49,10 @@ pull request and on each push to `main`.
   `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
 - **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
   and voxel, each in `<app>/tests/`.
+- **One more for the editor on a real device**, `vertical3d_device`, from
+  `vertical3d/tests/device/`. It draws the editor's shaded pass through the render device
+  suite's headless device, whose `Headless.cpp` it compiles. It skips where there is no device,
+as that suite does, and CI fails it on a skip, as it does that suite.
 
 `ctest -N` lists every suite. The test sources are the record of what each suite checks. A change
 with a testable CPU-side part is expected to add test cases.
@@ -94,8 +98,9 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
-defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
-checks for a device first, and `render_window`, whose `main` checks for a window.
+defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device` and
+`vertical3d_device`, whose `main` checks for a device first, and `render_window`, whose `main`
+checks for a window.
 
 A test file puts everything after its includes in one anonymous namespace, its suites and cases
 as well as its fixtures and helpers. `BOOST_AUTO_TEST_CASE` declares a struct named after the

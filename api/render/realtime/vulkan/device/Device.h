@@ -136,6 +136,14 @@ class Device final {
      **/
     const Description& description() const noexcept;
 
+    /**
+     * Whether a pipeline may draw triangles as their edges or their corners, with the polygon
+     * modes VK_POLYGON_MODE_LINE and VK_POLYGON_MODE_POINT. Those need the fillModeNonSolid
+     * feature, which the device turns on when the gpu offers it. A device without it is still
+     * chosen, because nothing else needs it, so a pipeline that would draw that way draws filled.
+     **/
+    bool nonSolidFill() const noexcept;
+
  private:
     /**
      * Pick the first physical device that can draw, and present when there is a surface,
@@ -176,6 +184,7 @@ class Device final {
     VkQueue presentQueue_;
     float timestampPeriod_;
     Description description_;
+    bool nonSolidFill_;
     /**< created after the logical device. Everything it allocated is freed before it goes **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };

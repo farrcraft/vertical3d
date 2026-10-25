@@ -54,7 +54,8 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` |
 | `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
-| `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane` |
+| `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane`, `Triangulation`, `ShadedPass` |
+| `shaders/` | The shaded pass's vertex and fragment stages, compiled into the editor at build time |
 | `src/scene/` | `Scene`, its items `Item`, `Mesh`, `Camera` and `Light`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` and `SceneStore` |
 | `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `VertexCommand`, `TopologyCommand`, `Placement` |
 | `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |

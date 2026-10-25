@@ -18,6 +18,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
@@ -38,8 +39,9 @@ namespace v3d::editor {
  * region. The split into views is therefore a property of the frame, not of the window.
  *
  * A scene pass depth tests, so a wireframe is occluded by what is in front of it. All the
- * scene passes share one depth buffer, and each clears it within its own region. The
- * handle pass that follows does not depth test and keeps what the scene pass left,
+ * scene passes share one depth buffer, and each clears it within its own region. A view that
+ * shows meshes draws their shaded surfaces in its scene pass first, and its wireframe over
+ * them. The handle pass that follows does not depth test and keeps what the scene pass left,
  * because the manipulator is an overlay.
  *
  * One more pass follows all of them. It covers the whole window, not one view, and draws
@@ -135,6 +137,8 @@ class Renderer final {
     // first, so that everything holding a device handle below is destroyed before the
     // context that owns the device is
     v3d::render::realtime::Engine3D engine_;
+    // the meshes' surfaces, built once the engine has a device
+    boost::shared_ptr<ShadedPass> shaded_;
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<TransformTool> transform_;

@@ -405,6 +405,29 @@ BOOST_AUTO_TEST_CASE(the_same_pipeline_is_compiled_into_the_cache_once) {
     BOOST_CHECK(headless.silent());
 }
 
+/**
+ * Drawing a triangle as its edges needs the fillModeNonSolid feature, which the device turns on
+ * where it is offered. A pipeline in that mode then compiles without a validation message.
+ *
+ * Point mode needs the same feature, and a vertex stage that writes gl_PointSize as well, which
+ * this case's shader does not.
+ **/
+BOOST_AUTO_TEST_CASE(a_line_polygon_mode_compiles_where_the_device_offers_it) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    if (!headless.device->nonSolidFill()) {
+        BOOST_TEST_MESSAGE("the device does not offer fillModeNonSolid");
+        return;
+    }
+
+    const boost::shared_ptr<Cache> cache = boost::make_shared<Cache>(headless.device);
+    Builder builder(headless.device);
+    describe(&builder);
+    builder.polygon(VK_POLYGON_MODE_LINE).depth(true, true).depthFormat(depthFormat).colourFormats({});
+    BOOST_CHECK_EQUAL(builder.rasterization().polygonMode, VK_POLYGON_MODE_LINE);
+    buildAndDestroy(headless, builder, cache);
+    BOOST_CHECK(headless.silent());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

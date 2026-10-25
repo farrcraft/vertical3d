@@ -227,7 +227,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 
 | Pass | Region | Depth | Clears |
 |---|---|---|---|
-| Scene pass, named after the view, which no other view shares | The view's region | Tested | Its own region, colour and depth |
+| Scene pass, named after the view, which no other view shares. It draws the meshes' shaded surfaces first and the scene canvas over them | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
 | `ui` | The whole window | Not tested | Nothing; it also draws the rubber band |
 
@@ -274,6 +274,50 @@ marks none. `Controller::fixedViews()` lists each command and its profile.
 between an orthographic and a perspective projection, and leaves the camera where it is. The
 menu item is checked while the camera is orthographic.
 
-The editor draws lines only. A shaded display mode is not built, so a selected face is drawn as
-its outline and a selected vertex as a small box. The outline covers every edge of
-the face, including the edges it shares with a neighbour.
+A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
+over the surface. The outline covers every edge of the face, including the edges it shares with
+a neighbour.
+
+## Shaded views
+
+A view that shows meshes draws their surfaces in its scene pass, before its wireframe.
+`ShadedPass` in `src/view/ShadedPass.h` does it, with the editor's own pipelines and shaders in
+`vertical3d/shaders/`.
+
+**Triangles.** `triangulate()` in `src/view/Triangulation.h` cuts each face into triangles by ear
+clipping in the face's plane, so a concave face is cut inside its outline. A face ear clipping
+cannot cut, one whose points lie on a line, is fanned from its first corner. Each triangle winds
+counter-clockwise seen from outside, the reverse of the face's loop.
+
+- **Flat shading** gives each face its own copies of its corners, lit by the face's normal.
+- **Smooth shading** gives each vertex one copy, lit by the average of the normals of the faces
+  around it.
+- A face whose stored normal is zero, as an extrude's ring is until it is moved, takes its
+  normal from its points, and +z when those have no area.
+
+**Uploads.** A mesh is uploaded once for each shading a view draws it in. It is uploaded again
+only when its `BRep::changes()` has moved, so a move of the item uploads nothing: its placement
+reaches the shader as a push constant at each draw. An upload no view drew in a frame is let go,
+through the frame ring, once the frames that read it are done.
+
+**The light** is at the eye. A surface facing the view is drawn in its colour, and one seen edge
+on keeps 30% of it. Either side of a surface is lit alike, so a back face is not black.
+
+**Display.** Each view keeps its own `ViewPort::Display`. The View menu sets the active view's:
+
+| Command | Sets | Default |
+|---|---|---|
+| `view::shade::flat`, `smooth` | The shading | Flat |
+| `view::cull::none`, `front`, `back`, `both` | Which side of the triangles is left out | Back |
+| `view::rendermode::front::points`, `lines`, `fill` | How the front of a triangle is drawn | Fill |
+| `view::rendermode::back::points`, `lines`, `fill` | How the back of a triangle is drawn | Fill |
+
+The front is the side a face's outward normal points to. A view draws each mesh twice, once
+keeping the front in the front's fill and once keeping the back in the back's, and the cull
+leaves out the side it names. The default fills the front and leaves the back out. A closed
+surface looks the same either way, and its back is never drawn.
+
+**Depth.** Every surface is drawn at a depth bias that pushes it back, so the wireframe drawn
+over it at the same depth stays in front. A point or line fill needs a device feature,
+`fillModeNonSolid`. On a device without it a side asked for that way is drawn filled, and the
+log says so once at startup.

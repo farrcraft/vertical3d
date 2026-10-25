@@ -339,15 +339,16 @@ jobs:
       # hardest to see by eye and the most likely to come from a rendering change.
       # The render suite is silent under it; the apps are not, and are not run here.
       #
-      # The render device and window suites are left out, because the two steps after this run
-      # them and also fail on a skip, which ctest does not count as a failure.
+      # The render device and window suites and the editor's device suite are left out, because
+      # the steps after this run them and also fail on a skip, which ctest does not count as a
+      # failure.
       - name: Test
         shell: cmd
         env:
           VK_LAYER_VALIDATE_SYNC: "1"
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
-          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^render_(device|window)$" || exit /b 1
+          ctest --test-dir "%BUILD_DIR%" --output-on-failure -E "^(render_(device|window)|vertical3d_device)$" || exit /b 1
 
       # A skipped render suite is a failure here even though it is not one locally. A run where
       # the suite skipped is green but has checked nothing about the renderer. Locally the skip
@@ -395,6 +396,27 @@ jobs:
             throw "the render suite found no device and skipped - VK_DRIVER_FILES is $env:VK_DRIVER_FILES"
           }
           if ($exit -ne 0) { throw "the render suite exited $exit" }
+
+      # The editor's device suite is held to the same rule, on the same device.
+      - name: The editor device suite ran rather than skipped
+        shell: pwsh
+        env:
+          VK_LAYER_VALIDATE_SYNC: "1"
+        run: |
+          $tests = (Resolve-Path "$env:BUILD_DIR\vertical3d\tests").Path
+          Push-Location $tests
+          & "$tests\v3dtest_vertical3d_device.exe" --detect_memory_leaks=0
+          $exit = $LASTEXITCODE
+          if ($exit -ne 0) {
+            $log = Join-Path $tests "v3d.log"
+            if (Test-Path $log) {
+              Write-Host "--- $log"
+              Get-Content $log
+            }
+          }
+          Pop-Location
+          if ($exit -eq 77) { throw "the editor device suite found no device and skipped" }
+          if ($exit -ne 0) { throw "the editor device suite exited $exit" }
 
       # The window suite is held to the same rule. This runner opens a window and lavapipe
       # presents to it, so a skip means one of the two stopped working, and the Engine3D cases

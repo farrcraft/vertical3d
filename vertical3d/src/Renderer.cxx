@@ -25,6 +25,7 @@
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
@@ -107,6 +108,11 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
         style->panelPadding = size * panelPaddingScale;
     };
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+
+    shaded_ = boost::make_shared<ShadedPass>(engine_.context());
+    if (!shaded_->nonSolid()) {
+        logger_->get()->warn("the device cannot draw a triangle as its edges or its corners, so a view asked to draws it filled");
+    }
 }
 
 /**
@@ -232,6 +238,10 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         overlay->depth(false);
         overlay->camera(view->camera()->view(), view->camera()->projection());
 
+        // the surfaces first, so the wireframe drawn after them is drawn over them
+        if (shaded_ && view->shows(ViewPort::SHOW_MESH)) {
+            shaded_->submit(scene, view->display(), pass.get());
+        }
         if (lines) {
             lines->submit(canvases_[index], pass.get());
             if (!overlays_[index].empty()) {
@@ -243,6 +253,9 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
     drawUi(frame, statistics);
 
     engine_.renderFrame();
+    if (shaded_) {
+        shaded_->collect();
+    }
 }
 
 /**
@@ -280,6 +293,8 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
 /**
  **/
 void Renderer::shutdown() {
+    // the surfaces' buffers go back to the ring, which destroys them once the device is idle
+    shaded_.reset();
     engine_.shutdown();
 }
 

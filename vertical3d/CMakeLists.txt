@@ -6,6 +6,8 @@ add_executable("vertical3d"
 	"src/view/ViewLayout.h" "src/view/ViewLayout.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
+	"src/view/Triangulation.h" "src/view/Triangulation.cxx"
+	"src/view/ShadedPass.h" "src/view/ShadedPass.cxx"
 
 	"src/scene/Item.h" "src/scene/Item.cxx"
 	"src/scene/Mesh.h" "src/scene/Mesh.cxx"
@@ -57,6 +59,10 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_type
 	v3dlib_ui
 )
+
+# the shaded pass's own stages, which a view draws its meshes' surfaces with
+v3d_add_shader(vertical3d "shaders/shaded.vert")
+v3d_add_shader(vertical3d "shaders/shaded.frag")
 
 v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)

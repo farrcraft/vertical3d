@@ -159,12 +159,8 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-33 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
+21 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
-
-[] **Shading and culling modes** (`view::shade::*`, `view::cull::*`, `view::rendermode::*`) need a
-shaded draw of the mesh, which the editor's renderer does not have. The mode itself is view
-state.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
 writes each item's geometry in full, so they read back as two copies. Keeping them shared needs
