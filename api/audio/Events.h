@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -41,8 +42,8 @@ enum class Stop : uint8_t {
  * audio::Engine. An app that plays events gets one of these from events(). In a build with no
  * event backend, events() returns the null backend, so the app builds and runs either way.
  *
- * Every call returns whether it succeeded. The null backend does nothing and returns false,
- * and a game treats that as silence, not as an error.
+ * Every call returns whether it succeeded. The null backend does nothing and returns false or
+ * nothing, and a game treats that as silence, not as an error.
  **/
 class Events {
  public:
@@ -94,6 +95,38 @@ class Events {
      * @return whether the parameter exists and took the value
      **/
     virtual bool parameter(std::string_view name, float value) = 0;
+
+    /**
+     * Set how loud a bus or a VCA plays, which is what a player's volume slider moves. The path
+     * says which it is: "bus:/" is the master bus, "bus:/Music" a bus under it, and
+     * "vca:/SFX" a VCA. A VCA scales the buses assigned to it without changing their routing.
+     *
+     * A path is found through the strings bank, so the bank that holds the names has to be
+     * loaded first. A level set before then is refused, and the app sets it again afterwards.
+     *
+     * @param level 1 as authored and 0 silent. A level below 0 is taken as 0
+     * @return whether the path exists and took the level
+     **/
+    virtual bool volume(std::string_view path, float level) = 0;
+
+    /**
+     * @return the level a bus or a VCA was set to, or nothing for a path no loaded bank holds
+     **/
+    virtual std::optional<float> volume(std::string_view path) const = 0;
+
+    /**
+     * Pause or resume a bus and everything routed through it. Pausing "bus:/" pauses
+     * everything. Pausing the game's buses and not the menu's is a pause menu. A VCA has no
+     * pause, so a "vca:/" path is refused.
+     *
+     * @return whether the bus exists and took the change
+     **/
+    virtual bool paused(std::string_view bus, bool paused) = 0;
+
+    /**
+     * @return whether a bus is paused, or nothing for a path no loaded bank holds
+     **/
+    virtual std::optional<bool> paused(std::string_view bus) const = 0;
 
     /**
      * Let the backend do a frame's work, and release every started event that has stopped.

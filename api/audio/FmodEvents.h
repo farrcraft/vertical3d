@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -33,8 +34,8 @@ namespace v3d::audio {
  * Banks stay loaded until the backend is destroyed. An event start() started is kept until it
  * has stopped, and released by the next update() after that.
  *
- * An event no bank holds, and a global parameter FMOD will not set, are each logged once per
- * name for the life of the backend. Every later call for that name still returns false. A
+ * An event no bank holds, a global parameter FMOD will not set, and a bus or VCA path no bank
+ * holds, are each logged once per name for the life of the backend. Every later call for that name still returns false. A
  * caller that sets a parameter every frame therefore writes one warning, not one a frame.
  **/
 class FmodEvents final : public Events {
@@ -61,6 +62,10 @@ class FmodEvents final : public Events {
     bool stop(Instance instance, Stop how) override;
     bool playing(Instance instance) const override;
     bool parameter(std::string_view name, float value) override;
+    bool volume(std::string_view path, float level) override;
+    std::optional<float> volume(std::string_view path) const override;
+    bool paused(std::string_view bus, bool paused) override;
+    std::optional<bool> paused(std::string_view bus) const override;
     void update() override;
     std::string_view name() const noexcept override;
 
@@ -72,6 +77,11 @@ class FmodEvents final : public Events {
      **/
     FMOD::Studio::EventInstance* create(const std::string& path);
 
+    /**
+     * Log a bus or VCA path FMOD refused, once per path.
+     **/
+    void refuse(const std::string& path, const char* why);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     FMOD::Studio::System* system_;
     /**< events already reported missing. Kept apart from the parameters, so an event and a
@@ -79,6 +89,8 @@ class FmodEvents final : public Events {
     std::set<std::string, std::less<>> missingEvents_;
     /**< global parameters already reported as refused **/
     std::set<std::string, std::less<>> refusedParameters_;
+    /**< bus and VCA paths already reported as refused **/
+    std::set<std::string, std::less<>> refusedMixes_;
     std::map<Instance, FMOD::Studio::EventInstance*> started_;  /**< what start() keeps hold of **/
     uint32_t nextInstance_ = 1;  /**< never reused, so a stale handle stays stale **/
 };

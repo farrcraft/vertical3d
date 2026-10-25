@@ -152,7 +152,11 @@ Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
 
-There are none open.
+[] **Leak: a started FMOD event leaves 72 bytes behind.** In a build with `V3D_FMOD_ROOT`,
+`fmod_events_test/the_fmod_backend_stops_an_event_it_started` run alone ends with the debug
+heap reporting one 72 byte block. The other FMOD cases, each run alone, report none. The block
+is allocated on the CRT heap, not FMOD's, so it is something `FmodEvents` or the case allocates
+around `start()` and `stop()`.
 
 ## Editor
 

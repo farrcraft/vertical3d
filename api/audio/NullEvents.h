@@ -25,6 +25,10 @@ class NullEvents final : public Events {
     bool stop(Instance instance, Stop how) override;
     bool playing(Instance instance) const override;
     bool parameter(std::string_view name, float value) override;
+    bool volume(std::string_view path, float level) override;
+    std::optional<float> volume(std::string_view path) const override;
+    bool paused(std::string_view bus, bool paused) override;
+    std::optional<bool> paused(std::string_view bus) const override;
     void update() override;
     std::string_view name() const noexcept override;
 };

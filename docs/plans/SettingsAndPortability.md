@@ -126,7 +126,10 @@ both matched by a press, and the command fired twice.
 
 ### Step 4 — Bus volume and pause on `audio::Events`
 
-**Open.** `Events` sets a volume on a bus or VCA by path, and pauses a bus by path. Both return
+**Done.** `Events::volume()` and `paused()` each have a setter and a getter that returns nothing
+for a path no bank holds. The FMOD case ran against the SDK's example banks in a build
+configured with `V3D_FMOD_ROOT`, on 2026-10-25. CI builds without the SDK and runs only the null
+backend's case. `Events` sets a volume on a bus or VCA by path, and pauses a bus by path. Both return
 whether the path exists, and a missing path is logged once per name, as a missing event is.
 
 - The null backend returns false for both.

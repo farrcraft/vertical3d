@@ -33,6 +33,19 @@ BOOST_AUTO_TEST_CASE(the_null_backend_plays_nothing_and_says_so) {
     BOOST_TEST(events.name() == "null");
 }
 
+/**
+ * The null backend has no mixer, so it sets no volume and pauses no bus, and has nothing to
+ * read back from either.
+ **/
+BOOST_AUTO_TEST_CASE(the_null_backend_has_no_buses) {
+    v3d::audio::NullEvents events;
+    BOOST_TEST(!events.volume("bus:/Music", 0.5F));
+    BOOST_TEST(!events.volume("vca:/SFX", 0.5F));
+    BOOST_TEST(!events.volume("bus:/Music").has_value());
+    BOOST_TEST(!events.paused("bus:/", true));
+    BOOST_TEST(!events.paused("bus:/").has_value());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

@@ -12,7 +12,9 @@
 #include <fmod_studio_common.h>
 #include <SDL3/SDL_loadso.h>
 
+#include <algorithm>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -29,6 +31,13 @@ namespace {
  * How many event instances FMOD may have playing at once, across every bank.
  **/
 const int maximumChannels = 512;
+
+/**
+ * Whether a mixer path names a VCA rather than a bus.
+ **/
+bool isVca(std::string_view path) noexcept {
+    return path.starts_with("vca:/");
+}
 
 };  // namespace
 
@@ -160,6 +169,100 @@ bool FmodEvents::parameter(std::string_view name, float value) {
         return false;
     }
     return true;
+}
+
+/**
+ **/
+void FmodEvents::refuse(const std::string& path, const char* why) {
+    if (refusedMixes_.insert(path).second) {
+        logger_->get()->warn("FMOD refused the mixer path {}: {}", path, why);
+    }
+}
+
+/**
+ **/
+bool FmodEvents::volume(std::string_view path, float level) {
+    const std::string mix(path);
+    const float clamped = std::max(level, 0.0F);
+    FMOD_RESULT result = FMOD_OK;
+    if (isVca(path)) {
+        FMOD::Studio::VCA* vca = nullptr;
+        result = system_->getVCA(mix.c_str(), &vca);
+        if (result == FMOD_OK) {
+            result = vca->setVolume(clamped);
+        }
+    } else {
+        FMOD::Studio::Bus* bus = nullptr;
+        result = system_->getBus(mix.c_str(), &bus);
+        if (result == FMOD_OK) {
+            result = bus->setVolume(clamped);
+        }
+    }
+    if (result != FMOD_OK) {
+        refuse(mix, FMOD_ErrorString(result));
+        return false;
+    }
+    return true;
+}
+
+/**
+ **/
+std::optional<float> FmodEvents::volume(std::string_view path) const {
+    const std::string mix(path);
+    float level = 0.0F;
+    FMOD_RESULT result = FMOD_OK;
+    if (isVca(path)) {
+        FMOD::Studio::VCA* vca = nullptr;
+        result = system_->getVCA(mix.c_str(), &vca);
+        if (result == FMOD_OK) {
+            result = vca->getVolume(&level);
+        }
+    } else {
+        FMOD::Studio::Bus* bus = nullptr;
+        result = system_->getBus(mix.c_str(), &bus);
+        if (result == FMOD_OK) {
+            result = bus->getVolume(&level);
+        }
+    }
+    if (result != FMOD_OK) {
+        return std::nullopt;
+    }
+    return level;
+}
+
+/**
+ **/
+bool FmodEvents::paused(std::string_view bus, bool paused) {
+    const std::string mix(bus);
+    if (isVca(bus)) {
+        refuse(mix, "a VCA has no pause");
+        return false;
+    }
+    FMOD::Studio::Bus* found = nullptr;
+    FMOD_RESULT result = system_->getBus(mix.c_str(), &found);
+    if (result == FMOD_OK) {
+        result = found->setPaused(paused);
+    }
+    if (result != FMOD_OK) {
+        refuse(mix, FMOD_ErrorString(result));
+        return false;
+    }
+    return true;
+}
+
+/**
+ **/
+std::optional<bool> FmodEvents::paused(std::string_view bus) const {
+    if (isVca(bus)) {
+        return std::nullopt;
+    }
+    const std::string mix(bus);
+    FMOD::Studio::Bus* found = nullptr;
+    bool paused = false;
+    if (system_->getBus(mix.c_str(), &found) != FMOD_OK || found->getPaused(&paused) != FMOD_OK) {
+        return std::nullopt;
+    }
+    return paused;
 }
 
 /**

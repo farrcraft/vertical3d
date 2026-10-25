@@ -5,6 +5,7 @@
 
 #include "NullEvents.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -46,6 +47,30 @@ bool NullEvents::playing(Instance /* instance */) const {
  **/
 bool NullEvents::parameter(std::string_view /* name */, float /* value */) {
     return false;
+}
+
+/**
+ **/
+bool NullEvents::volume(std::string_view /* path */, float /* level */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<float> NullEvents::volume(std::string_view /* path */) const {
+    return std::nullopt;
+}
+
+/**
+ **/
+bool NullEvents::paused(std::string_view /* bus */, bool /* paused */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<bool> NullEvents::paused(std::string_view /* bus */) const {
+    return std::nullopt;
 }
 
 /**

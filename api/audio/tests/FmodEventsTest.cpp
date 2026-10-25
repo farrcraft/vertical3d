@@ -172,6 +172,47 @@ BOOST_AUTO_TEST_CASE(the_fmod_backend_stops_an_event_it_started) {
     BOOST_TEST(stopped(again));
 }
 
+/**
+ * A volume set on a bus or a VCA is the one read back from FMOD, and a level below zero is
+ * taken as zero. A bus paused reads back paused, and resumed reads back resumed. A VCA has no
+ * pause, and a path no bank holds is refused and reported once.
+ **/
+BOOST_AUTO_TEST_CASE(the_fmod_backend_sets_a_bus_and_a_vca) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::audio::Events> events = v3d::audio::events(logger);
+    BOOST_REQUIRE(events->name() == "fmod");
+
+    const std::string media = V3D_FMOD_EXAMPLE_BANKS;
+    BOOST_REQUIRE(events->bank(media + "/Master.bank"));
+    BOOST_REQUIRE(events->bank(media + "/Master.strings.bank"));
+    BOOST_REQUIRE(events->bank(media + "/SFX.bank"));
+
+    BOOST_TEST(events->volume("bus:/Music", 0.25F));
+    BOOST_REQUIRE(events->volume("bus:/Music").has_value());
+    BOOST_TEST(*events->volume("bus:/Music") == 0.25F);
+    BOOST_TEST(events->volume("vca:/Player", 0.5F));
+    BOOST_REQUIRE(events->volume("vca:/Player").has_value());
+    BOOST_TEST(*events->volume("vca:/Player") == 0.5F);
+    BOOST_TEST(events->volume("bus:/", -1.0F));
+    BOOST_TEST(*events->volume("bus:/") == 0.0F);
+
+    BOOST_TEST(events->paused("bus:/SFX", true));
+    BOOST_REQUIRE(events->paused("bus:/SFX").has_value());
+    BOOST_TEST(*events->paused("bus:/SFX"));
+    BOOST_TEST(!*events->paused("bus:/Music"));
+    BOOST_TEST(events->paused("bus:/SFX", false));
+    BOOST_TEST(!*events->paused("bus:/SFX"));
+
+    const Warnings warnings(logger);
+    BOOST_TEST(!events->paused("vca:/Player", true));
+    BOOST_TEST(!events->paused("vca:/Player").has_value());
+    for (int frame = 0; frame < 3; ++frame) {
+        BOOST_TEST(!events->volume("bus:/No Such Bus", 1.0F));
+    }
+    BOOST_TEST(!events->volume("bus:/No Such Bus").has_value());
+    BOOST_TEST(warnings.count() == 2U);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

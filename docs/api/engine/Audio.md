@@ -67,6 +67,8 @@ events_->bank(path + "/Master.bank");
 events_->bank(path + "/Master.strings.bank");
 events_->play("event:/UI/Cancel");                       // a one shot
 events_->parameter("Intensity", 0.8F);                   // a global parameter
+events_->volume("vca:/Music", 0.5F);                     // a player's volume slider
+events_->paused("bus:/Game", true);                      // a pause menu
 events_->update();                                       // once a frame, in tick()
 ```
 
@@ -75,15 +77,26 @@ events_->update();                                       // once a frame, in tic
   [Dependencies.md](../../contributing/Dependencies.md#fmod-studio). A build with FMOD still
   gets the null backend when FMOD's dlls are not beside the executable, or FMOD fails to start.
   The null backend plays nothing.
-- **Every call says whether it did anything.** `bank()`, `play()` and `parameter()` return false
-  for a bank that did not load, an event no loaded bank holds, or a parameter that does not
-  exist, and always on the null backend. A game treats false as silence, not as an error.
+- **Every call says whether it did anything.** `bank()`, `play()`, `parameter()`, `volume()`
+  and `paused()` return false for a bank that did not load, an event no loaded bank holds, or a
+  parameter or a mixer path that does not exist, and always on the null backend. A game treats false as silence, not as an error.
 - **A missing event or parameter is logged once per name.** The FMOD backend warns the first time
   an event is not found or a parameter cannot be set, and returns false without logging on every
   later call for that name. A parameter set every frame writes one line, not one a frame. An
   event and a parameter with the same name are each reported.
 - **Load the strings bank** beside the banks that hold events. FMOD looks an event's path up in
   it, so without it no event is found by name.
+- **`volume(path, level)` sets a bus or a VCA**, told apart by the path: `"bus:/"` is the master
+  bus, `"bus:/Music"` a bus under it, and `"vca:/SFX"` a VCA. A VCA scales the buses assigned to
+  it without changing their routing, which is what a player's slider usually wants. 1 is as
+  authored and 0 is silent, and a level below 0 is taken as 0. `volume(path)` reads the level
+  back.
+- **`paused(bus, on)` pauses a bus** and everything routed through it. `"bus:/"` pauses
+  everything, and pausing the game's buses but not the menu's is a pause menu. A VCA has no
+  pause, so a `"vca:/"` path is refused. `paused(bus)` reads it back.
+- A bus or VCA path is found through the strings bank too, so a level or a pause set before it
+  is loaded is refused. Set them again once the banks are loaded. A path no bank holds is refused,
+  logged once per path, and reads back as nothing. On the null backend every one is refused.
 - `play()` starts a one shot, which FMOD releases when it ends.
 - **`start()` starts an event and keeps hold of it**, for a bed or a loop that has to be stopped.
   It returns an `audio::Instance`, a scoped enum like `Voice`. `Instance::None` is no event,
