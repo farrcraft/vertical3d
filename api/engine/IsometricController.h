@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <entt/entt.hpp>
+#include <glm/vec2.hpp>
 
 namespace v3d::engine {
 
@@ -40,6 +41,9 @@ struct IsometricCommands final {
 struct IsometricSpeeds final {
     float pan = 10.0F;   /**< world units a second **/
     float zoom = 10.0F;  /**< orthographic half height a second **/
+    /**< orthographic half height a notch of the wheel zooms by. A notch away from the player
+     * zooms in. A negative value turns the wheel round, for a player who prefers it **/
+    float notch = 1.0F;
 };
 
 /**
@@ -55,6 +59,12 @@ struct IsometricSpeeds final {
  *   Movement is therefore measured in seconds and does not depend on the frame rate.
  * - Every move goes through the orbit's own methods, so its clamps and its wrap apply, and a pan
  *   follows the view's axes after a rotate.
+ * - The wheel zooms by a step a notch, through wheel(), which the app calls with what the mouse
+ *   turned. A notch is not held, so it zooms when it arrives rather than over a step.
+ * - Edge pan moves the view while the cursor is near the window's edge. It is off until
+ *   edgePan() gives it a margin, because many players turn it off. The app tells the controller
+ *   where the cursor is through cursor(), and simulate() pans at the same speed a held pan
+ *   command does.
  *
  * The listener is disconnected when the controller is destroyed, so one released in release()
  * leaves nothing on the dispatcher.
@@ -95,15 +105,52 @@ class IsometricController final {
     void simulate(float step);
 
     /**
+     * Zoom by what the wheel turned, by Speeds::notch a notch, inside the orbit's clamps.
+     *
+     * @param notches how far it turned since the last call, away from the player first, as
+     *        input::MouseState::wheel() and ui::Immediate::Input give it
+     **/
+    void wheel(float notches);
+
+    /**
+     * Pan while the cursor is within a margin of the window's edge.
+     *
+     * @param margin how far in from each edge, in pixels, or zero for no edge pan, which is
+     *        the default
+     **/
+    void edgePan(float margin) noexcept;
+
+    /**
+     * Where the cursor is, for edge pan, read by the next simulate().
+     *
+     * @param at the cursor, in pixels from the window's top left
+     * @param viewport the window's size in pixels
+     * @param overUi whether the ui has the cursor, as ui::Immediate::capturing() says. An edge
+     *        under a panel does not pan the view
+     **/
+    void cursor(const glm::vec2& at, const glm::vec2& viewport, bool overUi) noexcept;
+
+    /**
      * Turn the orbit for a rotate command. Connected to the dispatcher by the constructor.
      **/
     void receive(const event::Event& event);
 
  private:
+    /**
+     * Which way the cursor pans the view, from where it sits against the window's edges: -1, 0
+     * or 1 along right() and forward(). Zero both ways when edge pan is off, the cursor is over
+     * the ui, or it is outside the window.
+     **/
+    glm::vec2 edgeAxes() const noexcept;
+
     type::camera::Isometric* orbit_;
     Held held_;
     Commands commands_;
     Speeds speeds_;
+    float margin_ = 0.0F;      /**< how far in from the edge the cursor pans, or zero for off **/
+    glm::vec2 cursor_{-1.0F};  /**< where the cursor was last, off the window until told **/
+    glm::vec2 viewport_{0.0F};
+    bool overUi_ = false;
     /**< disconnects when the controller goes **/
     entt::scoped_connection listening_;
 };

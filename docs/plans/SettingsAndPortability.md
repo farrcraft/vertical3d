@@ -154,7 +154,8 @@ it is built.
 
 ### Step 6 — Wheel zoom and edge pan on `IsometricController`
 
-**Open.**
+**Done.** `wheel()`, `edgePan()` and `cursor()` are on the controller, and `Speeds::notch` is the
+wheel's step, its sign the direction.
 
 - The controller takes a wheel delta each step and zooms by a stated step per notch, through
   `zoomBy()`, inside the orbit's clamps. The direction is an option.

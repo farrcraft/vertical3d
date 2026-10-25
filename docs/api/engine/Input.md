@@ -220,6 +220,10 @@ counting command edges, so it works for a binding that fires on press only, and 
 // in start()
 controller_ = std::make_unique<v3d::engine::IsometricController>(&orbit_, *this);
 
+// in tick(), from what the mouse did this frame
+controller_->wheel(mouse()->wheel());
+controller_->cursor(mouse()->position(), viewport, ui->capturing());
+
 // in simulate(step)
 controller_->simulate(step);
 
@@ -243,6 +247,16 @@ controller_.reset();
   instead drops commands in its own handlers, because its ui has focus or because of the state
   it is in, cannot use the controller. It calls `rotate()`, `pan()` and `zoomBy()` from those
   handlers.
+- **The wheel zooms a step a notch.** `wheel(notches)` zooms by `Speeds::notch` of half height a
+  notch, inside the orbit's clamps. A notch away from the player zooms in. A negative
+  `Speeds::notch` turns the wheel round, for a player who prefers it the other way. A notch is not
+  held, so it zooms when `wheel()` is called rather than over a step. Pass what the mouse turned
+  since the last call, which is what `MouseState::wheel()` gives.
+- **Edge pan is off until `edgePan(margin)` turns it on.** With a margin in pixels, a cursor within
+  it of an edge pans the view toward that edge at `Speeds::pan`, from `simulate()`. The top edge is
+  forward. `cursor(at, viewport, overUi)` tells the controller where the cursor is. A cursor outside
+  the window, or over the ui, pans nothing. A key held toward the same edge pans at one speed, not
+  two. `edgePan(0)` turns it off again, for a player who has turned it off.
 - Destroying the controller disconnects it from the dispatcher.
 
 ### Mouse look
