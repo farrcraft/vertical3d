@@ -10,6 +10,9 @@
 #include <iosfwd>
 #include <string>
 
+#include "Camera.h"
+#include "Light.h"
+#include "Mesh.h"
 #include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
@@ -19,8 +22,8 @@ namespace v3d::editor {
 /**
  * Writes a scene out as RIB. This is export only: nothing reads it back.
  *
- * **Topology and a placement per mesh, and nothing else.** The editor's Scene has no
- * lights and no materials, so what comes out renders in one flat colour.
+ * **Topology and a placement per mesh, and nothing else.** The scene's cameras and lights are
+ * not written, and it has no materials, so what comes out renders in one flat colour.
  *
  * Each face is written as it stands, as one Polygon. RI requires a polygon to be planar and
  * convex, and does no checking. moya dices a polygon's first four vertices and drops the
@@ -36,8 +39,7 @@ class RIBExportVisitor final : public SceneVisitor {
     /**
      * The file header and the camera, written before any mesh.
      *
-     * The scene holds no camera, because each view owns its own, so the caller passes the
-     * one the export uses.
+     * The caller passes the camera the export uses, which is a view's.
      *
      * @param camera the view the scene is rendered from
      * @param width the image size to ask the renderer for
@@ -52,7 +54,13 @@ class RIBExportVisitor final : public SceneVisitor {
     /**
      * One mesh: its placement, then a Polygon per face.
      **/
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
+    void visit(const boost::shared_ptr<Mesh>& item) override;
+
+    /**
+     * Cameras and lights are not written.
+     **/
+    void visit(const boost::shared_ptr<Camera>& camera) override;
+    void visit(const boost::shared_ptr<Light>& light) override;
 
  private:
     /**

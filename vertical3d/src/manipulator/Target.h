@@ -7,6 +7,8 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
 
@@ -54,7 +56,7 @@ class Target final {
      * them, whose normals a move changes.
      **/
     struct Part {
-        boost::shared_ptr<v3d::brep::BRep> mesh;
+        boost::shared_ptr<Mesh> mesh;
         std::vector<v3d::brep::Index> vertices;
         std::vector<v3d::brep::Index> faces;
     };
@@ -71,9 +73,9 @@ class Target final {
     Target();
 
     /**
-     * Whole objects.
+     * Whole objects, of any kind.
      **/
-    static Target objects(const Meshes& meshes);
+    static Target objects(const Items& items);
 
     /**
      * The vertices of the selected components of one kind, in every mesh of the set. An
@@ -99,9 +101,9 @@ class Target final {
     bool components() const noexcept;
 
     /**
-     * @return the meshes the target moves or moves parts of, in scene order
+     * @return the items the target moves, or the meshes it moves parts of, in scene order
      **/
-    const Meshes& meshes() const noexcept;
+    const Items& items() const noexcept;
 
     /**
      * @return for a component target, each mesh's vertices and the faces around them
@@ -127,7 +129,7 @@ class Target final {
     void move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame) const;
 
  private:
-    Meshes meshes_;
+    Items items_;
     std::vector<Part> parts_;
     bool components_;
 };

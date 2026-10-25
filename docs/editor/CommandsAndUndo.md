@@ -11,7 +11,7 @@ never applies it.
 
 **One gesture is one command.** A manipulator drag changes the meshes on every motion event so
 the user sees them move. `TransformTool` records one `TransformCommand` when the drag ends,
-holding each moved mesh's `Placement` (translation, rotation and scale) from the start and the
+holding each moved item's `Placement` (translation, rotation and scale) from the start and the
 end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
 set.
 
@@ -23,18 +23,19 @@ mesh exactly. A gesture that moved no vertex records nothing.
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
-  `Controller::createPoly` builds a `CreateCommand`, calls `redo()` to add the mesh, and then
-  pushes it. Creating and redoing use the same code.
+  `Controller::createPoly` wraps the primitive in a mesh item, builds a `CreateCommand`, calls
+  `redo()` to add the item, and then pushes it. Creating and redoing use the same code. A
+  `CreateCommand` takes an item of any kind.
 - **Every path out of a drag records it.** `TransformTool::commit()` runs on release and on a
   mode change. It pushes only if the placement actually changed, so a handle grabbed and
   released without moving records nothing.
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
 - **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
-  clears the selection flag of the mesh it removes, and leaves any other selected mesh selected.
-  `CreateCommand::redo` selects the new mesh and nothing else.
+  clears the selection flags of the item it removes, and leaves any other selected item selected.
+  `CreateCommand::redo` selects the new item and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
-  A mesh held by a dropped command is freed then.
+  An item held by a dropped command is freed then.
 - **A new push discards the redo side.**
 - **Opening a project clears the history**, so an open cannot be undone. It also cancels any
   drag under way without recording it.

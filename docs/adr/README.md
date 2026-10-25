@@ -126,7 +126,7 @@ content went. Numbers are never reused.
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | accepted |
+| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | superseded by 0099 |
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
@@ -135,6 +135,7 @@ content went. Numbers are never reused.
 | [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
 | [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
 | [0098](0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted |
+| [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | accepted |
 
 ## Build, testing and code
 

@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const unsigned int id = cube->id();
 
     const boost::shared_ptr<v3d::editor::CreateCommand> command =
@@ -249,7 +249,7 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
 
     command->undo();
     BOOST_CHECK_EQUAL(scene->count(), 0U);
@@ -265,8 +265,8 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
 
     plane->selected(true);
     scene->add(plane);
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     v3d::editor::CreateCommand command(scene, cube, "cube");
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
 
     // the flag lives on the mesh, so undoing the create clears it
     command.undo();
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
     BOOST_CHECK(!plane->selected());
 
     // with the plane added to the selection, undoing the create takes the cube out of it
@@ -290,12 +290,12 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     plane->selected(true);
     command.undo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{plane});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{plane});
     BOOST_CHECK(!cube->selected());
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
 
     const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
 
     BOOST_CHECK(!before.same(after));
 
-    v3d::editor::TransformCommand command({{.mesh = cube, .before = before, .after = after}}, "translate");
+    v3d::editor::TransformCommand command({{.item = cube, .before = before, .after = after}}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved

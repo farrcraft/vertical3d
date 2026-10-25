@@ -8,6 +8,7 @@ v3d_add_test(vertical3d
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
 
+	"scene/ItemTest.cxx"
 	"scene/SceneTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/WireframeVisitorTest.cxx"
@@ -30,6 +31,10 @@ v3d_add_test(vertical3d
 	"../src/view/ViewLayout.cxx"
 	"../src/view/ViewPort.cxx"
 	"../src/view/ConstructionPlane.cxx"
+	"../src/scene/Item.cxx"
+	"../src/scene/Mesh.cxx"
+	"../src/scene/Camera.cxx"
+	"../src/scene/Light.cxx"
 	"../src/scene/Scene.cxx"
 	"../src/scene/CreatePoly.cxx"
 	"../src/scene/WireframeVisitor.cxx"

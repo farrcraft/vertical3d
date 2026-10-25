@@ -10,6 +10,8 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Vertex.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -239,33 +241,33 @@ void SelectTool::selectObject(unsigned int id) {
     if (id == 0) {
         return;
     }
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(id);
-    if (!mesh) {
+    const boost::shared_ptr<Item> item = scene_->item(id);
+    if (!item) {
         return;
     }
-    const bool wanted = !adding_ || !mesh->selected();
-    mesh->selected(wanted);
+    const bool wanted = !adding_ || !item->selected();
+    item->selected(wanted);
     if (logger_) {
-        logger_->get()->info("{} mesh {}", wanted ? "selected" : "deselected", id);
+        logger_->get()->info("{} item {}", wanted ? "selected" : "deselected", id);
     }
 }
 
 /**
  **/
 void SelectTool::selectComponent(const Picker::Hit& hit) {
-    const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
+    const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.mesh);
     if (!mesh) {
         return;
     }
 
     // read before clearing: clicking the same component twice deselects it
-    const bool wanted = !componentSelected(*mesh, hit);
+    const bool wanted = !componentSelected(*mesh->geometry(), hit);
 
     if (!adding_) {
         scene_->deselectComponents();
     }
 
-    markComponent(mesh.get(), hit, wanted);
+    markComponent(mesh->geometry().get(), hit, wanted);
 
     if (logger_) {
         logger_->get()->info("{} {} {} of mesh {}", wanted ? "selected" : "deselected",
@@ -281,14 +283,16 @@ void SelectTool::selectInside() {
     }
     const std::vector<Picker::Hit> hits = picker_.inside(*scene_, *view_, anchor_, cursor_, mask_);
     for (const Picker::Hit& hit : hits) {
-        const boost::shared_ptr<v3d::brep::BRep> mesh = scene_->mesh(hit.mesh);
-        if (!mesh) {
+        if (hit.kind == SelectMask::Object) {
+            const boost::shared_ptr<Item> item = scene_->item(hit.mesh);
+            if (item) {
+                item->selected(true);
+            }
             continue;
         }
-        if (hit.kind == SelectMask::Object) {
-            mesh->selected(true);
-        } else {
-            markComponent(mesh.get(), hit, true);
+        const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.mesh);
+        if (mesh) {
+            markComponent(mesh->geometry().get(), hit, true);
         }
     }
     if (logger_) {

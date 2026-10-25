@@ -39,10 +39,10 @@ VertexCommand::Shape VertexCommand::Shape::of(const Target::Part& part) {
         return shape;
     }
     for (const v3d::brep::Index vertex : part.vertices) {
-        shape.points.push_back(part.mesh->vertex(vertex)->point());
+        shape.points.push_back(part.mesh->geometry()->vertex(vertex)->point());
     }
     for (const v3d::brep::Index face : part.faces) {
-        shape.normals.push_back(part.mesh->face(face)->normal());
+        shape.normals.push_back(part.mesh->geometry()->face(face)->normal());
     }
     return shape;
 }
@@ -54,10 +54,10 @@ void VertexCommand::Shape::applyTo(const Target::Part& part) const {
         return;
     }
     for (std::size_t index = 0; index < part.vertices.size() && index < points.size(); index++) {
-        part.mesh->vertex(part.vertices[index])->point(points[index]);
+        part.mesh->geometry()->vertex(part.vertices[index])->point(points[index]);
     }
     for (std::size_t index = 0; index < part.faces.size() && index < normals.size(); index++) {
-        part.mesh->face(part.faces[index])->normal(normals[index]);
+        part.mesh->geometry()->face(part.faces[index])->normal(normals[index]);
     }
 }
 

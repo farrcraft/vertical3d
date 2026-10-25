@@ -5,7 +5,7 @@
 
 #include "TransformTool.h"
 
-#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Item.h>
 #include <api/log/Logger.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
@@ -239,15 +239,15 @@ void TransformTool::commit() {
         return;
     }
 
-    // every placement is recorded in full, because a turn or a scale of several meshes
+    // every placement is recorded in full, because a turn or a scale of several items
     // moves each one's translation as well
-    const Meshes& meshes = target.meshes();
+    const Items& items = target.items();
     std::vector<TransformCommand::Change> changes;
     bool moved = false;
-    for (std::size_t index = 0; index < meshes.size() && index < before.size(); index++) {
-        const Placement after = Placement::of(*meshes[index]);
+    for (std::size_t index = 0; index < items.size() && index < before.size(); index++) {
+        const Placement after = Placement::of(*items[index]);
         moved = moved || !after.same(before[index]);
-        changes.push_back({.mesh = meshes[index], .before = before[index], .after = after});
+        changes.push_back({.item = items[index], .before = before[index], .after = after});
     }
     if (moved) {
         commands_->push(boost::make_shared<TransformCommand>(changes, modeName(mode_)));
@@ -338,8 +338,8 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
             shapes_.push_back(VertexCommand::Shape::of(part));
         }
     } else {
-        for (const boost::shared_ptr<v3d::brep::BRep>& mesh : target.meshes()) {
-            before_.push_back(Placement::of(*mesh));
+        for (const boost::shared_ptr<Item>& item : target.items()) {
+            before_.push_back(Placement::of(*item));
         }
     }
 }

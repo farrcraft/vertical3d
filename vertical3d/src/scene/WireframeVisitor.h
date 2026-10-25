@@ -7,6 +7,11 @@
 
 #include <api/render/realtime/canvas/Line.h>
 
+#include <api/brep/BRep.h>
+
+#include "Camera.h"
+#include "Light.h"
+#include "Mesh.h"
 #include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
@@ -15,7 +20,8 @@
 namespace v3d::editor {
 
 /**
- * Draws every mesh of a scene as a wireframe, onto one line canvas.
+ * Draws every mesh of a scene as a wireframe, onto one line canvas. Cameras and lights are not
+ * drawn.
  *
  * A mesh is drawn through its own transform, so the canvas carries the placement, not the
  * geometry. Each edge is drawn once, by the half edge ownsEdge() picks.
@@ -34,7 +40,13 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Append one mesh's wireframe.
      **/
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
+    void visit(const boost::shared_ptr<Mesh>& item) override;
+
+    /**
+     * Cameras and lights are not drawn.
+     **/
+    void visit(const boost::shared_ptr<Camera>& camera) override;
+    void visit(const boost::shared_ptr<Light>& light) override;
 
  private:
     /**

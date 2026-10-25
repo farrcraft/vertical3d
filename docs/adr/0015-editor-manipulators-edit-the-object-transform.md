@@ -7,8 +7,8 @@
 
 ## Context
 
-The editor needs translate, rotate and scale handles for the selected mesh. A mesh has a
-`dag::Transform` for its placement, per [ADR-0013](0013-editor-a-mesh-is-a-dag-node.md), and
+The editor needs translate, rotate and scale handles for the selected mesh. A mesh item has a
+`dag::Transform` for its placement, per [ADR-0099](0099-editor-scene-items-own-identity-and-placement.md), and
 the transform pivots about the mesh's own origin. Handles must stay grabbable when geometry is in
 front of them, and they share a plane with the construction grid's axis lines. The render pass
 model already provides overlay passes without depth, per
@@ -29,7 +29,7 @@ test.
   as a placement, and a rotation must be applied to every point. Two meshes could never share
   geometry. Modelling operations rebuild the vertex arrays, so a drag in progress would hold
   indices that could become invalid.
-- **Rejected because**: it merges placement into geometry, the distinction ADR-0013 makes.
+- **Rejected because**: it merges placement into geometry, the distinction ADR-0099 makes.
 
 ### Handles drawn at the centre of the selected components
 - **For**: the handles follow the face or vertices the user is working on.

@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <api/dag/Node.h>
-#include <api/dag/Transform.h>
 #include <api/type/geometry/AABBox.h>
 
 #include <string>
@@ -23,11 +21,11 @@ namespace v3d::brep {
 /**
  * A boundary representation mesh.
  *
- * It is a dag::Node, so it has an id the selection model keys on. It is a dag::Transform, so
- * its geometry is described about its own origin and placed by matrix(). A manipulator moves
- * the mesh through the transform, not through the vertices.
+ * It is geometry alone: it has no id and no placement, and is described about its own origin.
+ * Whatever holds it gives it both. Each vertex, half edge and face carries its own selection
+ * flag. A copy is a separate mesh with the same parts and the same flags.
  **/
-class BRep : public v3d::dag::Node, public v3d::dag::Transform {
+class BRep {
  public:
         BRep();
         ~BRep();
@@ -88,15 +86,7 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         void restore(const Snapshot & snapshot);
 
         /**
-         * Whether the mesh as a whole is selected, which is object mode selection.
-         * Component selection is the flag each Vertex, HalfEdge and Face carries.
-         **/
-        bool selected(void) const noexcept;
-        void selected(bool sel) noexcept;
-
-        /**
-         * Clear the selection flag of every vertex, edge and face, and leave the mesh's own
-         * flag alone. A select mask change deselects components, not objects.
+         * Clear the selection flag of every vertex, edge and face.
          **/
         void deselectComponents(void) noexcept;
 
@@ -119,7 +109,6 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         std::vector<Vertex> vertices_;
         std::vector<Face> faces_;
         std::vector<HalfEdge> edges_;
-        bool selected_;
 };
 
 

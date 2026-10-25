@@ -10,6 +10,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/Picker.h>
 #include <vertical3d/src/tool/SelectMask.h>
@@ -58,7 +59,7 @@ glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm
 
 BOOST_AUTO_TEST_CASE(picker_object_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const unsigned int id = scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
@@ -81,11 +82,11 @@ BOOST_AUTO_TEST_CASE(picker_nearest_test) {
     v3d::editor::Scene scene;
 
     // not near/far: the windows headers define both as macros
-    const boost::shared_ptr<v3d::brep::BRep> behind = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> behind = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     behind->translation(glm::vec3(0.0F, 0.0F, 4.0F));
     scene.add(behind);
 
-    const boost::shared_ptr<v3d::brep::BRep> front = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> front = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     front->translation(glm::vec3(0.0F, 0.0F, 2.0F));
     const unsigned int id = scene.add(front);
 
@@ -101,7 +102,7 @@ BOOST_AUTO_TEST_CASE(picker_nearest_test) {
 
 BOOST_AUTO_TEST_CASE(picker_transform_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->translation(glm::vec3(0.75F, 0.0F, 0.0F));
     const unsigned int id = scene.add(cube);
 
@@ -122,7 +123,7 @@ BOOST_AUTO_TEST_CASE(picker_transform_test) {
 
 BOOST_AUTO_TEST_CASE(picker_face_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->selected(true);
     const unsigned int id = scene.add(cube);
 
@@ -134,19 +135,19 @@ BOOST_AUTO_TEST_CASE(picker_face_test) {
     BOOST_CHECK_EQUAL(hit.valid, true);
     BOOST_CHECK_EQUAL(hit.mesh, id);
     BOOST_CHECK(hit.kind == v3d::editor::SelectMask::Face);
-    BOOST_CHECK_LT(hit.component, cube->faceCount());
+    BOOST_CHECK_LT(hit.component, cube->geometry()->faceCount());
 
     // the face hit is the one nearest the camera, so the ray enters through it
-    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, hit.component);
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube->geometry(), hit.component);
     BOOST_CHECK_GE(loop.size(), 3U);
-    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube, loop, 0);
+    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube->geometry(), loop, 0);
     BOOST_REQUIRE(found.has_value());
     BOOST_CHECK_LT(found.value_or(v3d::brep::Segment()).from[2], 0.0F);
 }
 
 BOOST_AUTO_TEST_CASE(picker_component_needs_an_object_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
@@ -165,14 +166,14 @@ BOOST_AUTO_TEST_CASE(picker_component_needs_an_object_test) {
 
 BOOST_AUTO_TEST_CASE(picker_vertex_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->selected(true);
     scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::Picker picker;
 
-    const v3d::brep::Vertex* first = cube->vertex(0);
+    const v3d::brep::Vertex* first = cube->geometry()->vertex(0);
     BOOST_REQUIRE(first != nullptr);
     const glm::vec2 target = screen(view, first->point());
 
@@ -182,7 +183,7 @@ BOOST_AUTO_TEST_CASE(picker_vertex_test) {
 
     // a front view of a cube projects its front and back vertices onto the same point, so
     // depth decides which index is returned. Whichever it is has to be under the cursor
-    const v3d::brep::Vertex* found = cube->vertex(hit.component);
+    const v3d::brep::Vertex* found = cube->geometry()->vertex(hit.component);
     BOOST_REQUIRE(found != nullptr);
     BOOST_CHECK_LT(glm::distance(screen(view, found->point()), target), 5.0F);
 
@@ -195,16 +196,16 @@ BOOST_AUTO_TEST_CASE(picker_vertex_test) {
 
 BOOST_AUTO_TEST_CASE(picker_edge_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->selected(true);
     scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::Picker picker;
 
-    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube, 0);
+    const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*cube->geometry(), 0);
     BOOST_REQUIRE_GE(loop.size(), 3U);
-    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube, loop, 0);
+    const std::optional<v3d::brep::Segment> found = v3d::brep::loopSegment(*cube->geometry(), loop, 0);
     BOOST_REQUIRE(found.has_value());
     const v3d::brep::Segment segment = found.value_or(v3d::brep::Segment());
     const glm::vec3& from = segment.from;
@@ -215,7 +216,7 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
         v3d::editor::SelectMask::Edge);
     BOOST_CHECK_EQUAL(hit.valid, true);
     BOOST_CHECK(hit.kind == v3d::editor::SelectMask::Edge);
-    BOOST_CHECK_LT(hit.component, cube->edgeCount());
+    BOOST_CHECK_LT(hit.component, cube->geometry()->edgeCount());
 
     // the middle of a face is a hundred pixels from any of them
     const v3d::editor::Picker::Hit missed = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
@@ -235,7 +236,7 @@ std::size_t inside(const v3d::editor::Scene& scene, const glm::vec3& corner, con
 
 BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const unsigned int id = scene.add(cube);
 
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
@@ -264,7 +265,7 @@ BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
 
 BOOST_AUTO_TEST_CASE(picker_inside_component_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     scene.add(cube);
 
     const glm::vec3 bottomLeft(-0.6F, -0.6F, 0.0F);
@@ -304,7 +305,7 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
     // a view that has never been given a region divides by zero if it is picked in
     const v3d::type::camera::Profile profile("unsized");
     const v3d::editor::ViewPort unsized("unsized", profile);
-    scene.add(v3d::editor::create_poly_cube());
+    scene.add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
     BOOST_CHECK_EQUAL(picker.pick(scene, unsized, glm::vec2(0.0F, 0.0F),
         v3d::editor::SelectMask::Object).valid, false);
     BOOST_CHECK(picker.inside(scene, unsized, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 400.0F),

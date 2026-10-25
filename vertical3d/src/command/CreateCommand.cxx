@@ -5,7 +5,8 @@
 
 #include "CreateCommand.h"
 
-#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -17,36 +18,39 @@ namespace v3d::editor {
 /**
  **/
 CreateCommand::CreateCommand(const boost::shared_ptr<Scene>& scene,
-    const boost::shared_ptr<v3d::brep::BRep>& mesh,
+    const boost::shared_ptr<Item>& item,
     const std::string& kind) :
     scene_(scene),
-    mesh_(mesh),
+    item_(item),
     kind_(kind) {
 }
 
 /**
  **/
 void CreateCommand::redo() {
-    if (!scene_ || !mesh_) {
+    if (!scene_ || !item_) {
         return;
     }
-    // a new mesh becomes the selection, so the transform tools act on it
+    // a new item becomes the selection, so the transform tools act on it
     scene_->deselect();
-    mesh_->selected(true);
-    scene_->add(mesh_);
+    item_->selected(true);
+    scene_->add(item_);
 }
 
 /**
  **/
 void CreateCommand::undo() {
-    if (!scene_ || !mesh_) {
+    if (!scene_ || !item_) {
         return;
     }
-    // the flag lives on the mesh rather than in the scene, so it is cleared as the mesh
-    // leaves. Any other selected mesh stays selected
-    mesh_->selected(false);
-    mesh_->deselectComponents();
-    scene_->remove(mesh_->id());
+    // the flags live on the item rather than in the scene, so they are cleared as the item
+    // leaves. Any other selected item stays selected
+    item_->selected(false);
+    const boost::shared_ptr<Mesh> mesh = as<Mesh>(item_);
+    if (mesh) {
+        mesh->geometry()->deselectComponents();
+    }
+    scene_->remove(item_->id());
 }
 
 /**

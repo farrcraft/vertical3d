@@ -11,6 +11,8 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
 
@@ -107,11 +109,11 @@ Target::Target() :
 
 /**
  **/
-Target Target::objects(const Meshes& meshes) {
+Target Target::objects(const Items& items) {
     Target target;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
-        if (mesh) {
-            target.meshes_.push_back(mesh);
+    for (const boost::shared_ptr<Item>& item : items) {
+        if (item) {
+            target.items_.push_back(item);
         }
     }
     return target;
@@ -122,16 +124,16 @@ Target Target::objects(const Meshes& meshes) {
 Target Target::components(const Meshes& meshes, SelectMask kind) {
     Target target;
     target.components_ = true;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
+    for (const boost::shared_ptr<Mesh>& mesh : meshes) {
         if (!mesh) {
             continue;
         }
-        std::vector<v3d::brep::Index> vertices = selectedVertices(*mesh, kind);
+        std::vector<v3d::brep::Index> vertices = selectedVertices(*mesh->geometry(), kind);
         if (vertices.empty()) {
             continue;
         }
-        std::vector<v3d::brep::Index> faces = facesAround(*mesh, vertices);
-        target.meshes_.push_back(mesh);
+        std::vector<v3d::brep::Index> faces = facesAround(*mesh->geometry(), vertices);
+        target.items_.push_back(mesh);
         target.parts_.push_back({.mesh = mesh, .vertices = std::move(vertices), .faces = std::move(faces)});
     }
     return target;
@@ -143,13 +145,13 @@ Target Target::selected(const Scene& scene, SelectMask mask) {
     if (mask == SelectMask::Object) {
         return objects(scene.selection());
     }
-    return components(scene.selection(), mask);
+    return components(scene.selected<Mesh>(), mask);
 }
 
 /**
  **/
 bool Target::empty() const noexcept {
-    return meshes_.empty();
+    return items_.empty();
 }
 
 /**
@@ -160,8 +162,8 @@ bool Target::components() const noexcept {
 
 /**
  **/
-const Meshes& Target::meshes() const noexcept {
-    return meshes_;
+const Items& Target::items() const noexcept {
+    return items_;
 }
 
 /**
@@ -176,15 +178,15 @@ glm::vec3 Target::pivot() const {
     glm::vec3 sum(0.0F, 0.0F, 0.0F);
     std::size_t count = 0;
     if (!components_) {
-        for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
-            sum += mesh->translation();
+        for (const boost::shared_ptr<Item>& item : items_) {
+            sum += item->translation();
             count++;
         }
     } else {
         for (const Part& part : parts_) {
             const glm::mat4 matrix = part.mesh->matrix();
             for (const v3d::brep::Index vertex : part.vertices) {
-                sum += glm::vec3(matrix * glm::vec4(part.mesh->vertex(vertex)->point(), 1.0F));
+                sum += glm::vec3(matrix * glm::vec4(part.mesh->geometry()->vertex(vertex)->point(), 1.0F));
                 count++;
             }
         }
@@ -198,10 +200,10 @@ glm::vec3 Target::pivot() const {
 /**
  **/
 glm::quat Target::axes() const {
-    if (meshes_.empty()) {
+    if (items_.empty()) {
         return glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     }
-    return meshes_.front()->rotation();
+    return items_.front()->rotation();
 }
 
 /**
@@ -219,28 +221,29 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
     if (!components_) {
         // multiplied on the left, because the turn is measured in world space and applies on
         // top of each object's own rotation. A scale is in the object's own axes
-        for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
-            mesh->rotation(glm::normalize(motion.turn * mesh->rotation()));
-            mesh->scale(glm::max(mesh->scale() * motion.stretch, glm::vec3(minimum)));
-            mesh->translation(place(mesh->translation()));
+        for (const boost::shared_ptr<Item>& item : items_) {
+            item->rotation(glm::normalize(motion.turn * item->rotation()));
+            item->scale(glm::max(item->scale() * motion.stretch, glm::vec3(minimum)));
+            item->translation(place(item->translation()));
         }
         return;
     }
 
     for (const Part& part : parts_) {
+        v3d::brep::BRep& geometry = *part.mesh->geometry();
         const glm::mat4 matrix = part.mesh->matrix();
         const glm::mat4 inverse = glm::inverse(matrix);
         for (const v3d::brep::Index index : part.vertices) {
-            v3d::brep::Vertex* vertex = part.mesh->vertex(index);
+            v3d::brep::Vertex* vertex = geometry.vertex(index);
             const glm::vec3 world(matrix * glm::vec4(vertex->point(), 1.0F));
             vertex->point(glm::vec3(inverse * glm::vec4(place(world), 1.0F)));
         }
         // a face stores its normal, so every face with a moved corner is brought up to date.
         // A face squashed flat has no normal, and keeps the one it had
         for (const v3d::brep::Index face : part.faces) {
-            const glm::vec3 normal = v3d::brep::newellNormal(*part.mesh, face);
+            const glm::vec3 normal = v3d::brep::newellNormal(geometry, face);
             if (normal != glm::vec3(0.0F)) {
-                part.mesh->face(face)->normal(normal);
+                geometry.face(face)->normal(normal);
             }
         }
     }

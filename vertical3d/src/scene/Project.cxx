@@ -13,6 +13,7 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Vertex.h>
+#include <api/dag/Transform.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>
@@ -22,6 +23,9 @@
 #include <string>
 #include <vector>
 
+#include "Camera.h"
+#include "Light.h"
+#include "Mesh.h"
 #include "Scene.h"
 #include "SceneVisitor.h"
 
@@ -95,19 +99,21 @@ boost::json::array vector(const glm::vec3& v) {
 }
 
 /**
- * Collects every mesh of a scene as the object the file stores it as.
+ * Collects every mesh of a scene as the object the file stores it as. Cameras and lights are
+ * not saved.
  **/
 class WriteVisitor final : public SceneVisitor {
  public:
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
-        if (!mesh) {
+    void visit(const boost::shared_ptr<Mesh>& item) override {
+        if (!item) {
             return;
         }
         boost::json::object transform;
-        transform["translation"] = vector(mesh->translation());
-        const glm::quat rotation = mesh->rotation();
+        transform["translation"] = vector(item->translation());
+        const glm::quat rotation = item->rotation();
         transform["rotation"] = boost::json::array{ rotation.x, rotation.y, rotation.z, rotation.w };
-        transform["scale"] = vector(mesh->scale());
+        transform["scale"] = vector(item->scale());
+        const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
         boost::json::array vertices;
         for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
@@ -142,27 +148,33 @@ class WriteVisitor final : public SceneVisitor {
         meshes.push_back(entry);
     }
 
+    void visit(const boost::shared_ptr<Camera>& /*camera*/) override {
+    }
+
+    void visit(const boost::shared_ptr<Light>& /*light*/) override {
+    }
+
     boost::json::array meshes;
 };
 
 /**
- * Read the placement a mesh was saved under. Every part of it is optional. A mesh with no
- * transform entry is left where a new mesh starts.
+ * Read the placement an item was saved under. Every part of it is optional. An item with no
+ * transform entry is left where a new item starts.
  **/
-void readTransform(const boost::json::object& entry, const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+void readTransform(const boost::json::object& entry, v3d::dag::Transform* placed) {
     if (!entry.contains("transform") || !entry.at("transform").is_object()) {
         return;
     }
     const boost::json::object& transform = entry.at("transform").as_object();
     float values[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
     if (numbers(transform, "translation", 3, values)) {
-        mesh->translation(glm::vec3(values[0], values[1], values[2]));
+        placed->translation(glm::vec3(values[0], values[1], values[2]));
     }
     if (numbers(transform, "scale", 3, values)) {
-        mesh->scale(glm::vec3(values[0], values[1], values[2]));
+        placed->scale(glm::vec3(values[0], values[1], values[2]));
     }
     if (numbers(transform, "rotation", 4, values)) {
-        mesh->rotation(glm::quat(values[3], values[0], values[1], values[2]));
+        placed->rotation(glm::quat(values[3], values[0], values[1], values[2]));
     }
 }
 
@@ -240,13 +252,12 @@ bool validMesh(const boost::shared_ptr<v3d::brep::BRep>& mesh, const std::string
 }
 
 /**
- * @return the mesh one entry of the meshes array describes, or null when it does not
+ * @return the mesh item one entry of the meshes array describes, or null when it does not
  *         describe a consistent one
  **/
-boost::shared_ptr<v3d::brep::BRep> readMesh(const boost::json::object& entry, const std::string& path,
+boost::shared_ptr<Mesh> readMesh(const boost::json::object& entry, const std::string& path,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
-    readTransform(entry, mesh);
+    const boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
 
     if (!entry.contains("vertices") || !entry.at("vertices").is_array() ||
         !entry.contains("edges") || !entry.at("edges").is_array() ||
@@ -261,7 +272,9 @@ boost::shared_ptr<v3d::brep::BRep> readMesh(const boost::json::object& entry, co
         !validMesh(mesh, path, logger)) {
         return nullptr;
     }
-    return mesh;
+    boost::shared_ptr<Mesh> item = boost::make_shared<Mesh>(mesh);
+    readTransform(entry, item.get());
+    return item;
 }
 
 };  // namespace
@@ -330,13 +343,13 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
     // built to one side and moved into the scene only once the whole file has been
     // understood, so a file that goes wrong half way through does not half replace a
     // document that was fine
-    std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes;
+    Meshes meshes;
     for (const boost::json::value& value : root.at("meshes").as_array()) {
         if (!value.is_object()) {
             logger_->get()->error("{} holds something that is not a mesh", path);
             return false;
         }
-        const boost::shared_ptr<v3d::brep::BRep> mesh = readMesh(value.as_object(), path, logger_);
+        const boost::shared_ptr<Mesh> mesh = readMesh(value.as_object(), path, logger_);
         if (!mesh) {
             return false;
         }
@@ -347,10 +360,10 @@ bool Project::read(const std::string& path, const boost::shared_ptr<Scene>& scen
         boost::json::value_to<std::string>(root.at("name")) : std::string("untitled");
 
     scene->clear();
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes) {
+    for (const boost::shared_ptr<Mesh>& mesh : meshes) {
         scene->add(mesh);
     }
-    logger_->get()->info("read {} - {} meshes from {}", name_, scene->count(), path);
+    logger_->get()->info("read {} - {} items from {}", name_, scene->count(), path);
     return true;
 }
 
@@ -373,7 +386,7 @@ bool Project::write(const std::string& path, const boost::shared_ptr<Scene>& sce
         logger_->get()->error("Failed writing the project to {}", path);
         return false;
     }
-    logger_->get()->info("wrote {} - {} meshes to {}", name_, scene->count(), path);
+    logger_->get()->info("wrote {} - {} meshes to {}", name_, visitor.meshes.size(), path);
     return true;
 }
 

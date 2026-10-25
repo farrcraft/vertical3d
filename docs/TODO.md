@@ -167,8 +167,8 @@ shaded draw of the mesh, which the editor's renderer does not have. The mode its
 state.
 
 [] **Cameras and lights in the scene** (`view::show::camera`, `view::show::light` and the camera,
-light, curve, handle and mesh select masks) need the scene to hold something other than meshes,
-and drawing them comes first. The masks and show toggles follow.
+light, curve, handle and mesh select masks). The scene holds camera and light items, but nothing
+saves, draws or creates one. Drawing them comes first, and the masks and show toggles follow.
 
 [] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
 through the command stack, so an import can be undone.

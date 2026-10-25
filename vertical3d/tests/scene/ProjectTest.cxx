@@ -6,7 +6,10 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
@@ -59,14 +62,20 @@ std::string get(const std::string& path) {
  **/
 class Collector final : public v3d::editor::SceneVisitor {
  public:
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override {
+    void visit(const boost::shared_ptr<v3d::editor::Mesh>& mesh) override {
         meshes.push_back(mesh);
     }
 
-    std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes;
+    void visit(const boost::shared_ptr<v3d::editor::Camera>& /*camera*/) override {
+    }
+
+    void visit(const boost::shared_ptr<v3d::editor::Light>& /*light*/) override {
+    }
+
+    v3d::editor::Meshes meshes;
 };
 
-std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes(const boost::shared_ptr<v3d::editor::Scene>& scene) {
+v3d::editor::Meshes meshes(const boost::shared_ptr<v3d::editor::Scene>& scene) {
     Collector collector;
     scene->accept(&collector);
     return collector.meshes;
@@ -76,7 +85,9 @@ std::vector<boost::shared_ptr<v3d::brep::BRep>> meshes(const boost::shared_ptr<v
  * Whether two meshes hold the same geometry, the same topology and the same placement.
  * Ids are not compared, because a mesh read from a file is a new node.
  **/
-void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_ptr<v3d::brep::BRep>& right) {
+void same(const boost::shared_ptr<v3d::editor::Mesh>& leftItem, const boost::shared_ptr<v3d::editor::Mesh>& rightItem) {
+    const boost::shared_ptr<v3d::brep::BRep>& left = leftItem->geometry();
+    const boost::shared_ptr<v3d::brep::BRep>& right = rightItem->geometry();
     BOOST_REQUIRE_EQUAL(left->vertexCount(), right->vertexCount());
     BOOST_REQUIRE_EQUAL(left->edgeCount(), right->edgeCount());
     BOOST_REQUIRE_EQUAL(left->faceCount(), right->faceCount());
@@ -98,15 +109,15 @@ void same(const boost::shared_ptr<v3d::brep::BRep>& left, const boost::shared_pt
         BOOST_CHECK_EQUAL(left->face(id)->edge(), right->face(id)->edge());
     }
 
-    BOOST_CHECK(left->translation() == right->translation());
-    BOOST_CHECK(left->scale() == right->scale());
-    BOOST_CHECK(left->rotation() == right->rotation());
+    BOOST_CHECK(leftItem->translation() == rightItem->translation());
+    BOOST_CHECK(leftItem->scale() == rightItem->scale());
+    BOOST_CHECK(leftItem->rotation() == rightItem->rotation());
 }
 
 BOOST_AUTO_TEST_CASE(project_round_trip_test) {
     const std::string path = scratch("v3d_round_trip.json");
 
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
     cube->scale(glm::vec3(2.0F, 0.5F, 1.0F));
     cube->rotation(glm::angleAxis(0.75F, glm::normalize(glm::vec3(0.0F, 1.0F, 1.0F))));
@@ -134,10 +145,10 @@ BOOST_AUTO_TEST_CASE(project_round_trip_test) {
 BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
     const std::string path = scratch("v3d_order.json");
 
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    const boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cone = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cone());
     cube->selected(true);
-    cone->face(0)->selected(true);
+    cone->geometry()->face(0)->selected(true);
 
     const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
     written->add(cube);
@@ -150,7 +161,7 @@ BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
     BOOST_REQUIRE_EQUAL(read->count(), 2U);
 
-    const std::vector<boost::shared_ptr<v3d::brep::BRep>> loaded = meshes(read);
+    const v3d::editor::Meshes loaded = meshes(read);
     BOOST_REQUIRE_EQUAL(loaded.size(), 2U);
     same(cube, loaded[0]);
     same(cone, loaded[1]);
@@ -158,7 +169,7 @@ BOOST_AUTO_TEST_CASE(project_order_and_selection_test) {
     // selection is where the user is rather than what the document holds, so nothing comes
     // back selected
     BOOST_CHECK(read->selection().empty());
-    BOOST_CHECK_EQUAL(loaded[1]->face(0)->selected(), false);
+    BOOST_CHECK_EQUAL(loaded[1]->geometry()->face(0)->selected(), false);
 
     boost::filesystem::remove(path);
 }
@@ -171,7 +182,7 @@ BOOST_AUTO_TEST_CASE(project_read_replaces_the_scene_test) {
     BOOST_REQUIRE_EQUAL(project.write(path, written), true);
 
     const boost::shared_ptr<v3d::editor::Scene> read = boost::make_shared<v3d::editor::Scene>();
-    read->add(v3d::editor::create_poly_cube());
+    read->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
     BOOST_REQUIRE_EQUAL(v3d::editor::Project(logger()).read(path, read), true);
 
     // reading replaces the document rather than adding to it
@@ -184,7 +195,7 @@ BOOST_AUTO_TEST_CASE(project_written_form_test) {
     const std::string path = scratch("v3d_form.json");
 
     const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(v3d::editor::create_poly_plane());
+    written->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
 
     v3d::editor::Project project(logger());
     project.name("form");
@@ -210,7 +221,7 @@ BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
     const std::string path = scratch("v3d_kept.json");
 
     const boost::shared_ptr<v3d::editor::Scene> written = boost::make_shared<v3d::editor::Scene>();
-    written->add(v3d::editor::create_poly_plane());
+    written->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
     v3d::editor::Project project(logger());
     project.name("kept");
     BOOST_REQUIRE_EQUAL(project.write(path, written), true);
@@ -233,7 +244,7 @@ BOOST_AUTO_TEST_CASE(project_failed_write_keeps_the_previous_project_test) {
 
 BOOST_AUTO_TEST_CASE(project_missing_file_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(v3d::editor::create_poly_cube());
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
 
     v3d::editor::Project project(logger());
     BOOST_CHECK_EQUAL(project.read(scratch("v3d_no_such_project.json"), scene), false);
@@ -246,7 +257,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_malformed_test) {
     const std::string path = scratch("v3d_malformed.json");
 
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(v3d::editor::create_poly_cube());
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
     v3d::editor::Project project(logger());
 
     put({.path = path, .text = "{ this is not json"});
@@ -306,7 +317,7 @@ BOOST_AUTO_TEST_CASE(project_rejects_dangling_reference_test) {
     BOOST_CHECK_EQUAL(scene->count(), 1U);
 
     // an unpaired edge is not a dangling one: INVALID_ID is what a boundary carries
-    BOOST_CHECK_EQUAL(meshes(scene).front()->edge(0)->pair(), v3d::brep::INVALID_ID);
+    BOOST_CHECK_EQUAL(meshes(scene).front()->geometry()->edge(0)->pair(), v3d::brep::INVALID_ID);
 
     boost::filesystem::remove(path);
 }
@@ -322,7 +333,7 @@ BOOST_AUTO_TEST_CASE(project_default_transform_test) {
     BOOST_REQUIRE_EQUAL(project.read(path, scene), true);
     BOOST_REQUIRE_EQUAL(scene->count(), 1U);
 
-    same(boost::make_shared<v3d::brep::BRep>(), meshes(scene).front());
+    same(boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>()), meshes(scene).front());
 
     // a file that carries no name reads as untitled
     BOOST_CHECK_EQUAL(project.name(), "untitled");

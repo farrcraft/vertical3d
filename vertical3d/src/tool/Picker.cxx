@@ -11,6 +11,9 @@
 #include <api/brep/Vertex.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -70,6 +73,7 @@ Picker::Picker(float tolerance) :
     camera_(nullptr),
     cursor_(0.0F, 0.0F),
     model_(1.0F),
+    current_(0),
     nearest_(0.0F),
     band_(false),
     min_(0.0F, 0.0F),
@@ -147,18 +151,20 @@ bool Picker::begin(const ViewPort& view, SelectMask mask) {
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
-    if (!mesh || camera_ == nullptr) {
+void Picker::visit(const boost::shared_ptr<Mesh>& item) {
+    if (!item || camera_ == nullptr) {
         return;
     }
 
     // an object has to be selected before any of its components may be, so a component
     // click stays inside the mesh the user is working on
-    if (mask_ != SelectMask::Object && !mesh->selected()) {
+    if (mask_ != SelectMask::Object && !item->selected()) {
         return;
     }
 
-    model_ = mesh->matrix();
+    model_ = item->matrix();
+    current_ = item->id();
+    const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
     if (band_) {
         enclosed(mesh);
@@ -178,6 +184,16 @@ void Picker::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         surface(mesh);
         break;
     }
+}
+
+/**
+ **/
+void Picker::visit(const boost::shared_ptr<Camera>& /*camera*/) {
+}
+
+/**
+ **/
+void Picker::visit(const boost::shared_ptr<Light>& /*light*/) {
 }
 
 /**
@@ -212,7 +228,7 @@ void Picker::surface(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
                 continue;
             }
             if (local.intersects(first, edge->from, edge->to, &distance)) {
-                offer({.mesh = mesh->id(), .component = face, .distance = distance});
+                offer({.mesh = current_, .component = face, .distance = distance});
             }
         }
     }
@@ -235,7 +251,7 @@ void Picker::vertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
         if (glm::distance(position, cursor_) > tolerance_) {
             continue;
         }
-        offer({.mesh = mesh->id(), .component = index, .distance = depth});
+        offer({.mesh = current_, .component = index, .distance = depth});
     }
 }
 
@@ -271,7 +287,7 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             if (glm::distance(start + (end - start) * along, cursor_) > tolerance_) {
                 continue;
             }
-            offer({.mesh = mesh->id(), .component = loop[index], .distance = startDepth + ((endDepth - startDepth) * along)});
+            offer({.mesh = current_, .component = loop[index], .distance = startDepth + ((endDepth - startDepth) * along)});
         }
     }
 }
@@ -316,7 +332,7 @@ void Picker::enclosedObject(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
     Hit hit;
     hit.valid = true;
-    hit.mesh = mesh->id();
+    hit.mesh = current_;
     hit.kind = SelectMask::Object;
     inside_.push_back(hit);
 }
@@ -326,7 +342,7 @@ void Picker::enclosedObject(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 void Picker::enclosedVertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     Hit hit;
     hit.valid = true;
-    hit.mesh = mesh->id();
+    hit.mesh = current_;
     hit.kind = SelectMask::Vertex;
     const std::size_t count = mesh->vertexCount();
     for (v3d::brep::Index index = 0; index < count; index++) {
@@ -343,7 +359,7 @@ void Picker::enclosedVertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
 void Picker::enclosedLoops(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     Hit hit;
     hit.valid = true;
-    hit.mesh = mesh->id();
+    hit.mesh = current_;
     hit.kind = mask_;
     const std::size_t faces = mesh->faceCount();
     for (v3d::brep::Index face = 0; face < faces; face++) {

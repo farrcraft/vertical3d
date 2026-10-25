@@ -7,6 +7,7 @@
 #include <api/brep/Index.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/WireframeVisitor.h>
 
@@ -20,14 +21,14 @@ namespace {
 /**
  * A unit quad in the z = 0 plane. One face, so none of its four edges has a pair.
  **/
-boost::shared_ptr<v3d::brep::BRep> quad() {
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+boost::shared_ptr<v3d::editor::Mesh> quad() {
+    boost::shared_ptr<v3d::editor::Mesh> mesh = boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>());
     std::vector<glm::vec3> points;
     points.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
     points.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
     points.push_back(glm::vec3(1.0F, 1.0F, 0.0F));
     points.push_back(glm::vec3(0.0F, 1.0F, 0.0F));
-    mesh->addFace(points, glm::vec3(0.0F, 0.0F, 1.0F));
+    mesh->geometry()->addFace(points, glm::vec3(0.0F, 0.0F, 1.0F));
     return mesh;
 }
 
@@ -45,12 +46,12 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     wireframe.visit(cube);
 
     // 24 half edges paired into the cube's 12 edges. A half edge and its pair are one
     // segment, and drawing both would double every line
-    BOOST_CHECK_EQUAL(cube->edgeCount(), 24U);
+    BOOST_CHECK_EQUAL(cube->geometry()->edgeCount(), 24U);
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 24U);
 }
 
@@ -58,7 +59,7 @@ BOOST_AUTO_TEST_CASE(wireframe_transform_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = quad();
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = quad();
     mesh->translation(glm::vec3(10.0F, 0.0F, 0.0F));
     wireframe.visit(mesh);
 
@@ -77,7 +78,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::brep::BRep> mesh = quad();
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = quad();
     wireframe.visit(mesh);
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 
@@ -89,7 +90,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
 
     canvas.clear();
     mesh->selected(false);
-    mesh->edge(0)->selected(true);
+    mesh->geometry()->edge(0)->selected(true);
     wireframe.visit(mesh);
 
     // one edge selected out of four, and the other three keep the unselected colour
@@ -110,15 +111,15 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     wireframe.visit(cube);
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 
-    for (v3d::brep::Index face = 0; face < cube->faceCount(); face++) {
+    for (v3d::brep::Index face = 0; face < cube->geometry()->faceCount(); face++) {
         canvas.clear();
-        cube->face(face)->selected(true);
+        cube->geometry()->face(face)->selected(true);
         wireframe.visit(cube);
-        cube->face(face)->selected(false);
+        cube->geometry()->face(face)->selected(false);
 
         unsigned int highlighted = 0;
         for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
@@ -148,7 +149,7 @@ BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {
 
     // a view that is not drawing meshes hands nothing to draw into
     wireframe.visit(quad());
-    wireframe.visit(boost::shared_ptr<v3d::brep::BRep>());
+    wireframe.visit(boost::shared_ptr<v3d::editor::Mesh>());
 }
 
 };  // namespace

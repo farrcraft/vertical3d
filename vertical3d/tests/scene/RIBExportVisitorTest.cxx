@@ -3,7 +3,6 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -12,6 +11,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -121,7 +121,7 @@ bool reimport(const std::string & source, ImportHandler * handler) {
  **/
 BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(v3d::editor::create_poly_cube());
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
 
     const std::string exported = exportScene(scene, false);
 
@@ -150,10 +150,10 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     first->translation(glm::vec3(3.0F, 4.0F, 5.0F));
     scene->add(first);
-    scene->add(v3d::editor::create_poly_plane());
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));

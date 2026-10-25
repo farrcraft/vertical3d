@@ -16,6 +16,10 @@
 #include <ostream>
 #include <vector>
 
+#include "Camera.h"
+#include "Light.h"
+#include "Mesh.h"
+
 
 namespace v3d::editor {
 
@@ -70,16 +74,17 @@ void RIBExportVisitor::end() {
     *stream_ << "WorldEnd\n";
 }
 
-void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
-    if (!mesh) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item) {
+    if (!item) {
         return;
     }
     meshes_++;
+    const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
     *stream_ << "AttributeBegin\n";
     *stream_ << "Attribute \"identifier\" \"name\" [\"mesh" << meshes_ << "\"]\n";
     *stream_ << "ConcatTransform ";
-    matrix(mesh->matrix());
+    matrix(item->matrix());
     *stream_ << "\n";
 
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
@@ -110,6 +115,16 @@ void RIBExportVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     *stream_ << "AttributeEnd\n";
+}
+
+/**
+ **/
+void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/) {
+}
+
+/**
+ **/
+void RIBExportVisitor::visit(const boost::shared_ptr<Light>& /*light*/) {
 }
 
 };  // namespace v3d::editor

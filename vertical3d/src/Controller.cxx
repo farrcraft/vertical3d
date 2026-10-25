@@ -31,6 +31,7 @@
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
@@ -386,10 +387,11 @@ void Controller::createPoly(const std::string& name) {
     }
 
     // the command does the creating, so making a mesh and redoing one run the same code
-    const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
+    const boost::shared_ptr<CreateCommand> command =
+        boost::make_shared<CreateCommand>(scene_, boost::make_shared<Mesh>(mesh), name);
     command->redo();
     history_->push(command);
-    logger()->get()->info("created a {} - {} meshes", name, scene_->count());
+    logger()->get()->info("created a {} - {} items", name, scene_->count());
 }
 
 /**
@@ -502,7 +504,7 @@ void Controller::exportProject() {
     scene_->accept(&visitor);
     visitor.end();
 
-    logger()->get()->info("exported {} mesh(es) to {}", scene_->count(), exportPath());
+    logger()->get()->info("exported {} item(s) to {}", scene_->count(), exportPath());
 }
 
 /**

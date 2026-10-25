@@ -19,6 +19,10 @@
 #include <optional>
 #include <vector>
 
+#include "Camera.h"
+#include "Light.h"
+#include "Mesh.h"
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::editor {
@@ -61,15 +65,16 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) 
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
-    if (canvas_ == nullptr || !mesh) {
+void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item) {
+    if (canvas_ == nullptr || !item) {
         return;
     }
 
-    const glm::vec4& base = mesh->selected() ? object_ : wire_;
+    const glm::vec4& base = item->selected() ? object_ : wire_;
+    const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
     canvas_->push();
-    canvas_->transform(mesh->matrix());
+    canvas_->transform(item->matrix());
 
     const std::size_t faces = mesh->faceCount();
     // a selected face is drawn as its boundary, there being no filled primitive to shade it
@@ -113,6 +118,16 @@ void WireframeVisitor::visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     markers(mesh);
 
     canvas_->pop();
+}
+
+/**
+ **/
+void WireframeVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/) {
+}
+
+/**
+ **/
+void WireframeVisitor::visit(const boost::shared_ptr<Light>& /*light*/) {
 }
 
 /**

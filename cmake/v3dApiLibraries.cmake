@@ -37,7 +37,7 @@ set(V3D_API_audio_REQUIRES log event asset)
 set(V3D_API_audio_PACKAGES SDL3_mixer EnTT)
 
 set(V3D_API_brep_PATH "brep")
-set(V3D_API_brep_REQUIRES dag type)
+set(V3D_API_brep_REQUIRES type)
 set(V3D_API_brep_PACKAGES glm)
 
 set(V3D_API_config_PATH "config")

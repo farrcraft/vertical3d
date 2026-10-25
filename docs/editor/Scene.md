@@ -1,7 +1,7 @@
 # Meshes, the scene and viewports
 
-The editor's data: half-edge meshes from `api/brep`, the scene that holds them, and the four
-viewports that draw it.
+The editor's data: half-edge meshes from `api/brep`, the scene items that place them, and the
+four viewports that draw it.
 
 ## Meshes
 
@@ -87,20 +87,13 @@ one is renumbered.
 | `insetFaces(mesh, faces, fraction)` | Makes a smaller copy of each face inside it, joined to its outline by a ring of quads. Each face is inset on its own. Each corner of a copy is `fraction` of the way to the face's centre. Each face keeps its index and becomes the copy. Returns the rings' faces |
 | `mergeVertices(mesh, vertices)` | Merges vertices into one at their centre. Edges that lose their length go, faces left with fewer than three corners go, and vertices nothing uses go. Edges that now run between the same two vertices are paired, so a merge can join two open boundaries. Refuses a merge that would leave an edge shared by more than two faces, a face that meets itself, or nothing at the merged point, and then changes nothing. Returns the merged vertex |
 
-**Identity and placement.** `BRep` derives from `v3d::dag::Node` and `v3d::dag::Transform`, so
-`v3dlib_brep` links `v3dlib_dag` publicly.
+**Geometry only.** A `BRep` has no id and no placement. It is described about its own origin,
+and the scene item that holds it places it. `v3dlib_brep` depends on `v3dlib_type` alone. A
+`BRep` can be copied, and the copy is a separate mesh with the same parts and the same flags.
 
-- `Node` gives each mesh an id from a process-wide counter. Ids are unique within one run, are
-  never reused, and mean nothing in another run. A `Node`, and so a `BRep`, cannot be copied.
-- `Transform` holds a translation, a rotation and a scale. `matrix()` composes them as
-  translation × rotation × scale, so geometry is described about the mesh's own origin.
-  `translation(v)` sets the position; `translate(v)` adds an offset to it.
-
-**Selection flags.** `BRep::selected()` is the object selection. Each `Vertex`, `HalfEdge` and
-`Face` carries its own flag for component selection. `BRep::deselectComponents()` clears the
-component flags and leaves the object flag alone.
-
-Background: [ADR-0013](../adr/0013-editor-a-mesh-is-a-dag-node.md)
+**Selection flags.** Each `Vertex`, `HalfEdge` and `Face` carries its own flag for component
+selection. `BRep::deselectComponents()` clears them all. The object selection is on the scene
+item, not on the mesh.
 
 ## Modelling operations
 
@@ -132,20 +125,46 @@ can be tested without it.
 ## The scene
 
 `v3d::editor::Scene` is the document being edited. It belongs to the editor, not to the api.
-It holds meshes and nothing else, finds them by their `Node` id, and keeps them in insertion
+It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
 order. `Scene::add` appends.
 
-- **No cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the camera
-  profiles read from `data/cameras.json`, and the layout names one profile per view.
-- **A selected set.** `Scene::selection()` returns every selected mesh in insertion order, as
-  `Meshes`. Component selection happens inside those meshes and may span several of them.
+**Items.** A scene item is a `v3d::editor::Item`. It derives from `v3d::dag::Node` and
+`v3d::dag::Transform`, and carries the object selection flag. There are three kinds:
+
+| Kind | Class | Holds |
+|---|---|---|
+| Mesh | `Mesh` | A shared `brep::BRep`, which its transform places. Two mesh items may share one `BRep`, and then share its component selection too |
+| Camera | `Camera` | A `Lens`: perspective or orthographic, the angle of view in degrees, the orthographic half height, and the clipping distances. It looks along its own +z axis with +y up, as a camera profile with no rotation does |
+| Light | `Light` | An `Emission`: a point, distant or spot light, its colour and intensity, and a spot light's cone and soft edge in radians, with RI's standard shaders' defaults. A distant or spot light shines along its own +z axis |
+
+- **Identity.** `Node` gives each item an id from a process-wide counter. Ids are unique within
+  one run, are never reused, and mean nothing in another run, so a project file never stores
+  one. An item cannot be copied, because a copy would share its id.
+- **Placement.** `Transform` holds a translation, a rotation and a scale. `matrix()` composes
+  them as translation × rotation × scale. `translation(v)` sets the position; `translate(v)`
+  adds an offset to it. A camera and a light ignore their scale.
+- **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
+  gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,
+  and `Scene::item(id)` finds any kind.
+- **Selection.** `Scene::selection()` returns every selected item of every kind in insertion
+  order, as `Items`. `Scene::selected<T>()` returns the selected items of one kind, so
+  `selected<Mesh>()` gives the `Meshes` an operation on components works through. Component
+  selection lives inside those meshes and may span several of them. A modelling operation runs
+  once on a `BRep` that two selected items share.
 - **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
-  `Scene::accept()`. `WireframeVisitor`, `RIBExportVisitor`, `Picker` and the project writer
-  all work this way.
+  `Scene::accept()`, which calls the `visit` for each item's kind. Every `visit` is pure, so a
+  new kind does not compile until each visitor handles it. `WireframeVisitor`,
+  `RIBExportVisitor`, `Picker` and the project writer all work this way. None of them does
+  anything with a camera or a light.
+- **Not the views' cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the
+  camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
+  camera item is part of the document.
+
+Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md)
 
 The four primitives in `src/scene/CreatePoly.h` are each one unit across and centred on the
-origin, so a mesh is placed by its transform. The cylinder and the cone are open: they have
-no cap faces.
+origin. Each is geometry, and the mesh item that holds it places it. The cylinder and the cone
+are open: they have no cap faces.
 
 ## Viewports
 

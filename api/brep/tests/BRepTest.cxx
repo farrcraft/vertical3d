@@ -11,7 +11,6 @@
 #include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
-#include <type_traits>
 #include <string>
 #include <vector>
 
@@ -129,29 +128,22 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0F, 1.0F, 2.0F)), true);
 }
 
-BOOST_AUTO_TEST_CASE(brep_identity_test) {
-    v3d::brep::BRep first;
-    const v3d::brep::BRep second;
+BOOST_AUTO_TEST_CASE(brep_copy_test) {
+    v3d::brep::BRep original;
+    original.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    original.face(0)->selected(true);
 
-    // a mesh is a dag::Node, so it has an id for the selection model to key on
-    BOOST_CHECK(first.id() != second.id());
-    // a copy would share that id with its original, so a mesh cannot be copied
-    static_assert(!std::is_copy_constructible_v<v3d::brep::BRep>);
-    static_assert(!std::is_copy_assignable_v<v3d::brep::BRep>);
-
-    // and a dag::Transform, so its geometry is described about its own origin
-    first.translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    const glm::vec4 placed = first.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
-    BOOST_CHECK_CLOSE(placed.x, 5.0F, 0.01F);
+    // a mesh is geometry alone, so a copy is a separate mesh with the same parts and flags
+    v3d::brep::BRep copy = original;
+    BOOST_CHECK_EQUAL(copy.vertexCount(), original.vertexCount());
+    BOOST_CHECK_EQUAL(copy.face(0)->selected(), true);
+    copy.vertex(0)->point(glm::vec3(9.0F, 0.0F, 0.0F));
+    BOOST_CHECK(original.vertex(0)->point() != glm::vec3(9.0F, 0.0F, 0.0F));
 }
 
 BOOST_AUTO_TEST_CASE(brep_selection_test) {
     v3d::brep::BRep mesh;
     mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-
-    BOOST_CHECK_EQUAL(mesh.selected(), false);
-    mesh.selected(true);
-    BOOST_CHECK_EQUAL(mesh.selected(), true);
 
     mesh.vertex(0)->selected(true);
     mesh.edge(0)->selected(true);
@@ -162,8 +154,6 @@ BOOST_AUTO_TEST_CASE(brep_selection_test) {
     BOOST_CHECK_EQUAL(mesh.vertex(0)->selected(), false);
     BOOST_CHECK_EQUAL(mesh.edge(0)->selected(), false);
     BOOST_CHECK_EQUAL(mesh.face(0)->selected(), false);
-    // the object's own selection survives a component deselect
-    BOOST_CHECK_EQUAL(mesh.selected(), true);
 }
 
 /**

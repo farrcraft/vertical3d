@@ -5,7 +5,6 @@
 
 #include "TransformCommand.h"
 
-
 #include <string>
 #include <vector>
 
@@ -24,8 +23,8 @@ TransformCommand::TransformCommand(const std::vector<Change>& changes, const std
  **/
 void TransformCommand::undo() {
     for (const Change& change : changes_) {
-        if (change.mesh) {
-            change.before.applyTo(change.mesh.get());
+        if (change.item) {
+            change.before.applyTo(change.item.get());
         }
     }
 }
@@ -34,8 +33,8 @@ void TransformCommand::undo() {
  **/
 void TransformCommand::redo() {
     for (const Change& change : changes_) {
-        if (change.mesh) {
-            change.after.applyTo(change.mesh.get());
+        if (change.item) {
+            change.after.applyTo(change.item.get());
         }
     }
 }

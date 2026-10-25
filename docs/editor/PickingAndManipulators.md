@@ -6,11 +6,12 @@ selection.
 ## Picking
 
 A pick answers "what is under the cursor?" with a CPU ray cast against the meshes. No GPU work
-or readback is involved, so a pick is answered inside the click's event handler.
+or readback is involved, so a pick is answered inside the click's event handler. Only mesh items
+are picked: a click never hits a camera or a light, and a rubber band never holds one.
 
 `v3d::editor::Picker` builds a `v3d::type::geometry::Ray` with `Camera::ray()`, which
 unprojects the cursor at the near and far depths. It returns a `Picker::Hit`: whether anything
-was hit, the mesh's `Node` id, the kind of thing hit, and the component's index.
+was hit, the mesh item's id, the kind of thing hit, and the component's index.
 
 What a click tests depends on the select mask:
 

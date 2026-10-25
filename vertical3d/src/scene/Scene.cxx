@@ -5,14 +5,15 @@
 
 #include "Scene.h"
 
-#include <api/brep/BRep.h>
-
+#include "Camera.h"
+#include "Item.h"
+#include "Light.h"
+#include "Mesh.h"
 #include "SceneVisitor.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
-#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,56 +21,62 @@ namespace v3d::editor {
 
 /**
  **/
-unsigned int Scene::add(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
-    if (!mesh) {
+unsigned int Scene::add(const boost::shared_ptr<Item>& item) {
+    if (!item) {
         return 0;
     }
-    meshes_.push_back(mesh);
-    return mesh->id();
+    items_.push_back(item);
+    return item->id();
 }
 
 /**
  **/
 bool Scene::remove(unsigned int id) {
-    auto it = std::find_if(meshes_.begin(), meshes_.end(),
-        [id](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->id() == id; });
-    if (it == meshes_.end()) {
+    auto it = std::find_if(items_.begin(), items_.end(),
+        [id](const boost::shared_ptr<Item>& item) { return item->id() == id; });
+    if (it == items_.end()) {
         return false;
     }
-    meshes_.erase(it);
+    items_.erase(it);
     return true;
 }
 
 /**
  **/
-boost::shared_ptr<v3d::brep::BRep> Scene::mesh(unsigned int id) const {
-    auto it = std::find_if(meshes_.begin(), meshes_.end(),
-        [id](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->id() == id; });
-    if (it == meshes_.end()) {
-        return boost::shared_ptr<v3d::brep::BRep>();
+boost::shared_ptr<Item> Scene::item(unsigned int id) const {
+    auto it = std::find_if(items_.begin(), items_.end(),
+        [id](const boost::shared_ptr<Item>& item) { return item->id() == id; });
+    if (it == items_.end()) {
+        return boost::shared_ptr<Item>();
     }
     return *it;
 }
 
 /**
  **/
-Meshes Scene::selection() const {
-    Meshes selected;
-    std::copy_if(meshes_.begin(), meshes_.end(), std::back_inserter(selected),
-        [](const boost::shared_ptr<v3d::brep::BRep>& mesh) { return mesh->selected(); });
+boost::shared_ptr<Mesh> Scene::mesh(unsigned int id) const {
+    return as<Mesh>(item(id));
+}
+
+/**
+ **/
+Items Scene::selection() const {
+    Items selected;
+    std::copy_if(items_.begin(), items_.end(), std::back_inserter(selected),
+        [](const boost::shared_ptr<Item>& item) { return item->selected(); });
     return selected;
 }
 
 /**
  **/
 std::size_t Scene::count() const noexcept {
-    return meshes_.size();
+    return items_.size();
 }
 
 /**
  **/
 void Scene::clear() noexcept {
-    meshes_.clear();
+    items_.clear();
 }
 
 /**
@@ -78,25 +85,38 @@ void Scene::accept(SceneVisitor* visitor) const {
     if (visitor == nullptr) {
         return;
     }
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
-        visitor->visit(mesh);
+    for (const boost::shared_ptr<Item>& item : items_) {
+        switch (item->kind()) {
+            case Item::Kind::Mesh:
+                visitor->visit(boost::static_pointer_cast<Mesh>(item));
+                break;
+            case Item::Kind::Camera:
+                visitor->visit(boost::static_pointer_cast<Camera>(item));
+                break;
+            case Item::Kind::Light:
+                visitor->visit(boost::static_pointer_cast<Light>(item));
+                break;
+        }
     }
 }
 
 /**
  **/
 void Scene::deselect() noexcept {
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
-        mesh->selected(false);
-        mesh->deselectComponents();
+    for (const boost::shared_ptr<Item>& item : items_) {
+        item->selected(false);
     }
+    deselectComponents();
 }
 
 /**
  **/
 void Scene::deselectComponents() noexcept {
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : meshes_) {
-        mesh->deselectComponents();
+    for (const boost::shared_ptr<Item>& item : items_) {
+        const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
+        if (mesh) {
+            mesh->geometry()->deselectComponents();
+        }
     }
 }
 

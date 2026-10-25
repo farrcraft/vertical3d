@@ -106,8 +106,8 @@ curve kind the plan does not build.
 
 | Decision | Step |
 |---|---|
-| Editor: what a scene item is, and how the scene holds kinds other than meshes. Amends ADR-0013. | 1 |
-| Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Amends ADR-0013. | 9 |
+| Editor: what a scene item is, and how the scene holds kinds other than meshes. Decided in ADR-0099, which supersedes ADR-0013. | 1 |
+| Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Amends ADR-0099. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. | 8 |
 | Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
 | Editor: what the editor animates, and how a key is stored. | 10 |
@@ -115,6 +115,7 @@ curve kind the plan does not build.
 ## What blocks what
 
 - **Step 1 blocks steps 2, 3, 4 and 9.** Every kind other than a mesh needs a scene item to be.
+  Step 1 is closed.
 - **Step 2 goes with step 1.** A scene that holds a camera has to save one.
 - **Step 3 comes before step 4's show toggles**, so that a toggle changes what is drawn.
 - **Step 7 needs the builder in step 7's first half** before any importer can make a mesh.
@@ -128,15 +129,23 @@ curve kind the plan does not build.
 
 ### Step 1 — A scene of items
 
-**Open.** ADR first. A scene item is a `dag::Node` and a `dag::Transform`, and a mesh is one
-kind of item. The ADR weighs a common base class with a kind, against a variant of the kinds.
-It also says how a visitor reaches each kind.
+**Closed.** ADR-0099 decided it, and supersedes ADR-0013. It weighed a variant of the kinds, a
+`dag::Node` found by cast, and a list per kind, against an editor base class.
 
-- `Scene` holds items. `selection()`, `mesh()`, `add()` and `remove()` work on items, with a
-  typed lookup for a mesh.
-- `Picker`, `Target`, `CreateCommand` and `RIBExportVisitor` take items, and handle only the
-  meshes until step 4 gives them other kinds.
-- No visible change. The editor suite's existing cases pass unchanged.
+- `editor::Item` is a `dag::Node` and a `dag::Transform` with the object selection flag.
+  `Mesh`, `Camera` and `Light` derive from it, and `as<T>()` casts by the item's kind.
+- `brep::BRep` is geometry alone. It lost its `dag` bases and its object flag, `v3dlib_brep` no
+  longer links `v3dlib_dag`, and a `BRep` can be copied. A `Mesh` holds a shared `BRep`, so two
+  items can share one, and a modelling operation runs once on a shared mesh.
+- `Scene` holds items of every kind in one list. `selection()` returns items, `selected<T>()`
+  the items of one kind, `item()` any kind, and `mesh()` a mesh.
+- `SceneVisitor` has a pure `visit` per kind. `Picker`, `WireframeVisitor`, `RIBExportVisitor`
+  and the project writer do nothing with a camera or a light until steps 2 to 4.
+- `CreateCommand` and `TransformCommand` take any item, and an object `Target` holds items, so
+  step 4's cameras and lights move and undo through the code that moves a mesh.
+- No visible change. The editor suite's cases changed with the types, since a mesh is now an
+  item that holds geometry, and kept what they check. `ItemTest` and `SceneTest` cover the
+  kinds, the casts, shared geometry and the order across kinds.
 
 ### Step 2 — Project version 2
 

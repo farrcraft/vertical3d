@@ -8,6 +8,9 @@
 #include <api/brep/BRep.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -29,7 +32,8 @@ namespace v3d::editor {
  * is hit when it is drawn within a few pixels of the cursor.
  *
  * A component mask considers only meshes that are already selected: an object has to be
- * selected before any of its components can be.
+ * selected before any of its components can be. Only meshes are picked. A camera or a light
+ * is never hit, and a rectangle never holds one.
  **/
 class Picker final : public SceneVisitor {
  public:
@@ -100,10 +104,12 @@ class Picker final : public SceneVisitor {
         const glm::vec2& opposite, SelectMask mask);
 
     /**
-     * One mesh of the scene, during a pick. Public because the scene calls it through
-     * SceneVisitor. Only the scene calls it.
+     * One item of the scene, during a pick. Public because the scene calls them through
+     * SceneVisitor. Only the scene calls them.
      **/
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
+    void visit(const boost::shared_ptr<Mesh>& item) override;
+    void visit(const boost::shared_ptr<Camera>& camera) override;
+    void visit(const boost::shared_ptr<Light>& light) override;
 
  private:
     /**
@@ -183,6 +189,8 @@ class Picker final : public SceneVisitor {
     int viewport_[4];
     glm::vec2 cursor_;
     glm::mat4 model_;
+    // the id of the mesh item being traversed, which every hit on its geometry names
+    unsigned int current_;
     float nearest_;
     Hit hit_;
 

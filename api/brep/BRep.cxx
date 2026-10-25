@@ -25,7 +25,7 @@ namespace v3d::brep {
 const Index BRep::INVALID_ID = v3d::brep::INVALID_ID;
 
 
-BRep::BRep() : selected_(false) {
+BRep::BRep() {
 }
 
 BRep::~BRep() {
@@ -290,14 +290,6 @@ Index BRep::addEdge(const HalfEdge& newEdge) {
 Index BRep::addFace(const Face& newFace) {
     faces_.push_back(newFace);
     return static_cast<Index>(faces_.size() - 1);
-}
-
-bool BRep::selected(void) const noexcept {
-    return selected_;
-}
-
-void BRep::selected(bool sel) noexcept {
-    selected_ = sel;
 }
 
 void BRep::deselectComponents(void) noexcept {

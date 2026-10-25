@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "Mesh.h"
 #include "Scene.h"
 
 #include <boost/make_shared.hpp>
@@ -41,6 +42,20 @@ boost::shared_ptr<TopologyCommand> refuse(std::string* problem, const std::strin
 }
 
 /**
+ * The geometry of every selected mesh item, in scene order. Two items may share one mesh,
+ * which is listed once, so an operation never runs on it twice.
+ **/
+std::vector<boost::shared_ptr<v3d::brep::BRep>> selectedGeometry(const Scene& scene) {
+    std::vector<boost::shared_ptr<v3d::brep::BRep>> geometry;
+    for (const boost::shared_ptr<Mesh>& item : scene.selected<Mesh>()) {
+        if (std::find(geometry.begin(), geometry.end(), item->geometry()) == geometry.end()) {
+            geometry.push_back(item->geometry());
+        }
+    }
+    return geometry;
+}
+
+/**
  * Run an operation on the selected faces of each selected mesh that has any, and record one
  * change for each.
  *
@@ -49,7 +64,7 @@ boost::shared_ptr<TopologyCommand> refuse(std::string* problem, const std::strin
 boost::shared_ptr<TopologyCommand> onSelectedFaces(const Scene& scene, const std::string& name,
     const std::function<void(v3d::brep::BRep*, const std::vector<v3d::brep::Index>&)>& operation) {
     std::vector<TopologyCommand::Change> changes;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : selectedGeometry(scene)) {
         std::vector<v3d::brep::Index> faces;
         for (v3d::brep::Index id = 0; id < mesh->faceCount(); id++) {
             if (mesh->face(id)->selected()) {
@@ -78,7 +93,7 @@ boost::shared_ptr<TopologyCommand> onSelectedFaces(const Scene& scene, const std
  **/
 boost::shared_ptr<TopologyCommand> splitEdges(const Scene& scene) {
     std::vector<TopologyCommand::Change> changes;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : selectedGeometry(scene)) {
         // a selected edge is either of its halves, and is split once through the half that
         // stands for it
         std::vector<v3d::brep::Index> edges;
@@ -117,7 +132,7 @@ boost::shared_ptr<TopologyCommand> splitEdges(const Scene& scene) {
 boost::shared_ptr<TopologyCommand> splitFace(const Scene& scene, std::string* problem) {
     boost::shared_ptr<v3d::brep::BRep> owner;
     std::vector<v3d::brep::Index> vertices;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : selectedGeometry(scene)) {
         for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
             if (!mesh->vertex(id)->selected()) {
                 continue;
@@ -173,7 +188,7 @@ boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene) {
 boost::shared_ptr<TopologyCommand> mergeVertices(const Scene& scene, std::string* problem) {
     boost::shared_ptr<v3d::brep::BRep> owner;
     std::vector<v3d::brep::Index> vertices;
-    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : scene.selection()) {
+    for (const boost::shared_ptr<v3d::brep::BRep>& mesh : selectedGeometry(scene)) {
         for (v3d::brep::Index id = 0; id < mesh->vertexCount(); id++) {
             if (!mesh->vertex(id)->selected()) {
                 continue;

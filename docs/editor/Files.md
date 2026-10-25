@@ -103,7 +103,7 @@ offline renderer reads RIB.
 - for each mesh, inside `WorldBegin` and `WorldEnd`: an `AttributeBegin` block with an
   identifier name, a `ConcatTransform` of the mesh's matrix, and one `Polygon` per face
 
-The scene has no lights or materials, so the result renders in one flat colour. RI treats a
+The export writes no lights and no materials, so the result renders in one flat colour. RI treats a
 polygon as planar and convex without checking. moya dices only the first four vertices of a
 polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.

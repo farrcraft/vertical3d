@@ -23,7 +23,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`audio`](../../api/audio/) | Sound playback over SDL3_mixer, and the loader for wav files. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
 | [`config`](../../api/config/) | Reads `data/config.json` and the documents it lists. Also reads camera profiles and sprite sheets. |
-| [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor mesh is placed by. |
+| [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
 | [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, the window, config, input and settings. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
@@ -54,7 +54,7 @@ Boost.
 | `event` | log, asset | glm, EnTT |
 | `dag` | type | glm |
 | `ecs` | type | glm, EnTT |
-| `brep` | dag, type | glm |
+| `brep` | type | glm |
 | `font` | log, image | FreeType, glm |
 | `config` | log, asset, type | glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
@@ -69,8 +69,8 @@ The same picture as layers, lowest first. A library uses only libraries in the r
 
 ```
 log   type   grid                          no device, no window
-image  asset  dag  ecs
-font   config  brep  asset_media  event
+image  asset  dag  ecs  brep
+font   config  asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input                                      SDL3
 audio                                      SDL3_mixer
@@ -213,8 +213,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 
 ### Geometry, models and effects
 
-- **Mesh** — three different things: a `brep::BRep` the editor models with, a `type::Model` a
-  file loads into, and a device-side mesh in the renderer. See [Types.md](Types.md#models).
+- **Mesh** — four different things: a `brep::BRep` the editor models with, the
+  `editor::Mesh` scene item that places one, a `type::Model` a file loads into, and a
+  device-side mesh in the renderer. See [Types.md](Types.md#models).
 - **Model** — `type::Model`: one vertex array, one index list, materials and parts. See
   [Types.md](Types.md#models).
 - **Part** — a range of a model's indices drawn with one material. See

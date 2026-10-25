@@ -3,13 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -45,8 +46,8 @@ constexpr glm::vec2 centre(200.0F, 200.0F);
 /**
  * Whole objects as a manipulator's target.
  **/
-v3d::editor::Target objects(const v3d::editor::Meshes& meshes) {
-    return v3d::editor::Target::objects(meshes);
+v3d::editor::Target objects(const v3d::editor::Items& items) {
+    return v3d::editor::Target::objects(items);
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_default_test) {
@@ -60,7 +61,7 @@ BOOST_AUTO_TEST_CASE(manipulator_default_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     const v3d::editor::TranslateManipulator manipulator;
 
@@ -88,7 +89,7 @@ BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::TranslateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::X);
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::TranslateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::None);
@@ -129,7 +130,7 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     const v3d::editor::RotateManipulator manipulator;
 
@@ -157,7 +158,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::RotateManipulator manipulator;
     manipulator.axis(v3d::editor::Manipulator::Axis::Z);
@@ -181,7 +182,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
     v3d::editor::ScaleManipulator manipulator;
 
@@ -214,8 +215,8 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
-    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
-    const boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
     const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
@@ -229,7 +230,7 @@ BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
 
     // an empty entry is not an origin, and an empty set has no handles
     const v3d::editor::Manipulator::Placement skipped =
-        manipulator.placement(objects({first, boost::shared_ptr<v3d::brep::BRep>()}), *view);
+        manipulator.placement(objects({first, boost::shared_ptr<v3d::editor::Item>()}), *view);
     BOOST_CHECK_CLOSE(skipped.origin.x, 1.0F, 0.01F);
     BOOST_CHECK_EQUAL(manipulator.placement(objects({}), *view).valid, false);
 
@@ -245,15 +246,15 @@ BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
  **/
 struct TwoCubes {
     TwoCubes() :
-        left(v3d::editor::create_poly_cube()),
-        right(v3d::editor::create_poly_cube()),
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
         view(frontView()) {
         left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
         right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
     }
 
-    boost::shared_ptr<v3d::brep::BRep> left;
-    boost::shared_ptr<v3d::brep::BRep> right;
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
     boost::shared_ptr<v3d::editor::ViewPort> view;
 };
 

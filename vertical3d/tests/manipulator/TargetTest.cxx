@@ -11,6 +11,8 @@
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
 
@@ -73,14 +75,14 @@ v3d::brep::Index edgeBetween(const v3d::brep::BRep& mesh, v3d::brep::Index from,
 }
 
 BOOST_AUTO_TEST_CASE(target_objects_test) {
-    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
-    const boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
 
-    const v3d::editor::Target target = v3d::editor::Target::objects({first, boost::shared_ptr<v3d::brep::BRep>(), second});
+    const v3d::editor::Target target = v3d::editor::Target::objects({first, boost::shared_ptr<v3d::editor::Item>(), second});
     BOOST_CHECK_EQUAL(target.components(), false);
-    BOOST_CHECK_EQUAL(target.meshes().size(), 2U);
+    BOOST_CHECK_EQUAL(target.items().size(), 2U);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(2.0F, 1.0F, 0.0F)), 0.0001F);
 
     BOOST_CHECK(v3d::editor::Target().empty());
@@ -88,32 +90,32 @@ BOOST_AUTO_TEST_CASE(target_objects_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
 
     // nothing selected is nothing to move
     BOOST_CHECK(v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face).empty());
 
     // a face brings its four corners, and every face but the opposite one touches them
-    const v3d::brep::Index face = frontFace(*cube);
+    const v3d::brep::Index face = frontFace(*cube->geometry());
     BOOST_REQUIRE(face != v3d::brep::INVALID_ID);
-    cube->face(face)->selected(true);
+    cube->geometry()->face(face)->selected(true);
     const v3d::editor::Target faces = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face);
     BOOST_REQUIRE_EQUAL(faces.parts().size(), 1U);
     BOOST_CHECK_EQUAL(faces.parts()[0].vertices.size(), 4U);
     BOOST_CHECK_EQUAL(faces.parts()[0].faces.size(), 5U);
     BOOST_CHECK_SMALL(glm::distance(faces.pivot(), glm::vec3(0.0F, 0.0F, -0.5F)), 0.0001F);
-    cube->deselectComponents();
+    cube->geometry()->deselectComponents();
 
     // two edges that share a corner bring three vertices, the shared one once
-    const v3d::brep::Index low = corner(*cube, glm::vec3(-0.5F, -0.5F, -0.5F));
-    const v3d::brep::Index right = corner(*cube, glm::vec3(0.5F, -0.5F, -0.5F));
-    const v3d::brep::Index up = corner(*cube, glm::vec3(-0.5F, 0.5F, -0.5F));
-    const v3d::brep::Index along = edgeBetween(*cube, low, right);
-    const v3d::brep::Index across = edgeBetween(*cube, up, low);
+    const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index up = corner(*cube->geometry(), glm::vec3(-0.5F, 0.5F, -0.5F));
+    const v3d::brep::Index along = edgeBetween(*cube->geometry(), low, right);
+    const v3d::brep::Index across = edgeBetween(*cube->geometry(), up, low);
     BOOST_REQUIRE(along != v3d::brep::INVALID_ID);
     BOOST_REQUIRE(across != v3d::brep::INVALID_ID);
-    cube->edge(along)->selected(true);
-    cube->edge(across)->selected(true);
+    cube->geometry()->edge(along)->selected(true);
+    cube->geometry()->edge(across)->selected(true);
     const v3d::editor::Target edges = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge);
     const std::vector<v3d::brep::Index> expected = {low, right, up};
     std::vector<v3d::brep::Index> sorted = expected;
@@ -123,11 +125,11 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
-    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
-    const boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    first->vertex(corner(*first, glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
-    second->vertex(corner(*second, glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
+    first->geometry()->vertex(corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
+    second->geometry()->vertex(corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
 
     // the pivot is the mean of the vertices in world space, across both objects
     const v3d::editor::Target target = v3d::editor::Target::components({first, second}, v3d::editor::SelectMask::Vertex);
@@ -146,14 +148,14 @@ BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_move_components_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     // the object is stretched along x, so a world offset is half as far in its own space
     cube->scale(glm::vec3(2.0F, 1.0F, 1.0F));
-    const v3d::brep::Index low = corner(*cube, glm::vec3(-0.5F, -0.5F, -0.5F));
-    const v3d::brep::Index right = corner(*cube, glm::vec3(0.5F, -0.5F, -0.5F));
-    const v3d::brep::Index far = corner(*cube, glm::vec3(0.5F, 0.5F, 0.5F));
-    cube->edge(edgeBetween(*cube, low, right))->selected(true);
-    cube->edge(edgeBetween(*cube, right, corner(*cube, glm::vec3(0.5F, 0.5F, -0.5F))))->selected(true);
+    const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index far = corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, 0.5F));
+    cube->geometry()->edge(edgeBetween(*cube->geometry(), low, right))->selected(true);
+    cube->geometry()->edge(edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))))->selected(true);
 
     const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge);
     v3d::editor::Motion motion;
@@ -161,24 +163,24 @@ BOOST_AUTO_TEST_CASE(target_move_components_test) {
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
 
     // the shared corner moves once, and the transform is left alone
-    BOOST_CHECK_SMALL(glm::distance(cube->vertex(right)->point(), glm::vec3(1.0F, -0.5F, -0.5F)), 0.0001F);
-    BOOST_CHECK_SMALL(glm::distance(cube->vertex(low)->point(), glm::vec3(0.0F, -0.5F, -0.5F)), 0.0001F);
-    BOOST_CHECK_SMALL(glm::distance(cube->vertex(far)->point(), glm::vec3(0.5F, 0.5F, 0.5F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(right)->point(), glm::vec3(1.0F, -0.5F, -0.5F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(low)->point(), glm::vec3(0.0F, -0.5F, -0.5F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(far)->point(), glm::vec3(0.5F, 0.5F, 0.5F)), 0.0001F);
     BOOST_CHECK(cube->scale() == glm::vec3(2.0F, 1.0F, 1.0F));
     BOOST_CHECK(cube->translation() == glm::vec3(0.0F));
 
     // every face round a moved corner has its normal from its points again
     for (const v3d::brep::Index face : target.parts()[0].faces) {
-        BOOST_CHECK_SMALL(glm::distance(cube->face(face)->normal(), v3d::brep::newellNormal(*cube, face)), 0.0001F);
+        BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), v3d::brep::newellNormal(*cube->geometry(), face)), 0.0001F);
     }
 }
 
 BOOST_AUTO_TEST_CASE(target_turn_components_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    const v3d::brep::Index face = frontFace(*cube);
-    cube->face(face)->selected(true);
-    const v3d::brep::Index right = corner(*cube, glm::vec3(0.5F, -0.5F, -0.5F));
-    const v3d::brep::Index back = corner(*cube, glm::vec3(0.5F, -0.5F, 0.5F));
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const v3d::brep::Index face = frontFace(*cube->geometry());
+    cube->geometry()->face(face)->selected(true);
+    const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
+    const v3d::brep::Index back = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, 0.5F));
     const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face);
 
     // a quarter turn about z turns the face about its own middle, so it stays in its plane
@@ -186,15 +188,15 @@ BOOST_AUTO_TEST_CASE(target_turn_components_test) {
     v3d::editor::Motion motion;
     motion.turn = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F));
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
-    BOOST_CHECK_SMALL(glm::distance(cube->vertex(right)->point(), glm::vec3(0.5F, 0.5F, -0.5F)), 0.0001F);
-    BOOST_CHECK_SMALL(glm::distance(cube->vertex(back)->point(), glm::vec3(0.5F, -0.5F, 0.5F)), 0.0001F);
-    BOOST_CHECK_SMALL(glm::distance(cube->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(right)->point(), glm::vec3(0.5F, 0.5F, -0.5F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(back)->point(), glm::vec3(0.5F, -0.5F, 0.5F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
 
     // a stretch past zero stops at the floor rather than turning the face inside out
     motion = v3d::editor::Motion();
     motion.stretch = glm::vec3(-3.0F, 1.0F, 1.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
-    BOOST_CHECK_SMALL(glm::distance(cube->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
 }
 
 };  // namespace
