@@ -51,9 +51,11 @@ BOOST_AUTO_TEST_CASE(framebuffer_negative_bound_test) {
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     buffer.addPrimitive(polygon, box(glm::vec3(-40.0F, -12.0F, 0.0F), glm::vec3(10.0F, 10.0F, 0.0F)));
+    BOOST_TEST(buffer.primitiveCount(0, 0) == 1U);
 
-    // the case passes when neither placement indexes outside the bucket grid
     buffer.addPrimitive(polygon, box(glm::vec3(9000.0F, 9000.0F, 0.0F), glm::vec3(9100.0F, 9100.0F, 0.0F)));
+    BOOST_TEST(buffer.primitiveCount(19, 14) == 1U);
+    BOOST_TEST(buffer.primitiveCount() == 2U);
 }
 
 };  // namespace

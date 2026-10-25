@@ -51,6 +51,13 @@ class Polygon : public reyes::Primitive {
         unsigned int vertices);
 
     /**
+     * The polygon as a fan of quadrilaterals about its first vertex, with a triangle last when
+     * the count is odd. RI requires a polygon to be convex, so each piece is too. A placed
+     * polygon's pieces are placed as it was, with its colour, normal, shading and motion.
+     **/
+    std::vector<boost::shared_ptr<Polygon>> quads() const;
+
+    /**
      **/
     void addVertex(const Vertex& vert);
 

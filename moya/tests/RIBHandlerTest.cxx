@@ -1078,4 +1078,61 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_crop_window_under_the_ray_hider_test) {
     checkCropped(*cropped("Hider \"raytrace\"\n"));
 }
 
+/**
+ * A hexagon small enough to be diced whole. Dicing interpolates four corners, so a polygon with
+ * more is broken into pieces of four corners or fewer first. Without that, the grid covers only
+ * the first four corners, the hexagon's upper half, and the lower half is not drawn.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Option \"limits\" \"gridsize\" [4096]\n"
+        "Format 64 48 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n"
+        "WorldBegin\n"
+        "Color [1 0 0]\n"
+        "Polygon \"P\" [0.8 0 5  0.4 0.693 5  -0.4 0.693 5  -0.8 0 5  -0.4 -0.693 5  0.4 -0.693 5]\n"
+        "WorldEnd\n", &handler));
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+
+    // y = 0.4 and y = -0.4 in screen space fall on rows 14 and 33, both inside the hexagon
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 14), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 33), 0.5F);
+}
+
+/**
+ * A quad at z = 4 in its own space, moved to z = 5 by a translation after the surface, drawn
+ * with a shader that shows the shading point in object space.
+ **/
+boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::string & hider) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "Surface \"objectspace\"\n"
+        "Translate 0 0 1\n"
+        "Polygon \"P\" [-5 -5 4  5 -5 4  5 5 4  -5 5 4]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().framebuffer()->planes();
+}
+
+/**
+ * Both hiders answer "object" space with the primitive's own transformation, so the quad's
+ * depth in its own space is 4 under either.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
+    BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::FrameBuffer::BLUE, 4, 3), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::FrameBuffer::BLUE, 4, 3), 4.0F, 0.01F);
+}
+
 };  // namespace

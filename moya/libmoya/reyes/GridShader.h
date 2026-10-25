@@ -36,6 +36,10 @@ namespace v3d::moya::reyes {
  * table returns the identity for "current". A hit the tracer shades has world space as its
  * current space, and the tracer answers that hit's space table itself.
  *
+ * **I follows the projection.** Under a perspective camera the eye is the origin of camera
+ * space, so I is the shading point itself. Under an orthographic camera every point is seen
+ * along z, so I is (0, 0, 1). E is the origin under both, as it is for a traced hit.
+ *
  * The render context holds one of these for its lifetime. `prepare` sizes a register file,
  * and a later grid of the same size over the same program reuses it rather than allocating
  * again.
@@ -103,6 +107,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      * differ only in what is written into the register file.
      */
     Run & run(const v3d::render::offline::sl::InstancePtr & shader, unsigned int batch);
+    /** SL's I at a shading point in camera space, for the context's projection. **/
+    glm::vec3 incident(const glm::vec3 & point) const;
 
     RenderContext* context_;
     /** What is being shaded, for the space table and for the lights. **/
@@ -113,6 +119,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      * placed it.
      **/
     glm::mat4x4 placement_ = glm::mat4x4(1.0F);
+    /** The primitive's object space into camera space. **/
+    glm::mat4x4 object_ = glm::mat4x4(1.0F);
     unsigned int batch_ = 1;
     /** The grid's points a side. **/
     unsigned int size_ = 1;

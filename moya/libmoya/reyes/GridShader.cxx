@@ -52,6 +52,10 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
     return held;
 }
 
+glm::vec3 GridShader::incident(const glm::vec3 & point) const {
+    return context_->perspective() ? point : glm::vec3(0.0F, 0.0F, 1.0F);
+}
+
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
     // every matrix maps out of camera space, the reyes hider's current space. The context's
     // table holds world to camera and camera to screen, so "world" is the inverse of its
@@ -85,9 +89,12 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = projection.ndc;
         return true;
     }
-    // "object" is the transform in force at the primitive rather than at the shader. shade()
-    // receives only the primitive's Shading, which does not hold it. The shader's transform
-    // differs from it in a scene that transforms between Surface and Polygon
+    // "object" is the transform in force at the primitive rather than at the shader. The two
+    // differ in a scene that transforms between Surface and Polygon
+    if (name == "object") {
+        *matrix = glm::inverse(object_);
+        return true;
+    }
     return false;
 }
 
@@ -182,6 +189,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
     }
     // a displacement shader names no lights, so shading_ stays null while it runs
     placement_ = shading.displacement.placement;
+    object_ = shading.object;
     batch_ = batch;
     size_ = size;
     Run & held = run(shading.displacement.shader, batch);
@@ -196,7 +204,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
-            point.incident = vert.point();
+            point.incident = incident(vert.point());
             const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
                 glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
             point.s = st.x;
@@ -234,6 +242,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     }
     shading_ = &shading;
     placement_ = shading.placement;
+    object_ = shading.object;
     batch_ = batch;
     size_ = size;
     toWorld_ = glm::inverse(context_->coordinateSystem("camera"));
@@ -259,9 +268,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
-            // the eye is the origin of camera space, so I is the point itself. This is the
-            // perspective camera's I, and an orthographic camera is given the same value
-            point.incident = vert.point();
+            point.incident = incident(vert.point());
             point.colour = vert.color();
             point.opacity = shading.opacity;
             const glm::vec2 st = vert.hasTexCoord() ? vert.st() :

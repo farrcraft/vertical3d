@@ -717,6 +717,7 @@ Shading RenderContext::shading() {
     Shading state;
     state.surface = surface_;
     state.placement = surfacePlacement_;
+    state.object = coordinateSystem("camera") * transform_.reference();
     state.opacity = opacity_;
     if (!state.surface) {
         // a scene that names no surface draws "constant", which does no shading. RI leaves
@@ -885,6 +886,7 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
     surface.shader = state.surface;
     surface.placement = glm::inverse(coordinateSystem("camera")) * state.placement;
     primitive->surface(surface);
+    primitive->object(glm::inverse(coordinateSystem("camera")) * state.object);
     primitive->opacity(state.opacity);
     primitive->lights(tracedLights(state));
 }
@@ -934,6 +936,27 @@ bool RenderContext::beforeWorld() {
     return true;
 }
 
+bool RenderContext::handedOn(const boost::shared_ptr<Polygon>& poly) {
+    // a polygon is placed with the state it was submitted under, and is traced once. A
+    // piece handed back by a split is already placed and keeps its parent's state
+    if (!poly->placed()) {
+        const Shading state = shading();
+        trace(*poly, state);
+        poly->place(coordinateSystem("camera") * transform_.reference(), color_, poly->geometricNormal(),
+            state);
+        poly->motion(transform_.before(coordinateSystem("camera")));
+    }
+    // dicing interpolates four corners, so a polygon with more is broken into pieces of four
+    // corners or fewer. Each piece is placed as its parent was, and is measured in turn
+    if (poly->vertexCount() <= 4) {
+        return false;
+    }
+    for (const boost::shared_ptr<Polygon> & piece : poly->quads()) {
+        addPolygon(piece);
+    }
+    return true;
+}
+
 void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (beforeWorld() || flatMotion()) {
         return;
@@ -943,14 +966,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         trace(*poly, shading());
         return;
     }
-    // a polygon is placed with the state it was submitted under, and is traced once. A
-    // piece handed back by a split is already placed and keeps its parent's state
-    if (!poly->placed()) {
-        const Shading state = shading();
-        trace(*poly, state);
-        poly->place(coordinateSystem("camera") * transform_.reference(), color_, poly->geometricNormal(),
-            state);
-        poly->motion(transform_.before(coordinateSystem("camera")));
+    if (handedOn(poly)) {
+        return;
     }
 
     fillVertices(poly.get());
@@ -1059,10 +1076,10 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     // a primitive already marked for splitting needs no size test
     if (poly->diceable()) {
-        // a raster bound wider or taller than one grid's side, sqrt(gridSize_) *
-        // shadingRate_ pixels, is split
-        float size = static_cast<float>(gridSize_);
-        size = sqrt(size) * shadingRate_;
+        // a raster bound wider or taller than one grid's side is split. A grid has gridSize_
+        // micropolygons, and RI states the shading rate as the area of one in pixels, so a
+        // side is sqrt(gridSize_ * shadingRate_) pixels
+        const float size = std::sqrt(static_cast<float>(gridSize_) * shadingRate_);
         const glm::vec3 bound_size = measured_max - measured_min;
         if ((bound_size[0] > size) || (bound_size[1] > size)) {
             poly->diceable(false);

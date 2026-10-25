@@ -152,16 +152,26 @@ and [offline/README.md](../offline/README.md) lists it.
 
 ### Step 2 — The reyes hider follows RI
 
-**Open.**
+**Closed.** Each fix has a test that fails without it.
 
-- `GridShader` sets I to (0, 0, 1) for an orthographic camera, and E to match.
-- `shade()` and `displace()` are given the primitive's placement, so `space("object")` answers.
-- ShadingRate is read as an area.
-- A polygon with more than four vertices is split before dicing.
-- `FrameBuffer` gains a count per bucket, and `framebuffer_negative_bound_test` checks where a
-  primitive lands.
-- Tests in `GridShaderTest.cxx`, `RenderContextTest.cxx`, `PolygonTest.cxx` and
-  `FrameBufferTest.cxx`. The orthographic reference pictures are regenerated.
+- `GridShader` gives I as (0, 0, 1) under an orthographic camera and as the point under a
+  perspective one. E stays the origin under both. A traced hit uses the origin too, so the
+  plan's "E to match" needed no change.
+- A primitive's object space travels in its `Shading` rather than through a new argument to
+  `shade()` and `displace()`. `RenderContext::shading()` is called when the primitive is
+  submitted, so the transformation in force then is the primitive's.
+- The ray hider answered no `"object"` space either, so `trace::Primitive` now carries one too.
+  Both hiders give the same answer, and a case renders under each.
+  `trace_a_hit_refuses_object_space_test` asserted the old refusal, and now checks the answer.
+- ShadingRate is read as an area: a grid side is `sqrt(gridsize * ShadingRate)` pixels.
+- A polygon with more than four vertices is broken into a fan of quadrilaterals, with a
+  triangle last when the count is odd, before it is measured. A hexagon diced whole drew only
+  its upper half before.
+- `FrameBuffer::primitiveCount(column, row)` counts one bucket, and
+  `framebuffer_negative_bound_test` checks where each primitive lands.
+- Three reference pictures changed, all from the I fix alone: with only I put back, the old
+  pictures matched. `reference-shadow.png` and `raytrace-shaded.png` render the same scene
+  under the two hiders. Their mean difference fell from 3.12 to 2.12 levels.
 
 ### Step 3 — The shading language
 

@@ -28,6 +28,12 @@ class Shading final {
     v3d::render::offline::sl::InstancePtr surface;
     glm::mat4x4 placement = glm::mat4x4(1.0F);
     /**
+     * The primitive's object space into camera space, as the transformation stood when it was
+     * submitted. SL's "object" space. It differs from the surface's placement when the scene
+     * transforms between the surface and the primitive.
+     **/
+    glm::mat4x4 object = glm::mat4x4(1.0F);
+    /**
      * The opacity that was current, SL's Os. The colour travels on the vertices because a
      * primitive may carry its own varying "Cs". moya reads no varying "Os", so this single
      * value covers the whole primitive.

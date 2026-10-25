@@ -499,4 +499,55 @@ BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
     BOOST_CHECK_EQUAL(grid.vertex(2, 2).point().z, 5.0F);
 }
 
+/**
+ * I is the direction from the eye to the shading point. Under an orthographic camera every
+ * point is seen along z, so I is (0, 0, 1) in camera space, as the ray hider casts its rays.
+ * Under a perspective camera the eye is the origin of camera space, so I is the point itself.
+ **/
+BOOST_AUTO_TEST_CASE(moya_i_follows_the_projection_test) {
+    v3d::moya::RenderContext orthographic;
+    prepare(&orthographic);
+    orthographic.searchpath("data:&");
+    orthographic.surface("incident", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid seen = facing({});
+    orthographic.shader().shade(orthographic.shading(), &seen);
+    const glm::vec3 along = seen.vertex(1, 1).color();
+    BOOST_CHECK_SMALL(along.x, 0.0001F);
+    BOOST_CHECK_SMALL(along.y, 0.0001F);
+    BOOST_CHECK_CLOSE(along.z, 1.0F, 0.01F);
+
+    v3d::moya::RenderContext perspective;
+    perspective.projection("perspective");
+    prepare(&perspective);
+    perspective.searchpath("data:&");
+    perspective.surface("incident", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid fanned = facing({});
+    perspective.shader().shade(perspective.shading(), &fanned);
+    const glm::vec3 point = fanned.vertex(1, 1).color();
+    BOOST_CHECK_CLOSE(point.x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(point.y, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(point.z, 5.0F, 0.01F);
+}
+
+/**
+ * "object" space is the space of the primitive being shaded, as the transformation stood when
+ * it was submitted. A translation after the surface shader moves the primitive and not the
+ * shader, so the two spaces differ.
+ **/
+BOOST_AUTO_TEST_CASE(moya_object_space_is_the_primitives_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.surface("objectspace", ParameterList());
+    rc.translate(1.0F, 0.0F, 0.0F);
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    rc.shader().shade(rc.shading(), &grid);
+    // the vertex is at (1, 1, 5) in camera space, one unit along x from its object's origin
+    const glm::vec3 here = grid.vertex(1, 1).color();
+    BOOST_CHECK_SMALL(here.x, 0.0001F);
+    BOOST_CHECK_CLOSE(here.y, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(here.z, 5.0F, 0.01F);
+}
+
 };  // namespace

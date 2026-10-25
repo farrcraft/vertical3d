@@ -75,6 +75,13 @@ size_t FrameBuffer::primitiveCount() const {
     return count;
 }
 
+size_t FrameBuffer::primitiveCount(unsigned int column, unsigned int row) const {
+    if (column >= bucketColumns_ || row >= bucketRows_) {
+        return 0;
+    }
+    return buckets_[column][row].primitiveCount();
+}
+
 unsigned int * FrameBuffer::bucketSize() const {
     return const_cast<unsigned int*>(bucketSize_);
 }

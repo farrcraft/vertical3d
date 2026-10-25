@@ -97,10 +97,12 @@ named. The language is in `api/render/offline/sl`.
   neighbouring point: one over a grid's span, or a traced hit's stencil step.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
-  implements (`sl::runtime::Renderer::space`), not a constant in the library. Neither a grid
-  nor a traced hit has an answer for `"object"`, because that is the transformation at the
-  primitive, and neither kind of primitive carries it. The machine reports the space as
-  unknown and leaves the value where it was.
+  implements (`sl::runtime::Renderer::space`), not a constant in the library.
+- **`"object"` is the primitive's space**, as the transformation stood when the primitive was
+  submitted. It differs from `"shader"` when a scene transforms between `Surface` and the
+  primitive. A reyes primitive carries it in its `Shading`, and a traced primitive carries it
+  as `trace::Primitive::object()`, so both hiders give the same answer. A moving primitive
+  answers with the pose it is stored in.
 - **`Renderer::space(name)` maps current space into the named space**, as RenderMan defines
   it. Every space follows that direction, `"shader"` included: it is the inverse of the
   shader's placement, since the placement maps the shader's own space into current space.

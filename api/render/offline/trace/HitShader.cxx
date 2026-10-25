@@ -44,6 +44,10 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(placement_);
         return true;
     }
+    if (name == "object") {
+        *matrix = glm::inverse(hit_.primitive->object());
+        return true;
+    }
     if (tracer_->scene() == nullptr) {
         return false;
     }
@@ -66,8 +70,6 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = scene.projection().ndc * scene.view();
         return true;
     }
-    // "object" space is the transformation in force at the primitive, and a traced primitive
-    // does not store it
     return false;
 }
 

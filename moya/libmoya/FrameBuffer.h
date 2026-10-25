@@ -64,6 +64,10 @@ class FrameBuffer {
      */
     size_t primitiveCount(void) const;
     /**
+     * How many primitives are waiting in one bucket. A bucket outside the grid holds none.
+     */
+    size_t primitiveCount(unsigned int column, unsigned int row) const;
+    /**
      * The image planes the film resolves the frame's samples into, indexed by Plane.
      */
     boost::shared_ptr<v3d::render::offline::FrameBuffer> planes(void) const;

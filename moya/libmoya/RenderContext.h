@@ -505,6 +505,14 @@ class RenderContext {
          * sent before it cannot be placed, and is left out. The first such polygon is logged.
          **/
         bool beforeWorld();
+        /**
+         * Place a polygon that is not yet placed with the state it was submitted under, and
+         * trace it. A polygon with more than four vertices is then handed back to addPolygon()
+         * as pieces.
+         *
+         * @return true when the polygon was handed on as pieces, and is not bucketed itself
+         **/
+        bool handedOn(const boost::shared_ptr<Polygon>& poly);
         boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<reyes::GridShader> shader_;
@@ -554,9 +562,10 @@ class RenderContext {
         /*
          * The framebuffer is tiled into buckets of bucketWidth_ by bucketHeight_ pixels.
          * gridSize_ is the number of micropolygons in a grid, so a grid is sqrt(gridSize_)
-         * micropolygons a side. A primitive whose raster bound is wider or taller than
-         * sqrt(gridSize_) * shadingRate_ pixels is split before it is diced. A smaller
-         * shading rate gives smaller micropolygons.
+         * micropolygons a side. shadingRate_ is the area of one micropolygon in pixels, so a
+         * primitive whose raster bound is wider or taller than sqrt(gridSize_ * shadingRate_)
+         * pixels is split before it is diced. A smaller shading rate gives smaller
+         * micropolygons.
          */
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;

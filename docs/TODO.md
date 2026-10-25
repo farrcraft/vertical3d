@@ -44,22 +44,6 @@ and its section names the plan or roadmap that orders it.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
-## moya's front end and reyes hider
-
-[Hardening](plans/Hardening.md) orders this, in step 2.
-
-Defects in `moya/libmoya` that its comments described wrongly.
-
-[] **The reyes hider departs from RI in four places.**
-
-- `GridShader` sets I to P for every camera. That is right for a perspective camera only; an
-  orthographic camera's I is (0, 0, 1) in camera space. The ray hider is right.
-- `GridShader::space("object")` fails, although the primitive's placement is that transform.
-  `shade()` is given the `Shading`, not the primitive.
-- ShadingRate is read as a side length in pixels: the first pass splits at
-  `sqrt(gridSize) * shadingRate` pixels. RI defines it as an area.
-- `Polygon::dice()` uses the first four vertices, so a polygon with more is diced wrongly.
-
 ## Tile grids
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 7 and 8.
@@ -280,13 +264,9 @@ style cannot set the bullet indent.
 [] **pong's multiplayer mode is single player.** Contract, minor. `ui::setMultiplayerMode` calls
 `mode(false)`, as single player does, so the computer still plays the right paddle.
 
-[] **Two tests do not check what they claim.** Weak test, minor.
-
-- odyssey's `a_world_destroyed_before_its_loads_arrive` streams at (1, 1), five tiles from the
-  east region, and `APPROACH` is 4. No load is in flight when the world is destroyed. Streaming
-  at (2, 1) puts one in flight.
-- moya's `framebuffer_negative_bound_test` has no assertion. It passes unless an out-of-range
-  bucket index crashes, and never checks which bucket a primitive lands in.
+[] **odyssey's `a_world_destroyed_before_its_loads_arrive` does not check what it claims.** Weak
+test, minor. It streams at (1, 1), five tiles from the east region, and `APPROACH` is 4. No load
+is in flight when the world is destroyed. Streaming at (2, 1) puts one in flight.
 
 ## Editor
 

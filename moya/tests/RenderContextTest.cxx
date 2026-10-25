@@ -427,4 +427,26 @@ BOOST_AUTO_TEST_CASE(render_context_unknown_projection_test) {
     BOOST_TEST((rc.coordinateSystem("screen") == screen));
 }
 
+/**
+ * ShadingRate is an area in pixels. A grid of 256 micropolygons, each covering a shading rate
+ * of 4 square pixels, spans sqrt(256 * 4) = 32 pixels a side. The polygon's raster bound is 216
+ * pixels across, so three rounds of four way splitting bring every piece under 32: 4^3 pieces.
+ * Read as a side length the rate would give 64 pixels, and two rounds.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
+    v3d::moya::RenderContext rc;
+    rc.shadingRate(4.0F);
+    rc.prepareWorld();
+
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
+    rc.addPolygon(polygon);
+    rc.render();
+
+    BOOST_TEST(rc.framebuffer()->primitiveCount() == 64U);
+}
+
 };  // namespace

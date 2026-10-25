@@ -24,6 +24,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 namespace {
@@ -429,20 +430,23 @@ BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
 }
 
 /**
- * A hit has no "object" space, because a traced primitive does not carry the transformation
- * that was in force where the scene created it. The hit refuses the space rather than
- * answering with world space, and the machine reports the refusal. "world" and "current" are
- * the identity.
+ * A hit's "object" space is the space of the primitive it struck, as the primitive carries it.
+ * The space table maps out of world space, so it answers with the inverse of the primitive's
+ * object to world transformation. "world" and "current" are the identity.
  **/
-BOOST_AUTO_TEST_CASE(trace_a_hit_refuses_object_space_test) {
+BOOST_AUTO_TEST_CASE(trace_a_hit_answers_object_space_test) {
+    const glm::mat4x4 placed = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    v3d::render::offline::trace::Triangle triangle = facing(2.0F, glm::vec3(1.0F));
+    triangle.object(placed);
     v3d::render::offline::trace::Scene scene;
-    scene.add(facing(2.0F, glm::vec3(1.0F)));
+    scene.add(triangle);
     v3d::render::offline::trace::Tracer tracer(&scene);
     const v3d::render::offline::trace::Hit hit = at(scene, 0.0F, 0.0F);
     v3d::render::offline::trace::HitShader shader(&tracer, hit);
 
     glm::mat4x4 matrix(1.0F);
-    BOOST_CHECK(!shader.space("object", &matrix));
+    BOOST_CHECK(shader.space("object", &matrix));
+    BOOST_CHECK((matrix == glm::inverse(placed)));
     BOOST_CHECK(shader.space("world", &matrix));
     BOOST_CHECK((matrix == glm::mat4x4(1.0F)));
     BOOST_CHECK(shader.space("current", &matrix));

@@ -11,6 +11,7 @@
 #include <api/type/geometry/Plane.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -90,6 +91,24 @@ boost::shared_ptr<Polygon> Polygon::build(const std::vector<glm::vec3> & points,
         polygon->addVertex(vertex);
     }
     return polygon;
+}
+
+std::vector<boost::shared_ptr<Polygon>> Polygon::quads() const {
+    std::vector<boost::shared_ptr<Polygon>> pieces;
+    for (size_t first = 1; first + 1 < vertices_.size(); first += 2) {
+        const boost::shared_ptr<Polygon> piece = boost::make_shared<Polygon>();
+        piece->addVertex(vertices_[0]);
+        const size_t last = std::min(first + 2, vertices_.size() - 1);
+        for (size_t i = first; i <= last; i++) {
+            piece->addVertex(vertices_[i]);
+        }
+        if (placed()) {
+            piece->place(placement(), color(), normal(), shading());
+            piece->motion(motion());
+        }
+        pieces.push_back(piece);
+    }
+    return pieces;
 }
 
 boost::shared_ptr<Polygon> Polygon::from(const v3d::render::offline::rib::ParameterList & parameters,
@@ -426,8 +445,8 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderCont
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
         side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
-        anything whose raster bound is wider or taller than the square root of the grid size
-        times the shading rate, so one grid covers what reaches here.
+        anything whose raster bound is wider or taller than sqrt(grid size * shading rate)
+        pixels, so one grid covers what reaches here.
     */
     const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger
     return dice(grid, across);
@@ -441,10 +460,9 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned i
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
-        bilinear interpolation over the polygon's first four vertices. A triangle's fourth
-        corner degenerates onto its third. A polygon with more than four vertices has the
-        rest dropped, so its grid does not cover the part of the polygon past the fourth
-        vertex.
+        bilinear interpolation over the polygon's four vertices. A triangle's fourth corner
+        degenerates onto its third. RenderContext::addPolygon() breaks a polygon with more
+        than four vertices into pieces before it reaches here.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
     const glm::vec3 corners[4] = {
