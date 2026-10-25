@@ -59,6 +59,11 @@ class Camera : public Aligned<16> {
 
     void updatePosition(const glm::vec3 &direction, float elapsedTimeSec);
     glm::vec3 calculateDisplacement(const glm::vec3 &direction, float elapsedTimeSec);
+    /**
+     * Accelerate each axis that the direction drives toward its velocity limit, and slow each
+     * axis it does not drive toward rest, over the elapsed time. The direction is in [-1, 1].
+     **/
+    void updateVelocity(const glm::vec3 &direction, float elapsedTimeSec);
 
     const glm::vec3 &acceleration() const;
     CameraBehavior behavior() const;
@@ -87,7 +92,6 @@ class Camera : public Aligned<16> {
  protected:
     void rotateFlight(float headingDegrees, float pitchDegrees, float rollDegrees);
     void rotateFirstPerson(float headingDegrees, float pitchDegrees);
-    void updateVelocity(const glm::vec3 &direction, float elapsedTimeSec);
     void updateViewMatrix(bool orthogonalizeAxes);
 
  private:

@@ -176,11 +176,15 @@ says how to build it.
   simulation. [api/engine/](api/engine/README.md) explains the loop.
 - **Mouse look.** `Window::relativeMouse(true)` hides the pointer and holds it in the window.
   `Controller::handleMotion` turns `MouseMotion::motion()`, the distance moved, into heading and
-  pitch. When the menu opens, the game leaves relative mode so the pointer shows; it returns to
-  relative mode when the menu closes.
+  pitch, at a tenth of a degree a pixel. Moving right turns the view right and moving down
+  turns it down. The pitch stops at straight up and straight down, and the heading turns about
+  the world's up axis, so the view never rolls. When the menu opens, the game leaves relative
+  mode so the pointer shows; it returns to relative mode when the menu closes.
 - **Movement from held keys.** `Controller::simulate` asks `held()` for each movement command
-  every step and passes the answer to `Player::move`, which starts or stops that direction. A key
-  let go while the menu was up therefore stops the player once the menu closes.
+  every step and passes the answer to `Player::move`, which starts or stops that direction. A
+  held direction accelerates at 8 units a second squared to 12 units a second, and a released
+  one slows to rest at the same rate. A key let go while the menu was up therefore brings the
+  player to rest once the menu closes.
 - **An app's own pipeline.** The terrain is drawn with voxel's own shaders in a pass that depth
   tests and sorts items front to back. The text and menu are drawn in a second pass of quads,
   with no depth test, over the terrain.

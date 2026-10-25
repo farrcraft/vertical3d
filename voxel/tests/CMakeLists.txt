@@ -5,6 +5,7 @@
 v3d_add_test(voxel
 	"TestMain.cxx"
 	"BindingsTest.cxx"
+	"CameraTest.cxx"
 	"ChunkTest.cxx"
 	"ChunkCullingTest.cxx"
 	"ChunkMeshPoolTest.cxx"

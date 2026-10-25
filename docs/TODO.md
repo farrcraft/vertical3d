@@ -67,17 +67,6 @@ library.
 - Move it to `api/grid`, and have odyssey use it from there.
 - Background: [LargeWorlds, step 8](plans/completed/LargeWorlds.md#step-8--remembered-sight).
 
-## Voxel
-
-[Hardening](plans/Hardening.md) orders this, in step 5.
-
-[] **Mouselook turns far too fast and rolls the view.**
-
-- Ten pixels of horizontal mouse motion turns the view most of the way round and tips it over.
-- The code reads one pixel as one unit of `Player::look()`'s heading and pitch. That scale was
-  set before relative mouse mode existed.
-- Background: [ShellAndShipping, step 3](plans/completed/ShellAndShipping.md#step-3--a-relative-mouse).
-
 ## Sprite sheets
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 10.
@@ -183,19 +172,6 @@ more strongly needs a second Vulkan implementation to compare against, and this 
 Defects a review found that the change under review did not introduce.
 [Review.md](contributing/Review.md) says how this list is used: a reviewer reads it first and
 does not report an entry again. Each entry names its class.
-
-[] **voxel's camera rotation is undefined.** Contract, major. `Camera::rotateFlight` and
-`rotateFirstPerson` rotate a default-constructed `glm::mat4`, which is uninitialised because the
-tree does not define `GLM_FORCE_CTOR_INIT`. They also pass degrees to `glm::rotate`, which takes
-radians, so the 90 degree pitch clamp does not match the rotation.
-
-[] **voxel's player speed is never read.** Contract, minor. `PLAYER_VELOCITY` is read only by
-`Camera::updateVelocity()`, and that and `updatePosition()` have no caller. `Player::move()` sets
-a velocity of 1, so the player walks at one unit a second.
-
-[] **voxel's perspective may not honour its horizontal field of view.** Semantics, minor.
-`Camera::perspective` multiplies both scales by the aspect ratio, so the horizontal field of view
-equals `fovx` only at an aspect of 1. Check against the intended projection.
 
 [] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
 defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built

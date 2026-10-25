@@ -28,12 +28,14 @@ Moves possibleMoves[] = {
 
 /**
  * The camera's acceleration, in units per second squared, and its velocity limit, in units
- * per second. move() sets the current velocity of a driven axis to one unit per second.
- * Nothing calls Camera::updateVelocity(), the only reader of the limit, so the walk is one
- * unit per second plus each step's small acceleration term.
+ * per second. A held direction accelerates the player to the limit, and a released one slows
+ * it to rest at the same rate.
  **/
 constexpr glm::vec3 PLAYER_ACCELERATION(8.0F, 8.0F, 8.0F);
 constexpr glm::vec3 PLAYER_VELOCITY(12.0F, 12.0F, 12.0F);
+
+/** How far mouselook turns the view for each pixel the mouse moves, in degrees. **/
+constexpr float LOOK_DEGREES_PER_PIXEL = 0.1F;
 
 };  // namespace
 
@@ -60,32 +62,16 @@ void Player::position(const glm::vec3 & pos) {
 }
 
 void Player::move(Movement direction, bool held) {
-    for (unsigned int i = 0; i < std::size(possibleMoves); i++) {
-        if (direction == possibleMoves[i].move_) {
-            if (((movement_ & direction) != 0) == held) {
-                return;
-            }
-            glm::vec3 velocity = camera_->currentVelocity();
-            if (held) {
-                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
-                movement_ |= direction;
-            } else {
-                velocity[static_cast<glm::length_t>(possibleMoves[i].axis_)] = 0.0F;
-                movement_ &= ~direction;
-            }
-            camera_->currentVelocity(velocity.x, velocity.y, velocity.z);
-            return;
-        }
+    // the speed follows in tick(), which accelerates a held direction and slows a released one
+    if (held) {
+        movement_ |= direction;
+    } else {
+        movement_ &= ~direction;
     }
 }
 
 void Player::look(float heading, float pitch) {
-    const float cameraRotationSpeed = 0.01F;
-
-    heading *= cameraRotationSpeed;
-    pitch *= cameraRotationSpeed;
-
-    camera_->rotate(heading, pitch, 0.0F);
+    camera_->rotate(heading * LOOK_DEGREES_PER_PIXEL, pitch * LOOK_DEGREES_PER_PIXEL, 0.0F);
 }
 
 void Player::tick(float step) {
@@ -100,10 +86,9 @@ void Player::tick(float step) {
     const glm::vec3 position = camera_->calculateMovement(displacement);
     if (!checkWorldCollision(position)) {
         camera_->position(position);
-
-        // position_ = camera_->position();
         position_ = position;
     }
+    camera_->updateVelocity(dir, step);
 }
 
 bool Player::checkWorldCollision(const glm::vec3 & /* position */) {

@@ -176,11 +176,10 @@ void Camera::perspective(const Lens& lens) {
     // Construct a projection matrix based on the horizontal field of view
     // 'fovx' rather than the more traditional vertical field of view 'fovy'.
 
-    const float focal = 1.0F / tanf(glm::radians(fovx) / 2.0F);
-    const float aspectInv = 1.0F / aspect;
-    const float fovy = 2.0F * atanf(aspectInv / focal);
-    const float xScale = 1.0F / tanf(0.5F * fovy);
-    const float yScale = xScale / aspectInv;
+    // a point at the edge of the horizontal field of view reaches x = 1 in clip space, and the
+    // vertical scale follows from the aspect, width over height
+    const float xScale = 1.0F / tanf(glm::radians(fovx) / 2.0F);
+    const float yScale = xScale * aspect;
 
     projection_[0][0] = xScale;
     projection_[0][1] = 0.0F;
@@ -229,33 +228,38 @@ void Camera::rotate(float headingDegrees, float pitchDegrees, float rollDegrees)
     updateViewMatrix(true);
 }
 
+namespace {
+
+/**
+ * A vector turned about an axis. A positive angle turns the camera right, down or to the right
+ * bank, which is clockwise about the axis as seen looking along it from its tip: the negative
+ * of glm's right-handed rotation.
+ **/
+glm::vec3 turned(const glm::vec3 & vector, float degrees, const glm::vec3 & axis) {
+    const glm::mat4 rotation = glm::rotate(glm::mat4(1.0F), glm::radians(-degrees), axis);
+    return glm::vec3(rotation * glm::vec4(vector, 0.0F));
+}
+
+};  // namespace
+
 void Camera::rotateFlight(float headingDegrees, float pitchDegrees, float rollDegrees) {
-    glm::mat4 rotMtx;
-
-    // Rotate camera's existing x and z axes about its existing y axis.
+    // each turn is about the camera's own axes as they stand after the turn before it
     if (headingDegrees != 0.0F) {
-        rotMtx = glm::rotate(rotMtx, headingDegrees, yAxis_);
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
+        xAxis_ = turned(xAxis_, headingDegrees, yAxis_);
+        zAxis_ = turned(zAxis_, headingDegrees, yAxis_);
     }
-
-    // Rotate camera's existing y and z axes about its existing x axis.
     if (pitchDegrees != 0.0F) {
-        rotMtx = glm::rotate(rotMtx, pitchDegrees, xAxis_);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
+        yAxis_ = turned(yAxis_, pitchDegrees, xAxis_);
+        zAxis_ = turned(zAxis_, pitchDegrees, xAxis_);
     }
-
-    // Rotate camera's existing x and y axes about its existing z axis.
     if (rollDegrees != 0.0F) {
-        rotMtx = glm::rotate(rotMtx, rollDegrees, zAxis_);
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
+        xAxis_ = turned(xAxis_, rollDegrees, zAxis_);
+        yAxis_ = turned(yAxis_, rollDegrees, zAxis_);
     }
 }
 
 void Camera::rotateFirstPerson(float headingDegrees, float pitchDegrees) {
-    // degrees above or below the horizon: straight up or straight down, and no further
+    // degrees below or above the horizon: straight down or straight up, and no further
     constexpr float pitchLimit = 90.0F;
 
     pitch_ += pitchDegrees;
@@ -270,20 +274,16 @@ void Camera::rotateFirstPerson(float headingDegrees, float pitchDegrees) {
         pitch_ = -pitchLimit;
     }
 
-    glm::mat4 rotMtx;
-
-    // Rotate camera's existing y and z axes about its existing x axis.
+    // the pitch is about the camera's own right axis, and the heading about the world's up
+    // axis, so a first person view never rolls
     if (pitchDegrees != 0.0F) {
-        rotMtx = glm::rotate(rotMtx, pitchDegrees, xAxis_);
-        yAxis_ = glm::vec3(glm::vec4(yAxis_, 0.0F) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
+        yAxis_ = turned(yAxis_, pitchDegrees, xAxis_);
+        zAxis_ = turned(zAxis_, pitchDegrees, xAxis_);
     }
-
-    // Rotate camera's existing x and z axes about the world y axis.
     if (headingDegrees != 0.0F) {
-        rotMtx = glm::rotate(rotMtx, headingDegrees, glm::vec3(0.0F, 1.0F, 0.0F));
-        xAxis_ = glm::vec3(glm::vec4(xAxis_, 0.0F) * rotMtx);
-        zAxis_ = glm::vec3(glm::vec4(zAxis_, 0.0F) * rotMtx);
+        const glm::vec3 up(0.0F, 1.0F, 0.0F);
+        xAxis_ = turned(xAxis_, headingDegrees, up);
+        zAxis_ = turned(zAxis_, headingDegrees, up);
     }
 }
 

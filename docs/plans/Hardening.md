@@ -242,18 +242,25 @@ The items as planned:
 
 ### Step 5 — voxel's camera
 
-**Open.**
+**Closed.** Each fix has a test in the new `voxel/tests/CameraTest.cxx` or in `PlayerTest`.
 
-- `rotateFlight` and `rotateFirstPerson` start from the identity, take radians, and rotate by a
-  fresh matrix for each axis. Axes are multiplied as column vectors.
-- The pitch clamp is in the same unit as the rotation.
-- `Player::look` takes a sensitivity in degrees per pixel.
-- `perspective` honours its horizontal field of view at every aspect.
-- The player's speed comes from `PLAYER_VELOCITY` through `updateVelocity()` and
-  `updatePosition()`.
-- Tests in a new `voxel/tests/CameraTest.cxx`: a heading turn keeps the up axis, a pitch stops
-  at its clamp, the projection's horizontal field of view matches at two aspects. `PlayerTest`
-  states how the player stops.
+- `rotateFlight` and `rotateFirstPerson` turn each axis by a fresh matrix, in radians, through
+  one helper. A positive heading turns right, a positive pitch turns down and a positive roll
+  banks right. That is the direction the old row vector products intended, which is the
+  negative of glm's right-handed rotation, so mouselook keeps its sense.
+- The pitch clamp and the rotation now share a unit. A first person turn pitches once, about
+  the camera's own right axis, and then turns about the world's up axis.
+- `Player::look` turns a tenth of a degree a pixel.
+- `perspective` gives the horizontal field of view at every aspect. Before, the horizontal scale
+  carried the aspect and the vertical one carried it twice, so voxel's view was narrower than
+  90 degrees at any window that is not square.
+- `Player::move` only records which directions are held, and `Player::tick` drives the speed
+  through `Camera::updateVelocity()`, now public. The player accelerates to `PLAYER_VELOCITY` and
+  slows to rest when a key is released, as the plan proposed, rather than stopping at once. The
+  first step from rest only gathers speed. `player_moves_while_a_direction_is_held_test` states
+  both.
+- Not checked in the running game: mouselook needs a person at the mouse. The rotation, the
+  projection and the speed are each checked by a case.
 
 ### Step 6 — Small contracts
 
