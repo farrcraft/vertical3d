@@ -15,9 +15,11 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Imager.h>
+#include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
@@ -605,6 +607,7 @@ void fillVertices(Polygon* poly) {
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
+    bound(surface_);
     // RI makes a shader's own space the transformation in force when the scene instanced
     // it. A "point \"shader\" (0, 0, 1)" parameter is stated in that space
     surfacePlacement_ = coordinateSystem("camera") * transform_.reference();
@@ -613,6 +616,7 @@ void RenderContext::surface(const std::string & name,
 void RenderContext::displacement(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     displacement_.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
+    bound(displacement_.shader);
     displacement_.placement = coordinateSystem("camera") * transform_.reference();
 }
 
@@ -627,6 +631,7 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
         // light of some other kind
         return;
     }
+    bound(light.shader);
     lights_.push_back(light);
     // RiLightSource switches the light it creates on
     illuminate(request.handle, true);
@@ -703,6 +708,13 @@ void RenderContext::illuminate(const std::string & handle, bool on) {
 void RenderContext::imager(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     imager_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::IMAGER, parameters);
+    bound(imager_);
+}
+
+void RenderContext::bound(const v3d::render::offline::sl::InstancePtr & shader) {
+    if (shader && shader->program().traces) {
+        tracing_ = true;
+    }
 }
 
 void RenderContext::searchpath(const std::string & path) {
@@ -1174,6 +1186,10 @@ void RenderContext::render() {
     }
 
     stopped_ = false;
+    // the reyes hider meets the traced scene only through a shader's trace or transmission
+    if (!hider_->traces() && !tracing_) {
+        traced_.clear();
+    }
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
     hider_->render(this, planes.get());
     if (stopped_) {

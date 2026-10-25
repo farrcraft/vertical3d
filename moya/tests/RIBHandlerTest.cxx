@@ -938,7 +938,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
  * The traced scene holds a displaced surface where its displacement moved it, under either
  * hider, so its shadows follow the moved shape. A floor at y = 0 lifted by one unit blocks a
  * shadow ray from half a unit up, which its undisplaced shape would not. A ray from above the
- * lifted floor meets it one unit up.
+ * lifted floor meets it one unit up. The light casts shadows, so the reyes hider keeps the
+ * traced scene after rendering.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
@@ -953,6 +954,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_
                 "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
                 "Translate 0 0 5\n"
                 "WorldBegin\n"
+                "LightSource \"distantlight\" 1\n"
                 "Attribute \"displacementbound\" \"float sphere\" [1]\n"
                 "Displacement \"lift\" \"float amount\" [1]\n"
                 "Polygon \"P\" [-2 0 -2  -2 0 2  2 0 2  2 0 -2]\n"

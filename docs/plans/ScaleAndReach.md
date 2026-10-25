@@ -110,14 +110,16 @@ The tree was read at `ab4bdea1`. Line numbers are from that commit.
 
 ### Step 1 — The traced scene is dropped when nothing traces
 
-**Open.** The shading language compiler marks a program that calls `trace` or `transmission`,
-directly or through a function. When the reyes hider starts rendering and no bound shader is
-marked, `RenderContext` drops the traced scene's triangles. Area lights keep their own copy.
+**Done.** The emitter sets `Program::traces` when a program's instructions call `trace` or
+`transmission`. A shader's own functions are inlined, so a call through one counts with no call
+graph to walk. `RenderContext` notes each surface, displacement, light and imager shader as it is
+bound, and `render()` calls the new `trace::Scene::clear()` under the reyes hider when none of
+them traces. A shader bound but never used by a primitive still keeps the scene, which errs
+towards keeping it. An area light's geometry was already its own copy.
 
-- `trace::Scene` gains `clear()`.
-- Tests: the mark is set through a function call and unset without one. A scene with no shadowing
-  light holds no triangles once rendering starts, and one with a shadowing light still does. The
-  reference pictures are unchanged.
+Two existing cases read the traced scene after `WorldEnd` under reyes with no shadowing light:
+the specification cube and the displaced shadow. Each now has a `distantlight`, so its subject is
+unchanged. The reference pictures are unchanged.
 
 ### Step 2 — A scanline's hits in one batch
 

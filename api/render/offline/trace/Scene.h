@@ -88,6 +88,13 @@ class Scene final {
     const std::vector<boost::shared_ptr<const Primitive>> & primitives() const;
 
     /**
+     * Drop every primitive and the motions that carry them, so a renderer that will trace no
+     * ray does not hold the scene's geometry. The camera, the projection, the lights, the
+     * background and the trace depth are kept. A ray then meets nothing.
+     **/
+    void clear();
+
+    /**
      * The primitives of one kind, in the order they were added, for a test or a tool that
      * checks what a scene built from a request.
      **/

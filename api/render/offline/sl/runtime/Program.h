@@ -38,6 +38,11 @@ class Program final {
      * before a scene's values are written over the defaults.
      **/
     std::size_t prologue = 0;
+    /**
+     * Whether the shader calls `trace` or `transmission`, and so needs the renderer's traced
+     * scene. A shader's own functions are inlined, so a call through one counts.
+     **/
+    bool traces = false;
 
     /**
      * The register holding a named symbol, or -1. A renderer that did not keep the index

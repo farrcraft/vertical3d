@@ -35,6 +35,14 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   space, before any split or dice. A polygon becomes a fan of triangles, since RI defines a
   polygon as planar and convex. The reyes hider reads the scene for `trace()` and
   `transmission()`. The ray hider reads it for everything.
+- **The reyes hider drops the traced scene's primitives when no shader traces.** The shading
+  language compiler marks a program that calls `trace()` or `transmission()`, directly or
+  through one of the shader's own functions. When rendering starts under the reyes hider and
+  no surface, displacement, light or imager shader the scene bound is marked, the primitives
+  are dropped, since no ray will meet them. They are still made as the scene is read, because a
+  shader bound later may trace. Every standard light with a direction calls `transmission()`,
+  so only a scene with no shadowing light gains. An area light keeps its own copy of its
+  geometry.
 - **A traced primitive carries its colour, opacity, surface shader and lights** from the moment
   it was made. A primitive with no surface shader, or whose shader fails to run, is drawn in its
   own colour at its own opacity. A triangle made from a polygon with a varying `"Cs"` carries a

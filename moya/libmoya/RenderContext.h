@@ -62,6 +62,10 @@ class RenderContext {
          * display of type "file" then has its colour channels written. Lights, the traced
          * scene and the framebuffer are kept. Does nothing before prepareWorld().
          *
+         * Under the reyes hider, when no shader the scene bound calls trace or transmission,
+         * the traced scene's primitives are dropped before the hider runs, since no ray will
+         * meet them. An area light keeps its own copy of its geometry.
+         *
          * A render the progress callback stops leaves the planes as far as the hider got, runs
          * no imager and writes no file.
          **/
@@ -461,6 +465,8 @@ class RenderContext {
          * again only when the lights that are on, or the number of lights, change.
          **/
         const v3d::render::offline::trace::Lights & tracedLights(const Shading & state);
+        /** Note a shader the scene bound, so render() knows whether any of them traces. **/
+        void bound(const v3d::render::offline::sl::InstancePtr & shader);
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
@@ -551,6 +557,8 @@ class RenderContext {
         glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0F);
         std::vector<std::string> lit_;
         v3d::render::offline::trace::Scene traced_;
+        /** Whether any shader the scene bound calls trace or transmission. **/
+        bool tracing_ = false;
         /** The lights that are on, in world space, and the handles and count they came from. **/
         v3d::render::offline::trace::Lights tracedLights_;
         std::vector<std::string> tracedFor_;

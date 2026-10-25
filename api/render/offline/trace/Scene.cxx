@@ -135,6 +135,17 @@ const std::vector<boost::shared_ptr<const Primitive>> & Scene::primitives() cons
     return primitives_;
 }
 
+void Scene::clear() {
+    primitives_.clear();
+    primitives_.shrink_to_fit();
+    motions_.clear();
+    motions_.shrink_to_fit();
+    hierarchy_ = Hierarchy();
+    unbounded_.clear();
+    bounded_.clear();
+    built_ = false;
+}
+
 void Scene::add(const v3d::render::offline::sl::Placed & light) {
     lights_.push_back(light);
 }

@@ -21,17 +21,7 @@ and its section names the plan or roadmap that orders it.
 
 ## Offline rendering
 
-[ScaleAndReach](plans/ScaleAndReach.md) orders these, in steps 1 and 2.
-
-[] **The reyes hider adds every polygon to the traced scene.**
-
-- moya fans each polygon into the traced scene as it arrives, before culling, and shades its
-  lights once for it. This lets an off-screen caster cast a shadow.
-- Every standard light with a direction calls `transmission()`, so only a scene with no
-  shadowing light gains. Such a scene casts no ray, and the hierarchy is built on the first
-  ray, so it pays only the memory the triangles hold.
-- The triangles still have to be made as the scene is read, because a shader bound later may
-  trace. The fix would drop them when rendering starts if nothing traced.
+[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 2.
 
 [] **`offline::trace::Tracer` runs a shader once per hit.**
 

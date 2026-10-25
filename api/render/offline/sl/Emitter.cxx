@@ -32,6 +32,7 @@
 #include <api/render/offline/sl/syntax/Variable.h>
 #include <api/render/offline/sl/syntax/While.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -176,6 +177,7 @@ bool Emitter::emit(runtime::Program* program) {
     program_->name = shader_->name;
     program_->registers.clear();
     program_->instructions.clear();
+    program_->traces = false;
     // the symbols come first and in the compiler's order, so a renderer can bind a parameter
     // or read Ci by the symbol's index without looking up its name
     for (const Symbol & symbol : symbols_) {
@@ -205,6 +207,14 @@ bool Emitter::emit(runtime::Program* program) {
         program_->prologue = 0;
         return false;
     }
+    const std::vector<Signature> & table = builtins();
+    program_->traces = std::ranges::any_of(program_->instructions, [&table](const runtime::Instruction & instruction) {
+        if (instruction.opcode != runtime::Opcode::CALL) {
+            return false;
+        }
+        const Signature::Body body = table[static_cast<std::size_t>(instruction.left)].body;
+        return body == Signature::Body::TRACE || body == Signature::Body::TRANSMISSION;
+    });
     return true;
 }
 

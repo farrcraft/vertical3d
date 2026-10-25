@@ -103,7 +103,7 @@ the shading language and the ray tracer. They differ in these ways:
 | A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
 | `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
 | Time of shadow and traced rays | Shutter open | Each sample's own time |
-| Storage of a primitive | Twice: in a bucket and in the traced scene | Once, in the traced scene |
+| Storage of a primitive | In a bucket, and in the traced scene until rendering starts if no shader traces | Once, in the traced scene |
 
 Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md)
 
@@ -111,7 +111,6 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 
 [TODO.md](../TODO.md#offline-rendering) holds the open work:
 
-- The reyes hider adds every polygon to the traced scene, even when nothing traces.
 - A traced hit is shaded by its own run of the machine, not in a batch with other hits.
 
 Also not built, with no open item:

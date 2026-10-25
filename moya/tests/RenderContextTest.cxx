@@ -3,8 +3,10 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/Area.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
@@ -447,6 +449,61 @@ BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
     rc.render();
 
     BOOST_TEST(rc.framebuffer()->primitiveCount() == 64U);
+}
+
+/** A quad in front of the camera, sent to a prepared context. **/
+void addQuad(v3d::moya::RenderContext* rc) {
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
+    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
+    rc->addPolygon(polygon);
+}
+
+/**
+ * Under the reyes hider, a scene whose shaders trace no ray drops its traced triangles when
+ * it renders. matte and ambientlight call neither trace nor transmission. An area light keeps
+ * its own copy of its geometry, so it still has something to shine from.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_drops_the_traced_scene_when_nothing_traces_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({32, 24}, 1.0F);
+    rc.prepareWorld();
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    rc.attributeBegin();
+    rc.areaLightSource({.shader = "ambientlight", .handle = "glow"}, v3d::render::offline::rib::ParameterList());
+    const boost::shared_ptr<v3d::render::offline::Area> area = rc.areaLight();
+    addQuad(&rc);
+    rc.attributeEnd();
+    BOOST_REQUIRE(area);
+    BOOST_REQUIRE_EQUAL(rc.traced().primitives().size(), 2U);
+
+    rc.render();
+
+    BOOST_TEST(rc.traced().primitives().empty());
+    BOOST_TEST(!area->empty());
+    BOOST_TEST(rc.framebuffer()->primitiveCount() > 0U);
+}
+
+/**
+ * A light that casts shadows calls transmission, so the traced scene is kept for it. Each
+ * standard light with a direction does.
+ *
+ * Passes before the change: the scene was never dropped. It guards against dropping one that a
+ * light still needs.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_keeps_the_traced_scene_for_a_shadowing_light_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({32, 24}, 1.0F);
+    rc.prepareWorld();
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    rc.lightSource({.shader = "distantlight", .handle = "key"}, v3d::render::offline::rib::ParameterList());
+    addQuad(&rc);
+
+    rc.render();
+
+    BOOST_TEST(rc.traced().primitives().size() == 2U);
 }
 
 };  // namespace
