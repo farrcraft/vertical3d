@@ -1,6 +1,6 @@
 # Hardening — RI Conformance, the Shading Language, Image Writers and voxel's Camera
 
-Drafted 2026-10-24 against `ab4bdea1`. This plan fixes the defects in [TODO.md](../TODO.md).
+Drafted 2026-10-24 against `ab4bdea1`. This plan fixes the defects in [TODO.md](../../TODO.md).
 It takes the sections "moya's front end and reyes hider" and "Known review findings", voxel's
 mouselook, the two test gaps that need only a case, and the external buffers of a glTF file. When it
 closes, those sections are empty, and the known-findings list a reviewer reads first is empty
@@ -8,7 +8,7 @@ too.
 
 Each entry this plan takes stays in TODO.md until the step that fixes it lands, and is then
 deleted there. Each step fixes its defects with a test that fails first, as
-[Review.md](../contributing/Review.md) requires, or records why no such test can be written.
+[Review.md](../../contributing/Review.md) requires, or records why no such test can be written.
 
 ## What the survey found
 
@@ -115,7 +115,7 @@ the behaviour of one class.
 - **Step 3's `faceforward` and step 2's I both move moya reference pictures.** Each step
   regenerates the pictures it moves, and says what changed in them.
 - **Steps 4, 5 and 6 are independent** of each other and of steps 1 to 3.
-- **[EditorScene](EditorScene.md) step 5 needs the `CameraControlTool` fix in step 6.**
+- **[EditorScene](../EditorScene.md) step 5 needs the `CameraControlTool` fix in step 6.**
 
 ## Steps
 
@@ -148,7 +148,7 @@ the behaviour of one class.
 
 The survey also found that `RiPointsPolygons` and `RiSphere` are empty in the C interface,
 though the RIB path draws both. That is a missing feature rather than a defect in this step,
-and [offline/README.md](../offline/README.md) lists it.
+and [offline/README.md](../../offline/README.md) lists it.
 
 ### Step 2 — The reyes hider follows RI
 
@@ -284,7 +284,7 @@ pass.
   `vertical3d/tests/tool/CameraControlToolTest.cxx`.
 - A menu `Item` is checked only when it is a check or a radio item.
 - `Immediate::theme()` reads `indent`.
-- pong's Multiplayer item, its command and its line in [Games.md](../Games.md) are gone. A case
+- pong's Multiplayer item, its command and its line in [Games.md](../../Games.md) are gone. A case
   checks that every item in pong's menu sends a command pong handles.
 - `a_request_that_decodes_and_does_not_upload_resolves_to_nothing` reaches `MeshRegistry::poll`'s
   upload failure with a stub loader. It passes on the old code. That code already abandoned such
@@ -292,4 +292,43 @@ pass.
 
 ## Outcome
 
-Written when the plan closes.
+Closed 2026-10-24. moya's C interface and reyes hider follow RI where the survey found them
+departing from it. The shading language passes an `output` formal by reference, turns a normal by
+Ng, names where a report was made and passes messages between shaders. The image writers fail
+without ending the process, voxel's camera turns and projects as it should, and the known review
+findings list is empty.
+
+**Delivered:**
+
+- RI's variadic entry points forward to their `V` forms, one polygon builder for both paths,
+  context handles that survive a later `RiBegin`, and `RtVoid` callbacks.
+- RI_NULL, unknown projections and unknown coordinate systems handled as RI defines them, a
+  polygon before `WorldBegin` refused, a failed write logged, and `CropWindow` under both hiders.
+- I by projection, `"object"` space under both hiders, ShadingRate as an area, and polygons of
+  more than four vertices diced whole.
+- `output` formals, `faceforward` by Ng, placed reports, a Sphere's four varying values, and
+  `surface()`, `displacement()` and `lightsource()`.
+- PNG errors caught behind a `setjmp`, a 26-byte TGA footer, a wide TGA size, and an abstract
+  `image::Writer`.
+- voxel's rotations, mouselook sensitivity, horizontal field of view and acceleration.
+- The small contracts of step 6, and a test for every known finding that was only untested.
+
+**Different from the plan:**
+
+- The reyes hider renders every bucket under a crop window and clears the pixels outside it,
+  because a primitive filed in a bucket outside the window may reach into it.
+- A traced primitive carries its object space as well, so both hiders answer `"object"`.
+- The test scenes gave "N" facing the camera on polygons whose Ng faced away. RI's `faceforward`
+  shaded them black, so they are wound the other way.
+- Message passing was larger than one item, and landed as a commit of its own.
+- The TGA writer refuses only a picture it cannot allocate, not one past a 32-bit byte count.
+- voxel's player decelerates when a key is released, as proposed, rather than stopping at once.
+
+**Left open:**
+
+- `RiPointsPolygons` and `RiSphere` do nothing in the C interface, though the RIB path draws
+  both. [offline/README.md](../../offline/README.md) lists it.
+- The overflow in the TGA size has no test, because the picture that reaches it is several
+  gigabytes.
+- voxel's mouselook was not tried by hand. The rotation, the projection and the speed each have a
+  case, and the game renders upright with a silent validation log.

@@ -20,7 +20,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [Hardening](Hardening.md) | moya, shading language, image, voxel, apps | RI's C interface and the reyes hider following RI, `output` and `faceforward` as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
 | [ScaleAndReach](ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice, and sprite sheet packing |
 
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [Hardening](completed/Hardening.md) | moya, shading language, image, voxel, apps | 2026-10-24 | RI's C interface and the reyes hider following RI, `output`, `faceforward` and message passing as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
 | [EditorModelling](completed/EditorModelling.md) | Editor, brep, ui, engine | 2026-10-24 | A dirty flag that asks before discarding work, selection sets and a rubber band, component moves, split, extrude, inset and merge with undo, fixed views and resizable panes |
 | [OfflineShading](completed/OfflineShading.md) | Offline rendering, moya | 2026-10-18 | Rotations checked against the specification, a bounding volume hierarchy, derivatives under both hiders, area lights, reyes opacity, and displacement under both hiders |
 | [ToolingDebt](completed/ToolingDebt.md) | All of the tree, tests | 2026-10-18 | The thirteen disabled clang-tidy checks enabled, a stronger frame test, a pipeline cache test, the glTF generators in TypeScript, and exact grade tests |

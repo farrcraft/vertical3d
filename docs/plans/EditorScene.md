@@ -122,7 +122,7 @@ curve kind the plan does not build.
   lights and a scene camera to render from.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.**
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
-- **Step 5 needs [Hardening](Hardening.md) step 6.** Step 6 is independent of everything else.
+- **Steps 5 and 6 are independent** of everything else, and can land at any point.
 
 ## Steps
 
@@ -171,8 +171,8 @@ position, through the command stack. A light is created the same way, from a new
 modifier can truck, dolly, zoom, pan and pitch. `CameraControlTool` gains dolly and pitch. On a
 perspective view zoom changes the field of view and dolly moves the camera.
 
-- Needs [Hardening](Hardening.md) step 6, which makes `CameraControlTool::deactivate` reset only
-  the mode it was given. A latched move and a held move would otherwise cancel each other.
+- Relies on `CameraControlTool::deactivate` ending only the move it names, so that a latched
+  move and a held move do not cancel each other.
 
 ### Step 6 — Shaded views
 
