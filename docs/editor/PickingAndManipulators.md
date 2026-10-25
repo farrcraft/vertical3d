@@ -6,22 +6,24 @@ selection.
 ## Picking
 
 A pick answers "what is under the cursor?" with a CPU ray cast against the meshes. No GPU work
-or readback is involved, so a pick is answered inside the click's event handler. Only mesh items
-are picked: a click never hits a camera or a light, and a rubber band never holds one.
+or readback is involved, so a pick is answered inside the click's event handler. A camera or a
+light is picked by its glyph, the lines it is drawn with.
 
 `v3d::editor::Picker` builds a `v3d::type::geometry::Ray` with `Camera::ray()`, which
 unprojects the cursor at the near and far depths. It returns a `Picker::Hit`: whether anything
-was hit, the mesh item's id, the kind of thing hit, and the component's index.
+was hit, the item's id, the kind of thing hit, and the component's index.
 
 What a click tests depends on the select mask:
 
 | Mask | Test | Winner |
 |---|---|---|
-| Object, Face | The ray against a triangle fan over each face | Nearest along the ray |
+| Object, Mesh, Face, on a mesh | The ray against a triangle fan over each face | Nearest along the ray |
 | Vertex, Edge | Each vertex or edge projected to the screen; within 5 pixels of the cursor counts | Nearest to the camera |
+| Object, Light, Camera, on a light or a camera | Each segment of its glyph projected to the screen; within 5 pixels counts | Nearest to the camera |
 
-Vertices and edges are drawn one pixel wide and have no area, so they are found by screen
-distance instead of by the ray.
+Vertices, edges and glyphs are drawn one pixel wide and have no area, so they are found by
+screen distance instead of by the ray. A ray distance and a screen depth are compared as they
+are, so under the object mask a mesh and a glyph at one point compete on a rough footing.
 
 Rules the picker follows:
 
@@ -36,16 +38,25 @@ Rules the picker follows:
 - The view's camera matrices are rebuilt before the cast, so a pick does not depend on a frame
   having been drawn since the camera moved.
 
-**Select masks.** `SelectMask` is one of Object, Vertex, Edge or Face, and `SelectTool` holds
-it. Keys 5 to 8, the Select Mask menu and the select-mask toolbar all set it. Changing the mask
-clears the component selection.
+**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Vertex, Edge or Face, and
+`SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the select-mask toolbar
+sets the same four, and the Select Mask menu sets all seven. Changing the mask clears the
+component selection.
+
+- **Object, Mesh, Light and Camera select whole items.** Object takes every kind, and each of the
+  others takes only its own kind. A mask that does not take a kind never hits it, so a light
+  behind a mesh can be clicked under the light mask.
+- **Vertex, Edge and Face select the parts of meshes.**
+
+The menu's Curve and Handle masks have no handler yet. There is no curve kind and no handle kind
+of item.
 
 **What a click does.** `SelectTool` picks on the press, not the release.
 
 - An object must be selected before any of its parts can be. Component masks test every
   selected mesh, so a component selection can span several objects.
-- In Object mode, a click on a mesh selects it and nothing else. A click on nothing clears the
-  whole selection.
+- Under a mask that selects whole items, a click on an item it takes selects that item and
+  nothing else. A click on nothing clears the whole selection.
 - In a component mode, a click on a part selects it and clears every other part of every mesh.
   A click on a part that is already selected clears it along with the rest. A click on nothing
   clears the components and keeps the objects selected.
@@ -64,7 +75,8 @@ or edge pick uses:
 
 | Mask | Inside when |
 |---|---|
-| Object | Every corner of its bounding box projects inside |
+| Object, Mesh, on a mesh | Every corner of its bounding box projects inside |
+| Object, Light, Camera, on a light or a camera | Every point of its glyph projects inside |
 | Vertex | It projects inside |
 | Edge | Both its ends project inside |
 | Face | Every vertex of its loop projects inside |
@@ -94,8 +106,10 @@ A manipulator is the set of handles that moves, turns or resizes the selected me
 `TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.
 
-**What the handles move follows the select mask.** `Target` holds it. In Object mode it is the
-selected objects, and a manipulator writes their transforms. In a component mode it is the
+**What the handles move follows the select mask.** `Target` holds it. Under a mask that selects
+whole items it is the selected items of the kinds the mask takes, and a manipulator writes their
+transforms. A light mask therefore moves the selected lights and leaves a selected mesh where it
+is. A camera or a light ignores its scale. In a component mode it is the
 distinct vertices of the selected components: one for a vertex, two for an edge, and the loop of
 a face. A vertex shared by two selected components moves once. A component target may span
 every selected object, and with no component selected there are no handles.

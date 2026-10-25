@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -28,12 +29,12 @@ namespace v3d::editor {
  * What a click at a screen point hit, found by a ray cast on the CPU, and what a rectangle
  * on the screen holds.
  *
- * An object or a face is hit when the ray meets a triangle of the mesh. A vertex or an edge
- * is hit when it is drawn within a few pixels of the cursor.
+ * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, or a
+ * camera's or light's glyph is hit when it is drawn within a few pixels of the cursor.
  *
- * A component mask considers only meshes that are already selected: an object has to be
- * selected before any of its components can be. Only meshes are picked. A camera or a light
- * is never hit, and a rectangle never holds one.
+ * A mask that selects whole items considers only the kinds it takes. A component mask
+ * considers only meshes that are already selected: an object has to be selected before any
+ * of its components can be.
  **/
 class Picker final : public SceneVisitor {
  public:
@@ -46,16 +47,16 @@ class Picker final : public SceneVisitor {
          **/
         bool valid;
         /**
-         * The dag::Node id of the mesh. A selection names a mesh by this id.
+         * The dag::Node id of the item. A selection names an item by this id.
          **/
-        unsigned int mesh;
+        unsigned int item;
         /**
          * Which kind of thing was hit. It is the mask the pick was made under.
          **/
         SelectMask kind;
         /**
          * The index of the vertex, half edge or face within that mesh. Zero and
-         * meaningless when the kind is Object.
+         * meaningless when the mask selects whole items.
          **/
         unsigned int component;
 
@@ -112,6 +113,12 @@ class Picker final : public SceneVisitor {
     void visit(const boost::shared_ptr<Light>& light) override;
 
  private:
+    /**
+     * A camera's or a light's glyph, drawn in its own space: hit when a segment is within
+     * tolerance of the cursor, and inside a rectangle when every point of it is.
+     **/
+    void glyph(const Item& item, const v3d::render::realtime::canvas::Line& drawn);
+
     /**
      * Ray against every triangle of the mesh, nearest along the ray winning.
      **/
@@ -170,7 +177,7 @@ class Picker final : public SceneVisitor {
      * depth for a screen space pick.
      **/
     struct Candidate {
-        unsigned int mesh = 0;
+        unsigned int item = 0;
         unsigned int component = 0;
         float distance = 0.0F;
     };

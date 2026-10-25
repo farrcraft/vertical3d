@@ -31,6 +31,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Middle mouse drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
 | Hold Left Shift | `select::add` | A click adds to the selection or takes away from it (see [Picking](PickingAndManipulators.md#picking)) |
 | 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
+| Create menu | `create::perspective::camera`, `ortho::camera`, `light::point`, `light::distant`, `light::spot` | Add a camera or a light at the view under the cursor, facing the way it looks |
 | 5, 6, 7, 8 | `select::mask::object`, `vertex`, `edge`, `face` | Choose what a click selects |
 | Q, W, E, R | `transform::select`, `translate`, `rotate`, `scale` | Choose the manipulator |
 | I | `transform::poly::inset_face` | Inset the selected faces (see [Modelling operations](Scene.md#modelling-operations)) |

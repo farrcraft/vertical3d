@@ -79,6 +79,30 @@
                   ]
                 },
                 {
+                  "label": "Light",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Point",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::point"
+                    },
+                    {
+                      "label": "Distant",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::distant"
+                    },
+                    {
+                      "label": "Spot",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::spot"
+                    }
+                  ]
+                },
+                {
                   "label": "Group",
                   "type": "action",
                   "context": "create",

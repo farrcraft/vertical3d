@@ -3,15 +3,21 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <cstdint>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -334,6 +340,46 @@ BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
 
     two.translation.x = 0.001F;
     BOOST_CHECK(!one.same(two));
+}
+
+BOOST_AUTO_TEST_CASE(create_camera_and_light_command_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    v3d::editor::CommandStack history;
+
+    // a camera and a light made at a view, as the Create menu makes them
+    v3d::type::camera::Profile view("view");
+    view.eye(glm::vec3(0.0F, 2.0F, -5.0F));
+    const boost::shared_ptr<v3d::editor::Camera> camera =
+        v3d::editor::create_camera(view, v3d::editor::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::Light> light = v3d::editor::create_light(view, v3d::editor::Light::Type::Spot);
+
+    for (const boost::shared_ptr<v3d::editor::Item>& item : v3d::editor::Items{ camera, light }) {
+        const boost::shared_ptr<v3d::editor::CreateCommand> command =
+            boost::make_shared<v3d::editor::CreateCommand>(scene, item, "item");
+        command->redo();
+        history.push(command);
+
+        // a new item of any kind is the selection, and has its document id
+        BOOST_CHECK(scene->selection() == v3d::editor::Items{ item });
+        BOOST_CHECK_GT(item->documentId(), 0);
+    }
+    BOOST_CHECK_EQUAL(scene->count(), 2U);
+
+    // each undoes and redoes, keeping its ids
+    const std::int64_t lightId = light->documentId();
+    BOOST_REQUIRE(history.undo() != nullptr);
+    BOOST_CHECK(!scene->item(light->id()));
+    BOOST_CHECK(!light->selected());
+    BOOST_REQUIRE(history.undo() != nullptr);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
+    BOOST_REQUIRE(history.redo() != nullptr);
+    BOOST_REQUIRE(history.redo() != nullptr);
+    BOOST_CHECK(scene->item(camera->id()) == camera);
+    BOOST_CHECK_EQUAL(light->documentId(), lightId);
+
+    // and each comes back where the view was
+    BOOST_CHECK(camera->translation() == glm::vec3(0.0F, 2.0F, -5.0F));
+    BOOST_CHECK(light->translation() == glm::vec3(0.0F, 2.0F, -5.0F));
 }
 
 };  // namespace

@@ -142,8 +142,15 @@ Target Target::components(const Meshes& meshes, SelectMask kind) {
 /**
  **/
 Target Target::selected(const Scene& scene, SelectMask mask) {
-    if (mask == SelectMask::Object) {
-        return objects(scene.selection());
+    if (selectsItems(mask)) {
+        // a mask that takes one kind moves only that kind, though others may be selected
+        Items taken;
+        for (const boost::shared_ptr<Item>& item : scene.selection()) {
+            if (takes(mask, item->kind())) {
+                taken.push_back(item);
+            }
+        }
+        return objects(taken);
     }
     return components(scene.selected<Mesh>(), mask);
 }

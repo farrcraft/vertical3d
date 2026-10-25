@@ -10,6 +10,7 @@ v3d_add_test(vertical3d
 
 	"scene/ItemTest.cxx"
 	"scene/SceneTest.cxx"
+	"scene/CreateItemTest.cxx"
 	"scene/CreatePolyTest.cxx"
 	"scene/GlyphsTest.cxx"
 	"scene/WireframeVisitorTest.cxx"
@@ -38,6 +39,7 @@ v3d_add_test(vertical3d
 	"../src/scene/Camera.cxx"
 	"../src/scene/Light.cxx"
 	"../src/scene/Scene.cxx"
+	"../src/scene/CreateItem.cxx"
 	"../src/scene/CreatePoly.cxx"
 	"../src/scene/Glyphs.cxx"
 	"../src/scene/WireframeVisitor.cxx"

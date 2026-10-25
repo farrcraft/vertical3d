@@ -85,8 +85,9 @@ class Target final {
     static Target components(const Meshes& meshes, SelectMask kind);
 
     /**
-     * The target the selection makes under a select mask: the selected objects in object
-     * mode, and their selected components otherwise.
+     * The target the selection makes under a select mask: the selected items of the kinds the
+     * mask takes when it selects whole items, and the selected components of the selected
+     * meshes otherwise.
      **/
     static Target selected(const Scene& scene, SelectMask mask);
 

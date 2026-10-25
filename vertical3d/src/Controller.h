@@ -19,6 +19,9 @@
 #include <api/ui/component/menu/Bar.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
@@ -153,6 +156,17 @@ class Controller final : public v3d::engine::Engine {
      * @param name which primitive, as the create commands name it
      **/
     void createPoly(const std::string& name);
+
+    /**
+     * Make a camera or a light at the active view, facing the way it looks.
+     **/
+    void createCamera(Camera::Projection projection);
+    void createLight(Light::Type type);
+
+    /**
+     * Put a new item into the scene through the history, under the name its command reports.
+     **/
+    void create(const boost::shared_ptr<Item>& item, const std::string& name);
 
     /**
      * Split the selected edges at their middles. It works under the edge mask only, and logs

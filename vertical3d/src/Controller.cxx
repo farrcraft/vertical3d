@@ -30,7 +30,11 @@
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Project.h>
@@ -248,6 +252,9 @@ void Controller::syncUi() {
     mark("select::mask::vertex", mask == SelectMask::Vertex);
     mark("select::mask::edge", mask == SelectMask::Edge);
     mark("select::mask::face", mask == SelectMask::Face);
+    mark("select::mask::mesh", mask == SelectMask::Mesh);
+    mark("select::mask::light", mask == SelectMask::Light);
+    mark("select::mask::camera", mask == SelectMask::Camera);
 
     const TransformTool::Mode mode = transformTool_->mode();
     mark("transform::select", mode == TransformTool::Mode::None);
@@ -302,6 +309,11 @@ void Controller::registerCommands() {
     press("create::poly::plane", [this]() { createPoly("plane"); });
     press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
     press("create::poly::cone", [this]() { createPoly("cone"); });
+    press("create::perspective::camera", [this]() { createCamera(Camera::Projection::Perspective); });
+    press("create::ortho::camera", [this]() { createCamera(Camera::Projection::Orthographic); });
+    press("create::light::point", [this]() { createLight(Light::Type::Point); });
+    press("create::light::distant", [this]() { createLight(Light::Type::Distant); });
+    press("create::light::spot", [this]() { createLight(Light::Type::Spot); });
     press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
     press("transform::poly::split_face", [this]() { splitSelectedFace(); });
     press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
@@ -312,6 +324,9 @@ void Controller::registerCommands() {
     press("select::mask::vertex", [this]() { selectMask("vertex"); });
     press("select::mask::edge", [this]() { selectMask("edge"); });
     press("select::mask::face", [this]() { selectMask("face"); });
+    press("select::mask::mesh", [this]() { selectMask("mesh"); });
+    press("select::mask::light", [this]() { selectMask("light"); });
+    press("select::mask::camera", [this]() { selectMask("camera"); });
 
     press("transform::select", [this]() { transformMode("select"); });
     press("transform::translate", [this]() { transformMode("translate"); });
@@ -387,9 +402,41 @@ void Controller::createPoly(const std::string& name) {
         return;
     }
 
-    // the command does the creating, so making a mesh and redoing one run the same code
-    const boost::shared_ptr<CreateCommand> command =
-        boost::make_shared<CreateCommand>(scene_, boost::make_shared<Mesh>(mesh), name);
+    create(boost::make_shared<Mesh>(mesh), name);
+}
+
+/**
+ **/
+void Controller::createCamera(Camera::Projection projection) {
+    if (!activeView_ || !activeView_->camera()) {
+        logger()->get()->info("a camera is made at a view, and there is no active view");
+        return;
+    }
+    const char* name = projection == Camera::Projection::Orthographic ? "orthographic camera" : "perspective camera";
+    create(create_camera(activeView_->camera()->profile(), projection), name);
+}
+
+/**
+ **/
+void Controller::createLight(Light::Type type) {
+    if (!activeView_ || !activeView_->camera()) {
+        logger()->get()->info("a light is made at a view, and there is no active view");
+        return;
+    }
+    const char* name = "point light";
+    if (type == Light::Type::Distant) {
+        name = "distant light";
+    } else if (type == Light::Type::Spot) {
+        name = "spot light";
+    }
+    create(create_light(activeView_->camera()->profile(), type), name);
+}
+
+/**
+ **/
+void Controller::create(const boost::shared_ptr<Item>& item, const std::string& name) {
+    // the command does the creating, so making an item and redoing one run the same code
+    const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, item, name);
     command->redo();
     history_->push(command);
     logger()->get()->info("created a {} - {} items", name, scene_->count());
@@ -499,9 +546,16 @@ void Controller::exportProject() {
         return;
     }
 
+    // one selected scene camera is the one rendered from, and the active view otherwise
+    const v3d::type::camera::Profile& picture = activeView_->camera()->profile();
+    const std::vector<boost::shared_ptr<Camera>> cameras = scene_->selected<Camera>();
+    v3d::type::camera::Camera camera(cameras.size() == 1 ? profile_of(*cameras.front(), picture) : picture);
+    camera.createProjection();
+    camera.createView();
+
     RIBExportVisitor visitor(&file);
-    const glm::uvec2 size = activeView_->camera()->profile().size();
-    visitor.begin(*activeView_->camera(), size.x, size.y);
+    const glm::uvec2 size = picture.size();
+    visitor.begin(camera, size.x, size.y);
     scene_->accept(&visitor);
     visitor.end();
 

@@ -163,12 +163,20 @@ the offline renderer reads RIB.
 `RIBExportVisitor` writes:
 
 - a header, then a `Format` the size of the active view's camera profile
-- the active view's camera as a `Projection` (orthographic or perspective), `ScreenWindow`,
-  `Clipping` and `Transform`
-- for each mesh, inside `WorldBegin` and `WorldEnd`: an `AttributeBegin` block with an
-  identifier name, a `ConcatTransform` of the mesh's matrix, and one `Polygon` per face
+- the camera as a `Projection` (orthographic or perspective), `ScreenWindow`, `Clipping` and
+  `Transform`. When exactly one camera item is selected the export renders from it, through
+  `profile_of()`, which gives it the active view's picture size. Otherwise it renders from the
+  active view
+- inside `WorldBegin` and `WorldEnd`, every light first, as a `LightSource` of RI's standard
+  shader for its type: `pointlight`, `distantlight` or `spotlight`. Each has its `intensity`,
+  its `lightcolor`, and a `from` in world space where the light is. A distant or spot light has a
+  `to` one unit along its +z axis, and a spot light its `coneangle` and `conedeltaangle`
+- then for each mesh: an `AttributeBegin` block with an identifier name, a `ConcatTransform` of
+  the mesh's matrix, and one `Polygon` per face
 
-The export writes no lights and no materials, so the result renders in one flat colour. RI treats a
+RI lights only what is declared after a light, so the lights come before every mesh whatever
+the scene's order. A camera item is never written as an item. The export writes no materials,
+so the result renders in one flat colour. RI treats a
 polygon as planar and convex without checking. moya dices only the first four vertices of a
 polygon, so a face with more than four vertices renders as a quad.
 [offline/](../offline/README.md) covers what moya does with the file.

@@ -51,6 +51,13 @@ class Camera final : public Item {
          * The near and far clipping distances along the view direction, in that order.
          **/
         glm::vec2 clipping{ defaultNear, defaultFar };
+
+        /**
+         * Whether every field is finite and in its range. The angle of view is above zero and
+         * below a straight angle, and the extent is above zero. The near distance is above
+         * zero, and the far one is beyond it. A scene document holds only a valid lens.
+         **/
+        bool valid() const;
     };
 
     Camera();

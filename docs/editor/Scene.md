@@ -162,10 +162,16 @@ order. `Scene::add` appends.
   `Scene::accept()`, which calls the `visit` for each item's kind. Every `visit` is pure, so a
   new kind does not compile until each visitor handles it. `WireframeVisitor`,
   `RIBExportVisitor`, `Picker` and the project writer all work this way. The wireframe draws a
-  camera or a light as its glyph, and the export and the picker do nothing with either.
+  camera or a light as its glyph, the picker picks it by that glyph, and the export writes each
+  light.
 - **Not the views' cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
+- **Making a camera or a light.** The Create menu's Camera and Light items make one at the
+  active view's eye, facing the way the view looks, through a `CreateCommand`, so the new item
+  is the selection and one undo removes it. `create_camera()` and `create_light()` in
+  `src/scene/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
+  when the view's would not be valid. A light takes RI's default emission for its type.
 
 Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
 [ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)

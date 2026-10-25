@@ -9,7 +9,9 @@
 #include <api/brep/Vertex.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/Picker.h>
@@ -69,7 +71,7 @@ BOOST_AUTO_TEST_CASE(picker_object_test) {
     const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
         v3d::editor::SelectMask::Object);
     BOOST_CHECK_EQUAL(hit.valid, true);
-    BOOST_CHECK_EQUAL(hit.mesh, id);
+    BOOST_CHECK_EQUAL(hit.item, id);
     BOOST_CHECK(hit.kind == v3d::editor::SelectMask::Object);
 
     // the corner of the view is well outside a mesh that covers the middle half of it
@@ -97,7 +99,7 @@ BOOST_AUTO_TEST_CASE(picker_nearest_test) {
     const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
         v3d::editor::SelectMask::Object);
     BOOST_CHECK_EQUAL(hit.valid, true);
-    BOOST_CHECK_EQUAL(hit.mesh, id);
+    BOOST_CHECK_EQUAL(hit.item, id);
 }
 
 BOOST_AUTO_TEST_CASE(picker_transform_test) {
@@ -118,7 +120,7 @@ BOOST_AUTO_TEST_CASE(picker_transform_test) {
     const v3d::editor::Picker::Hit moved = picker.pick(scene, *view, screen(view, glm::vec3(0.75F, 0.0F, 0.0F)),
         v3d::editor::SelectMask::Object);
     BOOST_CHECK_EQUAL(moved.valid, true);
-    BOOST_CHECK_EQUAL(moved.mesh, id);
+    BOOST_CHECK_EQUAL(moved.item, id);
 }
 
 BOOST_AUTO_TEST_CASE(picker_face_test) {
@@ -133,7 +135,7 @@ BOOST_AUTO_TEST_CASE(picker_face_test) {
     const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, glm::vec2(200.0F, 200.0F),
         v3d::editor::SelectMask::Face);
     BOOST_CHECK_EQUAL(hit.valid, true);
-    BOOST_CHECK_EQUAL(hit.mesh, id);
+    BOOST_CHECK_EQUAL(hit.item, id);
     BOOST_CHECK(hit.kind == v3d::editor::SelectMask::Face);
     BOOST_CHECK_LT(hit.component, cube->geometry()->faceCount());
 
@@ -246,7 +248,7 @@ BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
         v3d::editor::SelectMask::Object);
     BOOST_REQUIRE_EQUAL(hits.size(), 1U);
     BOOST_CHECK_EQUAL(hits[0].valid, true);
-    BOOST_CHECK_EQUAL(hits[0].mesh, id);
+    BOOST_CHECK_EQUAL(hits[0].item, id);
     BOOST_CHECK(hits[0].kind == v3d::editor::SelectMask::Object);
 
     // the corners may be given either way round
@@ -310,6 +312,98 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
         v3d::editor::SelectMask::Object).valid, false);
     BOOST_CHECK(picker.inside(scene, unsized, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 400.0F),
         v3d::editor::SelectMask::Object).empty());
+}
+
+/**
+ * A cube at the middle of the front view, a point light up and to its right, and a camera
+ * down and to its left, each glyph wholly inside the view.
+ **/
+struct Lit {
+    Lit() :
+        cube(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
+        light(boost::make_shared<v3d::editor::Light>()),
+        camera(boost::make_shared<v3d::editor::Camera>()),
+        view(frontView()) {
+        // both well inside the view's depth, so every point of either glyph is in front of
+        // the eye, and the camera's picture narrow enough to stay clear of the middle
+        light->translation(glm::vec3(0.75F, 0.75F, -0.5F));
+        camera->translation(glm::vec3(-0.5F, -0.55F, -0.5F));
+        v3d::editor::Camera::Lens lens;
+        lens.fov = 30.0F;
+        camera->lens(lens);
+        scene.add(cube);
+        scene.add(light);
+        scene.add(camera);
+    }
+
+    v3d::editor::Scene scene;
+    boost::shared_ptr<v3d::editor::Mesh> cube;
+    boost::shared_ptr<v3d::editor::Light> light;
+    boost::shared_ptr<v3d::editor::Camera> camera;
+    boost::shared_ptr<v3d::editor::ViewPort> view;
+};
+
+BOOST_FIXTURE_TEST_CASE(picker_glyph_test, Lit) {
+    v3d::editor::Picker picker;
+
+    // a click on a line of the light's star hits the light under the object and light masks
+    const glm::vec2 onLight = screen(view, light->translation() + glm::vec3(0.1F, 0.0F, 0.0F));
+    for (const v3d::editor::SelectMask mask : { v3d::editor::SelectMask::Object, v3d::editor::SelectMask::Light }) {
+        const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, onLight, mask);
+        BOOST_CHECK(hit.valid);
+        BOOST_CHECK_EQUAL(hit.item, light->id());
+        BOOST_CHECK(hit.kind == mask);
+    }
+
+    // and nothing under the camera mask, which takes only cameras
+    BOOST_CHECK(!picker.pick(scene, *view, onLight, v3d::editor::SelectMask::Camera).valid);
+
+    // a click beside the star's lines misses it
+    const glm::vec2 beside = screen(view, light->translation() + glm::vec3(0.1F, 0.1F, 0.0F));
+    BOOST_CHECK(!picker.pick(scene, *view, beside, v3d::editor::SelectMask::Light).valid);
+
+    // the camera's glyph is hit along a side of its pyramid
+    const glm::vec2 onCamera = screen(view, camera->translation());
+    const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, onCamera, v3d::editor::SelectMask::Camera);
+    BOOST_CHECK(hit.valid);
+    BOOST_CHECK_EQUAL(hit.item, camera->id());
+}
+
+BOOST_FIXTURE_TEST_CASE(picker_mask_kinds_test, Lit) {
+    v3d::editor::Picker picker;
+    const glm::vec2 middle(200.0F, 200.0F);
+
+    // the cube is hit under the masks that take meshes, and not under the others
+    BOOST_CHECK_EQUAL(picker.pick(scene, *view, middle, v3d::editor::SelectMask::Object).item, cube->id());
+    BOOST_CHECK_EQUAL(picker.pick(scene, *view, middle, v3d::editor::SelectMask::Mesh).item, cube->id());
+    BOOST_CHECK(picker.pick(scene, *view, middle, v3d::editor::SelectMask::Mesh).kind == v3d::editor::SelectMask::Mesh);
+    BOOST_CHECK(!picker.pick(scene, *view, middle, v3d::editor::SelectMask::Light).valid);
+    BOOST_CHECK(!picker.pick(scene, *view, middle, v3d::editor::SelectMask::Camera).valid);
+
+    // a component mask never takes a light, selected or not
+    light->selected(true);
+    const glm::vec2 onLight = screen(view, light->translation() + glm::vec3(0.1F, 0.0F, 0.0F));
+    BOOST_CHECK(!picker.pick(scene, *view, onLight, v3d::editor::SelectMask::Vertex).valid);
+}
+
+BOOST_FIXTURE_TEST_CASE(picker_inside_glyph_test, Lit) {
+    v3d::editor::Picker picker;
+
+    // a rectangle round the whole star holds the light, under the light mask only the light
+    const glm::vec2 low = screen(view, light->translation() - glm::vec3(0.3F, 0.3F, 0.0F));
+    const glm::vec2 high = screen(view, light->translation() + glm::vec3(0.3F, 0.3F, 0.0F));
+    const std::vector<v3d::editor::Picker::Hit> lights = picker.inside(scene, *view, low, high, v3d::editor::SelectMask::Light);
+    BOOST_REQUIRE_EQUAL(lights.size(), 1U);
+    BOOST_CHECK_EQUAL(lights[0].item, light->id());
+
+    // one round half of it does not
+    const glm::vec2 half = screen(view, light->translation());
+    BOOST_CHECK(picker.inside(scene, *view, low, half, v3d::editor::SelectMask::Light).empty());
+
+    // the whole view holds everything under the object mask, and only the meshes under the
+    // mesh mask
+    BOOST_CHECK_EQUAL(picker.inside(scene, *view, glm::vec2(0.0F), glm::vec2(400.0F), v3d::editor::SelectMask::Object).size(), 3U);
+    BOOST_CHECK_EQUAL(picker.inside(scene, *view, glm::vec2(0.0F), glm::vec2(400.0F), v3d::editor::SelectMask::Mesh).size(), 1U);
 }
 
 };  // namespace

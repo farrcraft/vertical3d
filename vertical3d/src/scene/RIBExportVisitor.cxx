@@ -14,11 +14,16 @@
 #include <cstddef>
 #include <optional>
 #include <ostream>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include "Camera.h"
 #include "Light.h"
 #include "Mesh.h"
+
+#include <glm/gtc/quaternion.hpp>
+#include <glm/vec3.hpp>
 
 
 namespace v3d::editor {
@@ -26,14 +31,14 @@ namespace v3d::editor {
 RIBExportVisitor::RIBExportVisitor(std::ostream* stream) : stream_(stream) {
 }
 
-void RIBExportVisitor::matrix(const glm::mat4x4& transform) {
-    *stream_ << "[";
+void RIBExportVisitor::matrix(std::ostream* out, const glm::mat4x4& transform) {
+    *out << "[";
     for (int column = 0; column < 4; column++) {
         for (int row = 0; row < 4; row++) {
-            *stream_ << " " << transform[column][row];
+            *out << " " << transform[column][row];
         }
     }
-    *stream_ << " ]";
+    *out << " ]";
 }
 
 void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned int width, unsigned int height) {
@@ -64,13 +69,16 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, unsigned i
     // the transform set between Projection and WorldBegin is the world to camera
     // transformation, which a view matrix already is
     *stream_ << "Transform ";
-    matrix(camera.view());
+    matrix(stream_, camera.view());
     *stream_ << "\n";
 
     *stream_ << "WorldBegin\n";
 }
 
 void RIBExportVisitor::end() {
+    // the lights were written as they were visited, so every mesh comes after every light
+    *stream_ << body_.str();
+    body_.str(std::string());
     *stream_ << "WorldEnd\n";
 }
 
@@ -81,11 +89,11 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item) {
     meshes_++;
     const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
-    *stream_ << "AttributeBegin\n";
-    *stream_ << "Attribute \"identifier\" \"name\" [\"mesh" << meshes_ << "\"]\n";
-    *stream_ << "ConcatTransform ";
-    matrix(item->matrix());
-    *stream_ << "\n";
+    body_ << "AttributeBegin\n";
+    body_ << "Attribute \"identifier\" \"name\" [\"mesh" << meshes_ << "\"]\n";
+    body_ << "ConcatTransform ";
+    matrix(&body_, item->matrix());
+    body_ << "\n";
 
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
         const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
@@ -107,14 +115,14 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item) {
             continue;
         }
 
-        *stream_ << "Polygon \"P\" [";
+        body_ << "Polygon \"P\" [";
         for (const glm::vec3& point : points) {
-            *stream_ << " " << point.x << " " << point.y << " " << point.z;
+            body_ << " " << point.x << " " << point.y << " " << point.z;
         }
-        *stream_ << " ]\n";
+        body_ << " ]\n";
     }
 
-    *stream_ << "AttributeEnd\n";
+    body_ << "AttributeEnd\n";
 }
 
 /**
@@ -124,7 +132,41 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/) {
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Light>& /*light*/) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light) {
+    if (!light) {
+        return;
+    }
+    lights_++;
+    const Light::Emission& emission = light->emission();
+    const glm::vec3 from = light->translation();
+    const glm::vec3 to = from + (light->rotation() * glm::vec3(0.0F, 0.0F, 1.0F));
+    const auto point = [this](const glm::vec3& value) {
+        *stream_ << " [" << value.x << " " << value.y << " " << value.z << "]";
+    };
+
+    switch (emission.type) {
+        case Light::Type::Point:
+            *stream_ << "LightSource \"pointlight\" " << lights_;
+            break;
+        case Light::Type::Distant:
+            *stream_ << "LightSource \"distantlight\" " << lights_;
+            break;
+        case Light::Type::Spot:
+            *stream_ << "LightSource \"spotlight\" " << lights_;
+            break;
+    }
+    *stream_ << " \"intensity\" [" << emission.intensity << "] \"lightcolor\"";
+    point(emission.colour);
+    *stream_ << " \"from\"";
+    point(from);
+    if (emission.type != Light::Type::Point) {
+        *stream_ << " \"to\"";
+        point(to);
+    }
+    if (emission.type == Light::Type::Spot) {
+        *stream_ << " \"coneangle\" [" << emission.cone << "] \"conedeltaangle\" [" << emission.delta << "]";
+    }
+    *stream_ << "\n";
 }
 
 };  // namespace v3d::editor

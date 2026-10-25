@@ -217,8 +217,8 @@ void SelectTool::apply(const Picker::Hit& hit) {
         return;
     }
 
-    if (mask_ == SelectMask::Object) {
-        selectObject(hit.valid ? hit.mesh : 0);
+    if (selectsItems(mask_)) {
+        selectObject(hit.valid ? hit.item : 0);
         return;
     }
 
@@ -255,7 +255,7 @@ void SelectTool::selectObject(unsigned int id) {
 /**
  **/
 void SelectTool::selectComponent(const Picker::Hit& hit) {
-    const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.mesh);
+    const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.item);
     if (!mesh) {
         return;
     }
@@ -271,7 +271,7 @@ void SelectTool::selectComponent(const Picker::Hit& hit) {
 
     if (logger_) {
         logger_->get()->info("{} {} {} of mesh {}", wanted ? "selected" : "deselected",
-            selectMaskName(hit.kind), hit.component, hit.mesh);
+            selectMaskName(hit.kind), hit.component, hit.item);
     }
 }
 
@@ -283,14 +283,14 @@ void SelectTool::selectInside() {
     }
     const std::vector<Picker::Hit> hits = picker_.inside(*scene_, *view_, anchor_, cursor_, mask_);
     for (const Picker::Hit& hit : hits) {
-        if (hit.kind == SelectMask::Object) {
-            const boost::shared_ptr<Item> item = scene_->item(hit.mesh);
+        if (selectsItems(hit.kind)) {
+            const boost::shared_ptr<Item> item = scene_->item(hit.item);
             if (item) {
                 item->selected(true);
             }
             continue;
         }
-        const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.mesh);
+        const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.item);
         if (mesh) {
             markComponent(mesh->geometry().get(), hit, true);
         }

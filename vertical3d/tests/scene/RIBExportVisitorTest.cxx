@@ -10,7 +10,10 @@
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -61,12 +64,28 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         (void)name;
         names_.push_back(parameters.string("name"));
     }
+    void lightSource(const v3d::render::offline::rib::LightSource & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override {
+        lights_.push_back(request.shader);
+        order_ += "L";
+        froms_.push_back(parameters.points("from").empty() ? glm::vec3(-99.0F) : parameters.points("from").front());
+        tos_.push_back(parameters.points("to").empty() ? glm::vec3(-99.0F) : parameters.points("to").front());
+        cones_.push_back(parameters.number("coneangle", -1.0F));
+        intensities_.push_back(parameters.number("intensity", -1.0F));
+    }
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+        order_ += "P";
         faces_++;
         corners_ += vertices;
         points_ = parameters.points("P");
     }
 
+    std::vector<std::string> lights_;
+    std::vector<glm::vec3> froms_;
+    std::vector<glm::vec3> tos_;
+    std::vector<float> cones_;
+    std::vector<float> intensities_;
+    std::string order_;
     std::vector<glm::mat4x4> placements_;
     std::vector<std::string> names_;
     std::vector<glm::vec3> points_;
@@ -208,6 +227,47 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
     BOOST_CHECK_EQUAL(handler.worlds_, 2U);
     BOOST_CHECK_EQUAL(handler.faces_, 0U);
+}
+
+BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+
+    const boost::shared_ptr<v3d::editor::Light> point = boost::make_shared<v3d::editor::Light>();
+    point->translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    point->emission({ .type = v3d::editor::Light::Type::Point, .intensity = 12.0F });
+    scene->add(point);
+
+    // a spot turned a quarter about y shines along +x
+    const boost::shared_ptr<v3d::editor::Light> spot = boost::make_shared<v3d::editor::Light>();
+    spot->translation(glm::vec3(0.0F, 5.0F, 0.0F));
+    spot->rotation(glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 1.0F, 0.0F)));
+    spot->emission({ .type = v3d::editor::Light::Type::Spot, .cone = 0.4F, .delta = 0.05F });
+    scene->add(spot);
+    scene->add(boost::make_shared<v3d::editor::Light>());
+    scene->items().back()->rotation(glm::angleAxis(glm::radians(180.0F), glm::vec3(1.0F, 0.0F, 0.0F)));
+    v3d::editor::as<v3d::editor::Light>(scene->items().back())->emission({ .type = v3d::editor::Light::Type::Distant });
+
+    // a camera item is not written: the export renders from the camera it is given
+    scene->add(boost::make_shared<v3d::editor::Camera>());
+
+    ImportHandler handler;
+    BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
+
+    // every light is RI's standard shader for its type, written before every mesh, though
+    // the plane comes first in the scene
+    BOOST_REQUIRE_EQUAL(handler.lights_.size(), 3U);
+    BOOST_CHECK_EQUAL(handler.lights_[0], "pointlight");
+    BOOST_CHECK_EQUAL(handler.lights_[1], "spotlight");
+    BOOST_CHECK_EQUAL(handler.lights_[2], "distantlight");
+    BOOST_CHECK_EQUAL(handler.order_, "LLLP");
+
+    // in world space: from where the light is, to one unit along its +z axis
+    BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(1.0F, 2.0F, 3.0F)), 0.0001F);
+    BOOST_CHECK_CLOSE(handler.intensities_[0], 12.0F, 0.001F);
+    BOOST_CHECK_SMALL(glm::distance(handler.tos_[1], glm::vec3(1.0F, 5.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_CLOSE(handler.cones_[1], 0.4F, 0.001F);
+    BOOST_CHECK_SMALL(glm::distance(handler.tos_[2], glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
 }
 
 };  // namespace

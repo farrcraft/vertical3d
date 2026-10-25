@@ -11,6 +11,7 @@
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -197,6 +198,25 @@ BOOST_AUTO_TEST_CASE(target_turn_components_test) {
     motion.stretch = glm::vec3(-3.0F, 1.0F, 1.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    light->translation(glm::vec3(4.0F, 0.0F, 0.0F));
+    cube->selected(true);
+    light->selected(true);
+    scene.add(cube);
+    scene.add(light);
+
+    // the object mask moves both, and the light mask the light alone, at its own pivot
+    BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object).items().size(), 2U);
+    const v3d::editor::Target lights = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    BOOST_REQUIRE_EQUAL(lights.items().size(), 1U);
+    BOOST_CHECK(lights.items()[0] == light);
+    BOOST_CHECK_SMALL(glm::distance(lights.pivot(), glm::vec3(4.0F, 0.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Camera).empty());
 }
 
 };  // namespace

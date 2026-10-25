@@ -1,7 +1,7 @@
 # Editor Scene — Cameras, Lights, Groups, Shading, Import, Render and Playback
 
 Drafted 2026-10-24 against `ab4bdea1`. This plan takes the six editor groups in
-[TODO.md](../TODO.md#editor). When it closes, every one of the menu's 80 commands has a handler.
+[TODO.md](../TODO.md#editor). When it closes, every one of the menu's 83 commands has a handler.
 The scene holds cameras, lights and groups as well as meshes. The views draw shaded as well as
 in wireframe, a project imports glTF, the Render menu renders the scene with moya, and the
 timeline keys and plays back transforms.
@@ -91,7 +91,7 @@ another directory is named.
 | Group | Commands | Step |
 |---|---|---|
 | Show | `view::show::light`, `view::show::camera` | 4 |
-| Select masks | `select::mask::curve`, `mesh`, `light`, `camera`, `handle` | 4 |
+| Select masks | `select::mask::mesh`, `light`, `camera` (step 4), `curve` (step 13), `handle` (step 14) | 4, 13, 14 |
 | Scene cameras and groups | `create::ortho::camera`, `create::perspective::camera` (step 4), `create::group` (step 9) | 4, 9 |
 | Camera Manipulators | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | 5 |
 | Shading | `view::shade::flat`, `smooth`; `view::cull::none`, `front`, `back`, `both`; `view::rendermode::front::*`, `back::*` (points, lines, fill) | 6 |
@@ -99,8 +99,8 @@ another directory is named.
 | Render | `render::settings`, `render::view`, `render::batch` | 8 |
 | Timeline | `timeline::set`, `timeline::playback::*` (ten) | 10 |
 
-The curve mask has no curves to select. Step 4 decides whether the item goes, or waits on a
-curve kind the plan does not build.
+The curve and handle masks need kinds of item the editor does not have. Steps 13 and 14 build
+them.
 
 ## Decisions
 
@@ -129,6 +129,7 @@ curve kind the plan does not build.
   lights and a scene camera to render from.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.**
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
+- **Step 13 needs step 1**, and **step 14 needs its ADR**, which decides what else it waits on.
 - **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
   step 11.
 
@@ -199,14 +200,23 @@ standard RI lights moya reads.
 
 ### Step 4 — Cameras and lights in the scene
 
-**Open.** `create::ortho::camera` and `create::perspective::camera` add a camera at the view's
-position, through the command stack. A light is created the same way, from a new create item.
+**Closed.** `create::ortho::camera` and `create::perspective::camera` add a camera at the view's
+eye, facing the way it looks, through the command stack. Create > Light gives `light::point`,
+`light::distant` and `light::spot`, which add a light the same way.
 
-- `SelectMask` gains `Mesh`, `Light`, `Camera` and `Handle`, and the picker honours them. Decide
-  whether `curve` is removed from the menu.
-- The RIB export writes each light as a `LightSource`, and a chosen scene camera as the camera.
-- Tests: create, undo and redo for each kind. The mask decides what a pick returns. The export
-  writes a light.
+- `SelectMask` gained `Mesh`, `Light` and `Camera`. Object takes every kind, and each of the
+  three takes only its own. The picker hits a camera or a light by its glyph, by screen distance,
+  and a band holds one when its whole glyph is inside. A target under one of the three moves only
+  its kind.
+- The Curve and Handle masks stay in the menu with no handler, and steps 13 and 14 build them.
+- The RIB export writes each light as a `LightSource` of RI's standard shader, before every mesh.
+  It renders from the selected camera when exactly one is selected, and from the active view
+  otherwise.
+- `Camera::Lens::valid()` and `Light::Emission::valid()` state the ranges once, for the store and
+  for making a camera from a view.
+- Tests: create, undo and redo for each kind. The mask decides what a pick and a band return, and
+  what a target moves. The export writes every light, before the meshes. A camera made from a view
+  is seen through the same view again, in either hand.
 
 ### Step 5 — Camera Manipulators
 
@@ -292,6 +302,26 @@ the recovery database.
 
 - Tests: an autosave leaves the document as it was. Recovery reads back the autosaved scene. A
   save removes the recovery database.
+
+### Step 13 — Curves
+
+**Open.** ADR first, on what a curve is: its form (polyline, Bezier, B-spline or NURBS), and
+whether it is a kind of item of its own. The menu's `select::mask::curve` waits on it.
+
+- A curve kind of item, drawn in lines through the wireframe, created from a new Create item,
+  saved as a new kind in the scene document, and exported as RI `Curves`.
+- `SelectMask::Curve` picks a curve by screen distance, as a glyph is picked.
+- Tests: a curve draws, picks, saves and exports.
+
+### Step 14 — Handles
+
+**Open.** ADR first, on what a handle is. Nothing in the editor defines one: a manipulator's
+handles are not items, and cannot be selected. The candidates are a group's selection handle,
+which needs step 9, and an IK handle, which needs a skeleton in the scene. The menu's
+`select::mask::handle` waits on it.
+
+- Whatever the ADR decides is built as an item kind or a part of one, with the handle mask
+  picking it.
 
 ## Outcome
 

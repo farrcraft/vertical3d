@@ -7,6 +7,8 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
@@ -402,6 +404,48 @@ BOOST_AUTO_TEST_CASE(select_tool_no_view_test) {
     select.button(1, true, glm::vec2(200.0F, 200.0F));
     BOOST_CHECK_EQUAL(cube->selected(), false);
     BOOST_CHECK_EQUAL(select.hit().valid, false);
+}
+
+BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
+    // every mask's name reads back as that mask
+    for (const v3d::editor::SelectMask mask : { v3d::editor::SelectMask::Object, v3d::editor::SelectMask::Vertex,
+        v3d::editor::SelectMask::Edge, v3d::editor::SelectMask::Face, v3d::editor::SelectMask::Mesh,
+        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera }) {
+        v3d::editor::SelectMask read = v3d::editor::SelectMask::Face;
+        BOOST_CHECK(v3d::editor::selectMask(v3d::editor::selectMaskName(mask), &read));
+        BOOST_CHECK(read == mask);
+    }
+
+    // the whole item masks take their own kind, and object takes every kind
+    BOOST_CHECK(v3d::editor::selectsItems(v3d::editor::SelectMask::Light));
+    BOOST_CHECK(!v3d::editor::selectsItems(v3d::editor::SelectMask::Edge));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Object, v3d::editor::Item::Kind::Camera));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Camera, v3d::editor::Item::Kind::Camera));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Camera, v3d::editor::Item::Kind::Light));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Light));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Face, v3d::editor::Item::Kind::Mesh));
+    BOOST_CHECK(!v3d::editor::selectMask("curve", nullptr));
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_light_mask_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    light->translation(glm::vec3(0.0F, 0.0F, -0.5F));
+    scene->add(cube);
+    scene->add(light);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+
+    // under the light mask a click selects the light whole, through the cube in front of the
+    // view's middle, which that mask does not take
+    select->activate("light");
+    select->button(1, true, glm::vec2(200.0F, 200.0F));
+    BOOST_CHECK(light->selected());
+    BOOST_CHECK(!cube->selected());
+
+    // and a miss clears it, as a miss under the object mask does
+    select->button(1, true, glm::vec2(10.0F, 10.0F));
+    BOOST_CHECK(!light->selected());
 }
 
 };  // namespace

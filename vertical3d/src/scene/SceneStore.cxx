@@ -40,7 +40,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
-#include <glm/gtc/constants.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -84,11 +83,6 @@ const char* const SCHEMA =
 constexpr std::size_t VERTEX_SIZE = 3 * sizeof(float);
 constexpr std::size_t EDGE_SIZE = 4 * sizeof(std::uint32_t);
 constexpr std::size_t FACE_SIZE = (3 * sizeof(float)) + sizeof(std::uint32_t);
-
-/**
- * A perspective camera's angle of view is below a straight angle, in degrees.
- **/
-constexpr float STRAIGHT_ANGLE = 180.0F;
 
 /**
  * Append a number to a blob.
@@ -405,8 +399,7 @@ bool readCamera(const boost::json::object& payload, Camera* camera, std::string*
         return false;
     }
     lens.clipping = glm::vec2(clipping[0], clipping[1]);
-    if (lens.fov <= 0.0F || lens.fov >= STRAIGHT_ANGLE || lens.extent <= 0.0F || lens.clipping.x <= 0.0F ||
-        lens.clipping.y <= lens.clipping.x) {
+    if (!lens.valid()) {
         *problem = "its lens is out of range";
         return false;
     }
@@ -458,9 +451,7 @@ bool readLight(const boost::json::object& payload, Light* light, std::string* pr
         return false;
     }
     emission.colour = glm::vec3(colour[0], colour[1], colour[2]);
-    if (emission.colour.r < 0.0F || emission.colour.g < 0.0F || emission.colour.b < 0.0F ||
-        emission.intensity < 0.0F || emission.cone <= 0.0F || emission.cone >= glm::pi<float>() ||
-        emission.delta < 0.0F || emission.delta > emission.cone) {
+    if (!emission.valid()) {
         *problem = "its emission is out of range";
         return false;
     }

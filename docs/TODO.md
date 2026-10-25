@@ -159,7 +159,7 @@ There are none open.
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
 [EditorScene](plans/EditorScene.md) orders every group here.
 
-45 of the menu's 80 commands have no handler, and only log themselves when chosen. Each group
+38 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
 
 [] **Shading and culling modes** (`view::shade::*`, `view::cull::*`, `view::rendermode::*`) need a
@@ -170,9 +170,8 @@ state.
 writes each item's geometry in full, so they read back as two copies. Keeping them shared needs
 the geometry as a record of its own, which the mesh items refer to by id, and a new mesh version.
 
-[] **Cameras and lights in the scene** (`view::show::camera`, `view::show::light` and the camera,
-light, curve, handle and mesh select masks). The scene holds and saves camera and light items,
-but nothing draws or creates one. Drawing them comes first, and the masks and show toggles follow.
+[] **Curve and handle select masks** (`select::mask::curve`, `select::mask::handle`). There is no
+curve kind of item, and nothing defines what a handle is. EditorScene steps 13 and 14 build them.
 
 [] **Importers** (`project::import::*`) each need a format reader. An importer creates meshes
 through the command stack, so an import can be undone.

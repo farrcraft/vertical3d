@@ -46,6 +46,13 @@ class Light final : public Item {
          **/
         float cone = defaultCone;
         float delta = defaultDelta;
+
+        /**
+         * Whether every field is finite and in its range. The colour and the intensity are
+         * zero or more. The cone is above zero and below half a turn, and the soft edge is
+         * from zero up to the cone. A scene document holds only a valid emission.
+         **/
+        bool valid() const;
     };
 
     Light();
