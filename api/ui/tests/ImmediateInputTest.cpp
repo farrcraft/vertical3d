@@ -29,12 +29,12 @@ const float lineStart = 6.0F;
 /**
  * A point inside a widget drawn first on the canvas, which is the top row.
  **/
-const glm::vec2 firstRow(100.0F, 10.0F);
+constexpr glm::vec2 firstRow(100.0F, 10.0F);
 
 /**
  * A point well away from anything drawn.
  **/
-const glm::vec2 nowhere(390.0F, 290.0F);
+constexpr glm::vec2 nowhere(390.0F, 290.0F);
 
 /**
  * A layer that measures at ten pixels a character and writes nothing.

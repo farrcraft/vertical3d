@@ -251,39 +251,50 @@ std::size_t LineEdit::at(float into, const paint::Measure& measure) const {
     return found;
 }
 
+namespace {
+
+/**
+ * Carry out a control chord on a line: copy, cut, paste and select all, and no other. Any other
+ * chord goes on to the app, so a ctrl-s still saves while the line has the focus.
+ *
+ * @return whether the chord is one of the four, which is taken whether or not it changed
+ *      anything, so it never also reaches a binding
+ **/
+bool chord(LineEdit* line, std::string_view key, const Clipboard& clipboard) {
+    if (key == "c") {
+        if (clipboard.write && line->selected()) {
+            // an empty copy never replaces what the clipboard holds
+            clipboard.write(line->selection());
+        }
+    } else if (key == "x") {
+        // the run is written to the clipboard before it is removed, and is not removed at all
+        // when there is no write callback, so a cut never loses text
+        if (clipboard.write && line->selected()) {
+            clipboard.write(line->selection());
+            line->removeSelection();
+        }
+    } else if (key == "v") {
+        if (clipboard.read) {
+            // insert() replaces the selection, so a paste and a typed character land the same
+            // way
+            line->insert(clipboard.read());
+        }
+    } else if (key == "a") {
+        line->selectAll();
+    } else {
+        return false;
+    }
+    return true;
+}
+
+};  // namespace
+
 bool edit(LineEdit* line, std::string_view key, bool shifted, bool controlled, const Clipboard& clipboard) {
     if (line == nullptr) {
         return false;
     }
-
     if (controlled) {
-        // copy, cut, paste and select all, and no other chord. Any other chord goes on to
-        // the app, so a ctrl-s still saves while the line has the focus
-        if (key == "c") {
-            if (clipboard.write && line->selected()) {
-                // an empty copy never replaces what the clipboard holds
-                clipboard.write(line->selection());
-            }
-        } else if (key == "x") {
-            // the run is written to the clipboard before it is removed, and is not removed
-            // at all when there is no write callback, so a cut never loses text
-            if (clipboard.write && line->selected()) {
-                clipboard.write(line->selection());
-                line->removeSelection();
-            }
-        } else if (key == "v") {
-            if (clipboard.read) {
-                // insert() replaces the selection, so a paste and a typed character land the
-                // same way
-                line->insert(clipboard.read());
-            }
-        } else if (key == "a") {
-            line->selectAll();
-        } else {
-            return false;
-        }
-        // taken whether or not it changed anything, so the chord never also reaches a binding
-        return true;
+        return chord(line, key, clipboard);
     }
 
     if (key == "backspace") {
