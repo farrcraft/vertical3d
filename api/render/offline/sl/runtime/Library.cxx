@@ -681,8 +681,7 @@ void Machine::builtin(const Instruction & instruction) {
     }
     site.given = &given;
     site.target = &answer;
-    if (body == Body::TRANSMISSION || body == Body::TRACE) {
-        shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
+    if (answered(table[index], instruction, given, &answer)) {
         return;
     }
     // a function that changes an argument in place writes that register, not its result.
@@ -783,6 +782,43 @@ void Machine::ambient(Value* target) {
             if (reached[point] != 0 && writable(*target, point)) {
                 target->triple(point, target->triple(point) + colour_.triple(point));
             }
+        }
+    }
+}
+
+bool Machine::answered(const Signature & signature, const Instruction & instruction,
+    const std::vector<const Value*> & given, Value* answer) {
+    if (signature.body == Body::TRANSMISSION || signature.body == Body::TRACE) {
+        shadowed(signature.body == Body::TRACE, *given[0], *given[1], answer);
+        return true;
+    }
+    if (signature.body == Body::MESSAGE) {
+        std::vector<Value*> outputs = written(instruction, signature.outputs);
+        if (!outputs.empty()) {
+            message(signature.name, given[0]->text(), outputs.front(), answer);
+        }
+        return true;
+    }
+    return false;
+}
+
+void Machine::message(const std::string & shader, const std::string & name, Value* variable, Value* target) {
+    Value read;
+    read.reset(variable->type(), variable->storage(), batch_);
+    const bool found = renderer_ != nullptr && renderer_->message(shader, name, &read);
+    const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
+    for (unsigned int point = 0; point < wide; point++) {
+        if (writable(*target, point)) {
+            target->number(point, found ? 1.0F : 0.0F);
+        }
+    }
+    if (!found) {
+        return;
+    }
+    const unsigned int across = variable->storage() == Storage::VARYING ? batch_ : 1;
+    for (unsigned int point = 0; point < across; point++) {
+        if (writable(*variable, point)) {
+            variable->assign(read, point);
         }
     }
 }

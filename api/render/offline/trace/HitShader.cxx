@@ -111,6 +111,8 @@ bool HitShader::light(unsigned int index, const Value & surface, const v3d::rend
     const bool ran = held.globals.shine(source, &held.machine, Tracer::STENCIL, surface, gathering, direction, colour,
         reached, ambient, source.area ? &from : nullptr);
     placement_ = was;
+    // the illuminance body that runs next for this light reads its output parameters
+    lightMachine_ = ran ? &held.machine : nullptr;
     if (ran && source.area) {
         // each sample carries its share of the light
         for (unsigned int lane = 0; lane < Tracer::STENCIL; lane++) {
@@ -143,6 +145,17 @@ bool HitShader::trace(const Value & origin, const Value & direction, Value* colo
         colour->triple(point, seen);
     }
     return true;
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the signature is Renderer::message
+bool HitShader::message(const std::string & shader, const std::string & name, Value* value) {
+    if (shader == "surface" && surfaceMachine_ != nullptr) {
+        return surfaceMachine_->output(name, value);
+    }
+    if (shader == "lightsource" && lightMachine_ != nullptr) {
+        return lightMachine_->output(name, value);
+    }
+    return false;
 }
 
 const v3d::render::offline::Texture* HitShader::texture(const std::string & name) {
@@ -226,7 +239,12 @@ glm::vec3 HitShader::shade(glm::vec3* opacity) {
     }
     held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0F) : tracer_->scene()->eye());
 
-    if (!held.machine.run()) {
+    surfaceMachine_ = &held.machine;
+    lightMachine_ = nullptr;
+    const bool ran = held.machine.run();
+    surfaceMachine_ = nullptr;
+    lightMachine_ = nullptr;
+    if (!ran) {
         // drawn as if it had no shader, so its opacity still applies
         return primitive.opacity() * hit_.colour;
     }

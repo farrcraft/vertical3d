@@ -573,4 +573,55 @@ BOOST_AUTO_TEST_CASE(moya_faceforward_turns_by_ng_test) {
     BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().z, 1.0F, 0.01F);
 }
 
+/**
+ * A surface reads an output parameter of the displacement shader that ran on its grid.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_surface_reads_its_displacement_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.displacement("lifted", ParameterList());
+    rc.surface("heightshown", ParameterList());
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    const v3d::moya::Shading shading = rc.shading();
+    rc.shader().displace(shading, &grid);
+    rc.shader().shade(shading, &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.25F, 0.01F);
+    BOOST_CHECK_SMALL(grid.vertex(1, 1).color().b, 0.0001F);
+
+    // with no displacement shader there is nothing to read, and the surface says so in blue
+    v3d::moya::RenderContext bare;
+    prepare(&bare);
+    bare.searchpath("data:&");
+    bare.surface("heightshown", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid plain = facing({});
+    bare.shader().shade(bare.shading(), &plain);
+    BOOST_CHECK_CLOSE(plain.vertex(1, 1).color().b, 1.0F, 0.01F);
+}
+
+/**
+ * Inside an illuminance loop, a surface reads an output parameter of the light the loop is
+ * running for. A light reads an output parameter of the surface it is lighting.
+ **/
+BOOST_AUTO_TEST_CASE(moya_lights_and_surfaces_pass_messages_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.lightSource({.shader = "messenger", .handle = "1"}, ParameterList());
+    rc.surface("heard", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    rc.shader().shade(rc.shading(), &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.5F, 0.01F);
+
+    v3d::moya::RenderContext asked;
+    prepare(&asked);
+    asked.searchpath("data:&");
+    asked.lightSource({.shader = "asker", .handle = "1"}, ParameterList());
+    asked.surface("told", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid lit = facing({});
+    asked.shader().shade(asked.shading(), &lit);
+    BOOST_CHECK_CLOSE(lit.vertex(1, 1).color().r, 0.75F, 0.01F);
+}
+
 };  // namespace

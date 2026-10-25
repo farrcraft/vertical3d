@@ -69,6 +69,14 @@ std::string describe(const Token & token) {
     return "'" + token.text() + "'";
 }
 
+/**
+ * Whether a keyword names a message passing call. "surface" and "displacement" are shader types
+ * at the top of a file, and inside a shader's body they can only be calls.
+ **/
+bool messageCall(const Token & token) {
+    return token.kind() == Token::Kind::KEYWORD && (token.text() == "surface" || token.text() == "displacement");
+}
+
 bool shaderType(const Token & token, ShaderType* type) {
     if (token.kind() != Token::Kind::KEYWORD) {
         return false;
@@ -348,7 +356,7 @@ syntax::StatementPtr Parser::parseStatement() {
         // an empty statement is parsed as an empty block, which has the same effect
         return boost::make_shared<syntax::Block>(token.position());
     }
-    if (token.kind() == Token::Kind::KEYWORD) {
+    if (token.kind() == Token::Kind::KEYWORD && !messageCall(token)) {
         return parseKeywordStatement(token);
     }
     syntax::StatementPtr statement = parseSimpleStatement();
@@ -655,7 +663,7 @@ syntax::ExpressionPtr Parser::parsePrimary() {
         next();
         return boost::make_shared<syntax::String>(token.text(), token.position());
     }
-    if (token.kind() == Token::Kind::IDENTIFIER) {
+    if (token.kind() == Token::Kind::IDENTIFIER || messageCall(token)) {
         next();
         if (!at(Token::Kind::PUNCTUATION, "(")) {
             return boost::make_shared<syntax::Variable>(token.text(), token.position());

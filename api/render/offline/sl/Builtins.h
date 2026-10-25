@@ -60,6 +60,8 @@ class Signature final {
         DU, DV, DERIV, AREA, CALCULATENORMAL,
         // computed from the renderer's lights, shadows and rays
         AMBIENT, TRANSMISSION, TRACE,
+        // another shader's output parameter, read through the renderer
+        MESSAGE,
         PRINTF
     };
 

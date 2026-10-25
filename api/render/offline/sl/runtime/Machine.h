@@ -20,6 +20,10 @@
 #include "Renderer.h"
 #include "Value.h"
 
+namespace v3d::render::offline::sl {
+class Signature;
+};  // namespace v3d::render::offline::sl
+
 namespace v3d::render::offline::sl::runtime {
 
 /**
@@ -70,6 +74,14 @@ class Machine final {
      **/
     Value & value(int reg);
     const Value & value(int reg) const;
+
+    /**
+     * Copy the output parameter `name` of the program this machine was prepared with into
+     * `value`, at every point of it. A renderer answers Renderer::message() with this.
+     *
+     * @return false when the program has no output parameter of that name and of the value's type
+     **/
+    bool output(const std::string & name, Value* value) const;
 
     unsigned int batch() const;
 
@@ -221,6 +233,19 @@ class Machine final {
      * trace() returns black, and the machine reports which call failed.
      **/
     void shadowed(bool ray, const Value & from, const Value & to, Value* target);
+    /**
+     * Run a built-in the renderer answers: a shadow, a traced ray or a message.
+     *
+     * @return false when the built-in is not one of those, and the machine computes it
+     **/
+    bool answered(const Signature & signature, const Instruction & instruction,
+        const std::vector<const Value*> & given, Value* answer);
+    /**
+     * A message passing call: the renderer reads the named shader's output parameter, and the
+     * live points of it are copied into the call's variable. The result is 1 where it was
+     * read and 0 where it was not.
+     **/
+    void message(const std::string & shader, const std::string & name, Value* variable, Value* target);
     /**
      * The matrix into a named coordinate space. When the renderer does not recognise the
      * space, this returns the identity and reports the name. The scene still renders, with

@@ -73,6 +73,12 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         std::vector<char>* reached, bool* ambient) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
     /**
+     * A light reads the surface being shaded, a surface reads the displacement shader that
+     * ran on the grid, and a surface's illuminance loop reads the light it is running for.
+     **/
+    bool message(const std::string & shader, const std::string & name,
+        v3d::render::offline::sl::runtime::Value* value) override;
+    /**
      * The grid being shaded: vertex (i, j) is batch point (i * size) + j, with u along i and v
      * along j, a step of 1 / (size - 1) apart.
      **/
@@ -125,6 +131,13 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     /** The grid's points a side. **/
     unsigned int size_ = 1;
     std::map<const v3d::render::offline::sl::runtime::Program*, Run> runs_;
+    /**
+     * The runs whose output parameters a message reads: the surface while it is shaded, the
+     * displacement that ran on the grid, and the light that ran last. Null when there is none.
+     **/
+    const Run* surfaceRun_ = nullptr;
+    const Run* displacementRun_ = nullptr;
+    const Run* lightRun_ = nullptr;
     /** What casts the rays, into the context's traced scene. **/
     v3d::render::offline::trace::Tracer tracer_;
     /**

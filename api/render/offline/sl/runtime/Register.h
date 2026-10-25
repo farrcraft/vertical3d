@@ -26,6 +26,8 @@ class Register final {
      * prologue leaves it holding its declared default.
      **/
     bool parameter = false;
+    /** A parameter declared `output`, which another shader may read through message passing. **/
+    bool output = false;
     /**
      * Whether the register holds a literal. Machine::prepare() writes it once, and no
      * instruction computes it.

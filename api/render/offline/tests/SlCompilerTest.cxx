@@ -697,4 +697,33 @@ BOOST_AUTO_TEST_CASE(slcompiler_two_argument_faceforward_needs_ng_test) {
         "pass the reference as a third argument at line 2, column 16");
 }
 
+/**
+ * surface(), displacement() and lightsource() read another shader's output parameter into a
+ * variable, so the second argument has to be one. "surface" and "displacement" are keywords,
+ * and a call of either still parses.
+ **/
+BOOST_AUTO_TEST_CASE(slcompiler_message_passing_test) {
+    BOOST_CHECK_EQUAL(compile(
+        "surface s() {\n"
+        "    float height = 0;\n"
+        "    if (displacement(\"height\", height) != 0) { Ci = height; }\n"
+        "    float tag = 0;\n"
+        "    illuminance (P, N, 1.5707963) { lightsource(\"tag\", tag); }\n"
+        "}\n"), "");
+
+    BOOST_CHECK_EQUAL(compile(
+        "light l() {\n"
+        "    color shade = 0;\n"
+        "    surface(\"shade\", shade);\n"
+        "    Cl = shade;\n"
+        "}\n"), "");
+
+    BOOST_CHECK_EQUAL(compile(
+        "light l() {\n"
+        "    surface(\"shade\", 1);\n"
+        "    Cl = 1;\n"
+        "}\n"),
+        "argument 2 of 'surface' is written, so it has to be a variable at line 2, column 22");
+}
+
 };  // namespace

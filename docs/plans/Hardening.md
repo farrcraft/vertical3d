@@ -175,8 +175,8 @@ and [offline/README.md](../offline/README.md) lists it.
 
 ### Step 3 — The shading language
 
-**Partly closed.** Every item but message passing has landed, each with a test that fails
-without it.
+**Closed.** Each fix has a test that fails without it, apart from the one case below that is
+stated to pass.
 
 - An `output` formal is copied back to its argument after the inlined body. The compiler
   refuses an argument that is not a variable, one the caller may not assign, and one of another
@@ -197,7 +197,15 @@ without it.
   colour. It passes on the old code, which already replicated the value.
 - The RIB reader reads a Sphere's parameters as four varying values.
 
-Message passing follows in a commit of its own.
+- Message passing landed in a commit of its own. `surface()`, `displacement()` and
+  `lightsource()` are built-ins that ask the renderer through `Renderer::message`, and
+  `Machine::output()` reads another machine's `output` parameter. The reyes hider answers all
+  three, and the ray hider answers `surface()` and `lightsource()`. A traced primitive was
+  displaced when it was diced, so a hit has no displacement to read. A case renders a light and
+  a surface passing values under both hiders.
+- The sphere case first passed on the old reader, which read all four colours and only warned
+  about the length. It now checks that no length warning is logged, and fails on the old
+  reader by hand.
 
 The items as planned:
 

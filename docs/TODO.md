@@ -213,11 +213,6 @@ a velocity of 1, so the player walks at one unit a second.
 `Camera::perspective` multiplies both scales by the aspect ratio, so the horizontal field of view
 equals `fovx` only at an aspect of 1. Check against the intended projection.
 
-[] **A shading language `output` shader parameter cannot be read.** Semantics, major. A
-shader parameter declared `output` sets `Symbol::output`, which nothing reads. RI reads one from
-another shader through `surface()`, `displacement()` and `lightsource()`, and none of the three
-is a built-in.
-
 [] **A default `camera::Profile::Frame` disagrees with its hand.** Contract, minor. The Frame
 defaults (direction -z, right +x, up +y) form the DirectionCrossUp basis, but a Frame-built
 profile has `hand_` UpCrossDirection and an identity rotation. Its `direction()` is -z while

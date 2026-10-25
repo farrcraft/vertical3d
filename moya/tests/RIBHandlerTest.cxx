@@ -1137,4 +1137,39 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
     BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::FrameBuffer::BLUE, 4, 3), 4.0F, 0.01F);
 }
 
+/**
+ * A quad lit by one light, under the hider given, with the surface and light named.
+ **/
+boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string & hider, const std::string & light,
+    const std::string & surface) {
+    v3d::moya::Renderer renderer;
+    v3d::moya::RIBHandler handler(&renderer);
+    BOOST_REQUIRE(read(
+        "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
+        "Format 8 6 1\n"
+        "PixelSamples 1 1\n"
+        "PixelFilter \"box\" 1 1\n"
+        "Projection \"orthographic\"\n"
+        "Clipping 1 100\n" + hider +
+        "WorldBegin\n"
+        "LightSource \"" + light + "\" 1\n"
+        "Surface \"" + surface + "\"\n"
+        "Polygon \"P\" [-5 -5 5  -5 5 5  5 5 5  5 -5 5]\n"
+        "WorldEnd\n", &handler));
+    return handler.context().framebuffer()->planes();
+}
+
+/**
+ * Lights and surfaces pass messages under both hiders, as a traced hit runs its lights and its
+ * surface as a grid does.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_messages_under_both_hiders_test) {
+    for (const std::string & hider : { std::string(), std::string("Hider \"raytrace\"\n") }) {
+        BOOST_TEST_CONTEXT("hider '" << hider << "'") {
+            BOOST_CHECK_CLOSE(messaged(hider, "messenger", "heard")->value(v3d::moya::FrameBuffer::RED, 4, 3), 0.5F, 0.01F);
+            BOOST_CHECK_CLOSE(messaged(hider, "asker", "told")->value(v3d::moya::FrameBuffer::RED, 4, 3), 0.75F, 0.01F);
+        }
+    }
+}
+
 };  // namespace

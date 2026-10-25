@@ -184,6 +184,7 @@ bool Emitter::emit(runtime::Program* program) {
         reg.storage = symbol.storage;
         reg.name = symbol.name;
         reg.parameter = symbol.role == Symbol::Role::PARAMETER;
+        reg.output = reg.parameter && symbol.output;
         program_->registers.push_back(reg);
     }
     program_->symbols = symbols_.size();

@@ -164,6 +164,21 @@ class Renderer {
      *         the machine then returns black and reports it
      **/
     virtual const Texture* texture(const std::string & name);
+
+    /**
+     * RI's message passing: the output parameter `name` of another shader running on the same
+     * points. `shader` is the call's name, which names the shader read:
+     * - "surface" is the surface being shaded. A light reads it.
+     * - "displacement" is the displacement shader that ran on the points.
+     * - "lightsource" is the light an illuminance loop is running for.
+     *
+     * `value` is sized for the batch, with the type and storage of the caller's variable. The
+     * renderer writes every point of it, and the machine copies the live points across.
+     *
+     * @return false when that shader is not running here, or has no output parameter of that
+     *         name and type. The call then returns 0 and leaves the variable as it was
+     **/
+    virtual bool message(const std::string & shader, const std::string & name, Value* value);
 };
 
 };  // namespace v3d::render::offline::sl::runtime

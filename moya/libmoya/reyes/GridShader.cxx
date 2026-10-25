@@ -114,6 +114,19 @@ const v3d::render::offline::Texture* GridShader::texture(const std::string & nam
     return context_->textures().find(name);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the signature is Renderer::message
+bool GridShader::message(const std::string & shader, const std::string & name, Value* value) {
+    const Run* from = nullptr;
+    if (shader == "surface") {
+        from = surfaceRun_;
+    } else if (shader == "displacement") {
+        from = displacementRun_;
+    } else if (shader == "lightsource") {
+        from = lightRun_;
+    }
+    return from != nullptr && from->machine.output(name, value);
+}
+
 bool GridShader::transmission(const Value & from, const Value & to, Value* fraction) {
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 source(toWorld_ * glm::vec4(from.triple(point), 1.0F));
@@ -169,6 +182,8 @@ bool GridShader::light(unsigned int index, const Value & surface, const v3d::ren
     const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, gathering, direction, colour, reached,
         ambient, shining.area ? &from : nullptr);
     placement_ = was;
+    // the illuminance body that runs next for this light reads its output parameters
+    lightRun_ = ran ? &held : nullptr;
     if (ran && shining.area) {
         // each sample carries its share of the light
         for (unsigned int point = 0; point < batch_; point++) {
@@ -179,6 +194,8 @@ bool GridShader::light(unsigned int index, const Value & surface, const v3d::ren
 }
 
 void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
+    // a grid with no displacement shader has none for its surface to read
+    displacementRun_ = nullptr;
     if (!shading.displacement.shader || grid == nullptr) {
         return;
     }
@@ -220,6 +237,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
     if (!held.machine.run()) {
         return;
     }
+    displacementRun_ = &held;
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);
@@ -287,7 +305,14 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     }
     held.globals.eye(&held.machine, glm::vec3(0.0F));
 
-    if (!held.machine.run()) {
+    surfaceRun_ = &held;
+    lightRun_ = nullptr;
+    const bool ran = held.machine.run();
+    surfaceRun_ = nullptr;
+    lightRun_ = nullptr;
+    // the displacement belongs to this grid, and the next grid sets its own
+    displacementRun_ = nullptr;
+    if (!ran) {
         shading_ = nullptr;
         return;
     }

@@ -162,6 +162,26 @@ bool Machine::live(unsigned int point) const {
     return masks_.back()[point] != 0;
 }
 
+bool Machine::output(const std::string & name, Value* value) const {
+    if (program_ == nullptr) {
+        return false;
+    }
+    const int reg = program_->symbol(name);
+    if (reg < 0) {
+        return false;
+    }
+    const Register & declared = program_->registers[static_cast<std::size_t>(reg)];
+    if (!declared.output || declared.type != value->type()) {
+        return false;
+    }
+    const Value & held = file_[static_cast<std::size_t>(reg)];
+    const unsigned int wide = value->storage() == Storage::VARYING ? value->width() : 1;
+    for (unsigned int point = 0; point < wide; point++) {
+        value->assign(held, point);
+    }
+    return true;
+}
+
 bool Machine::writable(const Value & target, unsigned int point) const {
     // a uniform value is one value for the whole batch, so it is written while any lane is
     // live, not only while lane zero is. A lane that broke out of a loop must not stop a

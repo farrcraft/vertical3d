@@ -7,6 +7,7 @@
 
 #include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 
 #include <string>
@@ -65,6 +66,13 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
         const v3d::render::offline::sl::runtime::Value & direction,
         v3d::render::offline::sl::runtime::Value* colour) override;
     const v3d::render::offline::Texture* texture(const std::string & name) override;
+    /**
+     * A light reads the surface being shaded, and a surface's illuminance loop reads the light
+     * it is running for. A traced primitive was displaced when it was diced, so a hit has no
+     * displacement shader to read.
+     **/
+    bool message(const std::string & shader, const std::string & name,
+        v3d::render::offline::sl::runtime::Value* value) override;
     /** The hit and its two neighbours, a step du along u and dv along v from it. **/
     Shape shape() const override;
 
@@ -79,6 +87,10 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
      * hit itself.
      **/
     void neighbours(Hit* alongU, Hit* alongV);
+
+    /** The machines whose output parameters a message reads, or null. **/
+    const v3d::render::offline::sl::runtime::Machine* surfaceMachine_ = nullptr;
+    const v3d::render::offline::sl::runtime::Machine* lightMachine_ = nullptr;
 
     Tracer* tracer_;
     const Hit & hit_;

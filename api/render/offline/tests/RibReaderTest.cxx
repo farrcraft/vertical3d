@@ -9,9 +9,11 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/rib/Requests.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <cmath>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -822,14 +824,23 @@ BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
 
 /**
  * A quadric has four varying values, one at each corner of its parameter space, so a sphere's
- * varying "Cs" holds four colours.
+ * varying "Cs" holds four colours, and the reader does not warn that the array is the wrong
+ * length.
  **/
 BOOST_AUTO_TEST_CASE(ribreader_a_sphere_reads_four_varying_values_test) {
     CountingHandler handler;
-    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> heard = std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(16);
+    logger->get()->sinks().push_back(heard);
+    v3d::render::offline::rib::Reader reader(logger);
     BOOST_REQUIRE(read("Sphere 1 -1 1 360 \"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n", &handler, &reader));
+    logger->get()->sinks().pop_back();
+
     BOOST_CHECK_EQUAL(handler.count("Sphere"), 1U);
     BOOST_CHECK_EQUAL(handler.colors_.size(), 4U);
+    for (const std::string & line : heard->last_formatted()) {
+        BOOST_CHECK_MESSAGE(!line.contains("carries"), line);
+    }
 }
 
 };  // namespace

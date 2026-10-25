@@ -10,6 +10,7 @@
 #include <api/render/offline/sl/Compiler.h>
 #include <api/render/offline/sl/Emitter.h>
 #include <api/render/offline/sl/Parser.h>
+#include <api/render/offline/sl/Types.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
@@ -785,6 +786,53 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     }
     BOOST_CHECK(declared == written);
     BOOST_CHECK(stubs == std::set<std::string>({ "shadow" }));
+}
+
+namespace {
+
+/**
+ * A renderer whose lights pass a "tag" of 0.5 as a float, and nothing else.
+ **/
+class Messaging final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
+        return false;
+    }
+
+    bool message(const std::string & shader, const std::string & name,
+        v3d::render::offline::sl::runtime::Value* value) override {
+        if (shader != "lightsource" || name != "tag" || value->type() != v3d::render::offline::sl::Type::FLOAT) {
+            return false;
+        }
+        for (unsigned int point = 0; point < value->width(); point++) {
+            value->number(point, 0.5F);
+        }
+        return true;
+    }
+};
+
+};  // namespace
+
+/**
+ * A message call returns 1 and writes the variable when the renderer passes the value, and
+ * returns 0 and leaves the variable as it was when it does not.
+ **/
+BOOST_AUTO_TEST_CASE(sllibrary_message_passing_test) {
+    Messaging renderer;
+    const Shaded shaded(
+        "float tag = 0;\n"
+        "float found = lightsource(\"tag\", tag);\n"
+        "float other = 7;\n"
+        "float missing = lightsource(\"other\", other);\n"
+        "float none = 3;\n"
+        "float without = surface(\"tag\", none);", 1, &renderer);
+
+    BOOST_CHECK_EQUAL(shaded.number("found"), 1.0F);
+    BOOST_CHECK_EQUAL(shaded.number("tag"), 0.5F);
+    BOOST_CHECK_EQUAL(shaded.number("missing"), 0.0F);
+    BOOST_CHECK_EQUAL(shaded.number("other"), 7.0F);
+    BOOST_CHECK_EQUAL(shaded.number("without"), 0.0F);
+    BOOST_CHECK_EQUAL(shaded.number("none"), 3.0F);
 }
 
 };  // namespace

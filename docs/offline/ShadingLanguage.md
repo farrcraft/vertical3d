@@ -232,9 +232,21 @@ files on disk.
   argument that the built-in reads and then writes in place. `setxcomp`, `setycomp`, `setzcomp`
   and `setcomp` each update their first argument. The compiler requires a variable there that
   the shader may assign, and propagates the storage class of the call's inputs into it, as an
-  assignment would. `fresnel` is the one built-in with outputs: it returns the unpolarised
-  reflectance of a dielectric, with `refract`'s conventions, and writes the reflected and
-  refracted directions.
+  assignment would. `fresnel` returns the unpolarised reflectance of a dielectric, with
+  `refract`'s conventions, and writes the reflected and refracted directions.
+- **A shader reads another's `output` parameter through message passing**, as RI defines it.
+  `surface("name", v)`, `displacement("name", v)` and `lightsource("name", v)` copy that
+  shader's parameter into `v` and return 1, or return 0 and leave `v` as it was. The parameter
+  has to be declared `output` and be of `v`'s type.
+  - A light reads `surface()`: the surface being shaded, as its values stand when the light
+    runs.
+  - A surface reads `displacement()`: the displacement shader that ran on the same grid. A
+    traced hit has none to read, because a traced primitive was displaced when it was diced.
+  - A surface reads `lightsource()` inside an `illuminance` body: the light the body is running
+    for.
+  - The renderer answers through `runtime::Renderer::message`, with `Machine::output()` reading
+    the other machine. `"surface"` and `"displacement"` are keywords, and inside a shader's body
+    the parser reads them as these calls.
 - **The componentwise maths takes a float or a triple.** `abs`, `sign`, `floor`, `ceil`,
   `round`, `sqrt`, `exp`, one-argument `log`, `mod`, `pow`, `min`, `max`, `clamp` and `mix`
   apply the same function to each component. A float argument is read for every component.

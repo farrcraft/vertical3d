@@ -39,8 +39,8 @@ class Symbol final {
     /** Whether the declaration states the storage class. When false, it is inferred. **/
     bool declared = false;
     /**
-     * Whether a shader parameter is declared `output`. Recorded from the declaration, but
-     * nothing reads it, and no output parameter is written back to the caller.
+     * Whether a shader parameter is declared `output`. Another shader running on the same
+     * point reads it through surface(), displacement() or lightsource().
      **/
     bool output = false;
 };
