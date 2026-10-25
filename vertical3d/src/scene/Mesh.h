@@ -7,6 +7,8 @@
 
 #include <api/brep/BRep.h>
 
+#include <cstdint>
+
 #include "Item.h"
 
 #include <boost/shared_ptr.hpp>
@@ -33,6 +35,11 @@ class Mesh final : public Item {
     Kind kind() const noexcept override;
 
     const boost::shared_ptr<v3d::brep::BRep>& geometry() const noexcept;
+
+    /**
+     * The item's revision, which counts the geometry's changes as well
+     **/
+    std::uint64_t revision() const noexcept override;
 
  private:
     boost::shared_ptr<v3d::brep::BRep> geometry_;

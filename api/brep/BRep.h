@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/AABBox.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,11 @@ namespace v3d::brep {
  * It is geometry alone: it has no id and no placement, and is described about its own origin.
  * Whatever holds it gives it both. Each vertex, half edge and face carries its own selection
  * flag. A copy is a separate mesh with the same parts and the same flags.
+ *
+ * It counts its changes. Adding a part and restoring a snapshot each add one to changes(), and
+ * so does every function in Operations.h, which work through them. A part changed in place,
+ * through the pointer vertex(), edge() or face() returns, is not counted, so the code changing
+ * it calls touch(). A change of selection is not a change of the geometry, and is not counted.
  **/
 class BRep {
  public:
@@ -92,6 +98,16 @@ class BRep {
 
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
 
+        /**
+         * @return how many times the mesh has been changed. It never goes down
+         **/
+        std::uint64_t changes(void) const noexcept;
+
+        /**
+         * Count a change made to a part in place.
+         **/
+        void touch(void) noexcept;
+
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;
         size_t faceCount(void) const;
@@ -109,6 +125,7 @@ class BRep {
         std::vector<Vertex> vertices_;
         std::vector<Face> faces_;
         std::vector<HalfEdge> edges_;
+        std::uint64_t changes_ = 0;
 };
 
 

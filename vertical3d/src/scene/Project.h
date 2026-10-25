@@ -84,6 +84,11 @@ class Project final {
     boost::filesystem::path scene() const;
 
     /**
+     * @return what the last save wrote of the scene
+     **/
+    const SceneStore::Written& written() const noexcept;
+
+    /**
      * @return what the project is called, which the manifest holds
      **/
     const std::string& name() const noexcept;
@@ -96,7 +101,7 @@ class Project final {
     /**
      * Write the layout, the scene and the manifest into a directory.
      **/
-    bool write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) const;
+    bool write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     SceneStore store_;

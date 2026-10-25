@@ -7,6 +7,8 @@
 
 #include <api/brep/BRep.h>
 
+#include <cstdint>
+
 #include "Item.h"
 
 #include <boost/make_shared.hpp>
@@ -30,6 +32,12 @@ Item::Kind Mesh::kind() const noexcept {
  **/
 const boost::shared_ptr<v3d::brep::BRep>& Mesh::geometry() const noexcept {
     return geometry_;
+}
+
+/**
+ **/
+std::uint64_t Mesh::revision() const noexcept {
+    return Item::revision() + geometry_->changes();
 }
 
 };  // namespace v3d::editor

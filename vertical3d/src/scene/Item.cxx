@@ -35,6 +35,18 @@ void Item::documentId(std::int64_t id) noexcept {
 
 /**
  **/
+std::uint64_t Item::revision() const noexcept {
+    return changes() + changes_;
+}
+
+/**
+ **/
+void Item::changed() noexcept {
+    changes_++;
+}
+
+/**
+ **/
 bool Item::selected() const noexcept {
     return selected_;
 }

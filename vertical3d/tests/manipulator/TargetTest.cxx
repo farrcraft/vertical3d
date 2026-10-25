@@ -9,6 +9,7 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Light.h>
@@ -19,6 +20,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -217,6 +219,24 @@ BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
     BOOST_CHECK(lights.items()[0] == light);
     BOOST_CHECK_SMALL(glm::distance(lights.pivot(), glm::vec3(4.0F, 0.0F, 0.0F)), 0.0001F);
     BOOST_CHECK(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Camera).empty());
+}
+
+BOOST_AUTO_TEST_CASE(target_move_counts_a_change_test) {
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    cube->geometry()->vertex(0)->selected(true);
+    const v3d::editor::Target target = v3d::editor::Target::components({ cube }, v3d::editor::SelectMask::Vertex);
+
+    // a component move changes the mesh's parts in place, and counts it, so a save sees it
+    const std::uint64_t before = cube->revision();
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK_GT(cube->revision(), before);
+    // so does putting a shape back, which a vertex command's undo and redo do
+    const v3d::editor::VertexCommand::Shape shape = v3d::editor::VertexCommand::Shape::of(target.parts()[0]);
+    const std::uint64_t moved = cube->revision();
+    shape.applyTo(target.parts()[0]);
+    BOOST_CHECK_GT(cube->revision(), moved);
 }
 
 };  // namespace

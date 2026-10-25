@@ -59,6 +59,8 @@ void VertexCommand::Shape::applyTo(const Target::Part& part) const {
     for (std::size_t index = 0; index < part.faces.size() && index < normals.size(); index++) {
         part.mesh->geometry()->face(part.faces[index])->normal(normals[index]);
     }
+    // the parts were changed in place, which the mesh does not see for itself
+    part.mesh->geometry()->touch();
 }
 
 /**

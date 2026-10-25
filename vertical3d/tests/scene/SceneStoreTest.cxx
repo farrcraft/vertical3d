@@ -176,7 +176,7 @@ std::int64_t query(const Scratch& scratch, const std::string& sql) {
 BOOST_AUTO_TEST_CASE(store_round_trip_test) {
     const Scratch scratch("round_trip");
     const boost::shared_ptr<v3d::editor::Scene> written = everyKind();
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));
 
     v3d::editor::Scene read;
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(store_selection_not_saved_test) {
         each->selected(true);
     }
     v3d::editor::as<v3d::editor::Mesh>(written->items()[0])->geometry()->face(0)->selected(true);
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));
 
     // selection is where the user is rather than what the document holds
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(store_selection_not_saved_test) {
 
 BOOST_AUTO_TEST_CASE(store_written_form_test) {
     const Scratch scratch("form");
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *everyKind()));
 
     // the header says what the database is, and which version of the tables it has
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(store_written_form_test) {
 
 BOOST_AUTO_TEST_CASE(store_rewrite_test) {
     const Scratch scratch("rewrite");
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
 
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(store_document_ids_test) {
     scene.add(second);
     scene.remove(second->id());
 
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), scene));
     v3d::editor::Scene read;
     BOOST_REQUIRE(store.read(scratch.path(), &read));
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(store_document_ids_test) {
 
 BOOST_AUTO_TEST_CASE(store_failed_write_keeps_the_last_save_test) {
     const Scratch scratch("failed_write");
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     v3d::editor::Scene first;
     first.add(item(v3d::editor::create_poly_plane()));
     BOOST_REQUIRE(store.write(scratch.path(), first));
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(store_failed_write_keeps_the_last_save_test) {
 
 BOOST_AUTO_TEST_CASE(store_missing_document_test) {
     const Scratch scratch("missing");
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     v3d::editor::Scene scene;
     BOOST_CHECK(!store.read(scratch.path(), &scene));
 
@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_another_programs_database_test) {
         BOOST_REQUIRE(database.open(scratch.path(), v3d::database::Database::Mode::Create));
         BOOST_REQUIRE(database.execute("CREATE TABLE theirs (value INTEGER); INSERT INTO theirs VALUES (7);"));
     }
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     v3d::editor::Scene scene;
     BOOST_CHECK(!store.read(scratch.path(), &scene));
 
@@ -349,7 +349,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "another program's database", "PRAGMA application_id = 1" },
     };
 
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     for (const Damage& damage : damages) {
         BOOST_TEST_CONTEXT(damage.what) {
             const Scratch scratch("damaged");
@@ -380,11 +380,137 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_dangling_reference_test) {
     // the write keeps what it is given, and the read refuses what the wireframe would index past
     v3d::editor::Scene written;
     written.add(item(broken));
-    const v3d::editor::SceneStore store(logger());
+    v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), written));
     v3d::editor::Scene read;
     BOOST_CHECK(!store.read(scratch.path(), &read));
     BOOST_CHECK_EQUAL(read.count(), 0U);
+}
+
+BOOST_AUTO_TEST_CASE(store_writes_only_the_changes_test) {
+    const Scratch scratch("changes");
+    v3d::editor::SceneStore store(logger());
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK(store.written().whole);
+    BOOST_CHECK_EQUAL(store.written().rows, 4U);
+
+    // a save that changes nothing writes nothing
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK(!store.written().whole);
+    BOOST_CHECK_EQUAL(store.written().rows, 0U);
+    BOOST_CHECK_EQUAL(store.written().moved, 0U);
+    BOOST_CHECK_EQUAL(store.written().removed, 0U);
+
+    // a move writes the one row, and the change reads back
+    scene->items()[1]->translation(glm::vec3(7.0F, 0.0F, 0.0F));
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    v3d::editor::Scene read;
+    v3d::editor::SceneStore reader(logger());
+    BOOST_REQUIRE(reader.read(scratch.path(), &read));
+    BOOST_CHECK(read.items()[1]->translation() == glm::vec3(7.0F, 0.0F, 0.0F));
+
+    // so does a change to a mesh's geometry made in place, once it is counted
+    const boost::shared_ptr<v3d::editor::Mesh> cube = v3d::editor::as<v3d::editor::Mesh>(scene->items()[0]);
+    cube->geometry()->vertex(0)->point(glm::vec3(3.0F));
+    cube->geometry()->touch();
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    BOOST_REQUIRE(reader.read(scratch.path(), &read));
+    BOOST_CHECK(v3d::editor::as<v3d::editor::Mesh>(read.items()[0])->geometry()->vertex(0)->point() == glm::vec3(3.0F));
+}
+
+BOOST_AUTO_TEST_CASE(store_removes_and_moves_rows_test) {
+    const Scratch scratch("removes");
+    v3d::editor::SceneStore store(logger());
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+
+    // removing the first item deletes its row and its blobs, and the rest only change place
+    const boost::shared_ptr<v3d::editor::Item> cube = scene->items()[0];
+    scene->remove(cube->id());
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().removed, 1U);
+    BOOST_CHECK_EQUAL(store.written().moved, 3U);
+    BOOST_CHECK_EQUAL(store.written().rows, 0U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items"), 3);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM buffers"), 3);
+
+    // putting it back, as a redone creation does, writes it again with its id
+    scene->add(cube);
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    v3d::editor::Scene read;
+    v3d::editor::SceneStore reader(logger());
+    BOOST_REQUIRE(reader.read(scratch.path(), &read));
+    BOOST_REQUIRE_EQUAL(read.count(), 4U);
+    same(cube, read.items()[3]);
+    BOOST_CHECK(read.items()[0]->kind() == v3d::editor::Item::Kind::Camera);
+}
+
+BOOST_AUTO_TEST_CASE(store_reads_then_writes_only_the_changes_test) {
+    const Scratch scratch("read_then_write");
+    {
+        v3d::editor::SceneStore first(logger());
+        BOOST_REQUIRE(first.write(scratch.path(), *everyKind()));
+    }
+
+    // a store that read a document remembers it, so its next save writes only what changed
+    v3d::editor::SceneStore store(logger());
+    v3d::editor::Scene scene;
+    BOOST_REQUIRE(store.read(scratch.path(), &scene));
+    v3d::editor::as<v3d::editor::Light>(scene.items()[2])->emission({ .intensity = 3.0F });
+    BOOST_REQUIRE(store.write(scratch.path(), scene));
+    BOOST_CHECK(!store.written().whole);
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+}
+
+BOOST_AUTO_TEST_CASE(store_writes_another_document_whole_test) {
+    const Scratch first("whole_first");
+    const Scratch second("whole_second");
+    v3d::editor::SceneStore store(logger());
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    BOOST_REQUIRE(store.write(first.path(), *scene));
+
+    // a document the store has not written or read is written whole, as Save As does, and
+    // becomes the one it remembers
+    BOOST_REQUIRE(store.write(second.path(), *scene));
+    BOOST_CHECK(store.written().whole);
+    BOOST_CHECK_EQUAL(store.written().rows, 4U);
+    BOOST_REQUIRE(store.write(second.path(), *scene));
+    BOOST_CHECK(!store.written().whole);
+
+    // and one another store wrote is written whole, rather than merged into
+    v3d::editor::SceneStore other(logger());
+    v3d::editor::Scene small;
+    small.add(item(v3d::editor::create_poly_plane()));
+    BOOST_REQUIRE(other.write(first.path(), small));
+    BOOST_REQUIRE(store.write(second.path(), *scene));
+    BOOST_REQUIRE(other.write(first.path(), small));
+    BOOST_CHECK(!other.written().whole);
+    BOOST_REQUIRE(store.write(first.path(), *scene));
+    BOOST_CHECK(store.written().whole);
+    BOOST_CHECK_EQUAL(query(first, "SELECT count(*) FROM items"), 4);
+}
+
+BOOST_AUTO_TEST_CASE(store_failed_write_is_followed_by_a_whole_one_test) {
+    const Scratch scratch("after_failure");
+    v3d::editor::SceneStore store(logger());
+    const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+
+    // a write that fails leaves the document as the last save left it, and the store forgets
+    // what it remembered of it
+    alter(scratch, "CREATE TRIGGER refuse BEFORE UPDATE ON items BEGIN SELECT RAISE(ABORT, 'refused'); END;");
+    scene->remove(scene->items()[0]->id());
+    BOOST_CHECK(!store.write(scratch.path(), *scene));
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items"), 4);
+
+    alter(scratch, "DROP TRIGGER refuse");
+    BOOST_REQUIRE(store.write(scratch.path(), *scene));
+    BOOST_CHECK(store.written().whole);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items"), 3);
 }
 
 };  // namespace

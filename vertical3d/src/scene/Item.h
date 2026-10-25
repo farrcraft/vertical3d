@@ -45,15 +45,30 @@ class Item : public v3d::dag::Node, public v3d::dag::Transform {
     void documentId(std::int64_t id) noexcept;
 
     /**
+     * A number that moves whenever anything a document saves of the item changes: its
+     * placement, what its kind holds, and a mesh's geometry. It never goes down, so a caller
+     * that kept it can tell whether the item has changed since. Its selection is not saved, and
+     * does not move it.
+     **/
+    virtual std::uint64_t revision() const noexcept;
+
+    /**
      * Whether the item as a whole is selected, which is object mode selection. A mesh's
      * component selection is the flag each of its vertices, half edges and faces carries.
      **/
     bool selected() const noexcept;
     void selected(bool selected) noexcept;
 
+ protected:
+    /**
+     * Count a change to what a kind holds, which a subclass's setters make.
+     **/
+    void changed() noexcept;
+
  private:
     bool selected_;
     std::int64_t documentId_;
+    std::uint64_t changes_ = 0;
 };
 
 /**

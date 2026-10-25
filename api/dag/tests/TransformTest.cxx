@@ -10,6 +10,7 @@
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace {
@@ -79,6 +80,22 @@ BOOST_AUTO_TEST_CASE(transform_value_test) {
     BOOST_CHECK_EQUAL(value.position.x, 2.0F);
     BOOST_CHECK_EQUAL(value.scale.y, 2.0F);
     BOOST_CHECK_EQUAL((value.matrix() == transform.matrix()), true);
+}
+
+BOOST_AUTO_TEST_CASE(transform_changes_test) {
+    v3d::dag::Transform transform;
+    BOOST_CHECK_EQUAL(transform.changes(), 0U);
+
+    // every setter counts, a setter that sets what is already there included
+    transform.translation(glm::vec3(1.0F, 0.0F, 0.0F));
+    transform.translate(glm::vec3(0.0F));
+    transform.rotation(glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    transform.scale(glm::vec3(2.0F));
+    BOOST_CHECK_EQUAL(transform.changes(), 4U);
+
+    // and reading does not
+    static_cast<void>(transform.matrix());
+    BOOST_CHECK_EQUAL(transform.changes(), 4U);
 }
 
 };  // namespace

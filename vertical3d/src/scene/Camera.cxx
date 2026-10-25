@@ -40,6 +40,7 @@ const Camera::Lens& Camera::lens() const noexcept {
  **/
 void Camera::lens(const Lens& lens) noexcept {
     lens_ = lens;
+    changed();
 }
 
 };  // namespace v3d::editor

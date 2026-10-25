@@ -103,10 +103,27 @@ untouched, if:
 - a blob belongs to an item that is not a mesh
 - `next_id` is missing or is not above every id the document holds
 
-**Writing.** `SceneStore::write` writes the whole scene in one transaction, replacing everything
-the document held. A write that fails at any point leaves the document as the last save left it,
-and a document the write was making is removed. A database that is not a scene document, or that
-this build could not read, is refused rather than overwritten.
+**Writing.** `SceneStore::write` writes in one transaction. A write that fails at any point leaves
+the document as the last save left it, and a document the write was making is removed. A
+database that is not a scene document, or that this build could not read, is refused rather than
+overwritten.
+
+**A save writes only what changed.** A `SceneStore` remembers the document it last wrote or read,
+and for each item in it the item itself, its revision and its place in the order. A write to that
+document:
+
+- writes the row and the blobs of each item that is new, or whose revision has moved
+- gives a new `position` to each item whose place alone changed, and writes nothing else of it
+- deletes the row of each item the scene no longer holds, which takes its blobs with it
+- writes `next_id`
+
+A write to any other path, a document the store has neither written nor read, is written whole:
+everything it held is deleted and every item is written. The next write after a write that
+failed is written whole too, because the document may no longer hold what the store remembers.
+`SceneStore::written()` says what the last write did.
+
+An item's revision is `Item::revision()`, which [Scene.md](Scene.md#the-scene) describes. A change
+that does not move it is not saved.
 
 **Versions.** Two versions are kept apart:
 

@@ -43,6 +43,7 @@ const Light::Emission& Light::emission() const noexcept {
  **/
 void Light::emission(const Emission& emission) noexcept {
     emission_ = emission;
+    changed();
 }
 
 };  // namespace v3d::editor

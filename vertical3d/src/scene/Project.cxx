@@ -201,6 +201,12 @@ boost::filesystem::path Project::scene() const {
 
 /**
  **/
+const SceneStore::Written& Project::written() const noexcept {
+    return store_.written();
+}
+
+/**
+ **/
 const std::string& Project::name() const noexcept {
     return name_;
 }
@@ -213,7 +219,7 @@ void Project::name(const std::string& title) {
 
 /**
  **/
-bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) const {
+bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) {
     if (!scene) {
         return false;
     }

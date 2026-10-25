@@ -27,6 +27,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "Camera.h"
@@ -39,6 +40,7 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -711,30 +713,92 @@ bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64
 }
 
 /**
- * Write every item and the next id. The tables are empty when this starts.
+ * The statements a write runs.
  **/
-bool store(v3d::database::Database* database, const Scene& scene, std::string* problem) {
-    Inserts inserts{
-        .item = database->prepare(
-            "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-        .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") };
-    v3d::database::Statement next = database->prepare("INSERT INTO meta (key, value) VALUES ('next_id', ?)");
-    if (!inserts.item.valid() || !inserts.buffer.valid() || !next.valid()) {
+struct Writes {
+    explicit Writes(v3d::database::Database* database) :
+        inserts{
+            .item = database->prepare(
+                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+            .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") },
+        remove(database->prepare("DELETE FROM items WHERE id = ?")),
+        move(database->prepare("UPDATE items SET position = ? WHERE id = ?")),
+        next(database->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('next_id', ?)")) {
+    }
+
+    bool valid() const {
+        return inserts.item.valid() && inserts.buffer.valid() && remove.valid() && move.valid() && next.valid();
+    }
+
+    /**
+     * The reason a statement failed, from whichever did.
+     **/
+    std::string error() const {
+        for (const v3d::database::Statement* statement : { &inserts.item, &inserts.buffer, &remove, &move, &next }) {
+            if (!statement->error().empty()) {
+                return statement->error();
+            }
+        }
+        return std::string();
+    }
+
+    Inserts inserts;
+    v3d::database::Statement remove;
+    v3d::database::Statement move;
+    v3d::database::Statement next;
+};
+
+/**
+ * Write the scene's changes since the items saved, or every item when nothing is saved, and the
+ * next id. A deleted row takes its blobs with it.
+ *
+ * @param saved the items as the document holds them, which a whole write has emptied
+ * @param after the items as the document will hold them once this commits
+ **/
+bool store(v3d::database::Database* database, const Scene& scene, const std::map<std::int64_t, SceneStore::Saved>& saved,
+    std::map<std::int64_t, SceneStore::Saved>* after, SceneStore::Written* written, std::string* problem) {
+    Writes writes(database);
+    if (!writes.valid()) {
         *problem = database->error();
         return false;
     }
 
     std::int64_t position = 0;
     for (const boost::shared_ptr<Item>& item : scene.items()) {
-        if (!storeItem(&inserts, item, position)) {
-            *problem = !inserts.item.error().empty() ? inserts.item.error() : inserts.buffer.error();
+        const std::int64_t id = item->documentId();
+        const auto found = saved.find(id);
+        const bool known = found != saved.end();
+        bool ran = true;
+        if (known && found->second.item.lock() == item && found->second.revision == item->revision()) {
+            if (found->second.position != position) {
+                ran = Binder(&writes.move).integer(position).integer(id).run();
+                written->moved++;
+            }
+        } else {
+            ran = (!known || Binder(&writes.remove).integer(id).run()) && storeItem(&writes.inserts, item, position);
+            written->rows++;
+        }
+        if (!ran) {
+            *problem = writes.error();
             return false;
         }
+        (*after)[id] = SceneStore::Saved{ .item = item, .revision = item->revision(), .position = position };
         position++;
     }
-    if (!Binder(&next).integer(scene.nextDocumentId()).run()) {
-        *problem = next.error();
+
+    for (const auto& [id, kept] : saved) {
+        if (!after->contains(id)) {
+            if (!Binder(&writes.remove).integer(id).run()) {
+                *problem = writes.error();
+                return false;
+            }
+            written->removed++;
+        }
+    }
+
+    if (!Binder(&writes.next).integer(scene.nextDocumentId()).run()) {
+        *problem = writes.error();
         return false;
     }
     return true;
@@ -750,7 +814,7 @@ SceneStore::SceneStore(const boost::shared_ptr<v3d::log::Logger>& logger) :
 
 /**
  **/
-bool SceneStore::read(const std::string& path, Scene* scene) const {
+bool SceneStore::read(const std::string& path, Scene* scene) {
     if (scene == nullptr) {
         return false;
     }
@@ -773,30 +837,44 @@ bool SceneStore::read(const std::string& path, Scene* scene) const {
         scene->add(item);
     }
     scene->nextDocumentId(loaded.next);
+
+    // the document holds what was just read, so the next write to it starts from here
+    path_ = path;
+    saved_.clear();
+    std::int64_t position = 0;
+    for (const boost::shared_ptr<Item>& item : loaded.items) {
+        saved_[item->documentId()] = Saved{ .item = item, .revision = item->revision(), .position = position++ };
+    }
     logger_->get()->info("read {} items from {}", scene->count(), path);
     return true;
 }
 
 /**
  **/
-bool SceneStore::write(const std::string& path, const Scene& scene) const {
+bool SceneStore::write(const std::string& path, const Scene& scene) {
     boost::system::error_code error;
     const bool existed = boost::filesystem::exists(path, error);
 
     std::string problem;
     bool written = false;
+    Written what;
+    std::map<std::int64_t, Saved> after;
     {
         v3d::database::Database database;
         bool fresh = false;
         if (!database.open(path, v3d::database::Database::Mode::Create)) {
             problem = database.error();
         } else if (header(&database, &fresh, &problem)) {
+            // only the document this store last wrote or read can take just the changes.
+            // Anything else, a document another store wrote included, is written whole
+            what.whole = fresh || !existed || path != path_;
+            const std::map<std::int64_t, Saved> none;
             v3d::database::Transaction transaction(&database);
             written = transaction.active() &&
                 (!fresh || (database.execute(SCHEMA) && database.applicationId(APPLICATION_ID) &&
                     database.userVersion(SCHEMA_VERSION))) &&
-                database.execute("DELETE FROM buffers; DELETE FROM items; DELETE FROM meta;") &&
-                store(&database, scene, &problem) && transaction.commit();
+                (!what.whole || database.execute("DELETE FROM buffers; DELETE FROM items; DELETE FROM meta;")) &&
+                store(&database, scene, what.whole ? none : saved_, &after, &what, &problem) && transaction.commit();
             if (!written && problem.empty()) {
                 problem = database.error();
             }
@@ -804,15 +882,27 @@ bool SceneStore::write(const std::string& path, const Scene& scene) const {
     }
 
     if (!written) {
-        // a document that this write made is not left behind empty
+        // a document that this write made is not left behind empty, and a document that may
+        // now be other than the store remembers is written whole next time
         if (!existed) {
             boost::filesystem::remove(path, error);
         }
+        path_.clear();
+        saved_.clear();
         logger_->get()->error("Cannot write the scene {}: {}", path, problem);
         return false;
     }
-    logger_->get()->info("wrote {} items to {}", scene.count(), path);
+    path_ = path;
+    saved_ = std::move(after);
+    written_ = what;
+    logger_->get()->info("wrote {} of {} items to {}", what.rows, scene.count(), path);
     return true;
+}
+
+/**
+ **/
+const SceneStore::Written& SceneStore::written() const noexcept {
+    return written_;
 }
 
 };  // namespace v3d::editor

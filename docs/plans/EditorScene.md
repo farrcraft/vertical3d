@@ -292,9 +292,20 @@ keyed per channel with `Track`, and stored in the project.
 
 ### Step 11 — Incremental save
 
-**Open.** An item carries a revision that every change to it moves. The store remembers the
+**Closed.** An item carries a revision that every change to it moves. The store remembers the
 revision it last wrote for each item, and a save writes only the rows of items that changed,
 were added or were removed.
+
+- `dag::Transform` and `brep::BRep` count their changes. A mesh counts an added part and a
+  restore, so every operation counts. A part changed in place needs `touch()`, which the
+  component move and the vertex command call. `Item::revision()` sums the counts.
+- The store remembers the items of the one document it last wrote or read. An item that only
+  changed place has its `position` updated. A write to any other document, or the first after a
+  failed write, is written whole.
+- Tests: the counts for a transform, a mesh and each kind. A save that changes nothing writes
+  nothing, and a move writes one row. A removal deletes one row and moves the rest, and a redone
+  item is written again. A document read and then saved writes only its change. Another document
+  is written whole, and so is the first write after a failed one.
 
 - Tests: a save after one move writes one row. An undone creation deletes its row. A save that
   changes nothing writes nothing.

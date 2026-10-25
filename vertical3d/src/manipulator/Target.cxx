@@ -253,6 +253,8 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
                 geometry.face(face)->normal(normal);
             }
         }
+        // the parts were changed in place, which the mesh does not see for itself
+        geometry.touch();
     }
 }
 

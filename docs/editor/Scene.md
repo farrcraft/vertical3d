@@ -74,6 +74,13 @@ current. Each costs time in proportion to the whole mesh.
 puts a snapshot back whole, selection flags included. A topology command keeps one from before an
 operation and one from after it.
 
+**Counting changes.** `BRep::changes()` counts the mesh's changes, and never goes down. Adding a
+part and `restore()` each count one, so every function in `Operations.h` counts, because they work
+through them. A part changed in place, through the pointer `vertex()`, `edge()` or `face()`
+returns, is not seen by the mesh, so the code that changes it calls `BRep::touch()`. The editor's
+component move (`Target::move`) and a vertex command's undo and redo do. A change of selection is
+not a change of the geometry, and is not counted.
+
 **Changing topology.** The functions in `api/brep/Operations.h` change which parts a mesh holds.
 Each leaves a mesh that passes `validateStrict()`. Each appends its new parts, so no existing
 index changes, apart from `mergeVertices`. It compacts the arrays, so every part after a removed
@@ -149,7 +156,13 @@ order. `Scene::add` appends.
   An item cannot be copied, because a copy would share both ids.
 - **Placement.** `Transform` holds a translation, a rotation and a scale. `matrix()` composes
   them as translation × rotation × scale. `translation(v)` sets the position; `translate(v)`
-  adds an offset to it. A camera and a light ignore their scale.
+  adds an offset to it. A camera and a light ignore their scale. Every setter adds one to
+  `Transform::changes()`.
+- **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
+  its placement, its lens or emission, and a mesh's geometry. It is the sum of
+  `Transform::changes()`, the item's own count of changes to what its kind holds, and for a mesh
+  `BRep::changes()`. Each only goes up, so the sum moves exactly when one of them does. A change
+  of selection does not move it. A save writes an item again only when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,
   and `Scene::item(id)` finds any kind.

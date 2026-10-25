@@ -7,6 +7,8 @@
 
 #include <api/type/Transform.h>
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
@@ -17,6 +19,9 @@ namespace v3d::dag {
  *
  * A class that derives from this is placed in the world by matrix(). A mesh, for example,
  * describes its geometry about its own origin and is drawn through matrix().
+ *
+ * It counts its changes: every call to a setter adds one to changes(), so a caller that kept
+ * the count can tell whether the transform has been set since.
  **/
 class Transform {
  public:
@@ -48,8 +53,14 @@ class Transform {
      **/
     const v3d::type::Transform & value(void) const;
 
+    /**
+     * @return how many times a setter has been called. It never goes down
+     **/
+    std::uint64_t changes(void) const noexcept;
+
  private:
     v3d::type::Transform value_;
+    std::uint64_t changes_ = 0;
 };
 
 };  // namespace v3d::dag

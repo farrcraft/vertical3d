@@ -7,12 +7,16 @@
 
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 
+#include "Item.h"
 #include "Scene.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 namespace v3d::editor {
 
@@ -27,6 +31,13 @@ namespace v3d::editor {
  * The database's header carries APPLICATION_ID, so a database another program wrote is
  * refused, and SCHEMA_VERSION, the version of its tables. Each kind of item has a version of
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
+ *
+ * **A save writes only what changed.** The store remembers each item it last wrote or read,
+ * with its revision and its place in the order, for the one document it last wrote or read. A
+ * write to that document writes the rows of the items that are new or whose revision has moved.
+ * It moves the rows of items whose place alone changed, and deletes the rows of items the scene
+ * no longer holds. A write to any other path, or to that path once the store has failed
+ * to write it, writes the whole scene.
  **/
 class SceneStore final {
  public:
@@ -48,6 +59,20 @@ class SceneStore final {
     static constexpr std::int64_t CAMERA_VERSION = 1;
     static constexpr std::int64_t LIGHT_VERSION = 1;
 
+    /**
+     * What the last write did.
+     **/
+    struct Written {
+        /** Whether it wrote the whole scene rather than its changes. **/
+        bool whole = false;
+        /** How many items' rows it wrote. **/
+        std::size_t rows = 0;
+        /** How many rows it gave a new place in the order, and nothing else. **/
+        std::size_t moved = 0;
+        /** How many rows it deleted. **/
+        std::size_t removed = 0;
+    };
+
     explicit SceneStore(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
@@ -59,20 +84,40 @@ class SceneStore final {
      *
      * @return whether the whole document was read
      **/
-    bool read(const std::string& path, Scene* scene) const;
+    bool read(const std::string& path, Scene* scene);
 
     /**
-     * Write the scene as the whole of a document, making the document when there is none.
+     * Write the scene into a document, making the document when there is none. Only what
+     * changed is written to the document this store last wrote or read, and the whole scene to
+     * any other.
      *
      * Everything is written in one transaction, so a write that fails leaves the document as
      * it was. A document this build could not read is refused rather than overwritten.
      *
      * @return whether the scene was written
      **/
-    bool write(const std::string& path, const Scene& scene) const;
+    bool write(const std::string& path, const Scene& scene);
+
+    /**
+     * @return what the last write that succeeded did
+     **/
+    const Written& written() const noexcept;
+
+    /**
+     * An item as the document holds it: the item, its revision and its place in the order.
+     **/
+    struct Saved {
+        boost::weak_ptr<Item> item;
+        std::uint64_t revision = 0;
+        std::int64_t position = 0;
+    };
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
+    // the document this store last wrote or read, and its items by document id
+    std::string path_;
+    std::map<std::int64_t, Saved> saved_;
+    Written written_;
 };
 
 };  // namespace v3d::editor

@@ -7,10 +7,12 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Operations.h>
 #include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -424,6 +426,33 @@ BOOST_AUTO_TEST_CASE(brep_newell_normal_test) {
         glm::vec3(0.0F, 0.0F, 1.0F));
     BOOST_CHECK(v3d::brep::newellNormal(line, 0) == glm::vec3(0.0F));
     BOOST_CHECK(v3d::brep::newellNormal(line, 7) == glm::vec3(0.0F));
+}
+
+BOOST_AUTO_TEST_CASE(brep_changes_test) {
+    v3d::brep::BRep mesh;
+    BOOST_CHECK_EQUAL(mesh.changes(), 0U);
+
+    // adding a part counts
+    mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    const std::uint64_t built = mesh.changes();
+    BOOST_CHECK_GT(built, 0U);
+
+    // a selection is not a change of the geometry
+    mesh.face(0)->selected(true);
+    mesh.deselectComponents();
+    BOOST_CHECK_EQUAL(mesh.changes(), built);
+
+    // a part changed in place is counted by touch(), and a restore counts
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    mesh.vertex(0)->point(glm::vec3(5.0F));
+    mesh.touch();
+    BOOST_CHECK_EQUAL(mesh.changes(), built + 1);
+    mesh.restore(before);
+    BOOST_CHECK_EQUAL(mesh.changes(), built + 2);
+
+    // an operation counts, because it works through the mesh
+    BOOST_REQUIRE(v3d::brep::splitEdge(mesh, 0).has_value());
+    BOOST_CHECK_GT(mesh.changes(), built + 2);
 }
 
 };  // namespace

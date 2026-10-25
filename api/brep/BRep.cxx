@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
@@ -32,6 +33,7 @@ BRep::~BRep() {
 }
 
 Index BRep::addVertex(const glm::vec3& v) {
+    changes_++;
     Index index = 0;
     for (; index < static_cast<Index>(vertices_.size()); index++) {
         if (vertices_[index] == v) {
@@ -44,12 +46,14 @@ Index BRep::addVertex(const glm::vec3& v) {
 }
 
 Index BRep::addEdge(Index vertex) {
+    changes_++;
     const HalfEdge halfEdge(vertex);
     edges_.push_back(halfEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
 void BRep::addFace(const std::vector<glm::vec3>& vertices, const glm::vec3& normal) {
+    changes_++;
     // add vertices
     std::vector<Index> indices;
     Index vertex;
@@ -278,18 +282,29 @@ size_t BRep::faceCount(void) const {
 }
 
 Index BRep::addVertex(const Vertex& v) {
+    changes_++;
     vertices_.push_back(v);
     return static_cast<Index>(vertices_.size() - 1);
 }
 
 Index BRep::addEdge(const HalfEdge& newEdge) {
+    changes_++;
     edges_.push_back(newEdge);
     return static_cast<Index>(edges_.size() - 1);
 }
 
 Index BRep::addFace(const Face& newFace) {
+    changes_++;
     faces_.push_back(newFace);
     return static_cast<Index>(faces_.size() - 1);
+}
+
+std::uint64_t BRep::changes(void) const noexcept {
+    return changes_;
+}
+
+void BRep::touch(void) noexcept {
+    changes_++;
 }
 
 void BRep::deselectComponents(void) noexcept {
@@ -313,6 +328,7 @@ BRep::Snapshot BRep::snapshot(void) const {
 }
 
 void BRep::restore(const Snapshot& snapshot) {
+    changes_++;
     vertices_ = snapshot.vertices;
     edges_ = snapshot.edges;
     faces_ = snapshot.faces;

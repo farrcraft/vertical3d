@@ -9,6 +9,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 
+#include <cstdint>
 #include <type_traits>
 
 #include <boost/test/unit_test.hpp>
@@ -99,6 +100,33 @@ BOOST_AUTO_TEST_CASE(camera_and_light_defaults_test) {
     BOOST_CHECK_CLOSE(light.emission().intensity, 1.0F, 0.01F);
     BOOST_CHECK_CLOSE(light.emission().cone, 0.523599F, 0.01F);
     BOOST_CHECK_CLOSE(light.emission().delta, 0.0872665F, 0.01F);
+}
+
+BOOST_AUTO_TEST_CASE(item_revision_test) {
+    v3d::editor::Camera camera;
+    v3d::editor::Light light;
+    v3d::editor::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
+
+    // placement, what a kind holds, and a mesh's geometry each move the revision
+    std::uint64_t before = camera.revision();
+    camera.translation(glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_CHECK_GT(camera.revision(), before);
+    before = camera.revision();
+    camera.lens(v3d::editor::Camera::Lens());
+    BOOST_CHECK_GT(camera.revision(), before);
+
+    before = light.revision();
+    light.emission(v3d::editor::Light::Emission());
+    BOOST_CHECK_GT(light.revision(), before);
+
+    before = mesh.revision();
+    mesh.geometry()->touch();
+    BOOST_CHECK_GT(mesh.revision(), before);
+
+    // and a selection does not
+    before = mesh.revision();
+    mesh.selected(true);
+    BOOST_CHECK_EQUAL(mesh.revision(), before);
 }
 
 };  // namespace
