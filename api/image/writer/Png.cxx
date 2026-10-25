@@ -5,6 +5,7 @@
 
 #include "Png.h"
 
+#include <api/image/File.h>
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
 #include <api/log/Logger.h>
@@ -61,8 +62,10 @@ struct Picture {
  * @return false when libpng reported an error
  **/
 // C4611 warns of any setjmp in C++. Nothing in encode() has a destructor for a longjmp to skip
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4611)
+#endif
 bool encode(png_structp png, png_infop info, Picture* picture) {
     if (setjmp(png_jmpbuf(png))) {  // NOLINT(cert-err52-cpp) - libpng reports an error by longjmp
         return false;
@@ -75,7 +78,9 @@ bool encode(png_structp png, png_infop info, Picture* picture) {
     png_write_end(png, info);
     return true;
 }
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 };  // namespace
 
@@ -122,8 +127,8 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     }
     picture.rows = rows.data();
 
-    FILE* fp = nullptr;
-    if (fopen_s(&fp, static_cast<std::string>(filename).c_str(), "wb") != 0) {
+    FILE* fp = openFile(static_cast<std::string>(filename), "wb");
+    if (fp == nullptr) {
         return false;
     }
     // the name lives as long as the write, because libpng's handlers read it

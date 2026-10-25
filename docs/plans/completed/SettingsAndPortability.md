@@ -90,7 +90,7 @@ as it already is for a `TextBox`. `typing()` says whether a field has the keyboa
 - A query for whether the widget just drawn is hovered, under the same one-frame-late rule every
   hover uses.
 - A checkbox, a float slider and a combo.
-- [ui/](../api/ui/README.md) describes each.
+- [ui/](../../api/ui/README.md) describes each.
 - Tests: a typed string edits the caller's, and a focused field makes `capturing()` true, so a
   typed key does not also fire a binding. With two widgets drawn and the second hovered, the
   first answers false. Each of the three settings widgets changes its value through input, not
@@ -119,7 +119,7 @@ both matched by a press, and the command fired twice.
 - Reset one command's override, and reset all of them, back to the binding document.
 - List the overrides, so an app can save them, and apply a saved list at start.
 - `rebind()` states what it does to a command the document binds to two sources.
-- [engine/](../api/engine/README.md) states the rules.
+- [engine/](../../api/engine/README.md) states the rules.
 - Tests: a rebind reads back the new source. A reset reads back the document's. Rebinding one of
   two sources leaves the other as stated. A saved list applied to a fresh engine reads back the
   same sources. A test that only checks `rebind()` returned true passes today.
@@ -133,7 +133,7 @@ backend's case. `Events` sets a volume on a bus or VCA by path, and pauses a bus
 whether the path exists, and a missing path is logged once per name, as a missing event is.
 
 - The null backend returns false for both.
-- [Audio.md](../api/engine/Audio.md) states the paths and the rule.
+- [Audio.md](../../api/engine/Audio.md) states the paths and the rule.
 - Tests: the null backend's answers run in CI. In a build with `V3D_FMOD_ROOT`, a volume set on a
   bus is the one read back, and a paused bus reads back paused. CI has no FMOD SDK, so the step
   records where that case ran.
@@ -148,7 +148,7 @@ it is built.
 
 - The default is today's choice, mailbox and then FIFO, so no consumer changes behaviour without
   asking.
-- [rendering/](../api/rendering/README.md) states the request and the fallbacks.
+- [rendering/](../../api/rendering/README.md) states the request and the fallbacks.
 - Tests: `choosePresentMode` with every request against FIFO alone, FIFO and mailbox, and all
   four modes. A test of the default alone passes today.
 
@@ -161,7 +161,7 @@ wheel's step, its sign the direction.
   `zoomBy()`, inside the orbit's clamps. The direction is an option.
 - Edge pan takes the cursor, the viewport and a margin in pixels, and pans at `Speeds::pan`. It is
   off by default, and off while the app says the UI has the cursor.
-- [engine/](../api/engine/README.md) states both.
+- [engine/](../../api/engine/README.md) states both.
 - Tests, with no device: a delta of +1 and -1 moves `zoom()` by the step and stops at the clamp.
   A cursor in the margin for one step moves `target()` by `pan × step`, and one outside it, or
   over the UI, does not.
@@ -187,7 +187,16 @@ of what is offered.
 
 ### Step 8 — The api libraries build off MSVC
 
-**Open.** ADR first.
+**Done.** [ADR-0107](../../adr/0107-build-the-api-libraries-build-with-clang-off-windows.md) chose
+Clang on Linux in CI over the libraries that need neither Vulkan nor SDL. The job is
+[portable.yml](../../../.github/workflows/portable.yml). The manifest's SDL3 and Vulkan ports moved
+into a default `platform` feature that the job leaves out. Clang found eight warnings in those
+libraries, all fixed: initializer lists out of declaration order, three private fields nothing
+read, and a scanline count nothing read. Linux found two more things Clang on Windows could not:
+MSVC's `#pragma warning` unguarded around the codecs and cgltf, and the image writers opening
+files with MSVC's `fopen_s`, which `image::openFile()` now hides. Clang 18 cannot see libstdc++'s
+`std::expected`, so the job installs Clang 20. The job's steps passed in an `ubuntu:24.04`
+container on 2026-10-25, before the first push.
 
 - Every compiler flag is guarded by compiler, with its Clang and GCC intent beside it. The
   `set(CMAKE_CXX_FLAGS ...)` lines become `target_compile_options` or go. The UTF-8 code-page
@@ -195,8 +204,40 @@ of what is offered.
 - A CI job configures and builds the libraries the ADR names with Clang or GCC. It compiles them,
   since the flags fail at compile and not at configure.
 - MSVC's `/WX`, `/analyze` and clang-tidy gates run as they do now.
-- [Build.md](../contributing/Build.md) states the rule for a new flag.
+- [Build.md](../../contributing/Build.md) states the rule for a new flag.
 
 ## Outcome
 
-Written when the plan closes.
+Drafted 2026-10-25 against `51dee3f2` and closed the same day. All eight steps landed, each with
+the gate its handoff named, and every new case failed without its change. Where failsfirst could
+only show a case failing to build, hand mutations showed the cases catch the behaviour.
+
+- **A game's shell.** `ui::Immediate` has a text field, a checkbox, a float slider, a combo and
+  `itemHovered()`. The canvas draws a segment at any angle. An app can read, rebind one key of
+  several, reset, save and restore its key bindings. `audio::Events` sets and reads a bus or VCA
+  volume and pauses a bus. `Engine3D` takes a present mode and reports the one granted. The
+  isometric controller zooms on the wheel and pans at the window's edge.
+- **Portability.** The Vulkan instance sees a portability driver, and a device passed over is
+  logged with what it lacks. Every compiler flag is guarded by compiler, and the libraries that
+  need neither Vulkan nor SDL build and test with Clang on Linux in CI
+  ([ADR-0107](../../adr/0107-build-the-api-libraries-build-with-clang-off-windows.md)).
+
+What turned out differently from the plan:
+
+- **A focused text field does not make `capturing()` true.** The bindings fire before a frame is
+  drawn, so the key is kept from them as it arrives, by `Immediate::press()`. The editing moved out
+  of `TextBox` into `input::LineEdit`, which both ui models now use, and `shell::Keyboard` can feed
+  an immediate layer with no `ui::Engine`.
+- **A rebind of a command bound to two keys made it fire twice.** The two mappings it left were
+  both matched by a press. A rebuild now keeps one.
+- **This machine's driver offers no mailbox mode**, so the default present request is granted FIFO
+  here. The handoff expected mailbox.
+- **The FMOD cases ran here**, against the SDK's example banks, in a build configured with
+  `V3D_FMOD_ROOT`. CI still builds without the SDK.
+- **Building off MSVC found more than flags.** Clang found eight warnings in the covered
+  libraries, and Linux found MSVC's pragmas and `fopen_s` in the image codecs. The manifest's
+  SDL3 and Vulkan ports moved into a default `platform` feature the Linux job leaves out, and a
+  build with tests can now select a subset of libraries.
+
+Left open: a 72 byte leak in one FMOD case that predates this plan, recorded in
+[TODO.md](../../TODO.md#known-review-findings).

@@ -14,7 +14,8 @@ repository rather than being part of it.
 
 Much of this code traces back to the early 2000s and is being modernised incrementally: C++17
 and newer, granular namespaces, CMake replacing autotools and VS solutions. How modern a given
-file is varies widely. MSVC and Windows only in practice; rendering is Vulkan 1.3 and windowing
+file is varies widely. MSVC and Windows only in practice, except that the api libraries needing
+neither Vulkan nor SDL also build with Clang on Linux in CI; rendering is Vulkan 1.3 and windowing
 is SDL3.
 
 ## Where things are written down

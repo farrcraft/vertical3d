@@ -22,8 +22,13 @@ add_library("v3dlib_moya"
 # RenderMan.cxx defines the whole RenderMan Interface and leaves many of its entry points
 # empty. Every parameter of an empty entry point is unreferenced, and at /W4 those C4100
 # warnings would bury the rest of the tree's warnings. C4100 is disabled for this target, so
-# a parameter keeps its name until its function gets a body.
-target_compile_options("v3dlib_moya" PRIVATE /wd4100 /EHsc /utf-8)
+# a parameter keeps its name until its function gets a body. -Wunused-parameter is the same
+# warning to Clang and GCC.
+if(MSVC)
+	target_compile_options("v3dlib_moya" PRIVATE /wd4100 /EHsc /utf-8)
+else()
+	target_compile_options("v3dlib_moya" PRIVATE -Wno-unused-parameter)
+endif()
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
 # header includes the log's. moya's headers name glm types. PRIVATE: only the render context's

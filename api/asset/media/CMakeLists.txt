@@ -22,14 +22,13 @@ target_include_directories(v3dlib_asset_media PRIVATE "${V3D_CGLTF_INCLUDE_DIR}"
 # lost the next time the port updates. The pragma in the file drops the
 # warning level, /analyze- takes it out of MSVC's analysis and SKIP_LINTING out of
 # clang-tidy's.
-set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES
-	COMPILE_OPTIONS "/analyze-"
-	SKIP_LINTING TRUE)
-
-target_compile_options(v3dlib_asset_media PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
+set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES SKIP_LINTING TRUE)
+if(MSVC)
+	set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES COMPILE_OPTIONS "/analyze-")
+else()
+	# -w is what the pragma does for MSVC, which Clang and GCC take from the command line
+	set_source_files_properties("loader/CgltfImpl.cpp" PROPERTIES COMPILE_OPTIONS "-w")
+endif()
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

@@ -9,9 +9,13 @@
 // for this file. A local fix to the header would be lost the next time it is updated from
 // upstream.
 
+#ifdef _MSC_VER
 #pragma warning(push, 0)
+#endif
 
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif

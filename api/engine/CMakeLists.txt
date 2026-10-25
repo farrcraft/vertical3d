@@ -32,11 +32,6 @@ target_link_libraries(v3dlib_engine PUBLIC
 # includes Application.h does not need it.
 target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media)
 
-target_compile_options(v3dlib_engine PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

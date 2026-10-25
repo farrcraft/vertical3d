@@ -24,8 +24,6 @@ constexpr unsigned int QUAD_INDICES = 6;
 };  // namespace
 
 TextureTextBuffer::TextureTextBuffer() :
-    ascender_(0.0F),
-    descender_(0.0F),
     lineStart_(0) {
 }
 
@@ -36,10 +34,6 @@ void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar
         // at the font's own size
         const float lineScale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
-        /*
-        descender_ = 0.0f;
-        ascender_ = 0.0f;
-        */
         lineStart_ = items_.size();
         // newlines don't actually generate any vertex data
         return;

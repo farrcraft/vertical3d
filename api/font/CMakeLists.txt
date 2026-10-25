@@ -7,11 +7,6 @@ target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image glm::glm)
 # includes FreeType.
 target_link_libraries(v3dlib_font PRIVATE Freetype::Freetype)
 
-target_compile_options(v3dlib_font PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

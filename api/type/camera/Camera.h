@@ -158,7 +158,6 @@ class Camera {
         void rotate(const glm::quat & new_rot);
 
  private:
-        glm::vec3 lookAt_;
         glm::mat4x4 projection_{1.0F};
         glm::mat4x4 view_{1.0F};  // viewing transformation, identity until createView()
         Profile profile_;

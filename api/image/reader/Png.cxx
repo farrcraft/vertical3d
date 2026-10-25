@@ -90,13 +90,17 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     std::vector<png_bytep> rowpointers;
     // C4611 flags the mix of setjmp with C++ object destruction, which the declarations
     // above satisfy: no owning object is constructed after this point.
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4611)
+#endif
     if (setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         return empty_ptr;
     }
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
     png_set_read_fn(png_ptr, &cursor, readFromBuffer);
 

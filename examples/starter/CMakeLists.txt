@@ -15,11 +15,14 @@ cmake_minimum_required(VERSION 3.21)
 project("v3dstarter" CXX)
 
 # The only settings a consumer makes for itself. The api's interface properties leave out the
-# language standard and /permissive-. Everything else a v3d:: target needs comes through the
-# target: its include root, /EHsc, /utf-8, and every third party dependency its headers name.
+# language standard and MSVC's /permissive-. Everything else a v3d:: target needs comes through
+# the target: its include root, /EHsc and /utf-8 under MSVC, and every third party dependency
+# its headers name.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_compile_options("/permissive-")
+if(MSVC)
+	add_compile_options("/permissive-")
+endif()
 
 # An application in its own repository reaches the tree through a submodule or FetchContent.
 # The path is relative here because the example travels with the tree it consumes.

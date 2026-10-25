@@ -92,11 +92,6 @@ v3d_add_app_data(vertical3d)
 # the WinMain that SDL_main.h supplies, and WinMain calls main.
 set_target_properties(vertical3d PROPERTIES WIN32_EXECUTABLE TRUE)
 
-target_compile_options(vertical3d PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

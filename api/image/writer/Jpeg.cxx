@@ -5,6 +5,7 @@
 
 #include "Jpeg.h"
 
+#include <api/image/File.h>
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
 #include <api/image/format/JpegError.h>
@@ -31,9 +32,8 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
     const std::string path(filename);
 
     // open the file
-    FILE* fp;
-    const errno_t err = fopen_s(&fp, path.c_str(), "wb");
-    if (err != 0) {
+    FILE* fp = openFile(path, "wb");
+    if (fp == nullptr) {
         return false;
     }
 
@@ -49,8 +49,10 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
 
     // C4611 flags the mix of setjmp with C++ object destruction, which the declarations
     // above satisfy: no owning object is constructed after this point.
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4611)
+#endif
     if (setjmp(jerr.setjmp_buffer)) {
         jpeg_destroy_compress(&cinfo);
         fclose(fp);
@@ -59,7 +61,9 @@ bool Jpeg::write(std::string_view filename, const boost::shared_ptr<Image>& img)
         logger()->get()->error("JpegWriter::write - the encoder refused {}", path);
         return false;
     }
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
     jpeg_create_compress(&cinfo);
 

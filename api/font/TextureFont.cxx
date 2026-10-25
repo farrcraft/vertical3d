@@ -132,13 +132,13 @@ TextureFont::TextureFont(const std::string& filename, float size, const boost::s
     filename_(filename),
     size_(size),
     spread_(spread),
+    hinting_(1),
+    outline_(OUTLINE_TYPE_NONE),
+    outlineThickness_(0.0F),
+    lcdFiltering_(1),
     height_(0),
     ascender_(0),
     descender_(0),
-    outline_(OUTLINE_TYPE_NONE),
-    outlineThickness_(0.0F),
-    hinting_(1),
-    lcdFiltering_(1),
     logger_(logger) {
     constexpr std::array<unsigned char, LCD_FILTER_TAPS> defaultLcdWeights{ 0x10, 0x40, 0x70, 0x40, 0x10 };
     std::copy(defaultLcdWeights.begin(), defaultLcdWeights.end(), std::begin(lcdWeights_));

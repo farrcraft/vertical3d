@@ -124,9 +124,13 @@ target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
 # VMA is one header that is both declaration and implementation, compiled in exactly one
 # translation unit. Its warnings and both analysers are switched off, as api/asset/media does
 # for cgltf, because a local fix would be lost the next time the port is updated.
-set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
-	COMPILE_OPTIONS "/analyze-;/W0"
-	SKIP_LINTING TRUE)
+set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES SKIP_LINTING TRUE)
+if(MSVC)
+	set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES COMPILE_OPTIONS "/analyze-;/W0")
+else()
+	# -w is /W0. Clang and GCC have no analyser of /analyze's kind to switch off
+	set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES COMPILE_OPTIONS "-w")
+endif()
 
 # PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
 # needs the font library only if it names one itself. The ecs components the lit renderer
@@ -134,11 +138,6 @@ set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
 # DecodedModel loads. DecodedModel.cpp names a texture beside its model with
 # boost::filesystem.
 target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
-
-target_compile_options(v3dlib_render PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

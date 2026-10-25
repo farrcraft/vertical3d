@@ -4,6 +4,7 @@
  **/
 
 #include <api/image/Factory.h>
+#include <api/image/File.h>
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
 #include <api/log/Logger.h>
@@ -147,8 +148,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
 
     // what the writer put in the file: scanline 0 has to be the red band
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, written, "rb"), 0);
+        FILE* fp = v3d::image::openFile(written, "rb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_decompress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);
@@ -176,8 +177,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     // and what the reader makes of a file whose first scanline is red: row 0 of the buffer
     const char* encoded = "data_out/test_orientation_encoded.jpg";
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, encoded, "wb"), 0);
+        FILE* fp = v3d::image::openFile(encoded, "wb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_compress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);
@@ -228,8 +229,8 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
     const unsigned int side = 8;
     const char* greyscale = "data_out/test_greyscale.jpg";
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, greyscale, "wb"), 0);
+        FILE* fp = v3d::image::openFile(greyscale, "wb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_compress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);

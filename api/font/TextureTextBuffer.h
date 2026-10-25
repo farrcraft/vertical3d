@@ -57,8 +57,6 @@ class TextureTextBuffer : public TextBuffer {
     void addQuad(const glm::vec2 & xy0, const glm::vec2 & xy1, const glm::vec2 & uv0, const glm::vec2 & uv1, const glm::vec4 & color, float gamma);
 
  private:
-    float ascender_;
-    float descender_;
     size_t lineStart_;
     glm::vec2 origin_;
 

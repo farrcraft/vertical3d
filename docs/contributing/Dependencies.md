@@ -17,6 +17,12 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json). The packages are
 installed into `out/build/<config>/vcpkg_installed/` during the first configure.
 
+SDL3, SDL3_mixer, Vulkan and vulkan-memory-allocator are in the manifest's `platform` feature,
+which is a default feature, so a configure installs them unless it is given
+`-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`. Only a build of the libraries that need neither a
+window nor a device leaves it out, as the Linux CI job does. A new port that only the window,
+the device or the audio needs goes in that feature.
+
 | Port | Notes |
 |---|---|
 | boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | One port per boost library the tree uses. The manifest does not use the `boost` metapackage. See [Adding a boost library](#adding-a-boost-library) |

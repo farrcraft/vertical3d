@@ -34,11 +34,6 @@ v3d_add_shared_data(pong)
 # app's window. SDL_main.h supplies the WinMain that calls main.
 set_target_properties(pong PROPERTIES WIN32_EXECUTABLE TRUE)
 
-target_compile_options(pong PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

@@ -45,11 +45,6 @@ target_link_libraries(v3dlib_audio PRIVATE SDL3_mixer::SDL3_mixer)
 # asset::Asset. This library depends on the asset core, and not the other way round.
 target_link_libraries(v3dlib_audio PUBLIC v3dlib_event v3dlib_asset Boost::json)
 
-target_compile_options(v3dlib_audio PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

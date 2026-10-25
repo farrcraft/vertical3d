@@ -16,11 +16,6 @@ v3d_add_api_library(config
 # Boost::json: CameraProfiles.h, SpriteSheets.h and WindowSize.h each read a boost::json::object.
 target_link_libraries(v3dlib_config PUBLIC v3dlib_log v3dlib_asset v3dlib_type glm::glm Boost::json)
 
-target_compile_options(v3dlib_config PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

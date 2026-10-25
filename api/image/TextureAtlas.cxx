@@ -37,8 +37,8 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     width_(width),
     height_(height),
     depth_(depth),
-    id_(0),
     used_(0),
+    id_(0),
     logger_(logger) {
     if (depth != 1 && depth != 3 && depth != 4) {
         const std::string err = "Invalid texture atlas depth - must be 1, 3, or 4";

@@ -9,10 +9,10 @@
 
 namespace v3d::brep {
 
-HalfEdge::HalfEdge() : vertex_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
+HalfEdge::HalfEdge() : vertex_(INVALID_ID), face_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), selected_(false) {
 }
 
-HalfEdge::HalfEdge(Index vert) : vertex_(vert), pair_(INVALID_ID), next_(INVALID_ID), face_(INVALID_ID), selected_(false) {
+HalfEdge::HalfEdge(Index vert) : vertex_(vert), face_(INVALID_ID), pair_(INVALID_ID), next_(INVALID_ID), selected_(false) {
 }
 
 HalfEdge::HalfEdge(const HalfEdge& other) {

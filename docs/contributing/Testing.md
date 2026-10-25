@@ -36,7 +36,9 @@ out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=compare_identic
 ```
 
 CI runs every suite in [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) on each
-pull request and on each push to `main`.
+pull request and on each push to `main`. [.github/workflows/portable.yml](../../.github/workflows/portable.yml)
+builds the libraries that need neither a window nor a device with Clang on Linux, and runs their
+suites there too. [Build.md](Build.md#building-off-msvc) lists them.
 
 ## How the suites are organised
 

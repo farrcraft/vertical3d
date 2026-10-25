@@ -86,11 +86,6 @@ target_link_libraries(v3dlib_ui PUBLIC
 # SDL3::SDL3: shell/Keyboard.cpp reads SDL events and the clipboard through SDL.
 target_link_libraries(v3dlib_ui PRIVATE v3dlib_input SDL3::SDL3)
 
-target_compile_options(v3dlib_ui PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
-
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")
 endif()

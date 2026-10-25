@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 |---|---|---|
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
 | [ScaleAndReach](ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice, and sprite sheet packing |
-| [SettingsAndPortability](SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | A present mode an app requests, bus volume and pause for FMOD events, key bindings an app can read and reset, settings widgets and a text field in `Immediate`, a canvas segment, wheel zoom and edge pan, a portability driver, and a build off MSVC |
 
 ## Completed plans
 
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [SettingsAndPortability](completed/SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | 2026-10-25 | Settings widgets and a text field in `Immediate`, a canvas segment, key bindings an app can read, reset and save, FMOD bus volume and pause, a requested present mode, wheel zoom and edge pan, a portability driver, and the platform-free libraries built with Clang on Linux |
 | [Hardening](completed/Hardening.md) | moya, shading language, image, voxel, apps | 2026-10-24 | RI's C interface and the reyes hider following RI, `output`, `faceforward` and message passing as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
 | [EditorModelling](completed/EditorModelling.md) | Editor, brep, ui, engine | 2026-10-24 | A dirty flag that asks before discarding work, selection sets and a rubber band, component moves, split, extrude, inset and merge with undo, fixed views and resizable panes |
 | [OfflineShading](completed/OfflineShading.md) | Offline rendering, moya | 2026-10-18 | Rotations checked against the specification, a bounding volume hierarchy, derivatives under both hiders, area lights, reyes opacity, and displacement under both hiders |

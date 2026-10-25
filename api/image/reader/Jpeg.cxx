@@ -38,8 +38,10 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
     // Establish the setjmp return context for jpegErrorExit to use.
     // C4611 flags the mix of setjmp with C++ object destruction, which the declaration
     // above satisfies: no owning object is constructed after this point.
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4611)
+#endif
     if (setjmp(jerr.setjmp_buffer)) {
         /* The decoder signalled an error. Destroy the decompress object and fail.
             * The input is the caller's buffer, so there is no file to close.
@@ -47,7 +49,9 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
         jpeg_destroy_decompress(&cinfo);
         return empty_ptr;
     }
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
     // Initialize the JPEG decompression object
     jpeg_create_decompress(&cinfo);
 
@@ -83,11 +87,14 @@ boost::shared_ptr<Image> Jpeg::read(const unsigned char* encoded, std::size_t si
 
     // Process data. A jpeg stores its scanlines top down and so does Image, so scanline
     // i is row i of the buffer.
-    JDIMENSION num_scanlines = 0;
     unsigned int row = 0;
     size_t index = 0;
     while (cinfo.output_scanline < cinfo.output_height) {
-        num_scanlines = jpeg_read_scanlines(&cinfo, buffer, buffer_height);
+        // a read that returns no rows would return none again, so the loop stops rather than
+        // spinning. A file source never does this, and a suspending source can
+        if (jpeg_read_scanlines(&cinfo, buffer, buffer_height) == 0) {
+            break;
+        }
 
         index = static_cast<size_t>(row) * 3 * cinfo.output_width;
         for (unsigned int i = 0; i < cinfo.output_width; i++) {

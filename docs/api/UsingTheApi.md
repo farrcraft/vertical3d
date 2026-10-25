@@ -153,6 +153,9 @@ api library they depend on, and looks only for the third-party packages that set
 - **Boost is always required**, because every api library links `Boost::headers`.
 - **`render_offline` needs no Vulkan and no SDL.** It is a separate library from `render`, so
   you can select it alone.
+- **A selection that needs no Vulkan and no SDL builds with Clang and GCC too**, on any platform.
+  Leave the manifest's `platform` feature out of your own vcpkg install. The rest of the api is
+  built and checked with MSVC on Windows only.
 - **`V3D_LIBRARIES` must be `all` if you turn the apps or the tests back on**, and the configure
   stops otherwise.
 
