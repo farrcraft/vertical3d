@@ -283,6 +283,23 @@ std::string Device::missingFeature(VkPhysicalDevice device) {
     if (features12.separateDepthStencilLayouts != VK_TRUE) {
         return "separate depth and stencil layouts";
     }
+    // every texture is a slot of one array of samplers, indexed by a value a draw pushes or an
+    // object carries, and a slot is written while frames that bind the array are in flight
+    if (features.features.shaderSampledImageArrayDynamicIndexing != VK_TRUE) {
+        return "dynamic indexing of sampled image arrays";
+    }
+    if (features12.shaderSampledImageArrayNonUniformIndexing != VK_TRUE) {
+        return "non-uniform indexing of sampled image arrays";
+    }
+    if (features12.runtimeDescriptorArray != VK_TRUE) {
+        return "runtime descriptor arrays";
+    }
+    if (features12.descriptorBindingPartiallyBound != VK_TRUE) {
+        return "partially bound descriptor bindings";
+    }
+    if (features12.descriptorBindingUpdateUnusedWhilePending != VK_TRUE) {
+        return "descriptor updates while pending";
+    }
     return std::string();
 }
 
@@ -398,6 +415,13 @@ void Device::createLogical() {
     features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     features12.pNext = &features13;
     features12.separateDepthStencilLayouts = VK_TRUE;
+    // the texture array: indexed by a value that may differ within a draw, declared without a
+    // size in the shaders, holding slots nothing has written, and written while frames are in
+    // flight
+    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features12.runtimeDescriptorArray = VK_TRUE;
+    features12.descriptorBindingPartiallyBound = VK_TRUE;
+    features12.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
 
     // a feature struct chained onto pNext and pEnabledFeatures are mutually exclusive, so
     // the base features travel in the chain as well
@@ -407,6 +431,7 @@ void Device::createLogical() {
     // drawing a triangle as its edges or its corners. Asked for only where it is offered, so a
     // device without it is still chosen
     features.features.fillModeNonSolid = nonSolidFill_ ? VK_TRUE : VK_FALSE;
+    features.features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
     const std::vector<const char*> extensions = Device::extensions(presenting(), offered(physical_));
 

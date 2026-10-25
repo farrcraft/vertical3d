@@ -11,7 +11,7 @@ them drawable.
 boost::shared_ptr<Textures> textures = renderer_->textures();
 TextureHandle sprite = textures->texture(image);                     // a v3d::image::Image
 TextureHandle atlas = textures->texture(pixels, width, height, 1);    // raw bytes; 1 channel for a glyph atlas
-MaterialHandle material = textures->material(sprite);                 // for a DrawItem of your own
+uint32_t slot = textures->slot(sprite);                               // for a DrawItem of your own
 textures->release(sprite);                                            // see Releasing resources
 ```
 
@@ -28,14 +28,24 @@ textures->release(sprite);                                            // see Rel
   TextureHandle floor = textures->texture(image, TextureFactory::Encoding::Srgb, tiling);
   ```
 
-  One sampler is made for each distinct spec and shared by every texture that names it.
-  `material()` binds the texture's own sampler.
+  One sampler is made for each distinct spec and shared by every texture that names it. A
+  texture is always read through its own sampler.
 - `white()` is the 1×1 white texture. It is never released.
-- **Upload at load time.** An upload waits for the GPU to finish the copy, so uploading during
-  play stalls the frame.
+- An upload returns without waiting for the copy, and the texture is drawn from the next frame
+  on.
+- **Every texture is a slot in one array**, bound at set 1, which holds a few thousand textures
+  or as many as the device allows, whichever is fewer. `capacity()` says how many. Registering
+  one more than that throws.
 
-A canvas names textures by `TextureHandle`. A `DrawItem` names a `MaterialHandle`, which binds
-the texture for drawing. `material()` makes one on first use and keeps it.
+A canvas names textures by `TextureHandle`, and the renderers turn each into its slot when they
+submit. A `DrawItem` of your own names `material()`, the one material that binds the array and
+is the same for every texture, and hands its shader `slot(texture)`, in a push constant or in
+data it reads per object. **Read the slot each frame rather than keeping it**, because a texture
+filled or replaced later moves to another slot. A shader declares the array as
+`layout(set = 1, binding = 0) uniform sampler2D textures[]` and reads `textures[slot]`, with
+`GL_EXT_nonuniform_qualifier` enabled. An index that may differ between the fragments of one
+draw, such as one read per instance, is wrapped in `nonuniformEXT()`. An unset or released
+handle's slot is the white texture's.
 
 ## Meshes and the mesh registry
 

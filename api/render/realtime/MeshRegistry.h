@@ -45,8 +45,8 @@ class DeviceContext;
  * A model loaded from a path, or added under a name, is uploaded the first time. Every later
  * request for it returns the same handle, so a hundred props drawn from one file are one
  * upload. A model is one vertex buffer drawn a part at a time. Each part's albedo is a
- * texture and a material from the context's Textures, shared by every part naming the same
- * image, and the white texture for a part naming none.
+ * texture from the context's Textures, shared by every part naming the same image, and the
+ * white texture for a part naming none. A draw reads it by the texture's slot.
  *
  * The vertex layout is type::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
  * that draws an entry declares that layout. A model with a skeleton is uploaded as a
@@ -70,7 +70,7 @@ class MeshRegistry final {
         uint32_t firstIndex;
         uint32_t indexCount;
         TextureHandle texture;   /**< the albedo, or the white texture **/
-        MaterialHandle material; /**< what binds the albedo at set 1 **/
+        MaterialHandle material; /**< what binds the texture array at set 1, which holds the albedo **/
         glm::vec4 baseColour;    /**< what the albedo is multiplied by **/
     };
 
@@ -255,7 +255,6 @@ class MeshRegistry final {
      **/
     struct Albedo final {
         TextureHandle texture;
-        MaterialHandle material;
         uint32_t users;
     };
 

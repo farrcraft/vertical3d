@@ -47,10 +47,12 @@ const uint32_t fragmentShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * The push constant block, laid out as world.vert declares it.
+ * The push constant block, laid out as world.vert and world.frag declare it. The tint is the
+ * vertex stage's and the texture's slot the fragment stage's.
  **/
 struct Push final {
     glm::vec4 tint;
+    uint32_t texture;
 };
 
 /**
@@ -112,7 +114,7 @@ PipelineHandle World::createPipeline(const std::string& name, const pipeline::Fo
         .cull(VK_CULL_MODE_NONE)
         .set(uniforms_->layout())
         .set(textures_->layout())
-        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .size = sizeof(Push)})
+        .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(Push)})
         .colourFormat(colour);
 
     if (blend == Blend::Additive) {
@@ -154,19 +156,17 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
 
-    const Push constants{.tint = tint};
     for (const canvas::World::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }
         // an unset texture is the untextured case, drawn against white
-        const MaterialHandle bound =
-            textures_->material(batch.texture.valid() ? batch.texture : textures_->white());
+        const Push constants{.tint = tint, .texture = textures_->slot(batch.texture)};
 
         DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
-        item.material = bound;
+        item.material = textures_->material();
         item.vertexBuffer = claimed.vertices->handle();
         item.indexBuffer = claimed.indices->handle();
         item.indexType = VK_INDEX_TYPE_UINT32;

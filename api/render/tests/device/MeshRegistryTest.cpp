@@ -20,6 +20,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
@@ -31,6 +32,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -228,16 +230,19 @@ BOOST_AUTO_TEST_CASE(an_embedded_albedo_is_uploaded) {
     const MeshRegistry::Entry* entry = meshes->resolve(meshes->load("embedded_texture.glb"));
     BOOST_REQUIRE(entry != nullptr);
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
-    BOOST_CHECK(entry->parts[0].texture != headless.context->textures()->white());
-    BOOST_CHECK(headless.context->resources()->material(entry->parts[0].material) != nullptr);
+    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    BOOST_CHECK(entry->parts[0].texture != textures->white());
+    BOOST_CHECK(textures->slot(entry->parts[0].texture) != textures->slot(textures->white()));
+    BOOST_CHECK(entry->parts[0].material == textures->material());
     BOOST_CHECK(headless.silent());
 }
 
 /**
- * Two models naming one image share one texture and one material, and the albedo outlives
- * the first of them to be released.
+ * Two models naming one image share one texture and its slot, and the albedo outlives the first
+ * of them to be released. Once the last is released, the texture resolves to nothing and its
+ * handle reads the white texture's slot.
  **/
-BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
+BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_texture) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
 
@@ -249,19 +254,20 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_material) {
     const MeshRegistry::Part barrelEntry = meshes->resolve(barrel)->parts.at(0);
     BOOST_CHECK(crateEntry.texture != headless.context->textures()->white());
     BOOST_CHECK(crateEntry.texture == barrelEntry.texture);
-    BOOST_CHECK(crateEntry.material == barrelEntry.material);
+    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const uint32_t slot = textures->slot(barrelEntry.texture);
+    BOOST_CHECK(slot != textures->slot(textures->white()));
 
     BOOST_CHECK(meshes->release(crate));
     BOOST_CHECK(meshes->resolve(crate) == nullptr);
-    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) != nullptr);
+    BOOST_CHECK(headless.context->resources()->texture(barrelEntry.texture) != nullptr);
+    BOOST_CHECK_EQUAL(textures->slot(barrelEntry.texture), slot);
 
-    // the last user's release releases the albedo. Its material resolves for the frame already
-    // queued, and to nothing once that frame is submitted
+    // the last user's release releases the albedo
     BOOST_CHECK(meshes->release(barrel));
     BOOST_CHECK(headless.context->resources()->texture(barrelEntry.texture) == nullptr);
-    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) != nullptr);
+    BOOST_CHECK_EQUAL(textures->slot(barrelEntry.texture), textures->slot(textures->white()));
     headless.submit(headless.context->ring()->begin());
-    BOOST_CHECK(headless.context->resources()->material(barrelEntry.material) == nullptr);
     headless.context->ring()->waitIdle();
     BOOST_CHECK(headless.silent());
 }
@@ -276,7 +282,7 @@ BOOST_AUTO_TEST_CASE(a_context_that_draws_nothing_still_loads_textures) {
     const unsigned char pixel[4] = {0x10, 0x20, 0x30, 0xFF};
     const v3d::render::realtime::TextureHandle texture = headless.context->textures()->texture(pixel, 1, 1, 4);
     BOOST_CHECK(headless.context->resources()->texture(texture) != nullptr);
-    BOOST_CHECK(headless.context->textures()->material(texture).valid());
+    BOOST_CHECK(headless.context->textures()->slot(texture) != headless.context->textures()->slot(headless.context->textures()->white()));
 
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
     const MeshHandle crate = meshes->add("crate", triangle("pixel.png"));
@@ -536,8 +542,8 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
 
 /**
  * A textured mesh released after an item drawing it is queued, and before the frame is begun,
- * is drawn with its albedo by that frame. The item names its material by handle, and the frame
- * resolves it when it is recorded, so the material has to outlive the release as the mesh does.
+ * is drawn with its albedo by that frame. The item carries the albedo's slot, read when it was
+ * queued, so the slot has to outlive the release as the mesh does.
  *
  * The triangle covers the target and the albedo is one flat colour at the ends of each channel's
  * range, so every texel of the picture is that colour on any conformant implementation.
@@ -573,6 +579,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
         .blend(false)
         .set(headless.context->frameUniforms()->layout())
         .set(headless.context->textures()->layout())
+        .push({.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(uint32_t)})
         .colourFormat(colourFormat);
     const PipelineHandle pipeline = headless.context->resources()->add(builder.build(headless.context->pipelineCache()));
 
@@ -585,10 +592,13 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     DrawItem item;
     item.pipeline = pipeline;
     item.material = entry->parts[0].material;
+    const uint32_t slot = headless.context->textures()->slot(entry->parts[0].texture);
+    std::memcpy(item.push.data(), &slot, sizeof(slot));
+    item.pushSize = sizeof(slot);
     entry->mesh->describe(&item);
     pass->submit(item);
 
-    // the albedo has no other user, so this releases its texture and material as well
+    // the albedo has no other user, so this releases its texture and slot as well
     BOOST_CHECK(meshes->release(handle));
 
     VkCommandBuffer commands = headless.context->ring()->begin();

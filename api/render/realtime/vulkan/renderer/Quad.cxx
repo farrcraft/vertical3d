@@ -61,12 +61,14 @@ const VkDeviceSize initialIndexBytes = 32ULL * 1024;
 /**
  * The push constant block, laid out as quad.vert and quad.frag declare it.
  *
- * One range covers both stages: the projection is the vertex stage's and text is the
- * fragment stage's, and a batch is one or the other for all of its fragments.
+ * One range covers both stages: the projection is the vertex stage's, and text and the
+ * texture's slot are the fragment stage's. A batch is one texture, and text or not, for all of
+ * its fragments.
  **/
 struct Push final {
     glm::mat4 projection;
     uint32_t text;
+    uint32_t texture;
 };
 
 };  // namespace
@@ -166,13 +168,10 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
         if (batch.indices == 0) {
             continue;
         }
-        // an unset texture is the untextured case, drawn against white
-        const MaterialHandle bound = textures_->material(batch.texture.valid() ? batch.texture : textures_->white());
-
         DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
-        item.material = bound;
+        item.material = textures_->material();
         item.vertexBuffer = vertices->handle();
         item.indexBuffer = indices->handle();
         item.indexType = VK_INDEX_TYPE_UINT32;
@@ -190,6 +189,8 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
             Push constants;
             constants.projection = projection;
             constants.text = batch.text ? 1U : 0U;
+            // an unset texture is the untextured case, drawn against white
+            constants.texture = textures_->slot(batch.texture);
             std::memcpy(item.push.data(), &constants, sizeof(constants));
             item.pushSize = sizeof(constants);
         }

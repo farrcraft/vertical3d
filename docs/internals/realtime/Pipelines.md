@@ -72,7 +72,7 @@ Sets are organised by how often their contents change.
 | Set | Changes | Holds | Owner |
 |---|---|---|---|
 | 0 | per pass, per frame | the camera: `view`, `projection`, `viewProjection` (three `mat4`) and `viewport` (`vec4`), 208 bytes std140 | `vulkan::frame::FrameUniforms` |
-| 1 | per material | one combined image sampler at binding 0, fragment stage (`FullScreen` declares one per source) | `Textures` (and `FullScreen`, `Grade`) |
+| 1 | never, for a textured pipeline; per material for a full-screen one | a textured pipeline's: every texture, an array of combined image samplers at binding 0, fragment stage, indexed by slot. A full-screen pipeline's: one combined image sampler per source | `Textures`; `FullScreen`, `Grade` |
 | 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2), object storage buffer (binding 3) | `vulkan::renderer::Lit` |
 | push | per draw | a projection or an origin, and flags | the item |
 
@@ -87,6 +87,17 @@ Rules:
   lit scene pushes its per-object data. A lit pipeline pushes nothing, and reads its object from
   the scene's object buffer at set 2 by instance index. A lit draw names its object as its first
   instance, and `Lit::object()` returns that index.
+- **A texture is a slot, not a set.** Every textured item names the one material `Textures`
+  holds, so set 1 is bound once while the pipeline stays bound, and the item carries its
+  texture's slot: a quad and a world quad in a push constant, a lit object in its
+  `Lit::Object::albedo`. The binding is partially bound and may be written while frames that
+  bind it are in flight, so a slot is written only when it is free: one released is freed
+  through the ring. A device without runtime descriptor arrays, partially bound bindings,
+  updates while pending, and dynamic and non-uniform indexing of sampled image arrays is not
+  selected.
+- **A full-screen pass binds its sources in a set of its own** at set 1, because a source mixes
+  two-dimensional images, depth images in their read-only layout and a grade's volume table,
+  and names them as they are when it is made.
 - A pipeline that declares set 2 must be drawn in a pass that names a scene set; the recorder
   checks this.
 
@@ -110,8 +121,9 @@ Current blocks:
 
 | Pipeline | Block | Size |
 |---|---|---|
-| Quad | `mat4 projection; uint text` | 68 bytes |
-| Line, World, FullScreen, Lit | none | |
+| Quad | `mat4 projection; uint text; uint texture` | 72 bytes |
+| World | `vec4 tint; uint texture` | 20 bytes |
+| Line, FullScreen, Lit | none | |
 
 The block is copied into the item by value, so the unused part of the 128 bytes is copied per
 item per frame whether or not a pipeline declared it.
@@ -125,13 +137,14 @@ writes it before binding.
 | Pool | Sets per Vulkan pool |
 |---|---|
 | set 0 (`FrameUniforms`) | 32 |
-| set 1 (`Textures`) | 64 |
+| set 1 (`Textures`) | one set, the texture array, in a pool of its own |
 | `FullScreen` sources | 8 |
 | set 2 (`Lit` scenes) | frames in flight |
 
 Background: [ADR-0008](../../adr/0008-shaders-descriptor-sets-by-update-frequency.md),
 [ADR-0064](../../adr/0064-lighting-lit-passes-use-the-shared-recorder.md),
-[ADR-0088](../../adr/0088-lit-per-object-data-in-a-storage-buffer.md)
+[ADR-0088](../../adr/0088-lit-per-object-data-in-a-storage-buffer.md),
+[ADR-0109](../../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 
 ## Draw items and the sort key
 

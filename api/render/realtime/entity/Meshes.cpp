@@ -104,6 +104,7 @@ void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float out
             object.baseColour = part.baseColour;
             object.outline = outline;
             object.firstJoint = group[instance].firstJoint;
+            object.albedo = lit->slot(part.texture);
             const uint32_t index = lit->object(object);
             if (instance == 0) {
                 item.firstInstance = index;

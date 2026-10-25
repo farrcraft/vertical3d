@@ -169,9 +169,16 @@ uploads have run.
 
 ### Step 5 — A texture request
 
-**Open.** ADR first. `Textures::request(path)` returns a handle at once. A worker decodes the
-image and `poll()` uploads it under the same budget as meshes. Until then the handle draws as the
-decision says.
+**In progress.** [ADR-0109](../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
+chose one bindless array of textures, which a draw indexes by slot, over swapping the image
+behind a stable handle and over a pending material. The binding model has moved: every texture
+is a slot of `pipeline::TextureArray` at set 1, quads and world quads push their slot, and a lit
+object carries its albedo's. Device selection now requires the descriptor indexing features.
+Full-screen passes keep their own sets. Every reference picture is unchanged.
+
+Still to do: `Textures::request(path)` returns a handle at once. A worker decodes the image and
+`poll()` uploads it under the same budget as meshes. Until then the handle reads the white
+texture's slot.
 
 - Tests: a requested texture draws its placeholder, then its pixels after a poll. Releasing a
   pending request abandons it. A missing file logs and leaves the placeholder.

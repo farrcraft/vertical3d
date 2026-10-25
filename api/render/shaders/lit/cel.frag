@@ -1,5 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_nonuniform_qualifier : require
 
 /**
  * The fragment stage of the lit pass: a key light and a fill, quantised into three flat bands,
@@ -16,7 +17,9 @@ layout(location = 1) in vec2 fragmentUv;
 layout(location = 2) in vec3 worldPosition;
 layout(location = 3) flat in uint instance;
 
-layout(set = 1, binding = 0) uniform sampler2D albedo;
+// every texture the context holds. An object's albedo is the one at its slot, and the slot may
+// differ between the fragments of one draw's instances
+layout(set = 1, binding = 0) uniform sampler2D textures[];
 layout(set = 2, binding = 1) uniform sampler2D shadowMap;
 
 layout(location = 0) out vec4 colour;
@@ -67,6 +70,7 @@ void main() {
     const vec3 shade = mix(bands[band], bands[max(band - 1, 0)], occlusion(worldPosition, n));
 
     // an untextured model samples a white albedo, so the base colour alone tints it
-    const vec4 base = texture(albedo, fragmentUv) * objects.entries[instance].baseColour;
+    const vec4 base = texture(textures[nonuniformEXT(objects.entries[instance].albedo)], fragmentUv) *
+        objects.entries[instance].baseColour;
     colour = vec4(base.rgb * shade, base.a);
 }

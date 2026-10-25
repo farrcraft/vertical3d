@@ -213,10 +213,16 @@ Background: [ADR-0061](../../adr/0061-resources-explicit-release-generational-ha
 headless one, or one only loading meshes) can still register textures. It owns:
 
 - the `memory::TextureFactory`, which copies through the context's one `Uploader`;
-- set 1's `DescriptorPool` and layout, which every textured pipeline declares;
+- the `pipeline::TextureArray`, set 1's one set and its layout, which every textured pipeline
+  declares, and the one material that binds it;
 - the 1×1 white texture, alive as long as the context;
-- the map from texture to material, keyed by the whole handle so a reused slot never finds an old
-  set.
+- the map from texture to slot, keyed by the whole handle so a handle reused after a release
+  never finds an old slot.
+
+A slot is taken when a texture is registered and given back when it is released. The array
+frees a released slot through the ring, so a frame queued before the release still reads the
+texture there, and hands out the lowest free slot first. A slot nothing holds names whatever it
+named last, which no draw reads.
 
 `Quad`, `World`, `Lit`, `Grade` and `MeshRegistry` all take `Textures`, so one uploaded atlas
 serves every primitive from one pool.

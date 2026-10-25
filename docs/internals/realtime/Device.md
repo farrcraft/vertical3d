@@ -10,7 +10,10 @@ that:
 - reports an API version below 1.3,
 - lacks a required extension (`VK_KHR_swapchain`, only when presenting),
 - lacks the 1.3 features `dynamicRendering` and `synchronization2`, or the 1.2 feature
-  `separateDepthStencilLayouts`, which every 1.2 device supports, or
+  `separateDepthStencilLayouts`, which every 1.2 device supports,
+- lacks what the texture array needs: `shaderSampledImageArrayDynamicIndexing`, and the 1.2
+  features `shaderSampledImageArrayNonUniformIndexing`, `runtimeDescriptorArray`,
+  `descriptorBindingPartiallyBound` and `descriptorBindingUpdateUnusedWhilePending`, or
 - has no graphics family, or no present family for the surface when presenting.
 
 Each device skipped is logged at info with the first thing it lacks: its version, an extension,

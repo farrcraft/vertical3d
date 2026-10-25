@@ -35,7 +35,7 @@ Engine3D                   owns the Context3D and the Frame being built
     vulkan::memory::Uploader   one-shot copies to device-local memory
     vulkan::frame::FrameUniforms set 0: one camera per pass per frame in flight
     vulkan::frame::DepthBuffer the window's depth image, made on first request
-    Textures                   texture factory, set 1 layout and pool, white texture, materials
+    Textures                   texture factory, the texture array at set 1, white texture, slots
     vulkan::renderer::Quad / Line / World   built on first request
 Frame -> Pass -> DrawItem
 ```

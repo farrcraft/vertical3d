@@ -298,7 +298,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
 std::string MeshRegistry::acquire(const DecodedModel::Albedo& source, Part* part) {
     const boost::shared_ptr<Textures> textures = context_->textures();
     part->texture = textures->white();
-    part->material = textures->material(part->texture);
+    part->material = textures->material();
     const std::string& key = source.key;
     if (key.empty()) {
         return std::string();
@@ -315,20 +315,12 @@ std::string MeshRegistry::acquire(const DecodedModel::Albedo& source, Part* part
         Albedo albedo;
         // a lit albedo is decoded to linear before it is lit
         albedo.texture = textures->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
-        try {
-            albedo.material = textures->material(albedo.texture);
-        } catch (...) {
-            // the texture is not counted yet, so nothing else would release it
-            textures->release(albedo.texture);
-            throw;
-        }
         albedo.users = 0;
         found = albedos_.emplace(key, albedo).first;
     }
 
     found->second.users++;
     part->texture = found->second.texture;
-    part->material = found->second.material;
     return key;
 }
 
@@ -368,7 +360,7 @@ void MeshRegistry::drop(const std::string& key) {
     }
     found->second.users--;
     if (found->second.users == 0) {
-        // the texture and its material go together, each once no frame can still read it
+        // the texture and its slot go together, once no frame can still read them
         context_->textures()->release(found->second.texture);
         albedos_.erase(found);
     }

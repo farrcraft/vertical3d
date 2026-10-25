@@ -58,7 +58,8 @@ class Lit final {
         glm::vec4 baseColour;
         float outline;        /**< how far the outline hull is pushed out, and zero for the cel pass **/
         uint32_t firstJoint;  /**< where the object's palette starts, for a skinned pipeline **/
-        float padding[2] = {0.0F, 0.0F};
+        uint32_t albedo = 0;  /**< the albedo's slot in the texture array at set 1, from slot() **/
+        float padding = 0.0F;
     };
 
     /**
@@ -118,6 +119,12 @@ class Lit final {
      * @return the pipeline a model's surface is drawn with
      **/
     PipelineHandle cel() const noexcept;
+
+    /**
+     * @return where a texture sits in the texture array, for an Object's albedo. Read it each
+     *         frame, because a texture filled or replaced later moves to another slot
+     **/
+    uint32_t slot(const TextureHandle& texture) const;
 
     /**
      * @return the pipeline a model's outline is drawn with, before its surface

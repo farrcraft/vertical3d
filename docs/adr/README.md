@@ -26,7 +26,7 @@ content went. Numbers are never reused.
 | [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
 | [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
 | [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
-| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088 |
+| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088, 0109 |
 | [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
 | [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
@@ -54,6 +54,7 @@ content went. Numbers are never reused.
 | [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
 | [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
 | [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
+| [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
 
 ## Offline rendering
 

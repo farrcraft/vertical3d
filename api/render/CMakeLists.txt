@@ -45,6 +45,7 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/Recorder.h" "realtime/vulkan/frame/Recorder.cxx"
 	"realtime/vulkan/pipeline/Pipeline.h" "realtime/vulkan/pipeline/Pipeline.cxx"
 	"realtime/vulkan/pipeline/Material.h" "realtime/vulkan/pipeline/Material.cxx"
+	"realtime/vulkan/pipeline/TextureArray.h" "realtime/vulkan/pipeline/TextureArray.cxx"
 	"realtime/vulkan/pipeline/Texture.h"
 	"realtime/vulkan/pipeline/Resources.h" "realtime/vulkan/pipeline/Resources.cxx"
 	"realtime/vulkan/memory/Memory.h" "realtime/vulkan/memory/Memory.cxx"

@@ -214,11 +214,11 @@ A replacement must declare the same sets as the built-in shaders, and no push co
 | Binding | Holds |
 |---|---|
 | set 0, binding 0 | The camera (`Camera` block) |
-| set 1, binding 0 | The albedo, a combined image sampler |
+| set 1, binding 0 | Every texture, an array of combined image samplers. An object's albedo is the one at its `albedo` slot |
 | set 2, binding 0 | The scene (`Scene` block, laid out as `SceneUniforms`) |
 | set 2, binding 1 | The shadow map |
 | set 2, binding 2 | The joint palette, a read-only storage buffer (skinned shaders) |
-| set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint (96 bytes each) |
+| set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint, albedo slot (96 bytes each) |
 
 Each vertex stage is given only the attributes the built-in one reads. Location 0 is the
 position, 1 the normal and 2 the uv, and a skinned stage also gets the joints at 3 and the

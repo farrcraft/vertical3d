@@ -33,6 +33,7 @@ struct Object {
     vec4 baseColour;
     float outline;
     uint firstJoint;            // where the object's palette starts in skin.glsl's joint buffer
+    uint albedo;                // the albedo's slot in the texture array at set 1
 };
 
 // set 2 - every object drawn this frame. A draw's first instance is where its objects start, so

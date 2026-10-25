@@ -11,9 +11,9 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
-#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 
 #include <vulkan/vulkan.h>
 
@@ -29,15 +29,17 @@ class RenderTarget;
 };  // namespace vulkan::frame
 
 /**
- * The textures a context holds and the materials they are sampled through.
+ * The textures a context holds, each in a slot of one texture array.
  *
- * Every pipeline that samples a texture at set 1 declares this one layout, so a material made
- * here serves the quad, the world quad and the lit renderer alike, and an atlas is uploaded
- * once. It belongs to the context, not to any renderer, so a context that draws no quads,
- * such as a headless one or one loading meshes, can still register textures.
+ * Every pipeline that samples a texture declares the array's layout at set 1 and binds its one
+ * material, which is the same for every draw. A draw names its texture by slot(), read from the
+ * handle when the draw is submitted, so the quad, the world quad and the lit renderer share
+ * every texture, and an atlas is uploaded once. It belongs to the context, not to any renderer,
+ * so a context that draws no quads, such as a headless one or one loading meshes, can still
+ * register textures.
  *
  * What is registered belongs to pipeline::Resources. The white texture lives as long as the
- * context. Any other texture lives until it is released here, along with its material.
+ * context. Any other texture lives until it is released here, along with its slot.
  **/
 class Textures final {
  public:
@@ -107,12 +109,20 @@ class Textures final {
     TextureHandle white() const noexcept;
 
     /**
-     * The descriptor set that binds a texture at set 1, created on first use and kept.
-     *
-     * @return the material to name on a draw item, or an unset handle for a texture this does
-     *         not hold
+     * @return the material that binds the texture array at set 1, the same for every textured
+     *         draw. It lives as long as the context
      **/
-    MaterialHandle material(const TextureHandle& handle);
+    MaterialHandle material() const noexcept;
+
+    /**
+     * Where a texture sits in the array, for a draw to read it by.
+     *
+     * Read it when the draw is submitted, not once and kept, because a texture filled or
+     * replaced later moves to another slot.
+     *
+     * @return the texture's slot, or the white texture's for an unset handle or one released
+     **/
+    uint32_t slot(const TextureHandle& handle) const;
 
     /**
      * @return set 1's layout, which every pipeline sampling a texture declares
@@ -120,11 +130,16 @@ class Textures final {
     VkDescriptorSetLayout layout() const noexcept;
 
     /**
-     * Release a texture and the material drawn with it.
+     * @return how many textures the array can hold at once, the white texture among them
+     **/
+    uint32_t capacity() const noexcept;
+
+    /**
+     * Release a texture and its slot.
      *
-     * The texture handle resolves to nothing at once. The material goes on resolving for the
-     * frame being queued, so items queued before the release draw with the texture. The image
-     * and the descriptor set are reclaimed once that frame has finished.
+     * The texture handle resolves to nothing at once, and slot() gives the white texture's.
+     * Items queued before the release keep the slot they were given, and draw with the texture.
+     * The image and the slot are reclaimed once the frame being queued has finished.
      *
      * @return whether anything was released. The white texture is never released, so a handle
      *         depthTexture() gave back for a target with nothing to sample can be released
@@ -136,10 +151,11 @@ class Textures final {
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Resources> resources_;
     boost::shared_ptr<vulkan::memory::TextureFactory> factory_;
-    boost::shared_ptr<vulkan::pipeline::DescriptorPool> sets_;  /**< set 1, the sampler every textured draw reads through **/
+    boost::shared_ptr<vulkan::pipeline::TextureArray> array_;  /**< set 1, which every textured draw reads through **/
+    MaterialHandle material_;  /**< what binds array_ **/
     TextureHandle white_;
-    /**< keyed by the whole handle, so a slot reused after a release never finds the old set **/
-    std::map<TextureHandle, MaterialHandle> materials_;
+    /**< keyed by the whole handle, so a handle's slot reused after a release never finds the old slot **/
+    std::map<TextureHandle, uint32_t> slots_;
     /**
      * The handle each registered render target image has, by its view. A view cannot be reused
      * while its entry is here, because the registered texture keeps the image alive until it is
@@ -149,6 +165,9 @@ class Textures final {
 
     /** A render target image's handle, registered the first time it is asked for. **/
     TextureHandle registered(const vulkan::pipeline::Texture& texture);
+
+    /** Register a texture, and give it a slot. **/
+    TextureHandle add(const vulkan::pipeline::Texture& texture);
 };
 
 };  // namespace v3d::render::realtime

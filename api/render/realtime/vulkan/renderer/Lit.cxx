@@ -250,6 +250,12 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
 
 /**
  **/
+uint32_t Lit::slot(const TextureHandle& texture) const {
+    return textures_->slot(texture);
+}
+
+/**
+ **/
 PipelineHandle Lit::cel() const noexcept {
     return cel_;
 }
