@@ -4,7 +4,7 @@
  **/
 
 #include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/vulkan/renderer/Clip.h>
+#include <api/render/realtime/renderer/Clip.h>
 
 #include <limits>
 
@@ -12,7 +12,7 @@
 #include <glm/vec4.hpp>
 
 using v3d::render::realtime::DrawItem;
-using v3d::render::realtime::vulkan::renderer::clip;
+using v3d::render::realtime::renderer::clip;
 
 namespace {
 

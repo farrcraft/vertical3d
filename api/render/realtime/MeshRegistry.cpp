@@ -10,7 +10,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/type/Model.h>
 
@@ -58,9 +58,9 @@ namespace {
  * The mesh on the device: the model's vertices as they are, or interleaved with their
  * influences for a model with a skeleton.
  **/
-boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceContext>& context, const type::Model& model) {
+boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const type::Model& model) {
     if (model.skeleton().empty()) {
-        return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+        return boost::make_shared<Mesh>(context->device(), context->uploader(),
             std::as_bytes(std::span(model.vertices())), static_cast<uint32_t>(model.vertices().size()),
             std::span<const uint32_t>(model.indices()));
     }
@@ -69,7 +69,7 @@ boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceCon
         vertices[index].vertex = model.vertices()[index];
         vertices[index].influence = model.influences()[index];
     }
-    return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+    return boost::make_shared<Mesh>(context->device(), context->uploader(),
         std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(model.indices()));
 }
 

@@ -11,12 +11,12 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
-#include <api/render/realtime/vulkan/pipeline/Material.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Material.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/render/realtime/vulkan/pipeline/TextureArray.h>
@@ -37,7 +37,7 @@ namespace v3d::render::realtime {
 /**
  **/
 Textures::Textures(const boost::shared_ptr<vulkan::device::Device>& device,
-    const boost::shared_ptr<vulkan::pipeline::Resources>& resources,
+    const boost::shared_ptr<Resources>& resources,
     const boost::shared_ptr<vulkan::frame::Ring>& ring,
     const boost::shared_ptr<vulkan::memory::Uploader>& uploader) :
     device_(device),
@@ -46,7 +46,7 @@ Textures::Textures(const boost::shared_ptr<vulkan::device::Device>& device,
     factory_ = boost::make_shared<vulkan::memory::TextureFactory>(device_, uploader);
     array_ = boost::make_shared<vulkan::pipeline::TextureArray>(device_, ring);
 
-    vulkan::pipeline::Material array;
+    Material array;
     array.set = array_->set();
     material_ = resources_->add(array);
 
@@ -149,7 +149,7 @@ std::size_t Textures::fill(const TextureHandle& handle, const boost::shared_ptr<
 
 /**
  **/
-TextureHandle Textures::texture(const vulkan::frame::RenderTarget& target, uint32_t slot) {
+TextureHandle Textures::texture(const RenderTarget& target, uint32_t slot) {
     // a depth-only target has no colour to read, and a slot written against no image is a
     // validation error. It gets the white texture, as depthTexture() does for a target with
     // no depth to read
@@ -161,7 +161,7 @@ TextureHandle Textures::texture(const vulkan::frame::RenderTarget& target, uint3
 
 /**
  **/
-TextureHandle Textures::depthTexture(const vulkan::frame::RenderTarget& target, uint32_t slot) {
+TextureHandle Textures::depthTexture(const RenderTarget& target, uint32_t slot) {
     if (!target.sampledDepth() || slot >= target.images()) {
         return white_;
     }

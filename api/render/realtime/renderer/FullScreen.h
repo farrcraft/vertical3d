@@ -13,7 +13,7 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -23,7 +23,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * A pass over the whole of a target, one fragment per pixel. A triangle covers the target, and
@@ -55,9 +55,9 @@ class FullScreen final {
     /**
      * @throw std::runtime_error if the pipeline cannot be built, or names no source
      **/
-    FullScreen(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
-        const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-        const boost::shared_ptr<frame::FrameUniforms>& uniforms, const Spec& spec);
+    FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
+        const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
+        const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const Spec& spec);
 
     FullScreen(const FullScreen&) = delete;
     FullScreen& operator=(const FullScreen&) = delete;
@@ -101,11 +101,11 @@ class FullScreen final {
     PipelineHandle pipeline() const noexcept;
 
  private:
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<pipeline::DescriptorPool> sources_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::pipeline::DescriptorPool> sources_;
     uint32_t count_;
     PipelineHandle pipeline_;
 };
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

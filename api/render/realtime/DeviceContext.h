@@ -13,10 +13,10 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/render/realtime/renderer/Quad.h>
+#include <api/render/realtime/renderer/World.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -72,7 +72,7 @@ class DeviceContext {
     /**
      * @return the pipelines, materials and textures a draw item can name by handle
      **/
-    boost::shared_ptr<vulkan::pipeline::Resources> resources() const;
+    boost::shared_ptr<Resources> resources() const;
 
     /**
      * @return set 0, where each pass's camera is written and bound from
@@ -129,7 +129,7 @@ class DeviceContext {
      * @return the batched quad primitive, which all 2D drawing goes through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::Quad> quads();
+    boost::shared_ptr<renderer::Quad> quads();
 
     /**
      * @return whether a quad renderer has been built, without building one
@@ -140,7 +140,7 @@ class DeviceContext {
      * @return the world space line primitive, which every line in the engine draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::Line> lines();
+    boost::shared_ptr<renderer::Line> lines();
 
     /**
      * @return whether a line renderer has been built, without building one
@@ -151,7 +151,7 @@ class DeviceContext {
      * @return the world space quad primitive
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::World> worldQuads();
+    boost::shared_ptr<renderer::World> worldQuads();
 
     /**
      * @return whether a world quad renderer has been built, without building one
@@ -180,7 +180,7 @@ class DeviceContext {
     // waits for the device and runs what they retired
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache_;
-    boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<Resources> resources_;
     boost::shared_ptr<vulkan::memory::Uploader> uploader_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms_;
     boost::shared_ptr<vulkan::frame::DepthBuffer> depth_;
@@ -188,8 +188,8 @@ class DeviceContext {
     VkExtent2D extent_;
     VkFormat depthFormat_;
     boost::shared_ptr<Textures> textures_;
-    boost::shared_ptr<vulkan::renderer::Quad> quads_;
-    boost::shared_ptr<vulkan::renderer::Line> lines_;
-    boost::shared_ptr<vulkan::renderer::World> worldQuads_;
+    boost::shared_ptr<renderer::Quad> quads_;
+    boost::shared_ptr<renderer::Line> lines_;
+    boost::shared_ptr<renderer::World> worldQuads_;
 };
 };  // namespace v3d::render::realtime

@@ -142,7 +142,7 @@ void MyApp::tick(unsigned int delta) {
   throws `std::logic_error`.
 
 A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
-and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A
+and draws itself (voxel's chunks, for instance) is a `Mesh` owned by the app. A
 `DrawItem` refers to its buffers directly and is valid only while the mesh is alive.
 `Mesh::describe(&item)` fills an item's geometry fields.
 
@@ -163,7 +163,7 @@ resolves to nothing after that.
 | A post pass source | `fullScreen.release(source)`, `grade.release(source)` |
 | A target registration after a resize | `textures->release(handle)`, then register again |
 | Pipelines | Never released. They live as long as the context. |
-| Your own `vulkan::memory::Mesh` | Yours. Keep it alive while any draw item names it. |
+| Your own `Mesh` | Yours. Keep it alive while any draw item names it. |
 
 **Release the renderer in `release()`.** The engine calls an app's `release()` before it
 destroys the window. The GPU device keeps the window's surface alive, so the renderer must be gone

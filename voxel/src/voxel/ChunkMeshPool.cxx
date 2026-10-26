@@ -5,7 +5,7 @@
 
 #include "ChunkMeshPool.h"
 
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 
 #include <cstddef>
 #include <utility>
@@ -19,7 +19,7 @@ ChunkMeshPool::ChunkMeshPool(Retire retire) :
     retire_(std::move(retire)) {
 }
 
-void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
+void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::Mesh>& mesh, const glm::vec3& origin,
     float size) {
     Entry entry;
     entry.mesh = mesh;
@@ -31,7 +31,7 @@ void ChunkMeshPool::add(size_t chunkId, const boost::shared_ptr<v3d::render::rea
         pool_.emplace(chunkId, entry);
         return;
     }
-    boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> replaced = found->second.mesh;
+    boost::shared_ptr<v3d::render::realtime::Mesh> replaced = found->second.mesh;
     found->second = entry;
     retire_([replaced]() mutable { replaced.reset(); });
 }

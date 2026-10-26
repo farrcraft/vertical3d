@@ -11,11 +11,11 @@
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/pipeline/Material.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
-#include <api/render/realtime/vulkan/renderer/FullScreen.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/Material.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/renderer/FullScreen.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -38,9 +38,9 @@ using v3d::render::realtime::MaterialHandle;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
-using v3d::render::realtime::vulkan::renderer::FullScreen;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::renderer::FullScreen;
 
 namespace {
 
@@ -299,8 +299,8 @@ BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
 
     const MaterialHandle first = copy.source({texture});
     const MaterialHandle second = copy.source({texture});
-    const v3d::render::realtime::vulkan::pipeline::Material* firstMaterial = headless.context->resources()->material(first);
-    const v3d::render::realtime::vulkan::pipeline::Material* secondMaterial = headless.context->resources()->material(second);
+    const v3d::render::realtime::Material* firstMaterial = headless.context->resources()->material(first);
+    const v3d::render::realtime::Material* secondMaterial = headless.context->resources()->material(second);
     BOOST_REQUIRE(firstMaterial != nullptr && secondMaterial != nullptr);
     BOOST_CHECK(firstMaterial->set != secondMaterial->set);
     BOOST_CHECK(copy.release(first));

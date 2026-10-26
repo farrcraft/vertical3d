@@ -11,7 +11,7 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/lighting/Shadow.h>
-#include <api/render/realtime/vulkan/renderer/Lit.h>
+#include <api/render/realtime/renderer/Lit.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
@@ -110,8 +110,8 @@ bool reaches(const Placed& placed, const Casting& casting) {
  *
  * @param cascade what a shadow draw pushes, or null for a draw that pushes nothing
  **/
-void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float outline, vulkan::renderer::Lit* lit,
-    Pass* pass, const vulkan::renderer::Lit::Cascade* cascade = nullptr) {
+void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float outline, renderer::Lit* lit,
+    Pass* pass, const renderer::Lit::Cascade* cascade = nullptr) {
     const MeshRegistry::Entry& entry = *group.front().entry;
     for (const MeshRegistry::Part& part : entry.parts) {
         DrawItem item;
@@ -126,7 +126,7 @@ void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float out
             item.pushSize = sizeof(*cascade);
         }
         for (std::size_t instance = 0; instance < group.size(); instance++) {
-            vulkan::renderer::Lit::Object object;
+            renderer::Lit::Object object;
             object.model = group[instance].model;
             object.baseColour = part.baseColour;
             object.outline = outline;
@@ -145,7 +145,7 @@ void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float out
 
 /**
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses) {
     const std::vector<std::vector<Placed>> groups = gather(registry, alpha, meshes, poses, false);
     const bool outlined = outline > 0.0F;
@@ -164,9 +164,9 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
 
 /**
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     Pass* pass, const Poses& poses, const Casting& casting) {
-    const vulkan::renderer::Lit::Cascade cascade{.index = casting.cascade};
+    const renderer::Lit::Cascade cascade{.index = casting.cascade};
     std::vector<Placed> reaching;
     for (const std::vector<Placed>& group : gather(registry, alpha, meshes, poses, true)) {
         reaching.clear();

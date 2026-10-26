@@ -9,7 +9,7 @@
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <array>
@@ -96,7 +96,7 @@ class ShadedPass final {
     struct Upload {
         boost::weak_ptr<v3d::brep::BRep> geometry;
         std::uint64_t changes = 0;
-        boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh;
+        boost::shared_ptr<v3d::render::realtime::Mesh> mesh;
         bool drawn = false;
     };
 

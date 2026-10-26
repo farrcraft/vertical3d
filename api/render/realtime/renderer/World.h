@@ -17,7 +17,7 @@
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -30,7 +30,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * The device side of the world space quad primitive.
@@ -80,9 +80,9 @@ class World final {
      * @param depth the format of the depth image, for the second of the two pipelines
      * @throw std::runtime_error if the pipelines cannot be created
      **/
-    World(const boost::shared_ptr<device::Device>& device,
-        const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-        const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+    World(const boost::shared_ptr<vulkan::device::Device>& device,
+        const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+        const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
         const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
 
     /**
@@ -121,7 +121,7 @@ class World final {
      * of a quad hides it, and two blended quads do not cut holes in each other where their
      * transparent parts overlap.
      **/
-    void createPipelines(const pipeline::Formats & formats);
+    void createPipelines(const vulkan::pipeline::Formats & formats);
 
     /**
      * Compile one world quad pipeline.
@@ -129,13 +129,13 @@ class World final {
      * @param formats the attachment formats. A depth format of VK_FORMAT_UNDEFINED is for a
      *        pass without depth, and anything else is tested against.
      **/
-    PipelineHandle createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend);
+    PipelineHandle createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend);
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<pipeline::Cache> cache_;
-    boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<frame::Ring> ring_;
-    boost::shared_ptr<frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
     boost::shared_ptr<Textures> textures_;
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
@@ -143,7 +143,7 @@ class World final {
     PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
     PipelineHandle additiveDepthPipeline_;
 
-    boost::shared_ptr<frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

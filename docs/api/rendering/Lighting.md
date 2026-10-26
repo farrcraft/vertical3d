@@ -6,7 +6,7 @@ the shadow functions are in `realtime::lighting`, in `api/render/realtime/lighti
 
 ## The lit pass
 
-`vulkan::renderer::Lit` draws registered meshes with light, cast shadows and an outline. A lit
+`renderer::Lit` draws registered meshes with light, cast shadows and an outline. A lit
 model is three things: a `MeshRegistry` entry, an entity with `ecs::component::Transform` and
 `component::Mesh`, and a `Lit`.
 
@@ -25,7 +25,7 @@ auto scene = boost::make_shared<RenderTarget>(context->device(), context->ring()
 auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
     mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true, 1, cascades);  // a layer per cascade
 
-vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
+renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
     context->ring(), context->frameUniforms(), context->textures(),
     scene->format(), scene->depthFormat(), map->depthFormat());
 ```
@@ -38,10 +38,10 @@ hand mirrors the image, which reverses the winding of every face on screen. `Lit
 clockwise front face unless told otherwise, which is right for the default hand:
 
 ```cpp
-vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
+renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
     context->ring(), context->frameUniforms(), context->textures(),
     scene->format(), scene->depthFormat(), map->depthFormat(),
-    vulkan::renderer::Lit::Shaders::embedded(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    renderer::Lit::Shaders::embedded(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
 ```
 
 The cel, outline and shadow pipelines all cull by this face. The light's matrix therefore has to
@@ -269,7 +269,7 @@ models and graded with them. `WindowRenderer::worldQuads()` is built for the win
 cannot draw into an sRGB scene target. Build a `World` against the target's formats:
 
 ```cpp
-vulkan::renderer::World litQuads(context->device(), context->pipelineCache(), context->resources(),
+renderer::World litQuads(context->device(), context->pipelineCache(), context->resources(),
     context->ring(), context->frameUniforms(), context->textures(), scene->format(), scene->depthFormat());
 // ... after meshes():
 litQuads.submit(worldCanvas, pass.get());
@@ -284,9 +284,9 @@ Colours given to world quads in this pass are linear.
 the constructor:
 
 ```cpp
-vulkan::renderer::Lit::Shaders shaders = vulkan::renderer::Lit::Shaders::embedded();
+renderer::Lit::Shaders shaders = renderer::Lit::Shaders::embedded();
 shaders.cel = loadSpirv("shaders/my_cel.frag.spv");
-vulkan::renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
+renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
 ```
 
 A replacement must declare the same sets as the built-in shaders. A shadow stage declares one

@@ -14,8 +14,8 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Material.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Material.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <cstdint>
@@ -25,7 +25,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 namespace {
 
@@ -47,9 +47,9 @@ const uint32_t setsPerPool = 8;
 
 /**
  **/
-FullScreen::FullScreen(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
-    const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-    const boost::shared_ptr<frame::FrameUniforms>& uniforms, const Spec& spec) :
+FullScreen::FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
+    const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
+    const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const Spec& spec) :
     device_(device),
     resources_(resources),
     count_(spec.sources) {
@@ -66,9 +66,9 @@ FullScreen::FullScreen(const boost::shared_ptr<device::Device>& device, const bo
         bindings[binding].descriptorCount = 1;
         bindings[binding].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     }
-    sources_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring, bindings, setsPerPool, spec.name);
+    sources_ = boost::make_shared<vulkan::pipeline::DescriptorPool>(device_, ring, bindings, setsPerPool, spec.name);
 
-    pipeline::Builder builder(device_);
+    vulkan::pipeline::Builder builder(device_);
     builder.name(spec.name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, spec.fragment.data(), spec.fragment.size() * sizeof(uint32_t))
@@ -94,7 +94,7 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
 
     std::vector<VkDescriptorImageInfo> images(count_);
     for (uint32_t binding = 0; binding < count_; binding++) {
-        const pipeline::Texture* texture = resources_->texture(textures[binding]);
+        const vulkan::pipeline::Texture* texture = resources_->texture(textures[binding]);
         if (texture == nullptr || !texture->image || !texture->sampler) {
             throw std::runtime_error("A full screen source names a texture that has been released, or has no image");
         }
@@ -113,7 +113,7 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
     }
     vkUpdateDescriptorSets(device_->handle(), count_, writes.data(), 0, nullptr);
 
-    pipeline::Material material;
+    Material material;
     material.set = set;
     material.texture = textures.front();
     return resources_->add(material);
@@ -122,7 +122,7 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
 /**
  **/
 bool FullScreen::release(const MaterialHandle& source) {
-    const pipeline::Material* material = resources_->material(source);
+    const Material* material = resources_->material(source);
     if (material == nullptr) {
         return false;
     }
@@ -159,4 +159,4 @@ PipelineHandle FullScreen::pipeline() const noexcept {
     return pipeline_;
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

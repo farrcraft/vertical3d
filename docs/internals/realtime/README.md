@@ -4,11 +4,17 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 [api/rendering/](../../api/rendering/README.md), and these pages do not repeat it.
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
-in [api/render/realtime](../../../api/render/realtime). The root holds the contexts, the frame
-and what a context owns. `canvas/` holds the canvases an app fills on the CPU, `entity/` the
-functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
-The Vulkan side is split into `vulkan/device`, `vulkan/frame`, `vulkan/memory`, `vulkan/pipeline`
-and `vulkan/renderer`.
+in [api/render/realtime](../../../api/render/realtime). The root holds what an app names: the
+contexts, the frame and its recorder, render targets, meshes, materials and the handle registry,
+and the stores a context owns. `renderer/` holds the renderers, `canvas/` the canvases an app
+fills on the CPU, `entity/` the functions that draw ECS entities, and `lighting/` the lit pass's
+settings and shadow fitting.
+
+`vulkan/` holds the wrappers over Vulkan objects, split into `vulkan/device`, `vulkan/frame`,
+`vulkan/memory` and `vulkan/pipeline`. **Nothing in `vulkan/` includes a header above it.** It
+speaks Vulkan's own terms, and the root turns an app's terms into them: `Present` becomes the
+swapchain's list of present modes, for one. An app names `vulkan::` only when it builds a pipeline
+or a buffer of its own.
 
 | Page | Read it to |
 |---|---|
@@ -33,12 +39,12 @@ WindowRenderer             owns the WindowContext and the Frame being built
                                Surface WindowContext made for the window
     vulkan::frame::Ring        frames in flight: a command buffer and a fence each
     vulkan::pipeline::Cache    the VkPipelineCache
-    vulkan::pipeline::Resources pipelines, materials and textures, by handle
+    Resources                  pipelines, materials and textures, by handle
     vulkan::memory::Uploader   one-shot copies to device-local memory
     vulkan::frame::FrameUniforms set 0: one camera per pass per frame in flight
     vulkan::frame::DepthBuffer the window's depth image, made on first request
     Textures                   texture factory, the texture array at set 1, white texture, slots
-    vulkan::renderer::Quad / Line / World   built on first request
+    renderer::Quad / Line / World   built on first request
 Frame -> Pass -> DrawItem
 ```
 

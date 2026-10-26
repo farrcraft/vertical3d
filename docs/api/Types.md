@@ -247,7 +247,7 @@ profile.lookat(center);   // the hand takes effect here
 - Nothing in this tree uses `DirectionCrossUp`, so `right()` in this tree's code always means
   `up × direction`.
 - A renderer that culls by winding has to be told the mirrored hand's front face.
-  `vulkan::renderer::Lit` takes it as a constructor argument, and `lighting::shadowLight()`
+  `renderer::Lit` takes it as a constructor argument, and `lighting::shadowLight()`
   takes the hand itself. See [Lighting.md](rendering/Lighting.md#setting-it-up).
 
 `Isometric` carries its own hand. Its `right()` and `forward()` follow it, and `apply()` writes

@@ -21,7 +21,7 @@
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -30,7 +30,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 namespace {
 
@@ -75,9 +75,9 @@ struct Push final {
 
 /**
  **/
-Quad::Quad(const boost::shared_ptr<device::Device>& device,
-    const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-    const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+Quad::Quad(const boost::shared_ptr<vulkan::device::Device>& device,
+    const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+    const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
     const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
     device_(device),
     cache_(cache),
@@ -85,14 +85,14 @@ Quad::Quad(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    stream_ = boost::make_shared<vulkan::frame::StreamRing>(device_, ring_, vulkan::frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
     createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
  **/
 Quad::~Quad() {
-    // the pipelines and their layouts belong to pipeline::Resources and the textures to the
+    // the pipelines and their layouts belong to Resources and the textures to the
     // context's Textures. The geometry buffers are owned here and are destroyed with it
 }
 
@@ -115,11 +115,11 @@ bool Quad::linearises(VkFormat colour) noexcept {
 
 /**
  **/
-void Quad::createPipelines(const pipeline::Formats & formats) {
+void Quad::createPipelines(const vulkan::pipeline::Formats & formats) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
     const bool linear = linearises(colour);
-    pipeline::Builder builder(device_);
+    vulkan::pipeline::Builder builder(device_);
     builder.name("quad")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, linear ? linearFragmentShader : fragmentShader,
@@ -151,9 +151,9 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Canvas::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
-    const boost::shared_ptr<memory::Buffer>& vertices = claimed.vertices;
-    const boost::shared_ptr<memory::Buffer>& indices = claimed.indices;
+    const vulkan::frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
+    const boost::shared_ptr<vulkan::memory::Buffer>& vertices = claimed.vertices;
+    const boost::shared_ptr<vulkan::memory::Buffer>& indices = claimed.indices;
 
     vertices->write(canvas.vertices().data(), vertexBytes);
     indices->write(canvas.indices().data(), indexBytes);
@@ -163,7 +163,7 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
     const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
-    const pipeline::Pipeline* pipeline = resources_->pipeline(handle);
+    const vulkan::pipeline::Pipeline* pipeline = resources_->pipeline(handle);
     for (const canvas::Canvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
@@ -199,4 +199,4 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
     }
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

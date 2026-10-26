@@ -15,7 +15,7 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 
@@ -30,9 +30,7 @@
 
 namespace v3d::render::realtime {
 
-namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan::frame
 
 /**
  * The textures a context holds, each in a slot of one texture array.
@@ -66,7 +64,7 @@ class Textures final {
      * @throw std::runtime_error if the white texture cannot be uploaded
      **/
     Textures(const boost::shared_ptr<vulkan::device::Device>& device,
-        const boost::shared_ptr<vulkan::pipeline::Resources>& resources,
+        const boost::shared_ptr<Resources>& resources,
         const boost::shared_ptr<vulkan::frame::Ring>& ring,
         const boost::shared_ptr<vulkan::memory::Uploader>& uploader);
 
@@ -146,7 +144,7 @@ class Textures final {
      * @param slot which of the target's images. A target with one image per frame in flight
      *        has one handle per slot, and a reader names current() or previous() each frame.
      **/
-    TextureHandle texture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
+    TextureHandle texture(const RenderTarget& target, uint32_t slot = 0);
 
     /**
      * Register a render target's depth image, so that a draw can sample what a pass tested
@@ -158,7 +156,7 @@ class Textures final {
      * texture, because a set written against an image with no sampled usage is undefined,
      * and a white shadow map only leaves the scene unshadowed.
      **/
-    TextureHandle depthTexture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
+    TextureHandle depthTexture(const RenderTarget& target, uint32_t slot = 0);
 
     /**
      * @return the 1x1 white texture an untextured draw samples
@@ -206,7 +204,7 @@ class Textures final {
 
  private:
     boost::shared_ptr<vulkan::device::Device> device_;
-    boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<Resources> resources_;
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::memory::TextureFactory> factory_;
     boost::shared_ptr<vulkan::pipeline::TextureArray> array_;  /**< set 1, which every textured draw reads through **/

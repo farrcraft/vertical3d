@@ -5,16 +5,16 @@ drawn.
 
 ## Post passes and the colour grade
 
-`vulkan::renderer::FullScreen` draws one triangle covering a target, with a fragment shader you
+`renderer::FullScreen` draws one triangle covering a target, with a fragment shader you
 supply as SPIR-V. Use it for any pass over a whole image: a blur, a tone map, a vignette.
 
 ```cpp
-vulkan::renderer::FullScreen::Spec spec;
+renderer::FullScreen::Spec spec;
 spec.name = "vignette";
 spec.fragment = vignetteSpirv;                // reads uv at location 0
 spec.sources = 1;                             // images bound at set 1, bindings 0 upwards
 spec.colour = swapchainFormat;                // what the pass draws into
-vulkan::renderer::FullScreen post(device, cache, resources, ring, uniforms, spec);
+renderer::FullScreen post(device, cache, resources, ring, uniforms, spec);
 
 MaterialHandle source = post.source({sceneTexture});   // once, and again after a resize
 colour->reads(scene);

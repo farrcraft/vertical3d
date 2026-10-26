@@ -10,12 +10,12 @@
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <vulkan/vulkan.h>
@@ -29,7 +29,7 @@
 #include <glm/vec4.hpp>
 
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * The device side of a lit scene. It holds the cel and outline pipelines a registered model is
@@ -110,9 +110,9 @@ class Lit final {
      *        camera's hand too: see lighting::shadowLight.
      * @throw std::runtime_error if a pipeline or the scene layout cannot be created
      **/
-    Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
-        const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-        const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
+    Lit(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
+        const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
+        const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
         VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders = Shaders::embedded(),
         VkFrontFace front = VK_FRONT_FACE_CLOCKWISE);
 
@@ -196,9 +196,9 @@ class Lit final {
      * all three.
      **/
     struct Slot final {
-        boost::shared_ptr<memory::Buffer> buffer;
-        boost::shared_ptr<memory::Buffer> palette;
-        boost::shared_ptr<memory::Buffer> objects;
+        boost::shared_ptr<vulkan::memory::Buffer> buffer;
+        boost::shared_ptr<vulkan::memory::Buffer> palette;
+        boost::shared_ptr<vulkan::memory::Buffer> objects;
         uint32_t count = 0;   /**< the objects added since the frame's scene was written **/
         VkDescriptorSet set = VK_NULL_HANDLE;
     };
@@ -220,7 +220,7 @@ class Lit final {
      *
      * @param buffer the slot's buffer for the binding
      **/
-    void reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const Reservation& reservation);
+    void reserve(Slot* slot, boost::shared_ptr<vulkan::memory::Buffer>* buffer, const Reservation& reservation);
 
     /**
      * Compile the cel and outline pipelines against the colour and depth formats, and the
@@ -233,21 +233,21 @@ class Lit final {
      **/
     Slot& slot();
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<pipeline::Cache> cache_;
-    boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<frame::Ring> ring_;
-    boost::shared_ptr<frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
     boost::shared_ptr<Textures> textures_;
-    boost::shared_ptr<pipeline::DescriptorPool> scenes_;
+    boost::shared_ptr<vulkan::pipeline::DescriptorPool> scenes_;
     std::vector<Slot> slots_;
     Slot* current_ = nullptr;   /**< the slot the last scene() wrote **/
     /**
      * A shadow map of one layer cleared to the far plane, which a scene with no shadow map
      * reads, so that nothing is in shadow
      **/
-    boost::shared_ptr<frame::RenderTarget> unshadowed_;
-    pipeline::Texture unshadowedTexture_;
+    boost::shared_ptr<RenderTarget> unshadowed_;
+    vulkan::pipeline::Texture unshadowedTexture_;
     PipelineHandle cel_;
     PipelineHandle outline_;
     PipelineHandle shadow_;
@@ -256,4 +256,4 @@ class Lit final {
     PipelineHandle skinnedShadow_;
 };
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

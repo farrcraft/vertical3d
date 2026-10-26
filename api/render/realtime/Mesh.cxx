@@ -7,9 +7,8 @@
 
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/vulkan/device/Device.h>
-
-#include "DeviceBuffer.h"
-#include "Uploader.h"
+#include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -18,31 +17,31 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::memory {
+namespace v3d::render::realtime {
 
 /**
  **/
-Mesh::Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
+Mesh::Mesh(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::memory::Uploader>& uploader,
     std::span<const std::byte> vertices, uint32_t vertexCount) :
     vertexCount_(vertexCount),
     indexCount_(0) {
     if (vertices.empty()) {
         throw std::runtime_error("A mesh needs vertices to be created from");
     }
-    vertices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.data(),
+    vertices_ = boost::make_shared<vulkan::memory::DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertices.data(),
         static_cast<VkDeviceSize>(vertices.size()));
 }
 
 /**
  **/
-Mesh::Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
+Mesh::Mesh(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::memory::Uploader>& uploader,
     std::span<const std::byte> vertices, uint32_t vertexCount, std::span<const uint32_t> indices) :
     Mesh(device, uploader, vertices, vertexCount) {
     if (indices.empty()) {
         throw std::runtime_error("An indexed mesh needs indices to be created from");
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(indices.size_bytes());
-    indices_ = boost::make_shared<DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices.data(), bytes);
+    indices_ = boost::make_shared<vulkan::memory::DeviceBuffer>(device, uploader, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices.data(), bytes);
     indexCount_ = static_cast<uint32_t>(indices.size());
 }
 
@@ -93,4 +92,4 @@ void Mesh::describe(DrawItem* item) const {
     item->instances = 1;
 }
 
-};  // namespace v3d::render::realtime::vulkan::memory
+};  // namespace v3d::render::realtime

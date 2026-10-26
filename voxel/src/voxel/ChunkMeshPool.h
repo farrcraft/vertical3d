@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 
 #include <functional>
 
@@ -33,7 +33,7 @@ class ChunkMeshPool {
     struct Entry {
         Entry();
 
-        boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh;
+        boost::shared_ptr<v3d::render::realtime::Mesh> mesh;
         glm::vec3 origin;  /**< the chunk's corner in blocks, which its vertices are relative to **/
         float size;        /**< how many blocks the chunk spans along each axis **/
     };
@@ -48,7 +48,7 @@ class ChunkMeshPool {
     /**
      * Take a chunk's mesh, replacing whatever was there and retiring it.
      **/
-    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>& mesh, const glm::vec3& origin,
+    void add(size_t chunkId, const boost::shared_ptr<v3d::render::realtime::Mesh>& mesh, const glm::vec3& origin,
         float size);
 
     /**

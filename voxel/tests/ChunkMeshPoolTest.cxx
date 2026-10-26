@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <voxel/src/voxel/ChunkMeshPool.h>
 
 #include <cstddef>
@@ -15,7 +15,7 @@
 #include <boost/test/unit_test.hpp>
 #include <glm/vec3.hpp>
 
-using v3d::render::realtime::vulkan::memory::Mesh;
+using v3d::render::realtime::Mesh;
 
 namespace {
 

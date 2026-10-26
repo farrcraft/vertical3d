@@ -266,7 +266,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   pipeline, set or buffer only when it changes. See
   [internals/realtime/](../internals/realtime/README.md).
 - **Lit pass** — a pass that draws meshes with light and shadow through
-  `vulkan::renderer::Lit`. See [rendering/Lighting.md](rendering/Lighting.md).
+  `renderer::Lit`. See [rendering/Lighting.md](rendering/Lighting.md).
 - **Scene set** — descriptor set 2, which a lit pass binds once. It holds the light, the shadow
   map and the frame's joint matrices. See [rendering/Lighting.md](rendering/Lighting.md).
 

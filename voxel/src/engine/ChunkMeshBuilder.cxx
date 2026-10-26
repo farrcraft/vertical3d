@@ -6,7 +6,7 @@
 #include "ChunkMeshBuilder.h"
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <voxel/src/voxel/MeshCache.h>
 
@@ -27,11 +27,11 @@ ChunkMeshBuilder::ChunkMeshBuilder(const boost::shared_ptr<v3d::render::realtime
     uploader_(uploader) {
 }
 
-boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder::build(const boost::shared_ptr<MeshCache>& mesh) const {
+boost::shared_ptr<v3d::render::realtime::Mesh> ChunkMeshBuilder::build(const boost::shared_ptr<MeshCache>& mesh) const {
     const size_t vertexCount = mesh->vertexCount();
     const size_t triCount = mesh->triCount();
     if (vertexCount == 0 || triCount == 0) {
-        return boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh>();
+        return boost::shared_ptr<v3d::render::realtime::Mesh>();
     }
 
     // the face a vertex belongs to gives its normal and its material. A vertex is shared only
@@ -67,6 +67,6 @@ boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> ChunkMeshBuilder:
         indices.push_back(static_cast<uint32_t>(tris[i].z));
     }
 
-    return boost::make_shared<v3d::render::realtime::vulkan::memory::Mesh>(device_, uploader_,
+    return boost::make_shared<v3d::render::realtime::Mesh>(device_, uploader_,
         std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(indices));
 }

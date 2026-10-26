@@ -14,7 +14,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/render/realtime/renderer/Line.h>
 #include <api/shell/Shell.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/Dressing.h>
@@ -201,7 +201,7 @@ void Renderer::draw() {
         return;
     }
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
+    const boost::shared_ptr<v3d::render::realtime::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;

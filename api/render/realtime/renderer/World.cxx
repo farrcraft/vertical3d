@@ -17,7 +17,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -29,7 +29,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 namespace {
 
@@ -65,9 +65,9 @@ const VkDeviceSize initialIndexBytes = 16ULL * 1024;
 
 /**
  **/
-World::World(const boost::shared_ptr<device::Device>& device,
-    const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-    const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+World::World(const boost::shared_ptr<vulkan::device::Device>& device,
+    const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+    const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
     const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
     device_(device),
     cache_(cache),
@@ -75,21 +75,21 @@ World::World(const boost::shared_ptr<device::Device>& device,
     ring_(ring),
     uniforms_(uniforms),
     textures_(textures) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
+    stream_ = boost::make_shared<vulkan::frame::StreamRing>(device_, ring_, vulkan::frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
     createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
  **/
 World::~World() {
-    // the pipelines and their layouts belong to pipeline::Resources, and the buffers go with the
+    // the pipelines and their layouts belong to Resources, and the buffers go with the
     // shared pointers holding them
 }
 
 /**
  **/
-void World::createPipelines(const pipeline::Formats & formats) {
-    const pipeline::Formats flat{.colour = formats.colour};
+void World::createPipelines(const vulkan::pipeline::Formats & formats) {
+    const vulkan::pipeline::Formats flat{.colour = formats.colour};
     pipeline_ = createPipeline("world", flat, Blend::Alpha);
     depthPipeline_ = createPipeline("world-depth", formats, Blend::Alpha);
     additivePipeline_ = createPipeline("world-additive", flat, Blend::Additive);
@@ -98,10 +98,10 @@ void World::createPipelines(const pipeline::Formats & formats) {
 
 /**
  **/
-PipelineHandle World::createPipeline(const std::string& name, const pipeline::Formats & formats, Blend blend) {
+PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
-    pipeline::Builder builder(device_);
+    vulkan::pipeline::Builder builder(device_);
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
@@ -120,7 +120,7 @@ PipelineHandle World::createPipeline(const std::string& name, const pipeline::Fo
     if (blend == Blend::Additive) {
         // the destination's alpha is kept, so adding light never changes how opaque the
         // picture is
-        pipeline::Builder::Blend adding;
+        vulkan::pipeline::Builder::Blend adding;
         adding.sourceColour = VK_BLEND_FACTOR_SRC_ALPHA;
         adding.destinationColour = VK_BLEND_FACTOR_ONE;
         adding.sourceAlpha = VK_BLEND_FACTOR_ZERO;
@@ -145,7 +145,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::World::Vertex);
     const VkDeviceSize indexBytes = canvas.indices().size() * sizeof(uint32_t);
-    const frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
+    const vulkan::frame::StreamRing::Geometry claimed = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = indexBytes});
     claimed.vertices->write(canvas.vertices().data(), vertexBytes);
     claimed.indices->write(canvas.indices().data(), indexBytes);
 
@@ -180,4 +180,4 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
     }
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

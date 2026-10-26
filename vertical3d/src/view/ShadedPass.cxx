@@ -13,9 +13,9 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -197,7 +197,7 @@ const ShadedPass::Upload* ShadedPass::upload(const boost::shared_ptr<v3d::brep::
         vertices.push_back({ .position = triangles.positions[index], .normal = triangles.normals[index] });
     }
     built_++;
-    upload.mesh = boost::make_shared<v3d::render::realtime::vulkan::memory::Mesh>(context_->device(), context_->uploader(),
+    upload.mesh = boost::make_shared<v3d::render::realtime::Mesh>(context_->device(), context_->uploader(),
         std::as_bytes(std::span<const Vertex>(vertices)), static_cast<std::uint32_t>(vertices.size()),
         std::span<const std::uint32_t>(triangles.indices));
     return &upload;
@@ -242,7 +242,7 @@ void ShadedPass::retire(Upload* upload) {
         return;
     }
     // a frame still in flight may read the buffers, so they go when the ring says it is safe
-    boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> mesh = std::move(upload->mesh);
+    boost::shared_ptr<v3d::render::realtime::Mesh> mesh = std::move(upload->mesh);
     context_->ring()->retire([mesh]() mutable { mesh.reset(); });
 }
 

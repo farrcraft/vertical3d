@@ -5,8 +5,8 @@
 
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 
 #include <cmath>
@@ -20,8 +20,8 @@
 
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::vulkan::frame::Timings;
 
 namespace {

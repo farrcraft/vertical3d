@@ -9,7 +9,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace v3d::render::realtime::vulkan::pipeline {
+namespace v3d::render::realtime {
 
 /**
  * What is bound at set 1 for a draw: per material data. A material outlives the frames that
@@ -22,4 +22,4 @@ struct Material final {
     TextureHandle texture;
 };
 
-};  // namespace v3d::render::realtime::vulkan::pipeline
+};  // namespace v3d::render::realtime

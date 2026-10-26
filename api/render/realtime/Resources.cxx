@@ -8,10 +8,10 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include "Material.h"
-#include "Pipeline.h"
-#include "Texture.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -20,11 +20,11 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::pipeline {
+namespace v3d::render::realtime {
 
 /**
  **/
-Resources::Resources(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<frame::Ring>& ring) :
+Resources::Resources(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring) :
     device_(device),
     ring_(ring),
     held_(boost::make_shared<Held>()) {
@@ -35,7 +35,7 @@ Resources::Resources(const boost::shared_ptr<device::Device>& device, const boos
 Resources::~Resources() {
     VkDevice device = device_->handle();
 
-    pipelines_.each([device](const Pipeline& pipeline) {
+    pipelines_.each([device](const vulkan::pipeline::Pipeline& pipeline) {
         if (pipeline.pipeline != VK_NULL_HANDLE) {
             vkDestroyPipeline(device, pipeline.pipeline, nullptr);
         }
@@ -51,7 +51,7 @@ Resources::~Resources() {
 
 /**
  **/
-PipelineHandle Resources::add(const Pipeline& pipeline) {
+PipelineHandle Resources::add(const vulkan::pipeline::Pipeline& pipeline) {
     return pipelines_.add(pipeline);
 }
 
@@ -63,7 +63,7 @@ MaterialHandle Resources::add(const Material& material) {
 
 /**
  **/
-TextureHandle Resources::add(const Texture& texture) {
+TextureHandle Resources::add(const vulkan::pipeline::Texture& texture) {
     return held_->textures.add(texture);
 }
 
@@ -110,8 +110,8 @@ bool Resources::release(const TextureHandle& handle) {
 
 /**
  **/
-bool Resources::replace(const TextureHandle& handle, const Texture& texture) {
-    Texture* held = held_->textures.resolve(handle);
+bool Resources::replace(const TextureHandle& handle, const vulkan::pipeline::Texture& texture) {
+    vulkan::pipeline::Texture* held = held_->textures.resolve(handle);
     if (held == nullptr || held_->retiringTextures.count(handle) > 0) {
         return false;
     }
@@ -129,7 +129,7 @@ std::size_t Resources::textureCount() const noexcept {
 
 /**
  **/
-const Pipeline* Resources::pipeline(const PipelineHandle& handle) const {
+const vulkan::pipeline::Pipeline* Resources::pipeline(const PipelineHandle& handle) const {
     return pipelines_.resolve(handle);
 }
 
@@ -145,11 +145,11 @@ const Material* Resources::material(const MaterialHandle& handle) const {
 
 /**
  **/
-const Texture* Resources::texture(const TextureHandle& handle) const {
+const vulkan::pipeline::Texture* Resources::texture(const TextureHandle& handle) const {
     if (held_->retiringTextures.count(handle) > 0) {
         return nullptr;
     }
     return held_->textures.resolve(handle);
 }
 
-};  // namespace v3d::render::realtime::vulkan::pipeline
+};  // namespace v3d::render::realtime

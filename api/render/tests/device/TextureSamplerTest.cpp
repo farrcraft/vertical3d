@@ -5,7 +5,7 @@
 
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Textures.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 

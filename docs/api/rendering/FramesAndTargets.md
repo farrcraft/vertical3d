@@ -92,11 +92,11 @@ Background: [ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.m
 
 ## Choosing a target
 
-A pass draws into the window unless it names a `vulkan::frame::RenderTarget`. A render target
+A pass draws into the window unless it names a `RenderTarget`. A render target
 is an offscreen image that a later pass can sample.
 
 ```cpp
-using vulkan::frame::RenderTarget;
+using RenderTarget;
 auto context = renderer_->context();
 
 // colour and depth, the size of a scene view

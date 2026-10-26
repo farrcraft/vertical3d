@@ -5,7 +5,7 @@
 
 #include "Material.h"
 
-namespace v3d::render::realtime::vulkan::pipeline {
+namespace v3d::render::realtime {
 
 /**
  **/
@@ -13,4 +13,4 @@ Material::Material() noexcept :
     set(VK_NULL_HANDLE) {
 }
 
-};  // namespace v3d::render::realtime::vulkan::pipeline
+};  // namespace v3d::render::realtime

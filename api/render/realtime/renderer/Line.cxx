@@ -18,7 +18,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -26,7 +26,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 namespace {
 
@@ -53,32 +53,32 @@ const VkDeviceSize initialVertexBytes = 64ULL * 1024;
 
 /**
  **/
-Line::Line(const boost::shared_ptr<device::Device>& device,
-    const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-    const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+Line::Line(const boost::shared_ptr<vulkan::device::Device>& device,
+    const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+    const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
     VkFormat colour, VkFormat depth) :
     device_(device),
     cache_(cache),
     resources_(resources),
     ring_(ring),
     uniforms_(uniforms) {
-    stream_ = boost::make_shared<frame::StreamRing>(device_, ring_, frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = 0});
+    stream_ = boost::make_shared<vulkan::frame::StreamRing>(device_, ring_, vulkan::frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = 0});
     createPipelines({.colour = colour, .depth = depth});
 }
 
 /**
  **/
 Line::~Line() {
-    // the pipelines and their layouts belong to pipeline::Resources, and the buffers go with the
+    // the pipelines and their layouts belong to Resources, and the buffers go with the
     // shared pointers holding them
 }
 
 /**
  **/
-void Line::createPipelines(const pipeline::Formats & formats) {
+void Line::createPipelines(const vulkan::pipeline::Formats & formats) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
-    pipeline::Builder builder(device_);
+    vulkan::pipeline::Builder builder(device_);
     builder.name("line")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
         .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
@@ -106,7 +106,7 @@ void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
     }
 
     const VkDeviceSize vertexBytes = canvas.vertices().size() * sizeof(canvas::Line::Vertex);
-    const boost::shared_ptr<memory::Buffer> vertices = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = 0}).vertices;
+    const boost::shared_ptr<vulkan::memory::Buffer> vertices = stream_->claim({.vertexBytes = vertexBytes, .indexBytes = 0}).vertices;
     vertices->write(canvas.vertices().data(), vertexBytes);
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
@@ -137,4 +137,4 @@ void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
     }
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

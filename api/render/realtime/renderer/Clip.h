@@ -14,7 +14,7 @@
 
 #include <glm/glm.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * Clip an item to a canvas's clip rectangle: min x, min y, max x, max y, in pixels of the image
@@ -38,4 +38,4 @@ inline void clip(DrawItem* item, const glm::vec4& rectangle) {
     item->scissor.extent.height = static_cast<uint32_t>(bottom - top);
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

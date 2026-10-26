@@ -9,13 +9,13 @@
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
-#include <api/render/realtime/vulkan/renderer/FullScreen.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
+#include <api/render/realtime/renderer/FullScreen.h>
+#include <api/render/realtime/renderer/Quad.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -68,15 +68,15 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
     const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip) :
     logger_(logger),
     context_(context) {
-    const bool encodes = vulkan::renderer::Quad::linearises(formats.colour);
+    const bool encodes = renderer::Quad::linearises(formats.colour);
     const auto build = [&](const std::string& name, std::vector<uint32_t> fragment) {
-        vulkan::renderer::FullScreen::Spec spec;
+        renderer::FullScreen::Spec spec;
         spec.name = name;
         spec.fragment = std::move(fragment);
         spec.sources = 2;
         spec.colour = formats.colour;
         spec.depth = formats.depth;
-        return boost::make_shared<vulkan::renderer::FullScreen>(context_->device(), context_->pipelineCache(),
+        return boost::make_shared<renderer::FullScreen>(context_->device(), context_->pipelineCache(),
             context_->resources(), context_->ring(), context_->frameUniforms(), spec);
     };
     shown_ = build("grade", encodes ? words(gradeLinearTargetShader) : words(gradeShader));
@@ -119,15 +119,15 @@ Grade::~Grade() {
 
 /**
  **/
-MaterialHandle Grade::source(const vulkan::frame::RenderTarget& scene, uint32_t slot) {
+MaterialHandle Grade::source(const RenderTarget& scene, uint32_t slot) {
     vulkan::pipeline::Texture texture = scene.texture(slot);
     if (!texture.image) {
         throw std::runtime_error("A grade's scene has no colour image to read");
     }
     texture.sampler = nearest_;
     // an _SRGB scene is decoded as it is read, so it is graded by the stage that encodes it again
-    const bool decoded = vulkan::renderer::Quad::linearises(scene.format());
-    vulkan::renderer::FullScreen& reader = decoded ? *decoded_ : *shown_;
+    const bool decoded = renderer::Quad::linearises(scene.format());
+    renderer::FullScreen& reader = decoded ? *decoded_ : *shown_;
     const TextureHandle sceneTexture = context_->resources()->add(texture);
     MaterialHandle material;
     try {
@@ -209,7 +209,7 @@ void Grade::submit(const MaterialHandle& source, Pass* pass) const {
 
 /**
  **/
-vulkan::renderer::FullScreen& Grade::pass(const Source& source) const {
+renderer::FullScreen& Grade::pass(const Source& source) const {
     return source.decoded ? *decoded_ : *shown_;
 }
 

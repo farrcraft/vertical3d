@@ -26,10 +26,10 @@
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/renderer/Lit.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/renderer/Lit.h>
+#include <api/render/realtime/renderer/World.h>
 #include <api/type/animation/Track.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
@@ -55,10 +55,10 @@ using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
-using v3d::render::realtime::vulkan::renderer::Lit;
-using v3d::render::realtime::vulkan::renderer::World;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::renderer::Lit;
+using v3d::render::realtime::renderer::World;
 using v3d::test::cube;
 using v3d::test::twoCubes;
 

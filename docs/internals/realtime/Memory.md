@@ -108,7 +108,7 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 |---|---|---|
 | `memory::Buffer` | Host visible, coherent, mapped for its whole life | Geometry rewritten every frame; readback |
 | `memory::DeviceBuffer` | Device local, filled by staging copy | Geometry built once and drawn many times |
-| `memory::Mesh` | Two `DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
+| `Mesh` | Two `memory::DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
 
 - **A `Buffer` never changes size.** Whatever outgrows one makes a new one and retires the old
   one through the ring, as `StreamRing` and `Capture` do. `Buffer::read()` is slow (coherent,
@@ -163,7 +163,7 @@ Background: [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md
 
 ## Resources and deferred destruction
 
-`vulkan::pipeline::Resources` owns everything a draw item names by handle: pipelines (with their
+`Resources` owns everything a draw item names by handle: pipelines (with their
 layouts), materials and textures. It is built on `Registry<Tag, T>`
 ([`Registry.h`](../../../api/render/realtime/Registry.h)).
 
@@ -226,9 +226,9 @@ image through a shared pointer, so whichever of the target and the registration 
 frees them. After `RenderTarget::recreate()` the old registration still names the old
 images, so it must be released and the target registered again.
 
-**Meshes are outside `Resources`.** An app's `memory::Mesh` belongs to whatever built it.
+**Meshes are outside `Resources`.** An app's `Mesh` belongs to whatever built it.
 `MeshRegistry` is a separate registry with the same slot-and-generation handles: an entry holds
-a `memory::Mesh`, its parts and an optional skin. Releasing an entry retires its mesh through the
+a `Mesh`, its parts and an optional skin. Releasing an entry retires its mesh through the
 ring and drops each albedo's user count, releasing the albedo with its last user. The registry's
 destructor destroys remaining meshes at once, so it must run after the device is idle.
 

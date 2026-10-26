@@ -19,7 +19,7 @@
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -35,11 +35,11 @@ namespace v3d::image {
 class Image;
 };  // namespace v3d::image
 
-namespace v3d::render::realtime::vulkan::frame {
+namespace v3d::render::realtime {
 class RenderTarget;
-};  // namespace v3d::render::realtime::vulkan::frame
+};  // namespace v3d::render::realtime
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * The device side of the batched quad primitive.
@@ -56,7 +56,7 @@ namespace v3d::render::realtime::vulkan::renderer {
  * its own from the StreamRing. They cannot share one pair: growing a buffer replaces the
  * allocation, which invalidates the handle every draw item already queued holds.
  *
- * The pipelines it registers belong to pipeline::Resources and live until it is destroyed.
+ * The pipelines it registers belong to Resources and live until it is destroyed.
  * Textures and their materials belong to the context's Textures.
  **/
 class Quad final {
@@ -73,9 +73,9 @@ class Quad final {
      * @param depth the format of the depth image, for the second of the two pipelines
      * @throw std::runtime_error if the pipelines or their resources cannot be created
      **/
-    Quad(const boost::shared_ptr<device::Device>& device,
-        const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-        const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+    Quad(const boost::shared_ptr<vulkan::device::Device>& device,
+        const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+        const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
         const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
 
     /**
@@ -120,19 +120,19 @@ class Quad final {
      * Neither tests nor writes depth. 2D is painter ordered either way, and a ui drawn over a
      * scene has to stay on top of it whatever depth the scene left.
      **/
-    void createPipelines(const pipeline::Formats & formats);
+    void createPipelines(const vulkan::pipeline::Formats & formats);
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<pipeline::Cache> cache_;
-    boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<frame::Ring> ring_;
-    boost::shared_ptr<frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
     boost::shared_ptr<Textures> textures_;
 
     PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;          /**< for a pass with one **/
 
-    boost::shared_ptr<frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

@@ -7,11 +7,13 @@
 
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Material.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
-#include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -20,13 +22,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "FrameUniforms.h"
 #include "RenderTarget.h"
-#include "Timings.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::frame {
+namespace v3d::render::realtime {
 
 namespace {
 
@@ -102,12 +102,12 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
  * A viewport width or height of zero means the whole extent of what the pass draws into. For
  * a pass into its own target, that is the target's extent, not the frame's.
  **/
-VkDescriptorSet writeCamera(FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
+VkDescriptorSet writeCamera(vulkan::frame::FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
     if (uniforms == nullptr) {
         return VK_NULL_HANDLE;
     }
 
-    FrameUniforms::Camera camera;
+    vulkan::frame::FrameUniforms::Camera camera;
     camera.view = pass.view();
     camera.projection = pass.projection();
     camera.viewProjection = camera.projection * camera.view;
@@ -153,17 +153,17 @@ into(nullptr) {
 
 /**
  **/
-void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-    FrameUniforms* uniforms, Timings* timings) {
+void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources,
+    vulkan::frame::FrameUniforms* uniforms, vulkan::frame::Timings* timings) {
     // the frame never reads the image's old contents, so UNDEFINED is the correct source
     // layout and the cheapest one. A frame given no image is one where every pass names its
     // own target
     if (target.image != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourForDrawing(target.image)});
+        vulkan::memory::record(commands, {vulkan::memory::colourForDrawing(target.image)});
     }
 
     if (frame.swapchainDepth() && target.depthImage != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::depthForDrawing(target.depthImage)});
+        vulkan::memory::record(commands, {vulkan::memory::depthForDrawing(target.depthImage)});
     }
 
     // every pass that draws into a target comes before every pass that reads it
@@ -192,7 +192,7 @@ void Recorder::record(VkCommandBuffer commands, const Frame& frame, const Target
     }
 
     if (target.image != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourAfterDrawing(target.image, target.finalLayout)});
+        vulkan::memory::record(commands, {vulkan::memory::colourAfterDrawing(target.image, target.finalLayout)});
     }
 }
 
@@ -203,10 +203,10 @@ void Recorder::openTarget(VkCommandBuffer commands, bool depth, const Target& in
     // to the next, the same as the swapchain image and the depth buffer. The barrier still
     // orders this frame's writes after the previous frame's reads of the same image
     if (into.image != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourForDrawing(into.image)});
+        vulkan::memory::record(commands, {vulkan::memory::colourForDrawing(into.image)});
     }
     if (depth && into.depthImage != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::depthForDrawing(into.depthImage)});
+        vulkan::memory::record(commands, {vulkan::memory::depthForDrawing(into.depthImage)});
     }
 }
 
@@ -215,18 +215,18 @@ void Recorder::openTarget(VkCommandBuffer commands, bool depth, const Target& in
 void Recorder::closeTarget(VkCommandBuffer commands, bool depth, const Target& into) {
     // every pass after the last one that wrote the target can sample it
     if (into.image != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+        vulkan::memory::record(commands, {vulkan::memory::colourAfterDrawing(into.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
     // a depth image created for sampling moves to DEPTH_READ_ONLY_OPTIMAL, so a later pass
     // can both sample it and depth test against it. A shadow map target has only a depth image
     if (depth && into.sampledDepth && into.depthImage != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::depthForSampling(into.depthImage)});
+        vulkan::memory::record(commands, {vulkan::memory::depthForSampling(into.depthImage)});
     }
 }
 
 /**
  **/
-void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target, const pipeline::Resources& resources,
+void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources,
     VkDescriptorSet frameSet) {
     VkRenderingAttachmentInfo colour{};
     colour.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -303,7 +303,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const Target& 
 
 /**
  **/
-void Recorder::dynamics(VkCommandBuffer commands, const Pass& pass, const pipeline::Pipeline& pipeline) {
+void Recorder::dynamics(VkCommandBuffer commands, const Pass& pass, const vulkan::pipeline::Pipeline& pipeline) {
     // dynamic state outlives a bind only into another pipeline that also declares it dynamic,
     // so each state is set every time a pipeline that declares it is bound
     if (pipeline.biased) {
@@ -320,7 +320,7 @@ void Recorder::dynamics(VkCommandBuffer commands, const Pass& pass, const pipeli
 
 /**
  **/
-void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const Target& into) {
+void Recorder::check(const Pass& pass, const vulkan::pipeline::Pipeline& pipeline, const Target& into) {
     if (pipeline.scene && pass.scene() == VK_NULL_HANDLE) {
         std::stringstream msg;
         msg << "The " << pass.name() << " pass draws with a pipeline that declares a scene at set 2, and names none";
@@ -351,7 +351,7 @@ void Recorder::check(const Pass& pass, const pipeline::Pipeline& pipeline, const
 
 /**
  **/
-void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
+void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const Resources& resources,
     VkDescriptorSet frameSet, Bound* bound) {
     // DrawItem::record, for work the item's fields cannot describe. It may record any command,
     // so nothing bound before it is assumed to be bound after it
@@ -368,7 +368,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
 
     scissor(commands, item, bound);
 
-    const pipeline::Pipeline* pipeline = resources.pipeline(item.pipeline);
+    const vulkan::pipeline::Pipeline* pipeline = resources.pipeline(item.pipeline);
     if (pipeline == nullptr || pipeline->pipeline == VK_NULL_HANDLE) {
         return;
     }
@@ -403,7 +403,7 @@ void Recorder::record(VkCommandBuffer commands, const Pass& pass, const DrawItem
         vkCmdPushConstants(commands, pipeline->layout, pipeline->pushStages, 0, item.pushSize, item.push.data());
     }
 
-    const pipeline::Material* material = resources.material(item.material);
+    const Material* material = resources.material(item.material);
     if (material != nullptr && material->set != VK_NULL_HANDLE && material->set != bound->set) {
         // set 1 holds per material data
         vkCmdBindDescriptorSets(commands, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &material->set, 0, nullptr);
@@ -464,4 +464,4 @@ void Recorder::scissor(VkCommandBuffer commands, const DrawItem& item, Bound* bo
     bound->scissorSet = true;
 }
 
-};  // namespace v3d::render::realtime::vulkan::frame
+};  // namespace v3d::render::realtime

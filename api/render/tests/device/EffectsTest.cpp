@@ -18,8 +18,8 @@
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/type/animation/SpriteClip.h>
 #include <api/type/animation/Track.h>
 #include <api/type/camera/Camera.h>
@@ -51,8 +51,8 @@ using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::component::Particles;
 using v3d::render::realtime::component::Sprite;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::type::animation::SpriteClip;
 using v3d::type::animation::Track;
 

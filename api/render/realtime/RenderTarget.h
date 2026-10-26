@@ -6,6 +6,8 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
@@ -15,12 +17,9 @@
 #include <cstdint>
 #include <vector>
 
-#include "DepthBuffer.h"
-#include "Ring.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::frame {
+namespace v3d::render::realtime {
 
 /**
  * An image a pass draws into that is not the swapchain's, and that a later pass samples.
@@ -72,12 +71,12 @@ class RenderTarget final {
      *        so previous() can be read on the first frame
      * @param layers how many layers the depth image has, which more than one needs a target
      *        with sampled depth and no colour
-     * @throw std::runtime_error if allocation fails, if either dimension is zero, if there
-     *        is no colour and no sampled depth, if images is neither one nor the frames in
-     *        flight, or if there is more than one layer and a colour image or no sampled depth.
-     *        A target with no colour and no sampled depth would have nothing to read
+     * @throw std::runtime_error if allocation fails or either dimension is zero. A target with
+     *        no colour and no sampled depth throws too, because it would have nothing to read.
+     *        Images that are neither one nor the frames in flight throw, as does more than one
+     *        layer with a colour image or without sampled depth
      **/
-    RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+    RenderTarget(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring,
         uint32_t width, uint32_t height, VkFormat colour, bool depth = false, bool sampledDepth = false,
         uint32_t images = 1, uint32_t layers = 1);
 
@@ -93,7 +92,7 @@ class RenderTarget final {
      * pipeline built against this target has to be rebuilt.
      *
      * The view and the sampler are new, so anything holding a descriptor set written
-     * against the old ones has to write it again. A pipeline::Resources texture registered
+     * against the old ones has to write it again. A Resources texture registered
      * from the old images keeps them alive and goes on naming them, so it has to be
      * released and the target registered again.
      *
@@ -183,7 +182,7 @@ class RenderTarget final {
     bool sampledDepth() const noexcept;
 
     /**
-     * One slot's depth image described as something pipeline::Resources can own, so that a draw
+     * One slot's depth image described as something Resources can own, so that a draw
      * item can name it as a material's texture and sample what was rendered into it. This is
      * how a shadow map is read.
      *
@@ -192,10 +191,10 @@ class RenderTarget final {
      * written against those would read an image with no sampled usage, which only the
      * validation layer reports.
      **/
-    pipeline::Texture depthTexture(uint32_t slot = 0) const;
+    vulkan::pipeline::Texture depthTexture(uint32_t slot = 0) const;
 
     /**
-     * One slot described as something pipeline::Resources can own, so that a draw item can name
+     * One slot described as something Resources can own, so that a draw item can name
      * it as a material's texture and sample what was rendered into it. A target of more than
      * one image is registered once per slot, and a reader names current() or previous() each
      * frame.
@@ -205,15 +204,15 @@ class RenderTarget final {
      * returns a value rather than registering itself, because the caller owns the
      * registration and releases it.
      **/
-    pipeline::Texture texture(uint32_t slot = 0) const;
+    vulkan::pipeline::Texture texture(uint32_t slot = 0) const;
 
  private:
     /**
      * One frame's images: the colour, and the depth when the target has one.
      **/
     struct Slot final {
-        boost::shared_ptr<memory::Image> image;
-        boost::shared_ptr<DepthBuffer> depth;
+        boost::shared_ptr<vulkan::memory::Image> image;
+        boost::shared_ptr<vulkan::frame::DepthBuffer> depth;
     };
 
     /**
@@ -225,7 +224,7 @@ class RenderTarget final {
     /**
      * A colour image of the target's format.
      **/
-    boost::shared_ptr<memory::Image> createColour(const VkExtent2D& extent) const;
+    boost::shared_ptr<vulkan::memory::Image> createColour(const VkExtent2D& extent) const;
 
     /**
      * Clear every slot and leave it in the layout a reader samples it in, as though a pass had
@@ -244,16 +243,16 @@ class RenderTarget final {
      **/
     const Slot& slot() const noexcept;
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<Ring> ring_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
     VkFormat format_;
     uint32_t images_;
     uint32_t layers_;
     std::vector<Slot> slots_;
-    boost::shared_ptr<pipeline::Sampler> sampler_;
+    boost::shared_ptr<vulkan::pipeline::Sampler> sampler_;
     VkExtent2D extent_;
     bool wantsDepth_;
     bool sampledDepth_;
 };
 
-};  // namespace v3d::render::realtime::vulkan::frame
+};  // namespace v3d::render::realtime

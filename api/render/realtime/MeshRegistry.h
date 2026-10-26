@@ -11,7 +11,7 @@
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/UploadQueue.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/type/Model.h>
 
 #include <cstddef>
@@ -94,7 +94,7 @@ class MeshRegistry final {
      * What a handle resolves to: everything a draw of the model needs except where it is.
      **/
     struct Entry final {
-        boost::shared_ptr<vulkan::memory::Mesh> mesh;
+        boost::shared_ptr<Mesh> mesh;
         std::vector<Part> parts;  /**< in the model's order, which is the order they are drawn **/
         boost::shared_ptr<const Skin> skin;  /**< null for a static model **/
         /**

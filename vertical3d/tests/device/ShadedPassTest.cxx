@@ -13,8 +13,8 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/tests/device/Headless.h>
 #include <api/type/camera/Camera.h>
@@ -89,8 +89,8 @@ boost::shared_ptr<v3d::brep::BRep> facing() {
 glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::ShadedPass* shaded, const v3d::editor::Scene& scene,
     const v3d::editor::ViewPort::Display& display, const std::string& name) {
     using v3d::render::realtime::vulkan::frame::Capture;
-    using v3d::render::realtime::vulkan::frame::Recorder;
-    using v3d::render::realtime::vulkan::frame::RenderTarget;
+    using v3d::render::realtime::Recorder;
+    using v3d::render::realtime::RenderTarget;
 
     const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
         headless->device, headless->context->ring(), size, size, colourFormat, true);

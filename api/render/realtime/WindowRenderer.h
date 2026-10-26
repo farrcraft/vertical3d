@@ -7,7 +7,7 @@
 
 #include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
+#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 #include <api/window/Window.h>
 
@@ -133,7 +133,7 @@ class WindowRenderer final {
      * The batched quad primitive that all 2D drawing goes through. An app fills a Canvas during
      * its tick and hands both to this.
      **/
-    boost::shared_ptr<vulkan::renderer::Quad> quads() const;
+    boost::shared_ptr<renderer::Quad> quads() const;
 
     /**
      * @return where a texture is uploaded and made a material, or null before initialize()
@@ -147,7 +147,7 @@ class WindowRenderer final {
      * Built on the first call rather than at startup, so an app that draws no lines pays
      * nothing for it.
      **/
-    boost::shared_ptr<vulkan::renderer::Line> lines();
+    boost::shared_ptr<renderer::Line> lines();
 
     /**
      * The world space quad primitive. An app fills a canvas::World during its tick and hands
@@ -156,7 +156,7 @@ class WindowRenderer final {
      * Built on the first call rather than at startup, so an app that draws none pays
      * nothing for it.
      **/
-    boost::shared_ptr<vulkan::renderer::World> worldQuads();
+    boost::shared_ptr<renderer::World> worldQuads();
 
     /**
      * The name of the pass every frame has, for an app adding items to it directly.

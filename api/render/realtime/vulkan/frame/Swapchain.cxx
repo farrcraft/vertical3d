@@ -6,7 +6,6 @@
 #include "Swapchain.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Present.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
@@ -24,18 +23,19 @@ namespace {
 /**
  * @return how a present mode reads in the log
  **/
-const char* describe(Present present) noexcept {
-    switch (present) {
-    case Present::Uncapped:
+const char* describe(VkPresentModeKHR mode) noexcept {
+    switch (mode) {
+    case VK_PRESENT_MODE_MAILBOX_KHR:
         return "uncapped (mailbox)";
-    case Present::Vsync:
+    case VK_PRESENT_MODE_FIFO_KHR:
         return "with vsync (fifo)";
-    case Present::AdaptiveVsync:
+    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
         return "with adaptive vsync (fifo relaxed)";
-    case Present::Immediate:
+    case VK_PRESENT_MODE_IMMEDIATE_KHR:
         return "immediately (immediate)";
+    default:
+        return "in a mode with no name here";
     }
-    return "";
 }
 
 };  // namespace
@@ -43,13 +43,13 @@ const char* describe(Present present) noexcept {
 /**
  **/
 Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-    VkFormat preferred, Present present) :
+    VkFormat preferred, const std::vector<VkPresentModeKHR>& present) :
     device_(device),
     logger_(logger),
     swapchain_(VK_NULL_HANDLE),
     preferred_(preferred),
     wanted_(present),
-    presenting_(Present::Vsync),
+    presenting_(VK_PRESENT_MODE_FIFO_KHR),
     format_(VK_FORMAT_UNDEFINED),
     extent_(),
     copyable_(false) {
@@ -191,58 +191,25 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
 
 /**
  **/
-VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes, Present wanted) {
-    const auto offered = [&modes](VkPresentModeKHR mode) {
-        return std::find(modes.begin(), modes.end(), mode) != modes.end();
-    };
-    // the modes each request will take, best first. Fifo is the only mode every implementation
-    // has to offer, so it ends every list
-    std::vector<VkPresentModeKHR> order;
-    switch (wanted) {
-    case Present::Uncapped:
-        order = {VK_PRESENT_MODE_MAILBOX_KHR};
-        break;
-    case Present::Vsync:
-        break;
-    case Present::AdaptiveVsync:
-        order = {VK_PRESENT_MODE_FIFO_RELAXED_KHR};
-        break;
-    case Present::Immediate:
-        order = {VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR};
-        break;
-    }
-    for (const VkPresentModeKHR mode : order) {
-        if (offered(mode)) {
+VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes, const std::vector<VkPresentModeKHR>& wanted) {
+    for (const VkPresentModeKHR mode : wanted) {
+        if (std::find(modes.begin(), modes.end(), mode) != modes.end()) {
             return mode;
         }
     }
+    // the only mode every implementation has to offer
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 /**
  **/
-Present Swapchain::granted(VkPresentModeKHR mode) noexcept {
-    switch (mode) {
-    case VK_PRESENT_MODE_MAILBOX_KHR:
-        return Present::Uncapped;
-    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-        return Present::AdaptiveVsync;
-    case VK_PRESENT_MODE_IMMEDIATE_KHR:
-        return Present::Immediate;
-    default:
-        return Present::Vsync;
-    }
-}
-
-/**
- **/
-void Swapchain::request(Present present) noexcept {
+void Swapchain::request(const std::vector<VkPresentModeKHR>& present) {
     wanted_ = present;
 }
 
 /**
  **/
-Present Swapchain::presenting() const noexcept {
+VkPresentModeKHR Swapchain::presenting() const noexcept {
     return presenting_;
 }
 
@@ -330,7 +297,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     format_ = surfaceFormat.format;
     extent_ = extent;
     copyable_ = copyable;
-    presenting_ = granted(presentMode);
+    presenting_ = presentMode;
     logger_->get()->info("Presenting {}x{} images {}", extent.width, extent.height, describe(presenting_));
 
     uint32_t count = 0;

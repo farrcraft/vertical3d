@@ -47,8 +47,8 @@ another directory is named.
 * **A mesh is drawn as lines, every frame, on the CPU.** `WireframeVisitor` appends each edge to
   a line canvas (`src/view/ViewPort.cxx:131`). No mesh becomes GPU geometry.
 * **`api/render/realtime` has a lit pass that no app uses.** `MeshRegistry` uploads a
-  `type::Model` (`api/render/realtime/MeshRegistry.h:177`) and `vulkan::renderer::Lit` draws it
-  (`vulkan/renderer/Lit.h:49`). Lit is cel shading with fixed cull and polygon modes, and needs
+  `type::Model` (`api/render/realtime/MeshRegistry.h:177`) and `renderer::Lit` draws it
+  (`renderer/Lit.h:49`). Lit is cel shading with fixed cull and polygon modes, and needs
   an sRGB target. `pipeline::Builder` can set both modes (`vulkan/pipeline/Builder.h:92,98`).
   `WindowRenderer::context()` gives an app the device context to build its own pass.
 * **BRep faces wind clockwise from outside**, and Lit and glTF expect counter-clockwise.

@@ -1,11 +1,11 @@
 # The renderers
 
-The classes in `vulkan/renderer` that turn a canvas, lines, world quads or lit meshes into draw
+The classes in `renderer/` that turn a canvas, lines, world quads or lit meshes into draw
 items.
 
 ## The renderers
 
-Each renderer in `vulkan/renderer` takes the context's device, pipeline cache, resources, ring
+Each renderer in `renderer/` takes the context's device, pipeline cache, resources, ring
 and frame uniforms. `Quad`, `Line`, `World` and `Lit` also take the colour and depth formats they
 draw into, and each of them compiles a variant per depth state.
 

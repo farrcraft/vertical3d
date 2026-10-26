@@ -10,13 +10,13 @@
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/type/Model.h>
 
@@ -28,7 +28,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 namespace {
 
@@ -80,7 +80,7 @@ std::vector<uint32_t> words(const uint32_t (&code)[N]) {
  * Sets 0 to 2, which every lit pipeline declares alike so that the sets a pass binds stay bound
  * across a switch between them.
  **/
-void declare(pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
+void declare(vulkan::pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
     VkDescriptorSetLayout scene) {
     builder->set(camera)
         .set(material)
@@ -101,7 +101,7 @@ enum class Reads : uint8_t {
  * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
  * layout MeshRegistry uploads a skinned model in.
  **/
-void vertex(pipeline::Builder* builder, bool skinned, Reads reads) {
+void vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads) {
     using Vertex = type::Model::Vertex;
     using Influence = type::Model::Influence;
     builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
@@ -148,9 +148,9 @@ Lit::Shaders Lit::Shaders::embedded() {
 
 /**
  **/
-Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<pipeline::Cache>& cache,
-    const boost::shared_ptr<pipeline::Resources>& resources, const boost::shared_ptr<frame::Ring>& ring,
-    const boost::shared_ptr<frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
+Lit::Lit(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
+    const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
+    const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
     VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders, VkFrontFace front) :
     device_(device),
     cache_(cache),
@@ -186,12 +186,12 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
     objects.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     // a set per frame in flight, which is all a scene ever needs
-    scenes_ = boost::make_shared<pipeline::DescriptorPool>(device_, ring_,
+    scenes_ = boost::make_shared<vulkan::pipeline::DescriptorPool>(device_, ring_,
         std::vector<VkDescriptorSetLayoutBinding>{block, map, palette, objects}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
     // read as an array of layers, as every shadow map is, so the binding has one kind of view
-    unshadowed_ = boost::make_shared<frame::RenderTarget>(device_, ring_, 1, 1, VK_FORMAT_UNDEFINED, true, true);
+    unshadowed_ = boost::make_shared<RenderTarget>(device_, ring_, 1, 1, VK_FORMAT_UNDEFINED, true, true);
     unshadowed_->clear();
     unshadowedTexture_ = unshadowed_->depthTexture();
 
@@ -205,7 +205,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
 
     for (const bool skinned : {false, true}) {
         const std::vector<uint32_t>& meshVertex = skinned ? shaders.skinnedMesh : shaders.mesh;
-        pipeline::Builder cel(device_);
+        vulkan::pipeline::Builder cel(device_);
         cel.name(skinned ? "lit-cel-skinned" : "lit-cel")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, meshVertex.data(), bytes(meshVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.cel.data(), bytes(shaders.cel));
@@ -221,7 +221,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
 
         // the back of a slightly larger hull, so the front faces are the ones culled
         const std::vector<uint32_t>& outlineVertex = skinned ? shaders.skinnedOutline : shaders.outlineVertex;
-        pipeline::Builder outline(device_);
+        vulkan::pipeline::Builder outline(device_);
         outline.name(skinned ? "lit-outline-skinned" : "lit-outline")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, outlineVertex.data(), bytes(outlineVertex))
             .shader(VK_SHADER_STAGE_FRAGMENT_BIT, shaders.outlineFragment.data(), bytes(shaders.outlineFragment));
@@ -240,7 +240,7 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
         // depth alone, so no fragment stage and no colour. Culled as the cel pass is, which
         // lighting::shadowLight keeps right by winding a face the way a camera does
         const std::vector<uint32_t>& shadowVertex = skinned ? shaders.skinnedShadow : shaders.shadow;
-        pipeline::Builder caster(device_);
+        vulkan::pipeline::Builder caster(device_);
         caster.name(skinned ? "lit-shadow-skinned" : "lit-shadow")
             .shader(VK_SHADER_STAGE_VERTEX_BIT, shadowVertex.data(), bytes(shadowVertex));
         vertex(&caster, skinned, Reads::Position);
@@ -311,7 +311,8 @@ Lit::Slot& Lit::slot() {
         return slot;
     }
 
-    slot.buffer = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(lighting::SceneUniforms)});
+    slot.buffer = boost::make_shared<vulkan::memory::Buffer>(device_,
+        vulkan::memory::BufferSpec{.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, .bytes = sizeof(lighting::SceneUniforms)});
     slot.set = scenes_->allocate();
 
     VkDescriptorBufferInfo buffer{};
@@ -334,7 +335,7 @@ Lit::Slot& Lit::slot() {
 
 /**
  **/
-void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const Reservation& reservation) {
+void Lit::reserve(Slot* slot, boost::shared_ptr<vulkan::memory::Buffer>* buffer, const Reservation& reservation) {
     const uint32_t binding = reservation.binding;
     const VkDeviceSize needed = reservation.needed;
     const VkDeviceSize kept = reservation.kept;
@@ -345,7 +346,8 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<memory::Buffer>* buffer, const R
     while (size < needed) {
         size *= 2;
     }
-    const boost::shared_ptr<memory::Buffer> grown = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
+    const boost::shared_ptr<vulkan::memory::Buffer> grown = boost::make_shared<vulkan::memory::Buffer>(device_,
+        vulkan::memory::BufferSpec{.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, .bytes = size});
     if (*buffer) {
         if (kept > 0) {
             std::vector<unsigned char> bytes(static_cast<std::size_t>(kept));
@@ -388,8 +390,8 @@ VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const Textur
         written.palette->write(palette.data(), bytes);
     }
 
-    const pipeline::Texture* texture = resources_->texture(shadowMap);
-    // the white texture is what Textures gives for a target with no depth to read, which is no
+    const vulkan::pipeline::Texture* texture = resources_->texture(shadowMap);
+    // Textures gives the white texture for a target with no depth to read, and that means no
     // shadow map
     if (texture == nullptr || !texture->image || shadowMap == textures_->white()) {
         // the far plane in every texel, so nothing is in shadow
@@ -426,4 +428,4 @@ uint32_t Lit::object(const Object& object) {
     return current_->count++;
 }
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

@@ -9,6 +9,8 @@
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/pipeline/Pipeline.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -16,12 +18,10 @@
 #include <set>
 
 #include "Material.h"
-#include "Pipeline.h"
-#include "Texture.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::pipeline {
+namespace v3d::render::realtime {
 
 /**
  * Everything a draw item can name by handle, and the owner that destroys it.
@@ -40,7 +40,7 @@ class Resources final {
      * @param device the device everything registered here was created on
      * @param ring the frames in flight. Released resources are retired through it.
      **/
-    Resources(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<frame::Ring>& ring);
+    Resources(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring);
 
     /**
      * Destroys every resource that was registered, in the order vulkan requires.
@@ -53,7 +53,7 @@ class Resources final {
     /**
      * Take ownership of a pipeline and its layout.
      **/
-    PipelineHandle add(const Pipeline& pipeline);
+    PipelineHandle add(const vulkan::pipeline::Pipeline& pipeline);
 
     /**
      * Take ownership of a material. The descriptor set belongs to the pool it was
@@ -64,7 +64,7 @@ class Resources final {
     /**
      * Take ownership of a texture and everything backing it.
      **/
-    TextureHandle add(const Texture& texture);
+    TextureHandle add(const vulkan::pipeline::Texture& texture);
 
     /**
      * Stop addressing a material.
@@ -101,12 +101,12 @@ class Resources final {
      *
      * @return whether the handle referred to a texture not released
      **/
-    bool replace(const TextureHandle& handle, const Texture& texture);
+    bool replace(const TextureHandle& handle, const vulkan::pipeline::Texture& texture);
 
     /**
      * @return the pipeline the handle refers to, or nullptr
      **/
-    const Pipeline* pipeline(const PipelineHandle& handle) const;
+    const vulkan::pipeline::Pipeline* pipeline(const PipelineHandle& handle) const;
 
     /**
      * @return the material the handle refers to, or nullptr. A released material resolves
@@ -117,7 +117,7 @@ class Resources final {
     /**
      * @return the texture the handle refers to, or nullptr once it is released
      **/
-    const Texture* texture(const TextureHandle& handle) const;
+    const vulkan::pipeline::Texture* texture(const TextureHandle& handle) const;
 
     /**
      * @return how many textures are held. A released texture is counted until it is destroyed,
@@ -132,16 +132,16 @@ class Resources final {
      **/
     struct Held final {
         Registry<MaterialTag, Material> materials;
-        Registry<TextureTag, Texture> textures;
+        Registry<TextureTag, vulkan::pipeline::Texture> textures;
         /**< each released material, and the last frame it may be recorded into **/
         std::map<MaterialHandle, uint64_t> retiringMaterials;
         std::set<TextureHandle> retiringTextures;
     };
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<frame::Ring> ring_;
-    Registry<PipelineTag, Pipeline> pipelines_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    Registry<PipelineTag, vulkan::pipeline::Pipeline> pipelines_;
     boost::shared_ptr<Held> held_;
 };
 
-};  // namespace v3d::render::realtime::vulkan::pipeline
+};  // namespace v3d::render::realtime

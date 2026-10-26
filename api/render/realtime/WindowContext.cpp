@@ -43,7 +43,7 @@ WindowContext::WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, 
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
     swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device(), static_cast<uint32_t>(window_->width()),
-        static_cast<uint32_t>(window_->height()), preferred, present);
+        static_cast<uint32_t>(window_->height()), preferred, presentModes(present));
     presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, swapchain_, ring());
     describe(swapchain_->format(), swapchain_->extent());
 }
@@ -83,7 +83,7 @@ void WindowContext::resize() {
 /**
  **/
 void WindowContext::present(Present present) {
-    swapchain_->request(present);
+    swapchain_->request(presentModes(present));
     resize();
 }
 

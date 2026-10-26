@@ -7,15 +7,14 @@
 
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
 
 #include <vulkan/vulkan.h>
 
-#include "FrameUniforms.h"
-#include "Timings.h"
-
-namespace v3d::render::realtime::vulkan::frame {
+namespace v3d::render::realtime {
 
 /**
  * Turns a frame into commands.
@@ -71,8 +70,8 @@ class Recorder final {
      *        frame whose pipelines declare nothing at set 0
      * @param timings where each pass is timed under its name, or null for none
      **/
-    static void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const pipeline::Resources& resources,
-        FrameUniforms* uniforms = nullptr, Timings* timings = nullptr);
+    static void record(VkCommandBuffer commands, const Frame& frame, const Target& target, const Resources& resources,
+        vulkan::frame::FrameUniforms* uniforms = nullptr, vulkan::frame::Timings* timings = nullptr);
 
     /**
      * Whether a pass gives a pipeline everything it declares it needs per pass: a scene set
@@ -90,7 +89,7 @@ class Recorder final {
      *        undefined
      * @throw std::runtime_error naming the pass and what it lacks
      **/
-    static void check(const Pass& pass, const pipeline::Pipeline& pipeline, const Target& into = Target());
+    static void check(const Pass& pass, const vulkan::pipeline::Pipeline& pipeline, const Target& into = Target());
 
  private:
     /**
@@ -99,7 +98,7 @@ class Recorder final {
     struct Bound {
         Bound() noexcept;
 
-        const pipeline::Pipeline* pipeline;
+        const vulkan::pipeline::Pipeline* pipeline;
         VkDescriptorSet frameSet;
         VkDescriptorSet sceneSet;
         VkDescriptorSet set;
@@ -134,13 +133,13 @@ class Recorder final {
     /**
      * @param frameSet what the pass binds at set 0, or null if it binds nothing there
      **/
-    static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const pipeline::Resources& resources,
+    static void record(VkCommandBuffer commands, const Pass& pass, const Target& target, const Resources& resources,
         VkDescriptorSet frameSet);
 
     /**
      * Bind what the item needs that is not bound already, and issue its draw.
      **/
-    static void record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const pipeline::Resources& resources,
+    static void record(VkCommandBuffer commands, const Pass& pass, const DrawItem& item, const Resources& resources,
         VkDescriptorSet frameSet, Bound* bound);
 
     /**
@@ -156,7 +155,7 @@ class Recorder final {
      *
      * @pre check() has passed, so a biased pipeline's pass names a bias
      **/
-    static void dynamics(VkCommandBuffer commands, const Pass& pass, const pipeline::Pipeline& pipeline);
+    static void dynamics(VkCommandBuffer commands, const Pass& pass, const vulkan::pipeline::Pipeline& pipeline);
 };
 
-};  // namespace v3d::render::realtime::vulkan::frame
+};  // namespace v3d::render::realtime

@@ -12,10 +12,10 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -32,8 +32,8 @@ using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 
 namespace {
 
@@ -197,12 +197,12 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
  **/
 BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::Resources> resources = headless.context->resources();
+    const boost::shared_ptr<v3d::render::realtime::Resources> resources = headless.context->resources();
 
     idle(&headless);
     const std::size_t before = resources->textureCount();
     const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
-    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::vulkan::pipeline::Material());
+    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::Material());
 
     BOOST_CHECK(resources->release(material));
     BOOST_CHECK(!resources->release(material));

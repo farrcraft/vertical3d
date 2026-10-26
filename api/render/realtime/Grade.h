@@ -23,17 +23,15 @@ namespace v3d::render::realtime {
 
 class DeviceContext;
 
-namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan::frame
 
 namespace vulkan::pipeline {
 class Sampler;
 };  // namespace vulkan::pipeline
 
-namespace vulkan::renderer {
+namespace renderer {
 class FullScreen;
-};  // namespace vulkan::renderer
+};  // namespace renderer
 
 /**
  * A colour grade: a full-screen pass that looks every pixel of a scene up in a 16 cubed table.
@@ -84,7 +82,7 @@ class Grade final {
      * @return the source submit() names
      * @throw std::runtime_error if the scene has no colour image, or the source cannot be bound
      **/
-    MaterialHandle source(const vulkan::frame::RenderTarget& scene, uint32_t slot = 0);
+    MaterialHandle source(const RenderTarget& scene, uint32_t slot = 0);
 
     /**
      * Release a source, and the scene's registration with it.
@@ -141,7 +139,7 @@ class Grade final {
     /**
      * @return the pass a source's material belongs to
      **/
-    vulkan::renderer::FullScreen& pass(const Source& source) const;
+    renderer::FullScreen& pass(const Source& source) const;
 
     /**
      * Register a table's texels as a texture, uploaded into an image of its own.
@@ -150,8 +148,8 @@ class Grade final {
 
     boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<DeviceContext> context_;
-    boost::shared_ptr<vulkan::renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
-    boost::shared_ptr<vulkan::renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
+    boost::shared_ptr<renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
+    boost::shared_ptr<renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;
     TextureHandle tableTexture_;
     std::map<MaterialHandle, Source> sources_;

@@ -73,7 +73,7 @@ Sets are organised by how often their contents change.
 |---|---|---|---|
 | 0 | per pass, per frame | the camera: `view`, `projection`, `viewProjection` (three `mat4`) and `viewport` (`vec4`), 208 bytes std140 | `vulkan::frame::FrameUniforms` |
 | 1 | never, for a textured pipeline; per material for a full-screen one | a textured pipeline's: every texture, an array of combined image samplers at binding 0, fragment stage, indexed by slot. A full-screen pipeline's: one combined image sampler per source | `Textures`; `FullScreen`, `Grade` |
-| 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2), object storage buffer (binding 3) | `vulkan::renderer::Lit` |
+| 2 | per pass, only for pipelines that declare it | a lit scene: `Scene` uniform (binding 0), shadow map (binding 1), joint palette storage buffer (binding 2), object storage buffer (binding 3) | `renderer::Lit` |
 | push | per draw | a projection or an origin, and flags | the item |
 
 Rules:

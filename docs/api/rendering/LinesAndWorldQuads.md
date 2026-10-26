@@ -44,7 +44,7 @@ canvas::World::Corners corners = {a, b, c, d};  // in order around the edge
 world.quad(corners, colour);
 world.quad(corners, uv0, uv1, glm::vec4(1.0F), textureHandle);   // uv0 at the first corner, uv1 at the third
 
-renderer_->worldQuads()->submit(world, pass.get(), 0, vulkan::renderer::World::Blend::Alpha);
+renderer_->worldQuads()->submit(world, pass.get(), 0, renderer::World::Blend::Alpha);
 ```
 
 - Corners go in perimeter order, as `grid::tileCorners` returns them. Any convex quad comes out

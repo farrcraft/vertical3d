@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
     Frame frame;
     frame.pass("first");
     frame.pass("second");
-    frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::vulkan::frame::RenderTarget>());
+    frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::RenderTarget>());
 
     const std::vector<boost::shared_ptr<v3d::render::realtime::Pass>> ordered = frame.ordered();
     BOOST_REQUIRE_EQUAL(ordered.size(), 2U);

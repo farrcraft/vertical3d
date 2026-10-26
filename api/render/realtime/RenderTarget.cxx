@@ -6,14 +6,13 @@
 #include "RenderTarget.h"
 
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
-
-#include "DepthBuffer.h"
-#include "Ring.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -23,7 +22,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::render::realtime::vulkan::frame {
+namespace v3d::render::realtime {
 
 namespace {
 
@@ -75,20 +74,20 @@ void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& exten
 void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth,
     const std::vector<VkImageView>& depthViews, const VkExtent2D& extent) {
     if (colour != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourForDrawing(colour)});
+        vulkan::memory::record(commands, {vulkan::memory::colourForDrawing(colour)});
     }
     if (depth != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::depthForDrawing(depth)});
+        vulkan::memory::record(commands, {vulkan::memory::depthForDrawing(depth)});
     }
     clear(commands, {.colour = colourView, .depth = depthViews.empty() ? VK_NULL_HANDLE : depthViews.front()}, extent);
     for (std::size_t layer = 1; layer < depthViews.size(); layer++) {
         clear(commands, {.colour = VK_NULL_HANDLE, .depth = depthViews[layer]}, extent);
     }
     if (colour != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
+        vulkan::memory::record(commands, {vulkan::memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
     if (depth != VK_NULL_HANDLE) {
-        memory::record(commands, {memory::depthForSampling(depth)});
+        vulkan::memory::record(commands, {vulkan::memory::depthForSampling(depth)});
     }
 }
 
@@ -96,8 +95,8 @@ void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, V
 
 /**
  **/
-RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - images and layers keep the order the header gives callers
+RenderTarget::RenderTarget(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the order the header gives callers
     uint32_t width, uint32_t height, VkFormat colour, bool depth, bool sampledDepth, uint32_t images, uint32_t layers) :
     device_(device),
     ring_(ring),
@@ -152,16 +151,16 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
         }
         if (wantsDepth_) {
             // a target's depth is a DepthBuffer, the same class the swapchain passes use
-            slot.depth = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_, layers_);
+            slot.depth = boost::make_shared<vulkan::frame::DepthBuffer>(device_, width, height, sampledDepth_, layers_);
         }
     }
 
-    boost::shared_ptr<pipeline::Sampler> sampler;
+    boost::shared_ptr<vulkan::pipeline::Sampler> sampler;
     if (format_ != VK_FORMAT_UNDEFINED) {
         // the default: linear, because a target is read at whatever size the pass reading it
         // draws, and clamped, because sampling past its edge is reaching outside what was
         // rendered. One serves every slot, since they differ only in what was drawn
-        sampler = boost::make_shared<pipeline::Sampler>(device_, pipeline::Sampler::Spec());
+        sampler = boost::make_shared<vulkan::pipeline::Sampler>(device_, vulkan::pipeline::Sampler::Spec());
     }
 
     VkExtent2D extent{};
@@ -180,16 +179,16 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
 
 /**
  **/
-boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& extent) const {
-    memory::Image::Spec spec;
+boost::shared_ptr<vulkan::memory::Image> RenderTarget::createColour(const VkExtent2D& extent) const {
+    vulkan::memory::Image::Spec spec;
     spec.width = extent.width;
     spec.height = extent.height;
     spec.format = format_;
-    // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets frame::Capture
-    // copy one out. It is always granted, as SAMPLED is, and its only cost is any compression
-    // a desktop driver disables for it
+    // a pass draws into a target and a later pass reads it. TRANSFER_SRC lets a capture copy
+    // one out. It is always granted, as SAMPLED is, and its only cost is any compression a
+    // desktop driver disables for it
     spec.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    return boost::make_shared<memory::Image>(device_, spec);
+    return boost::make_shared<vulkan::memory::Image>(device_, spec);
 }
 
 /**
@@ -197,7 +196,7 @@ boost::shared_ptr<memory::Image> RenderTarget::createColour(const VkExtent2D& ex
 void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& extent) const {
     // clear by rendering, not by a transfer command, because every target image already has
     // attachment usage and none has TRANSFER_DST
-    memory::Uploader uploader(device_, ring_);
+    vulkan::memory::Uploader uploader(device_, ring_);
     uploader.submit([&slots, &extent](VkCommandBuffer commands) {
         for (const Slot& slot : slots) {
             const bool depth = slot.depth && slot.depth->sampled();
@@ -325,17 +324,17 @@ bool RenderTarget::sampledDepth() const noexcept {
 
 /**
  **/
-pipeline::Texture RenderTarget::depthTexture(uint32_t slot) const {
+vulkan::pipeline::Texture RenderTarget::depthTexture(uint32_t slot) const {
     if (!sampledDepth() || slot >= slots_.size()) {
-        return pipeline::Texture();
+        return vulkan::pipeline::Texture();
     }
     return slots_[slot].depth->texture();
 }
 
 /**
  **/
-pipeline::Texture RenderTarget::texture(uint32_t slot) const {
-    pipeline::Texture texture;
+vulkan::pipeline::Texture RenderTarget::texture(uint32_t slot) const {
+    vulkan::pipeline::Texture texture;
     if (slot < slots_.size()) {
         texture.image = slots_[slot].image;
         texture.sampler = sampler_;
@@ -343,4 +342,4 @@ pipeline::Texture RenderTarget::texture(uint32_t slot) const {
     return texture;
 }
 
-};  // namespace v3d::render::realtime::vulkan::frame
+};  // namespace v3d::render::realtime

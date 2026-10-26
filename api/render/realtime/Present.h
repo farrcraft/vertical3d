@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include <cstdint>
+#include <vector>
 
 namespace v3d::render::realtime {
 
@@ -22,5 +25,15 @@ enum class Present : uint8_t {
     AdaptiveVsync,  /**< as Vsync, but a late image is shown at once and may tear (fifo relaxed), else Vsync **/
     Immediate       /**< as soon as it is drawn, tearing (immediate), else Uncapped, else Vsync **/
 };
+
+/**
+ * @return the vulkan present modes a request takes, best first. Fifo ends every list.
+ **/
+std::vector<VkPresentModeKHR> presentModes(Present present);
+
+/**
+ * @return the request a vulkan present mode answers. A mode no request names answers Vsync.
+ **/
+Present granted(VkPresentModeKHR mode) noexcept;
 
 };  // namespace v3d::render::realtime

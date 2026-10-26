@@ -10,12 +10,12 @@
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
+#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/render/realtime/renderer/Quad.h>
+#include <api/render/realtime/renderer/World.h>
 #include <api/window/Window.h>
 
 #include "DeviceContext.h"
@@ -104,8 +104,8 @@ const std::vector<vulkan::frame::Timings::Timing>& WindowRenderer::timings() con
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Quad> WindowRenderer::quads() const {
-    return context_ ? context_->quads() : boost::shared_ptr<vulkan::renderer::Quad>();
+boost::shared_ptr<renderer::Quad> WindowRenderer::quads() const {
+    return context_ ? context_->quads() : boost::shared_ptr<renderer::Quad>();
 }
 
 /**
@@ -116,14 +116,14 @@ boost::shared_ptr<Textures> WindowRenderer::textures() const {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Line> WindowRenderer::lines() {
-    return context_ ? context_->lines() : boost::shared_ptr<vulkan::renderer::Line>();
+boost::shared_ptr<renderer::Line> WindowRenderer::lines() {
+    return context_ ? context_->lines() : boost::shared_ptr<renderer::Line>();
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::World> WindowRenderer::worldQuads() {
-    return context_ ? context_->worldQuads() : boost::shared_ptr<vulkan::renderer::World>();
+boost::shared_ptr<renderer::World> WindowRenderer::worldQuads() {
+    return context_ ? context_->worldQuads() : boost::shared_ptr<renderer::World>();
 }
 
 /**
@@ -176,7 +176,7 @@ void WindowRenderer::present(Present present) {
 /**
  **/
 Present WindowRenderer::presenting() const noexcept {
-    return context_ ? context_->swapchain()->presenting() : present_;
+    return context_ ? granted(context_->swapchain()->presenting()) : present_;
 }
 
 /**
@@ -224,7 +224,7 @@ void WindowRenderer::renderFrame() {
 
     const boost::shared_ptr<vulkan::frame::Swapchain> swapchain = context_->swapchain();
 
-    vulkan::frame::Recorder::Target target;
+    Recorder::Target target;
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
@@ -245,7 +245,7 @@ void WindowRenderer::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(context_->ring()->frame());
 
-    vulkan::frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
+    Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
 
     // a swapchain recreated since the request may have lost TRANSFER_SRC, and Capture throws

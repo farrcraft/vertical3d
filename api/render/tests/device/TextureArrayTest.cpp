@@ -7,7 +7,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 

@@ -7,6 +7,8 @@
 
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <vulkan/vulkan.h>
 
@@ -14,19 +16,16 @@
 #include <cstdint>
 #include <span>
 
-#include "DeviceBuffer.h"
-#include "Uploader.h"
-
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::memory {
+namespace v3d::render::realtime {
 
 /**
  * Static geometry in device local memory: vertices, and indices where the draw is indexed.
  *
- * A mesh is the only thing a draw item names that pipeline::Resources does not own. Whatever
- * built a mesh holds it, such as a chunk, a model or the MeshRegistry. A draw item that refers
- * to one is valid only while that owner is alive.
+ * A mesh is the only thing a draw item names that Resources does not own. Whatever built a
+ * mesh holds it, such as a chunk, a model or the MeshRegistry. A draw item that refers to one
+ * is valid only while that owner is alive.
  *
  * The buffers are filled once at construction. Rebuilding geometry means building a new
  * mesh rather than refilling this one, since a refill has to wait for every frame that
@@ -44,13 +43,13 @@ class Mesh final {
      * @param indices 32 bit indices into it
      * @throw std::runtime_error if either buffer cannot be created or filled
      **/
-    Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
+    Mesh(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::memory::Uploader>& uploader,
         std::span<const std::byte> vertices, uint32_t vertexCount, std::span<const uint32_t> indices);
 
     /**
      * A mesh drawn straight out of its vertex buffer.
      **/
-    Mesh(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
+    Mesh(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::memory::Uploader>& uploader,
         std::span<const std::byte> vertices, uint32_t vertexCount);
 
     /**
@@ -87,10 +86,10 @@ class Mesh final {
     void describe(DrawItem* item) const;
 
  private:
-    boost::shared_ptr<DeviceBuffer> vertices_;
-    boost::shared_ptr<DeviceBuffer> indices_;
+    boost::shared_ptr<vulkan::memory::DeviceBuffer> vertices_;
+    boost::shared_ptr<vulkan::memory::DeviceBuffer> indices_;
     uint32_t vertexCount_;
     uint32_t indexCount_;
 };
 
-};  // namespace v3d::render::realtime::vulkan::memory
+};  // namespace v3d::render::realtime

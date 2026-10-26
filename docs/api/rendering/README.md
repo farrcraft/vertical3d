@@ -49,9 +49,9 @@ two frames after the app lets go of it. The renderer handles this for every obje
 `WindowRenderer` gives an app the three primitives and the texture store directly:
 
 ```cpp
-renderer_->quads();       // vulkan::renderer::Quad - the 2D quad canvas
-renderer_->lines();       // vulkan::renderer::Line - world-space lines
-renderer_->worldQuads();  // vulkan::renderer::World - world-space textured quads
+renderer_->quads();       // renderer::Quad - the 2D quad canvas
+renderer_->lines();       // renderer::Line - world-space lines
+renderer_->worldQuads();  // renderer::World - world-space textured quads
 renderer_->textures();    // Textures - uploads images and makes them drawable
 ```
 

@@ -15,8 +15,8 @@
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Material.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Material.h>
+#include <api/render/realtime/Resources.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/shell/Shell.h>
 #include <api/ui/Immediate.h>
@@ -241,7 +241,7 @@ void Renderer::createUniforms() {
     vkUpdateDescriptorSets(context_->device()->handle(), 1, &write, 0, nullptr);
 
     // a material here is a descriptor set and no texture, which is all the recorder binds
-    v3d::render::realtime::vulkan::pipeline::Material material;
+    v3d::render::realtime::Material material;
     material.set = set;
     material_ = context_->resources()->add(material);
 }

@@ -92,7 +92,7 @@ turns the loop over.
 
 ## Recording a frame
 
-`vulkan::frame::Recorder` is the only code that writes draw commands into a command buffer.
+`Recorder` is the only code that writes draw commands into a command buffer.
 
 `Recorder::record(commands, frame, target, resources, uniforms, timings)`:
 

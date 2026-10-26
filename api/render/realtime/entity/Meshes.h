@@ -17,9 +17,9 @@
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 class Lit;
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer
 
 namespace v3d::render::realtime::entity {
 
@@ -42,7 +42,7 @@ namespace v3d::render::realtime::entity {
  *        Zero submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses = Poses());
 
 /**
@@ -74,7 +74,7 @@ struct Casting final {
  * A static caster is culled against the cascade by a sphere around its model, scaled by its
  * transform. A skinned one is never culled, since its pose can reach past its bind pose.
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
+void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     Pass* pass, const Poses& poses = Poses(), const Casting& casting = Casting());
 
 };  // namespace v3d::render::realtime::entity

@@ -16,7 +16,7 @@
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <vulkan/vulkan.h>
 
@@ -26,7 +26,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime::vulkan::renderer {
+namespace v3d::render::realtime::renderer {
 
 /**
  * The device side of the world space line primitive.
@@ -58,9 +58,9 @@ class Line final {
      * @param depth the format of the depth image, for the second of the two pipelines
      * @throw std::runtime_error if the pipelines cannot be created
      **/
-    Line(const boost::shared_ptr<device::Device>& device,
-        const boost::shared_ptr<pipeline::Cache>& cache, const boost::shared_ptr<pipeline::Resources>& resources,
-        const boost::shared_ptr<frame::Ring>& ring, const boost::shared_ptr<frame::FrameUniforms>& uniforms,
+    Line(const boost::shared_ptr<vulkan::device::Device>& device,
+        const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
+        const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
         VkFormat colour, VkFormat depth);
 
     /**
@@ -94,18 +94,18 @@ class Line final {
      * by the geometry in front of it. Lines drawn over a scene, not into it, belong in a pass
      * with no depth.
      **/
-    void createPipelines(const pipeline::Formats & formats);
+    void createPipelines(const vulkan::pipeline::Formats & formats);
 
-    boost::shared_ptr<device::Device> device_;
-    boost::shared_ptr<pipeline::Cache> cache_;
-    boost::shared_ptr<pipeline::Resources> resources_;
-    boost::shared_ptr<frame::Ring> ring_;
-    boost::shared_ptr<frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
 
     PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
     PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests against it **/
 
-    boost::shared_ptr<frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
 };
 
-};  // namespace v3d::render::realtime::vulkan::renderer
+};  // namespace v3d::render::realtime::renderer

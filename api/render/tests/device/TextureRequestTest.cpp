@@ -16,9 +16,9 @@
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/Resources.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <chrono>
@@ -45,8 +45,8 @@ using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::Textures;
 using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 
 namespace {
 

@@ -21,6 +21,7 @@
 namespace {
 
 using v3d::render::realtime::Present;
+using v3d::render::realtime::presentModes;
 using v3d::render::realtime::vulkan::frame::Swapchain;
 
 /**
@@ -45,10 +46,10 @@ BOOST_AUTO_TEST_CASE(window_renderer_takes_a_present_mode_at_the_next_frame_test
     const v3d::test::Windowed windowed;
     const std::vector<VkPresentModeKHR> modes = offered(windowed);
     BOOST_REQUIRE(!modes.empty());
-    BOOST_TEST((windowed.renderer->presenting() == Swapchain::granted(Swapchain::choosePresentMode(modes, Present::Uncapped))));
+    BOOST_TEST((windowed.renderer->presenting() == v3d::render::realtime::granted(Swapchain::choosePresentMode(modes, presentModes(Present::Uncapped)))));
 
     for (const Present request : {Present::Immediate, Present::AdaptiveVsync, Present::Vsync, Present::Uncapped}) {
-        const Present expected = Swapchain::granted(Swapchain::choosePresentMode(modes, request));
+        const Present expected = v3d::render::realtime::granted(Swapchain::choosePresentMode(modes, presentModes(request)));
         windowed.renderer->present(request);
         windowed.renderer->renderFrame();
         BOOST_TEST((windowed.renderer->presenting() == expected));

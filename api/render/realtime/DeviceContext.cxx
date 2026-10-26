@@ -12,10 +12,10 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/render/realtime/renderer/Quad.h>
+#include <api/render/realtime/renderer/World.h>
 
 #include "Textures.h"
 
@@ -35,7 +35,7 @@ extent_(extent),
 depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
-    resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
+    resources_ = boost::make_shared<Resources>(device_, ring_);
     uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_, ring_);
     textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
     frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
@@ -73,7 +73,7 @@ boost::shared_ptr<vulkan::pipeline::Cache> DeviceContext::pipelineCache() const 
 
 /**
  **/
-boost::shared_ptr<vulkan::pipeline::Resources> DeviceContext::resources() const {
+boost::shared_ptr<Resources> DeviceContext::resources() const {
     return resources_;
 }
 
@@ -145,9 +145,9 @@ boost::shared_ptr<Textures> DeviceContext::textures() const {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Quad> DeviceContext::quads() {
+boost::shared_ptr<renderer::Quad> DeviceContext::quads() {
     if (!quads_) {
-        quads_ = boost::make_shared<vulkan::renderer::Quad>(device_, pipelineCache_, resources_, ring_,
+        quads_ = boost::make_shared<renderer::Quad>(device_, pipelineCache_, resources_, ring_,
             frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return quads_;
@@ -161,9 +161,9 @@ bool DeviceContext::hasQuads() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Line> DeviceContext::lines() {
+boost::shared_ptr<renderer::Line> DeviceContext::lines() {
     if (!lines_) {
-        lines_ = boost::make_shared<vulkan::renderer::Line>(device_, pipelineCache_, resources_, ring_,
+        lines_ = boost::make_shared<renderer::Line>(device_, pipelineCache_, resources_, ring_,
             frameUniforms_, colourFormat_, depthFormat_);
     }
     return lines_;
@@ -177,9 +177,9 @@ bool DeviceContext::hasLines() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::World> DeviceContext::worldQuads() {
+boost::shared_ptr<renderer::World> DeviceContext::worldQuads() {
     if (!worldQuads_) {
-        worldQuads_ = boost::make_shared<vulkan::renderer::World>(device_, pipelineCache_, resources_,
+        worldQuads_ = boost::make_shared<renderer::World>(device_, pipelineCache_, resources_,
             ring_, frameUniforms_, textures_, colourFormat_, depthFormat_);
     }
     return worldQuads_;

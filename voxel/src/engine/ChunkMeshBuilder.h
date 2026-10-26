@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <boost/shared_ptr.hpp>
@@ -17,7 +17,7 @@ class MeshCache;
  * Turns a built mesh cache into device local geometry.
  *
  * A chunk's mesh is built once and drawn for many frames, so its geometry goes in a
- * vulkan::memory::Mesh, whose buffers are device local. That costs one staging copy at build
+ * Mesh, whose buffers are device local. That costs one staging copy at build
  * time, and gives the fastest memory for every frame after it.
  */
 class ChunkMeshBuilder {
@@ -34,7 +34,7 @@ class ChunkMeshBuilder {
      * @return the mesh, or null when the cache holds no geometry
      * @throw std::runtime_error if the buffers cannot be created or filled
      **/
-    boost::shared_ptr<v3d::render::realtime::vulkan::memory::Mesh> build(const boost::shared_ptr<MeshCache>& mesh) const;
+    boost::shared_ptr<v3d::render::realtime::Mesh> build(const boost::shared_ptr<MeshCache>& mesh) const;
 
  private:
     boost::shared_ptr<v3d::render::realtime::vulkan::device::Device> device_;
