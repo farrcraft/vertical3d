@@ -183,6 +183,7 @@ RtToken RI_WIDTH = const_cast<char*>("width"),
         RI_CONSTANTWIDTH = const_cast<char*>("constantwidth");
 
 // each basis is RI's matrix for it, rows first
+// NOLINTBEGIN(readability-magic-numbers) - the entries are the values RI's specification gives
 RtBasis RiBezierBasis = { { -1.0F, 3.0F, -3.0F, 1.0F }, { 3.0F, -6.0F, 3.0F, 0.0F }, { -3.0F, 3.0F, 0.0F, 0.0F },
             { 1.0F, 0.0F, 0.0F, 0.0F } },
         RiBSplineBasis = { { -1.0F / 6.0F, 3.0F / 6.0F, -3.0F / 6.0F, 1.0F / 6.0F }, { 3.0F / 6.0F, -6.0F / 6.0F, 3.0F / 6.0F, 0.0F },
@@ -193,6 +194,7 @@ RtBasis RiBezierBasis = { { -1.0F, 3.0F, -3.0F, 1.0F }, { 3.0F, -6.0F, 3.0F, 0.0
             { 1.0F, 0.0F, 0.0F, 0.0F } },
         RiPowerBasis = { { 1.0F, 0.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F, 0.0F }, { 0.0F, 0.0F, 1.0F, 0.0F },
             { 0.0F, 0.0F, 0.0F, 1.0F } };
+// NOLINTEND(readability-magic-numbers)
 
 RtInt RiLastError;
 
