@@ -5,7 +5,7 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/reyes/Samples.h>
 
 #include <vector>
@@ -30,10 +30,10 @@ Samples one() {
 
 /** What one pixel resolves to, red, green and blue. **/
 glm::vec3 resolved(const Samples & samples) {
-    v3d::render::offline::FrameBuffer planes(1, 1, v3d::moya::FrameBuffer::COVERAGE + 1);
-    samples.resolve(&planes, v3d::moya::FrameBuffer::RED, v3d::moya::FrameBuffer::COVERAGE, v3d::moya::FrameBuffer::DEPTH);
-    return { planes.value(v3d::moya::FrameBuffer::RED, 0, 0), planes.value(v3d::moya::FrameBuffer::RED + 1, 0, 0),
-        planes.value(v3d::moya::FrameBuffer::RED + 2, 0, 0) };
+    v3d::render::offline::FrameBuffer planes(1, 1, v3d::moya::Planes::COVERAGE + 1);
+    samples.resolve(&planes, v3d::moya::Planes::RED, v3d::moya::Planes::COVERAGE, v3d::moya::Planes::DEPTH);
+    return { planes.value(v3d::moya::Planes::RED, 0, 0), planes.value(v3d::moya::Planes::RED + 1, 0, 0),
+        planes.value(v3d::moya::Planes::RED + 2, 0, 0) };
 }
 
 /** A white surface of opacity one half, which as Ci is premultiplied to a half. **/

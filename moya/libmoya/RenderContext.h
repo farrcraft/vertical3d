@@ -17,11 +17,10 @@
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
-#include <moya/libmoya/reyes/Samples.h>
 
 #include "Attributes.h"
 #include "Display.h"
-#include "FrameBuffer.h"
+#include "Planes.h"
 #include "Lights.h"
 #include "Polygon.h"
 #include "Progress.h"
@@ -153,11 +152,6 @@ class RenderContext {
          **/
         void hider(const std::string & name);
         bool raytracing() const;
-        /**
-         * Renders the buckets, for the reyes hider. Every bucket's grids are hidden into a new
-         * set of samples, and the samples are then resolved into the planes.
-         **/
-        void bucket(v3d::render::offline::FrameBuffer* planes);
         /** The near clipping plane, RiClipping's hither. **/
         float hither() const;
         /**
@@ -368,13 +362,9 @@ class RenderContext {
 
         /**
          * maps to RiPolygon()
-         * Under the ray hider the polygon is only added to the traced scene. Under the
-         * reyes hider it is also added to the traced scene, then bounded and bucketed, and
-         * prepareWorld() must come first. A polygon outside the clipping planes or the
-         * frustum is culled. One that is too large or crosses the eye plane is marked for
-         * splitting. A polygon that is not culled goes in the bucket that holds the upper
-         * left corner of its raster bound. The pieces of a split come back through here,
-         * and are bucketed again but not traced again.
+         * The polygon is added to the traced scene. Under the reyes hider it is also placed
+         * with the current state and handed to the hider, which bounds and buckets it.
+         * prepareWorld() must come first.
          **/
         void addPolygon(const boost::shared_ptr<Polygon>& poly);
         /**
@@ -411,14 +401,12 @@ class RenderContext {
         const boost::shared_ptr<v3d::log::Logger> & logger() const;
 
         /**
-         * The buckets the world was prepared into. Null until prepareWorld().
+         * The planes the frame is drawn into, indexed by Planes::Plane. Null until
+         * prepareWorld().
          **/
-        boost::shared_ptr<FrameBuffer> framebuffer() const;
-        /**
-         * The frame's samples, which the reyes hider writes into. bucket() creates them
-         * from sampling() as it stands then, so they do not exist under the ray hider.
-         **/
-        reyes::Samples & samples();
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> picture() const;
+        /** How many primitives the hider has bucketed and not yet rendered. **/
+        std::size_t bucketed() const;
 
         unsigned int bucketWidth() const;
         unsigned int bucketHeight() const;
@@ -478,20 +466,11 @@ class RenderContext {
          * sent before it cannot be placed, and is left out. The first such polygon is logged.
          **/
         bool beforeWorld();
-        /**
-         * Place a polygon that is not yet placed with the state it was submitted under, and
-         * trace it. A polygon with more than four vertices is then handed back to addPolygon()
-         * as pieces.
-         *
-         * @return true when the polygon was handed on as pieces, and is not bucketed itself
-         **/
-        bool handedOn(const boost::shared_ptr<Polygon>& poly);
         boost::shared_ptr<Shaders> shaders_;
         boost::shared_ptr<reyes::GridShader> shader_;
         Lights lights_;
         TracedScene traced_;
-        boost::shared_ptr<FrameBuffer> frameBuffer_;
-        boost::shared_ptr<reyes::Samples> samples_;
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> planes_;
         Progress progress_;
         v3d::render::offline::CameraOptions options_;
         v3d::render::offline::Camera camera_;
@@ -522,7 +501,7 @@ class RenderContext {
  *
  * An orthographic projection leaves w at one, so the divide changes nothing. A perspective
  * one writes the eye depth into w, and the divide takes the point to screen or raster units.
- * A point whose w is at or behind the eye is returned undivided. addPolygon() tests w
+ * A point whose w is at or behind the eye is returned undivided. The reyes hider tests w
  * itself first, and splits a primitive with such a corner.
  **/
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);

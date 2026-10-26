@@ -9,7 +9,7 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
   `image(channels)` takes the leading planes as the picture and ignores the rest. The plane
   count is not the channel count.
 - **moya's planes are red, green, blue, depth and coverage**, named by
-  `moya::FrameBuffer::Plane`, under either hider.
+  `moya::Planes::Plane`, under either hider.
 - **Coverage is the filtered fraction of a pixel's samples that hit something.** An imager
   reads it as `alpha`. It separates a pixel nothing was drawn into from a black one. It is
   exactly zero or one only at one sample per pixel under a one-pixel box filter.

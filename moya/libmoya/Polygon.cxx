@@ -9,6 +9,7 @@
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
+#include <moya/libmoya/reyes/Hider.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
 #include <algorithm>
@@ -207,7 +208,7 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     vertices_ = std::move(clipped);
 }
 
-// the bound in the space the vertices are in: object space, until RenderContext::addPolygon()
+// the bound in the space the vertices are in: object space, until reyes::Hider::add()
 // moves a diceable polygon's vertices into eye space
 v3d::type::geometry::AABBox Polygon::bound(void) const {
     v3d::type::geometry::AABBox bound;
@@ -342,7 +343,7 @@ void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, 
 
 /*
     Cut the polygon by a plane. p1 takes the negative side and p2 the positive, and both
-    start empty. split(RenderContext &) calls this three times to make four pieces.
+    start empty. split() calls this three times to make four pieces.
 */
 void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
@@ -370,7 +371,7 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     Cut the polygon into four by two planes through the centre of its bound. Both are
     perpendicular to the polygon's plane, and the second is perpendicular to the first.
 */
-void Polygon::split(RenderContext & rc) {
+void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
     // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
@@ -421,8 +422,8 @@ void Polygon::split(RenderContext & rc) {
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 
-    // each piece goes back through RenderContext::addPolygon(), which bounds, culls and
-    // measures it against the grid again. The caller discards this polygon
+    // each piece goes back to the hider, which bounds, culls and measures it against the grid
+    // again. The caller discards this polygon
     const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
     for (const boost::shared_ptr<Polygon> & piece : pieces) {
         if (progress(piece, bounds)) {
@@ -432,19 +433,19 @@ void Polygon::split(RenderContext & rc) {
                 piece->place(placement(), color(), normal(), shading());
                 piece->motion(motion());
             }
-            rc.addPolygon(piece);
+            hider.add(piece, &rc);
         }
     }
 }
 
 /*
-    RenderContext::addPolygon() moves a diceable polygon's vertices into eye space, so the
+    reyes::Hider::add() moves a diceable polygon's vertices into eye space, so the
     grid is built in eye space. The hider projects it to raster space.
 */
 bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
-        side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
+        side has n - 1 micropolygons a side. reyes::Hider::add() marks for splitting
         anything whose raster bound is wider or taller than sqrt(grid size * shading rate)
         pixels, so one grid covers what reaches here.
     */
@@ -461,7 +462,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned i
 
     /*
         bilinear interpolation over the polygon's four vertices. A triangle's fourth corner
-        degenerates onto its third. RenderContext::addPolygon() breaks a polygon with more
+        degenerates onto its third. reyes::Hider::add() breaks a polygon with more
         than four vertices into pieces before it reaches here.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
@@ -488,7 +489,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned i
         vertices_[fourth].normal()
     };
     // the geometric normal is one value across the primitive, so there is nothing to
-    // interpolate: addPolygon() wrote the same one onto every vertex
+    // interpolate: reyes::Hider::add() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
     // texture coordinates interpolate only when the scene gave every corner one. A grid
     // without them takes its own parameters as s and t when it is shaded

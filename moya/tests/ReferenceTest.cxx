@@ -11,6 +11,7 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
@@ -441,11 +442,11 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(reader.read(scene.file, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
-    return handler.context().framebuffer()->planes();
+    return handler.context().picture();
 }
 
 boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc) {
-    return rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
+    return rc.picture()->image(v3d::moya::Planes::CHANNELS);
 }
 
 /**
@@ -633,17 +634,17 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     scene(rc);
     rc.render();
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::BLUE, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::Planes::RED, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::Planes::BLUE, 24, 16) == 1.0F);
     // and nothing outside it
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::RED, 55, 40) == 0.0F);
+    BOOST_TEST(planes->value(v3d::moya::Planes::RED, 55, 40) == 0.0F);
 
     // a covered pixel took a depth from the geometry rather than keeping the one it was
     // cleared to
-    BOOST_TEST(planes->value(v3d::moya::FrameBuffer::DEPTH, 24, 16) < 2.0F);
+    BOOST_TEST(planes->value(v3d::moya::Planes::DEPTH, 24, 16) < 2.0F);
 }
 
 /**
@@ -656,7 +657,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     rc.render();
 
     const boost::shared_ptr<v3d::image::Image> rendered =
-        rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
+        rc.picture()->image(v3d::moya::Planes::CHANNELS);
 
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -696,7 +697,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
     BOOST_CHECK_EQUAL(reader.error(), "");
 
     const boost::shared_ptr<v3d::image::Image> rendered =
-        handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
+        handler.context().picture()->image(v3d::moya::Planes::CHANNELS);
 
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -737,7 +738,7 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
     scene(rc);
     rc.render();
 
-    BOOST_TEST(rc.framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 24, 16) == 1.0F);
+    BOOST_TEST(rc.picture()->value(v3d::moya::Planes::RED, 24, 16) == 1.0F);
 }
 
 /**
@@ -754,7 +755,7 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
     pixelCentres(rc);
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS),
         SHADED, SHADED_RENDERED);
 }
 
@@ -773,7 +774,7 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(SHADED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         SHADED, SHADED_RIB_RENDERED);
 }
 
@@ -787,7 +788,7 @@ BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
     shadedScene(rc);
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS),
         SAMPLED, SAMPLED_RENDERED);
 }
 
@@ -802,7 +803,7 @@ BOOST_AUTO_TEST_CASE(moya_sampled_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(SAMPLED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         SAMPLED, SAMPLED_RIB_RENDERED);
 }
 
@@ -818,8 +819,8 @@ BOOST_AUTO_TEST_CASE(moya_sampled_render_is_repeatable_test) {
     second.render();
 
     const v3d::image::Difference difference = v3d::image::compare(
-        *first.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
-        *second.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), 0);
+        *first.picture()->image(v3d::moya::Planes::CHANNELS),
+        *second.picture()->image(v3d::moya::Planes::CHANNELS), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
 
@@ -839,8 +840,8 @@ BOOST_AUTO_TEST_CASE(moya_bucket_edges_do_not_show_test) {
     large.render();
 
     const v3d::image::Difference difference = v3d::image::compare(
-        *small.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
-        *large.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), 0);
+        *small.picture()->image(v3d::moya::Planes::CHANNELS),
+        *large.picture()->image(v3d::moya::Planes::CHANNELS), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
 
@@ -852,7 +853,7 @@ BOOST_AUTO_TEST_CASE(moya_focus_reference_test) {
     focusScene(rc, true);
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), FOCUS, FOCUS_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), FOCUS, FOCUS_RENDERED);
 }
 
 BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
@@ -863,7 +864,7 @@ BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(FOCUS_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         FOCUS, FOCUS_RIB_RENDERED);
 }
 
@@ -884,7 +885,7 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
             focusScene(lens, true);
             lens.render();
 
-            BOOST_CHECK_SMALL(largest(*pinhole.framebuffer()->planes(), *lens.framebuffer()->planes(), {.from = 0, .to = 30}),
+            BOOST_CHECK_SMALL(largest(*pinhole.picture(), *lens.picture(), {.from = 0, .to = 30}),
                 1.0F / 255.0F);
         }
     }
@@ -914,9 +915,9 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
             lens.sampling().width = glm::vec2(1.0F);
             lens.render();
 
-            const unsigned int coverage = v3d::moya::FrameBuffer::COVERAGE;
-            const unsigned int sharp = partial(*pinhole.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
-            const unsigned int blurred = partial(*lens.framebuffer()->planes(), coverage, {.row = 24, .from = 30, .to = 45});
+            const unsigned int coverage = v3d::moya::Planes::COVERAGE;
+            const unsigned int sharp = partial(*pinhole.picture(), coverage, {.row = 24, .from = 30, .to = 45});
+            const unsigned int blurred = partial(*lens.picture(), coverage, {.row = 24, .from = 30, .to = 45});
             BOOST_CHECK_LE(sharp, 2U);
             BOOST_CHECK_GE(blurred, 4U);
             BOOST_CHECK_LE(blurred, 7U);
@@ -932,7 +933,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_test) {
     motionScene(rc);
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), MOTION, MOTION_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), MOTION, MOTION_RENDERED);
 }
 
 BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
@@ -943,7 +944,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(MOTION_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         MOTION, MOTION_RIB_RENDERED);
 }
 
@@ -960,7 +961,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
             slidingQuad(rc);
             rc.render();
 
-            checkRamp(*rc.framebuffer()->planes(), v3d::moya::FrameBuffer::COVERAGE, 24);
+            checkRamp(*rc.picture(), v3d::moya::Planes::COVERAGE, 24);
         }
     }
 }
@@ -984,16 +985,16 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
                 for (unsigned int down = 0; down < 4; down++) {
                     const unsigned int column = 20 + (8 * across);
                     const unsigned int row = 12 + (8 * down);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, column, row) - (85.0F * across / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::RED, column, row) - (85.0F * across / 255.0F),
                         1.0F / 255.0F);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, column, row) - (85.0F * down / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, column, row) - (85.0F * down / 255.0F),
                         1.0F / 255.0F);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, column, row) - (128.0F / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::BLUE, column, row) - (128.0F / 255.0F),
                         1.0F / 255.0F);
                 }
             }
             // and outside the quad is the background
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 4, 4), 0.0F);
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 4, 4), 0.0F);
         }
     }
 }
@@ -1004,7 +1005,7 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
-    check(planes->image(v3d::moya::FrameBuffer::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
+    check(planes->image(v3d::moya::Planes::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
         The two hiders also agree on the same file away from the edges, where the reyes hider's
@@ -1033,7 +1034,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_triangle_reference_test) {
     triangleScene(rc);
     rc.render();
     check(picture(rc), TRIANGLE, TRIANGLE_RENDERED);
-    check(read({.file = TRIANGLE_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
+    check(read({.file = TRIANGLE_SCENE})->image(v3d::moya::Planes::CHANNELS), TRIANGLE, TRIANGLE_RIB_RENDERED);
 }
 
 /**
@@ -1051,7 +1052,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_shaded_reference_test) {
     pixelCentres(rc);
     rc.render();
     check(picture(rc), TRACED_SHADED, TRACED_SHADED_RENDERED);
-    check(read({.file = TRACED_SHADED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SHADED,
+    check(read({.file = TRACED_SHADED_SCENE})->image(v3d::moya::Planes::CHANNELS), TRACED_SHADED,
         TRACED_SHADED_RIB_RENDERED);
 }
 
@@ -1063,7 +1064,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_sampled_reference_test) {
     raytraceShadedScene(rc);
     rc.render();
     check(picture(rc), TRACED_SAMPLED, TRACED_SAMPLED_RENDERED);
-    check(read({.file = TRACED_SAMPLED_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_SAMPLED,
+    check(read({.file = TRACED_SAMPLED_SCENE})->image(v3d::moya::Planes::CHANNELS), TRACED_SAMPLED,
         TRACED_SAMPLED_RIB_RENDERED);
 }
 
@@ -1088,7 +1089,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_focus_reference_test) {
     focusScene(rc, true);
     rc.render();
     check(picture(rc), TRACED_FOCUS, TRACED_FOCUS_RENDERED);
-    check(read({.file = TRACED_FOCUS_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_FOCUS,
+    check(read({.file = TRACED_FOCUS_SCENE})->image(v3d::moya::Planes::CHANNELS), TRACED_FOCUS,
         TRACED_FOCUS_RIB_RENDERED);
 }
 
@@ -1098,7 +1099,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_motion_reference_test) {
     motionScene(rc);
     rc.render();
     check(picture(rc), TRACED_MOTION, TRACED_MOTION_RENDERED);
-    check(read({.file = TRACED_MOTION_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_MOTION,
+    check(read({.file = TRACED_MOTION_SCENE})->image(v3d::moya::Planes::CHANNELS), TRACED_MOTION,
         TRACED_MOTION_RIB_RENDERED);
 }
 
@@ -1111,7 +1112,7 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
     spheresScene(rc);
     rc.render();
     check(picture(rc), SPHERES, SPHERES_RENDERED);
-    check(read({.file = SPHERES_SCENE})->image(v3d::moya::FrameBuffer::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
+    check(read({.file = SPHERES_SCENE})->image(v3d::moya::Planes::CHANNELS), SPHERES, SPHERES_RIB_RENDERED);
 }
 
 /**
@@ -1121,10 +1122,10 @@ BOOST_AUTO_TEST_CASE(moya_raytrace_spheres_reference_test) {
 BOOST_AUTO_TEST_CASE(moya_raytrace_lit_quad_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/raytrace-lit-quad.rib"});
 
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.70710678F, 0.5F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.70710678F, 0.5F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 32, 24), 0.70710678F, 0.5F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::BLUE, 32, 24), 0.70710678F, 0.5F);
     // and nothing outside the quad
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::RED, 2, 2), 0.0001F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::RED, 2, 2), 0.0001F);
 }
 
 /**
@@ -1141,8 +1142,8 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     motionScene(uncached);
     uncached.render();
 
-    const v3d::render::offline::FrameBuffer & cachedImage = *cached.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & cachedImage = *cached.picture();
+    const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.picture();
     BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0F);
 }
 
@@ -1187,7 +1188,7 @@ BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
     bumpScene(rc, "hidden");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), BUMP, BUMP_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), BUMP, BUMP_RENDERED);
 }
 
 /**
@@ -1201,7 +1202,7 @@ BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         BUMP, BUMP_RIB_RENDERED);
 }
 
@@ -1215,7 +1216,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
     bumpScene(rc, "raytrace");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
 }
 
 /**
@@ -1229,7 +1230,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
 }
 
@@ -1301,7 +1302,7 @@ BOOST_AUTO_TEST_CASE(moya_area_reference_test) {
     areaScene(rc, "hidden");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), AREA, AREA_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), AREA, AREA_RENDERED);
 }
 
 /**
@@ -1315,7 +1316,7 @@ BOOST_AUTO_TEST_CASE(moya_area_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(AREA_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), AREA, AREA_RIB_RENDERED);
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS), AREA, AREA_RIB_RENDERED);
 }
 
 /**
@@ -1327,7 +1328,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_test) {
     areaScene(rc, "raytrace");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_AREA, TRACED_AREA_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_AREA, TRACED_AREA_RENDERED);
 }
 
 /**
@@ -1341,7 +1342,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(TRACED_AREA_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         TRACED_AREA, TRACED_AREA_RIB_RENDERED);
 }
 
@@ -1393,7 +1394,7 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_test) {
     glassScene(rc);
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), GLASS, GLASS_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), GLASS, GLASS_RENDERED);
 }
 
 /**
@@ -1407,7 +1408,7 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(GLASS_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), GLASS, GLASS_RIB_RENDERED);
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS), GLASS, GLASS_RIB_RENDERED);
 }
 
 /*
@@ -1457,7 +1458,7 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_test) {
     displacedScene(rc, "hidden");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), DISPLACED, DISPLACED_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), DISPLACED, DISPLACED_RENDERED);
 }
 
 /**
@@ -1471,7 +1472,7 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(DISPLACED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         DISPLACED, DISPLACED_RIB_RENDERED);
 }
 
@@ -1485,7 +1486,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_test) {
     displacedScene(rc, "raytrace");
     rc.render();
 
-    check(rc.framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS), TRACED_DISPLACED, TRACED_DISPLACED_RENDERED);
+    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_DISPLACED, TRACED_DISPLACED_RENDERED);
 }
 
 /**
@@ -1499,7 +1500,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_from_rib_test) {
     BOOST_REQUIRE(reader.read(TRACED_DISPLACED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
         TRACED_DISPLACED, TRACED_DISPLACED_RIB_RENDERED);
 }
 

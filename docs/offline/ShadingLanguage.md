@@ -307,7 +307,7 @@ Rules:
 - **A normal transforms by the inverse transpose**, never by the matrix that moves the points.
   The two agree under a rotation and a uniform scale, so the fault stays hidden until a scene
   scales one axis.
-- **moya's `Vertex` holds both.** `RenderContext::addPolygon` fills them from
+- **moya's `Vertex` holds both.** `reyes::Hider::add` fills them from
   `Polygon::geometricNormal()` before transforming anything. The diceable branch moves both into
   eye space. Dicing interpolates `N` and renormalises it. `Ng` is copied, since there is one.
 - **A split carries `N` across.** A corner of a piece keeps the normal of the vertex it came

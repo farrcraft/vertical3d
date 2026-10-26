@@ -62,7 +62,7 @@ its own, as the driver does. Nothing either holds is shared, so two renders on t
 not meet. The editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
 
 - **A `Display` of type `framebuffer`** writes no file, and the picture stays in
-  `context().framebuffer()`.
+  `context().picture()`.
 - **`RenderContext::progress(callback)`** is told how much of the frame is done, from 0 to 1. The
   reyes hider tells it after each bucket and the ray-trace hider after each row. Progress
   reaches 1 at the end of the first pass over the buckets, and holds there through a pass

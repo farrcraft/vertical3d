@@ -27,7 +27,7 @@ v3d::type::geometry::AABBox Primitive::bound(void) const {
     return v3d::type::geometry::AABBox();
 }
 
-void Primitive::split(RenderContext & rc) {
+void Primitive::split(Hider & /* hider */, RenderContext & /* rc */) {
 }
 
 bool Primitive::dice(boost::shared_ptr<MicroPolygonGrid> & /* grid */, RenderContext & /* rc */) {

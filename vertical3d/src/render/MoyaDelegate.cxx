@@ -10,7 +10,7 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/type/camera/Profile.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
@@ -97,10 +97,10 @@ void MoyaDelegate::run(const std::string& rib, const std::stop_token& stop) {
         const bool read = reader.read(stream, &handler);
         if (handler.context().stopped()) {
             finished = State::Stopped;
-        } else if (!read || !handler.context().framebuffer()) {
+        } else if (!read || !handler.context().picture()) {
             logger_->get()->error("the render could not read the scene - {}", reader.error());
         } else {
-            image = handler.context().framebuffer()->planes()->image(v3d::moya::FrameBuffer::CHANNELS);
+            image = handler.context().picture()->image(v3d::moya::Planes::CHANNELS);
             finished = State::Finished;
         }
     } catch (const std::exception& error) {

@@ -7,6 +7,7 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/trace/Scene.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
@@ -201,7 +202,7 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
     polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1U);
+    BOOST_TEST(rc.bucketed() == 1U);
 }
 
 /**
@@ -228,7 +229,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
         raster bound is 216 pixels across. A grid covers 16, so four rounds of four way
         splitting bring every piece under one: 4^4 pieces, all diceable and bucketed.
     */
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
+    BOOST_TEST(rc.bucketed() == 256U);
 }
 
 namespace {
@@ -398,7 +399,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     // ends with every piece bucketed. It would not if a piece were measured with the current
     // state instead of its parent's
     rc.render();
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
+    BOOST_TEST(rc.bucketed() == 256U);
 }
 
 /**
@@ -431,14 +432,14 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     rc.addPolygon(polygon);
     rc.render();
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 24, 16), 1.0F, 0.01F);
     // and this is outside it, where the imager is the whole of the pixel
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 55, 40), 0.15F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::BLUE, 55, 40), 0.45F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::COVERAGE, 55, 40), 1.0F, 0.01F);
 }
 
 /**
@@ -488,7 +489,7 @@ BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
     rc.addPolygon(polygon);
     rc.render();
 
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 64U);
+    BOOST_TEST(rc.bucketed() == 64U);
 }
 
 /** A quad in front of the camera, sent to a prepared context. **/
@@ -523,7 +524,7 @@ BOOST_AUTO_TEST_CASE(render_context_drops_the_traced_scene_when_nothing_traces_t
 
     BOOST_TEST(rc.traced().primitives().empty());
     BOOST_TEST(!area->empty());
-    BOOST_TEST(rc.framebuffer()->primitiveCount() > 0U);
+    BOOST_TEST(rc.bucketed() > 0U);
 }
 
 /**

@@ -12,7 +12,7 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Ray.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RayHider.h>
@@ -34,7 +34,7 @@
 
 namespace {
 
-typedef v3d::moya::FrameBuffer Planes;
+typedef v3d::moya::Planes Planes;
 
 /**
  * A 16 by 16 frame of an orthographic camera looking down +z from z = -1. The frame is
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
     rc.prepareWorld();
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     checkPixel(planes, 8, 8, glm::vec3(0.0F));
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 8, 8), 0.0F);
 }
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
     rightTriangle(rc);
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     const glm::vec3 red(1.0F, 0.0F, 0.0F);
     const glm::vec3 nothing(0.0F);
     // inside, near the middle of the frame
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
     rc.prepareWorld();
     rightTriangle(rc);
 
-    BOOST_CHECK_EQUAL(rc.framebuffer()->primitiveCount(), 0U);
+    BOOST_CHECK_EQUAL(rc.bucketed(), 0U);
     BOOST_CHECK_EQUAL(rc.traced().all<v3d::render::offline::trace::Triangle>().size(), 1U);
 }
 
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
     rc.render();
 
     // the nearer one wins whichever order they were given in
-    checkPixel(*rc.framebuffer()->planes(), 8, 8, closer);
+    checkPixel(*rc.picture(), 8, 8, closer);
 }
 
 /**
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
         triangle(rc, {glm::vec3(-1.0F, -1.0F, 5.0F), glm::vec3(1.0F, -1.0F, 5.0F), glm::vec3(0.0F, 1.0F, 5.0F)}, glm::vec3(1.0F));
         rc.render();
-        depth[i] = rc.framebuffer()->planes()->value(Planes::DEPTH, 8, 8);
+        depth[i] = rc.picture()->value(Planes::DEPTH, 8, 8);
     }
     BOOST_CHECK_CLOSE(depth[1], depth[0], 0.01F);
 }
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
     rightTriangle(rc);
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     const float inside = planes.value(Planes::COVERAGE, 11, 8);
     const float outside = planes.value(Planes::COVERAGE, 12, 8);
     BOOST_CHECK(inside > 0.5F && inside < 1.0F);
@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
     adaptive(second);
     second.render();
 
-    const v3d::render::offline::FrameBuffer & firstImage = *first.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & secondImage = *second.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & firstImage = *first.picture();
+    const v3d::render::offline::FrameBuffer & secondImage = *second.picture();
     for (unsigned int plane = 0; plane < firstImage.planes(); plane++) {
         for (unsigned int row = 0; row < SIZE; row++) {
             for (unsigned int column = 0; column < SIZE; column++) {
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
         "Polygon \"P\" [0 -1 2  1 -1 2  1 1 2  0 1 2]\n"
         "WorldEnd\n", &handler));
 
-    const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 3, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 12, 8), 0.0F);
 }
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
         "WorldEnd\n", &handler));
 
     // screen x = 2 * world x, so the quad covers screen x over [0, 1], which is columns 8 to 15
-    const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 9, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 14, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 6, 8), 0.0F);
@@ -523,7 +523,7 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
         rc.addPolygon(polygon);
         rc.render();
 
-        const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+        const v3d::render::offline::FrameBuffer & planes = *rc.picture();
         // near the red corner at the lower left, and near the green one at the lower right
         const unsigned int near[2][2] = { { 1, 14 }, { 12, 14 } };
         for (unsigned int k = 0; k < 2; k++) {
@@ -571,7 +571,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
                 "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\n"
                 "WorldEnd\n", &handler));
 
-            const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+            const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
             BOOST_CHECK_GT(planes.value(Planes::COVERAGE, 8, 8), 0.9F);
         }
     }

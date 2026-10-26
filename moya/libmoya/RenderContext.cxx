@@ -21,11 +21,8 @@
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
-#include <api/type/geometry/AABBox.h>
-#include <api/type/geometry/Frustum.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/Hider.h>
-#include <moya/libmoya/reyes/Samples.h>
 
 #include <algorithm>
 #include <array>
@@ -44,7 +41,7 @@
 #include <glm/matrix.hpp>
 
 #include "Display.h"
-#include "FrameBuffer.h"
+#include "Planes.h"
 #include "Hider.h"
 #include "Lights.h"
 #include "Polygon.h"
@@ -78,8 +75,12 @@ void RenderContext::initialize() {
     shaders_ = boost::make_shared<Shaders>(logger_);
 }
 
-boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
-    return frameBuffer_;
+boost::shared_ptr<v3d::render::offline::FrameBuffer> RenderContext::picture() const {
+    return planes_;
+}
+
+std::size_t RenderContext::bucketed() const {
+    return hider_->bucketed();
 }
 
 unsigned int RenderContext::bucketWidth() const {
@@ -96,11 +97,6 @@ unsigned int RenderContext::gridSize() const {
 
 float RenderContext::shadingRate() const {
     return attributes_.shadingRate;
-}
-
-reyes::Samples & RenderContext::samples() {
-    assert(samples_);
-    return *samples_;
 }
 
 v3d::render::offline::Sampling & RenderContext::sampling() {
@@ -129,7 +125,8 @@ void RenderContext::prepareWorld() {
     // inside the world block the current transformation is object to world
     transforms_.current().replace(glm::mat4x4(1.0F));
 
-    frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(options_.width(), options_.height())}));
+    planes_ = Planes::make(options_.width(), options_.height());
+    hider_->begin(this);
 }
 
 unsigned int RenderContext::imageWidth() const {
@@ -347,77 +344,6 @@ void RenderContext::scale(float sx, float sy, float sz) {
     transforms_.current().concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
-namespace {
-
-/** An axis aligned box, by its least and greatest corners. **/
-struct Bound {
-    glm::vec3 min{0.0F};
-    glm::vec3 max{0.0F};
-};
-
-/**
- * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
- * picks z, each from max when set and from min when clear.
- **/
-glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
-    return glm::vec3((index & 1) != 0 ? max.x : min.x,
-                     (index & 2) != 0 ? max.y : min.y,
-                     (index & 4) != 0 ? max.z : min.z);
-}
-
-/**
- * The axis aligned bound of a box carried through an affine matrix.
- *
- * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
- * on an axis, so the two diagonal corners alone can leave part of the box outside.
- **/
-Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
-    Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
-    for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0F));
-        bound.min = glm::min(bound.min, corner);
-        bound.max = glm::max(bound.max, corner);
-    }
-    return bound;
-}
-
-/**
- * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
- * from its object space bound. A still primitive's bound is left as it is.
- **/
-void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept) {
-    if (!motion.moving()) {
-        return;
-    }
-    for (const glm::mat4x4* end : { &motion.open(), &motion.close() }) {
-        const Bound at = transformBound(*end, object);
-        swept->min = glm::min(swept->min, at.min);
-        swept->max = glm::max(swept->max, at.max);
-    }
-}
-
-/**
- * Give every vertex that brought no colour or normal of its own the primitive's, and every
- * vertex the primitive's plane as its geometric normal.
- *
- * A vertex with no "Cs" takes the primitive's colour, which the surface shader then reads as
- * Cs. The normals go the same way: Ng is the primitive's plane on every vertex, and a vertex
- * that brought no varying "N" shades with it, so a polygon that gives no normals is shaded
- * faceted.
- **/
-void fillVertices(Polygon* poly) {
-    for (unsigned int i = 0; i < poly->vertexCount(); i++) {
-        if (!(*poly)[i].hasColor()) {
-            (*poly)[i].color(poly->color());
-        }
-        (*poly)[i].geometricNormal(poly->normal());
-        if (!(*poly)[i].hasNormal()) {
-            (*poly)[i].normal(poly->normal());
-        }
-    }
-}
-
-};  // namespace
 
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
@@ -605,33 +531,12 @@ bool RenderContext::flatMotion() {
 }
 
 bool RenderContext::beforeWorld() {
-    if (frameBuffer_) {
+    if (planes_) {
         return false;
     }
     if (!beforeWorldReported_) {
         beforeWorldReported_ = true;
         logger_->get()->warn("a polygon sent before WorldBegin is not drawn");
-    }
-    return true;
-}
-
-bool RenderContext::handedOn(const boost::shared_ptr<Polygon>& poly) {
-    // a polygon is placed with the state it was submitted under, and is traced once. A
-    // piece handed back by a split is already placed and keeps its parent's state
-    if (!poly->placed()) {
-        const Shading state = shading();
-        traced_.add(*poly, state, submission(state));
-        poly->place(coordinateSystem("camera") * transforms_.current().reference(), attributes_.color, poly->geometricNormal(),
-            state);
-        poly->motion(transforms_.current().before(coordinateSystem("camera")));
-    }
-    // dicing interpolates four corners, so a polygon with more is broken into pieces of four
-    // corners or fewer. Each piece is placed as its parent was, and is measured in turn
-    if (poly->vertexCount() <= 4) {
-        return false;
-    }
-    for (const boost::shared_ptr<Polygon> & piece : poly->quads()) {
-        addPolygon(piece);
     }
     return true;
 }
@@ -646,144 +551,16 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         traced_.add(*poly, state, submission(state));
         return;
     }
-    if (handedOn(poly)) {
-        return;
+    // a polygon is placed with the state it was submitted under, and is traced once. A piece of
+    // a split is already placed, keeps its parent's state, and goes back to the hider itself
+    if (!poly->placed()) {
+        const Shading state = shading();
+        traced_.add(*poly, state, submission(state));
+        poly->place(coordinateSystem("camera") * transforms_.current().reference(), attributes_.color,
+            poly->geometricNormal(), state);
+        poly->motion(transforms_.current().before(coordinateSystem("camera")));
     }
-
-    fillVertices(poly.get());
-
-    v3d::type::geometry::AABBox bound = poly->bound();
-
-    glm::vec3 bound_max = bound.max();
-    glm::vec3 bound_min = bound.min();
-
-    /*
-        The bound is in object space. The placement takes it to eye space, where every
-        later calculation on the polygon happens. The placement is the camera coordinate
-        system, which holds world to camera as prepareWorld() saved it, times the object to
-        world transformation. It applies as it stands, with no transpose or inverse.
-    */
-    const glm::mat4x4 toEye = poly->placement();
-    const Bound object{.min = bound_min, .max = bound_max};
-    const Bound eye = transformBound(toEye, object);
-    bound_min = eye.min;
-    bound_max = eye.max;
-
-    // a moving primitive is culled by where it is at both ends of the shutter, as well as by
-    // where it is stored. The size test below reads where it is stored, because a split
-    // shrinks a primitive and never the distance it travels
-    Bound swept = eye;
-    sweep(poly->motion(), object, &swept);
-
-    // a displacement shader may move the surface as far as its bound, so the bound grows by it
-    // before the primitive is culled and bucketed. A displacement that goes past the bound is
-    // clipped. With no bound the primitive does not grow. The size test reads the surface
-    // before it is grown, because the grid it is diced into covers the surface and not the
-    // bound. A bound wider than a grid would otherwise be split without end
-    const float grown = poly->shading().displacementBound;
-    const glm::vec3 surface_min = bound_min;
-    const glm::vec3 surface_max = bound_max;
-    bound_min -= glm::vec3(grown);
-    bound_max += glm::vec3(grown);
-    swept.min -= glm::vec3(grown);
-    swept.max += glm::vec3(grown);
-    const glm::vec3 & swept_min = swept.min;
-    const glm::vec3 & swept_max = swept.max;
-
-    // hither-yon cull
-    if ((swept_max[2] > options_.yon() && swept_min[2] > options_.yon())  // the bound is wholly beyond the far plane
-        || (swept_max[2] < options_.hither() && swept_min[2] < options_.hither())) {  // the bound is wholly nearer than the near plane
-        return;
-    }
-
-    poly->diceable(true);
-
-    // eye plane test. A bound that spans the near plane passes the cull above. If it also
-    // reaches behind the eye plane, z = 0, it cannot be projected, and is marked undiceable
-    // so that it is split
-    if (bound_max[2] > options_.hither() && bound_min[2] < options_.hither()) {
-        if (bound_min[2] < 0.0) {
-            poly->diceable(false);
-        }
-    }
-
-    // viewing frustum cull. The frustum is built from the "screen" coordinate system, which
-    // takes eye space to screen space, so it is tested against the eye space bound swept
-    // over the shutter. Only the bound is transformed. The vertices stay in object space
-    const v3d::type::geometry::Frustum frustum(coordinateSystem("screen"), v3d::type::geometry::Frustum::Depth::MinusOneToOne);
-    v3d::type::geometry::AABBox eyeBound;
-    eyeBound.extents(swept_min, swept_max);
-    if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {
-        return;
-    }
-
-    // raster applies after screen, so it is on the left: a matrix applies to what is on its
-    // right
-    const glm::mat4x4 screen = camera_.raster;
-    // all eight corners of the eye space bound are projected, because under a perspective
-    // projection the raster extremes need not lie at two diagonal corners. A corner at or
-    // behind the eye has no raster position. It is left out, and the primitive is split. The
-    // test on w is the one project() makes before it divides
-    glm::vec3 raster_min(std::numeric_limits<float>::max());
-    glm::vec3 raster_max(std::numeric_limits<float>::lowest());
-    glm::vec3 measured_min(std::numeric_limits<float>::max());
-    glm::vec3 measured_max(std::numeric_limits<float>::lowest());
-    bool projected = false;
-    for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
-            poly->diceable(false);
-            continue;
-        }
-        const glm::vec3 point = project(screen, corner);
-        raster_min = glm::min(raster_min, point);
-        raster_max = glm::max(raster_max, point);
-        projected = true;
-        const glm::vec3 inner = project(screen, boxCorner(surface_min, surface_max, k));
-        measured_min = glm::min(measured_min, inner);
-        measured_max = glm::max(measured_max, inner);
-    }
-    if (!projected) {
-        // no corner is in front of the eye. The primitive is split, and its pieces are
-        // bucketed again, so the first bucket holds it until then
-        raster_min = glm::vec3(0.0F);
-        raster_max = glm::vec3(0.0F);
-    }
-    bound_min = raster_min;
-    bound_max = raster_max;
-
-    bound.extents(bound_min, bound_max);
-
-    // a primitive already marked for splitting needs no size test
-    if (poly->diceable()) {
-        // a raster bound wider or taller than one grid's side is split. A grid has gridSize_
-        // micropolygons, and RI states the shading rate as the area of one in pixels, so a
-        // side is sqrt(gridSize_ * attributes_.shadingRate) pixels
-        const float size = std::sqrt(static_cast<float>(gridSize_) * attributes_.shadingRate);
-        const glm::vec3 bound_size = measured_max - measured_min;
-        if ((bound_size[0] > size) || (bound_size[1] > size)) {
-            poly->diceable(false);
-        }
-    }
-
-    // dicing is done in eye space, so a polygon that will be diced has its vertices moved
-    // there now
-    if (poly->diceable()) {
-        // a normal transforms by the inverse transpose of the matrix that moves the points.
-        // The two agree under a rotation and a uniform scale. Under a scale on one axis the
-        // point matrix would tilt a normal off its surface
-        const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
-        for (unsigned int i = 0; i < poly->vertexCount(); i++) {
-            Vertex pv = poly->vertex(i);
-            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0F)));
-            pv.normal(glm::normalize(toEyeNormal * pv.normal()));
-            pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
-            (*poly)[i] = pv;
-        }
-    }
-
-    // the polygon goes in the bucket that holds the upper left corner of its raster bound
-    frameBuffer_->addPrimitive(poly, bound);
+    hider_->add(poly, this);
 }
 
 void RenderContext::display(const v3d::render::offline::rib::Display & display) {
@@ -813,12 +590,6 @@ const std::string & RenderContext::displayName() const {
     return display_.name();
 }
 
-void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
-    samples_ = boost::make_shared<reyes::Samples>(glm::uvec2(planes->width(), planes->height()), sampling_);
-    frameBuffer_->render(*this);
-    samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
-}
-
 void RenderContext::progress(const Progress::Callback& callback) {
     progress_.callback(callback);
 }
@@ -832,7 +603,7 @@ bool RenderContext::stopped() const noexcept {
 }
 
 void RenderContext::render() {
-    if (!frameBuffer_) {
+    if (!planes_) {
         return;
     }
 
@@ -841,7 +612,7 @@ void RenderContext::render() {
     if (!hider_->traces() && !shaders_->traces()) {
         traced_.scene().clear();
     }
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> & planes = planes_;
     // the hider's time is logged, so that a render can be timed again after a change
     const std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
     hider_->render(this, planes.get());
@@ -856,10 +627,10 @@ void RenderContext::render() {
         // The shader's machine logs a failed run. The failed row and the rows below it stay
         // as the hider wrote them, and the frame is still written
         v3d::render::offline::sl::Imager imager(shaders_->imager(), &shader());
-        imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
+        imager.run(planes_.get(), Planes::COVERAGE);
     }
 
-    display_.finish(frameBuffer_->planes().get(), logger_);
+    display_.finish(planes_.get(), logger_);
 }
 
 };  // namespace v3d::moya

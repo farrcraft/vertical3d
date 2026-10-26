@@ -5,6 +5,8 @@
 
 #include "Bucket.h"
 
+#include "Hider.h"
+
 #include <api/render/offline/MovingTransform.h>
 #include <moya/libmoya/RenderContext.h>
 
@@ -331,13 +333,13 @@ void hide(const Placement & placement, const Samples::Layer & shaded, Samples * 
  * Hide every micropolygon of a grid into the frame's samples. The film filters the samples
  * into pixels once every bucket is done.
  */
-void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & rc) {
+void hide(MicroPolygonGrid & grid, const Primitive & primitive, Hider & hider, RenderContext & rc) {
     const glm::mat4x4 & toRaster = rc.camera().raster;
     // an orthographic camera has no lens to blur through
     const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0F;
     Placement placement(toRaster, {.radius = radius, .focus = rc.sampling().focalDistance}, primitive.motion(),
         rc.sampling().shutter);
-    Samples & samples = rc.samples();
+    Samples & samples = hider.samples();
     const unsigned int surface = samples.surface();
 
     const auto corners = [&grid](unsigned int column, unsigned int row) {
@@ -401,10 +403,10 @@ size_t Bucket::primitiveCount(void) const {
     return primitives_.size();
 }
 
-bool Bucket::render(RenderContext & rc) {
+bool Bucket::render(Hider & hider, RenderContext & rc) {
     bool split = false;
-    // splitting resubmits pieces through RenderContext::addPolygon(), which may append to
-    // this same bucket, so the loop reads the size on every iteration
+    // splitting resubmits pieces through the hider, which may append to this same bucket, so
+    // the loop reads the size on every iteration
     for (size_t i = 0; i < primitives_.size(); i++) {
         // a copy, because split() may append to primitives_ and so move the entry it came from
         const boost::shared_ptr<Primitive> prim = primitives_[i];
@@ -416,12 +418,12 @@ bool Bucket::render(RenderContext & rc) {
                 // The surface shader runs over every vertex at once and leaves Ci there
                 rc.shader().displace(prim->shading(), grid.get());
                 rc.shader().shade(prim->shading(), grid.get());
-                hide(*grid, *prim, rc);
+                hide(*grid, *prim, hider, rc);
             }
         } else {
-            // RenderContext::addPolygon() buckets each piece and decides whether it is
-            // diceable, so the original is erased whether or not split() submitted anything
-            prim->split(rc);
+            // the hider buckets each piece and decides whether it is diceable, so the original
+            // is erased whether or not split() submitted anything
+            prim->split(hider, rc);
             primitives_.erase(primitives_.begin() + static_cast<std::ptrdiff_t>(i));
             i--;
             split = true;

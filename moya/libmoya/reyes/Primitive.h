@@ -22,13 +22,11 @@ class RenderContext;
 
 namespace v3d::moya::reyes {
 
+class Hider;
+
 /**
- * A primitive as the reyes hider handles it.
- *
- * The reyes hider works in two passes. The first pass is RenderContext::addPolygon(), which
- * bounds each primitive as the scene submits it and puts it in a bucket. The second pass is
- * FrameBuffer::render() at WorldEnd, which dices each bucket's primitives into grids, shades
- * and hides the grids, and splits a primitive too large to dice.
+ * A primitive as the reyes hider handles it. The hider's add() bounds it and buckets it, and
+ * its render() dices it into grids, or splits it when it is too large to dice.
  */
 class Primitive {
  public:
@@ -43,7 +41,7 @@ class Primitive {
          * primitive afterwards either way. A primitive that cannot be usefully split submits
          * nothing, and is dropped.
          */
-        virtual void split(RenderContext & rc);
+        virtual void split(Hider & hider, RenderContext & rc);
         /**
          * Turn the primitive into a micropolygon grid, one call per grid.
          *

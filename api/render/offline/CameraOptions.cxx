@@ -130,6 +130,7 @@ Camera CameraOptions::freeze(const glm::mat4x4 & view) const {
     camera.ndc = normalised * camera.screen;
     camera.perspective = perspective();
     camera.hither = hither_;
+    camera.yon = yon_;
     camera.width = width_;
     camera.height = height_;
     return camera;

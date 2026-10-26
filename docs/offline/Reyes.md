@@ -12,13 +12,13 @@ runs at `WorldEnd`.
 
 ### First pass: bound, cull and bucket
 
-`RenderContext::addPolygon` does the following for each polygon:
+`RenderContext::addPolygon` adds each polygon to the traced scene, then stores on it the state
+it was submitted under: the object to eye transformation, the colour, the geometric normal and
+the shading state. It then hands the polygon to `reyes::Hider::add`, which does the following:
 
-1. Adds the polygon to the traced scene, then stores on it the state it was submitted under:
-   the object to eye transformation, the colour, the geometric normal and the shading state.
-   A polygon with more than four vertices is then broken into a fan of quadrilaterals about
-   its first vertex, with a triangle last when the count is odd, because dicing interpolates
-   four corners. Each piece goes through these steps in turn.
+1. Breaks a polygon with more than four vertices into a fan of quadrilaterals about its first
+   vertex, with a triangle last when the count is odd, because dicing interpolates four
+   corners. Each piece goes through these steps in turn.
 2. Gives each vertex without a `"Cs"` the current colour, and each vertex without an `"N"` the
    geometric normal.
 3. Bounds the polygon in object space and moves the bound to eye space. All eight corners of
@@ -41,12 +41,13 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
 
 ### Second pass: split, dice, shade and hide
 
-`moya::FrameBuffer::render` sweeps the buckets. For each primitive in a bucket:
+`reyes::Buckets::render` sweeps the buckets, which the hider made when the world began. For
+each primitive in a bucket:
 
 - **An undiceable primitive is split** into up to four pieces, by two planes through the centre
-  of its bound, perpendicular to its plane and to each other. Each piece goes back through the
-  first pass, which bounds, culls and buckets it again. A piece with fewer than three vertices,
-  or one no smaller than its parent on any axis, is dropped, so splitting terminates.
+  of its bound, perpendicular to its plane and to each other. Each piece goes back to the
+  hider's first pass, which bounds, culls and buckets it again. A piece with fewer than three
+  vertices, or one no smaller than its parent on any axis, is dropped, so splitting terminates.
 - **A split carries `"st"`, colour and shading normal.** A corner of a piece keeps the values of
   the vertex it came from. A vertex made where a plane cuts an edge takes each value as far
   along the edge as it lies, when both ends of the edge have one, and its normal is

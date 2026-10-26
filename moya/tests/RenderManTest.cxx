@@ -5,7 +5,7 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
 #include <moya/libmoya/Shading.h>
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(renderman_refuses_what_the_reader_refuses_test) {
     BOOST_CHECK_EQUAL(context().pixelAspect(), 1.0F);
     RiWorldBegin();
     RiWorldEnd();
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
     BOOST_REQUIRE(planes);
     BOOST_CHECK_EQUAL(planes->width(), 32U);
     BOOST_CHECK_EQUAL(planes->height(), 16U);
@@ -237,10 +237,10 @@ void beginCovered() {
 }
 
 void checkRed() {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
     BOOST_REQUIRE(planes);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 4, 3), 1.0F, 0.01F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 4, 3), 0.001F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 4, 3), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, 4, 3), 0.001F);
 }
 
 /**

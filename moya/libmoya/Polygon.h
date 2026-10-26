@@ -33,7 +33,7 @@ class Polygon : public reyes::Primitive {
     /**
      * One polygon from the corners that indices names in the position array, with whatever
      * colour, shading normal and texture coordinates the scene gave each corner. An index past
-     * the position array is skipped. RenderContext::addPolygon() gives a vertex left without a
+     * the position array is skipped. reyes::Hider::add() gives a vertex left without a
      * colour the current colour, and a vertex left without a normal the plane the polygon lies
      * in.
      **/
@@ -99,7 +99,7 @@ class Polygon : public reyes::Primitive {
 
     // reyes::Primitive
     virtual v3d::type::geometry::AABBox bound(void) const;
-    virtual void split(RenderContext & rc);
+    void split(reyes::Hider & hider, RenderContext & rc) override;
     virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid

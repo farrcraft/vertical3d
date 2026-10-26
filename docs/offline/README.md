@@ -31,7 +31,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 - **Handler**: `offline::rib::Handler`, a C++ interface with one virtual method per request.
   moya implements it as `moya::RIBHandler`.
 - **Graphics state**: the current transformation, colour, opacity, surface shader and lights,
-  plus the frame's options. `moya::RenderContext` holds it.
+  plus the frame's options. `moya::RenderContext` holds it, as the classes below.
 - **Primitive**: one piece of geometry, a polygon or a sphere.
 - **Hider**: the stage that decides what is visible at each sample. moya has two, selected by
   the `Hider` request: `"hidden"` (the reyes hider, and RI's default) and `"raytrace"`.
@@ -87,6 +87,24 @@ among them. A varargs form collects its parameters and calls its `V` form. Each 
 token table holds RI's string for it, and each basis matrix holds RI's values. A null name is
 ignored by the request it is passed to, or reaches the context as an empty string where RI gives
 null a meaning.
+
+### The render context
+
+**`RenderContext` has one method per RI request**, and holds the world from `WorldBegin` to
+`WorldEnd`. Each part of the graphics state is a class of its own in `moya/libmoya/`:
+
+| Class | Holds |
+|---|---|
+| `CameraOptions`, `Camera` | The camera options, and the camera they freeze into at `WorldBegin`. Both are in `api/render/offline` |
+| `Transforms` | The current transformation, the `TransformBegin` stack, and the coordinate systems a scene named |
+| `Attributes` | Everything `AttributeBegin` saves but the transformation. A block saves and restores the whole value |
+| `Lights` | The lights a scene created, which last for the frame. Which are on is an attribute |
+| `Shaders` | The shader library, the textures, the imager, and whether any bound shader traces |
+| `TracedScene` | The scene a ray meets, which every primitive is added to |
+| `Display` | `Display` and `CropWindow`, and the finishing of a frame |
+| `Progress` | The callback a render reports to, and whether it was asked to stop |
+
+The planes a frame is drawn into are `context().picture()`, indexed by `moya::Planes`.
 
 ### The two hiders
 

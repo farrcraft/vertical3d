@@ -21,7 +21,7 @@
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 
-#include "FrameBuffer.h"
+#include "Planes.h"
 #include "RenderContext.h"
 
 namespace v3d::moya {
@@ -208,9 +208,9 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     this->camera(camera);
 
     const v3d::render::offline::Sampling & sampling = context->sampling();
-    const unsigned int colour = FrameBuffer::RED;
-    const unsigned int coverage = FrameBuffer::COVERAGE;
-    const unsigned int depth = FrameBuffer::DEPTH;
+    const unsigned int colour = Planes::RED;
+    const unsigned int coverage = Planes::COVERAGE;
+    const unsigned int depth = Planes::DEPTH;
     const unsigned int width = camera_.width;
     const unsigned int height = camera_.height;
     taken_.assign(static_cast<std::size_t>(width) * height, 0);

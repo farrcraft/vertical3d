@@ -14,7 +14,7 @@
 #include <api/type/geometry/Ray.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Shading.h>
@@ -48,7 +48,7 @@ unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < planes.height(); row++) {
         for (unsigned int column = 0; column < planes.width(); column++) {
-            if (planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
+            if (planes.value(v3d::moya::Planes::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
@@ -115,7 +115,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, con
         "WorldBegin\n" + shading +
         "Polygon \"P\" [-0.9 -0.9 5  -0.9 0.9 5  0.9 0.9 5  0.9 -0.9 5]\n" + varying +
         "WorldEnd\n", &handler));
-    return handler.context().framebuffer()->planes();
+    return handler.context().picture();
 }
 
 /**
@@ -144,8 +144,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
 
     BOOST_CHECK_EQUAL(handler.context().imageWidth(), 64U);
     BOOST_CHECK_EQUAL(handler.context().imageHeight(), 48U);
-    BOOST_REQUIRE(handler.context().framebuffer());
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
+    BOOST_REQUIRE(handler.context().picture());
+    BOOST_CHECK_EQUAL(handler.context().picture()->width(), 64U);
 }
 
 /**
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
+    BOOST_CHECK_EQUAL(handler.context().bucketed(), 1U);
 }
 
 /**
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
         "WorldEnd\n", &handler));
 
     // the quad survived the hither-yon cull. At a depth of zero it would have been culled
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
+    BOOST_CHECK_EQUAL(handler.context().bucketed(), 1U);
 }
 
 /**
@@ -237,10 +237,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 0.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 0.0F);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::GREEN, 32, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 32, 24), 0.0F);
 }
 
 /**
@@ -268,13 +268,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
         "AttributeEnd\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     // the screen window is [-4/3, 4/3] by [-1, 1] on a 64 by 48 frame, so -0.5 in x lands at
     // column 20 and +0.5 at column 44
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 20, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 20, 24), 0.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::BLUE, 44, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 44, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 20, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 20, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 44, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 44, 24), 0.0F);
 }
 
 /**
@@ -294,12 +294,12 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
         "Polygon \"P\" [-0.4 -0.4 4  0.4 -0.4 4  0.4 0.4 4  -0.4 0.4 4]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
 
     unsigned int covered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (planes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
+            if (planes->value(v3d::moya::Planes::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
@@ -319,11 +319,11 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
         "Polygon \"P\" [-0.4 -0.4 8  0.4 -0.4 8  0.4 0.4 8  -0.4 0.4 8]\n"
         "WorldEnd\n", &distant));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> distantPlanes = distant.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> distantPlanes = distant.context().picture();
     unsigned int distantCovered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (distantPlanes->value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) {
+            if (distantPlanes->value(v3d::moya::Planes::RED, column, row) > 0.5F) {
                 distantCovered++;
             }
         }
@@ -349,17 +349,17 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
         "Polygon \"P\" [-0.5 -0.5 5  0.5 -0.5 5  0.5 0.5 5  -0.5 0.5 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
 
     unsigned int columns = 0;
     for (unsigned int column = 0; column < 64; column++) {
-        if (planes->value(v3d::moya::FrameBuffer::RED, column, 24) > 0.5F) {
+        if (planes->value(v3d::moya::Planes::RED, column, 24) > 0.5F) {
             columns++;
         }
     }
     unsigned int rows = 0;
     for (unsigned int row = 0; row < 48; row++) {
-        if (planes->value(v3d::moya::FrameBuffer::RED, 32, row) > 0.5F) {
+        if (planes->value(v3d::moya::Planes::RED, 32, row) > 0.5F) {
             rows++;
         }
     }
@@ -389,11 +389,11 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
         "Polygon \"P\" [-1.9 -1.9 5  1.9 -1.9 5  1.9 1.9 5  -1.9 1.9 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     // under a window of [-2, 2] the quad nearly fills the frame. The default [-4/3, 4/3] by
     // [-1, 1] would clip it at the top and bottom
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 1), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 46), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 1), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 46), 1.0F);
 }
 
 /**
@@ -478,8 +478,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F);
 }
 
 /**
@@ -514,7 +514,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 1U);
+    BOOST_CHECK_EQUAL(handler.context().bucketed(), 1U);
     BOOST_TEST(heard.said("does not dice spheres"));
 }
 
@@ -546,10 +546,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
         "AttributeEnd\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 1.0F, 0.01F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::GREEN, 32, 24), 1.0e-6F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::FrameBuffer::BLUE, 32, 24), 1.0e-6F);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, 32, 24), 1.0e-6F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::BLUE, 32, 24), 1.0e-6F);
 }
 
 /**
@@ -563,8 +563,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
 
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 8U);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 4U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->width(), 8U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->height(), 4U);
 }
 
 /**
@@ -580,8 +580,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test
 
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 48U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->width(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->height(), 48U);
 }
 
 /**
@@ -594,8 +594,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test
 
     BOOST_REQUIRE(read("Format 64 0 1\nFormat 70000 16 1\nWorldBegin\nWorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->width(), 64U);
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->height(), 240U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->width(), 64U);
+    BOOST_CHECK_EQUAL(handler.context().picture()->height(), 240U);
 }
 
 /**
@@ -641,7 +641,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
         v3d::moya::RIBHandler handler(&renderer);
         BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
             &handler));
-        BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0U);
+        BOOST_CHECK_EQUAL(handler.context().bucketed(), 0U);
     }
     {
         v3d::moya::Renderer renderer;
@@ -674,10 +674,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
         "Polygon \"P\" [0 0 5  1 0 5  1 1 5  0 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
     // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 56, 7), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 56, 7), 0.5F);
 }
 
 /**
@@ -700,9 +700,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
         "Polygon \"P\" [-1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 16, 32), 0.5F);
-    BOOST_CHECK_LT(planes->value(v3d::moya::FrameBuffer::RED, 48, 32), 0.5F);
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 16, 32), 0.5F);
+    BOOST_CHECK_LT(planes->value(v3d::moya::Planes::RED, 48, 32), 0.5F);
 }
 
 /**
@@ -721,9 +721,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
         "Polygon \"P\" [-1 -1 5  -1 -1 5  1 -1 5  1 1 5  -1 1 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 24), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 24), 0.5F);
 }
 
 /**
@@ -748,10 +748,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
     }
     // the colours vary across the quad, so the comparison is not of two flat pictures. The
     // lower left corner is red and the upper right blue
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 40) > 0.8F);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 14, 40) < 0.2F);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::BLUE, 50, 8) > 0.8F);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 8) < 0.2F);
+    BOOST_TEST(split->value(v3d::moya::Planes::RED, 14, 40) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::Planes::BLUE, 14, 40) < 0.2F);
+    BOOST_TEST(split->value(v3d::moya::Planes::BLUE, 50, 8) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::Planes::RED, 50, 8) < 0.2F);
 }
 
 /**
@@ -772,13 +772,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
 
     for (const auto & pixel : INSIDE) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
-            BOOST_CHECK_SMALL(split->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]) -
-                whole->value(v3d::moya::FrameBuffer::RED, pixel[0], pixel[1]), 0.04F);
+            BOOST_CHECK_SMALL(split->value(v3d::moya::Planes::RED, pixel[0], pixel[1]) -
+                whole->value(v3d::moya::Planes::RED, pixel[0], pixel[1]), 0.04F);
         }
     }
     // the left edge leans away from the light and the right faces it
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 14, 24) < 0.7F);
-    BOOST_TEST(split->value(v3d::moya::FrameBuffer::RED, 50, 24) > 0.9F);
+    BOOST_TEST(split->value(v3d::moya::Planes::RED, 14, 24) < 0.7F);
+    BOOST_TEST(split->value(v3d::moya::Planes::RED, 50, 24) > 0.9F);
 }
 
 
@@ -928,7 +928,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
             "Displacement \"lift\" \"float amount\" [0.5]\n"
             "Polygon \"P\" [-0.5 -0.5 100.2  -0.5 0.5 100.2  0.5 0.5 100.2  0.5 -0.5 100.2]\n"
             "WorldEnd\n", &handler));
-        return coverage(*handler.context().framebuffer()->planes());
+        return coverage(*handler.context().picture());
     };
     BOOST_CHECK_EQUAL(render(""), 0U);
     BOOST_CHECK_GT(render("Attribute \"displacementbound\" \"float sphere\" [0.5]\n"), 0U);
@@ -986,7 +986,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test)
         "WorldBegin\n"
         "WorldEnd\n", &handler));
 
-    BOOST_CHECK_EQUAL(handler.context().framebuffer()->primitiveCount(), 0U);
+    BOOST_CHECK_EQUAL(handler.context().bucketed(), 0U);
     BOOST_TEST(heard.said("before WorldBegin"));
 }
 
@@ -1053,7 +1053,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string &
         "Color [1 0 0]\n"
         "Polygon \"P\" [-5 -5 5  5 -5 5  5 5 5  -5 5 5]\n"
         "WorldEnd\n", &handler));
-    return handler.context().framebuffer()->planes();
+    return handler.context().picture();
 }
 
 void checkCropped(const v3d::render::offline::FrameBuffer & planes) {
@@ -1061,8 +1061,8 @@ void checkCropped(const v3d::render::offline::FrameBuffer & planes) {
         for (unsigned int column = 0; column < planes.width(); column++) {
             const bool inside = column < 4;
             BOOST_TEST_CONTEXT("pixel " << column << ", " << row) {
-                BOOST_TEST((planes.value(v3d::moya::FrameBuffer::RED, column, row) > 0.5F) == inside);
-                BOOST_TEST((planes.value(v3d::moya::FrameBuffer::COVERAGE, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::Planes::RED, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::Planes::COVERAGE, column, row) > 0.5F) == inside);
             }
         }
     }
@@ -1101,11 +1101,11 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
         "Color [1 0 0]\n"
         "Polygon \"P\" [0.8 0 5  0.4 0.693 5  -0.4 0.693 5  -0.8 0 5  -0.4 -0.693 5  0.4 -0.693 5]\n"
         "WorldEnd\n", &handler));
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
 
     // y = 0.4 and y = -0.4 in screen space fall on rows 14 and 33, both inside the hexagon
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 14), 0.5F);
-    BOOST_CHECK_GT(planes->value(v3d::moya::FrameBuffer::RED, 32, 33), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 14), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 33), 0.5F);
 }
 
 /**
@@ -1127,7 +1127,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::st
         "Translate 0 0 1\n"
         "Polygon \"P\" [-5 -5 4  5 -5 4  5 5 4  -5 5 4]\n"
         "WorldEnd\n", &handler));
-    return handler.context().framebuffer()->planes();
+    return handler.context().picture();
 }
 
 /**
@@ -1135,8 +1135,8 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::st
  * depth in its own space is 4 under either.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
-    BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::FrameBuffer::BLUE, 4, 3), 4.0F, 0.01F);
-    BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::FrameBuffer::BLUE, 4, 3), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::Planes::BLUE, 4, 3), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::Planes::BLUE, 4, 3), 4.0F, 0.01F);
 }
 
 /**
@@ -1158,7 +1158,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string 
         "Surface \"" + surface + "\"\n"
         "Polygon \"P\" [-5 -5 5  -5 5 5  5 5 5  5 -5 5]\n"
         "WorldEnd\n", &handler));
-    return handler.context().framebuffer()->planes();
+    return handler.context().picture();
 }
 
 /**
@@ -1168,8 +1168,8 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string 
 BOOST_AUTO_TEST_CASE(moya_ribhandler_messages_under_both_hiders_test) {
     for (const std::string & hider : { std::string(), std::string("Hider \"raytrace\"\n") }) {
         BOOST_TEST_CONTEXT("hider '" << hider << "'") {
-            BOOST_CHECK_CLOSE(messaged(hider, "messenger", "heard")->value(v3d::moya::FrameBuffer::RED, 4, 3), 0.5F, 0.01F);
-            BOOST_CHECK_CLOSE(messaged(hider, "asker", "told")->value(v3d::moya::FrameBuffer::RED, 4, 3), 0.75F, 0.01F);
+            BOOST_CHECK_CLOSE(messaged(hider, "messenger", "heard")->value(v3d::moya::Planes::RED, 4, 3), 0.5F, 0.01F);
+            BOOST_CHECK_CLOSE(messaged(hider, "asker", "told")->value(v3d::moya::Planes::RED, 4, 3), 0.75F, 0.01F);
         }
     }
 }
@@ -1207,7 +1207,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
             BOOST_CHECK(std::is_sorted(told.begin(), told.end()));
             BOOST_CHECK_CLOSE(told.back(), 1.0F, 0.001F);
             BOOST_CHECK(!handler.context().stopped());
-            BOOST_CHECK_EQUAL(handler.context().framebuffer()->planes()->value(v3d::moya::FrameBuffer::RED, 60, 44), 1.0F);
+            BOOST_CHECK_EQUAL(handler.context().picture()->value(v3d::moya::Planes::RED, 60, 44), 1.0F);
         }
     }
 }
@@ -1229,8 +1229,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
             BOOST_REQUIRE(read(covered(hider), &handler));
             BOOST_CHECK_EQUAL(told, 1U);
             BOOST_CHECK(handler.context().stopped());
-            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().framebuffer()->planes();
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::FrameBuffer::RED, 60, 44), 0.0F);
+            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 60, 44), 0.0F);
         }
     }
 }

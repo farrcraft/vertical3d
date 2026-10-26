@@ -3,7 +3,7 @@
 v3d_add_test(moya
 	"TestMain.cxx"
 	"FootprintTest.cxx"
-	"FrameBufferTest.cxx"
+	"BucketsTest.cxx"
 	"GridShaderTest.cxx"
 	"MicroPolygonGridTest.cxx"
 	"PolygonClipTest.cxx"

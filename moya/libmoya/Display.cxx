@@ -18,7 +18,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-#include "FrameBuffer.h"
+#include "Planes.h"
 
 namespace v3d::moya {
 
@@ -61,7 +61,7 @@ void Display::finish(v3d::render::offline::FrameBuffer* planes, const boost::sha
                 continue;
             }
             for (unsigned int plane = 0; plane < planes->planes(); plane++) {
-                planes->value(plane, column, row, plane == FrameBuffer::DEPTH ? std::numeric_limits<float>::max() : 0.0F);
+                planes->value(plane, column, row, plane == Planes::DEPTH ? std::numeric_limits<float>::max() : 0.0F);
             }
         }
     }
@@ -74,7 +74,7 @@ void Display::finish(v3d::render::offline::FrameBuffer* planes, const boost::sha
     // only the three colour channels are written, whatever the display mode. The coverage and
     // depth planes stay in the framebuffer
     v3d::image::Factory factory(logger);
-    if (!factory.write(name_, planes->image(FrameBuffer::CHANNELS))) {
+    if (!factory.write(name_, planes->image(Planes::CHANNELS))) {
         logger->get()->error("the picture could not be written to '{}'", name_);
     }
 }

@@ -33,6 +33,8 @@ class Camera final {
     bool perspective = false;
     /** The near clipping plane, in camera space z. A primary ray starts there. **/
     float hither = 0.0F;
+    /** The far clipping plane, in camera space z. **/
+    float yon = 0.0F;
     /** The picture's size in pixels. **/
     unsigned int width = 0;
     unsigned int height = 0;
