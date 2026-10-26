@@ -5,7 +5,6 @@
 
 #include <api/asset/File.h>
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
 #include <api/log/Logger.h>
 
@@ -27,7 +26,7 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
  **/
 BOOST_AUTO_TEST_CASE(text_content_test) {
     auto asset = boost::dynamic_pointer_cast<v3d::asset::kind::Text>(
-        manager()->load("plain.txt", v3d::asset::Type::Text));
+        manager()->load<v3d::asset::kind::Text>("plain.txt"));
 
     BOOST_TEST(static_cast<bool>(asset));
     BOOST_TEST(asset->content() == "one\ntwo\n");
@@ -37,7 +36,7 @@ BOOST_AUTO_TEST_CASE(text_content_test) {
  * A missing file is no asset, the same as every other loader.
  **/
 BOOST_AUTO_TEST_CASE(text_missing_file_test) {
-    BOOST_TEST(!manager()->load("absent.txt", v3d::asset::Type::Text));
+    BOOST_TEST(!manager()->load<v3d::asset::kind::Text>("absent.txt"));
 }
 
 /**

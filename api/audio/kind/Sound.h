@@ -19,7 +19,7 @@ class Sound : public v3d::asset::Asset {
  public:
     /**
      **/
-    Sound(const std::string& name, v3d::asset::Type t, const boost::shared_ptr<AudioClip>& clip);
+    Sound(const std::string& name, const boost::shared_ptr<AudioClip>& clip);
 
     /**
      **/

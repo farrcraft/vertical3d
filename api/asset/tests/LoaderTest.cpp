@@ -5,7 +5,7 @@
 
 #include <api/asset/Asset.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
+#include <api/asset/kind/Text.h>
 #include <api/log/Logger.h>
 
 #include <string_view>
@@ -22,7 +22,7 @@ namespace {
 class Probe final : public v3d::asset::Loader {
  public:
     explicit Probe(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(v3d::asset::Type::Text, logger) {
+        Loader(typeid(v3d::asset::kind::Text), logger) {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
@@ -34,10 +34,10 @@ Probe probe() {
     return Probe(boost::make_shared<v3d::log::Logger>());
 }
 
-BOOST_AUTO_TEST_CASE(loader_type_test) {
+BOOST_AUTO_TEST_CASE(loader_kind_test) {
     auto loader = probe();
 
-    BOOST_TEST((loader.type() == v3d::asset::Type::Text));
+    BOOST_TEST((loader.kind() == typeid(v3d::asset::kind::Text)));
 }
 
 };  // namespace

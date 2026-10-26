@@ -6,7 +6,6 @@
 #include <api/asset/Asset.h>
 #include <api/asset/Loader.h>
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
 #include <api/grid/Pathfinding.h>
@@ -105,7 +104,7 @@ struct Fixture final {
 
 boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("world", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("world", parsed.as_object());
 }
 
 // the preprocessor splits a macro argument on every comma outside parentheses, so a braced
@@ -332,7 +331,7 @@ BOOST_AUTO_TEST_CASE(a_world_destroyed_before_its_loads_arrive) {
 class Throwing final : public v3d::asset::Loader {
  public:
     explicit Throwing(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(v3d::asset::Type::JsonDocument, logger) {
+        Loader(typeid(v3d::asset::kind::Json), logger) {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {

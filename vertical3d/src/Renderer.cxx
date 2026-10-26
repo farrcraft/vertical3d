@@ -6,7 +6,6 @@
 #include "Renderer.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
@@ -166,10 +165,8 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     // a theme names its images but does not load them. The app loads each one as an
     // asset, and the device context's texture service owns the texture it becomes
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
-        const v3d::asset::Type type = source.ends_with(".png")
-            ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
         const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            assetManager_->load<v3d::asset::media::kind::Image>(source, type);
+            assetManager_->load<v3d::asset::media::kind::Image>(source);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }

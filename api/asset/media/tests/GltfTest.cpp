@@ -5,7 +5,6 @@
 
 #include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Compare.h>
@@ -130,14 +129,14 @@ boost::shared_ptr<v3d::log::Logger> logger() {
 boost::shared_ptr<v3d::asset::media::kind::Model> loadAsset(const char* name) {
     v3d::asset::Manager manager("data", logger());
     v3d::asset::media::registerLoaders(manager, logger());
-    const boost::shared_ptr<v3d::asset::Asset> asset = manager.load(name, v3d::asset::Type::ModelGltf);
+    const boost::shared_ptr<v3d::asset::Asset> asset = manager.load<v3d::asset::media::kind::Model>(name);
     return boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(asset);
 }
 
 boost::shared_ptr<v3d::type::Model> load(const char* name) {
     v3d::asset::Manager manager("data", logger());
     v3d::asset::media::registerLoaders(manager, logger());
-    const boost::shared_ptr<v3d::asset::Asset> asset = manager.load(name, v3d::asset::Type::ModelGltf);
+    const boost::shared_ptr<v3d::asset::Asset> asset = manager.load<v3d::asset::media::kind::Model>(name);
     if (!asset) {
         return boost::shared_ptr<v3d::type::Model>();
     }
@@ -298,7 +297,7 @@ BOOST_AUTO_TEST_CASE(gltf_resolves_by_extension_test) {
 
     // .glb and .gltf both reach the model loader, so an app naming a file gets one without
     // naming the type
-    const boost::shared_ptr<v3d::asset::Asset> asset = manager.loadTypeFromExt(FIXTURE);
+    const boost::shared_ptr<v3d::asset::Asset> asset = manager.load(FIXTURE);
     BOOST_CHECK_EQUAL(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(asset)), true);
 }
 
@@ -648,7 +647,7 @@ class Heard final {
         v3d::asset::Manager manager("data", logger_);
         v3d::asset::media::registerLoaders(manager, logger_);
         asset_ = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
-            manager.load(name, v3d::asset::Type::ModelGltf));
+            manager.load<v3d::asset::media::kind::Model>(name));
         logger_->get()->sinks().pop_back();
     }
 

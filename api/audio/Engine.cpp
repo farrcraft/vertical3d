@@ -7,7 +7,6 @@
 
 #include <api/asset/Json.h>
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/audio/kind/Sound.h>
 #include <api/event/kind/Sound.h>
 #include <api/log/Logger.h>
@@ -139,7 +138,7 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
 
 bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets) {
     return load(config, [&assets](const std::string& source) -> boost::shared_ptr<AudioClip> {
-        const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source, v3d::asset::Type::AudioWav);
+        const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source);
         return sound ? sound->clip() : boost::shared_ptr<AudioClip>();
     });
 }

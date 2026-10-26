@@ -19,7 +19,7 @@ class Json final : public Asset {
  public:
     /**
      **/
-    Json(const std::string& name, Type t, const boost::json::object &doc);
+    Json(const std::string& name, const boost::json::object &doc);
 
     /**
      **/

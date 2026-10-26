@@ -4,7 +4,6 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/ecs/component/Playback.h>
@@ -81,7 +80,7 @@ boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headles
  **/
 v3d::type::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
     const boost::shared_ptr<v3d::asset::media::kind::Model> loaded =
-        boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load(STRIP, v3d::asset::Type::ModelGltf));
+        boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load<v3d::asset::media::kind::Model>(STRIP));
     BOOST_REQUIRE(loaded && loaded->model());
     v3d::type::Model model = *loaded->model();
     model.skeleton() = v3d::type::Skeleton();
@@ -206,7 +205,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle strip = meshes.load(STRIP);
     const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
-        assets(headless)->load(STRIP, v3d::asset::Type::ModelGltf))->model());
+        assets(headless)->load<v3d::asset::media::kind::Model>(STRIP))->model());
 
     entt::registry registry;
     lay(&registry, strip);

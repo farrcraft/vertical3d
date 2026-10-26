@@ -6,7 +6,6 @@
 #include "Renderer.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
 #include <api/image/TextureAtlas.h>
@@ -95,7 +94,7 @@ void TetrisRenderer::loadPieces(const boost::shared_ptr<v3d::asset::Manager>& as
     for (const char* const colour : colours) {
         const std::string name = std::string("pieces/") + colour + ".tga";
         const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            assetManager->load<v3d::asset::media::kind::Image>(name, v3d::asset::Type::ImageTga);
+            assetManager->load<v3d::asset::media::kind::Image>(name);
         if (!asset || !asset->image()) {
             logger_->get()->error("unable to load the piece texture {}", name);
             continue;

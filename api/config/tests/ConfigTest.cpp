@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(config_named_file_absent_test) {
 }
 
 /**
- * The extension picks a loader, and Manager::loadTypeFromExt returns no asset for an
+ * The extension picks a loader, and Manager::load returns no asset for an
  * extension nothing is registered for. A config naming a file this library cannot load is
  * therefore a rejection like any other.
  **/

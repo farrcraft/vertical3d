@@ -4,7 +4,6 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/audio/Loaders.h>
 #include <api/audio/kind/Sound.h>
 #include <api/log/Logger.h>
@@ -31,7 +30,7 @@ BOOST_AUTO_TEST_CASE(audio_loader_by_extension_test) {
     v3dtest::writeWav("loaded.wav");
     auto assets = manager();
 
-    auto sound = boost::dynamic_pointer_cast<v3d::audio::kind::Sound>(assets->loadTypeFromExt("loaded.wav"));
+    auto sound = boost::dynamic_pointer_cast<v3d::audio::kind::Sound>(assets->load("loaded.wav"));
     BOOST_REQUIRE(sound);
     BOOST_REQUIRE(sound->clip());
     BOOST_TEST(sound->clip()->audio() != nullptr);
@@ -44,7 +43,7 @@ BOOST_AUTO_TEST_CASE(audio_loader_by_extension_test) {
 BOOST_AUTO_TEST_CASE(audio_loader_unreadable_test) {
     auto assets = manager();
 
-    BOOST_TEST(!assets->load("nowhere.wav", v3d::asset::Type::AudioWav));
+    BOOST_TEST(!assets->load<v3d::audio::kind::Sound>("nowhere.wav"));
 }
 
 };  // namespace

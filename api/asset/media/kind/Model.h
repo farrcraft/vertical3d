@@ -23,7 +23,7 @@ class Model : public Asset {
  public:
     /**
      **/
-    Model(const std::string& name, Type t, const boost::shared_ptr<v3d::type::Model>& model,
+    Model(const std::string& name, const boost::shared_ptr<v3d::type::Model>& model,
         const std::vector<boost::shared_ptr<v3d::image::Image>>& baseColours = {});
 
     /**

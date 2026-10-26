@@ -7,9 +7,10 @@
 #include <api/log/Logger.h>
 
 #include <string_view>
+#include <typeindex>
+#include <typeinfo>
 
 #include "Asset.h"
-#include "Type.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -18,6 +19,9 @@ namespace v3d::asset {
 /**
  * The base interface for asset loaders.
  *
+ * A loader is registered for the class of asset it produces, its kind. Every asset it returns
+ * is of that class.
+ *
  * A loader keeps no state between calls. One loader serves every caller of the same manager,
  * so a setting left on it by one caller would affect the next. A load reads everything it
  * needs from the file.
@@ -25,11 +29,9 @@ namespace v3d::asset {
 class Loader {
  public:
     /**
-     * Get the asset type
-     * 
-     * @return Type
+     * @return the class of asset this loader produces
      **/
-    Type type() const;
+    std::type_index kind() const noexcept;
 
     /**
      * Load an asset
@@ -42,10 +44,10 @@ class Loader {
 
  protected:
     /**
-     * @param t the asset type this loader provides
+     * @param kind the class of asset this loader produces, as typeid(kind::Json)
      * @param logger the log a failed load is reported to
      **/
-    Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger);
+    Loader(const std::type_info& kind, const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      * @return the log a loader reports a failed load to
@@ -54,6 +56,6 @@ class Loader {
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
-    Type type_;
+    std::type_index kind_;
 };
 };  // namespace v3d::asset

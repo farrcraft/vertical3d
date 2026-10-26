@@ -6,7 +6,6 @@
 #include "Sound.h"
 
 #include <api/asset/Asset.h>
-#include <api/asset/Type.h>
 #include <api/audio/AudioClip.h>
 
 #include <string>
@@ -14,8 +13,8 @@
 namespace v3d::audio::kind {
 /**
  **/
-Sound::Sound(const std::string& name, v3d::asset::Type t, const boost::shared_ptr<AudioClip>& clip) :
-    v3d::asset::Asset(name, t),
+Sound::Sound(const std::string& name, const boost::shared_ptr<AudioClip>& clip) :
+    v3d::asset::Asset(name),
     clip_(clip) {
 }
 

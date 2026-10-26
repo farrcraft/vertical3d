@@ -8,7 +8,6 @@
 #include <api/asset/Asset.h>
 #include <api/asset/File.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
@@ -701,7 +700,7 @@ std::string readerFor(const cgltf_image& image) {
 /**
  **/
 Gltf::Gltf(const boost::shared_ptr<v3d::log::Logger>& logger) :
-    Loader(Type::ModelGltf, logger) {
+    Loader(typeid(kind::Model), logger) {
 }
 
 /**
@@ -792,7 +791,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         return boost::shared_ptr<Asset>();
     }
 
-    return boost::make_shared<kind::Model>(std::string(name), Type::ModelGltf, model, baseColours);
+    return boost::make_shared<kind::Model>(std::string(name), model, baseColours);
 }
 
 /**

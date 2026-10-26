@@ -29,8 +29,9 @@ auto model = assets()->load<v3d::asset::media::kind::Model>("knight.glb");
 ```
 
 - `load<T>(name)` picks the loader from the file's extension, which is matched in lower case,
-  and returns the asset as `T`.
-- `load<T>(name, type)` names the `asset::Type` instead of using the extension.
+  and returns the asset as `T`. A file whose extension no loader reads, or that has none, is
+  loaded by the loader registered for `T`.
+- `load(name)` returns the asset as an `asset::Asset`, and needs an extension a loader reads.
 - `path(name)` returns the full path a name resolves to, for code that opens the file itself.
 - **Every failure gives a null pointer and a line in the log.** A missing file, a file that does
   not decode, an extension nothing is registered for, and a file of a different kind than `T`
@@ -84,7 +85,7 @@ Background: [ADR-0086](../adr/0086-loading-one-worker-thread-polled-from-the-mai
 ## Loaders
 
 A manager loads only file types that have a loader registered on it. Each loader is registered
-for one `asset::Type` and a list of extensions.
+for the class of asset it produces, its kind, and a list of extensions.
 
 | Registered by | Extensions | Returns |
 |---|---|---|
@@ -107,25 +108,26 @@ To add a loader, derive from `asset::Loader` ([api/asset/Loader.h](../../api/ass
 implement `load(name)`, and register it:
 
 ```cpp
-manager.registerLoader(boost::make_shared<MyLoader>(logger), {".txt"});
+manager.registerLoader(boost::make_shared<MyLoader>(logger), {".lvl"});
 ```
 
-- A loader is built with one of the types in `asset::Type`
-  ([api/asset/Type.h](../../api/asset/Type.h)), and is registered under it. A format with no
-  type there needs one added to `Type.h` first. An app cannot add a type of its own.
-
-- Extensions include the dot and are lower case.
-- Registering a type again replaces its loader.
+- A loader passes its kind to the `Loader` constructor, as `typeid(MyLevel)`, and every asset
+  it returns is of that class. Any library or app can add a kind.
+- Extensions include the dot and are lower case. An extension registered again moves to the new
+  loader.
+- **A second loader of one kind** keeps the extensions it was registered with, and takes over the
+  files whose extension no loader reads. The first keeps its own extensions.
 - **`load()` returns null and logs on failure. It never throws.**
 - **A loader holds no state between calls.** One instance serves everything that loads through
   the manager, possibly on several threads at once, so a setting left on it by one caller would
   be seen by the next.
 
-Splitting the loaders this way keeps each library's dependencies small. `config` needs only the
-JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an app that links `audio`
-pulls in SDL3_mixer.
+Splitting the loaders this way keeps each library's dependencies small. A library that reads only
+documents needs only the JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an
+app that links `audio` pulls in SDL3_mixer.
 
-Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md)
+Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md),
+[ADR-0118](../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md)
 
 ## JSON documents
 

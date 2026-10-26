@@ -6,7 +6,6 @@
 #include "Image.h"
 
 #include <api/asset/Asset.h>
-#include <api/asset/Type.h>
 #include <api/image/Image.h>
 
 #include <string>
@@ -14,8 +13,8 @@
 namespace v3d::asset::media::kind {
 /**
  **/
-Image::Image(const std::string& name, Type t, const boost::shared_ptr<v3d::image::Image>& img) :
-    Asset(name, t),
+Image::Image(const std::string& name, const boost::shared_ptr<v3d::image::Image>& img) :
+    Asset(name),
     image_(img) {
 }
 

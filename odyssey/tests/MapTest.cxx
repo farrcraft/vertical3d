@@ -3,7 +3,6 @@
  * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
  **/
 
-#include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
 #include <api/grid/Pathfinding.h>
 #include <api/grid/TileCoord.h>
@@ -22,7 +21,7 @@ namespace {
 
 boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("map", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("map", parsed.as_object());
 }
 
 boost::shared_ptr<odyssey::tile::Map> map() {

@@ -7,7 +7,6 @@
 
 #include <api/asset/Asset.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
@@ -22,7 +21,7 @@ namespace v3d::asset::media::loader {
 
 /**
  **/
-Image::Image(Type type, const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(type, logger) {
+Image::Image(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(typeid(kind::Image), logger) {
 }
 
 /**
@@ -37,6 +36,6 @@ boost::shared_ptr<Asset> Image::load(std::string_view name) {
         logger()->get()->error("Could not read image asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
-    return boost::make_shared<kind::Image>(std::string(name), type(), image);
+    return boost::make_shared<kind::Image>(std::string(name), image);
 }
 };  // namespace v3d::asset::media::loader

@@ -6,7 +6,6 @@
 #include "DecodedModel.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Image.h>
@@ -26,7 +25,7 @@ namespace v3d::render::realtime {
  **/
 DecodedModel decodeModel(asset::Manager& assets, const std::string& path, const AlbedoUploaded& uploaded) {
     const boost::shared_ptr<asset::media::kind::Model> loaded =
-        assets.load<asset::media::kind::Model>(path, asset::Type::ModelGltf);
+        assets.load<asset::media::kind::Model>(path);
     if (!loaded || !loaded->model()) {
         throw std::runtime_error("Unable to load a model from " + path);
     }

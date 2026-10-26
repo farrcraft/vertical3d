@@ -16,7 +16,7 @@ namespace {
 
 boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& name) {
     v3d::asset::Manager assets("data", boost::make_shared<v3d::log::Logger>());
-    return boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.loadTypeFromExt(name));
+    return boost::dynamic_pointer_cast<v3d::asset::kind::Json>(assets.load(name));
 }
 
 BOOST_AUTO_TEST_CASE(json_document_test) {

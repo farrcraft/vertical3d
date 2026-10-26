@@ -10,16 +10,11 @@
 namespace v3d::asset::media::loader {
 /**
  * Every image format, through image::Factory, which reads the format from the extension.
- *
- * One instance is registered for each image type, so a caller that loads as ImagePng gets an
- * asset whose type() is ImagePng. The factory decodes the file the same way for every type.
+ * Every format produces the one kind, kind::Image.
  **/
 class Image final : public Loader {
  public:
-    /**
-     * @param type the image type this instance is registered under
-     **/
-    Image(Type type, const boost::shared_ptr<v3d::log::Logger>& logger);
+    explicit Image(const boost::shared_ptr<v3d::log::Logger>& logger);
 
     boost::shared_ptr<Asset> load(std::string_view name) override;
 };

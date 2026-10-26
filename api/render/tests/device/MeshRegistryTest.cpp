@@ -6,9 +6,9 @@
 #include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
 #include <api/asset/Worker.h>
 #include <api/asset/media/Loaders.h>
+#include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/asset/media/loader/Image.h>
 #include <api/image/Image.h>
@@ -121,8 +121,8 @@ bool drain(Worker* worker) {
 class CountingPng final : public v3d::asset::Loader {
  public:
     explicit CountingPng(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(v3d::asset::Type::ImagePng, logger),
-        png_(v3d::asset::Type::ImagePng, logger) {
+        Loader(typeid(v3d::asset::media::kind::Image), logger),
+        png_(logger) {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
@@ -145,14 +145,14 @@ class CountingPng final : public v3d::asset::Loader {
 class Partless final : public v3d::asset::Loader {
  public:
     explicit Partless(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(v3d::asset::Type::ModelGltf, logger) {
+        Loader(typeid(v3d::asset::media::kind::Model), logger) {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
         const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
         model->vertices().resize(3);
         model->indices() = { 0, 1, 2 };
-        return boost::make_shared<v3d::asset::media::kind::Model>(std::string(name), v3d::asset::Type::ModelGltf, model,
+        return boost::make_shared<v3d::asset::media::kind::Model>(std::string(name), model,
             std::vector<boost::shared_ptr<v3d::image::Image>>());
     }
 };

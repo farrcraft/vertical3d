@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
 
     std::vector<boost::shared_ptr<v3d::asset::Asset>> expected;
     for (const std::string& name : names) {
-        expected.push_back(assets->loadTypeFromExt(name));
+        expected.push_back(assets->load(name));
         BOOST_REQUIRE_MESSAGE(expected.back(), name << " loads on one thread");
     }
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
             for (std::size_t round = 0; round < rounds; round++) {
                 // each thread starts at a different file, so different decoders run at once
                 const std::size_t which = (worker + round) % names.size();
-                if (!same(expected[which], assets->loadTypeFromExt(names[which]))) {
+                if (!same(expected[which], assets->load(names[which]))) {
                     mismatches++;
                 }
             }

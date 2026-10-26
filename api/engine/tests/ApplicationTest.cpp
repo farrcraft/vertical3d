@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
     {
         auto logger = boost::make_shared<v3d::log::Logger>();
         v3d::asset::Manager manager(record.path, logger);
-        BOOST_TEST(manager.loadTypeFromExt("found.txt") != nullptr);
+        BOOST_TEST(manager.load("found.txt") != nullptr);
     }
 
     // the log file stays open while any logger holds it, so it is moved back before the

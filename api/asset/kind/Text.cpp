@@ -6,7 +6,6 @@
 #include "Text.h"
 
 #include <api/asset/Asset.h>
-#include <api/asset/Type.h>
 
 #include <string>
 
@@ -14,8 +13,8 @@ namespace v3d::asset::kind {
 
 /**
  **/
-Text::Text(const std::string& name, Type t, const std::string& content) :
-    Asset(name, t),
+Text::Text(const std::string& name, const std::string& content) :
+    Asset(name),
     content_(content) {
 }
 

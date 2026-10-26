@@ -8,7 +8,6 @@
 #include <api/asset/Asset.h>
 #include <api/asset/File.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
 #include <api/asset/kind/Text.h>
 #include <api/log/Logger.h>
 
@@ -22,7 +21,7 @@ namespace v3d::asset::loader {
 
 /**
  **/
-Text::Text(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::Text, logger) {
+Text::Text(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(typeid(v3d::asset::kind::Text), logger) {
 }
 
 /**
@@ -33,6 +32,6 @@ boost::shared_ptr<Asset> Text::load(std::string_view name) {
         logger()->get()->error("Could not read text asset: {}", name);
         return boost::shared_ptr<Asset>();
     }
-    return boost::make_shared<v3d::asset::kind::Text>(std::string(name), Type::Text, *content);
+    return boost::make_shared<v3d::asset::kind::Text>(std::string(name), *content);
 }
 };  // namespace v3d::asset::loader
