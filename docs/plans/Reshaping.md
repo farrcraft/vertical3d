@@ -235,17 +235,25 @@ Steps on different lines do not block each other.
 
 ### Step 3 — RenderContext as a facade
 
-**Open.** Needs step 2.
+**Closed.** `RenderContext.cxx` went from 1242 lines to 636, and its header from 631 to 509, most
+of which is the documentation of one method per RI request.
 
-- `Transforms`, `Attributes`, `Lights`, `Shaders`, `TracedScene`, `Display` and `Progress` in
-  libmoya, each with one job.
-- `Attributes` is a value and a stack, so an attribute is saved and restored in one place.
-- The cull, bound and bucket body of `addPolygon` moves into `reyes::Hider`. A split primitive
-  re-enters the hider.
-- `moya::FrameBuffer` becomes `reyes::Buckets`, owned by the reyes hider.
-- `RenderContext` keeps one method per RI request and the world lifecycle.
-- The editor's surface stays: `progress`, `stopped`, and the picture.
-- `ReferenceTest` and `RIBHandlerTest` split along the new classes, with a shared fixture.
+- `Transforms`, `Attributes`, `Lights`, `Shaders`, `TracedScene`, `Display` and `Progress` are
+  in libmoya, each with one job. `docs/offline/README.md` lists them.
+- `AttributeBegin` saves the whole `Attributes` value with the transformation, and
+  `AttributeEnd` restores it.
+- `reyes::Hider` does both reyes passes. A split piece goes back to the hider's `add()`, and no
+  longer passes the context's check for a flat motion, which read the transformation current at
+  render time rather than the piece's.
+- The bucket grid is `reyes::Buckets`, owned by the reyes hider. The output planes are the
+  context's `picture()`, indexed by `moya::Planes`. The editor reads `picture()`.
+- **Different from the plan:** the bucket size, grid size, their pins and the motion cache stay
+  options of the context. `RiHider` makes a new hider, which would otherwise lose them. The
+  hider reads them from the context.
+- **Different from the plan:** clearing the pixels outside the crop window is `Display`'s, not
+  `offline::FrameBuffer`'s, since only `Display` reads the crop window.
+- `ReferenceTest` is `Reference.h` and three files by subject. `RIBHandlerTest` is `Handling.h`
+  and five files by subject. No case changed.
 
 ### Step 4 — RI's C interface as an adapter
 
