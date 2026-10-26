@@ -7,11 +7,13 @@
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -19,10 +21,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Headless.h"
@@ -540,6 +544,27 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     headless.submit(commands);
     headless.context->ring()->waitIdle();
 
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A context destroys its ring however it is let go, even with a mesh still retired into it. The
+ * mesh holds the ring through its uploader, so a ring left to its own destructor would keep
+ * itself, and the device under it, alive.
+ **/
+BOOST_AUTO_TEST_CASE(a_context_destroys_its_ring_whatever_was_retired_into_it) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    boost::weak_ptr<v3d::render::realtime::vulkan::frame::Ring> ring;
+    {
+        const boost::shared_ptr<v3d::render::realtime::DeviceContext> context = boost::make_shared<v3d::render::realtime::DeviceContext>(
+            headless.logger, headless.device, colourFormat, VkExtent2D{width, height});
+        ring = context->ring();
+        const std::vector<float> vertices(9, 0.0F);
+        const boost::shared_ptr<v3d::render::realtime::Mesh> mesh = boost::make_shared<v3d::render::realtime::Mesh>(context->device(),
+            context->uploader(), std::as_bytes(std::span(vertices)), 3U);
+        context->ring()->retire([mesh]() {});
+    }
+    BOOST_CHECK(ring.expired());
     BOOST_CHECK(headless.silent());
 }
 

@@ -108,6 +108,13 @@ void Ring::waitIdleNoThrow() const noexcept {
 
 /**
  **/
+void Ring::drain() noexcept {
+    waitIdleNoThrow();
+    retired_.flush();
+}
+
+/**
+ **/
 uint64_t Ring::begun() const noexcept {
     return begun_;
 }

@@ -94,6 +94,14 @@ class Ring final {
     void waitIdleNoThrow() const noexcept;
 
     /**
+     * Wait for the device, then destroy everything retired, finished or not, as the destructor
+     * does. The owner of a ring calls it before it lets the ring go, because a retired object
+     * may hold the ring itself, as a mesh does through its uploader. The ring would then never
+     * be destroyed, and the device under it would never be either.
+     **/
+    void drain() noexcept;
+
+    /**
      * @return how many frames have been begun since the Ring was built
      **/
     uint64_t begun() const noexcept;

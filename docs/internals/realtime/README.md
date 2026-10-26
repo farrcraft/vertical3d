@@ -62,8 +62,10 @@ with.
 **Member order sets teardown order.** C++ destroys members in reverse declaration order:
 
 - `DeviceContext` declares the `Ring` before everything it paces, so the ring is destroyed after
-  them. A renderer's buffers may still be in flight on one of the ring's fences, and the ring's
-  destructor waits for the device and runs every pending retirement.
+  them. A renderer's buffers may still be in flight on one of the ring's fences. The context's
+  destructor calls `Ring::drain()`, which waits for the device and runs every pending
+  retirement. A retired object may hold the ring itself, as a mesh does through its uploader, so
+  the ring cannot be left to run them in its own destructor.
 - `WindowContext` declares the `Presenter` last, so it is destroyed first. Nothing else may go while
   a frame it submitted is in flight.
 - `Device` resets its `memory::Allocator` explicitly in its destructor body, before

@@ -179,8 +179,9 @@ that may name the released object, `Ring::recording()`. While a frame is begun a
 submitted, that is the frame being recorded. Between a submit and the next begin, it is the frame
 about to be begun. `Ring::begin()` runs every callback whose frames have finished: a frame has
 finished once `framesInFlight` more frames have begun, because beginning a frame waits on the
-fence of the slot's previous use. The ring's destructor waits for the device and runs everything
-left.
+fence of the slot's previous use. `Ring::drain()` waits for the device and runs everything left,
+and the context calls it as it is destroyed. The ring's own destructor does the same for a ring
+nothing retired into holds.
 
 **Every release goes through the ring, except the swapchain's.** A material, a texture, a set, a
 descriptor pool, an outgrown stream or readback buffer, a target's images and the window's depth

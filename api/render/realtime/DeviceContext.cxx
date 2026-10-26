@@ -47,9 +47,11 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
 /**
  **/
 DeviceContext::~DeviceContext() {
-    // the device may still be drawing with everything about to be destroyed
+    // the device may still be drawing with everything about to be destroyed, and what was
+    // retired may hold the ring, so it is destroyed here rather than left to the ring's own
+    // destructor
     if (ring_) {
-        ring_->waitIdleNoThrow();
+        ring_->drain();
     }
 }
 
