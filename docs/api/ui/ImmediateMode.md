@@ -8,7 +8,7 @@ document is in [README.md](README.md#two-ways-to-write-a-ui).
 ```cpp
 v3d::ui::Immediate* layer = screen_->immediate();
 layer->begin(&screen_->canvas(), input);
-if (layer->window("Debug", glm::vec2(20, 20), glm::vec2(260, 180), 0.85F)) {
+if (layer->window("Debug", { .position = glm::vec2(20, 20), .size = glm::vec2(260, 180) }, 0.85F)) {
     layer->text("chunks " + std::to_string(count));
     if (layer->button("Reset")) {
         reset();
@@ -37,7 +37,7 @@ default-constructed `Input` is no cursor at all.
 
 | Call | Draws | Returns |
 |---|---|---|
-| `window(title, position, size, alpha)` / `endWindow()` | a window with a title bar | whether to draw its contents |
+| `window(title, area, alpha)` / `endWindow()` | a window with a title bar | whether to draw its contents |
 | `text`, `textDisabled`, `textWrapped`, `bulletText` | a line of text | |
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
@@ -49,7 +49,7 @@ default-constructed `Input` is no cursor at all.
 | `progressBar(fraction, overlay)` | a filled track with text over it | |
 | `separator()` | a rule across the width | |
 | `tabBar(id)` / `tab(label)` / `endTabBar()` | a strip of tabs | `tab()` is true for the selected tab |
-| `table(id, columns, height)` / `column` / `headerRow` / `nextRow` / `nextColumn` / `endTable` | a table | |
+| `table(id, { .columns, .height })` / `column` / `headerRow` / `nextRow` / `nextColumn` / `endTable` | a table | |
 
 Layout helpers:
 
@@ -174,7 +174,7 @@ A window clips its body to its edges and scrolls when its content is taller than
   overflows.
 - The wheel scrolls three rows per notch.
 
-A **table given a height** (the third argument to `table()`) scrolls its own rows:
+A **table given a height** (the `height` of its `TableShape`) scrolls its own rows:
 
 - It clips to that height and draws its own scrollbar down its right side.
 - `headerRow()` is drawn above the scrolled region, so the column names stay put while the

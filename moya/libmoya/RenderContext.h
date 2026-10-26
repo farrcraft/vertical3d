@@ -36,8 +36,8 @@ class GridShader;
 class Hider;
 
 /**
- * The current graphics state. Several contexts may exist at once, and only the last one
- * created is active.
+ * The current graphics state. Several contexts may exist at once. The one most recently begun
+ * or made active with RiContext is active.
  **/
 class RenderContext {
  public:

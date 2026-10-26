@@ -14,7 +14,7 @@ list of typed entries, each naming another file in `data/`.
     { "type": "binding", "file": "mappings.json" },
     { "type": "window",  "file": "window.json" },
     { "type": "sound",   "file": "sounds.json" },
-    { "type": "map",     "file": "map.json" }
+    { "type": "world",   "file": "world.json" }
   ]
 }
 ```
@@ -35,9 +35,10 @@ The api recognises seven types, listed in `config::Type` in
 | `sprite` | `config::SpriteSheets` | See [Sprite sheets](#sprite-sheets). |
 
 **Any other type is an app's own document.** The config loads it like the others and files it
-under the type its entry names. odyssey's board is one: its entry has type `map`, and it reads
-the document with `config()->get("map")`. Inside an engine subclass, `document("map")` returns
-the same document as a `boost::json::object`, or null if the config lists none.
+under the type its entry names. odyssey's world is one: its entry has type `world`, and it
+reads the document with `config()->get("world")`. Inside an engine subclass,
+`document("world")` returns the same document as a `boost::json::object`, or null if the config
+lists none.
 
 How failures are reported:
 

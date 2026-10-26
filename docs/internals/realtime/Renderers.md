@@ -6,8 +6,13 @@ items.
 ## The renderers
 
 Each renderer in `vulkan/renderer` takes the context's device, pipeline cache, resources, ring
-and frame uniforms, plus the colour and depth formats it draws into. Each compiles a variant per
-depth state.
+and frame uniforms. `Quad`, `Line`, `World` and `Lit` also take the colour and depth formats they
+draw into, and each of them compiles a variant per depth state.
+
+- `Quad`, `World` and `Lit` also take the texture service, which binds the textures they sample.
+- `Lit` also takes the shadow map's format, its shaders and the front face.
+- `FullScreen` takes a `Spec`: its fragment shader, how many images it samples, and the formats
+  of the pass it draws in.
 
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|

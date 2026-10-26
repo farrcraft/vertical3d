@@ -103,12 +103,16 @@ for one `asset::Type` and a list of extensions.
 - **A typeface is not an asset.** The size a face is rasterized at belongs to the caller, so
   `ui::paint::TextRenderer` opens the face itself at the path `Manager::path()` gives.
 
-To add a format, derive from `asset::Loader` ([api/asset/Loader.h](../../api/asset/Loader.h)),
+To add a loader, derive from `asset::Loader` ([api/asset/Loader.h](../../api/asset/Loader.h)),
 implement `load(name)`, and register it:
 
 ```cpp
-manager.registerLoader(boost::make_shared<MyLoader>(logger), {".map"});
+manager.registerLoader(boost::make_shared<MyLoader>(logger), {".txt"});
 ```
+
+- A loader is built with one of the types in `asset::Type`
+  ([api/asset/Type.h](../../api/asset/Type.h)), and is registered under it. A format with no
+  type there needs one added to `Type.h` first. An app cannot add a type of its own.
 
 - Extensions include the dot and are lower case.
 - Registering a type again replaces its loader.

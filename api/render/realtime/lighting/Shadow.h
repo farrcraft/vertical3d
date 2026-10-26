@@ -36,8 +36,8 @@ struct ShadowBounds final {
 
 /**
  * How fitShadow() reads the casters. The margin is added to the radius around them. alpha is
- * Engine::alpha(), the fraction of a step elapsed since the last one. At one, the current step's
- * positions are read.
+ * engine::Engine::alpha(), the fraction of a step elapsed since the last one. At one, the
+ * current step's positions are read.
  **/
 struct ShadowFit final {
     float margin = 0.0F;

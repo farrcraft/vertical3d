@@ -98,8 +98,8 @@ class Grade final {
      * a slow change between two tables a game lerps itself.
      *
      * A new table is made and the old one retired through the Ring, so a frame in flight
-     * finishes with the table it was recorded against. Uploading the new table waits for that
-     * upload alone, not for frames in flight. Every source keeps the handle source() gave it.
+     * finishes with the table it was recorded against. The new table's upload does not wait
+     * for the GPU. Every source keeps the handle source() gave it.
      * Call this before the frame's submit(): a submit() earlier in the same frame still draws
      * with the old table.
      *

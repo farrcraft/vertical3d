@@ -23,7 +23,8 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
 | [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
 | [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, models and skeletons, animation clips, particle effects, random numbers |
-| [`dag`](api/dag/) | Scene nodes: an id and a transform for each mesh |
+| [`dag`](api/dag/) | Scene nodes: an id and a transform for each item in the editor's scene |
+| [`database`](api/database/) | SQLite connections, statements and transactions |
 | [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
 | [`font`](api/font/) | Glyph layout and atlas packing |
 | [`asset`](api/asset/) | Loading files by type, and the loaders for JSON documents |
@@ -31,7 +32,7 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`config`](api/config/) | JSON configuration documents |
 | [`event`](api/event/) | Mapping input to named commands, and dispatching them |
 | [`input`](api/input/) | Keyboard and mouse state |
-| [`audio`](api/audio/) | Sound playback through SDL3_mixer |
+| [`audio`](api/audio/) | Sound playback through SDL3_mixer, with placed voices, and FMOD Studio events when built with FMOD |
 | [`ecs`](api/ecs/) | Components and systems on EnTT |
 | [`grid`](api/grid/) | Tile grids: pathfinding, line of sight and overlay geometry |
 | [`log`](api/log/) | Logging through spdlog |
@@ -46,9 +47,9 @@ Each application is a top-level directory and builds with the libraries.
 | **voxel** | A Minecraft-style voxel terrain generator, with chunked meshes over Perlin noise |
 | **pong** | Pong, with sound and a computer opponent |
 | **tetris** | Tetris |
-| **odyssey** | A tile-based roguelike in early development: a tile map, routes and line of sight, and a player sprite |
+| **odyssey** | A tile-based roguelike in early development: a world of regions loaded as the player moves, routes and line of sight across them, and a player sprite |
 | **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
-| **imagetool** | A command-line tool for images. It reads an image, prints its size and bit depth with `--info`, cuts out a rectangle with `--crop x,y,width,height`, and writes the result with `--outfile` |
+| **imagetool** | A command-line tool for images. It prints an image's size, crops it and converts it, and it packs images into a sprite sheet and unpacks one |
 
 [examples/](examples/) is separate: each example is its own CMake project that uses the
 libraries the way an app in another repository would.

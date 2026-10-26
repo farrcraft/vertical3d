@@ -280,8 +280,8 @@ class Controller final : public v3d::engine::Engine {
 
     /**
      * Choose a project to read over the scene, write the scene to the project it came from,
-     * or choose a name to write it under. The project starts as project.json beside the
-     * executable, and is whatever was last opened or saved as after that.
+     * or choose a name to write it under. The project starts as the project directory beside
+     * the executable, and is whatever was last opened or saved as after that.
      **/
     void openProject();
     bool saveProject();
@@ -303,8 +303,9 @@ class Controller final : public v3d::engine::Engine {
     /**
      * Write the scene out as RIB for the offline renderer.
      *
-     * It writes the topology and a placement per mesh, seen from the active view's camera.
-     * Nothing reads the RIB back. The editor saves and opens its own project format.
+     * It writes each mesh and light where the scene's hierarchy places it, seen from the one
+     * selected scene camera, or from the active view when there is not exactly one. Nothing
+     * reads the RIB back. The editor saves and opens its own project format.
      **/
     void exportProject();
 

@@ -34,8 +34,9 @@ The two virtual functions take different units on purpose:
 
 **Simulation goes in `simulate()`, not in `tick()`.** Code in `simulate()` gives the same
 result at any frame rate. Code in `tick()` does not. Nothing enforces this, and simulation left
-in `tick()` compiles and runs, but its results depend on the frame rate. The differing argument
-types mean that passing one function's time to the other does not compile.
+in `tick()` compiles and runs, but its results depend on the frame rate. The two times have
+different types, but a float and an unsigned int convert to each other, so passing one
+function's time to the other can compile too. `delta` is milliseconds and `step` is seconds.
 
 Write simulation in seconds: a velocity is units per second, so `position += velocity * step`
 needs no conversion.

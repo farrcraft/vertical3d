@@ -192,16 +192,24 @@ Steps on different lines do not block each other.
 
 ### Step 1 — Defects and stale statements
 
-**Open.**
+**Closed.**
 
-- Initialise the whole RI token table, and refuse a null token at each entry point.
-- Keep the predefined spaces apart from the systems a scene names, so `CoordinateSystem`
-  cannot replace one. A case that saves `"raster"` and renders shows the hazard first.
-- Add the two ScaleAndReach items to TODO.md.
-- Delete `v3dshell/` and its mentions. Add an editor entry to TODO.md for a console over the
-  operation layer.
-- Correct each stale statement in the survey, ADR-0047 included.
-- Point `roadmap/README.md` at sections that exist.
+- Every RI token holds RI's string, and the five basis matrices hold RI's values. Every
+  implemented entry point already ignored a null name except `RiCoordinateSystem` and
+  `RiCoordSysTransform`, and those two now do too. One guard for every entry point comes with
+  the adapter in step 4.
+- The predefined spaces are kept apart from the ones a scene names. A predefined name from a
+  scene is logged and refused. `"camera"` was exposed as well as `"raster"`, because every
+  placement reads it.
+- The traced rays of hits that did not trace are a TODO.md entry. The FMOD backend's missing CI
+  coverage is a limitation, not work, so Testing.md states it instead.
+- `v3dshell/` is deleted. TODO.md has an editor entry for a console over the operation layer.
+- Every stale statement in the survey is corrected, ADR-0047 included. So are those found on
+  the way: the renderer constructors in `Renderers.md`, `engine::Engine::alpha()` named from
+  inside the renderer, two `Controller.h` comments, `CONTRIBUTING.md`'s plain `ctest`, the
+  closed `asset::Type`, and theme fonts and `align`, which nothing draws with.
+- `roadmap/README.md` links only TODO.md sections that exist.
+- Five new cases, each failing first.
 
 ### Step 2 — A shared offline camera
 

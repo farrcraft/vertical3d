@@ -40,7 +40,7 @@ Every game follows the same pattern:
 | Pong | `pong` | 800 × 600 | `binding`, `ui`, `window`, `sound` | `pong` suite: ball, paddle, game state, scene |
 | Tetris | `tetris` | 800 × 600 | `binding`, `ui`, `window` | `tetris` suite: board, tetrad |
 | Voxel | `voxel` | 800 × 600 | `binding`, `ui`, `window` | `voxel` suite: chunks, culling, mesh cache, Morton codes |
-| Odyssey | `Odyssey` | 1280 × 768 | `binding`, `window`, and the game's own `world` | `odyssey` suite: map, sight, world |
+| Odyssey | `Odyssey` | 1280 × 768 | `binding`, `window`, and the game's own `world` | `odyssey` suite: map, world, bindings |
 
 No suite needs a window or a GPU. The renderers are not covered.
 

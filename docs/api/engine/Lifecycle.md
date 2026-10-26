@@ -108,10 +108,10 @@ are already destroyed when a base class destructor runs.
   `initialize()` or call `shutdown()`; neither is possible.
 - **Release everything that presents to the window in `release()`.** That includes a second
   renderer built after startup.
-- **A quit command calls `quit()`.** `quit()` sets a flag, and the loop stops before the next
-  frame. The loop still ticks and renders after an event handler returns, so the window must
-  outlive the handler. An app cannot reach `shutdown()`, so it cannot tear the window down from
-  a handler.
+- **A quit command calls `quit()`.** `quit()` sets a flag. The loop stops polling events, and
+  leaves as soon as the handler returns, without ticking or rendering that frame. The window
+  stays open until the engine releases the app. An app cannot reach `shutdown()`, so it cannot
+  tear the window down from a handler.
 - The engine already answers the `ui::quit` command, a window close request and an SDL quit
   event. A menu's quit item and a quit key can both send `ui::quit`. It answers
   `ui::fullscreen` too, by switching the window between full screen and a window.

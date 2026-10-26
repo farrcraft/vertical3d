@@ -37,7 +37,7 @@ namespace v3d::render::realtime::entity {
  * The pass is the caller's, and has to name the scene Lit::scene() returned for this frame.
  * Each draw's object is added to that scene, so scene() is called first.
  *
- * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
+ * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
  * @param outline how far the outline hull is pushed out, from lighting::Settings::outline.
  *        Zero submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with

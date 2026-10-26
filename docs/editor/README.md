@@ -56,25 +56,28 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` |
 | `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
-| `src/view/` | `ViewLayout`, `ViewPort`, `ConstructionPlane`, `Triangulation`, `ShadedPass` |
+| `src/view/` | The viewports and their layout, the construction plane, and the shaded pass |
 | `shaders/` | The shaded pass's vertex and fragment stages, compiled into the editor at build time |
-| `src/scene/` | `Scene`, its items `Item`, `Mesh`, `Camera` and `Light`, `SceneVisitor`, the primitives in `CreatePoly`, the operations in `Modelling`, `WireframeVisitor`, `RIBExportVisitor`, `Project` and `SceneStore` |
-| `src/command/` | `Command`, `CommandStack`, `CreateCommand`, `TransformCommand`, `VertexCommand`, `TopologyCommand`, `Placement` |
-| `src/tool/` | `Tool`, `CameraControlTool`, `SelectTool`, `TransformTool`, `Picker`, `SelectMask` |
-| `src/manipulator/` | `Manipulator` and its translate, rotate and scale subclasses, and `Target`, what they move |
+| `src/scene/` | The scene and its kinds of item, animation and render settings, the primitives and modelling operations, wireframe drawing, RIB export, and the project files |
+| `src/command/` | The undo records and the stack that holds them |
+| `src/tool/` | The camera, select and transform tools, and picking |
+| `src/manipulator/` | The translate, rotate and scale handles, and what they move |
+| `src/render/` | Rendering the scene with moya: a shot, the render window, live render and batches |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
-| `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory |
+| `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory, and the `vertical3d_device` suite |
 
 Everything is in the namespace `v3d::editor`. Includes are written from the repository root,
 for both the api and the editor's own headers: `#include <api/brep/BRep.h>`,
 `#include <vertical3d/src/scene/Scene.h>`. A header in the same directory is included by its
 bare name in quotes.
 
-The tests run without a window or a GPU. Run them with
+The `vertical3d` suite runs without a window or a GPU. `vertical3d_device` draws the shaded
+pass on a headless device, and is skipped where there is none. Run both with
 `ctest --test-dir out/build/x64-Debug -R vertical3d`.
 
 ## What is not built
 
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
-- Most menu items have no handler and log themselves as unregistered.
+- Six menu items have no handler, and log themselves as unregistered: the four importers and
+  the curve and handle select masks.

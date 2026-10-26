@@ -19,6 +19,8 @@ A theme is data in the ui document. It is a list of styles. Each style has a `cl
 - A font has `source`, and optionally `face`, `size`, `bold` and `italics`.
 - An image has a `source`, which the app resolves (see [Images](#images)).
 - Any property may carry an `align` hint.
+- **Fonts and `align` hints are read and kept, and nothing draws with them.** Every component's
+  text is drawn in the text renderer's font.
 
 A component's `style` key names a style within its class. A component that names no style is
 dressed by the first style of its class in the theme. One style can therefore dress every

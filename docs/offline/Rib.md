@@ -26,7 +26,8 @@ The reader recognises these requests:
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
 
-moya acts on all of them except `FrameBegin` and `FrameEnd`, which it accepts and ignores.
+moya acts on all of them except `version`, `FrameBegin`, `FrameEnd` and `MakeTexture`, which it
+accepts and ignores.
 `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`, `texture`)
 and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
 `"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by

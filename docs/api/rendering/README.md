@@ -77,6 +77,7 @@ and up vectors and a depth axis.
   Two passes needing different depth over the same pixels would not work. An offscreen target
   has its own depth.
 - **Wide lines.** Lines are one pixel.
-- **Uploading during play.** Every upload waits for the GPU. There is no transfer queue.
+- **A transfer queue.** Uploads run on the graphics queue. None waits for the GPU, and
+  `Textures` and `MeshRegistry` spread theirs over frames under a budget.
 - **A lit scene in an app.** The lit pass, shadows and the grade are exercised by the device
   tests in `api/render/tests/device`; no app in the tree draws one.

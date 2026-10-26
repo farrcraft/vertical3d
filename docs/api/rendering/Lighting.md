@@ -144,7 +144,7 @@ ground, stay out of the fit. `alsoCover` adds points that must be inside the map
 a character is walking to. `fitShadow` returns nothing when no entity casts. The radius is never
 below `lighting::minimumShadowRadius` (0.01), so one caster with no margin still gives a usable
 matrix. Each caster is read where it is drawn, `alpha` of the way from its previous step, as the
-lit pass draws it. Pass `Engine::alpha()`; the default of one reads the current step.
+lit pass draws it. Pass `engine::Engine::alpha()`; the default of one reads the current step.
 
 `lighting::fitShadowToView(viewProjection, distance, towards, texels)` fits the map to what the
 camera sees instead, for a world larger than one view. Call it every frame with the camera's

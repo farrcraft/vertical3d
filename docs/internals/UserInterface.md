@@ -46,8 +46,8 @@ a component type. How to use the library is in
 Boundaries the split keeps:
 
 - **Reading a document is the `Loader`'s.** `Engine.h` declares `Container` and
-  `style::Theme` and includes no component header and no `boost::json`. An app that draws a
-  ui does not compile against every component.
+  `style::Theme`, and includes no component header. It names `boost::json::object` only for the
+  document `load()` is handed. An app that draws a ui does not compile against every component.
 - **Box arithmetic is the `Arranger`'s, and painting is `ComponentRenderer`'s.** They are
   joined by an `Arranger::Paint` callback. The renderer contains no layout arithmetic, and
   the arranger names no renderer.

@@ -44,8 +44,8 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 - **Shading language (SL)**: RenderMan's C-like language for shaders. moya compiles a subset of
   it at run time and interprets the result.
 - **Shader**: a program written in SL. moya runs surface, light and imager shaders.
-- **Batch**: the set of shading points one shader run covers: a grid's vertices, one ray hit,
-  or a row of pixels.
+- **Batch**: the set of shading points one shader run covers: a grid's vertices, up to 64 ray
+  hits that share a shader, or a row of pixels.
 - **Mask**: one flag per point in a batch, saying which points execute the current statement.
 - **Uniform and varying**: a uniform value is one value for the whole batch. A varying value has
   one value per point.
@@ -69,8 +69,9 @@ scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics st
 1. The reader parses each request and calls the matching `RIBHandler` method, with its
    parameter list already typed.
 2. The handler updates the graphics state in `RenderContext`. At `WorldBegin` the context saves
-   the camera and freezes the options. Each primitive is added to the traced scene, and under
-   the reyes hider it is also filed in a bucket.
+   the camera and builds the frame from the options as they stand. An option set after it is
+   not refused. Each primitive is added to the traced scene, and under the reyes hider it is
+   also filed in a bucket.
 3. At `WorldEnd` the hider renders. The reyes hider splits, dices, shades and hides each
    bucket's primitives into a frame of samples. The ray hider casts a primary ray through each
    sample.
@@ -113,7 +114,7 @@ Background: [ADR-0078](../adr/0078-offline-moya-is-the-one-renderer-ray-tracing-
 
 [TODO.md](../TODO.md#offline-rendering) holds the open work:
 
-- A traced hit is shaded by its own run of the machine, not in a batch with other hits.
+- A shader's traced rays include the hits that did not call `trace()`.
 
 Also not built, with no open item:
 

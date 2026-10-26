@@ -20,7 +20,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 |---|---|
 | [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, atomic file writes and document migration. |
 | [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models. |
-| [`audio`](../../api/audio/) | Sound playback over SDL3_mixer, and the loader for wav files. |
+| [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
 | [`config`](../../api/config/) | Reads `data/config.json` and the documents it lists. Also reads camera profiles and sprite sheets. |
 | [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
@@ -61,7 +61,7 @@ Boost.
 | `config` | log, asset, type | glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
 | `asset_media` | log, asset, image, type | cgltf, glm |
-| `audio` | log, event, asset | **SDL3_mixer**, EnTT |
+| `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
 | `render` | log, asset, asset_media, ecs, font, image, type | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type | **SDL3**, glm, EnTT |

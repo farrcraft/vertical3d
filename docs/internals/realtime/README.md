@@ -106,6 +106,8 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
 ## Tests
 
 Unit tests that need no GPU (canvas batching, sort keys, frame ordering, recorder checks,
-swapchain format choice, retirement, capture conversion) and device tests that draw headless
-are in [api/render/tests](../../../api/render/tests). How to run them and verify a rendering
-change is in [contributing/Testing.md](../../contributing/Testing.md).
+swapchain format choice, retirement, capture conversion) are in
+[api/render/tests](../../../api/render/tests). Device tests that draw headless are in its
+`device/` directory, and the `render_window` suite in `window/` presents to a real window. How
+to run them and verify a rendering change is in
+[contributing/Testing.md](../../contributing/Testing.md).
