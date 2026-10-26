@@ -75,18 +75,34 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 ### The tracer
 
 - **`trace::Tracer` traces rays through a scene and shades what they hit.** `see()` is what a
-  primary ray sees. `transmitted()` and `traced()` are `transmission()` and `trace()` in world
-  space, for a shading point that is not a hit, such as a grid vertex.
-- **Each hit is shaded by a `trace::HitShader`** made on the stack for it. The `HitShader`
-  answers the shader's callbacks for that hit. A hit a shader traces into gets its own
+  batch of primary rays sees, each ray with the time its sample was taken. `transmitted()` and
+  `traced()` are `transmission()` and `trace()` in world space, for a shading point that is not
+  a hit, such as a grid vertex. `traced()` also takes a batch of rays.
+- **Rays are traced and shaded in batches.** `see()` finds the next surface along every ray of
+  its batch, and shades those hits together. Hits that share a surface shader, the shader's
+  placement, an object space and a list of lights are shaded by one run of the shader, up to
+  `Tracer::BATCH` (64) hits a run. Anything else a hit reads is a point of the batch.
+- **What a ray sees does not depend on its batch.** Each hit is shaded from its own points, and
+  each ray is composited in its own order. A batch gives the same answer, to the bit, as each of
+  its rays alone.
+- **Each batch is shaded by a `trace::HitShader`** made on the stack for it. The `HitShader`
+  answers the shader's callbacks for the batch. A batch a shader traces into gets its own
   `HitShader`, so nothing is saved and restored around a traced ray.
-- **A hit is shaded as a stencil of three points**: the hit, and the points a step along its
-  primitive's u and along its v. The derivative built-ins difference them. A step is the change
-  in the parameter that moves the surface one pixel's width, from `Scene::footprint()`, so a
-  derivative is taken over what one pixel sees. A scene with no camera has a pixel one unit
-  wide. `Primitive::at()` places a neighbour by its u and v, and `Scene::around()` carries it
-  into the hit's pose. A step past a triangle's edge stays on its plane, and one past a
-  sphere's seam continues its sweep. A primitive that cannot place a point has zero derivatives.
+- **A shader's traced rays are a batch.** `trace()` traces one ray for each hit of the run, and
+  the rays are traced and shaded together, one depth down. A grid's `trace()` under the reyes
+  hider is one batch too.
+- **A hit is one point, or a stencil of three when its shader differentiates.** A surface
+  shader that reads a derivative, or a light shining on it that does, shades each hit with the
+  points a step along its primitive's u and along its v. The derivative built-ins difference
+  them. Any other shader shades each hit as a single point, because a derivative it never reads
+  would not change its result. The compiler records which programs differentiate
+  ([ShadingLanguage.md](ShadingLanguage.md#built-in-functions)).
+- **A stencil's step** is the change in the parameter that moves the surface one pixel's width,
+  from `Scene::footprint()`, so a derivative is taken over what one pixel sees. Each hit of a
+  batch has its own steps. A scene with no camera has a pixel one unit wide. `Primitive::at()`
+  places a neighbour by its u and v, and `Scene::around()` carries it into the hit's pose. A step
+  past a triangle's edge stays on its plane, and one past a sphere's seam continues its sweep. A
+  primitive that cannot place a point has zero derivatives.
 - **Only the hit traces.** A shadow or traced ray is cast from the hit, and its two neighbours
   take its answer. The neighbours are a pixel away, so the difference would not show, and a
   hit's rays are not tripled.
@@ -96,14 +112,20 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   the two derivatives without turning it.
 - **The `Tracer` keeps one machine per program per trace depth.** A surface tracing into another
   surface with the same shader is still part way through its run when the second run starts.
-- **The `Tracer` computes the poses once for a sample's time** (`Tracer::time()`), so a
-  sample's shadow and traced rays see the same moment without inverting a motion per ray.
+- **The poses are computed once for each ray of a batch**, at its sample's time, and a hit's
+  shadow and traced rays use its ray's. A ray at the same time as the one before it shares that
+  ray's poses, and a scene with nothing moving computes none. A caller that shades one point at
+  a time sets the time with `Tracer::time()`.
 - **A primary ray composites what it passes through**, front to back by each surface's `Oi`,
   with the background behind what remains. A shader that never writes `Oi` is as opaque as its
   primitive's `Os`. A ray continuing through a surface is not a traced ray and does not count
   against the trace depth.
 - **A primitive with no surface shader is its own flat colour.**
-- **One shader run per hit is slow**, and accepted. The references are 64 by 48 pixels.
+- **The ray hider casts a row pass by pass.** Each pass casts a set of samples for every pixel
+  of the row still unsettled, as one batch. A pixel's samples are seeded by the pixel and its
+  pass, so the batch does not change them. The film is given the samples a pixel at a time,
+  in the order a pixel at a time would give them.
+- moya logs how long the hider took, so a render can be timed again after a change.
 
 ### Shadows and traced rays
 

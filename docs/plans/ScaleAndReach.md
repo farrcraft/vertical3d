@@ -123,14 +123,34 @@ unchanged. The reference pictures are unchanged.
 
 ### Step 2 — A scanline's hits in one batch
 
-**Open.** ADR first. The ray hider collects a scanline's first hits, groups them by shader, and
-runs each group as one batch, each hit keeping its stencil of three. A hit that is not opaque
-continues as before, one ray at a time, so compositing stays in order.
+**Done.** A profile came first, since ADR-0093's revisit condition was a profile showing three
+points a hit. In Release at 320 by 240, the machine was 85 to 90 percent of a ray-traced render.
+A run cost about 1 microsecond before it shaded a point and about half that per point, and a hit
+ran its surface shader and every light over three points. Two decisions came out of it, both
+amending ADR-0093.
 
-- Profile a Release render under `Hider "raytrace"` before and after, by hand. moya gains a
-  render time in its log, so the comparison can be repeated.
-- Tests: the ray-traced reference pictures are identical, since samples are seeded per pixel.
-  A batch with mixed shaders gives each hit its own shader's result.
+- [ADR-0113](../adr/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) chose
+  batches at every depth over a row's first hits alone, over one hit a run with a faster
+  machine, and over deferred shading sorted per bucket. `Tracer::see()` takes a batch of rays
+  with a time each. Hits that share a surface shader, its placement, an object space and their
+  lights are one run of up to `Tracer::BATCH` (64) hits. A run's `trace()` is the next batch,
+  and so are the rays that continue through a surface. `Renderer::Shape`'s stencil holds a
+  group of three per hit, each with its own steps. The ray hider casts a row pass by pass, and
+  gives the film its samples in the old order. A grid's `trace()` is one batch too.
+- [ADR-0114](../adr/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) chose
+  to shade a hit's neighbours only when its surface shader, or a light on it, differentiates.
+  The emitter sets `Program::differentiates` beside `traces`.
+- moya logs the hider's time. Best of three, before and after, at 320 by 240: bump 877 to
+  592 ms, shaded 1323 to 378, spheres 4168 to 1125, area 7031 to 2025, sampled 5010 to 1277,
+  and motion 907 to 895. A batch of 256 was no faster than 64. All six pictures are the same,
+  byte for byte, and so is every reference picture.
+- Tests: a batch sees what each ray sees alone, to the bit, over mixed shaders, more hits than a
+  run holds, two derivative hits of one run, a surface seen through, shadows, a mirror, and
+  pairs differing only in placement, object space or lights. A batch of traced rays matches
+  each ray alone. A hit is one point unless its shader or a light differentiates. A stencil of
+  two groups gives each its own derivatives and area. The emitter's flag covers each built-in,
+  `du` and `dv`, and a call through a function. Hand mutations of the shadow ray, the traced
+  ray, the stencil groups, the lanes and each of the three grouping checks each fail a case.
 
 ### Step 3 — Cascaded shadow maps
 

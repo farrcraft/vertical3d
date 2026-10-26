@@ -183,6 +183,10 @@ files on disk.
   or column. A traced hit's neighbours are its stencil, described in
   [RayTracing.md](RayTracing.md). A batch of lone points has none, and every derivative there
   is zero.
+  - **A program records whether it differentiates** (`Program::differentiates`): it calls one of
+    these five, or reads `du` or `dv`. A call through the shader's own function counts, because
+    the function is inlined. The ray hider shades a hit's neighbours only for a program that
+    differentiates.
   - `Du` and `Dv` take a float, a colour or a position. A position's derivative is a vector.
   - A uniform value's derivative is zero, because it is the same at every point.
   - `Deriv(num, den)` is RI's `Du(num) / Du(den) + Dv(num) / Dv(den)`. A term is dropped where

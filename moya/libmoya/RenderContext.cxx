@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -1191,7 +1192,11 @@ void RenderContext::render() {
         traced_.clear();
     }
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
+    // the hider's time is logged, so that a render can be timed again after a change
+    const std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
     hider_->render(this, planes.get());
+    const std::chrono::duration<double> took = std::chrono::steady_clock::now() - started;
+    logger_->get()->info("rendered {} by {} pixels in {:.3f} s", planes->width(), planes->height(), took.count());
     if (stopped_) {
         return;
     }

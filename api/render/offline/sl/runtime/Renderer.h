@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 
 #include "Value.h"
 
@@ -57,7 +58,11 @@ class Renderer {
              * and v index j is batch point (i * across) + j.
              **/
             GRID,
-            /** Three points: one, then one a step along u from it, then one a step along v. **/
+            /**
+             * `along` groups of three points: one, then one a step along u from it, then one a
+             * step along v. Group g is batch points 3g to 3g + 2, and each of its points takes
+             * the derivatives its first point has.
+             **/
             STENCIL
         };
 
@@ -67,6 +72,12 @@ class Renderer {
         /** The step in u and in v between two neighbours. **/
         float du = 0.0F;
         float dv = 0.0F;
+        /**
+         * A stencil's steps in u and v, one pair for each group, in place of du and dv. Null
+         * gives every group du and dv. The renderer keeps the steps for as long as the shape
+         * is in use.
+         **/
+        const std::vector<glm::vec2>* steps = nullptr;
     };
 
     virtual ~Renderer() = default;

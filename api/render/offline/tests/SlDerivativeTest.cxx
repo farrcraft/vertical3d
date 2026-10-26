@@ -79,7 +79,7 @@ class Run final {
         BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + body);
         v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
-        const unsigned int along = shape.layout == Renderer::Shape::Layout::STENCIL ? 3U : shape.along;
+        const unsigned int along = shape.layout == Renderer::Shape::Layout::STENCIL ? 3U * shape.along : shape.along;
         const unsigned int across = shape.layout == Renderer::Shape::Layout::STENCIL ? 1U : shape.across;
         machine_.renderer(&renderer_);
         machine_.prepare(program_, along * across);
@@ -256,6 +256,83 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_stencil_test) {
         BOOST_TEST_CONTEXT("point " << point) {
             BOOST_TEST(glm::length(run.triple("across", point) - acrossU()) < 1.0e-3F);
             BOOST_TEST(glm::length(run.triple("down", point) - acrossV()) < 1.0e-3F);
+        }
+    }
+}
+
+/**
+ * A stencil of several groups is several hits in one batch. Each group's points take the
+ * derivatives of that group's first point, over that group's own steps, so one hit's
+ * neighbours never reach into another's.
+ **/
+BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_stencil_of_groups_test) {
+    // the second group lies on a plane turned the other way, with steps of its own
+    const std::vector<glm::vec2> steps = { glm::vec2(0.01F, 0.02F), glm::vec2(0.04F, 0.05F) };
+    Renderer::Shape stencil;
+    stencil.layout = Renderer::Shape::Layout::STENCIL;
+    stencil.along = 2;
+    stencil.steps = &steps;
+    const Run run("vector across = Du(P);\nvector down = Dv(P);\nfloat patch = area(P);", stencil,
+        [&steps](const glm::uvec2 & index) {
+            const unsigned int group = index.x / 3U;
+            const glm::vec2 & step = steps[group];
+            const glm::vec3 u = group == 0 ? acrossU() : acrossV();
+            const glm::vec3 v = group == 0 ? acrossV() : acrossU();
+            const glm::vec3 offsets[3] = { glm::vec3(0.0F), u * step.x, v * step.y };
+            v3d::render::offline::sl::Point point;
+            point.position = glm::vec3(1.0F + (4.0F * static_cast<float>(group))) + offsets[index.x % 3U];
+            return point;
+        });
+    for (unsigned int point = 0; point < 6; point++) {
+        const unsigned int group = point / 3U;
+        const glm::vec3 u = group == 0 ? acrossU() : acrossV();
+        const glm::vec3 v = group == 0 ? acrossV() : acrossU();
+        BOOST_TEST_CONTEXT("point " << point) {
+            BOOST_TEST(glm::length(run.triple("across", point) - u) < 1.0e-3F);
+            BOOST_TEST(glm::length(run.triple("down", point) - v) < 1.0e-3F);
+            // the patch a step along each spans, which is this group's steps and no other's
+            const float spanned = glm::length(glm::cross(u * steps[group].x, v * steps[group].y));
+            BOOST_CHECK_CLOSE(run.number("patch", point), spanned, 0.1F);
+        }
+    }
+}
+
+/**
+ * The program a shader body compiles to, for a case that reads what the emitter recorded
+ * about it rather than running it.
+ **/
+v3d::render::offline::sl::runtime::Program emitted(const std::string & source) {
+    std::istringstream stream(source);
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
+    BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + source);
+    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + source);
+    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::runtime::Program program;
+    BOOST_REQUIRE_MESSAGE(emitter.emit(&program), emitter.error() + " in: " + source);
+    return program;
+}
+
+/**
+ * A program records whether it reads a derivative, so that a ray hider shades a hit's
+ * neighbours only for a shader that needs them. Each derivative built-in counts, and so does
+ * reading du or dv, the steps to the neighbours. A call inside the shader's own function
+ * counts, because the function is inlined. Lighting and texturing alone do not.
+ **/
+BOOST_AUTO_TEST_CASE(sl_a_program_records_that_it_differentiates_test) {
+    for (const std::string & body : { std::string("vector d = Du(P);"), std::string("float d = Dv(s);"),
+             std::string("float d = Deriv(s, t);"), std::string("float a = area(P);"),
+             std::string("normal n = calculatenormal(P);"), std::string("float w = du;"), std::string("float w = s * dv;"),
+             std::string("normal bumped(point at) {\n return calculatenormal(at);\n}\nnormal n = bumped(P);") }) {
+        BOOST_TEST_CONTEXT(body) {
+            BOOST_TEST(emitted("surface s() {\n" + body + "\n}\n").differentiates);
+        }
+    }
+    for (const std::string & body : { std::string("Ci = Cs;"), std::string("Ci = Cs * diffuse(normalize(N)) + ambient();"),
+             std::string("float w = noise(P * 4);"), std::string("float w = 0;\nCi = color (u, v, w);") }) {
+        BOOST_TEST_CONTEXT(body) {
+            BOOST_TEST(!emitted("surface s() {\n" + body + "\n}\n").differentiates);
         }
     }
 }

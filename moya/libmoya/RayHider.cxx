@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <vector>
 
 #include <glm/geometric.hpp>
@@ -58,6 +59,86 @@ class Spread {
     glm::dvec3 sum_ { 0.0 };
     glm::dvec3 squares_ { 0.0 };
 };
+
+/**
+ * One pixel of a row as the ray hider casts it: the samples it has taken so far, in the order
+ * it took them, and whether it needs no more.
+ **/
+class Pixel final {
+ public:
+    Spread spread;
+    unsigned int taken = 0;
+    bool settled = false;
+    std::vector<v3d::render::offline::Film::Sample> samples;
+};
+
+/** Which pass of which row is being cast, and the first column of the row's pixels. **/
+class Pass final {
+ public:
+    unsigned int row = 0;
+    unsigned int pass = 0;
+    unsigned int left = 0;
+};
+
+/**
+ * Cast one pass of a row: a set of samples for every pixel of it still unsettled, as one batch,
+ * so their hits are shaded together. Each sample is kept on its pixel, and each pixel then
+ * settles or does not.
+ *
+ * @param depth the raster depth of a world space point, for the depth plane
+ * @return false when every pixel had settled, so that nothing was cast
+ **/
+bool cast(const RayHider & hider, v3d::render::offline::trace::Tracer* tracer, const v3d::render::offline::Sampler & sampler,
+    const v3d::render::offline::Sampling & sampling, const Pass & at, const std::function<float(const glm::vec3 &)> & depth,
+    std::vector<Pixel>* pixels) {
+    std::vector<v3d::render::offline::trace::Tracer::Look> looks;
+    std::vector<v3d::render::offline::Sampler::Sample> cast;
+    std::vector<std::size_t> owners;
+    std::vector<unsigned int> sets(pixels->size(), 0);
+    for (std::size_t index = 0; index < pixels->size(); index++) {
+        if ((*pixels)[index].settled) {
+            continue;
+        }
+        const std::vector<v3d::render::offline::Sampler::Sample> set =
+            sampler.pixel(at.left + static_cast<unsigned int>(index), at.row, at.pass);
+        sets[index] = static_cast<unsigned int>(set.size());
+        for (const v3d::render::offline::Sampler::Sample & sample : set) {
+            v3d::render::offline::trace::Tracer::Look look;
+            look.ray = hider.ray(sample, sampling);
+            look.time = sample.time;
+            looks.push_back(look);
+            cast.push_back(sample);
+            owners.push_back(index);
+        }
+    }
+    if (looks.empty()) {
+        return false;
+    }
+
+    const std::vector<v3d::render::offline::trace::Tracer::Seen> seen = tracer->see(looks);
+    for (std::size_t i = 0; i < looks.size(); i++) {
+        v3d::render::offline::Film::Sample sample;
+        sample.raster = cast[i].raster;
+        sample.colour = seen[i].colour;
+        sample.opacity = seen[i].opacity;
+        sample.hit = seen[i].hit;
+        if (seen[i].hit) {
+            sample.depth = depth(looks[i].ray.origin() + looks[i].ray.direction() * seen[i].distance);
+        }
+        Pixel & pixel = (*pixels)[owners[i]];
+        pixel.samples.push_back(sample);
+        pixel.spread.add(sample.colour);
+    }
+    for (std::size_t index = 0; index < pixels->size(); index++) {
+        Pixel & pixel = (*pixels)[index];
+        if (pixel.settled) {
+            continue;
+        }
+        pixel.taken += sets[index];
+        pixel.settled = !(sampling.variance > 0.0F) || pixel.taken >= 4 * sets[index] || pixel.spread.settled(sampling.variance);
+    }
+    return true;
+}
 
 };  // namespace
 
@@ -144,39 +225,31 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     v3d::render::offline::Film film(width, height, sampling);
     // no ray is cast outside the crop window. The context clears those pixels afterwards
     const glm::uvec4 window = context->cropped();
+    const unsigned int left = window.x;
+    const unsigned int right = std::min(window.y, width);
+    // the depth plane holds raster space z, as the reyes hider's does
+    const std::function<float(const glm::vec3 &)> rasterDepth = [this](const glm::vec3 & point) {
+        const glm::vec3 eye(camera_.toCamera * glm::vec4(point, 1.0F));
+        return project(camera_.toRaster, eye).z;
+    };
+    /*
+        A row is cast pass by pass, every unsettled pixel's set of samples as one batch. Each
+        set of samples is seeded by the pixel and its pass, so what a pixel sees does not depend
+        on the batch it was cast in. The film is given the samples pixel by pixel afterwards, in
+        the order a pixel at a time would give them, so its sums are the same.
+    */
+    std::vector<Pixel> pixels;
     for (unsigned int row = window.z; row < window.w && row < height; row++) {
-        for (unsigned int column = window.x; column < window.y && column < width; column++) {
-            // each set of samples is seeded by the pixel and its pass, so the result does not
-            // depend on the order the pixels are rendered in
-            Spread spread;
-            unsigned int taken = 0;
-            for (unsigned int pass = 0;; pass++) {
-                const std::vector<v3d::render::offline::Sampler::Sample> set = sampler.pixel(column, row, pass);
-                for (const v3d::render::offline::Sampler::Sample & at : set) {
-                    const v3d::type::geometry::Ray traced = ray(at, sampling);
-                    tracer.time(at.time);
-                    const v3d::render::offline::trace::Tracer::Seen seen = tracer.see(traced);
-
-                    v3d::render::offline::Film::Sample sample;
-                    sample.raster = at.raster;
-                    sample.colour = seen.colour;
-                    sample.opacity = seen.opacity;
-                    sample.hit = seen.hit;
-                    if (seen.hit) {
-                        // the depth plane holds raster space z, as the reyes hider's does
-                        const glm::vec3 point = traced.origin() + traced.direction() * seen.distance;
-                        const glm::vec3 eye(camera_.toCamera * glm::vec4(point, 1.0F));
-                        sample.depth = project(camera_.toRaster, eye).z;
-                    }
-                    film.add(sample);
-                    spread.add(sample.colour);
-                }
-                taken += static_cast<unsigned int>(set.size());
-                if (!(sampling.variance > 0.0F) || taken >= 4 * set.size() || spread.settled(sampling.variance)) {
-                    break;
-                }
+        pixels.assign(right > left ? right - left : 0U, Pixel());
+        unsigned int pass = 0;
+        while (cast(*this, &tracer, sampler, sampling, {.row = row, .pass = pass, .left = left}, rasterDepth, &pixels)) {
+            pass++;
+        }
+        for (std::size_t index = 0; index < pixels.size(); index++) {
+            for (const v3d::render::offline::Film::Sample & sample : pixels[index].samples) {
+                film.add(sample);
             }
-            taken_[(static_cast<std::size_t>(row) * width) + column] = taken;
+            taken_[(static_cast<std::size_t>(row) * width) + left + index] = pixels[index].taken;
         }
         // the rows already traced are resolved, so a stopped render keeps what it found
         if (!context->report(static_cast<float>(row + 1 - window.z) / static_cast<float>(window.w - window.z))) {

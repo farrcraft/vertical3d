@@ -70,9 +70,11 @@ content went. Numbers are never reused.
 | [0077](0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 |
 | [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
 | [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted |
-| [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | accepted |
+| [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | amended by 0113, 0114 |
 | [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted |
 | [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted |
+| [0113](0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted |
+| [0114](0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted |
 
 ## User interface
 

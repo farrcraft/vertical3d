@@ -12,6 +12,7 @@
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/trace/Scene.h>
+#include <api/type/geometry/Line.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 
@@ -138,11 +139,20 @@ bool GridShader::transmission(const Value & from, const Value & to, Value* fract
 }
 
 bool GridShader::trace(const Value & origin, const Value & direction, Value* colour) {
+    // the grid's rays are traced as one batch, so their hits are shaded together
+    std::vector<v3d::type::geometry::Line> paths;
+    std::vector<glm::vec3> geometric;
+    paths.reserve(batch_);
+    geometric.reserve(batch_);
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 start(toWorld_ * glm::vec4(origin.triple(point), 1.0F));
         const glm::vec3 along = glm::mat3(toWorld_) * direction.triple(point);
-        colour->triple(point, tracer_.traced({.origin = start, .direction = along},
-            point < planes_.size() ? planes_[point] : glm::vec3(0.0F)));
+        paths.push_back({.origin = start, .direction = along});
+        geometric.push_back(point < planes_.size() ? planes_[point] : glm::vec3(0.0F));
+    }
+    const std::vector<glm::vec3> seen = tracer_.traced(paths, geometric, std::vector<float>(batch_, tracer_.time()));
+    for (unsigned int point = 0; point < batch_; point++) {
+        colour->triple(point, seen[point]);
     }
     return true;
 }

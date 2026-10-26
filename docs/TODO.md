@@ -19,21 +19,6 @@ up. None waits for a game, a scene or a second caller to need it first.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
-## Offline rendering
-
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 2.
-
-[] **`offline::trace::Tracer` runs a shader once per hit.**
-
-- Each hit gets its own `HitShader` and its own run of the machine, so a ray-hidden image pays
-  the machine's per-run cost once per pixel sample.
-- The fix batches the hits of a scanline that share a shader into one run, as the reyes hider
-  shades a grid. It is for speed alone, and gives no derivatives.
-- Measure the gain with a profile of a Release render. A pixel's samples are seeded per pixel,
-  so batching them in another order does not change the picture.
-
-Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
-
 ## Lit scenes
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.
