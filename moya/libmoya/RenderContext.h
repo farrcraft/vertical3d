@@ -21,7 +21,9 @@
 
 #include "Attributes.h"
 #include "FrameBuffer.h"
+#include "Lights.h"
 #include "Polygon.h"
+#include "Shaders.h"
 #include "Shading.h"
 #include "Transforms.h"
 
@@ -460,13 +462,6 @@ class RenderContext {
         static constexpr unsigned int tracedAcross = 64;
         /** Give a traced primitive the state's surface, opacity and lights, in world space. **/
         void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
-        /**
-         * The state's lights placed in world space, as one shared set. The set is built
-         * again only when the lights that are on, or the number of lights, change.
-         **/
-        const v3d::render::offline::trace::Lights & tracedLights(const Shading & state);
-        /** Note a shader the scene bound, so render() knows whether any of them traces. **/
-        void bound(const v3d::render::offline::sl::InstancePtr & shader);
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
@@ -477,19 +472,6 @@ class RenderContext {
          public:
             v3d::render::offline::MovingTransform transform;
             Attributes attributes;
-        };
-
-        /**
-         * A light the scene created, kept for the frame under the handle a later
-         * Illuminate names it by.
-         **/
-        class LightSource {
-         public:
-            std::string handle;
-            v3d::render::offline::sl::InstancePtr shader;
-            glm::mat4x4 placement = glm::mat4x4(1.0F);
-            /** The geometry an area light shines from, or null for any other light. **/
-            boost::shared_ptr<v3d::render::offline::Area> area;
         };
 
         Transforms transforms_;
@@ -523,18 +505,10 @@ class RenderContext {
          * @return true when the polygon was handed on as pieces, and is not bucketed itself
          **/
         bool handedOn(const boost::shared_ptr<Polygon>& poly);
-        boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
-        boost::shared_ptr<v3d::render::offline::Textures> textures_;
+        boost::shared_ptr<Shaders> shaders_;
         boost::shared_ptr<reyes::GridShader> shader_;
-        std::vector<LightSource> lights_;
+        Lights lights_;
         v3d::render::offline::trace::Scene traced_;
-        /** Whether any shader the scene bound calls trace or transmission. **/
-        bool tracing_ = false;
-        /** The lights that are on, in world space, and the handles and count they came from. **/
-        v3d::render::offline::trace::Lights tracedLights_;
-        std::vector<std::string> tracedFor_;
-        std::size_t tracedLightsFor_ = 0;
-        v3d::render::offline::sl::InstancePtr imager_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<reyes::Samples> samples_;
         Progress progress_;

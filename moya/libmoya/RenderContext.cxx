@@ -19,9 +19,7 @@
 #include <api/render/offline/sl/Imager.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
-#include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
-#include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
@@ -51,8 +49,10 @@
 
 #include "FrameBuffer.h"
 #include "Hider.h"
+#include "Lights.h"
 #include "Polygon.h"
 #include "RayHider.h"
+#include "Shaders.h"
 #include "Shading.h"
 
 namespace v3d::moya {
@@ -76,8 +76,7 @@ void RenderContext::initialize() {
     logger_ = boost::make_shared<v3d::log::Logger>();
     // RI's default hider
     hider_ = boost::make_shared<reyes::Hider>();
-    shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
-    textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
+    shaders_ = boost::make_shared<Shaders>(logger_);
 }
 
 boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
@@ -424,7 +423,6 @@ void fillVertices(Polygon* poly) {
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     attributes_.surface.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
-    bound(attributes_.surface.shader);
     // RI makes a shader's own space the transformation in force when the scene instanced
     // it. A "point \"shader\" (0, 0, 1)" parameter is stated in that space
     attributes_.surface.placement = coordinateSystem("camera") * transforms_.current().reference();
@@ -433,13 +431,12 @@ void RenderContext::surface(const std::string & name,
 void RenderContext::displacement(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     attributes_.displacement.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
-    bound(attributes_.displacement.shader);
     attributes_.displacement.placement = coordinateSystem("camera") * transforms_.current().reference();
 }
 
 void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
     const v3d::render::offline::rib::ParameterList & parameters) {
-    LightSource light;
+    Lights::Light light;
     light.handle = request.handle;
     light.shader = shaders_->instance(request.shader, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
     light.placement = coordinateSystem("camera") * transforms_.current().reference();
@@ -448,8 +445,7 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
         // light of some other kind
         return;
     }
-    bound(light.shader);
-    lights_.push_back(light);
+    lights_.add(light);
     // RiLightSource switches the light it creates on
     illuminate(request.handle, true);
 }
@@ -461,9 +457,7 @@ void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource
     if (lights_.size() == before) {
         return;
     }
-    lights_.back().area = boost::make_shared<v3d::render::offline::Area>(request.handle);
-    lights_.back().area->samples(attributes_.lightSamples);
-    attributes_.areaLight = lights_.back().area;
+    attributes_.areaLight = lights_.area(attributes_.lightSamples);
 }
 
 void RenderContext::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
@@ -519,14 +513,7 @@ void RenderContext::illuminate(const std::string & handle, bool on) {
 
 void RenderContext::imager(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
-    imager_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::IMAGER, parameters);
-    bound(imager_);
-}
-
-void RenderContext::bound(const v3d::render::offline::sl::InstancePtr & shader) {
-    if (shader && shader->program().traces) {
-        tracing_ = true;
-    }
+    shaders_->imager(name, parameters);
 }
 
 void RenderContext::searchpath(const std::string & path) {
@@ -534,7 +521,7 @@ void RenderContext::searchpath(const std::string & path) {
 }
 
 v3d::render::offline::Textures & RenderContext::textures() {
-    return *textures_;
+    return shaders_->textures();
 }
 
 Shading RenderContext::shading() {
@@ -546,21 +533,10 @@ Shading RenderContext::shading() {
     if (!state.surface) {
         // a scene that names no surface draws "constant", which does no shading. RI leaves
         // the default surface to the renderer
-        state.surface = shaders_->instance("constant",
-            v3d::render::offline::sl::ShaderType::SURFACE,
-            v3d::render::offline::rib::ParameterList());
+        state.surface = shaders_->constant();
         state.placement = coordinateSystem("camera") * transforms_.current().reference();
     }
-    for (const LightSource & light : lights_) {
-        if (!attributes_.shines(light.handle)) {
-            continue;
-        }
-        v3d::render::offline::sl::Placed shining;
-        shining.shader = light.shader;
-        shining.placement = light.placement;
-        shining.area = light.area;
-        state.lights.push_back(shining);
-    }
+    state.lights = lights_.shining(attributes_.lit);
     state.displacement = attributes_.displacement;
     state.displacementBound = attributes_.displacementBound;
     return state;
@@ -583,24 +559,6 @@ reyes::GridShader & RenderContext::shader() {
 
 v3d::render::offline::trace::Scene & RenderContext::traced() {
     return traced_;
-}
-
-const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Shading & state) {
-    if (tracedLights_ && tracedFor_ == attributes_.lit && tracedLightsFor_ == lights_.size()) {
-        return tracedLights_;
-    }
-    // a light's placement takes it to camera space, and the traced scene is in world space
-    const glm::mat4x4 toWorld = glm::inverse(coordinateSystem("camera"));
-    auto on = boost::make_shared<std::vector<v3d::render::offline::sl::Placed> >();
-    for (const v3d::render::offline::sl::Placed & light : state.lights) {
-        v3d::render::offline::sl::Placed placed = light;
-        placed.placement = toWorld * light.placement;
-        on->push_back(placed);
-    }
-    tracedLights_ = on;
-    tracedFor_ = attributes_.lit;
-    tracedLightsFor_ = lights_.size();
-    return tracedLights_;
 }
 
 void RenderContext::trace(const Polygon & poly, const Shading & state) {
@@ -712,7 +670,8 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
     primitive->surface(surface);
     primitive->object(glm::inverse(coordinateSystem("camera")) * state.object);
     primitive->opacity(state.opacity);
-    primitive->lights(tracedLights(state));
+    // a light's placement takes it to camera space, and the traced scene is in world space
+    primitive->lights(lights_.traced(state.lights, attributes_.lit, glm::inverse(coordinateSystem("camera"))));
 }
 
 bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
@@ -999,7 +958,7 @@ void RenderContext::render() {
 
     stopped_ = false;
     // the reyes hider meets the traced scene only through a shader's trace or transmission
-    if (!hider_->traces() && !tracing_) {
+    if (!hider_->traces() && !shaders_->traces()) {
         traced_.clear();
     }
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = frameBuffer_->planes();
@@ -1012,11 +971,11 @@ void RenderContext::render() {
         return;
     }
 
-    if (imager_) {
+    if (shaders_->imager()) {
         // the imager runs once the hider has finished, because it reads the whole picture.
         // The shader's machine logs a failed run. The failed row and the rows below it stay
         // as the hider wrote them, and the frame is still written
-        v3d::render::offline::sl::Imager imager(imager_, &shader());
+        v3d::render::offline::sl::Imager imager(shaders_->imager(), &shader());
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }
 
