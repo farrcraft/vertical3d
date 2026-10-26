@@ -19,6 +19,7 @@ add_library("v3dlib_moya"
 	"reyes/Samples.h" "reyes/Samples.cxx"
 	"Shaders.h" "Shaders.cxx"
 	"Shading.h"
+	"TracedScene.h" "TracedScene.cxx"
 	"Transforms.h" "Transforms.cxx"
 	"Vertex.h" "Vertex.cxx"
 )

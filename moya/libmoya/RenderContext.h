@@ -25,6 +25,7 @@
 #include "Polygon.h"
 #include "Shaders.h"
 #include "Shading.h"
+#include "TracedScene.h"
 #include "Transforms.h"
 
 #include <cstddef>
@@ -447,21 +448,8 @@ class RenderContext {
         void initialize();
 
  private:
-        /**
-         * Add a polygon to the traced scene as a fan of triangles, placed by the current
-         * transformation and shaded by the given state.
-         **/
-        void trace(const Polygon & poly, const Shading & state);
-        /**
-         * Add a polygon with a displacement shader to the traced scene as the surface the
-         * shader moves it to. It is diced in camera space into a grid of tracedAcross
-         * micropolygons a side, displaced, and added as two triangles for each micropolygon.
-         **/
-        void traceDisplaced(const Polygon & poly, const Shading & state);
-        /** The micropolygons a side a displaced polygon is diced into for the traced scene. **/
-        static constexpr unsigned int tracedAcross = 64;
-        /** Give a traced primitive the state's surface, opacity and lights, in world space. **/
-        void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
+        /** What a primitive submitted now goes into the traced scene under. **/
+        TracedScene::Submission submission(const Shading & state);
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
@@ -508,7 +496,7 @@ class RenderContext {
         boost::shared_ptr<Shaders> shaders_;
         boost::shared_ptr<reyes::GridShader> shader_;
         Lights lights_;
-        v3d::render::offline::trace::Scene traced_;
+        TracedScene traced_;
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<reyes::Samples> samples_;
         Progress progress_;
