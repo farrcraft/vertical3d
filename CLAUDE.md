@@ -29,7 +29,7 @@ is SDL3.
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
-| `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/engine/](docs/api/engine/README.md) |
+| `api/engine`, `config`, `event`, `input`, `audio`, `log`, `window` | [docs/api/engine/](docs/api/engine/README.md) |
 | `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
 | `api/database` | [docs/api/Database.md](docs/api/Database.md) |

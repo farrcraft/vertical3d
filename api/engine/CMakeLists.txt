@@ -20,7 +20,7 @@ target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_config
 	v3dlib_event
 	v3dlib_input
-	v3dlib_render
+	v3dlib_window
 	v3dlib_type
 	SDL3::SDL3
 	EnTT::EnTT

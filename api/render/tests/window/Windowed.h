@@ -7,8 +7,8 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/render/realtime/Window.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include <optional>
 
@@ -49,7 +49,7 @@ struct Windowed {
     bool silent() const;
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<render::realtime::Window> window;
+    boost::shared_ptr<v3d::window::Window> window;
     boost::shared_ptr<render::realtime::Engine3D> engine;
 };
 

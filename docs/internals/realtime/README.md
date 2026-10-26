@@ -22,13 +22,15 @@ and `vulkan/renderer`.
 ## Object chain and ownership
 
 ```
-realtime::Window           SDL_WINDOW_VULKAN window; owns vulkan::device::Instance and Surface
+window::Window             the SDL window, in its own library; holds no Vulkan object
+sharedInstance()           the process's vulkan::device::Instance, shared by every window
 Engine3D                   owns the Context3D and the Frame being built
   Context3D : DeviceContext
     vulkan::frame::Swapchain   the images presented to the window
     vulkan::frame::Presenter   acquire, submit, present, and their semaphores
   DeviceContext              everything that needs only a device
-    vulkan::device::Device     physical + logical device, queues, memory::Allocator
+    vulkan::device::Device     physical + logical device, queues, memory::Allocator, and the
+                               Surface Context3D made for the window
     vulkan::frame::Ring        frames in flight: a command buffer and a fence each
     vulkan::pipeline::Cache    the VkPipelineCache
     vulkan::pipeline::Resources pipelines, materials and textures, by handle
@@ -62,9 +64,10 @@ with.
   `vkDestroyDevice`. A suballocator frees its blocks against the device, which must still exist.
 
 **`Engine3D::shutdown()`** waits for the ring to go idle, drops the frame, and resets the
-context. The context must go before the window: the device holds the window's surface alive,
-and `Window::destroy()` unloads the Vulkan library. A surface destroyed after that is never
-destroyed, and the instance reports it leaked.
+context. The context must go before the window, because the device holds the surface made for
+the window, and a surface has to be destroyed before its window. The surface holds the shared
+instance, so the instance, and the Vulkan loader under it, outlive every surface made against
+them.
 
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Every pass draws through dynamic
 rendering.

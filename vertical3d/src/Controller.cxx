@@ -14,7 +14,6 @@
 #include <api/event/State.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
-#include <api/render/realtime/Window.h>
 #include <api/image/Image.h>
 #include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
@@ -28,6 +27,7 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
+#include <api/window/Window.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
@@ -35,6 +35,11 @@
 #include <vertical3d/src/command/KeyCommand.h>
 #include <vertical3d/src/command/SettingsCommand.h>
 #include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/render/Batch.h>
+#include <vertical3d/src/render/Delegate.h>
+#include <vertical3d/src/render/MoyaDelegate.h>
+#include <vertical3d/src/render/RenderPanels.h>
+#include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/CreatePoly.h>
@@ -44,14 +49,9 @@
 #include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
-#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/RenderSettings.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
-#include <vertical3d/src/render/Batch.h>
-#include <vertical3d/src/render/Delegate.h>
-#include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/render/RenderPanels.h>
-#include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>

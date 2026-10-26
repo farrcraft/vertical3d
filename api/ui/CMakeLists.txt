@@ -84,7 +84,9 @@ target_link_libraries(v3dlib_ui PUBLIC
 # the name a binding is written against and the name a text box receives come from one table. The
 # header names neither the device nor SDL_Event beyond a forward declaration.
 # SDL3::SDL3: shell/Keyboard.cpp reads SDL events and the clipboard through SDL.
-target_link_libraries(v3dlib_ui PRIVATE v3dlib_input SDL3::SDL3)
+# v3dlib_window: shell/Keyboard.cpp turns text input on and off on the window. Keyboard.h
+# declares the window rather than including it.
+target_link_libraries(v3dlib_ui PRIVATE v3dlib_input v3dlib_window SDL3::SDL3)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

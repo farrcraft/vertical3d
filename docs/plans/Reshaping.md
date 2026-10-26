@@ -281,11 +281,18 @@ of which is the documentation of one method per RI request.
 
 ### Step 5 — The engine without Vulkan
 
-**Open.** An ADR decides where the window lives.
+**Closed.** [ADR-0116](../adr/0116-platform-the-window-is-a-library-below-the-renderer.md)
+decides it.
 
-- `engine` owns an SDL window, and `render` creates its surface from it.
-- `engine` depends on SDL3, not on `render`.
-- imagetool can use `run<T>`, `Settings` and `userPath`.
+- **Different from the plan:** the window is a library of its own, `window`, below `engine`,
+  `ui` and `render`, rather than a part of `engine`. `ui::shell::Keyboard` turns text input on
+  and off on the window, and under the plan `ui` would have had to depend on `engine`.
+- `engine` links `window` and SDL3, not `render`. A tool can run the engine with no window and
+  no Vulkan SDK. imagetool does not use the engine today, and nothing here makes it.
+- `Context3D` makes the surface for the window, against one Vulkan instance for the process
+  that `sharedInstance()` returns. Each window made its own instance before.
+- No new case. The window suite still presents to a real window through the shared instance
+  with the validation layer silent, and pong and the editor start with no validation message.
 
 ### Step 6 — The engine and the shell joined
 

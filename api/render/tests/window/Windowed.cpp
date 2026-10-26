@@ -7,9 +7,10 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/render/realtime/Window.h>
+#include <api/render/realtime/SharedInstance.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include <SDL3/SDL.h>
 
@@ -46,7 +47,7 @@ Windowed::Windowed(std::optional<render::realtime::vulkan::memory::Allocator::Ki
         throw std::runtime_error(std::string("SDL could not start its video subsystem: ") + SDL_GetError());
     }
     logger = boost::make_shared<v3d::log::Logger>();
-    window = boost::make_shared<render::realtime::Window>(logger);
+    window = boost::make_shared<v3d::window::Window>(logger);
     if (!window->create(glm::ivec2(windowWidth, windowHeight))) {
         SDL_Quit();
         throw std::runtime_error(std::string("SDL could not create a window: ") + SDL_GetError());
@@ -77,8 +78,9 @@ Windowed::~Windowed() {
  **/
 bool Windowed::silent() const {
     // nothing reported means a clean run only when the layer is on. Without the layer nothing
-    // checks the calls, and every run reports nothing
-    const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = window->instance();
+    // checks the calls, and every run reports nothing. The engine's device holds the shared
+    // instance, so this is the one it reported to
+    const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = render::realtime::sharedInstance(logger);
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
         return false;

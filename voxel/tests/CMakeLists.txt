@@ -66,6 +66,7 @@ target_link_libraries(v3dtest_voxel PRIVATE
 	v3dlib_input
 	v3dlib_log
 	v3dlib_render
+	v3dlib_window
 	v3dlib_ui)
 
 v3d_copy_data(v3dtest_voxel app "${CMAKE_CURRENT_SOURCE_DIR}/../data")

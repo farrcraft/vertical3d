@@ -8,10 +8,10 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Window.h>
 #include <api/ui/Engine.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 
 #include "PongScene.h"
 
@@ -48,7 +48,7 @@ constexpr float rightScoreColumn = 0.75F;
 
 /**
  **/
-PongRenderer::PongRenderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     engine_(logger, assetManager) {
     engine_.initialize(window);

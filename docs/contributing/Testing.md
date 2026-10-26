@@ -64,7 +64,7 @@ with a testable CPU-side part is expected to add test cases.
 These have no automated test:
 
 - `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
-  through `render::realtime::Window` and not through the feature.
+  through `window::Window` and not through the feature.
 - Whether a sound from `audio::Engine` is audible. An engine with no device gives back no
   voice, so most cases run without one. `audio_engine_a_sound_plays_at_its_gain_times_its_bus_test`
   opens SDL's dummy audio driver, which plays into nothing and needs no sound card, and reads

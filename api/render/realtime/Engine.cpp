@@ -7,11 +7,9 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-
-#include "Window.h"
+#include <api/window/Window.h>
 
 #include <boost/make_shared.hpp>
-
 
 namespace v3d::render::realtime {
 /**
@@ -32,7 +30,7 @@ const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
     return logger_;
 }
 
-bool Engine::initialize(const boost::shared_ptr<Window>& window) {
+bool Engine::initialize(const boost::shared_ptr<v3d::window::Window>& window) {
     window_ = window;
     return true;
 }
@@ -49,7 +47,7 @@ boost::shared_ptr<v3d::asset::Manager> Engine::assetManager() {
     return assetManager_;
 }
 
-boost::shared_ptr<Window> Engine::window() {
+boost::shared_ptr<v3d::window::Window> Engine::window() {
     return window_;
 }
 };  // namespace v3d::render::realtime

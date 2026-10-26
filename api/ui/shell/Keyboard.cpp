@@ -6,11 +6,11 @@
 #include "Keyboard.h"
 
 #include <api/input/Keyboard.h>
-#include <api/render/realtime/Window.h>
 #include <api/ui/Component.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/component/Type.h>
+#include <api/window/Window.h>
 
 #include <SDL3/SDL.h>
 
@@ -23,7 +23,7 @@ namespace v3d::ui::shell {
 /**
  **/
 Keyboard::Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-    const boost::shared_ptr<v3d::render::realtime::Window>& window) :
+    const boost::shared_ptr<v3d::window::Window>& window) :
     ui_(ui),
     layer_(nullptr),
     window_(window),

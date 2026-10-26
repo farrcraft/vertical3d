@@ -10,7 +10,6 @@
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Window.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
@@ -24,6 +23,7 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <voxel/src/engine/Camera.h>
 #include <voxel/src/engine/ChunkMeshBuilder.h>
 #include <voxel/src/engine/ChunkVertex.h>
@@ -150,7 +150,7 @@ constexpr glm::vec3 palette[materialCount] = {
 
 /**
  **/
-Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::render::realtime::Window>& window,
+Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
     const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     scene_(scene),
     logger_(logger),

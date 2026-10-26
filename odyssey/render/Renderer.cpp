@@ -12,7 +12,7 @@
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Window.h>
+#include <api/window/Window.h>
 #include <odyssey/engine/Player.h>
 #include <odyssey/engine/Unit.h>
 #include <odyssey/tile/Map.h>
@@ -76,7 +76,7 @@ constexpr float tileGap = 1.0F;
 
 /**
  **/
-Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     logger_(logger),
     registry_(registry),

@@ -26,17 +26,18 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
 | [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
-| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, the window, config, input and settings. |
+| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings. It opens the window. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
 | [`font`](../../api/font/) | Rasterizes a typeface with FreeType into a texture atlas and lays out text. |
 | [`grid`](../../api/grid/) | Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry. |
 | [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
-| [`render`](../../api/render/) | The Vulkan realtime renderer: window, frames, passes, draw items, canvases, sprites, meshes and lighting. |
+| [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms, models, skeletons, animation, particle effects and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
+| [`window`](../../api/window/) | The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses no graphics API. See [engine/Window.md](engine/Window.md). |
 
 ## How they depend on each other
 
@@ -63,9 +64,10 @@ Boost.
 | `asset_media` | log, asset, image, type | cgltf, glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
-| `render` | log, asset, asset_media, ecs, font, image, type | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
-| `ui` | log, render, asset, event, font, image, input, type | **SDL3**, glm, EnTT |
-| `engine` | log, asset, asset_media, config, event, input, render, type | **SDL3**, EnTT |
+| `window` | log | **SDL3**, glm |
+| `render` | log, asset, asset_media, ecs, font, image, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
+| `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
+| `engine` | log, asset, asset_media, config, event, input, type, window | **SDL3**, EnTT |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
@@ -74,16 +76,18 @@ log   type   grid   database               no device, no window
 image  asset  dag  ecs  brep
 font   config  asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
-input                                      SDL3
+input  window                              SDL3
 audio                                      SDL3_mixer
+engine                                     SDL3, no Vulkan
 render                                     Vulkan, SDL3
-ui     engine                              Vulkan, SDL3 (through render)
+ui                                         Vulkan, SDL3 (through render)
 ```
 
 Three consequences matter when choosing what to link:
 
 - **Anything that links `render` needs the Vulkan SDK to configure**, because the renderer's
-  shaders are compiled at build time. That includes `ui` and `engine`.
+  shaders are compiled at build time. That includes `ui`. `engine` does not link `render`, so
+  a tool that runs the engine with no window needs no Vulkan.
 - **Only `audio` needs SDL3_mixer.** The engine does not link it, so an app that plays sound
   links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio)
   shows how.

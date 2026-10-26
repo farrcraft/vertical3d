@@ -9,6 +9,7 @@
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include <optional>
 #include <string>
@@ -18,7 +19,6 @@
 #include "Context3D.h"
 #include "Engine.h"
 #include "Frame.h"
-#include "Window.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -43,7 +43,7 @@ class Engine3D : public Engine {
 
     /**
      **/
-    bool initialize(const boost::shared_ptr<Window>& window) override;
+    bool initialize(const boost::shared_ptr<v3d::window::Window>& window) override;
 
     /**
      * Wait for everything in flight before the device and the window go away.

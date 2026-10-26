@@ -11,9 +11,9 @@
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include "DeviceContext.h"
-#include "Window.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -36,7 +36,7 @@ class Context3D : public DeviceContext {
      * @param allocations how the device finds memory for its buffers and images
      * @param present how the swapchain's images are presented, as Swapchain describes
      **/
-    Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
+    Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
         vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated,
         Present present = Present::Uncapped);
@@ -69,7 +69,9 @@ class Context3D : public DeviceContext {
 
  private:
     /**
-     * The device the base is built on, taken from the window's instance and surface.
+     * The device the base is built on: the process's instance, and a surface made for the
+     * window against it. The device holds the surface, so the context has to be destroyed
+     * before the window is.
      *
      * Static because it runs in the member initializer list, before the object exists. The
      * base class needs a device, and only the window can supply one.
@@ -77,9 +79,9 @@ class Context3D : public DeviceContext {
      * @throw std::runtime_error if the window has not been created
      **/
     static boost::shared_ptr<vulkan::device::Device> deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<Window>& window, vulkan::memory::Allocator::Kind allocations);
+        const boost::shared_ptr<v3d::window::Window>& window, vulkan::memory::Allocator::Kind allocations);
 
-    boost::shared_ptr<Window> window_;
+    boost::shared_ptr<v3d::window::Window> window_;
     boost::shared_ptr<vulkan::frame::Swapchain> swapchain_;
     // declared last, so it is destroyed first. Its destructor waits for the device, so
     // nothing else is destroyed while a frame it submitted is in flight

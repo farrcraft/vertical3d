@@ -6,14 +6,13 @@
 #include "Renderer.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/media/kind/Image.h>
 #include <api/asset/Type.h>
+#include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Window.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/renderer/Line.h>
 #include <api/ui/Engine.h>
@@ -21,9 +20,10 @@
 #include <api/ui/paint/Text.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
-#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/manipulator/Target.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ShadedPass.h>
@@ -90,7 +90,7 @@ constexpr float panelPaddingScale = 0.3F;
 
 /**
  **/
-Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
+Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
     logger_(logger),

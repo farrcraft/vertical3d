@@ -13,9 +13,9 @@
 
 union SDL_Event;
 
-namespace v3d::render::realtime {
+namespace v3d::window {
 class Window;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::window
 
 namespace v3d::ui {
 class Engine;
@@ -59,7 +59,7 @@ class Keyboard final {
      *        as it leaves. Without a window the keys still edit, but no characters arrive
      **/
     Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-        const boost::shared_ptr<v3d::render::realtime::Window>& window);
+        const boost::shared_ptr<v3d::window::Window>& window);
 
     ~Keyboard();
 
@@ -102,7 +102,7 @@ class Keyboard final {
 
     boost::shared_ptr<Engine> ui_;
     Immediate* layer_;
-    boost::shared_ptr<v3d::render::realtime::Window> window_;
+    boost::shared_ptr<v3d::window::Window> window_;
     input::Keys keys_;
 };
 

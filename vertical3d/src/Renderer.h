@@ -8,15 +8,15 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <api/render/realtime/Window.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
@@ -55,7 +55,7 @@ class Renderer final {
     /**
      * @throw std::runtime_error if the device or the line pipelines cannot be built
      **/
-    Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
+    Renderer(const boost::shared_ptr<v3d::window::Window>& window,
         const boost::shared_ptr<v3d::log::Logger>& logger,
         const boost::shared_ptr<v3d::asset::Manager>& assetManager);
 

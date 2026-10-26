@@ -179,7 +179,7 @@ bool Engine::openWindow() {
     // from here on, shutdown() or ~Engine has to destroy the window and quit SDL
     needShutdown_ = true;
 
-    window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
+    window_ = boost::make_shared<v3d::window::Window>(logger_);
 
     // a size of -1 leaves the window at its own default, so an app with no window
     // config, or none carrying dimensions, still gets a window
@@ -480,7 +480,7 @@ const Statistics& Engine::statistics() const noexcept {
     return statistics_;
 }
 
-boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {
+boost::shared_ptr<v3d::window::Window> Engine::window() const {
     return window_;
 }
 

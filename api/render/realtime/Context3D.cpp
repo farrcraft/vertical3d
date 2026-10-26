@@ -7,13 +7,16 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Present.h>
+#include <api/render/realtime/SharedInstance.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include "DeviceContext.h"
-#include "Window.h"
 
 #include <cstdint>
 #include <stdexcept>
@@ -24,16 +27,18 @@ namespace v3d::render::realtime {
 /**
  **/
 boost::shared_ptr<vulkan::device::Device> Context3D::deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<Window>& window, vulkan::memory::Allocator::Kind allocations) {
-    if (!window || !window->instance() || !window->surface()) {
+    const boost::shared_ptr<v3d::window::Window>& window, vulkan::memory::Allocator::Kind allocations) {
+    if (!window || window->sdl() == nullptr) {
         throw std::runtime_error("A 3D context needs a created window to render to");
     }
-    return boost::make_shared<vulkan::device::Device>(logger, window->instance(), window->surface(), allocations);
+    const boost::shared_ptr<vulkan::device::Instance> instance = sharedInstance(logger);
+    const boost::shared_ptr<vulkan::device::Surface> surface = boost::make_shared<vulkan::device::Surface>(instance, window->sdl());
+    return boost::make_shared<vulkan::device::Device>(logger, instance, surface, allocations);
 }
 
 /**
  **/
-Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Window>& window,
+Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
     VkFormat preferred, vulkan::memory::Allocator::Kind allocations, Present present) :
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {

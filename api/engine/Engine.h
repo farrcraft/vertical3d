@@ -12,7 +12,7 @@
 #include <api/event/Engine.h>
 #include <api/input/Engine.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Window.h>
+#include <api/window/Window.h>
 
 #include <map>
 #include <string>
@@ -150,7 +150,7 @@ class Engine {
     /**
      * @return Window
      **/
-    boost::shared_ptr<v3d::render::realtime::Window> window() const;
+    boost::shared_ptr<v3d::window::Window> window() const;
 
     /**
      * What the engine built, for an app to build on. Each is null until initialize() runs.
@@ -361,7 +361,7 @@ class Engine {
 
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::config::Config> config_;
-     boost::shared_ptr<v3d::render::realtime::Window> window_;
+     boost::shared_ptr<v3d::window::Window> window_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
      boost::shared_ptr<v3d::event::Engine> eventEngine_;

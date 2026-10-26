@@ -6,25 +6,24 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/vulkan/device/Instance.h>
-#include <api/render/realtime/vulkan/device/Surface.h>
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 
 #include <string>
+#include <string_view>
 
 #include <glm/vec2.hpp>
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::render::realtime {
+namespace v3d::window {
 /**
- * The window everything is drawn into, and the Vulkan instance and surface that present to it.
+ * An OS window, and the platform calls that act on it: its size, caption, focus, full screen,
+ * text input and the mouse.
  *
- * Every window is a Vulkan window: an app presents through a swapchain whether it draws in two
- * dimensions or three. A 2D app differs from a 3D one in what its passes request, an
- * orthographic camera and no depth, and not in the window.
+ * The window is made for presenting with Vulkan, which SDL loads when the window is created. It
+ * holds no Vulkan object: a renderer makes the surface it presents to from sdl(), and has to be
+ * released before the window is destroyed.
  **/
 class Window final {
  public:
@@ -34,10 +33,10 @@ class Window final {
     explicit Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept;
 
     /**
-     * Create the window, the vulkan instance, and the surface that presents to it.
+     * Create the window. It fails, and the reason is logged, when SDL cannot load the Vulkan
+     * loader the window presents through.
      *
-     * @throw std::runtime_error if the vulkan loader or SDL's extension list is missing
-     * @return whether the window itself could be created
+     * @return whether the window could be created
      **/
     bool create(const glm::ivec2& size);
 
@@ -47,22 +46,14 @@ class Window final {
     bool created() const noexcept;
 
     /**
+     * Destroy the window. Anything that presents to it has to be released first.
      **/
     void destroy();
 
     /**
+     * @return the SDL window, or null before create() and after destroy()
      **/
     SDL_Window* sdl() noexcept;
-
-    /**
-     * @return the vulkan instance the window was created against
-     **/
-    boost::shared_ptr<vulkan::device::Instance> instance() const;
-
-    /**
-     * @return the vulkan surface the window presents to
-     **/
-    boost::shared_ptr<vulkan::device::Surface> surface() const;
 
     /**
      * Record a size the window has already been given.
@@ -174,14 +165,11 @@ class Window final {
 
  private:
     SDL_Window* window_;
-    boost::shared_ptr<vulkan::device::Instance> instance_;
-    boost::shared_ptr<vulkan::device::Surface> surface_;
     std::string caption_;
     int width_;
     int height_;
-    bool vulkanLoaded_;
     bool created_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
 
-};  // namespace v3d::render::realtime
+};  // namespace v3d::window

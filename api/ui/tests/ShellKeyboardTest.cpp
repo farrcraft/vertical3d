@@ -45,8 +45,7 @@ struct Fixture final {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        seam = boost::make_shared<v3d::ui::shell::Keyboard>(ui, dispatcher,
-            boost::shared_ptr<v3d::render::realtime::Window>());
+        seam = boost::make_shared<v3d::ui::shell::Keyboard>(ui, dispatcher, nullptr);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -291,8 +290,7 @@ BOOST_AUTO_TEST_CASE(keys_reach_an_immediate_field_with_no_retained_ui) {
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Engine>(), dispatcher,
-        boost::shared_ptr<v3d::render::realtime::Window>());
+    v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Engine>(), dispatcher, nullptr);
     seam.immediate(&layer);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));

@@ -17,6 +17,7 @@
 #include <api/render/realtime/vulkan/renderer/Line.h>
 #include <api/render/realtime/vulkan/renderer/Quad.h>
 #include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/window/Window.h>
 
 #include "Context3D.h"
 #include "DeviceContext.h"
@@ -24,7 +25,6 @@
 #include "Frame.h"
 #include "Present.h"
 #include "Textures.h"
-#include "Window.h"
 
 #include <string>
 #include <string_view>
@@ -55,7 +55,7 @@ Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boos
 
 /**
  **/
-bool Engine3D::initialize(const boost::shared_ptr<Window>& window) {
+bool Engine3D::initialize(const boost::shared_ptr<v3d::window::Window>& window) {
     Engine::initialize(window);
 
     // the context can only be built once there is a created window to take a device from
@@ -77,8 +77,7 @@ bool Engine3D::shutdown() {
         context_->ring()->waitIdleNoThrow();
     }
     // the context must be destroyed before the window. The context owns the device, which
-    // keeps the window's surface alive. The window's teardown unloads the Vulkan library, and
-    // a surface destroyed after that is never destroyed, so the instance reports it as leaked
+    // holds the surface made for the window, and a surface has to go before its window does.
     // assigned null rather than calling frame_.reset(), which reads like Frame::reset()
     frame_ = nullptr;
     // the capture's readback buffer belongs to the device the context owns
@@ -156,7 +155,7 @@ bool Engine3D::capture(std::string_view path) {
 /**
  **/
 bool Engine3D::beginFrame(glm::ivec2* size) {
-    const boost::shared_ptr<Window> target = window();
+    const boost::shared_ptr<v3d::window::Window> target = window();
     const int width = target ? target->width() : 0;
     const int height = target ? target->height() : 0;
     if (width <= 0 || height <= 0) {

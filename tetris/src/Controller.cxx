@@ -71,7 +71,7 @@ bool Controller::start() {
         return false;
     }
 
-    const boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    const boost::shared_ptr<v3d::window::Window> win = window();
     renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
     renderer_->scene(scene_);
     renderer_->ui(vgui_);

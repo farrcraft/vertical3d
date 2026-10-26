@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	asset asset_media audio brep config dag database ecs engine event font grid image input log
-	render render_offline type ui)
+	render render_offline type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -58,7 +58,7 @@ set(V3D_API_ecs_REQUIRES type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media config event input render type)
+set(V3D_API_engine_REQUIRES log asset asset_media config event input type window)
 set(V3D_API_engine_PACKAGES SDL3 EnTT)
 
 set(V3D_API_event_PATH "event")
@@ -86,7 +86,7 @@ set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
 
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log asset asset_media ecs font image type)
+set(V3D_API_render_REQUIRES log asset asset_media ecs font image type window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but a separate library: the offline renderer is built on it. It names
@@ -100,8 +100,14 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image input type)
+set(V3D_API_ui_REQUIRES log render asset event font image input type window)
 set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
+
+# The OS window and its platform calls. It names no graphics API, so a selection that needs a
+# window but no renderer does not need the Vulkan SDK.
+set(V3D_API_window_PATH "window")
+set(V3D_API_window_REQUIRES log)
+set(V3D_API_window_PACKAGES SDL3 glm)
 
 # The imported target each package provides. The verification below recognises a package in
 # a link line by this target. A package that provides only an include directory, such as cgltf,

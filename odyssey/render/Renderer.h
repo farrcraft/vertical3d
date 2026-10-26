@@ -33,7 +33,7 @@ class Renderer final {
     /**
      * @throw std::runtime_error if the device or the swapchain cannot be built
      **/
-    Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
+    Renderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
         const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
 
     Renderer(const Renderer&) = delete;

@@ -7,8 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-
-#include "Window.h"
+#include <api/window/Window.h>
 
 namespace v3d::render::realtime {
 /**
@@ -25,7 +24,7 @@ class Engine {
      **/
     virtual ~Engine();
 
-    virtual bool initialize(const boost::shared_ptr<Window>& window);
+    virtual bool initialize(const boost::shared_ptr<v3d::window::Window>& window);
 
     /**
      **/
@@ -35,7 +34,7 @@ class Engine {
      **/
     boost::shared_ptr<v3d::asset::Manager> assetManager();
 
-    boost::shared_ptr<Window> window();
+    boost::shared_ptr<v3d::window::Window> window();
 
     /**
      **/
@@ -49,6 +48,6 @@ class Engine {
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::asset::Manager> assetManager_;
-    boost::shared_ptr<Window> window_;
+    boost::shared_ptr<v3d::window::Window> window_;
 };
 };  // namespace v3d::render::realtime

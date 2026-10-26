@@ -10,12 +10,12 @@
 #include <api/engine/Statistics.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/input/MouseState.h>
-#include <api/render/realtime/Window.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <voxel/src/engine/Nanoseconds.h>
 #include <voxel/src/game/GameState.h>
 #include <voxel/src/game/Player.h>
@@ -81,7 +81,7 @@ bool Controller::start() {
 
     scene_ = boost::make_shared<Scene>();
 
-    const boost::shared_ptr<v3d::render::realtime::Window> win = window();
+    const boost::shared_ptr<v3d::window::Window> win = window();
     renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
     renderer_->ui(vgui_);
 
