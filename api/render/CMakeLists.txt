@@ -4,7 +4,7 @@ v3d_add_api_library(render
 	"realtime/WindowRenderer.h" "realtime/WindowRenderer.cpp" 
 	"realtime/WindowContext.h" "realtime/WindowContext.cpp"
 	"realtime/DeviceContext.h" "realtime/DeviceContext.cxx" 
-	"realtime/Handle.h" "realtime/Registry.h"
+	"realtime/Handle.h" "realtime/Registry.h" "realtime/UploadQueue.h"
 	"realtime/canvas/Canvas.h" "realtime/canvas/Canvas.cpp"
 	"realtime/canvas/Stacks.h" "realtime/canvas/Stacks.cpp"
 	"realtime/canvas/Line.h" "realtime/canvas/Line.cpp"

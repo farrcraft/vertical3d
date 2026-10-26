@@ -241,6 +241,32 @@ BOOST_AUTO_TEST_CASE(a_missing_image_is_reported_and_draws_white) {
 }
 
 /**
+ * A request that failed frees its path. Asking for the path again reads the file again as a new
+ * handle, and the failed handle goes on drawing white until it is released.
+ **/
+BOOST_AUTO_TEST_CASE(a_failed_request_frees_its_path) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<Worker> worker = boost::make_shared<Worker>();
+    const boost::shared_ptr<Textures> textures = requesting(&headless, worker);
+
+    const TextureHandle failed = textures->request("no_such_image.png");
+    BOOST_REQUIRE(drain(worker.get()));
+    BOOST_CHECK_EQUAL(textures->poll(), 0U);
+
+    const TextureHandle again = textures->request("no_such_image.png");
+    BOOST_CHECK(again != failed);
+    BOOST_CHECK_EQUAL(worker->outstanding(), 1U);
+    BOOST_CHECK(headless.context->resources()->texture(failed) != nullptr);
+    BOOST_CHECK_EQUAL(textures->slot(failed), textures->slot(textures->white()));
+    BOOST_REQUIRE(drain(worker.get()));
+    BOOST_CHECK_EQUAL(textures->poll(), 0U);
+
+    BOOST_CHECK(textures->release(failed));
+    BOOST_CHECK(textures->release(again));
+    headless.context->ring()->waitIdle();
+}
+
+/**
  * A request needs somewhere to read from and something to decode on. Without them it is refused,
  * rather than giving a handle that never fills.
  **/

@@ -22,40 +22,17 @@
 #include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 
 #include "Handle.h"
+#include "UploadQueue.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <exception>
-#include <expected>
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 #include <boost/make_shared.hpp>
-#include <boost/weak_ptr.hpp>
 
 namespace v3d::render::realtime {
-
-namespace {
-
-/**
- * What an exception says, for the line a failed request is reported on.
- **/
-std::string describe(const std::exception_ptr& error) {
-    if (!error) {
-        return "the file holds no image";
-    }
-    try {
-        std::rethrow_exception(error);
-    } catch (const std::exception& thrown) {
-        return thrown.what();
-    } catch (...) {
-        return "an unknown error";
-    }
-}
-
-};  // namespace
 
 /**
  **/
@@ -65,8 +42,7 @@ Textures::Textures(const boost::shared_ptr<vulkan::device::Device>& device,
     const boost::shared_ptr<vulkan::memory::Uploader>& uploader) :
     device_(device),
     resources_(resources),
-    ring_(ring),
-    inbox_(boost::make_shared<Inbox>()) {
+    ring_(ring) {
     factory_ = boost::make_shared<vulkan::memory::TextureFactory>(device_, uploader);
     array_ = boost::make_shared<vulkan::pipeline::TextureArray>(device_, ring);
 
@@ -120,16 +96,10 @@ TextureHandle Textures::request(const std::string& path, vulkan::memory::Texture
     requests_[handle] = Request{.path = path, .encoding = encoding, .sampler = sampler};
     requested_[path] = handle;
     try {
-        worker_->post([assets = assets_, path]() {
-                const boost::shared_ptr<asset::media::kind::Image> image = assets->load<asset::media::kind::Image>(path);
-                return image ? image->image() : boost::shared_ptr<image::Image>();
-            },
-            [inbox = boost::weak_ptr<Inbox>(inbox_), handle](std::expected<boost::shared_ptr<image::Image>, std::exception_ptr> result) {
-                const boost::shared_ptr<Inbox> held = inbox.lock();
-                if (held) {
-                    held->push_back(Arrival{handle, std::move(result)});
-                }
-            });
+        uploads_.post(worker_.get(), handle, [assets = assets_, path]() {
+            const boost::shared_ptr<asset::media::kind::Image> image = assets->load<asset::media::kind::Image>(path);
+            return image ? image->image() : boost::shared_ptr<image::Image>();
+        });
     } catch (...) {
         release(handle);
         throw;
@@ -140,49 +110,40 @@ TextureHandle Textures::request(const std::string& path, vulkan::memory::Texture
 /**
  **/
 std::size_t Textures::poll(std::size_t budget) {
-    std::size_t count = 0;
-    std::size_t spent = 0;
-    while (!inbox_->empty() && (count == 0 || spent < budget)) {
-        const Arrival arrival = std::move(inbox_->front());
-        inbox_->pop_front();
-
-        // a request released before its image arrived has nothing left to fill
-        const std::map<TextureHandle, Request>::iterator found = requests_.find(arrival.handle);
-        if (found == requests_.end() || !found->second.pending) {
-            continue;
-        }
-        Request& request = found->second;
-        request.pending = false;
-        if (!arrival.result || !*arrival.result) {
+    return uploads_.poll(budget,
+        [this](const TextureHandle& handle) {
+            // a request released before its image arrived has nothing left to fill
+            const std::map<TextureHandle, Request>::const_iterator found = requests_.find(handle);
+            return found != requests_.end() && found->second.pending;
+        },
+        [this](const TextureHandle& handle, const boost::shared_ptr<image::Image>& image) {
+            return fill(handle, image, &requests_.at(handle));
+        },
+        [this](const TextureHandle& handle, const std::string& reason) {
+            const std::map<TextureHandle, Request>::iterator found = requests_.find(handle);
             if (logger_) {
-                logger_->get()->error("The texture {} could not be loaded, and is drawn white: {}", request.path,
-                    describe(arrival.result ? std::exception_ptr() : arrival.result.error()));
+                logger_->get()->error("The texture {} could not be loaded, and is drawn white: {}", found->second.path, reason);
             }
-            continue;
-        }
-        try {
-            spent += fill(arrival, &request);
-        } catch (const std::exception& error) {
-            if (logger_) {
-                logger_->get()->error("The texture {} could not be uploaded, and is drawn white: {}", request.path, error.what());
-            }
-            continue;
-        }
-        count++;
-    }
-    return count;
+            // the handle keeps the white texture until it is released, and the path is free for
+            // a request that reads the file again
+            requested_.erase(found->second.path);
+            requests_.erase(found);
+        });
 }
 
 /**
  **/
-std::size_t Textures::fill(const Arrival& arrival, Request* request) {
-    const boost::shared_ptr<image::Image>& image = *arrival.result;
+std::size_t Textures::fill(const TextureHandle& handle, const boost::shared_ptr<image::Image>& image, Request* request) {
+    if (!image) {
+        throw std::runtime_error("the file holds no image");
+    }
     const vulkan::pipeline::Texture texture = factory_->create(image, request->encoding, request->sampler);
     const uint32_t slot = place(texture);
+    request->pending = false;
     // items queued before now were given the white texture's slot and draw white. Every one
     // submitted after reads the texture's own
-    resources_->replace(arrival.handle, texture);
-    slots_[arrival.handle] = slot;
+    resources_->replace(handle, texture);
+    slots_[handle] = slot;
     return static_cast<std::size_t>(image->width()) * image->height() * 4;
 }
 

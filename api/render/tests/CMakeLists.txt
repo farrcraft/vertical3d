@@ -24,7 +24,8 @@ v3d_add_test(render
 	"CaptureConvertTest.cpp"
 	"QuadFormatTest.cpp"
 	"ResultTest.cpp"
-	"DecodedModelTest.cpp")
+	"DecodedModelTest.cpp"
+	"UploadQueueTest.cpp")
 
 target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
 

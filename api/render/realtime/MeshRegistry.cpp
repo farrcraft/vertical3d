@@ -17,12 +17,11 @@
 #include "DecodedModel.h"
 #include "Handle.h"
 #include "Textures.h"
+#include "UploadQueue.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
-#include <expected>
 #include <map>
 #include <optional>
 #include <set>
@@ -33,7 +32,6 @@
 #include <vector>
 
 #include <boost/make_shared.hpp>
-#include <boost/weak_ptr.hpp>
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
@@ -73,19 +71,6 @@ boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceCon
     }
     return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
         std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(model.indices()));
-}
-
-/**
- * What an exception says, for the line a failed request is reported on.
- **/
-std::string describe(const std::exception_ptr& error) {
-    try {
-        std::rethrow_exception(error);
-    } catch (const std::exception& exception) {
-        return exception.what();
-    } catch (...) {
-        return "an error that is not a std::exception";
-    }
 }
 
 /**
@@ -135,8 +120,7 @@ MeshRegistry::MeshRegistry(const boost::shared_ptr<log::Logger>& logger, const b
     logger_(logger),
     context_(context),
     assets_(assets),
-    worker_(worker),
-    inbox_(boost::make_shared<Inbox>()) {
+    worker_(worker) {
 }
 
 /**
@@ -169,13 +153,7 @@ MeshHandle MeshRegistry::request(const std::string& path) {
     keys_[path] = handle;
     pending_++;
     try {
-        worker_->post([assets = assets_, path]() { return decodeModel(*assets, path); },
-            [inbox = boost::weak_ptr<Inbox>(inbox_), handle](std::expected<DecodedModel, std::exception_ptr> result) {
-                const boost::shared_ptr<Inbox> held = inbox.lock();
-                if (held) {
-                    held->push_back(Arrival{ handle, std::move(result) });
-                }
-            });
+        uploads_.post(worker_.get(), handle, [assets = assets_, path]() { return decodeModel(*assets, path); });
     } catch (...) {
         abandon(handle);
         throw;
@@ -186,38 +164,26 @@ MeshHandle MeshRegistry::request(const std::string& path) {
 /**
  **/
 std::size_t MeshRegistry::poll(std::size_t budget) {
-    std::size_t count = 0;
-    std::size_t spent = 0;
-    while (!inbox_->empty() && (count == 0 || spent < budget)) {
-        Arrival arrival = std::move(inbox_->front());
-        inbox_->pop_front();
-
-        // a request released, or loaded at once, before its decoding finished has no slot to fill
-        const Slot* slot = meshes_.resolve(arrival.handle);
-        if (slot == nullptr || !slot->pending) {
-            continue;
-        }
-        const std::string key = slot->key;
-        if (!arrival.result) {
-            logger_->get()->error("The model {} could not be loaded: {}", key, describe(arrival.result.error()));
-            abandon(arrival.handle);
-            continue;
-        }
-
-        const DecodedModel& decoded = *arrival.result;
-        // counted before the upload, which makes every albedo it names an uploaded one
-        const std::size_t cost = bytes(decoded, [this](const std::string& albedo) { return uploaded(albedo); });
-        try {
-            upload(key, *decoded.model, decoded.albedos, arrival.handle);
-        } catch (const std::exception& error) {
-            logger_->get()->error("The model {} could not be uploaded: {}", key, error.what());
-            abandon(arrival.handle);
-            continue;
-        }
-        count++;
-        spent += cost;
-    }
-    return count;
+    return uploads_.poll(budget,
+        [this](const MeshHandle& handle) {
+            // a request released, or loaded at once, before its decoding finished has no slot to
+            // fill
+            const Slot* slot = meshes_.resolve(handle);
+            return slot != nullptr && slot->pending;
+        },
+        [this](const MeshHandle& handle, const DecodedModel& decoded) {
+            // counted before the upload, which makes every albedo it names an uploaded one
+            const std::size_t cost = bytes(decoded, [this](const std::string& albedo) { return uploaded(albedo); });
+            const std::string key = meshes_.resolve(handle)->key;
+            upload(key, *decoded.model, decoded.albedos, handle);
+            return cost;
+        },
+        [this](const MeshHandle& handle, const std::string& reason) {
+            logger_->get()->error("The model {} could not be loaded: {}", meshes_.resolve(handle)->key, reason);
+            // the handle resolves to nothing from now on, and the path is free for a request that
+            // reads the file again
+            abandon(handle);
+        });
 }
 
 /**

@@ -10,6 +10,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/UploadQueue.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
@@ -22,9 +23,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <deque>
-#include <exception>
-#include <expected>
 #include <map>
 #include <string>
 
@@ -108,8 +106,9 @@ class Textures final {
      * The handle can be drawn at once. Until poll() uploads the image it reads the white
      * texture's slot, and resolves to a texture holding the white image. Asking for a path again
      * returns the same handle, uploaded or not. An image that cannot be read or uploaded is
-     * reported in the log, and its handle reads white until it is released. Releasing a request
-     * before its image arrives drops what the worker decodes for it.
+     * reported in the log, and its handle reads white until it is released. Its path is freed,
+     * so asking for it again reads the file again, as a new handle. Releasing a request before
+     * its image arrives drops what the worker decodes for it.
      *
      * @param path relative to the asset manager's root
      * @param encoding and sampler as texture() takes them
@@ -238,7 +237,7 @@ class Textures final {
 
     /**
      * What a request() asked for, kept while its handle is held. It is pending until its image
-     * is uploaded or fails.
+     * is uploaded. One that fails is dropped.
      **/
     struct Request final {
         std::string path;
@@ -248,23 +247,17 @@ class Textures final {
     };
 
     /**
-     * An image the worker has finished with, waiting for poll(): the image, null for a file
-     * that held none, or what reading it threw.
+     * Upload a decoded image into its request's handle, and say how many bytes it cost.
+     *
+     * @throw std::runtime_error if the file held no image, and whatever the upload throws
      **/
-    struct Arrival final {
-        TextureHandle handle;
-        std::expected<boost::shared_ptr<image::Image>, std::exception_ptr> result;
-    };
-    using Inbox = std::deque<Arrival>;
-
-    /** Upload an arrival into its request's handle, and say how many bytes it cost. **/
-    std::size_t fill(const Arrival& arrival, Request* request);
+    std::size_t fill(const TextureHandle& handle, const boost::shared_ptr<image::Image>& image, Request* request);
 
     boost::shared_ptr<asset::Manager> assets_;
     boost::shared_ptr<asset::Worker> worker_;
     boost::shared_ptr<log::Logger> logger_;
-    /** Held by every completion as a weak pointer, so one that runs after the Textures is gone drops its image. **/
-    boost::shared_ptr<Inbox> inbox_;
+    /** Each request's decoded image, or null for a file that held none. **/
+    UploadQueue<TextureTag, boost::shared_ptr<image::Image>> uploads_;
     std::map<TextureHandle, Request> requests_;
     /** The handle each requested path was given. **/
     std::map<std::string, TextureHandle> requested_;

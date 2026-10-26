@@ -251,6 +251,15 @@ through the ring. Items queued before the poll were given the white slot and dra
 every one submitted after reads the texture's. A texture made and then refused a slot is
 retired through the ring rather than destroyed, because its upload may still be running.
 
+**Both stores stream through one `UploadQueue`.** `Textures` and `MeshRegistry` each post a
+request's decoding to the worker through it, and their `poll()` is its `poll()`. It holds what
+has arrived, in the order it was posted. It skips a handle the store no longer waits for, uploads
+at least one value, and stops once the bytes reach the budget. A completion holds it weakly, so a
+result that arrives after its store is gone is dropped. A failure is a job that threw or an
+upload that threw, and it reaches the store once. The store logs it, keeps the handle's stand-in
+until it is released, and frees the path so that a later request reads the file again. The
+stand-in is the white texture for a texture, and nothing for a mesh.
+
 `Quad`, `World`, `Lit`, `Grade` and `MeshRegistry` all take `Textures`, so one uploaded atlas
 serves every primitive from one pool.
 

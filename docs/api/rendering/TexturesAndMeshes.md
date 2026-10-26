@@ -134,7 +134,8 @@ void MyApp::tick(unsigned int delta) {
   which `MeshRegistry` shares.
 - Asking for a path again returns the same handle, uploaded or not.
 - **A file that cannot be read or uploaded is reported in the log**, and its handle draws white
-  until it is released.
+  until it is released. The path is freed, so asking for it again reads the file again as a new
+  handle.
 - **Releasing a pending handle** drops what the worker decodes for it, and the path can be
   requested again as a new handle.
 - `request()` takes the same encoding and sampler as `texture()`. Without `requestFrom()` it

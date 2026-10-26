@@ -10,14 +10,12 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
 #include <api/render/realtime/Textures.h>
+#include <api/render/realtime/UploadQueue.h>
 #include <api/render/realtime/vulkan/memory/Mesh.h>
 #include <api/type/Model.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <deque>
-#include <exception>
-#include <expected>
 #include <map>
 #include <optional>
 #include <string>
@@ -244,20 +242,6 @@ class MeshRegistry final {
     };
 
     /**
-     * A requested model the worker has finished with, waiting for poll().
-     **/
-    struct Arrival final {
-        MeshHandle handle;
-        std::expected<DecodedModel, std::exception_ptr> result;
-    };
-
-    /**
-     * What the worker's completions hand to this registry. A completion holds it weakly, so one
-     * that runs after the registry is gone does nothing.
-     **/
-    using Inbox = std::deque<Arrival>;
-
-    /**
      * An albedo, and how many entries name it.
      **/
     struct Albedo final {
@@ -311,7 +295,7 @@ class MeshRegistry final {
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<asset::Manager> assets_;
     boost::shared_ptr<asset::Worker> worker_;
-    boost::shared_ptr<Inbox> inbox_;
+    UploadQueue<MeshTag, DecodedModel> uploads_;
     Registry<MeshTag, Slot> meshes_;
     std::size_t pending_ = 0;
     std::map<std::string, MeshHandle> keys_;
