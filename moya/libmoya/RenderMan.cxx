@@ -182,19 +182,17 @@ RtToken RI_IDENTIFIER = const_cast<char*>("identifier"),
 RtToken RI_WIDTH = const_cast<char*>("width"),
         RI_CONSTANTWIDTH = const_cast<char*>("constantwidth");
 
-// each basis is RI's matrix for it, rows first
-// NOLINTBEGIN(readability-magic-numbers) - the entries are the values RI's specification gives
-RtBasis RiBezierBasis = { { -1.0F, 3.0F, -3.0F, 1.0F }, { 3.0F, -6.0F, 3.0F, 0.0F }, { -3.0F, 3.0F, 0.0F, 0.0F },
-            { 1.0F, 0.0F, 0.0F, 0.0F } },
-        RiBSplineBasis = { { -1.0F / 6.0F, 3.0F / 6.0F, -3.0F / 6.0F, 1.0F / 6.0F }, { 3.0F / 6.0F, -6.0F / 6.0F, 3.0F / 6.0F, 0.0F },
-            { -3.0F / 6.0F, 0.0F, 3.0F / 6.0F, 0.0F }, { 1.0F / 6.0F, 4.0F / 6.0F, 1.0F / 6.0F, 0.0F } },
-        RiCatmullRomBasis = { { -0.5F, 1.5F, -1.5F, 0.5F }, { 1.0F, -2.5F, 2.0F, -0.5F }, { -0.5F, 0.0F, 0.5F, 0.0F },
-            { 0.0F, 1.0F, 0.0F, 0.0F } },
-        RiHermiteBasis = { { 2.0F, 1.0F, -2.0F, 1.0F }, { -3.0F, -2.0F, 3.0F, -1.0F }, { 0.0F, 1.0F, 0.0F, 0.0F },
-            { 1.0F, 0.0F, 0.0F, 0.0F } },
-        RiPowerBasis = { { 1.0F, 0.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F, 0.0F }, { 0.0F, 0.0F, 1.0F, 0.0F },
-            { 0.0F, 0.0F, 0.0F, 1.0F } };
-// NOLINTEND(readability-magic-numbers)
+// each basis is RI's matrix for it, rows first. The entries are the values RI's specification
+// gives, so they are not named. A B-spline entry is a sixth, written as the float it rounds to
+RtBasis RiBezierBasis = { { -1.0F, 3.0F, -3.0F, 1.0F }, { 3.0F, -6.0F, 3.0F, 0.0F },  // NOLINT(readability-magic-numbers)
+    { -3.0F, 3.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F, 0.0F } };  // NOLINT(readability-magic-numbers)
+RtBasis RiBSplineBasis = { { -0.16666667F, 0.5F, -0.5F, 0.16666667F }, { 0.5F, -1.0F, 0.5F, 0.0F }, { -0.5F, 0.0F, 0.5F, 0.0F },  // NOLINT(readability-magic-numbers)
+    { 0.16666667F, 0.6666667F, 0.16666667F, 0.0F } };  // NOLINT(readability-magic-numbers)
+RtBasis RiCatmullRomBasis = { { -0.5F, 1.5F, -1.5F, 0.5F }, { 1.0F, -2.5F, 2.0F, -0.5F },  // NOLINT(readability-magic-numbers)
+    { -0.5F, 0.0F, 0.5F, 0.0F }, { 0.0F, 1.0F, 0.0F, 0.0F } };
+RtBasis RiHermiteBasis = { { 2.0F, 1.0F, -2.0F, 1.0F }, { -3.0F, -2.0F, 3.0F, -1.0F },  // NOLINT(readability-magic-numbers)
+    { 0.0F, 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F, 0.0F } };
+RtBasis RiPowerBasis = { { 1.0F, 0.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F, 0.0F }, { 0.0F, 0.0F, 1.0F, 0.0F }, { 0.0F, 0.0F, 0.0F, 1.0F } };
 
 RtInt RiLastError;
 
