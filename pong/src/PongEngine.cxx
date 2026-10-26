@@ -104,7 +104,7 @@ bool PongEngine::start() {
         soundEngine_->load(*sounds, *assets());
     }
     const boost::shared_ptr<v3d::window::Window> win = window();
-    renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets(), &shell_);
+    renderer_ = boost::make_shared<PongRenderer>(win, logger(), &shell_);
     scene_ = boost::make_shared<PongScene>(&registry(), dispatcher());
     renderer_->scene(scene_);
 

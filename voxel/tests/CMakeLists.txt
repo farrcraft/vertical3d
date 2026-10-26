@@ -59,7 +59,6 @@ target_link_libraries(v3dtest_voxel PRIVATE
 # The mesh pool holds the render library's meshes. The controller needs the rest of what the
 # app links.
 target_link_libraries(v3dtest_voxel PRIVATE
-	v3dlib_asset
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_input

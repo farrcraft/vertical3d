@@ -5,7 +5,6 @@
 
 #include "PongRenderer.h"
 
-#include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
 #include <api/shell/Shell.h>
@@ -48,9 +47,9 @@ constexpr float rightScoreColumn = 0.75F;
 /**
  **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
+    v3d::shell::Shell* shell) :
     shell_(shell),
-    engine_(logger, assetManager) {
+    engine_(logger) {
     engine_.initialize(window);
     engine_.clearColour(barColour);
 
@@ -100,7 +99,7 @@ void PongRenderer::draw(float alpha) {
 
     // the screen's canvas is a layer of its own, in front of the court
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
-        engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
+        engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(court_, pass.get(), 0);
     engine_.quads()->submit(ui, pass.get(), 1);
 

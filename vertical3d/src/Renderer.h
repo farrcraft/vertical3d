@@ -8,7 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
@@ -138,7 +138,7 @@ class Renderer final {
 
     // first, so that everything holding a device handle below is destroyed before the
     // context that owns the device is
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
     // the meshes' surfaces, built once the engine has a device
     boost::shared_ptr<ShadedPass> shaded_;
 

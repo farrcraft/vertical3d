@@ -80,7 +80,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
     logger_(logger),
     registry_(registry),
-    engine_(logger, assetManager) {
+    engine_(logger) {
     engine_.initialize(window);
     engine_.clearColour(clearColour);
 
@@ -131,7 +131,7 @@ void Renderer::draw() {
     drawPlayer(topLeft);
 
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
-        engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
+        engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(canvas_, pass.get());
 
     engine_.renderFrame();

@@ -26,7 +26,7 @@ bool AppEngine::start() {
     return true;
 }
 
-// in the renderer's constructor, once its Engine3D is initialized
+// in the renderer's constructor, once its WindowRenderer is initialized
 shell_->present(&engine_, options);
 
 // in release(): the screen draws through the renderer, so it goes first
@@ -44,7 +44,7 @@ bool AppEngine::release() {
   `Options::menu` it builds a `GameMenu` on the document's `game-menu` container, which calls
   `suspend` as it opens and closes. An app with no `ui` document has a ui with nothing in it.
   `start()` returns false when the document does not load.
-- **`present(renderer, options)` builds the `Screen`** over the app's `Engine3D`. The options
+- **`present(renderer, options)` builds the `Screen`** over the app's `WindowRenderer`. The options
   are the screen's own: the text size, the dressing, and whether it builds an overlay or an
   immediate layer. [ui/Setup.md](../ui/Setup.md#screen-the-renderers-and-the-canvas) covers
   them.

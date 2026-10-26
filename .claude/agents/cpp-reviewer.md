@@ -109,9 +109,6 @@ most often Major.
   or into that app, is a design finding even if it links.
 - **App logic does not belong in `api/`, and api concerns do not belong in an app.** The
   test is whether a second app would want it.
-- **Two different classes are named `Engine`** — `v3d::engine::Engine` is the game engine,
-  `v3d::render::realtime::Engine` is the render engine. Check that a change touching one has
-  not confused it for the other.
 
 ### Against the ADRs
 

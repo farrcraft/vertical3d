@@ -17,7 +17,6 @@ v3d_add_test(pong
 	"../src/PongScene.cxx")
 
 target_link_libraries(v3dtest_pong PRIVATE
-	v3dlib_asset
 	v3dlib_audio
 	v3dlib_config
 	v3dlib_ecs

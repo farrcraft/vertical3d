@@ -15,7 +15,6 @@ add_executable(pong
 )
 
 target_link_libraries(pong PRIVATE
-	v3dlib_asset
 	v3dlib_audio
 	v3dlib_config
 	v3dlib_ecs

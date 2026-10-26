@@ -20,7 +20,7 @@ bool AppEngine::render() {
     canvas_.rect(glm::vec2(40.0F, 40.0F), glm::vec2(size.x - 40.0F, size.y - 40.0F),
         glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
-    boost::shared_ptr<Pass> pass = renderer_->frame()->pass(Engine3D::colourPass);
+    boost::shared_ptr<Pass> pass = renderer_->frame()->pass(WindowRenderer::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());
 
     renderer_->renderFrame();
@@ -34,8 +34,8 @@ items are dropped.
 
 ### The colour pass
 
-Every frame has a pass named `Engine3D::colourPass` (`"colour"`). It draws into the window and
-clears to the colour set with `Engine3D::clearColour()`. A 2D app usually needs nothing else.
+Every frame has a pass named `WindowRenderer::colourPass` (`"colour"`). It draws into the window and
+clears to the colour set with `WindowRenderer::clearColour()`. A 2D app usually needs nothing else.
 
 ### Adding passes
 
@@ -167,13 +167,13 @@ frame, for trails or feedback effects.
 
 A pipeline is built for one colour format and one depth format. **A pipeline drawn into a pass
 with different formats throws `std::runtime_error` naming the pass.** The renderers
-`Engine3D` gives you are built for the window's format. To draw into a target of another format,
-build that renderer yourself against the target's formats (see
+`WindowRenderer` gives you are built for the window's format. To draw into a target of another
+format, build that renderer yourself against the target's formats (see
 [The lit pass](Lighting.md#the-lit-pass) for an example with `World`).
 
 ## Reading a frame back
 
-An app on `Engine3D` captures its window with one call:
+An app on `WindowRenderer` captures its window with one call:
 
 ```cpp
 renderer_->capture("frame.png");   // the next frame that presents is written to frame.png
@@ -229,13 +229,13 @@ Testing with captures is covered in [contributing/Testing.md](../../contributing
   area.
 - The swapchain is rebuilt when the GPU reports it out of date. A frame may be dropped when this
   happens; the next one draws at the new size.
-- The renderers `Engine3D` gives you keep working across a resize. Their pipelines do not need
+- The renderers `WindowRenderer` gives you keep working across a resize. Their pipelines do not need
   rebuilding.
 
 ## Vsync
 
-`Engine3D::present(mode)` asks for how the window's images are presented, which is what a
-settings screen calls vsync. `presenting()` says which mode the driver granted.
+`WindowRenderer::present(mode)` sets how the window's images are presented. A settings screen
+calls this vsync. `presenting()` says which mode the driver granted.
 
 | `Present::` | Presents | Falls back to |
 |---|---|---|

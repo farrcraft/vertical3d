@@ -6,12 +6,12 @@ What an app builds once, in its `start()`, before it can draw or drive a ui.
 
 ### Screen: the renderers and the canvas
 
-An app built on `Engine3D` uses `v3d::ui::shell::Screen` and builds none of the pieces itself.
+An app built on `WindowRenderer` uses `v3d::ui::shell::Screen` and builds none of the pieces itself.
 An app on the game engine has its `shell::Shell` build the screen, through
 `present(renderer, options)`. [engine/Shell.md](../engine/Shell.md) covers it. A `Screen`
 builds:
 
-- the `TextRenderer`, uploading its atlas through the `Engine3D`
+- the `TextRenderer`, uploading its atlas through the `WindowRenderer`
 - the `ComponentRenderer` over that text
 - a `StatisticsOverlay`, unless `Options::statistics` is false
 - an `Immediate` layer, if `Options::immediate` is true
@@ -39,7 +39,7 @@ shell_->draw();                         // the retained ui, then the statistics 
 engine_.quads()->submit(screen_->canvas(), pass.get());
 ```
 
-- `begin()` begins the frame through `Engine3D::beginFrame`, sizes the canvas to the frame,
+- `begin()` begins the frame through `WindowRenderer::beginFrame`, sizes the canvas to the frame,
   and clears it. It returns false when the window is minimised or there is no renderer.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
@@ -58,7 +58,7 @@ objects across a rescale, given the new size, so the immediate layer keeps where
 were dragged, what is folded and how far each list is scrolled.
 
 An app that needs a piece `Screen` does not build writes it beside the screen. An app that
-does not use `Engine3D` builds `TextRenderer` itself with its own `Upload`.
+does not use `WindowRenderer` builds `TextRenderer` itself with its own `Upload`.
 
 ### Loading the document
 

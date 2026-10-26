@@ -265,7 +265,7 @@ its front faces culled, so only a rim shows around the silhouette.
 ### World quads in a lit scene
 
 World quads can be drawn in the lit pass after its meshes, so they are depth-tested against the
-models and graded with them. `Engine3D::worldQuads()` is built for the window's format, so it
+models and graded with them. `WindowRenderer::worldQuads()` is built for the window's format, so it
 cannot draw into an sRGB scene target. Build a `World` against the target's formats:
 
 ```cpp

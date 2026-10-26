@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/shell/Shell.h>
@@ -42,15 +41,12 @@ class MeshBuilder;
 class Renderer {
  public:
     /**
-     * @throw std::runtime_error if the pipeline or its uniforms cannot be built
-     **/
-    /**
      * @param shell the app's shell, which builds its screen over this renderer's engine. It
      *        outlives the renderer
+     * @throw std::runtime_error if the pipeline or its uniforms cannot be built
      **/
     Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
-        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-        v3d::shell::Shell* shell);
+        const boost::shared_ptr<v3d::log::Logger> & logger, v3d::shell::Shell* shell);
 
     /**
      **/
@@ -121,7 +117,7 @@ class Renderer {
 
     // first, so that everything holding a device handle below is destroyed before the
     // context that owns the device is
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
 
     boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
     boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::DescriptorPool> scenePool_;

@@ -419,7 +419,7 @@ jobs:
           if ($exit -ne 0) { throw "the editor device suite exited $exit" }
 
       # The window suite is held to the same rule. This runner opens a window and lavapipe
-      # presents to it, so a skip means one of the two stopped working, and the Engine3D cases
+      # presents to it, so a skip means one of the two stopped working, and the WindowRenderer cases
       # have checked nothing. The suite prints its reason for skipping to the console.
       - name: The render window suite ran rather than skipped
         shell: pwsh

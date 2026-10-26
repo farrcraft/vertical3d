@@ -26,7 +26,6 @@ add_executable(voxel
 	"src/Version.h" "src/main.cxx")
 
 target_link_libraries(voxel PRIVATE
-	v3dlib_asset
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_input

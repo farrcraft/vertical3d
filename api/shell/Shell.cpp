@@ -51,7 +51,7 @@ bool Shell::start(const v3d::ui::shell::GameMenu::Suspend& suspend) {
 
 /**
  **/
-void Shell::present(v3d::render::realtime::Engine3D* renderer, const v3d::ui::shell::Screen::Options& options) {
+void Shell::present(v3d::render::realtime::WindowRenderer* renderer, const v3d::ui::shell::Screen::Options& options) {
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(renderer, engine_->assets(), engine_->logger(), options);
 }
 

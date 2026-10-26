@@ -50,7 +50,7 @@ another directory is named.
   `type::Model` (`api/render/realtime/MeshRegistry.h:177`) and `vulkan::renderer::Lit` draws it
   (`vulkan/renderer/Lit.h:49`). Lit is cel shading with fixed cull and polygon modes, and needs
   an sRGB target. `pipeline::Builder` can set both modes (`vulkan/pipeline/Builder.h:92,98`).
-  `Engine3D::context()` gives an app the device context to build its own pass.
+  `WindowRenderer::context()` gives an app the device context to build its own pass.
 * **BRep faces wind clockwise from outside**, and Lit and glTF expect counter-clockwise.
 
 **Import:**

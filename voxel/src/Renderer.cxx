@@ -5,10 +5,9 @@
 
 #include "Renderer.h"
 
-#include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -69,7 +68,7 @@ const uint32_t fragmentShader[] =
 /**
  * The pass the terrain draws into. It is the frame's first, so it is the one that clears.
  **/
-const char* const terrainPass = v3d::render::realtime::Engine3D::colourPass;
+const char* const terrainPass = v3d::render::realtime::WindowRenderer::colourPass;
 
 /**
  * The pass the overlay and the ui draw into, over whatever the terrain left.
@@ -151,11 +150,10 @@ constexpr glm::vec3 palette[materialCount] = {
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
-    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-    v3d::shell::Shell* shell) :
+    const boost::shared_ptr<v3d::log::Logger> & logger, v3d::shell::Shell* shell) :
     scene_(scene),
     logger_(logger),
-    engine_(logger, assetManager),
+    engine_(logger),
     drawnChunks_(0),
     meshedChunks_(0),
     debug_(false),

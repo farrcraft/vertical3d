@@ -31,7 +31,7 @@ loads the Vulkan loader when it creates one, so a machine with no Vulkan driver 
 
 ## Presenting to it
 
-**A renderer makes the surface it presents to from `sdl()`.** `Engine3D::initialize(window)`
+**A renderer makes the surface it presents to from `sdl()`.** `WindowRenderer::initialize(window)`
 does this. Every surface is made against one Vulkan instance for the process, which
 `render::realtime::sharedInstance()` returns. It is made on first use and destroyed when the
 last thing holding it lets go, so two windows share it, and a renderer that is released and

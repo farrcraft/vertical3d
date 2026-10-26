@@ -20,7 +20,7 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
-class Engine3D;
+class WindowRenderer;
 };  // namespace v3d::render::realtime
 
 namespace v3d::ui::shell {
@@ -30,11 +30,11 @@ namespace v3d::ui::shell {
  * over the renderer the app already has.
  *
  * Builds the text renderer, the component renderer and, when Options asks, the statistics
- * overlay and an immediate layer over the Engine3D it is handed. It owns the canvas they
+ * overlay and an immediate layer over the WindowRenderer it is handed. It owns the canvas they
  * draw into. An app opens each frame with begin(), which also skips a minimised window.
  *
  * This lives in api/ui because v3dlib_ui links v3dlib_render, so building it on the render
- * side would be a library cycle. Engine3D is forward-declared so that no api/ui header names
+ * side would be a library cycle. WindowRenderer is forward-declared so that no api/ui header names
  * a Vulkan type.
  *
  * The app decides what is drawn into the canvas and which pass it is submitted to. begin()
@@ -65,7 +65,7 @@ class Screen final {
      *        owned, and it must outlive this. Null builds everything with no device, which
      *        uploads nothing and begins no frame
      **/
-    Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
+    Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
         const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options);
 
     // the text renderer writes into the canvas by its address
@@ -139,7 +139,7 @@ class Screen final {
      **/
     void build();
 
-    v3d::render::realtime::Engine3D* engine_;
+    v3d::render::realtime::WindowRenderer* engine_;
     Options options_;
     float scale_;
     bool resized_;

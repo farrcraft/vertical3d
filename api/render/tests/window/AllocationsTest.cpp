@@ -16,30 +16,30 @@ namespace {
 using Kind = v3d::render::realtime::vulkan::memory::Allocator::Kind;
 
 /**
- * The kind of the allocator on the device the engine's context built. It is read from the
- * allocator, not from anything the engine stored, because the test checks that the choice
+ * The kind of the allocator on the device the renderer's context built. It is read from the
+ * allocator, not from anything the renderer stored, because the test checks that the choice
  * reaches the device.
  **/
 Kind built(const v3d::test::Windowed& windowed) {
-    return windowed.engine->context()->device()->allocator().kind();
+    return windowed.renderer->context()->device()->allocator().kind();
 }
 
 /**
- * An engine asked for one allocation per resource builds that device, and draws through it.
+ * A renderer asked for one allocation per resource builds that device, and draws through it.
  **/
-BOOST_AUTO_TEST_CASE(engine3d_builds_the_allocator_it_is_asked_for_test) {
+BOOST_AUTO_TEST_CASE(window_renderer_builds_the_allocator_it_is_asked_for_test) {
     const v3d::test::Windowed windowed(Kind::Direct);
     BOOST_TEST((built(windowed) == Kind::Direct));
 
-    windowed.engine->renderFrame();
-    windowed.engine->renderFrame();
+    windowed.renderer->renderFrame();
+    windowed.renderer->renderFrame();
     BOOST_TEST(windowed.silent());
 }
 
 /**
- * An engine that names no kind suballocates.
+ * A renderer that names no kind suballocates.
  **/
-BOOST_AUTO_TEST_CASE(engine3d_suballocates_by_default_test) {
+BOOST_AUTO_TEST_CASE(window_renderer_suballocates_by_default_test) {
     const v3d::test::Windowed windowed;
     BOOST_TEST((built(windowed) == Kind::Suballocated));
 }

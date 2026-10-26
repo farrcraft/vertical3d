@@ -39,7 +39,7 @@ a component type. How to use the library is in
 | `input::LineEdit`, `input::edit()` | [input/LineEdit.h](../../api/ui/input/LineEdit.h) | one line of text with a caret and a selection, and the edit a key names on it; a `TextBox` and `Immediate::textField()` both edit through them |
 | `input::command()`, `input::send()` | [input/Command.h](../../api/ui/input/Command.h) | which event a component sends when activated, and the one place events are sent |
 | `Immediate` | [Immediate.h](../../api/ui/Immediate.h) | the immediate-mode layer |
-| `shell::Screen` | [shell/Screen.h](../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `Engine3D` |
+| `shell::Screen` | [shell/Screen.h](../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `WindowRenderer` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
 | `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../api/ui/shell) | shared game shell pieces |
 
@@ -51,7 +51,7 @@ Boundaries the split keeps:
 - **Box arithmetic is the `Arranger`'s, and painting is `ComponentRenderer`'s.** They are
   joined by an `Arranger::Paint` callback. The renderer contains no layout arithmetic, and
   the arranger names no renderer.
-- **No `api/ui` header names a Vulkan or SDL type.** `shell::Screen` declares `Engine3D`
+- **No `api/ui` header names a Vulkan or SDL type.** `shell::Screen` declares `WindowRenderer`
   rather than including it. `shell::Keyboard` declares `SDL_Event`. `TextRenderer` takes its
   atlas upload as a callback. The clipboard and the text measure are callbacks. This keeps
   the library testable without a window or a device.

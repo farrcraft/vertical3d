@@ -42,17 +42,17 @@ std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsign
  * recorded would read the image as an earlier frame left it, which is red or undefined, never
  * green.
  **/
-BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
+BOOST_AUTO_TEST_CASE(window_renderer_capture_writes_the_frame_it_presents_test) {
     const v3d::test::Windowed windowed;
-    const std::string path = "data_out/engine3d_capture.png";
+    const std::string path = "data_out/window_renderer_capture.png";
     boost::filesystem::remove(path);
 
-    windowed.engine->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
-    windowed.engine->renderFrame();
+    windowed.renderer->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    windowed.renderer->renderFrame();
 
-    windowed.engine->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
-    BOOST_REQUIRE(windowed.engine->capture(path));
-    windowed.engine->renderFrame();
+    windowed.renderer->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
+    BOOST_REQUIRE(windowed.renderer->capture(path));
+    windowed.renderer->renderFrame();
 
     v3d::image::reader::Png png(windowed.logger);
     const boost::shared_ptr<v3d::image::Image> written = png.read(path);
@@ -66,17 +66,17 @@ BOOST_AUTO_TEST_CASE(engine3d_capture_writes_the_frame_it_presents_test) {
 /**
  * A request is answered by one frame, and the frame after it writes nothing.
  **/
-BOOST_AUTO_TEST_CASE(engine3d_capture_is_cleared_by_the_frame_that_writes_it_test) {
+BOOST_AUTO_TEST_CASE(window_renderer_capture_is_cleared_by_the_frame_that_writes_it_test) {
     const v3d::test::Windowed windowed;
-    const std::string path = "data_out/engine3d_capture_once.png";
+    const std::string path = "data_out/window_renderer_capture_once.png";
     boost::filesystem::remove(path);
 
-    BOOST_REQUIRE(windowed.engine->capture(path));
-    windowed.engine->renderFrame();
+    BOOST_REQUIRE(windowed.renderer->capture(path));
+    windowed.renderer->renderFrame();
     BOOST_REQUIRE(boost::filesystem::exists(path));
 
     boost::filesystem::remove(path);
-    windowed.engine->renderFrame();
+    windowed.renderer->renderFrame();
     BOOST_TEST(!boost::filesystem::exists(path));
     BOOST_TEST(windowed.silent());
 }

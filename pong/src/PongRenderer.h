@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/shell/Shell.h>
 
 #include <string>
@@ -34,7 +33,7 @@ class PongRenderer final {
      *        outlives the renderer
      **/
     PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell);
+        v3d::shell::Shell* shell);
 
     /**
      * @param alpha how far the frame is between the last simulation step and the next
@@ -57,7 +56,7 @@ class PongRenderer final {
     boost::shared_ptr<PongScene> scene_;
     v3d::shell::Shell* shell_;
 
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
     // the court, in its own units, under the screen's canvas
     v3d::render::realtime::canvas::Canvas court_;
 };

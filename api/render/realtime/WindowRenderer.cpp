@@ -3,9 +3,8 @@
  * Copyright (c) 2023 Joshua Farr (josh@farrcraft.com)
  **/
 
-#include "Engine3D.h"
+#include "WindowRenderer.h"
 
-#include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
@@ -19,12 +18,11 @@
 #include <api/render/realtime/vulkan/renderer/World.h>
 #include <api/window/Window.h>
 
-#include "Context3D.h"
 #include "DeviceContext.h"
-#include "Engine.h"
 #include "Frame.h"
 #include "Present.h"
 #include "Textures.h"
+#include "WindowContext.h"
 
 #include <string>
 #include <string_view>
@@ -40,13 +38,13 @@ constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06F, 0.07F, 0.10F, 1.0F};
 
 };  // namespace
 
-const char* const Engine3D::colourPass = "colour";
+const char* const WindowRenderer::colourPass = "colour";
 
 /**
  **/
-Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-    VkFormat preferred, vulkan::memory::Allocator::Kind allocations) :
-    Engine(logger, assetManager),
+WindowRenderer::WindowRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, VkFormat preferred,
+    vulkan::memory::Allocator::Kind allocations) :
+    logger_(logger),
     clearColour_(DEFAULT_CLEAR_COLOUR),
     preferred_(preferred),
     allocations_(allocations),
@@ -55,22 +53,20 @@ Engine3D::Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boos
 
 /**
  **/
-bool Engine3D::initialize(const boost::shared_ptr<v3d::window::Window>& window) {
-    Engine::initialize(window);
+void WindowRenderer::initialize(const boost::shared_ptr<v3d::window::Window>& window) {
+    window_ = window;
 
     // the context can only be built once there is a created window to take a device from
-    context_ = boost::make_shared<Context3D>(logger(), window, preferred_, allocations_, present_);
+    context_ = boost::make_shared<WindowContext>(logger_, window, preferred_, allocations_, present_);
     pendingPresent_.reset();
 
     frame_ = boost::make_shared<Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);
-
-    return true;
 }
 
 /**
  **/
-bool Engine3D::shutdown() {
+void WindowRenderer::shutdown() {
     if (context_) {
         // every submitted frame has to finish before the swapchain, the device and the
         // window are destroyed
@@ -84,55 +80,55 @@ bool Engine3D::shutdown() {
     capture_.reset();
     capturePath_.clear();
     context_.reset();
-    return Engine::shutdown();
+    window_.reset();
 }
 
 /**
  **/
-boost::shared_ptr<DeviceContext> Engine3D::context() {
+boost::shared_ptr<DeviceContext> WindowRenderer::context() {
     return context_;
 }
 
 /**
  **/
-boost::shared_ptr<Frame> Engine3D::frame() const {
+boost::shared_ptr<Frame> WindowRenderer::frame() const {
     return frame_;
 }
 
 /**
  **/
-const std::vector<vulkan::frame::Timings::Timing>& Engine3D::timings() const {
+const std::vector<vulkan::frame::Timings::Timing>& WindowRenderer::timings() const {
     static const std::vector<vulkan::frame::Timings::Timing> none;
     return context_ ? context_->ring()->timings().last() : none;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Quad> Engine3D::quads() const {
+boost::shared_ptr<vulkan::renderer::Quad> WindowRenderer::quads() const {
     return context_ ? context_->quads() : boost::shared_ptr<vulkan::renderer::Quad>();
 }
 
 /**
  **/
-boost::shared_ptr<Textures> Engine3D::textures() const {
+boost::shared_ptr<Textures> WindowRenderer::textures() const {
     return context_ ? context_->textures() : boost::shared_ptr<Textures>();
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Line> Engine3D::lines() {
+boost::shared_ptr<vulkan::renderer::Line> WindowRenderer::lines() {
     return context_ ? context_->lines() : boost::shared_ptr<vulkan::renderer::Line>();
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::World> Engine3D::worldQuads() {
+boost::shared_ptr<vulkan::renderer::World> WindowRenderer::worldQuads() {
     return context_ ? context_->worldQuads() : boost::shared_ptr<vulkan::renderer::World>();
 }
 
 /**
  **/
-void Engine3D::clearColour(const glm::vec4& colour) {
+void WindowRenderer::clearColour(const glm::vec4& colour) {
     clearColour_ = colour;
     if (frame_) {
         frame_->pass(colourPass)->clearColour(colour);
@@ -141,12 +137,12 @@ void Engine3D::clearColour(const glm::vec4& colour) {
 
 /**
  **/
-bool Engine3D::capture(std::string_view path) {
+bool WindowRenderer::capture(std::string_view path) {
     if (!context_ || !context_->swapchain()->copyable()) {
         return false;
     }
     if (!capture_) {
-        capture_ = boost::make_shared<vulkan::frame::Capture>(context_->device(), logger());
+        capture_ = boost::make_shared<vulkan::frame::Capture>(context_->device(), logger_);
     }
     capturePath_ = path;
     return true;
@@ -154,8 +150,8 @@ bool Engine3D::capture(std::string_view path) {
 
 /**
  **/
-bool Engine3D::beginFrame(glm::ivec2* size) {
-    const boost::shared_ptr<v3d::window::Window> target = window();
+bool WindowRenderer::beginFrame(glm::ivec2* size) {
+    const boost::shared_ptr<v3d::window::Window> target = window_;
     const int width = target ? target->width() : 0;
     const int height = target ? target->height() : 0;
     if (width <= 0 || height <= 0) {
@@ -170,7 +166,7 @@ bool Engine3D::beginFrame(glm::ivec2* size) {
 
 /**
  **/
-void Engine3D::present(Present present) {
+void WindowRenderer::present(Present present) {
     present_ = present;
     if (context_) {
         pendingPresent_ = present;
@@ -179,20 +175,20 @@ void Engine3D::present(Present present) {
 
 /**
  **/
-Present Engine3D::presenting() const noexcept {
+Present WindowRenderer::presenting() const noexcept {
     return context_ ? context_->swapchain()->presenting() : present_;
 }
 
 /**
  **/
-void Engine3D::renderFrame() {
+void WindowRenderer::renderFrame() {
     if (!context_ || !frame_) {
         return;
     }
 
     if (pendingPresent_) {
-        // a new present mode needs a new swapchain, which is built here rather than when it
-        // was asked for, so that nothing is rebuilt while a tick is building the frame
+        // a new present mode needs a new swapchain. It is built here, at the start of a frame,
+        // so that nothing is rebuilt while a tick is building the frame
         context_->present(*pendingPresent_);
         pendingPresent_.reset();
         context_->ring()->skip();
@@ -218,7 +214,7 @@ void Engine3D::renderFrame() {
         // there is no swapchain, because the window had no area when the swapchain was last
         // created. Once the window has an area again, as when it is restored from minimized,
         // recreate the swapchain
-        if (window() && window()->width() > 0 && window()->height() > 0) {
+        if (window_ && window_->width() > 0 && window_->height() > 0) {
             context_->resize();
         }
         context_->ring()->skip();
@@ -256,7 +252,7 @@ void Engine3D::renderFrame() {
     // for that
     const bool capturing = !capturePath_.empty() && swapchain->copyable();
     if (!capturePath_.empty() && !capturing) {
-        logger()->get()->error("Cannot capture a frame to {}: the swapchain images cannot be copied out of", capturePath_);
+        logger_->get()->error("Cannot capture a frame to {}: the swapchain images cannot be copied out of", capturePath_);
         capturePath_.clear();
     }
     if (capturing) {
@@ -271,7 +267,7 @@ void Engine3D::renderFrame() {
     if (capturing) {
         context_->ring()->waitIdle();
         if (!capture_->write(capturePath_)) {
-            logger()->get()->error("Cannot write a captured frame to {}", capturePath_);
+            logger_->get()->error("Cannot write a captured frame to {}", capturePath_);
         }
         capturePath_.clear();
     }
@@ -285,7 +281,7 @@ void Engine3D::renderFrame() {
 
 /**
  **/
-void Engine3D::endFrame() {
+void WindowRenderer::endFrame() {
     frame_->reset();
 }
 

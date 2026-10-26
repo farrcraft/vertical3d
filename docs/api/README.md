@@ -126,10 +126,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Game engine** — `v3d::engine::Engine` in `api/engine`. It runs the main loop and owns the
   window, the config, the asset manager and the input devices. Each app subclasses it.
   See [engine/](engine/README.md).
-- **Render engine** — `v3d::render::realtime::Engine`, a different class in `api/render`. Its
-  subclass `Engine3D` is the one apps use. See [rendering/](rendering/README.md).
-- **Engine3D** — `v3d::render::realtime::Engine3D`, the realtime renderer an app holds. It
-  builds and presents frames into the window. See [rendering/](rendering/README.md).
+- **WindowRenderer** — `v3d::render::realtime::WindowRenderer` in `api/render`, the realtime
+  renderer an app holds. It builds and presents frames into the window. See
+  [rendering/](rendering/README.md).
 - **Controller** — the class name tetris, voxel and the editor give their game engine subclass.
   It is a naming habit, not an api class.
 - **App** — a subclass of the game engine plus a one-line `main` that calls `run<T>`. See
@@ -242,7 +241,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 ### Drawing
 
 - **Frame** — everything drawn for one presented image: a list of passes, built during the
-  tick and recorded by `Engine3D::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
+  tick and recorded by `WindowRenderer::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Pass** — one drawing operation into one target, with its own camera, clear, depth test and
   list of draw items. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Draw item** — `DrawItem`, a description of one draw: pipeline and material handles, push

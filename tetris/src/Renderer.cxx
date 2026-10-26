@@ -72,7 +72,7 @@ constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
  **/
 TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
-    shell_(shell), logger_(logger), engine_(logger, assetManager) {
+    shell_(shell), logger_(logger), engine_(logger) {
     engine_.initialize(window);
     engine_.clearColour(backgroundColour);
 
@@ -185,7 +185,7 @@ void TetrisRenderer::draw() {
     shell_->draw();
 
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
-        engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);
+        engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(screen_->canvas(), pass.get());
 
     engine_.renderFrame();

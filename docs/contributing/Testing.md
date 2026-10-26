@@ -276,8 +276,8 @@ Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
 
 ## The render window suite
 
-`v3dtest_render_window` tests what only a window can show: `Engine3D` acquiring, recording and
-presenting to a swapchain. Each case opens a small SDL window, builds an `Engine3D` on it, and
+`v3dtest_render_window` tests what only a window can show: `WindowRenderer` acquiring, recording and
+presenting to a swapchain. Each case opens a small SDL window, builds an `WindowRenderer` on it, and
 closes both when it ends. Every case asserts validation silence, as the device suite's do.
 
 `main` opens one window before Boost.Test starts. When SDL cannot start, the window cannot be
@@ -289,7 +289,7 @@ A window appears on the screen for each case while the suite runs.
 **In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
 to it. The suite runs in a workflow step of its own rather than through ctest, and fails the job
 on exit code 77. A skip there means the window or the swapchain stopped working and no
-`Engine3D` case was checked.
+`WindowRenderer` case was checked.
 
 ## Reference images
 

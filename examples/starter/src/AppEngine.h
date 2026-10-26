@@ -7,7 +7,7 @@
 
 #include <api/engine/Engine.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 
 #include <string>
 
@@ -30,6 +30,6 @@ class AppEngine final : public v3d::engine::Engine {
     bool release() override;
 
  private:
-    boost::shared_ptr<v3d::render::realtime::Engine3D> renderer_;
+    boost::shared_ptr<v3d::render::realtime::WindowRenderer> renderer_;
     v3d::render::realtime::canvas::Canvas canvas_;
 };

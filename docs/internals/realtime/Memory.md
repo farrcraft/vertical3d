@@ -68,8 +68,8 @@ built once the logical device exists.
 | `Suballocated` (default) | Regions of larger blocks through the Vulkan Memory Allocator (VMA). Every app in the tree uses it. |
 | `Direct` | One `vkAllocateMemory` per resource. Only the tests use it. |
 
-A consumer chooses the kind in the `Device` constructor. `Engine3D` and `Context3D` take it too,
-and pass it to the device they build.
+A consumer chooses the kind in the `Device` constructor. `WindowRenderer` and `WindowContext`
+take it too, and pass it to the device they build.
 
 **Suballocation is the default because making device memory is slow, and limited.** A world
 that streams makes buffers and images during play, and with one allocation each, making the
@@ -145,7 +145,7 @@ Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-fre
   again, skipped or advanced (it compares `Ring::turns()` and `Ring::frame()`). A slot begun
   again after an abandoned attempt reuses that attempt's claims. The cursor never passes the end
   of the slot's list, so a claim takes a held pair or appends one. Nothing has to be told a frame
-  ended, so a renderer an app builds itself reuses its buffers the same way. `Engine3D` calls
+  ended, so a renderer an app builds itself reuses its buffers the same way. `WindowRenderer` calls
   `Ring::skip()` for a frame it does not draw, out of date or with no swapchain, so the claims
   of a run of skipped frames reuse one frame's buffers rather than piling up.
 - **Each submission gets its own pair.** Appending several canvases into one buffer would break,

@@ -8,7 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
@@ -42,7 +42,7 @@ void lineHeight(paint::Dressing* dressing, float size) {
 
 /**
  **/
-Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
+Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
     const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options) :
     engine_(engine),
     options_(options),

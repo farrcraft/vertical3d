@@ -16,7 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
-class Engine3D;
+class WindowRenderer;
 };  // namespace v3d::render::realtime
 
 namespace v3d::shell {
@@ -76,7 +76,7 @@ class Shell final {
      *
      * @param options how the screen draws text, and which of its parts it builds
      **/
-    void present(v3d::render::realtime::Engine3D* renderer, const v3d::ui::shell::Screen::Options& options);
+    void present(v3d::render::realtime::WindowRenderer* renderer, const v3d::ui::shell::Screen::Options& options);
 
     /**
      * Drop the screen, the menu and the ui. Called before the renderer is released.

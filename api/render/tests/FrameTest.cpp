@@ -265,8 +265,8 @@ BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
 
 /**
  * A pass reading a target is recorded after the pass drawing into it, even when the reader was
- * created first. Engine3D's colour pass is such a reader, and Engine3D creates it before an app
- * adds any pass.
+ * created first. WindowRenderer's colour pass is such a reader, and WindowRenderer creates it
+ * before an app adds any pass.
  **/
 BOOST_AUTO_TEST_CASE(a_reader_is_recorded_after_a_writer_created_later) {
     const std::vector<Node> nodes{node(nullptr, {&sceneTarget}), node(&sceneTarget)};

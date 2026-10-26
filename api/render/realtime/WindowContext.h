@@ -21,11 +21,11 @@ namespace v3d::render::realtime {
 /**
  * The 3D render context: a DeviceContext that draws into a window.
  *
- * DeviceContext owns everything that needs only a device. Context3D owns what needs the
+ * DeviceContext owns everything that needs only a device. WindowContext owns what needs the
  * surface: the swapchain and the Presenter. It also keeps DeviceContext's description of the
  * destination in step with the swapchain, which is recreated whenever the window changes size.
  **/
-class Context3D : public DeviceContext {
+class WindowContext : public DeviceContext {
  public:
     /**
      * @param logger
@@ -36,14 +36,14 @@ class Context3D : public DeviceContext {
      * @param allocations how the device finds memory for its buffers and images
      * @param present how the swapchain's images are presented, as Swapchain describes
      **/
-    Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
+    WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
         vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated,
         Present present = Present::Uncapped);
 
     /**
      **/
-    ~Context3D() override;
+    ~WindowContext() override;
 
     /**
      * @return the swapchain presented to the window

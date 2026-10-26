@@ -32,7 +32,7 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * The caller gives the extent, and it does not follow the swapchain. A shadow map is sized by
  * the detail it needs, not by the window. To track the window, the app recreates the target
- * when Engine3D::beginFrame reports a new size.
+ * when WindowRenderer::beginFrame reports a new size.
  *
  * The colour format is given too, and is not taken from the swapchain. A pipeline under
  * dynamic rendering is built against the format of what it draws into, so a pass drawing

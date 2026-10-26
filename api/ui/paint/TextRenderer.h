@@ -44,7 +44,7 @@ class TextRenderer {
      * The only step in this class that needs a device, so the app passes it in. Everything
      * else here is cpu side: the cache packs into an image::TextureAtlas and the buffer
      * lays a string out. Because the upload is a callback, an app that draws this canvas
-     * with a renderer of its own can use the class. With Engine3D, the callback is
+     * with a renderer of its own can use the class. With WindowRenderer, the callback is
      * engine->textures()->texture(image).
      **/
     typedef std::function<v3d::render::realtime::TextureHandle(

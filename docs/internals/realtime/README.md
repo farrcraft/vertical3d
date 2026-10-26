@@ -24,13 +24,13 @@ and `vulkan/renderer`.
 ```
 window::Window             the SDL window, in its own library; holds no Vulkan object
 sharedInstance()           the process's vulkan::device::Instance, shared by every window
-Engine3D                   owns the Context3D and the Frame being built
-  Context3D : DeviceContext
+WindowRenderer             owns the WindowContext and the Frame being built
+  WindowContext : DeviceContext
     vulkan::frame::Swapchain   the images presented to the window
     vulkan::frame::Presenter   acquire, submit, present, and their semaphores
   DeviceContext              everything that needs only a device
     vulkan::device::Device     physical + logical device, queues, memory::Allocator, and the
-                               Surface Context3D made for the window
+                               Surface WindowContext made for the window
     vulkan::frame::Ring        frames in flight: a command buffer and a fence each
     vulkan::pipeline::Cache    the VkPipelineCache
     vulkan::pipeline::Resources pipelines, materials and textures, by handle
@@ -48,7 +48,7 @@ orthographic projection and no depth.
 **`DeviceContext` is usable without a window.** It is given a colour format and an extent at
 construction, or later through the protected `describe()`. Every pipeline built through it is
 compiled against that format. A headless context (as in the device tests) is a
-`DeviceContext` on a `Device` built with no surface. `Context3D` has no format at construction
+`DeviceContext` on a `Device` built with no surface. `WindowContext` has no format at construction
 because its swapchain does not exist yet, so it calls `describe()` after creating the swapchain
 and after every rebuild. A renderer already built keeps the format it was compiled
 with.
@@ -58,12 +58,12 @@ with.
 - `DeviceContext` declares the `Ring` before everything it paces, so the ring is destroyed after
   them. A renderer's buffers may still be in flight on one of the ring's fences, and the ring's
   destructor waits for the device and runs every pending retirement.
-- `Context3D` declares the `Presenter` last, so it is destroyed first. Nothing else may go while
+- `WindowContext` declares the `Presenter` last, so it is destroyed first. Nothing else may go while
   a frame it submitted is in flight.
 - `Device` resets its `memory::Allocator` explicitly in its destructor body, before
   `vkDestroyDevice`. A suballocator frees its blocks against the device, which must still exist.
 
-**`Engine3D::shutdown()`** waits for the ring to go idle, drops the frame, and resets the
+**`WindowRenderer::shutdown()`** waits for the ring to go idle, drops the frame, and resets the
 context. The context must go before the window, because the device holds the surface made for
 the window, and a surface has to be destroyed before its window. The surface holds the shared
 instance, so the instance, and the Vulkan loader under it, outlive every surface made against

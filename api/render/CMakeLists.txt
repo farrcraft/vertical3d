@@ -1,9 +1,8 @@
 v3d_add_api_library(render
 	"realtime/Frame.h" "realtime/Frame.cpp"
-	"realtime/Engine.h" "realtime/Engine.cpp" 
 	"realtime/SharedInstance.h" "realtime/SharedInstance.cpp"
-	"realtime/Engine3D.h" "realtime/Engine3D.cpp" 
-	"realtime/Context3D.h" "realtime/Context3D.cpp"
+	"realtime/WindowRenderer.h" "realtime/WindowRenderer.cpp" 
+	"realtime/WindowContext.h" "realtime/WindowContext.cpp"
 	"realtime/DeviceContext.h" "realtime/DeviceContext.cxx" 
 	"realtime/Handle.h" "realtime/Registry.h"
 	"realtime/canvas/Canvas.h" "realtime/canvas/Canvas.cpp"
@@ -114,9 +113,9 @@ v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEF
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
-# v3dlib_window: Engine3D.h and Context3D.h take the window they present to.
+# v3dlib_window: WindowRenderer.h and WindowContext.h take the window they present to.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright:
-# Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Surface.h
+# WindowContext.h and every vulkan/ header carry VkDevice and its neighbours, and Surface.h
 # carries SDL_Window.
 target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type v3dlib_window Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
 # PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h and

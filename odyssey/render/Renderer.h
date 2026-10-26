@@ -9,7 +9,7 @@
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <odyssey/engine/Player.h>
 #include <odyssey/tile/World.h>
 
@@ -92,7 +92,7 @@ class Renderer final {
     entt::registry* registry_;
 
     v3d::render::realtime::canvas::Canvas canvas_;
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
 
     v3d::render::realtime::TextureHandle sprite_;
 };

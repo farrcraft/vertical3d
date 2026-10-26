@@ -7,7 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
+#include <api/render/realtime/WindowRenderer.h>
 #include <api/shell/Shell.h>
 #include <api/ui/shell/Screen.h>
 
@@ -92,7 +92,7 @@ class TetrisRenderer final {
     v3d::shell::Shell* shell_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
 
     v3d::render::realtime::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;

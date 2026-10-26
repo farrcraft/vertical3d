@@ -46,7 +46,7 @@ immediate mode. See [Themes and styles](Themes.md#themes-and-styles).
 
 The ui owns no device, pass or draw call. Panels, highlights and text are all quads appended
 to a canvas the app is already filling. The app submits that canvas itself, through
-`Engine3D::quads()`, so a ui adds no pass and no draw of its own. [rendering/](../rendering/README.md)
+`WindowRenderer::quads()`, so a ui adds no pass and no draw of its own. [rendering/](../rendering/README.md)
 covers the canvas and the quad pipeline.
 
 ```

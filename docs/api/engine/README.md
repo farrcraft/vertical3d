@@ -4,9 +4,8 @@ These pages are for someone writing an app against the api. They cover
 `v3d::engine::Engine` in [api/engine/Engine.h](../../../api/engine/Engine.h), the class every
 app subclasses. Terms are defined in the [glossary](../README.md#glossary).
 
-There are two classes named `Engine`. These pages are about the game engine. The render engine,
-`v3d::render::realtime::Engine` and its subclass `Engine3D`, is a separate object that an app
-creates and holds; [rendering/](../rendering/README.md) covers it. Menus and other ui are in
+The renderer, `v3d::render::realtime::WindowRenderer`, is a separate object that an app creates
+and holds; [rendering/](../rendering/README.md) covers it. Menus and other ui are in
 [ui/](../ui/README.md).
 
 | Page | Read it to |
@@ -60,7 +59,7 @@ makes it that game. Do not write your own version of these:
 - **Frame statistics** — `v3d::ui::shell::StatisticsOverlay` draws the loop's measurements. It
   starts hidden.
 - **The screen** — `v3d::ui::shell::Screen` builds the text renderer, the component renderer
-  and the statistics overlay over an `Engine3D`, and owns the canvas they draw into. Its
+  and the statistics overlay over an `WindowRenderer`, and owns the canvas they draw into. Its
   `begin()` starts each frame and returns false while the window is minimised. In that case the
   app draws nothing that frame.
 

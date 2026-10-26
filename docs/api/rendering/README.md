@@ -19,26 +19,26 @@ All names are in `v3d::render::realtime` unless a namespace is given. `vulkan::`
 
 ## The objects an app touches
 
-An app creates one `Engine3D` in its `start()` and calls `initialize(window())` on it. That
+An app creates one `WindowRenderer` in its `start()` and calls `initialize(window())` on it. That
 builds everything else.
 
-The constructor takes two optional choices after the asset manager. The first is the colour
+The constructor takes two optional choices after the logger. The first is the colour
 format to present through, covered in [ColourAndPost.md](ColourAndPost.md). The second is how the
 device finds memory. It defaults to regions of larger blocks, which suits streaming and keeps
 an app far under the device's limit on allocations. A case that wants one allocation per
 resource passes `vulkan::memory::Allocator::Kind::Direct`:
 
 ```cpp
-renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_UNDEFINED,
+renderer_ = boost::make_shared<WindowRenderer>(logger(), VK_FORMAT_UNDEFINED,
     vulkan::memory::Allocator::Kind::Direct);
 ```
 
 | Object | What it is to an app |
 |---|---|
-| `Engine3D` | The renderer. It holds the frame being built and draws it with `renderFrame()`. |
-| `DeviceContext` | Everything that needs only the GPU: textures, renderers, the frames in flight. `Engine3D::context()` returns it. |
-| `Context3D` | A `DeviceContext` that draws into a window. It adds the swapchain and presenting. An app rarely names it. |
-| `Frame` | Everything to draw for one image, as a list of passes. `Engine3D::frame()` returns it. |
+| `WindowRenderer` | The renderer. It holds the frame being built and draws it with `renderFrame()`. |
+| `DeviceContext` | Everything that needs only the GPU: textures, renderers, the frames in flight. `WindowRenderer::context()` returns it. |
+| `WindowContext` | A `DeviceContext` that draws into a window. It adds the swapchain and presenting. An app rarely names it. |
+| `Frame` | Everything to draw for one image, as a list of passes. `WindowRenderer::frame()` returns it. |
 | `Pass` | One pass of a frame: where it draws, how it clears, its camera, and the draw items in it. |
 | `DrawItem` | A description of one draw. The drawing primitives create these for you. |
 
@@ -46,7 +46,7 @@ A *frame in flight* is a frame the CPU has finished recording but the GPU may st
 There are two. Anything an app hands to the renderer can still be in use by the GPU for up to
 two frames after the app lets go of it. The renderer handles this for every object it owns.
 
-`Engine3D` gives an app the three primitives and the texture store directly:
+`WindowRenderer` gives an app the three primitives and the texture store directly:
 
 ```cpp
 renderer_->quads();       // vulkan::renderer::Quad - the 2D quad canvas

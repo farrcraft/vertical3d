@@ -95,7 +95,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
     logger_(logger),
     assetManager_(assetManager),
-    engine_(logger, assetManager),
+    engine_(logger),
     shell_(shell),
     background_(background) {
     engine_.initialize(window);

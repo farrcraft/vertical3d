@@ -26,10 +26,8 @@ v3d::engine::Features AppEngine::features() const {
 bool AppEngine::start() {
     window()->caption("vertical3d starter");
 
-    renderer_ = boost::make_shared<v3d::render::realtime::Engine3D>(logger(), assets());
-    if (!renderer_->initialize(window())) {
-        return false;
-    }
+    renderer_ = boost::make_shared<v3d::render::realtime::WindowRenderer>(logger());
+    renderer_->initialize(window());
     renderer_->clearColour(glm::vec4(0.1F, 0.1F, 0.15F, 1.0F));
 
     return true;
@@ -55,7 +53,7 @@ bool AppEngine::render() {
         glm::vec2(static_cast<float>(size.x) - 40.0F, static_cast<float>(size.y) - 40.0F),
         glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
-    boost::shared_ptr<v3d::render::realtime::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::Engine3D::colourPass);
+    boost::shared_ptr<v3d::render::realtime::Pass> pass = renderer_->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());
 
     renderer_->renderFrame();

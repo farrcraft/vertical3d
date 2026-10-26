@@ -66,10 +66,10 @@ shader writes is the value on screen. Every colour and texture in an unlit app i
 display space, and textures are uploaded as `UNORM` to match. Blending happens in display space.
 
 **An app that writes linear light chooses the swapchain format.** Pass a format to the
-`Engine3D` constructor:
+`WindowRenderer` constructor:
 
 ```cpp
-renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_B8G8R8A8_SRGB);
+renderer_ = boost::make_shared<WindowRenderer>(logger(), VK_FORMAT_B8G8R8A8_SRGB);
 ```
 
 - If the surface offers that format in a non-linear sRGB colour space, the swapchain uses it.

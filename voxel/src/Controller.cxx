@@ -76,7 +76,7 @@ bool Controller::start() {
     scene_ = boost::make_shared<Scene>();
 
     const boost::shared_ptr<v3d::window::Window> win = window();
-    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets(), &shell_);
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), &shell_);
 
     // give the camera's projection the window's aspect
     renderer_->resize(glm::ivec2(window()->width(), window()->height()));

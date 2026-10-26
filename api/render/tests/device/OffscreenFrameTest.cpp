@@ -40,7 +40,7 @@ const uint32_t width = 64;
 const uint32_t height = 32;
 
 /**
- * Describe a target to the recorder, the way Engine3D describes a swapchain image.
+ * Describe a target to the recorder, the way WindowRenderer describes a swapchain image.
  **/
 Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
     Recorder::Target described;

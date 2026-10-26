@@ -25,7 +25,7 @@ namespace v3d::render::realtime {
  * Everything a context owns that needs only a device: the frames in flight, the pipeline
  * cache and resources, the uploader, set 0, and the quad, line and world quad renderers.
  *
- * A DeviceContext is usable on its own. Context3D derives from it to draw into a window, and
+ * A DeviceContext is usable on its own. WindowContext derives from it to draw into a window, and
  * adds the swapchain and the Presenter. A context that draws into an offscreen target is a
  * DeviceContext given that target's format and size. Under dynamic rendering a pipeline is
  * built against the format of whatever it draws into, and that format is all a renderer needs
@@ -41,7 +41,7 @@ class DeviceContext {
      * @param logger
      * @param device the device everything here is built on
      * @param colour the colour format of what this draws into, and what every pipeline built
-     *        here is built against. Context3D passes VK_FORMAT_UNDEFINED, because its
+     *        here is built against. WindowContext passes VK_FORMAT_UNDEFINED, because its
      *        swapchain does not exist yet, and calls describe() later
      * @param extent the size of that destination
      * @param framesInFlight how many frames may be recorded ahead of the device
@@ -162,8 +162,8 @@ class DeviceContext {
     /**
      * Say what this context draws into.
      *
-     * Context3D's swapchain is created after the DeviceContext, and is recreated whenever the
-     * window changes size, so Context3D calls describe() each time. A renderer already built
+     * WindowContext's swapchain is created after the DeviceContext, and is recreated whenever the
+     * window changes size, so WindowContext calls describe() each time. A renderer already built
      * keeps the format it was compiled with.
      *
      * @param colour the colour format of the destination

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "Context3D.h"
+#include "WindowContext.h"
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/Present.h>
@@ -26,10 +26,10 @@
 namespace v3d::render::realtime {
 /**
  **/
-boost::shared_ptr<vulkan::device::Device> Context3D::deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
+boost::shared_ptr<vulkan::device::Device> WindowContext::deviceFor(const boost::shared_ptr<v3d::log::Logger>& logger,
     const boost::shared_ptr<v3d::window::Window>& window, vulkan::memory::Allocator::Kind allocations) {
     if (!window || window->sdl() == nullptr) {
-        throw std::runtime_error("A 3D context needs a created window to render to");
+        throw std::runtime_error("A window context needs a created window to render to");
     }
     const boost::shared_ptr<vulkan::device::Instance> instance = sharedInstance(logger);
     const boost::shared_ptr<vulkan::device::Surface> surface = boost::make_shared<vulkan::device::Surface>(instance, window->sdl());
@@ -38,7 +38,7 @@ boost::shared_ptr<vulkan::device::Device> Context3D::deviceFor(const boost::shar
 
 /**
  **/
-Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
+WindowContext::WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
     VkFormat preferred, vulkan::memory::Allocator::Kind allocations, Present present) :
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
@@ -50,7 +50,7 @@ Context3D::Context3D(const boost::shared_ptr<v3d::log::Logger>& logger, const bo
 
 /**
  **/
-Context3D::~Context3D() {
+WindowContext::~WindowContext() {
     // the device may still be drawing with everything about to be destroyed. The base waits
     // as well, and by then this has already let go of the presenter
     ring()->waitIdleNoThrow();
@@ -58,19 +58,19 @@ Context3D::~Context3D() {
 
 /**
  **/
-boost::shared_ptr<vulkan::frame::Swapchain> Context3D::swapchain() const {
+boost::shared_ptr<vulkan::frame::Swapchain> WindowContext::swapchain() const {
     return swapchain_;
 }
 
 /**
  **/
-boost::shared_ptr<vulkan::frame::Presenter> Context3D::presenter() const {
+boost::shared_ptr<vulkan::frame::Presenter> WindowContext::presenter() const {
     return presenter_;
 }
 
 /**
  **/
-void Context3D::resize() {
+void WindowContext::resize() {
     swapchain_->recreate(static_cast<uint32_t>(window_->width()), static_cast<uint32_t>(window_->height()));
     // a new swapchain can hold a different number of images, and the Presenter keeps a
     // semaphore per image
@@ -86,7 +86,7 @@ void Context3D::resize() {
 
 /**
  **/
-void Context3D::present(Present present) {
+void WindowContext::present(Present present) {
     swapchain_->request(present);
     resize();
 }

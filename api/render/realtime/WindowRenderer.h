@@ -16,46 +16,52 @@
 #include <string_view>
 #include <vector>
 
-#include "Context3D.h"
-#include "Engine.h"
 #include "Frame.h"
+#include "WindowContext.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
-/* A 3D render engine.
+/**
+ * The renderer an app draws into a window with. It owns the window's device context and the
+ * frame being built, and records and presents that frame. The same class serves 2D and 3D: a
+ * 2D app differs only in what its passes ask for.
  **/
-class Engine3D : public Engine {
+class WindowRenderer final {
  public:
     /**
      * @param logger
-     * @param assetManager
      * @param preferred the colour format to present through. An app whose shaders write
      *        linear light names one here. Leaving it undefined selects the display space
      *        (UNORM) default.
      * @param allocations how the device finds memory for its buffers and images. Suballocated
      *        unless an app asks for one allocation per resource.
      **/
-    Engine3D(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
-        VkFormat preferred = VK_FORMAT_UNDEFINED,
+    explicit WindowRenderer(const boost::shared_ptr<v3d::log::Logger>& logger, VkFormat preferred = VK_FORMAT_UNDEFINED,
         vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated);
 
+    WindowRenderer(const WindowRenderer&) = delete;
+    WindowRenderer& operator=(const WindowRenderer&) = delete;
+
     /**
+     * Build the device context for a created window, and the frame with its colour pass.
+     *
+     * @throw std::runtime_error if the window is not created, or no device can present to it
      **/
-    bool initialize(const boost::shared_ptr<v3d::window::Window>& window) override;
+    void initialize(const boost::shared_ptr<v3d::window::Window>& window);
 
     /**
      * Wait for everything in flight before the device and the window go away.
      **/
-    bool shutdown() override;
+    void shutdown();
 
     /**
      * Record the frame that has been built up, present it, and empty it ready for the
      * next one. Rebuilds the swapchain when the window has changed size underneath it,
      * and draws nothing at all while the window has no area.
      **/
-    void renderFrame() override;
+    void renderFrame();
 
     /**
      * Write the next frame that is presented to a png.
@@ -165,7 +171,10 @@ class Engine3D : public Engine {
      **/
     void endFrame();
 
-    boost::shared_ptr<Context3D> context_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
+    /**< declared before the context, so the context and the surface it holds go first **/
+    boost::shared_ptr<v3d::window::Window> window_;
+    boost::shared_ptr<WindowContext> context_;
     boost::shared_ptr<Frame> frame_;
     glm::vec4 clearColour_;
     /**< the format initialize() requests for the swapchain. The surface decides which it gets **/
