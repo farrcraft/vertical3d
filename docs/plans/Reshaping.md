@@ -357,8 +357,11 @@ where the shell lives.
   names its layer, cascade and bias, and each reader names what it reads.
 - A frame's shadows are nothing, one light matrix with every caster drawn, or cascades culled
   per cascade. The passes are named after the scene, so two scenes share a frame.
-- The full lit scene case draws through `LitScene`. Five new cases. They fail to build without
-  it.
+- A scene is drawn once a frame, and a second draw before the frame is submitted throws. Two
+  scenes in one frame grade into passes of their own, since a grade covers its whole pass.
+- The full lit scene case draws through `LitScene`. Six new cases. Five fail to build without
+  it, and the once-a-frame case fails without its check. The cascade case checks that the
+  cascades darken the ground.
 - **Found on the way:** a mesh retired into the ring held the ring through its uploader, so a
   mesh released in the last frames before shutdown kept the ring and the device alive. The
   context drains the ring as it is destroyed. One new case, which fails without the change.
