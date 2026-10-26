@@ -300,7 +300,6 @@ decides it.
 
 - A layer above `engine` and `ui::shell` builds the screen, the game menu and the overlay. Each
   app's hand wiring goes.
-- The engine takes the ECS snapshot before each step, for the types an app registers.
 
 Done so far:
 
@@ -310,6 +309,9 @@ Done so far:
   and saves them after every change. `Bindings::changed()` reports a change, so one made
   through `bindings()` is saved too. pong's per-key settings are gone, so a player's earlier
   pong rebindings are not carried over. Three new cases.
+- An app registers each type it draws between steps with `Engine::interpolate<T>()`. The
+  loop calls `step()`, which snapshots each registered type and then calls `simulate()`.
+  `engine` links `ecs`. pong registers its two position types. One new case.
 
 ### Step 7 — The realtime vocabulary
 

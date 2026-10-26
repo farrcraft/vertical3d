@@ -33,12 +33,14 @@ concept Interpolable = std::copy_constructible<T> && requires(const T& from, con
  * Copy every entity's T into its Previous<T>, giving one to an entity that has none, and take
  * Previous<T> off every entity that no longer has a T.
  *
- * Call it at the start of simulate(), before anything moves, once for each type a renderer
- * draws between steps. Every entity with a T is snapshotted whether or not it is about to
- * move, so an entity that has stopped is drawn where it stopped. An entity that loses its T and
- * is given one again in a later step is drawn at its new value, not blended from the old one.
- * An entity that loses and regains its T within one step keeps its Previous<T>. Call settle()
- * for it.
+ * It runs before each simulation step, before anything moves, once for each type a renderer
+ * draws between steps. engine::Engine::interpolate<T>() registers a type for the engine to
+ * snapshot. Call this directly only for a registry no engine steps.
+ *
+ * Every entity with a T is snapshotted whether or not it is about to move, so an entity that
+ * has stopped is drawn where it stopped. An entity that loses its T and is given one again in a
+ * later step is drawn at its new value, not blended from the old one. An entity that loses and
+ * regains its T within one step keeps its Previous<T>. Call settle() for it.
  **/
 template <typename T>
 void snapshot(entt::registry& registry) {

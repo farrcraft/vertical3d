@@ -8,7 +8,6 @@
 #include <api/audio/Engine.h>
 #include <api/audio/Loaders.h>
 #include <api/config/Type.h>
-#include <api/ecs/Previous.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
 #include <api/engine/Engine.h>
@@ -62,6 +61,9 @@ std::string_view paddleCommand(std::string_view item) {
 
 
 PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
+    // the renderer draws the ball and the paddles between the last two steps
+    interpolate<v3d::ecs::component::Position2D>();
+    interpolate<v3d::ecs::component::Position1D>();
     // simulate() reads whether each paddle command's key is held
     for (const std::string_view command : PongScene::paddleCommands) {
         commands().addHeld("pong::" + std::string(command));
@@ -130,10 +132,6 @@ bool PongEngine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
     }
-    // where the ball and paddles were before this step moves them, so the renderer can
-    // interpolate between the two steps
-    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(registry());
-    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(registry());
     // steer by the keys held now, not by the presses and releases received. A key held while
     // the menu was open, or across a change of mode, then moves its paddle as soon as play resumes
     for (const std::string_view command : PongScene::paddleCommands) {

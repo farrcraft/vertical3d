@@ -123,7 +123,7 @@ the same for the clip being faded out of, and the fade's progress.
   nothing, so a game can call it every step from whatever chooses its clip. A fade of zero, or
   nothing playing, cuts.
 - **`advance(registry, step)`** moves every entity's playback on by one step. Call it in
-  `simulate()`, after the snapshot.
+  `simulate()`. The engine has already taken the step's snapshot.
 - **`crossed(previous, current, marker)`** counts how many times a step passed a marker time in
   the clip, such as a footstep. It is zero for a step that changed clip.
 - **`Playback::none`** as the clip draws the skeleton's rest pose. Playing it with a fade fades
@@ -180,9 +180,11 @@ state from before the last step and blend towards the current state by `Engine::
 
 The rules:
 
-- **Call `snapshot<T>` at the top of `simulate()`, before anything moves**, once for each type
-  you draw between steps. Every entity with a `T` is snapshotted whether or not it is about to
-  move, so a stopped entity is drawn where it stopped.
+- **Register each type you draw between steps with `Engine::interpolate<T>()`**, once, in the
+  app's constructor or `start()`. The engine calls `snapshot<T>` for it before every
+  `simulate()`, before anything moves. Every entity with a `T` is snapshotted whether or not it
+  is about to move, so a stopped entity is drawn where it stopped. Call `snapshot<T>` yourself
+  only for a registry the engine does not step.
 - **Call `settle<T>` after a teleport, once the new value is written.** It copies the value the
   entity has when it is called. An entity put somewhere rather than moved there is otherwise
   drawn sweeping across the screen for one frame, and nothing reports it.
@@ -197,16 +199,19 @@ The rules:
   at its current value.
 
 ```cpp
+MyEngine::MyEngine(const std::string& path) : v3d::engine::Engine(path) {
+    interpolate<v3d::ecs::component::Transform>();
+    interpolate<v3d::ecs::component::Playback>();
+}
+
 bool MyEngine::simulate(float step) {
-    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry());
-    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry());
     // ... move things ...
     v3d::ecs::component::advance(registry(), step);
     return true;
 }
 ```
 
-pong snapshots `Position2D` and `Position1D` this way.
+pong registers `Position2D` and `Position1D` this way.
 
 Background: [ADR-0060](../adr/0060-ecs-interpolate-from-a-previous-step-component.md)
 
@@ -224,8 +229,8 @@ components live in `api/render/realtime/component/`, beside the renderer handles
 
 The api provides the functions that find these entities and draw them, in `realtime::entity`:
 `sprites()`, `particles()`, `meshes()` and `casters()`. Each takes the registry and `alpha()`,
-and reads `Transform` through `interpolated<Transform>`. An entity whose game snapshots
-`Transform` is therefore drawn between steps with no further work.
+and reads `Transform` through `interpolated<Transform>`. An entity whose game registers
+`Transform` with `interpolate<T>()` is therefore drawn between steps with no further work.
 
 A sprite ignores its transform's rotation, because a billboard faces the camera. A game shows
 which way a sprite faces by choosing its region. A `Sprite` holds the region's texture

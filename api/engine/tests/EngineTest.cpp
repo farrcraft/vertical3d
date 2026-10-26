@@ -4,6 +4,8 @@
  **/
 
 #include <api/config/Type.h>
+#include <api/ecs/Previous.h>
+#include <api/ecs/component/Position2D.h>
 #include <api/event/Bindings.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
@@ -497,6 +499,48 @@ BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
     BOOST_CHECK(!later.held("pong::leftPaddleUp"));
     later.offer(keyDown(SDLK_UP));
     BOOST_CHECK(later.held("pong::leftPaddleUp"));
+}
+
+/**
+ * An engine whose simulation moves every Position2D one unit along x, so a case can tell what
+ * a step saw before it moved anything.
+ **/
+class SteppingEngine final : public v3d::engine::Engine {
+ public:
+    explicit SteppingEngine(const std::string& path) : Engine(path) {
+    }
+
+    using Engine::interpolate;
+    using Engine::registry;
+    using Engine::step;
+
+    bool simulate(float /* step */) override {
+        for (auto [entity, position] : registry().view<v3d::ecs::component::Position2D>().each()) {
+            position.value.x += 1.0F;
+        }
+        return true;
+    }
+};
+
+/**
+ * A step snapshots each registered type before it simulates, so an entity's Previous holds
+ * where it was before the step moved it. Registering a type twice snapshots it once.
+ **/
+BOOST_AUTO_TEST_CASE(engine_snapshots_registered_types_before_a_step_test) {
+    SteppingEngine engine(appPath("good"));
+    engine.interpolate<v3d::ecs::component::Position2D>();
+    engine.interpolate<v3d::ecs::component::Position2D>();
+    entt::registry& registry = engine.registry();
+    const entt::entity ball = registry.create();
+    registry.emplace<v3d::ecs::component::Position2D>(ball, glm::vec2(3.0F, 0.0F));
+
+    BOOST_REQUIRE(engine.step(0.01F));
+    BOOST_REQUIRE(registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball));
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball).value.value.x, 3.0F);
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::component::Position2D>(ball).value.x, 4.0F);
+
+    BOOST_REQUIRE(engine.step(0.01F));
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball).value.value.x, 4.0F);
 }
 
 /**

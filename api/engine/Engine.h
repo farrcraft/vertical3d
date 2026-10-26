@@ -7,6 +7,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/config/Config.h>
+#include <api/ecs/Previous.h>
 #include <api/event/Bindings.h>
 #include <api/event/Commands.h>
 #include <api/event/Engine.h>
@@ -14,6 +15,7 @@
 #include <api/log/Logger.h>
 #include <api/window/Window.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <string_view>
@@ -330,6 +332,26 @@ class Engine {
     const boost::shared_ptr<Settings>& settings() const noexcept;
 
     /**
+     * Snapshot every entity's T into its ecs::Previous<T> before each simulation step, so a
+     * renderer can draw between the last two steps. An app registers each type it draws that
+     * way once, in its constructor or start(). Registering a type again does nothing.
+     **/
+    template <typename T>
+    void interpolate() {
+        const Snapshot snapshot = &v3d::ecs::snapshot<T>;
+        if (std::find(snapshots_.begin(), snapshots_.end(), snapshot) == snapshots_.end()) {
+            snapshots_.push_back(snapshot);
+        }
+    }
+
+    /**
+     * One fixed simulation step: snapshot each type interpolate() registered, then simulate().
+     * eventLoop() calls it once for each step due. It is separate so that a test can run a
+     * step.
+     **/
+    bool step(float seconds);
+
+    /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
      *
      * eventLoop() renders, and cannot run in a test. This is a separate function so that a
@@ -364,6 +386,10 @@ class Engine {
      bool openWindow();
 
      entt::registry registry_;
+
+     // what interpolate() registered, run in order before each simulate()
+     typedef void (*Snapshot)(entt::registry& registry);
+     std::vector<Snapshot> snapshots_;
 
      // the bindings from the binding config, read by held() and rebuilt by rebind()
      boost::shared_ptr<v3d::event::Bindings> bindings_;

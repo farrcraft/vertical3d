@@ -12,13 +12,15 @@ v3d_add_api_library(engine
 
 # PUBLIC: Engine.h holds one of each of these, so an app that subclasses it compiles all of
 # them: the logger, the asset manager, the config, the event and input engines, the window,
-# and the registry. type, because Feature.h is a type::Flags. SDL3, because Engine.h passes
+# and the registry. ecs, because interpolate<T>() in Engine.h snapshots through ecs::Previous.
+# type, because Feature.h is a type::Flags. SDL3, because Engine.h passes
 # each SDL_Event to the app. Boost::json, because Engine.h and Settings.h name boost::json
 # types.
 target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_log
 	v3dlib_asset
 	v3dlib_config
+	v3dlib_ecs
 	v3dlib_event
 	v3dlib_input
 	v3dlib_window

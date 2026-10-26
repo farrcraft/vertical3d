@@ -515,7 +515,7 @@ bool Engine::eventLoop() {
         // the frame and carries the remainder forward
         statistics_.frame(std::chrono::nanoseconds(elapsed), accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
-            if (!simulate(Accumulator::seconds)) {
+            if (!step(Accumulator::seconds)) {
                 return false;
             }
         }
@@ -558,6 +558,15 @@ bool Engine::held(std::string_view command) const {
  **/
 bool Engine::tick(unsigned int /* delta */) {
     return true;
+}
+
+/**
+ **/
+bool Engine::step(float seconds) {
+    for (const Snapshot snapshot : snapshots_) {
+        snapshot(registry_);
+    }
+    return simulate(seconds);
 }
 
 /**

@@ -15,6 +15,7 @@ v3d_add_test(engine
 target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_engine
 	v3dlib_config
+	v3dlib_ecs
 	v3dlib_asset
 	v3dlib_event
 	v3dlib_log
