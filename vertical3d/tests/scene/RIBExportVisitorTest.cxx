@@ -8,6 +8,7 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/rib/Requests.h>
+#include <api/render/offline/rib/Writer.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -150,7 +151,8 @@ v3d::type::camera::Camera camera(bool orthographic) {
 
 std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, const v3d::editor::RIBExportVisitor::Output & output) {
     std::ostringstream stream;
-    v3d::editor::RIBExportVisitor visitor(&stream);
+    v3d::render::offline::rib::Writer writer(&stream);
+    v3d::editor::RIBExportVisitor visitor(&writer);
     visitor.begin(camera(false), output);
     scene->accept(&visitor);
     visitor.end();
@@ -159,7 +161,8 @@ std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, con
 
 std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
-    v3d::editor::RIBExportVisitor visitor(&stream);
+    v3d::render::offline::rib::Writer writer(&stream);
+    v3d::editor::RIBExportVisitor visitor(&writer);
     const v3d::type::camera::Camera view = camera(orthographic);
     v3d::editor::RIBExportVisitor::Output output;
     output.settings.size = glm::uvec2(320, 240);

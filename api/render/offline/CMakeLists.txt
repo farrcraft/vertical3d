@@ -30,6 +30,8 @@ v3d_add_api_library(render_offline
 	"rib/Requests.h"
 	"rib/Handler.h"
 	"rib/Reader.h" "rib/Reader.cxx"
+	"rib/Recorder.h" "rib/Recorder.cxx"
+	"rib/Writer.h" "rib/Writer.cxx"
 	"sl/Token.h"
 	"sl/Lexer.h" "sl/Lexer.cxx"
 	"sl/syntax/Expression.h" "sl/syntax/Expression.cxx"

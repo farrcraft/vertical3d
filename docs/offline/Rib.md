@@ -126,5 +126,23 @@ name.
 - **A `PointsPolygons` face with fewer than three vertices is skipped.** The first face whose
   indices run past the end of the index list ends the request.
 
+### Writing and recording
+
+Two handlers in `api/render/offline/rib` take requests from anything that sends them, such as
+the editor's export, rather than from the reader.
+
+- **`rib::Writer` writes each request as a line of ASCII RIB**, which the reader reads back as
+  the same request. A number takes the fewest digits that read back as the same float. A
+  parameter is written by its name when its declaration is the one in force. Otherwise it
+  carries its declaration inline, as in `"uniform float Ks"`. A deforming primitive is written
+  as it was given, because RIB carries a deformation as the same primitive given again.
+- **RIB has no number for an infinity or a NaN.** The writer writes an infinity as the largest
+  float of its sign and a NaN as 0. `DepthOfField`'s infinite fstop is the exception, and is
+  written as the request with no arguments, which is a pinhole.
+- **`rib::Recorder` keeps each request with copies of its arguments**, and `replay()` passes them
+  in order to another handler, as often as it is called. A deforming primitive goes to that
+  handler's `deformation()`, and is dropped when that is null, as the reader drops it. A
+  recording cannot be copied or moved, so one passed to another thread is held by a pointer.
+
 Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md),
 [ADR-0025](../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md)

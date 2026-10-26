@@ -52,6 +52,17 @@ bool filterNamed(const std::string & name, Filter * filter) {
     return true;
 }
 
+std::string filterName(Filter filter) {
+    switch (filter) {
+        case Filter::Box: return "box";
+        case Filter::Triangle: return "triangle";
+        case Filter::CatmullRom: return "catmull-rom";
+        case Filter::Gaussian: return "gaussian";
+        case Filter::Sinc: return "sinc";
+    }
+    return "gaussian";
+}
+
 float filter(Filter kind, const glm::vec2 & offset, const glm::vec2 & width) {
     const glm::vec2 half = width * 0.5F;
     if (!(std::fabs(offset.x) <= half.x) || !(std::fabs(offset.y) <= half.y)) {

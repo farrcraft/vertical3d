@@ -8,7 +8,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/rib/Reader.h>
+#include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
@@ -18,14 +18,13 @@
 
 #include <exception>
 #include <mutex>
-#include <sstream>
 #include <stop_token>
-#include <string>
 #include <thread>
 
 #include "Delegate.h"
 #include "Shot.h"
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::editor {
@@ -68,19 +67,19 @@ boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
 /**
  **/
 void MoyaDelegate::start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
-    std::ostringstream rib;
-    writeShot(&rib, scene, from, RIBExportVisitor::Output{ .settings = settings });
+    const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
+    shoot(shot.get(), scene, from, RIBExportVisitor::Output{ .settings = settings });
     {
         const std::scoped_lock lock(mutex_);
         status_.state = State::Rendering;
         status_.done = 0.0F;
     }
-    worker_ = std::jthread([this, text = rib.str()](const std::stop_token& stop) { run(text, stop); });
+    worker_ = std::jthread([this, shot](const std::stop_token& stop) { run(*shot, stop); });
 }
 
 /**
  **/
-void MoyaDelegate::run(const std::string& rib, const std::stop_token& stop) {
+void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const std::stop_token& stop) {
     State finished = State::Failed;
     boost::shared_ptr<v3d::image::Image> image;
     try {
@@ -90,13 +89,11 @@ void MoyaDelegate::run(const std::string& rib, const std::stop_token& stop) {
             status_.done = done;
             return !stop.stop_requested();
         });
-        v3d::render::offline::rib::Reader reader(logger_);
-        std::istringstream stream(rib);
-        const bool read = reader.read(stream, &handler);
+        shot.replay(&handler);
         if (handler.context().stopped()) {
             finished = State::Stopped;
-        } else if (!read || !handler.context().picture()) {
-            logger_->get()->error("the render could not read the scene - {}", reader.error());
+        } else if (!handler.context().picture()) {
+            logger_->get()->error("the render made no picture of the scene");
         } else {
             image = handler.context().picture()->image(v3d::moya::Planes::CHANNELS);
             finished = State::Finished;

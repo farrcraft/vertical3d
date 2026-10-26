@@ -8,13 +8,14 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/render/offline/rib/Declaration.h>
+#include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 
 #include <cstddef>
 #include <optional>
-#include <ostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -27,22 +28,30 @@
 #include "RenderSettings.h"
 
 #include <glm/gtc/quaternion.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 
 namespace v3d::editor {
 
-RIBExportVisitor::RIBExportVisitor(std::ostream* stream) : stream_(stream) {
+namespace {
+
+typedef v3d::render::offline::rib::Declaration Declaration;
+typedef v3d::render::offline::rib::ParameterList ParameterList;
+
+const Declaration UNIFORM_FLOAT(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1);
+const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type::POINT, 1);
+
+/** The version of RIB the export is written in. **/
+const float RIB_VERSION = 3.03F;
+
+std::vector<float> floats(const glm::vec3& value) {
+    return { value.x, value.y, value.z };
 }
 
-void RIBExportVisitor::matrix(std::ostream* out, const glm::mat4x4& transform) {
-    *out << "[";
-    for (int column = 0; column < 4; column++) {
-        for (int row = 0; row < 4; row++) {
-            *out << " " << transform[column][row];
-        }
-    }
-    *out << " ]";
+};  // namespace
+
+RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) : handler_(handler) {
 }
 
 void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Output& output) {
@@ -52,70 +61,67 @@ void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Outp
     eye_ = profile.eye();
     looks_ = profile.direction();
 
-    *stream_ << "##RenderMan RIB-Structure 1.1\n";
-    *stream_ << "##Creator Vertical3D\n";
-    *stream_ << "version 3.03\n";
-    *stream_ << "Format " << settings.size.x << " " << settings.size.y << " 1\n";
-    *stream_ << "PixelSamples " << settings.samples << " " << settings.samples << "\n";
-    *stream_ << "Hider \"" << (settings.hider == RenderSettings::Hider::RayTrace ? "raytrace" : "hidden") << "\"\n";
+    handler_->version(RIB_VERSION);
+    handler_->format({.width = settings.size.x, .height = settings.size.y, .pixelAspect = 1.0F});
+    handler_->pixelSamples(glm::uvec2(settings.samples));
+    handler_->hider(settings.hider == RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
     if (output.file.empty()) {
-        *stream_ << "Display \"vertical3d\" \"framebuffer\" \"rgb\"\n";
+        handler_->display({.name = "vertical3d", .type = "framebuffer", .mode = "rgb"}, ParameterList());
     } else {
-        *stream_ << "Display \"" << output.file << "\" \"file\" \"rgb\"\n";
+        handler_->display({.name = output.file, .type = "file", .mode = "rgb"}, ParameterList());
     }
 
     /*
-        The screen window is written rather than left to the frame aspect. The editor's
-        camera states its aperture as a pixel aspect and an ortho zoom, and a reader should
-        not have to derive the window from those.
+        The screen window is sent rather than left to the frame aspect. The editor's camera
+        states its aperture as a pixel aspect and an ortho zoom, and a renderer should not have
+        to derive the window from those.
     */
     if (profile.orthographic()) {
         const float top = profile.orthoZoom();
         const float right = top * profile.pixelAspect();
-        *stream_ << "Projection \"orthographic\"\n";
-        *stream_ << "ScreenWindow " << -right << " " << right << " " << -top << " " << top << "\n";
+        handler_->projection("orthographic", ParameterList());
+        handler_->screenWindow({.left = -right, .right = right, .bottom = -top, .top = top});
     } else {
-        *stream_ << "Projection \"perspective\" \"fov\" [" << profile.fov() << "]\n";
-        *stream_ << "ScreenWindow " << -profile.pixelAspect() << " " << profile.pixelAspect() << " -1 1\n";
+        ParameterList fov;
+        fov.add("fov", UNIFORM_FLOAT, { profile.fov() }, {});
+        handler_->projection("perspective", fov);
+        handler_->screenWindow({.left = -profile.pixelAspect(), .right = profile.pixelAspect(), .bottom = -1.0F, .top = 1.0F});
     }
-    *stream_ << "Clipping " << clipping.x << " " << clipping.y << "\n";
+    handler_->clipping({.hither = clipping.x, .yon = clipping.y});
 
     // the transform set between Projection and WorldBegin is the world to camera
     // transformation, which a view matrix already is
-    *stream_ << "Transform ";
-    matrix(stream_, camera.view());
-    *stream_ << "\n";
+    handler_->transform(camera.view());  // NOLINT(build/include_what_you_use)
 
-    *stream_ << "WorldBegin\n";
-    *stream_ << "Surface \"matte\"\n";
+    handler_->worldBegin();
+    handler_->surface("matte", ParameterList());
 }
 
 void RIBExportVisitor::end() {
-    // the lights were written as they were visited, so every mesh comes after every light
+    // the lights were sent as they were visited, so every mesh comes after every light
     if (lights_ == 0) {
-        const glm::vec3 to = eye_ + looks_;
-        *stream_ << "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [" << eye_.x << " " << eye_.y << " "
-            << eye_.z << "] \"to\" [" << to.x << " " << to.y << " " << to.z << "]\n";
+        ParameterList light;
+        light.add("intensity", UNIFORM_FLOAT, { 1.0F }, {});
+        light.add("from", UNIFORM_POINT, floats(eye_), {});
+        light.add("to", UNIFORM_POINT, floats(eye_ + looks_), {});
+        handler_->lightSource({.shader = "distantlight", .handle = "1"}, light);
     }
-    *stream_ << body_.str();
-    body_.str(std::string());
-    *stream_ << "WorldEnd\n";
+    body_.replay(handler_);
+    handler_->worldEnd();
 }
 
 void RIBExportVisitor::enter(const std::string& name, const glm::mat4x4& local) {
-    std::ostringstream begin;
-    begin << "AttributeBegin\n";
-    begin << "Attribute \"identifier\" \"name\" [\"" << name << "\"]\n";
-    begin << "ConcatTransform ";
-    matrix(&begin, local);
-    begin << "\n";
-    blocks_.push_back({ .begin = begin.str() });
+    blocks_.push_back({ .name = name, .local = local });
 }
 
 void RIBExportVisitor::open() {
     for (Block& block : blocks_) {
         if (!block.written) {
-            body_ << block.begin;
+            ParameterList identifier;
+            identifier.add("name", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::STRING, 1), {}, { block.name });
+            body_.attributeBegin();
+            body_.attribute("identifier", identifier);
+            body_.concatTransform(block.local);
             block.written = true;
         }
     }
@@ -126,7 +132,7 @@ void RIBExportVisitor::leave(const boost::shared_ptr<Item>& /*item*/) {
         return;
     }
     if (blocks_.back().written) {
-        body_ << "AttributeEnd\n";
+        body_.attributeEnd();
     }
     blocks_.pop_back();
 }
@@ -148,24 +154,25 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
         }
         // a half edge names the vertex it ends at, so each segment starts where the one
         // before it ended. Taking each segment's start visits every vertex of the face once
-        std::vector<glm::vec3> points;
+        std::vector<float> points;
         for (std::size_t index = 0; index < loop.size(); index++) {
             const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
             if (!segment) {
                 points.clear();
                 break;
             }
-            points.push_back(segment->from);
+            points.push_back(segment->from.x);
+            points.push_back(segment->from.y);
+            points.push_back(segment->from.z);
         }
-        if (points.size() < 3) {
+        const unsigned int corners = static_cast<unsigned int>(points.size() / 3);
+        if (corners < 3) {
             continue;
         }
 
-        body_ << "Polygon \"P\" [";
-        for (const glm::vec3& point : points) {
-            body_ << " " << point.x << " " << point.y << " " << point.z;
-        }
-        body_ << " ]\n";
+        ParameterList list;
+        list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
+        body_.polygon(corners, list);
     }
 }
 
@@ -195,33 +202,31 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed
     // a light is not scaled, so its direction is its world rotation alone
     const glm::vec3 from(placed.world[3]);
     const glm::vec3 to = from + (orientation(placed.world) * glm::vec3(0.0F, 0.0F, 1.0F));
-    const auto point = [this](const glm::vec3& value) {
-        *stream_ << " [" << value.x << " " << value.y << " " << value.z << "]";
-    };
 
+    std::string shader;
     switch (emission.type) {
         case Light::Type::Point:
-            *stream_ << "LightSource \"pointlight\" " << lights_;
+            shader = "pointlight";
             break;
         case Light::Type::Distant:
-            *stream_ << "LightSource \"distantlight\" " << lights_;
+            shader = "distantlight";
             break;
         case Light::Type::Spot:
-            *stream_ << "LightSource \"spotlight\" " << lights_;
+            shader = "spotlight";
             break;
     }
-    *stream_ << " \"intensity\" [" << emission.intensity << "] \"lightcolor\"";
-    point(emission.colour);
-    *stream_ << " \"from\"";
-    point(from);
+    ParameterList list;
+    list.add("intensity", UNIFORM_FLOAT, { emission.intensity }, {});
+    list.add("lightcolor", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1), floats(emission.colour), {});
+    list.add("from", UNIFORM_POINT, floats(from), {});
     if (emission.type != Light::Type::Point) {
-        *stream_ << " \"to\"";
-        point(to);
+        list.add("to", UNIFORM_POINT, floats(to), {});
     }
     if (emission.type == Light::Type::Spot) {
-        *stream_ << " \"coneangle\" [" << emission.cone << "] \"conedeltaangle\" [" << emission.delta << "]";
+        list.add("coneangle", UNIFORM_FLOAT, { emission.cone }, {});
+        list.add("conedeltaangle", UNIFORM_FLOAT, { emission.delta }, {});
     }
-    *stream_ << "\n";
+    handler_->lightSource({.shader = shader, .handle = std::to_string(lights_)}, list);
 }
 
 };  // namespace v3d::editor

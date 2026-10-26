@@ -18,7 +18,7 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | Library | What it does |
 |---|---|
 | [`render`](api/render/) | The Vulkan renderer: frames, passes, 2D quads, lines, lit 3D meshes and post-processing |
-| [`render/offline`](api/render/offline/) | The base of the offline renderer: RIB parsing, the shading language, the film and the ray tracer. Needs no Vulkan (`v3dlib_render_offline`) |
+| [`render/offline`](api/render/offline/) | The base of the offline renderer: reading and writing RIB, the shading language, the film and the ray tracer. Needs no Vulkan (`v3dlib_render_offline`) |
 | [`engine`](api/engine/) | The application base class, the main loop, and startup of the window, config and input |
 | [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
 | [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |

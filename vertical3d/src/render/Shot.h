@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/rib/Handler.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
@@ -31,10 +32,16 @@ v3d::type::camera::Profile shotFrom(const Scene& scene, const boost::shared_ptr<
     const v3d::type::camera::Profile& view);
 
 /**
- * Write the scene as RIB, seen from a camera, as the output's settings render it.
+ * Send the scene to a RIB handler, seen from a camera, as the output's settings render it.
  *
  * The camera takes the picture's size and frame aspect from the settings, so the picture is
  * not stretched whatever the shape of the view it came from.
+ **/
+void shoot(v3d::render::offline::rib::Handler* handler, const Scene& scene, const v3d::type::camera::Profile& from,
+    const RIBExportVisitor::Output& output);
+
+/**
+ * Write the shot shoot() sends as a RIB file, with the structure comments that open one.
  **/
 void writeShot(std::ostream* stream, const Scene& scene, const v3d::type::camera::Profile& from,
     const RIBExportVisitor::Output& output);

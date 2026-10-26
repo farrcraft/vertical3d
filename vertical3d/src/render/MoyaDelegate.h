@@ -7,13 +7,13 @@
 
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <mutex>
 #include <stop_token>
-#include <string>
 #include <thread>
 
 #include "Delegate.h"
@@ -25,11 +25,11 @@ namespace v3d::editor {
 /**
  * Renders with moya, linked into the editor, on a thread of its own.
  *
- * The scene is written as RIB on the caller's thread when a render starts, so the render reads
- * nothing of the scene while it runs and the user can go on editing. The thread hands the RIB to
- * a moya renderer of its own, and the picture stays in that renderer's framebuffer rather than
- * going through a file. moya reports its progress per bucket or per row, and stops there when
- * the render is cancelled.
+ * The scene's requests are recorded on the caller's thread when a render starts, so the render
+ * reads nothing of the scene while it runs and the user can go on editing. The thread replays
+ * them into a moya handler of its own, and the picture stays in that handler's framebuffer
+ * rather than going through a file. moya reports its progress per bucket or per row, and stops
+ * there when the render is cancelled.
  **/
 class MoyaDelegate final : public Delegate {
  public:
@@ -54,9 +54,9 @@ class MoyaDelegate final : public Delegate {
 
  private:
     /**
-     * Render one RIB stream on the render's thread.
+     * Render one recorded shot on the render's thread.
      **/
-    void run(const std::string& rib, const std::stop_token& stop);
+    void run(const v3d::render::offline::rib::Recorder& shot, const std::stop_token& stop);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // the status and the picture, which the render's thread writes and the caller reads

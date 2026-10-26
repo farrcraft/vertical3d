@@ -5,10 +5,10 @@
 
 #pragma once
 
+#include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Camera.h>
 
-#include <iosfwd>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -22,12 +22,14 @@
 #include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
 /**
- * Writes a scene out as RIB. This is export only: nothing reads it back.
+ * Sends a scene to a RIB handler, one request at a time. A rib::Writer makes a RIB file of it,
+ * and a renderer's handler renders it. Nothing reads a scene back from RIB.
  *
  * **The camera, the lights, and topology with a placement per mesh.** Each light is a
  * LightSource of RI's standard shader for its type, in world space. RI lights only what is
@@ -54,9 +56,9 @@ namespace v3d::editor {
 class RIBExportVisitor final : public SceneVisitor {
  public:
     /**
-     * @param stream where the RIB goes. Nothing here closes or flushes it
+     * @param handler where the requests go, which outlives the export
      **/
-    explicit RIBExportVisitor(std::ostream* stream);
+    explicit RIBExportVisitor(v3d::render::offline::rib::Handler* handler);
 
     /**
      * What a render of the export makes: its settings, and where its picture goes.
@@ -68,7 +70,7 @@ class RIBExportVisitor final : public SceneVisitor {
     };
 
     /**
-     * The file header, the picture and the camera, written before any mesh.
+     * The picture and the camera, sent before any mesh.
      *
      * The caller passes the camera the export uses, a view's or one made from a scene
      * camera. Its frame aspect should be the picture's, or the picture is stretched.
@@ -78,8 +80,8 @@ class RIBExportVisitor final : public SceneVisitor {
     void begin(const v3d::type::camera::Camera& camera, const Output& output);
 
     /**
-     * Write the camera's light when the scene had none, then the meshes, and close the world
-     * block. A file without this renders nothing.
+     * Send the camera's light when the scene had none, then the meshes, and close the world
+     * block. A render without this renders nothing.
      **/
     void end();
 
@@ -105,11 +107,12 @@ class RIBExportVisitor final : public SceneVisitor {
 
  private:
     /**
-     * The block of an item being visited: the lines that begin it, and whether they have
-     * been written.
+     * The block of an item being visited: the name and local matrix that begin it, and
+     * whether it has been sent.
      **/
     struct Block {
-        std::string begin;
+        std::string name;
+        glm::mat4x4 local{ 1.0F };
         bool written = false;
     };
 
@@ -123,16 +126,9 @@ class RIBExportVisitor final : public SceneVisitor {
      **/
     void open();
 
-    /**
-     * Sixteen floats in the order RIB expects, which is also the order glm stores them.
-     * Both put the translation last, so a transpose here would move the object to where
-     * its axes point instead.
-     **/
-    static void matrix(std::ostream* out, const glm::mat4x4& transform);
-
-    std::ostream* stream_;
-    // the meshes, held until every light has been written
-    std::ostringstream body_;
+    v3d::render::offline::rib::Handler* handler_;
+    // the meshes, held until every light has been sent
+    v3d::render::offline::rib::Recorder body_;
     // the blocks of the item being visited and of each item above it, outermost first
     std::vector<Block> blocks_;
     unsigned int meshes_ = 0;

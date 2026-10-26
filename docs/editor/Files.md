@@ -224,12 +224,14 @@ Project > Export > rib (`project::export::rib`) writes the scene as RenderMan RI
 nothing reads it back into the editor. The scene document stays the editor's own format, and
 the offline renderer reads RIB.
 
-`RIBExportVisitor` writes:
+`RIBExportVisitor` sends these requests to a RIB handler, and the export's handler is a
+`rib::Writer`:
 
-- a header, then the picture: a `Format` of the render settings' size, their `PixelSamples` along
-  each axis, and their `Hider`. A `Display` names the file the picture is written to, which for
-  the export is `export.png` beside it. A `Display` of type `framebuffer` keeps the picture in
-  the renderer, and Render View reads it from there ([Rendering.md](Rendering.md))
+- RIB's structure comments, which `writeShot()` writes, then the picture: a `Format` of the
+  render settings' size, their `PixelSamples` along each axis, and their `Hider`. A `Display`
+  names the file the picture is written to, which for the export is `export.png` beside it. A
+  `Display` of type `framebuffer` keeps the picture in the renderer, and Render View reads it
+  from there ([Rendering.md](Rendering.md))
 - the camera as a `Projection` (orthographic or perspective), `ScreenWindow`, `Clipping` and
   `Transform`. When exactly one camera item is selected the export renders from it, through
   `profile_of()`, from where the scene's evaluation puts it. Otherwise it renders from the

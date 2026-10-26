@@ -5,6 +5,8 @@
 
 #include "Shot.h"
 
+#include <api/render/offline/rib/Handler.h>
+#include <api/render/offline/rib/Writer.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -38,9 +40,9 @@ v3d::type::camera::Profile shotFrom(const Scene& scene, const boost::shared_ptr<
 
 /**
  **/
-void writeShot(std::ostream* stream, const Scene& scene, const v3d::type::camera::Profile& from,
+void shoot(v3d::render::offline::rib::Handler* handler, const Scene& scene, const v3d::type::camera::Profile& from,
     const RIBExportVisitor::Output& output) {
-    if (stream == nullptr) {
+    if (handler == nullptr) {
         return;
     }
     v3d::type::camera::Profile profile(from);
@@ -50,10 +52,22 @@ void writeShot(std::ostream* stream, const Scene& scene, const v3d::type::camera
     camera.createProjection();
     camera.createView();
 
-    RIBExportVisitor visitor(stream);
+    RIBExportVisitor visitor(handler);
     visitor.begin(camera, output);
     scene.accept(&visitor);
     visitor.end();
+}
+
+/**
+ **/
+void writeShot(std::ostream* stream, const Scene& scene, const v3d::type::camera::Profile& from,
+    const RIBExportVisitor::Output& output) {
+    if (stream == nullptr) {
+        return;
+    }
+    *stream << "##RenderMan RIB-Structure 1.1" << "\n" << "##Creator Vertical3D" << "\n";
+    v3d::render::offline::rib::Writer writer(stream);
+    shoot(&writer, scene, from, output);
 }
 
 };  // namespace v3d::editor

@@ -388,10 +388,21 @@ of which is the documentation of one method per RI request.
 
 ### Step 16 — Live render through the handler
 
-**Open.** Needs step 4.
+**Closed.**
 
-- The RIB exporter emits to a `rib::Handler`. A text handler writes files, and moya's handler
-  takes the calls directly.
+- `RIBExportVisitor` sends its requests to a `rib::Handler`. `rib::Writer` in
+  `api/render/offline` writes them as RIB text, and Batch and the export write files through
+  it. A number is written in the fewest digits that read back as the same float, where the old
+  export wrote six significant digits.
+- **Different from the plan:** Render View records the shot in a `rib::Recorder` on the
+  editor's thread, and replays it into moya's handler on the render's thread. Calling moya's
+  handler directly would build its world, shaders included, on the editor's thread. The
+  recorder also holds the meshes until every light is out, which the text buffer did before.
+- `Declaration` gains a text form and equality, and `filterName()` names a `Filter`, for the
+  writer.
+- Eight new cases, all in a new suite for the writer and the recorder, which fail to build
+  without the change. The writer's fixed point case writes every request, reads it back, and
+  writes it again.
 
 ### Step 17 — demos/
 

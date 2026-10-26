@@ -38,8 +38,8 @@ class Declaration final {
         HPOINT
     };
 
-    Declaration();
-    Declaration(Storage storage, Type type, unsigned int count);
+    Declaration() noexcept;
+    Declaration(Storage storage, Type type, unsigned int count) noexcept;
 
     /**
      * Read a declaration - "uniform point", "varying float", "float[3]", "point". An
@@ -68,6 +68,14 @@ class Declaration final {
      * uniform, one per vertex for varying and vertex.
      **/
     unsigned int elements(unsigned int vertices) const;
+
+    /**
+     * The declaration as parse() reads it, with its storage class always given, such as
+     * "varying color" or "uniform float[2]".
+     **/
+    std::string text() const;
+
+    bool operator==(const Declaration & other) const;
 
  private:
     Storage storage_ = Storage::UNIFORM;

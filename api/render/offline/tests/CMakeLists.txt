@@ -12,6 +12,7 @@ v3d_add_test(render_offline
 	"RibLexerTest.cxx"
 	"RibDeclarationsTest.cxx"
 	"RibReaderTest.cxx"
+	"RibWriterTest.cxx"
 	"RibArgumentsTest.cxx"
 	"SlLexerTest.cxx"
 	"SlParserTest.cxx"

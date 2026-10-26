@@ -26,10 +26,11 @@ what the editor drives:
 A render reads the scene when it starts, so an edit made while it runs is not in its picture.
 
 **moya is the first renderer behind it.** `MoyaDelegate` links `v3dlib_moya` into the editor.
-It writes the scene as RIB on the caller's thread, then hands it to a moya renderer of its own on
-a thread of its own. The picture stays in that renderer's framebuffer, with no file between
-them. moya reports its progress after each bucket of the reyes hider and each row of the
-ray-trace hider, and stops there when cancelled. moya resolves its samples into pixels only at
+It records the scene's RIB requests in a `rib::Recorder` on the caller's thread, then replays
+them into a moya handler of its own on a thread of its own. No RIB text is written or parsed.
+The picture stays in that handler's framebuffer, with no file between them. moya reports its
+progress after each bucket of the reyes hider and each row of the ray-trace hider, and stops
+there when cancelled. moya resolves its samples into pixels only at
 the end of a frame, so the picture arrives when the render finishes, not bucket by bucket.
 
 **A batch writes files and runs moya.exe.** `Batch` writes one RIB file per frame per camera,
@@ -45,9 +46,10 @@ Background: [ADR-0106](../adr/0106-editor-a-renderer-interface-for-interactive-a
 ## What is rendered
 
 The camera is the one selected scene camera, or the active view when there is not exactly one.
-`shotFrom()` in `src/render/Shot.h` picks it, and `writeShot()` writes the scene from it as the
-settings say. The camera takes the picture's size and frame aspect from the settings, so the
-picture is not stretched to the shape of the view.
+`shotFrom()` in `src/render/Shot.h` picks it, and `shoot()` sends the scene from it to a RIB
+handler as the settings say. `writeShot()` is `shoot()` into a `rib::Writer`, which makes a RIB
+file of it for a batch and for the export. The camera takes the picture's size and frame aspect
+from the settings, so the picture is not stretched to the shape of the view.
 
 **Render settings** belong to the document and are saved with it:
 
