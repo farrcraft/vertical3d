@@ -21,7 +21,8 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 ## Rules
 
-- **A roadmap describes the tree as it is.** Update it when the code it describes changes.
+- **An open roadmap describes the tree as it is.** Update it when the code it describes changes.
+  A completed roadmap is a frozen record, and is never updated.
 - **A roadmap does not record decisions.** It may say that a decision is needed and what depends
   on it. The decision itself goes in an ADR in [adr/](../adr/).
 - **A roadmap is not [TODO.md](../TODO.md).** TODO.md lists independent loose ends. A roadmap

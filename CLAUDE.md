@@ -44,6 +44,10 @@ is SDL3.
 | Why something is shaped as it is | [docs/adr/README.md](docs/adr/README.md), grouped by area |
 | What is planned, and what is loose | [docs/plans/](docs/plans/README.md), [docs/TODO.md](docs/TODO.md) |
 
+Everything under a `completed/` directory in `docs/plans`, `docs/roadmap` or `docs/audits` is a
+frozen record. Never edit one or fix its links, and never take a fact about the current tree
+from one. When searching for where a subject is documented, leave them out.
+
 [docs/README.md](docs/README.md) is the full index. [docs/sdlc.md](docs/sdlc.md) describes how
 work moves through the repo: where plans live, when a decision earns an ADR, and what
 "verified" means.

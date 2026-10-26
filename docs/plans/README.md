@@ -13,6 +13,8 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 - **A completed plan stays in the repository.** It records why the work was ordered as it was.
   Its final "Outcome" section says what was delivered, what turned out differently from the
   plan, and what was left open.
+- **A completed plan is frozen.** It is not updated when the code moves, and its links and line
+  numbers are not repaired. It describes the tree as it stood when the plan closed.
 
 [sdlc.md](../sdlc.md) describes how plans fit with ADRs, roadmaps and TODO.md.
 
@@ -21,6 +23,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
+| [Reshaping](Reshaping.md) | All of the tree, documents | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the games in `demos/`, and each reference fact in one place |
 
 ## Completed plans
 

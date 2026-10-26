@@ -29,6 +29,13 @@ what the area would need, and in what order, written while the code is fresh in 
 head. A roadmap is not a schedule. When one of its sections is started, that section gets a
 plan and the roadmap links to it.
 
+**A completed plan, roadmap or audit is a record, not a reference.** Everything under a
+`completed/` directory describes the tree as it stood when that work closed. Nobody updates it
+when the code moves, and nobody repairs its links, paths or line numbers. Read it to learn why
+work was ordered as it was, or what an old tree held. Read the reference documents to learn how
+the tree works now. A reference document never relies on a record for a current fact. The prose
+gate does not check these directories.
+
 ## 2. Decide
 
 **A decision gets an ADR when all of these hold:**
