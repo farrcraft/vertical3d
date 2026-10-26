@@ -6,18 +6,19 @@
 #include "RIBHandler.h"
 
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/Checked.h>
 
 #include "Polygon.h"
 #include "RenderContext.h"
-#include "Renderer.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -52,18 +53,38 @@ const float DEEPEST_TRACE = 16.0F;
 
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 
-};  // namespace
-
-RIBHandler::RIBHandler(Renderer * renderer) : renderer_(renderer) {
-    renderer_->createRenderContext("");
+/**
+ * Print Pixar's copyright notice the first time it is called in a process. A static's
+ * initialiser runs once even when two threads reach it together.
+ **/
+void notice() {
+    static const bool printed = [] {
+        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                     "Copyright 1988, 1989, Pixar" << "\n" <<
+                     "All Rights Reserved" << "\n";
+        return true;
+    }();
+    (void)printed;
 }
 
-RIBHandler::~RIBHandler() {
-    renderer_->destroyActiveRenderContext();
+};  // namespace
+
+RIBHandler::RIBHandler(const std::string & name) : context_(name) {
+    notice();
 }
 
 RenderContext & RIBHandler::context() {
-    return renderer_->activeRenderContext();
+    return context_;
+}
+
+const v3d::render::offline::rib::Declarations & RIBHandler::declarations() const {
+    return declarations_;
+}
+
+void RIBHandler::declare(const v3d::render::offline::rib::Declare & request) {
+    // a declaration that names no type declares nothing. The reader has already reported it
+    // for a file, and RiDeclare has nothing to report it to
+    (void)declarations_.declare(request);
 }
 
 void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
@@ -121,14 +142,23 @@ void RIBHandler::hider(const std::string & name, const ParameterList & parameter
 }
 
 void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
     context().surface(name, parameters);
 }
 
 void RIBHandler::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
     context().lightSource(request, parameters);
 }
 
 void RIBHandler::displacement(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
     context().displacement(name, parameters);
 }
 
@@ -138,14 +168,23 @@ void RIBHandler::attribute(const std::string & name, const ParameterList & param
 
 void RIBHandler::areaLightSource(const v3d::render::offline::rib::LightSource & request,
     const ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
     context().areaLightSource(request, parameters);
 }
 
 void RIBHandler::illuminate(const std::string & handle, bool on) {
+    if (handle.empty()) {
+        return;
+    }
     context().illuminate(handle, on);
 }
 
 void RIBHandler::imager(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
     context().imager(name, parameters);
 }
 
@@ -273,12 +312,41 @@ void RIBHandler::scale(float sx, float sy, float sz) {
     context().scale(sx, sy, sz);
 }
 
+void RIBHandler::coordinateSystem(const std::string & space) {
+    if (space.empty()) {
+        return;
+    }
+    context().saveCoordinateSystem(space);
+}
+
+void RIBHandler::coordSysTransform(const std::string & space) {
+    if (space.empty()) {
+        return;
+    }
+    context().setCoordinateSystem(space);
+}
+
 void RIBHandler::motionBegin(const std::vector<float> & times) {
+    motion_ = true;
+    primitives_ = 0;
     context().motionBegin(times);
 }
 
 void RIBHandler::motionEnd() {
+    motion_ = false;
     context().motionEnd();
+}
+
+bool RIBHandler::deforms() {
+    if (!motion_ || primitives_++ == 0) {
+        return false;
+    }
+    if (!deformed_) {
+        deformed_ = true;
+        context().logger()->get()->warn("a primitive inside a motion block deforms, which is not supported; "
+            "it is drawn at the block's first time");
+    }
+    return true;
 }
 
 void RIBHandler::color(const glm::vec3 & value) {
@@ -294,6 +362,9 @@ void RIBHandler::shadingRate(float size) {
 }
 
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
     const boost::shared_ptr<Polygon> polygon = Polygon::from(parameters, vertices);
     if (polygon) {
         context().addPolygon(polygon);
@@ -302,6 +373,9 @@ void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters
 
 void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
     (void)parameters;
+    if (deforms()) {
+        return;
+    }
     if (!context().addSphere(request) && !spheres_) {
         spheres_ = true;
         context().logger()->get()->warn("the reyes hider does not dice spheres, so this scene renders without them");
@@ -309,6 +383,9 @@ void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const
 }
 
 void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
     const std::vector<unsigned int> & indices = request.indices;
     const std::vector<glm::vec3> points = parameters.points("P");
     const std::vector<glm::vec3> colors = parameters.points("Cs");

@@ -12,7 +12,6 @@
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
-#include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
@@ -388,13 +387,6 @@ class RenderContext {
         bool known(const std::string & name) const;
 
         /**
-         * maps to RiDeclare()
-         * The parameter types the C entry points read. The RIB reader keeps its own
-         * declarations for the file it reads, separate from these.
-         **/
-        v3d::render::offline::rib::Declarations & declarations();
-
-        /**
          * Where this context logs a request it cannot carry out. The RIB reader has a
          * logger of its own for errors in the file.
          **/
@@ -450,7 +442,6 @@ class RenderContext {
         std::vector<std::string> unusedAttributes_;
 
         std::string name_;
-        v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;
         bool beforeWorldReported_ = false;

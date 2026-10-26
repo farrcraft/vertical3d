@@ -12,7 +12,6 @@
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -85,8 +84,7 @@ void MoyaDelegate::run(const std::string& rib, const std::stop_token& stop) {
     State finished = State::Failed;
     boost::shared_ptr<v3d::image::Image> image;
     try {
-        v3d::moya::Renderer renderer;
-        v3d::moya::RIBHandler handler(&renderer);
+        v3d::moya::RIBHandler handler;
         handler.context().progress([this, &stop](float done) {
             const std::scoped_lock lock(mutex_);
             status_.done = done;

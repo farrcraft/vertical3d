@@ -52,14 +52,16 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
   failure code. Any exception is printed to stderr.
 - A Debug build is slow. A 256 by 192 ray traced scene takes about a minute.
 
-moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/Renderer.h` explains
-why: a second API beside the RI C API breaks the standard's "one true API" clause.
+moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/RIBHandler.h` explains
+why: a second API beside the RI C API breaks the standard's "one true API" clause. The first
+handler a process makes prints Pixar's copyright notice, as a program that is not compliant
+must.
 
 ### Inside another program
 
-A program that links `v3dlib_moya` renders a RIB stream with a `Renderer` and a `RIBHandler` of
-its own, as the driver does. Nothing either holds is shared, so two renders on two threads do
-not meet. The editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
+A program that links `v3dlib_moya` renders a RIB stream with a `RIBHandler` of its own, as the
+driver does. Nothing a handler holds is shared, so two renders on two threads do not meet. The
+editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
 
 - **A `Display` of type `framebuffer`** writes no file, and the picture stays in
   `context().picture()`.

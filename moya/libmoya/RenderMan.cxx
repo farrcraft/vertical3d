@@ -4,19 +4,21 @@
  **/
 
 #include "RenderMan.h"
-#include "Polygon.h"
+#include "RIBHandler.h"
 #include "Renderer.h"
 
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Arguments.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/Requests.h>
 
 #include <stdarg.h>
-#include <string.h>
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <deque>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -24,14 +26,33 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+/*
+    Each entry point turns its arguments into the request rib::Handler takes, and passes it to
+    the active handler. The handler applies RI's rules, the same ones it applies to a file. An
+    entry point converts and nothing more: RI_NULL becomes the empty name, a C filter function
+    becomes a Filter, and untyped parameter arrays become a typed list.
+*/
+
 namespace {
 
-// the renderer the C interface drives. It is built on first use, inside the RI call that
-// reaches it, so an exception from its constructor reaches the caller. An exception from a
-// static initialiser reaches no handler at all.
+// the handlers the C interface drives. The stack is built on first use, inside the RI call
+// that reaches it, so an exception from its constructor reaches the caller. An exception from
+// a static initialiser reaches no handler at all.
 v3d::moya::Renderer& renderer() {
     static v3d::moya::Renderer instance;
     return instance;
+}
+
+v3d::moya::RIBHandler& handler() {
+    return renderer().active();
+}
+
+/**
+ * A name as the handler takes it. RI_NULL is the empty name, which the handler ignores
+ * wherever RI needs a name, and reads as RI's meaning for null elsewhere.
+ **/
+std::string text(const char* token) {
+    return token != RI_NULL ? std::string(token) : std::string();
 }
 
 /**
@@ -53,21 +74,25 @@ void collect(va_list arguments, std::vector<RtToken>* tokens, std::vector<RtPoin
 }
 
 /**
- * The parameter list of a shader request, typed by what the context has declared.
+ * A parameter list, typed by what the active handler has declared.
  *
- * A shader's parameters are uniform, so one vertex is the count that bounds every value
- * array: a uniform value is one element whatever it is attached to.
+ * @param vertices how many vertices the request's primitive has, which bounds a varying or a
+ *        vertex array. A request that is not geometry has one, because a uniform value is one
+ *        element whatever it is attached to
  **/
-void parameters(v3d::moya::RenderContext & rc, RtInt n, RtToken tokens[], RtPointer parms[],
-    v3d::render::offline::rib::ParameterList* list) {
+v3d::render::offline::rib::ParameterList parameters(RtInt n, RtToken tokens[], RtPointer parms[],
+    unsigned int vertices = 1) {
+    v3d::moya::RIBHandler & active = handler();
+    v3d::render::offline::rib::ParameterList list;
     std::vector<std::string> unresolved;
-    v3d::render::offline::rib::arguments(rc.declarations(), n, tokens, parms, 1, list,
+    v3d::render::offline::rib::arguments(active.declarations(), n, tokens, parms, vertices, &list,
         &unresolved);
     for (const std::string & name : unresolved) {
         // a name with no declaration has no length either, so it is dropped rather than
         // read past, as the RIB reader does for a file
-        rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
+        active.context().logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
     }
+    return list;
 }
 
 /**
@@ -239,76 +264,74 @@ RtVoid RiProcRunProgram(RtPointer data, RtFloat detail) {
 RtVoid RiProcDynamicLoad(RtPointer data, RtFloat detail) {
 }
 
-// RiGetContext and RiContext have no RIB equivalents. The handle is the active context, which
+// RiGetContext and RiContext have no RIB equivalents. The handle is the active handler, which
 // stays where it is until RiEnd ends it
 RtContextHandle RiGetContext(void) {
-    return &renderer().activeRenderContext();
+    return &renderer().active();
 }
 
 // a handle to a context that has ended, or was never begun, is ignored
 RtVoid RiContext(RtContextHandle handle) {
-    renderer().activate(static_cast<const v3d::moya::RenderContext*>(handle));
+    renderer().activate(static_cast<const v3d::moya::RIBHandler*>(handle));
 }
 
+// RI returns the token the name now stands for. In this renderer the token is the name
 RtToken RiDeclare(char * name, char * declaration) {
-    if (name == nullptr || declaration == nullptr) {
-        return 0;
-    }
-    renderer().activeRenderContext().declarations().declare({.name = name, .type = declaration});
-    // RI returns the token the name now stands for. In this renderer the token is the name
+    handler().declare({.name = text(name), .type = text(declaration)});
     return name;
 }
 
 
-// RiBegin pushes a new context and makes it active. RI_NULL is the empty name
+// RiBegin pushes a new context and makes it active
 RtVoid RiBegin(RtToken name) {
-    std::string str;
-    if (name != RI_NULL) {
-        str = name;
-    }
-    renderer().createRenderContext(str);
+    renderer().begin(text(name));
 }
 
 
 // RiEnd pops the active context, and the one beneath it becomes active. With no context
 // begun it does nothing. A request that arrives with no context active creates one
 RtVoid RiEnd(void) {
-    renderer().destroyActiveRenderContext();
+    renderer().end();
 }
 
 RtVoid RiFrameBegin(RtInt frame) {
+    handler().frameBegin(frame);
 }
 
 RtVoid RiFrameEnd(void) {
+    handler().frameEnd();
 }
 
-// the transformation in force becomes the world to camera transformation, and the
-// framebuffer is allocated
 RtVoid RiWorldBegin(void) {
-    renderer().activeRenderContext().prepareWorld();
+    handler().worldBegin();
 }
 
-// renders the frame, and writes it when the display type is "file"
 RtVoid RiWorldEnd(void) {
-    renderer().activeRenderContext().render();
+    handler().worldEnd();
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    // the context takes a side of zero or less as its default, and refuses one that is too large
-    renderer().activeRenderContext().imageResolution(glm::ivec2(xres, yres), aspect);
+    // a side the RIB reader would refuse is refused here too, and the request is skipped
+    const std::optional<uint32_t> width = v3d::render::offline::formatSide(static_cast<float>(xres));
+    const std::optional<uint32_t> height = v3d::render::offline::formatSide(static_cast<float>(yres));
+    if (!width || !height) {
+        return;
+    }
+    handler().format({.width = *width, .height = *height, .pixelAspect = aspect});
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
-    renderer().activeRenderContext().frameAspectRatio(aspect);
+    handler().frameAspectRatio(aspect);
 }
 
 RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
-    renderer().activeRenderContext().screenWindow({.left = left, .right = right, .bottom = bot, .top = top});
+    handler().screenWindow({.left = left, .right = right, .bottom = bot, .top = top});
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
-    renderer().activeRenderContext().cropWindow({.xmin = xmin, .xmax = xmax, .ymin = ymin, .ymax = ymax});
+    handler().cropWindow({.xmin = xmin, .xmax = xmax, .ymin = ymin, .ymax = ymax});
 }
 
 RtVoid RiProjection(RtToken name, ...) {
@@ -321,17 +344,12 @@ RtVoid RiProjection(RtToken name, ...) {
     RiProjectionV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-// "perspective" reads an optional "fov", in degrees, and takes 90 without one. RI_NULL
-// applies no projection
 RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.projection(name != RI_NULL ? name : "", list.number("fov", v3d::moya::RenderContext::defaultFov));
+    handler().projection(text(name), parameters(n, tokens, parms));
 }
 
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
-    renderer().activeRenderContext().clipping({.hither = hither, .yon = yon});
+    handler().clipping({.hither = hither, .yon = yon});
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -340,28 +358,25 @@ RtVoid RiClippingPlane(RtFloat x, RtFloat y, RtFloat z, RtFloat nx, RtFloat ny, 
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
-    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
-    sampling.fstop = fstop;
-    sampling.focalLength = focallength;
-    sampling.focalDistance = focaldistance;
+    handler().depthOfField({.fstop = fstop, .focalLength = focallength, .focalDistance = focaldistance});
 }
 
 RtVoid RiShutter(RtFloat min, RtFloat max) {
-    renderer().activeRenderContext().sampling().shutter = glm::vec2(min, max);
+    handler().shutter({.open = min, .close = max});
 }
 
 RtVoid RiPixelVariance(RtFloat variation) {
-    renderer().activeRenderContext().sampling().variance = variation;
+    handler().pixelVariance(variation);
 }
 
 RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
-    renderer().activeRenderContext().sampling().samples = glm::uvec2(
-        v3d::render::offline::sampleCount(xsamples), v3d::render::offline::sampleCount(ysamples));
+    handler().pixelSamples(glm::uvec2(
+        v3d::render::offline::sampleCount(xsamples), v3d::render::offline::sampleCount(ysamples)));
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
     // the C interface names a filter by its function, and only the filters RI declares are
-    // known. Any other function leaves the filter the context had
+    // known. Any other function skips the request
     v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
     if (filterfunc == RiBoxFilter) {
         filter = v3d::render::offline::Filter::Box;
@@ -376,13 +391,11 @@ RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
     } else {
         return;
     }
-    // a width the RIB reader would refuse is refused here too, and the context keeps its filter
+    // a width the RIB reader would refuse is refused here too, and the request is skipped
     if (!v3d::render::offline::filterWidth(glm::vec2(xwidth, ywidth))) {
         return;
     }
-    v3d::render::offline::Sampling & sampling = renderer().activeRenderContext().sampling();
-    sampling.filter = filter;
-    sampling.width = glm::vec2(xwidth, ywidth);
+    handler().pixelFilter(filter, xwidth, ywidth);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -400,13 +413,7 @@ RtVoid RiImager(RtToken name, ...) {
 }
 
 RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    if (name == nullptr) {
-        return;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.imager(name, list);
+    handler().imager(text(name), parameters(n, tokens, parms));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -423,29 +430,23 @@ RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
     RiDisplayV(name, type, mode, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-// a null name, type or mode reaches the context as an empty string. No parameter is read, and
-// the context logs each one
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.display({
-        .name = name != nullptr ? name : "",
-        .type = type != nullptr ? type : "",
-        .mode = mode != nullptr ? mode : ""}, list);
+    handler().display({.name = text(name), .type = text(type), .mode = text(mode)}, parameters(n, tokens, parms));
 }
 
 RtVoid RiHider(RtToken type, ...) {
-    renderer().activeRenderContext().hider(type != nullptr ? type : "");
+    va_list arguments;
+    va_start(arguments, type);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiHiderV(type, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    // no hider takes a parameter
-    (void)n;
-    (void)tokens;
-    (void)parms;
-    renderer().activeRenderContext().hider(type != nullptr ? type : "");
+    handler().hider(text(type), parameters(n, tokens, parms));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -456,25 +457,33 @@ RtVoid RiRelativeDetail(RtFloat relativedetail) {
 }
 
 RtVoid RiOption(RtToken name, ...) {
+    va_list arguments;
+    va_start(arguments, name);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiOptionV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().option(text(name), parameters(n, tokens, parms));
 }
 
 RtVoid RiAttributeBegin(void) {
-    renderer().activeRenderContext().attributeBegin();
+    handler().attributeBegin();
 }
 
 RtVoid RiAttributeEnd(void) {
-    renderer().activeRenderContext().attributeEnd();
+    handler().attributeEnd();
 }
 
 RtVoid RiColor(RtColor color) {
-    renderer().activeRenderContext().color(glm::vec3(color[0], color[1], color[2]));
+    handler().color(glm::vec3(color[0], color[1], color[2]));
 }
 
 RtVoid RiOpacity(RtColor color) {
-    renderer().activeRenderContext().opacity(glm::vec3(color[0], color[1], color[2]));
+    handler().opacity(glm::vec3(color[0], color[1], color[2]));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -494,25 +503,21 @@ RtLightHandle RiLightSource(RtToken name, ...) {
 
 namespace {
 
-/** A light through the context, as an ordinary light or as an area light. **/
+/** A light, as an ordinary light or as an area light. **/
 RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], bool area) {
-    if (name == nullptr) {
-        return 0;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
     /*
-        A C caller has no handle to give, so the interface returns one. The render context
-        keys lights on a string, because RIB 3.03 writes a handle as a number and later
-        versions write a string. This handle is the count of lights made so far, the same
-        sequence a 3.03 file writes.
+        A C caller has no handle to give, so the interface returns one. The handler keys
+        lights on a string, because RIB 3.03 writes a handle as a number and later versions
+        write a string. This handle is the count of lights made so far, the same sequence a
+        3.03 file writes. A light whose shader cannot be made still has a handle, which turns
+        nothing on or off.
     */
     const std::string handle = std::to_string(made++);
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
+    const v3d::render::offline::rib::LightSource request = {.shader = text(name), .handle = handle};
     if (area) {
-        rc.areaLightSource({.shader = name, .handle = handle}, list);
+        handler().areaLightSource(request, parameters(n, tokens, parms));
     } else {
-        rc.lightSource({.shader = name, .handle = handle}, list);
+        handler().lightSource(request, parameters(n, tokens, parms));
     }
     return keep(handle);
 }
@@ -538,14 +543,9 @@ RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPoin
 }
 
 RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
-    if (light == nullptr) {
-        return;
-    }
-    renderer().activeRenderContext().illuminate(static_cast<const char*>(light), onoff != RI_FALSE);
+    handler().illuminate(text(static_cast<const char*>(light)), onoff != RI_FALSE);
 }
 
-// a shader the library cannot load leaves no surface current, and a primitive with no
-// surface is shaded with "constant"
 RtVoid RiSurface(RtToken name, ...) {
     va_list arguments;
     va_start(arguments, name);
@@ -557,13 +557,7 @@ RtVoid RiSurface(RtToken name, ...) {
 }
 
 RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    if (name == nullptr) {
-        return;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.surface(name, list);
+    handler().surface(text(name), parameters(n, tokens, parms));
 }
 
 RtVoid RiAtmosphere(RtToken name, ...) {
@@ -585,7 +579,7 @@ RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiShadingRate(RtFloat size) {
-    renderer().activeRenderContext().shadingRate(size);
+    handler().shadingRate(size);
 }
 
 RtVoid RiShadingInterpolation(RtToken type) {
@@ -617,7 +611,7 @@ RtVoid RiSides(RtInt sides) {
 }
 
 RtVoid RiIdentity(void) {
-    renderer().activeRenderContext().setIdentityTransform();
+    handler().identity();
 }
 
 namespace {
@@ -634,27 +628,27 @@ glm::mat4x4 matrix(RtMatrix transform) {
 };  // namespace
 
 RtVoid RiTransform(RtMatrix transform) {
-    renderer().activeRenderContext().setTransform(matrix(transform));
+    handler().transform(matrix(transform));
 }
 
 RtVoid RiConcatTransform(RtMatrix transform) {
-    renderer().activeRenderContext().concatTransform(matrix(transform));
+    handler().concatTransform(matrix(transform));
 }
 
 RtVoid RiPerspective(RtFloat fov) {
 }
 
 RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer().activeRenderContext().translate(dx, dy, dz);
+    handler().translate(dx, dy, dz);
 }
 
 // angle is in degrees
 RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-    renderer().activeRenderContext().rotate(angle, glm::vec3(dx, dy, dz));
+    handler().rotate(angle, glm::vec3(dx, dy, dz));
 }
 
 RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
-    renderer().activeRenderContext().scale(sx, sy, sz);
+    handler().scale(sx, sy, sz);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -678,28 +672,15 @@ RtVoid RiDisplacement(RtToken name, ...) {
 }
 
 RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    if (name == nullptr) {
-        return;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.displacement(name, list);
+    handler().displacement(text(name), parameters(n, tokens, parms));
 }
 
-// a null space names nothing, and is ignored
 RtVoid RiCoordinateSystem(RtToken space) {
-    if (space == nullptr) {
-        return;
-    }
-    renderer().activeRenderContext().saveCoordinateSystem(space);
+    handler().coordinateSystem(text(space));
 }
 
 RtVoid RiCoordSysTransform(RtToken space) {
-    if (space == nullptr) {
-        return;
-    }
-    renderer().activeRenderContext().setCoordinateSystem(space);
+    handler().coordSysTransform(text(space));
 }
 
 RtPoint * RiTransformPoints(RtToken /* fromspace */, RtToken /* tospace */, RtInt /* n */, RtPoint /* points */[]) {
@@ -707,11 +688,11 @@ RtPoint * RiTransformPoints(RtToken /* fromspace */, RtToken /* tospace */, RtIn
 }
 
 RtVoid RiTransformBegin(void) {
-    renderer().activeRenderContext().pushTransform();
+    handler().transformBegin();
 }
 
 RtVoid RiTransformEnd(void) {
-    renderer().activeRenderContext().popTransform();
+    handler().transformEnd();
 }
 
 RtVoid RiAttribute(RtToken name, ...) {
@@ -725,13 +706,7 @@ RtVoid RiAttribute(RtToken name, ...) {
 }
 
 RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    if (name == nullptr) {
-        return;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    v3d::render::offline::rib::ParameterList list;
-    parameters(rc, n, tokens, parms, &list);
-    rc.attribute(name, list);
+    handler().attribute(text(name), parameters(n, tokens, parms));
 }
 
 RtVoid RiPolygon(RtInt nverts, ...) {
@@ -744,26 +719,11 @@ RtVoid RiPolygon(RtInt nverts, ...) {
     RiPolygonV(nverts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-// reads "P", "Cs", "N" and "st", as the RIB path does. A polygon is not checked for being
-// planar, convex or degenerate
+// a vertex or varying value is one element per corner. A count below zero is no corners
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    if (nverts < 3) {
-        return;
-    }
-    v3d::moya::RenderContext & rc = renderer().activeRenderContext();
-    const unsigned int vertices = static_cast<unsigned int>(nverts);
-    // a vertex or varying value is one element per corner
-    v3d::render::offline::rib::ParameterList list;
-    std::vector<std::string> unresolved;
-    v3d::render::offline::rib::arguments(rc.declarations(), n, tokens, parms, vertices, &list, &unresolved);
-    for (const std::string & name : unresolved) {
-        rc.logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
-    }
-    const boost::shared_ptr<v3d::moya::Polygon> polygon = v3d::moya::Polygon::from(list, vertices);
-    if (polygon) {
-        rc.addPolygon(polygon);
-    }
+    const unsigned int vertices = static_cast<unsigned int>(std::max(nverts, 0));
+    handler().polygon(vertices, parameters(n, tokens, parms, vertices));
 }
 
 RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {
@@ -773,9 +733,36 @@ RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[]
 }
 
 RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
+    va_list arguments;
+    va_start(arguments, verts);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiPointsPolygonsV(npolys, nverts, verts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
+// a vertex or varying value is one element per point the faces index, so the arrays are as
+// long as the largest index plus one. A count or an index below zero skips the request
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
+    v3d::render::offline::rib::PointsPolygons request;
+    std::size_t total = 0;
+    for (RtInt each = 0; each < npolys; each++) {
+        if (nverts[each] < 0) {
+            return;
+        }
+        request.counts.push_back(static_cast<unsigned int>(nverts[each]));
+        total += static_cast<std::size_t>(nverts[each]);
+    }
+    unsigned int points = 0;
+    for (std::size_t each = 0; each < total; each++) {
+        if (verts[each] < 0) {
+            return;
+        }
+        request.indices.push_back(static_cast<unsigned int>(verts[each]));
+        points = std::max(points, request.indices.back() + 1);
+    }
+    handler().pointsPolygons(request, parameters(n, tokens, parms, points));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -814,12 +801,17 @@ RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat
 RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
 }
 
+// RI's last named argument is a float, which a variadic list cannot be started from, so this
+// form reads no parameter. moya reads none of a sphere's
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+    RiSphereV(radius, zmin, zmax, tmax, 0, nullptr, nullptr);
 }
 
+// a quadric has a varying value at each of the four corners of its parameter space
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    handler().sphere({.radius = radius, .zmin = zmin, .zmax = zmax, .thetamax = tmax}, parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -935,14 +927,14 @@ RtVoid RiMotionBegin(RtInt n, ...) {
         times.push_back(static_cast<float>(va_arg(arguments, double)));
     }
     va_end(arguments);
-    renderer().activeRenderContext().motionBegin(times);
+    handler().motionBegin(times);
 }
 
 RtVoid RiMotionBeginV(RtInt n, RtInt n2, RtToken tokens[], RtPointer parms[]) {
 }
 
 RtVoid RiMotionEnd(void) {
-    renderer().activeRenderContext().motionEnd();
+    handler().motionEnd();
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

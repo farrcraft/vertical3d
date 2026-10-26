@@ -7,7 +7,6 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -32,8 +31,7 @@ namespace {
  * A picture the image factory cannot write is reported through the context's own logger.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -49,8 +47,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
  * The renderer reads no display parameter, so each one a scene gives is logged as not used.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -65,8 +62,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
  * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string & hider) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Format 8 6 1\n"
         "PixelSamples 1 1\n"
@@ -128,8 +124,7 @@ std::string covered(const char* hider) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT(hider) {
-            v3d::moya::Renderer renderer;
-            v3d::moya::RIBHandler handler(&renderer);
+            v3d::moya::RIBHandler handler;
             std::vector<float> told;
             handler.context().progress([&told](float done) {
                 told.push_back(done);
@@ -152,8 +147,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT(hider) {
-            v3d::moya::Renderer renderer;
-            v3d::moya::RIBHandler handler(&renderer);
+            v3d::moya::RIBHandler handler;
             unsigned int told = 0;
             handler.context().progress([&told](float /*done*/) {
                 told++;

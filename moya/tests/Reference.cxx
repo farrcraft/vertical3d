@@ -17,7 +17,6 @@
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Vertex.h>
 
 #include <algorithm>
@@ -264,8 +263,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
 }
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     if (scene.hider != nullptr) {
         handler.context().hider(scene.hider);
     }

@@ -117,6 +117,14 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         translate_ = glm::vec3(dx, dy, dz);
         counts_["Translate"]++;
     }
+    void coordinateSystem(const std::string & space) override {
+        spaces_.push_back("save " + space);
+        counts_["CoordinateSystem"]++;
+    }
+    void coordSysTransform(const std::string & space) override {
+        spaces_.push_back("use " + space);
+        counts_["CoordSysTransform"]++;
+    }
     void color(const glm::vec3 & value) override {
         color_ = value;
         counts_["Color"]++;
@@ -176,6 +184,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::vector<std::string> declared_;
     std::vector<std::string> lights_;
     std::vector<std::string> illuminated_;
+    std::vector<std::string> spaces_;
     std::vector<glm::vec3> background_;
     std::vector<float> bucket_;
     std::string texturePath_;
@@ -480,6 +489,23 @@ BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
     BOOST_CHECK_EQUAL(moved.x, 2.0F);
     BOOST_CHECK_EQUAL(moved.y, 3.0F);
     BOOST_CHECK_EQUAL(moved.z, 4.0F);
+}
+
+/**
+ * CoordinateSystem and CoordSysTransform each take the name of a space, and reach the handler
+ * in the order the file gives them.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_coordinate_system_requests_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "CoordinateSystem \"lamp\"\n"
+        "Translate 1 0 0\n"
+        "CoordSysTransform \"lamp\"\n", &handler, &reader));
+
+    BOOST_TEST(reader.unrecognised().empty());
+    BOOST_TEST(handler.spaces_ == std::vector<std::string>({ "save lamp", "use lamp" }), boost::test_tools::per_element());
 }
 
 BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {

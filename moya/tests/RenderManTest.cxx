@@ -6,6 +6,7 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <moya/libmoya/Planes.h>
+#include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
 #include <moya/libmoya/Shading.h>
@@ -24,19 +25,18 @@ namespace {
 
 /**
  * The context the C entry points write to. RiGetContext is RI's own query for it, and the
- * handle it returns is the context.
+ * handle it returns is the handler that holds the context.
  **/
 v3d::moya::RenderContext & context() {
-    return *static_cast<v3d::moya::RenderContext*>(RiGetContext());
+    return static_cast<v3d::moya::RIBHandler*>(RiGetContext())->context();
 }
 
 /**
- * The C interface and the RIB reader each reach a render context, and neither goes through the
- * other. A va_list cannot be built at runtime, so the reader cannot call the C entry points.
+ * Each C entry point passes its request to the handler the RIB reader calls, so the two reach
+ * the same graphics state by the same rules.
  *
- * The shader requests are checked on the C path here. A parameter a C caller passes is typed
- * by what RiDeclare said, the same table a file's Declare fills, and it reaches the same
- * graphics state.
+ * A parameter a C caller passes is typed by what RiDeclare said, the same table a file's
+ * Declare fills.
  **/
 BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiBegin(RI_NULL);
@@ -208,8 +208,9 @@ BOOST_AUTO_TEST_CASE(renderman_a_displacement_reaches_the_context_test) {
     RiAttribute(const_cast<char*>("displacementbound"), const_cast<char*>("sphere"), &sphere, RI_NULL);
     RtFloat amount = 0.1F;
     RiDeclare(const_cast<char*>("amount"), const_cast<char*>("float"));
-    // lift is a fixture beside the suite's scenes, and RiOption does not set a search path
-    context().searchpath("data:&");
+    // lift is a fixture beside the suite's scenes
+    RtString path = const_cast<char*>("data:&");
+    RiOption(const_cast<char*>("searchpath"), const_cast<char*>("shader"), &path, RI_NULL);
     RiDisplacement(const_cast<char*>("lift"), const_cast<char*>("amount"), &amount, RI_NULL);
     const v3d::moya::Shading shading = context().shading();
     BOOST_REQUIRE(shading.displacement.shader);
@@ -263,6 +264,59 @@ BOOST_AUTO_TEST_CASE(renderman_polygon_vector_form_draws_test) {
     RtToken tokens[2] = { RI_P, RI_CS };
     RtPointer parms[2] = { const_cast<RtPoint*>(COVER), const_cast<RtPoint*>(RED) };
     RiPolygonV(4, 2, tokens, parms);
+    RiWorldEnd();
+    checkRed();
+    RiEnd();
+}
+
+/**
+ * A polygon after the first in a motion block is the first one deforming, which moya does not
+ * draw, as it does not from a file. The later polygon is green and nearer the camera, so it
+ * would cover the red one if it were drawn.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_a_deforming_polygon_is_not_drawn_test) {
+    const RtPoint nearer[4] = { { -5.0F, -5.0F, 2.0F }, { 5.0F, -5.0F, 2.0F }, { 5.0F, 5.0F, 2.0F }, { -5.0F, 5.0F, 2.0F } };
+    const RtPoint green[4] = { { 0.0F, 1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F }, { 0.0F, 1.0F, 0.0F } };
+    beginCovered();
+    RiMotionBegin(2, 0.0, 1.0);
+    RiPolygon(4, RI_P, const_cast<RtPoint*>(COVER), RI_CS, const_cast<RtPoint*>(RED), RI_NULL);
+    RiPolygon(4, RI_P, const_cast<RtPoint*>(nearer), RI_CS, const_cast<RtPoint*>(green), RI_NULL);
+    RiMotionEnd();
+    RiWorldEnd();
+    checkRed();
+    RiEnd();
+}
+
+/**
+ * RiPointsPolygons draws its faces, and reads a vertex value at each point the faces index.
+ * Two triangles that share a diagonal make the covering quad.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_points_polygons_draws_test) {
+    beginCovered();
+    RtInt nverts[2] = { 3, 3 };
+    RtInt verts[6] = { 0, 1, 2, 0, 2, 3 };
+    RiPointsPolygons(2, nverts, verts, RI_P, const_cast<RtPoint*>(COVER), RI_CS, const_cast<RtPoint*>(RED), RI_NULL);
+    RiWorldEnd();
+    checkRed();
+    RiEnd();
+}
+
+/**
+ * RiSphere draws under the ray hider, as a file's Sphere does. A large sphere in front of the
+ * camera covers the picture in the colour in force.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_sphere_draws_under_the_ray_hider_test) {
+    RiBegin(RI_NULL);
+    RiHider(const_cast<char*>("raytrace"), RI_NULL);
+    RiFormat(8, 6, 1.0F);
+    RiPixelSamples(1.0F, 1.0F);
+    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+    RtColor red = { 1.0F, 0.0F, 0.0F };
+    RiColor(red);
+    RiTranslate(0.0F, 0.0F, 20.0F);
+    RiSphere(10.0F, -10.0F, 10.0F, 360.0F, RI_NULL);
     RiWorldEnd();
     checkRed();
     RiEnd();

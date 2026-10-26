@@ -10,7 +10,6 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Shading.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
@@ -26,6 +25,7 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Handling.h"
 
@@ -36,8 +36,7 @@ namespace {
  * RiColor is graphics state rather than a material, and it reaches the pixels.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -55,12 +54,46 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
 }
 
 /**
+ * CoordinateSystem names the current transformation, and CoordSysTransform makes it current
+ * again after the transformation has moved on.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_coordinate_systems_test) {
+    v3d::moya::RIBHandler handler;
+
+    BOOST_REQUIRE(read(
+        "Scale 2 2 2\n"
+        "CoordinateSystem \"lamp\"\n"
+        "Identity\n"
+        "CoordSysTransform \"lamp\"\n"
+        "CoordinateSystem \"copy\"\n", &handler));
+
+    const glm::mat4x4 doubled = glm::scale(glm::mat4x4(1.0F), glm::vec3(2.0F));
+    BOOST_TEST((handler.context().coordinateSystem("lamp") == doubled));
+    BOOST_TEST((handler.context().coordinateSystem("copy") == doubled));
+}
+
+/**
+ * A shader with an empty name names nothing, so the request is ignored and the surface in
+ * force stays. The C interface passes RI_NULL on as the empty name.
+ **/
+BOOST_AUTO_TEST_CASE(moya_ribhandler_an_empty_name_is_ignored_test) {
+    v3d::moya::RIBHandler handler;
+
+    BOOST_REQUIRE(read(
+        "Surface \"plastic\"\n"
+        "Surface \"\"\n", &handler));
+
+    const v3d::moya::Shading shading = handler.context().shading();
+    BOOST_REQUIRE(shading.surface);
+    BOOST_CHECK_EQUAL(shading.surface->name(), "plastic");
+}
+
+/**
  * The current colour and transform push and pop together, so the second polygon is not
  * coloured or placed by what the first one set.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -92,8 +125,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
  * TransformEnd restores the current transformation that TransformBegin saved.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     // a polygon added after the block sits where its own points say
     BOOST_REQUIRE(read(
@@ -129,15 +161,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
         "Scale 1 0 1\n"
         "MotionEnd\n";
     {
-        v3d::moya::Renderer renderer;
-        v3d::moya::RIBHandler handler(&renderer);
+        v3d::moya::RIBHandler handler;
         BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
             &handler));
         BOOST_CHECK_EQUAL(handler.context().bucketed(), 0U);
     }
     {
-        v3d::moya::Renderer renderer;
-        v3d::moya::RIBHandler handler(&renderer);
+        v3d::moya::RIBHandler handler;
         BOOST_REQUIRE(read("Hider \"raytrace\"\n" + flat + "Sphere 1 -1 1 360\nWorldEnd\n", &handler));
         BOOST_CHECK(handler.context().traced().all<v3d::render::offline::trace::Sphere>().empty());
     }
@@ -149,8 +179,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
  * join it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     // read up to WorldEnd, so the lights are still on to be read back
     BOOST_REQUIRE(read(
@@ -192,8 +221,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
  * changes nothing.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     // read up to WorldEnd, so the attribute state is still there to be read back
     BOOST_REQUIRE(read(
@@ -231,8 +259,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
  * with a shader that shows the shading point in object space.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::string & hider) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
         "Format 8 6 1\n"
@@ -262,8 +289,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string & hider, const std::string & light,
     const std::string & surface) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
         "Format 8 6 1\n"

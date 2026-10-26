@@ -7,7 +7,6 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -108,11 +107,9 @@ int run(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    // RiBegin and RiEnd have no RIB equivalent. The RIBHandler pushes the render context on
-    // construction and pops it on destruction
+    // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     if (!outfile.empty()) {
         handler.output(outfile);

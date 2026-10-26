@@ -14,7 +14,6 @@
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/Renderer.h>
 
 #include <algorithm>
 #include <cmath>
@@ -97,8 +96,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
  * the two disagree, this case fails. A fault in the reader shows as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
@@ -175,8 +173,7 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
  * shows here.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(SHADED_SCENE, &handler));
@@ -204,8 +201,7 @@ BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
  * The sampled scene said in RIB, which names no sampling and so gets the defaults.
  **/
 BOOST_AUTO_TEST_CASE(moya_sampled_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(SAMPLED_SCENE, &handler));
@@ -265,8 +261,7 @@ BOOST_AUTO_TEST_CASE(moya_focus_reference_test) {
 }
 
 BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(FOCUS_SCENE, &handler));
@@ -345,8 +340,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_test) {
 }
 
 BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(MOTION_SCENE, &handler));

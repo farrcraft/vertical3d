@@ -79,14 +79,23 @@ scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics st
 5. The imager shader, if the scene names one, runs over the planes.
 6. The colour planes are written to the output file.
 
-**There are two ways into a `RenderContext`**: the RI C entry points in `RenderMan.cxx`, and
-`RIBHandler`. Neither calls the other. The reader cannot use the C API, because most RI
-functions take varargs and a `va_list` cannot be built at run time. Every C entry point has a
-definition, but many are empty: every quadric, `RiPointsPolygons`, `RiOption` and `RiBasis`
-among them. A varargs form collects its parameters and calls its `V` form. Each token in the
-token table holds RI's string for it, and each basis matrix holds RI's values. A null name is
-ignored by the request it is passed to, or reaches the context as an empty string where RI gives
-null a meaning.
+**The RI C entry points in `RenderMan.cxx` are an adapter over `RIBHandler`.** Each converts
+its arguments into the request the handler takes and passes it on, so a C call and a file's
+request follow the same rules. The conversion is all an entry point does: RI_NULL becomes the
+empty name, a filter function becomes a `Filter`, and the untyped parameter arrays become a list
+typed by the handler's declarations. The reader cannot call the C entry points instead, because
+most take varargs and a `va_list` cannot be built at run time.
+
+- `moya::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
+  pops it. The active handler receives every call, and `RiGetContext`'s handle is the handler.
+- `RIBHandler` ignores a request whose shader, light or space name is empty.
+- Every C entry point has a definition, but many are empty: every quadric but the sphere,
+  `RiBasis` and `RiMakeTexture` among them.
+- A varargs form collects its parameters and calls its `V` form. `RiSphere` is the exception.
+  RI ends its named arguments on a float, which a `va_list` cannot be started from, so it passes
+  no parameter. moya reads none of a sphere's.
+- Each token in the token table holds RI's string for it, and each basis matrix holds RI's
+  values.
 
 ### The render context
 
@@ -142,4 +151,3 @@ Also not built, with no open item:
   hider.
 - `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary and gzipped
   RIB, and `Display` modes other than RGB.
-- `RiPointsPolygons` and `RiSphere` in the RI C interface. Only the RIB path draws them.

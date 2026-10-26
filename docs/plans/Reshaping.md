@@ -257,12 +257,27 @@ of which is the documentation of one method per RI request.
 
 ### Step 4 — RI's C interface as an adapter
 
-**Open.** Needs step 3.
+**Closed.**
 
-- `RenderMan.cxx` turns each call into a `rib::Handler` request, so each RI rule lives in
-  `RIBHandler` alone.
-- `RIBHandler` no longer needs a `Renderer`. The notice is printed once per process, not per
-  render.
+- Each entry point in `RenderMan.cxx` converts its arguments and calls the active
+  `RIBHandler`. `RiOption`, `RiSphere` and `RiPointsPolygons` now work from C, through the
+  handler's code for a file.
+- One guard serves every entry point: RI_NULL becomes the empty name. `RIBHandler` ignores an
+  empty shader, light or space name, from a file as well as from C.
+- `RIBHandler` owns its context and the declarations the C interface types parameters by.
+  `RenderContext` no longer holds declarations. `Renderer` is the C interface's stack of
+  handlers, and `RiGetContext`'s handle is the handler. The notice is printed by the first
+  handler a process makes.
+- **Different from the plan:** `CoordinateSystem` and `CoordSysTransform` are new handler
+  requests, and the reader reads them, because the rule for a predefined name has to live in
+  the handler. A file can now name a space.
+- **Different from the plan:** a deforming primitive in a motion block is held back by
+  `RIBHandler` as well as by the reader, because the C interface has no reader in front of it.
+- **Different from the plan:** `RiSphere` passes no parameter to the handler. RI ends its named
+  arguments on a float, and a `va_list` cannot be started from one.
+- Eight new cases. The notice case and the C cases for the sphere, the mesh and the motion block
+  fail to build without the change. The reader's coordinate system case fails to build, and the
+  moya ones for coordinate systems and an empty name fail.
 
 ### Step 5 — The engine without Vulkan
 

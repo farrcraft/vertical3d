@@ -21,7 +21,7 @@ The reader recognises these requests:
 | Options | `version`, `Declare`, `Option`, `Hider`, `Format`, `FrameAspectRatio`, `ScreenWindow`, `CropWindow`, `Projection`, `Clipping`, `Display`, `Imager` |
 | Sampling and lens | `PixelSamples`, `PixelFilter`, `PixelVariance`, `DepthOfField`, `Shutter` |
 | Blocks | `FrameBegin`, `FrameEnd`, `WorldBegin`, `WorldEnd`, `AttributeBegin`, `AttributeEnd`, `TransformBegin`, `TransformEnd`, `MotionBegin`, `MotionEnd` |
-| Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale` |
+| Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale`, `CoordinateSystem`, `CoordSysTransform` |
 | Attributes | `Color`, `Opacity`, `ShadingRate`, `Attribute` |
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
@@ -70,9 +70,12 @@ name.
 - **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
   array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
   `RtFloat`s.
-- **A variadic C entry point forwards to its `V` form**, which does the work, so the two forms
-  of a request cannot differ. `RiPolygon` and the RIB `Polygon` build their polygon through one
-  function, and both read `"P"`, `"Cs"`, `"N"` and `"st"`.
+- **A C entry point and a file's request reach the same `RIBHandler` method.** A variadic entry
+  point forwards to its `V` form, which converts the arguments and calls the handler, so the two
+  forms of a request cannot differ. `RiPolygon` and the RIB `Polygon` both read `"P"`, `"Cs"`,
+  `"N"` and `"st"`.
+- **A shader, light or space with an empty name names nothing.** `RIBHandler` ignores the
+  request, and the state stays as it was. The C interface passes `RI_NULL` on as the empty name.
 - **No `Display` parameter is read.** Each one a scene gives is logged as not used.
 - **`RiGetContext` returns a handle that lasts until `RiEnd` ends its context.** `RiContext`
   makes that context active again, and a handle to a context that has ended is ignored. `RiEnd`
@@ -101,9 +104,8 @@ name.
   not a converted file.
 - **`Attribute "displacementbound"` is a distance in object space**, or in the space its
   `"string coordinatesystem"` names: `"object"`, `"world"`, `"camera"`, or one the scene saved
-  with `RiCoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
-  space's axes. A space the scene never named is reported, and object space is used. The RIB
-  reader does not read `CoordinateSystem`, so a file can name only the three predefined spaces.
+  with `CoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
+  space's axes. A space the scene never named is reported, and object space is used.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
   `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
 - **An area light keeps the geometry declared after it in the same attribute block.** Every
@@ -114,7 +116,8 @@ name.
 - **A primitive repeated inside a motion block is a deformation, which moya does not build.**
   The reader hands the later poses to `Handler::deformation()`, which returns null unless a
   renderer overrides it, and lists them in `Reader::unsupported()`. The primitive is drawn at
-  the block's first time.
+  the block's first time. `RIBHandler` leaves out a later pose that reaches it through the C
+  interface in the same way, and logs the first one.
 - **A polygon's `"st"` is its texture coordinates**, two floats per vertex. A traced triangle
   weights its corners' values by its barycentric coordinates. A triangle given none has `s` and
   `t` equal to those coordinates. The reyes hider interpolates `"st"` across a grid, as it does

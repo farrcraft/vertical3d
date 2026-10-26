@@ -18,7 +18,6 @@
 #include <moya/libmoya/RayHider.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
-#include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Vertex.h>
 
 #include <array>
@@ -123,7 +122,7 @@ BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {
 BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
     RiBegin(RI_NULL);
     RiHider(const_cast<char*>("raytrace"), RI_NULL);
-    BOOST_CHECK(static_cast<v3d::moya::RenderContext*>(RiGetContext())->raytracing());
+    BOOST_CHECK(static_cast<v3d::moya::RIBHandler*>(RiGetContext())->context().raytracing());
     RiEnd();
 }
 
@@ -288,8 +287,7 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
  * [0, 2], and a quad at x in [0, 1] fills the left half of the picture.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -313,8 +311,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
  * screen.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -340,8 +337,7 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
  * polygon restores what it saved, so only the translation after the block moves the polygon.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -365,8 +361,7 @@ BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
  * "N" is the shading normal and overrides it, and Ng stays the plane.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -390,8 +385,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
  * normal leans the opposite way to the points.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -418,8 +412,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
  * current, and is met where the transformation put it.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -445,8 +438,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
  * two primitives lights them differently. Primitives made under the same lights share one set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -553,8 +545,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
     const char* hiders[2] = { "hidden", "raytrace" };
     for (const char* hider : hiders) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::Renderer renderer;
-            v3d::moya::RIBHandler handler(&renderer);
+            v3d::moya::RIBHandler handler;
             BOOST_REQUIRE(read(
                 std::string("Hider \"") + hider + "\"\n"
                 "Format 16 16 1\n"

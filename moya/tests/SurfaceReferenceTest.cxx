@@ -11,7 +11,6 @@
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/Renderer.h>
 
 #include <algorithm>
 #include <cmath>
@@ -78,8 +77,7 @@ BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
  * The same bumped plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
@@ -106,8 +104,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
  * The same traced bumped plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
@@ -192,8 +189,7 @@ BOOST_AUTO_TEST_CASE(moya_area_reference_test) {
  * The same area light said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_area_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(AREA_SCENE, &handler));
@@ -218,8 +214,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_test) {
  * The traced area light said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_AREA_SCENE, &handler));
@@ -284,8 +279,7 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_test) {
  * The same translucent quad said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(GLASS_SCENE, &handler));
@@ -348,8 +342,7 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_test) {
  * The same displaced plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(DISPLACED_SCENE, &handler));
@@ -376,8 +369,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_test) {
  * The same traced displaced plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_from_rib_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_DISPLACED_SCENE, &handler));

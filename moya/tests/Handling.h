@@ -10,7 +10,6 @@
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -98,8 +97,7 @@ class Heard {
  **/
 inline boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
     const std::string & varying) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"limits\" \"gridsize\" [" + std::to_string(grid) + "]\n"
         "Format 64 48 1\n"

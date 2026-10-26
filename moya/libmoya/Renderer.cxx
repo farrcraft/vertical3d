@@ -5,56 +5,40 @@
 
 #include "Renderer.h"
 
-#include "RenderContext.h"
+#include "RIBHandler.h"
 
 #include <algorithm>
-#include <iostream>
 #include <string>
 
 #include <boost/make_shared.hpp>
 
 namespace v3d::moya {
 
-
-Renderer::Renderer() {
+void Renderer::begin(const std::string & name) {
+    handlers_.push_back(boost::make_shared<RIBHandler>(name));
 }
 
-Renderer::~Renderer() {
-}
-
-void Renderer::createRenderContext(const std::string & name) {
-    // printed each time the stack goes from empty to one context, so a process that begins
-    // more than one context in turn prints it more than once
-    if (contexts_.empty()) {
-        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
-                     "Copyright 1988, 1989, Pixar" << "\n" <<
-                     "All Rights Reserved" << "\n";
-    }
-
-    contexts_.push_back(boost::make_shared<RenderContext>(name));
-}
-
-void Renderer::destroyActiveRenderContext(void) {
-    if (!contexts_.empty()) {
-        contexts_.pop_back();
+void Renderer::end() {
+    if (!handlers_.empty()) {
+        handlers_.pop_back();
     }
 }
 
-bool Renderer::activate(const RenderContext * context) {
-    const auto found = std::find_if(contexts_.begin(), contexts_.end(),
-        [context](const boost::shared_ptr<RenderContext> & held) { return held.get() == context; });
-    if (found == contexts_.end()) {
+bool Renderer::activate(const RIBHandler * handler) {
+    const auto found = std::find_if(handlers_.begin(), handlers_.end(),
+        [handler](const boost::shared_ptr<RIBHandler> & held) { return held.get() == handler; });
+    if (found == handlers_.end()) {
         return false;
     }
-    std::rotate(found, found + 1, contexts_.end());
+    std::rotate(found, found + 1, handlers_.end());
     return true;
 }
 
-RenderContext & Renderer::activeRenderContext(void) {
-    if (contexts_.empty()) {
-        createRenderContext("");
+RIBHandler & Renderer::active() {
+    if (handlers_.empty()) {
+        begin("");
     }
-    return *contexts_.back();
+    return *handlers_.back();
 }
 
 };  // namespace v3d::moya

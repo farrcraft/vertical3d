@@ -12,7 +12,6 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
-#include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Imager.h>
@@ -465,10 +464,6 @@ Shading RenderContext::shading() {
     state.displacement = attributes_.displacement;
     state.displacementBound = attributes_.displacementBound;
     return state;
-}
-
-v3d::render::offline::rib::Declarations & RenderContext::declarations() {
-    return declarations_;
 }
 
 const boost::shared_ptr<v3d::log::Logger> & RenderContext::logger() const {

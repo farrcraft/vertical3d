@@ -526,6 +526,18 @@ Reader::Result Reader::transformRequest(const std::string & name, Lexer * lexer,
         handler->scale(triple[0], triple[1], triple[2]);
         return Result::Handled;
     }
+    if (name == "CoordinateSystem" || name == "CoordSysTransform") {
+        std::string space;
+        if (!text(lexer, &space)) {
+            return Result::Failed;
+        }
+        if (name == "CoordinateSystem") {
+            handler->coordinateSystem(space);
+        } else {
+            handler->coordSysTransform(space);
+        }
+        return Result::Handled;
+    }
     return Result::Unhandled;
 }
 

@@ -11,7 +11,6 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Renderer.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -36,8 +35,7 @@ namespace {
  * The polygon a file names reaches RenderContext::addPolygon(), which files it in a bucket.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -55,8 +53,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
  * and logs a warning. The ray hider draws spheres.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -79,8 +76,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
  * what it traces.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -111,8 +107,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
  * left out of the traced scene. A sphere with a positive radius in the same scene is drawn.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
@@ -134,8 +129,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
  * to x = 0.79. A bound built from those two corners alone culls a quad that is on screen.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -162,8 +156,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
  * first edge with a length, and a polygon too large to dice is drawn rather than lost.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -243,8 +236,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
     const auto render = [](const std::string & bound) {
-        v3d::moya::Renderer renderer;
-        v3d::moya::RIBHandler handler(&renderer);
+        v3d::moya::RIBHandler handler;
         BOOST_REQUIRE(read(
             "Format 64 48 1\n"
             "PixelSamples 1 1\n"
@@ -273,8 +265,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT("under " << hider) {
-            v3d::moya::Renderer renderer;
-            v3d::moya::RIBHandler handler(&renderer);
+            v3d::moya::RIBHandler handler;
             BOOST_REQUIRE(read(
                 "Format 16 16 1\n"
                 "Hider \"" + std::string(hider) + "\"\n"
@@ -305,8 +296,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_
  * A polygon sent before WorldBegin has no camera to be placed by, so it is logged and dropped.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -325,8 +315,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test)
  * the first four corners, the hexagon's upper half, and the lower half is not drawn.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"limits\" \"gridsize\" [4096]\n"
         "Format 64 48 1\n"

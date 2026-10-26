@@ -17,7 +17,6 @@
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Vertex.h>
 
 #include <algorithm>
