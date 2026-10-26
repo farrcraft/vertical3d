@@ -22,7 +22,6 @@
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>
-#include <api/ui/style/property/Font.h>
 #include <api/ui/style/property/Image.h>
 #include <api/ui/style/property/Number.h>
 
@@ -140,8 +139,9 @@ const char* const themedDocument = R"({
 BOOST_AUTO_TEST_SUITE(theme_test)
 
 /**
- * A theme carries styles, a style carries properties of four kinds, and each is read as the
- * kind of the array it was written in.
+ * A theme carries styles, a style carries properties of three kinds, and each is read as the
+ * kind of the array it was written in. Nothing draws with a font, so a style's fonts are
+ * not read.
  **/
 BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     bool loaded = false;
@@ -167,18 +167,12 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
 
     const std::vector<boost::shared_ptr<v3d::ui::style::Style>> labels = dark->getStyleSet("", "label");
     BOOST_REQUIRE_EQUAL(labels.size(), 1U);
-    const boost::shared_ptr<v3d::ui::style::property::Font> font =
-        boost::dynamic_pointer_cast<v3d::ui::style::property::Font>(labels.front()->property("label", "font"));
-    BOOST_REQUIRE(font);
-    BOOST_CHECK_EQUAL(font->face(), "Vera");
-    BOOST_CHECK_EQUAL(font->size(), 18U);
-    BOOST_CHECK(font->bold());
-    BOOST_CHECK(!font->italics());
+    BOOST_CHECK(!labels.front()->property("label", "font"));
 }
 
 /**
  * A button style is told apart by its state as well as by its name, and an image property
- * carries its source and its alignment.
+ * carries its source.
  **/
 BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     bool loaded = false;
@@ -197,7 +191,6 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
         boost::dynamic_pointer_cast<v3d::ui::style::property::Image>(styled->property("top-left", "image"));
     BOOST_REQUIRE(corner);
     BOOST_CHECK_EQUAL(corner->source(), "skins/tl.tga");
-    BOOST_CHECK((corner->align() == v3d::ui::style::Property::TOP_LEFT));
     // nothing has uploaded it, so the handle it will draw with is unset
     BOOST_CHECK(!corner->image().valid());
 }
@@ -474,8 +467,7 @@ BOOST_AUTO_TEST_CASE(an_optional_member_of_the_wrong_type_is_ignored) {
     bool loaded = false;
     boost::shared_ptr<v3d::ui::Interface> ui;
     BOOST_CHECK_NO_THROW(ui = load(R"({
-        "themes": [ { "name": "dark", "styles": [ { "class": "label", "name": "s", "state": 5,
-            "fonts": [ { "name": "f", "source": 5, "face": 5, "size": -12, "align": 5 } ] } ] } ],
+        "themes": [ { "name": "dark", "styles": [ { "class": "button", "name": "s", "state": 5 } ] } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "button", "name": "go", "label": 5, "icon": [], "style": 3, "depth": -1,
               "anchor": 2, "command": 5, "context": "ui" },

@@ -172,10 +172,6 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Interface>& ui) {
         }
         return engine_.textures()->texture(asset->image());
     });
-
-    // the metrics the constructor worked out from the font size stand unless the theme
-    // names its own
-    screen_->theme(ui_->activeTheme());
 }
 
 /**
@@ -190,7 +186,7 @@ glm::vec2 Renderer::insets() const {
 /**
  **/
 void Renderer::draw() {
-    if (!screen_->begin()) {
+    if (!screen_->begin(shell_->ui().get())) {
         return;
     }
     const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();

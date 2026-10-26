@@ -82,7 +82,7 @@ void PongRenderer::draw(float alpha) {
         return;
     }
 
-    if (!screen->begin()) {
+    if (!screen->begin(shell_->ui().get())) {
         return;
     }
     const v3d::render::realtime::canvas::Canvas& ui = screen->canvas();

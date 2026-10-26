@@ -76,13 +76,19 @@ class Screen final {
     ~Screen() = default;
 
     /**
-     * Begin a frame: size the canvas to it, and clear the canvas.
+     * Begin a frame: draw with the ui's active theme, size the canvas to the frame, and
+     * clear the canvas.
      *
+     * The theme is read from the ui every frame, and given to the component renderer and the
+     * immediate layer when it has changed, before either draws. Setting the active theme on
+     * the Interface is all an app does to change it.
+     *
+     * @param ui the ui whose theme is drawn with, or null to keep the theme drawn with now
      * @return false when there is no frame to draw into, because the window is minimised or
      *         there is no renderer. The app then draws nothing and returns. For a minimised
      *         window, the empty frame has already been presented
      **/
-    bool begin();
+    bool begin(const Interface* ui);
 
     /**
      * @return whether the last begin() found the frame a different size from the one before,
@@ -93,7 +99,8 @@ class Screen final {
 
     /**
      * Draw text larger or smaller, rebuilding what captures its size. The dressing is
-     * filled in again for the new size, and the theme is set again on what is rebuilt.
+     * filled in again for the new size, and the theme drawn with is set again on what is
+     * rebuilt.
      *
      * @param factor how much larger than Options::size, from a little above zero
      **/
@@ -105,12 +112,6 @@ class Screen final {
      *         the scale
      **/
     float size() const noexcept;
-
-    /**
-     * Set a theme on the component renderer and the immediate layer, and keep it for what
-     * scale() rebuilds.
-     **/
-    void theme(const boost::shared_ptr<style::Theme>& theme);
 
     /**
      * Draw a ui, then the statistics over it, into the canvas. Either may be missing.
@@ -139,6 +140,11 @@ class Screen final {
      **/
     void build();
 
+    /**
+     * Dress the component renderer and the immediate layer from a theme.
+     **/
+    void theme(const boost::shared_ptr<style::Theme>& theme);
+
     v3d::render::realtime::WindowRenderer* engine_;
     Options options_;
     float scale_;
@@ -148,7 +154,6 @@ class Screen final {
     boost::shared_ptr<paint::ComponentRenderer> components_;
     boost::shared_ptr<StatisticsOverlay> statistics_;
     boost::shared_ptr<Immediate> immediate_;
-    boost::shared_ptr<style::Theme> theme_;
 };
 
 };  // namespace v3d::ui::shell

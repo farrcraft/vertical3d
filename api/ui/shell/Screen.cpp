@@ -73,10 +73,11 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
 /**
  **/
 void Screen::build() {
+    // the theme lives on the Interface, and the renderer being replaced is what was last given it
+    const boost::shared_ptr<style::Theme> drawing = components_ ? components_->theme() : boost::shared_ptr<style::Theme>();
     const float drawn = size();
     components_ = boost::make_shared<paint::ComponentRenderer>(text_->measure(drawn), text_->write(&canvas_, drawn));
     options_.dress(&components_->dressing(), drawn);
-    components_->theme(theme_);
 
     if (options_.immediate) {
         // built once and given the new text after that, so a rescale keeps where its windows
@@ -86,11 +87,11 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
-        // the immediate layer has its own Dressing type, which the app's Dress does not fill,
-        // so only the line height is copied across
+        // the app's Dress fills in a hud's sizes, which are larger than a tool panel's, so
+        // only the line height, which follows the text, is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
-        immediate_->theme(theme_);
     }
+    theme(drawing);
     if (statistics_) {
         statistics_->size(StatisticsOverlay::defaultSize * scale_);
     }
@@ -98,7 +99,10 @@ void Screen::build() {
 
 /**
  **/
-bool Screen::begin() {
+bool Screen::begin(const Interface* ui) {
+    if (ui != nullptr && ui->activeTheme() != components_->theme()) {
+        theme(ui->activeTheme());
+    }
     resized_ = false;
     glm::ivec2 frame(0, 0);
     if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
@@ -145,10 +149,9 @@ float Screen::size() const noexcept {
 /**
  **/
 void Screen::theme(const boost::shared_ptr<style::Theme>& theme) {
-    theme_ = theme;
-    components_->theme(theme_);
+    components_->theme(theme);
     if (immediate_) {
-        immediate_->theme(theme_);
+        immediate_->theme(theme);
     }
 }
 

@@ -205,9 +205,31 @@ BOOST_AUTO_TEST_CASE(a_disabled_widget_answers_nothing) {
     ui.endDisabled();
     ui.end();
 
-    // and it is drawn in the dim colour while it is off
+    // and it is drawn in the disabled colour while it is off
     BOOST_REQUIRE(!written.empty());
-    BOOST_CHECK(written.back().colour == ui.dressing().dimText);
+    BOOST_CHECK(written.back().colour == ui.dressing().disabledText);
+}
+
+/**
+ * An empty field shows its label in the placeholder colour, which a theme names apart from
+ * the colour of disabled text.
+ **/
+BOOST_AUTO_TEST_CASE(an_empty_field_shows_its_label_as_a_placeholder) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 hint(1.0F, 0.0F, 0.0F, 1.0F);
+    ui.dressing().placeholder = hint;
+
+    std::string value;
+    ui.begin(&canvas, v3d::ui::Immediate::Input());
+    ui.textField("Name", &value);
+    ui.end();
+
+    BOOST_REQUIRE(!written.empty());
+    BOOST_CHECK_EQUAL(written.back().text, "Name");
+    BOOST_CHECK(written.back().colour == hint);
 }
 
 /**

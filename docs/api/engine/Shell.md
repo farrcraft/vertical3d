@@ -55,9 +55,10 @@ bool AppEngine::release() {
 
 ## Drawing
 
-The app's renderer opens each frame through `screen()->begin()`, draws its own content, and
-then calls `draw()`, which draws the ui and the statistics over it into the screen's canvas.
-Where the canvas is submitted, and in which pass, stays the renderer's.
+The app's renderer opens each frame through `screen()->begin(ui().get())`, draws its own
+content, and then calls `draw()`, which draws the ui and the statistics over it into the
+screen's canvas. `begin()` draws the frame in the ui's active theme. Where the canvas is
+submitted, and in which pass, stays the renderer's.
 
 `sample()` is what the overlay shows: the loop's frame times and steps, and a span for every
 scope the app timed with `Engine::measure()`. `draw()` uses it. An app that adds spans of its

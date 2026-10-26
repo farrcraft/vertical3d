@@ -168,7 +168,7 @@ void TetrisRenderer::draw() {
         return;
     }
 
-    if (!screen_->begin()) {
+    if (!screen_->begin(shell_->ui().get())) {
         return;
     }
     if (screen_->resized()) {

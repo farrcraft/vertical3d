@@ -60,7 +60,7 @@ makes it that game. Do not write your own version of these:
   starts hidden.
 - **The screen** — `v3d::ui::shell::Screen` builds the text renderer, the component renderer
   and the statistics overlay over an `WindowRenderer`, and owns the canvas they draw into. Its
-  `begin()` starts each frame and returns false while the window is minimised. In that case the
+  `begin(ui)` starts each frame and returns false while the window is minimised. In that case the
   app draws nothing that frame.
 
 [ui/](../ui/README.md) describes how to use each of these.

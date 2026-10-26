@@ -340,7 +340,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
  **/
 void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     const v3d::ui::Immediate::Input& tools) {
-    if (!screen_->begin()) {
+    if (!screen_->begin(shell_->ui().get())) {
         return;
     }
     const v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();

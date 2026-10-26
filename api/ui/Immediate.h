@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/input/LineEdit.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Style.h>
 
@@ -79,36 +80,6 @@ class Immediate {
     };
 
     /**
-     * The colours and metrics the immediate ui draws with. A value that a theme's "tools"
-     * style does not set keeps its default, so an empty theme changes nothing.
-     *
-     * A Style is the set of properties a theme holds. This struct is what one resolves to.
-     **/
-    struct Dressing final {
-        Dressing() noexcept;
-
-        float lineHeight;      /**< the height of one row of text **/
-        float padding;         /**< the gap between a widget's edge and the text in it **/
-        float spacing;         /**< the gap between one widget and the next **/
-        float barHeight;       /**< how tall a title bar, a tab or a button is **/
-        float borderWidth;     /**< how thick a window's outline is **/
-        float radius;          /**< how far a window's corners are rounded **/
-        float indent;          /**< how far a bullet pushes its text in **/
-        float scrollbarWidth;  /**< how wide the bar down a window that scrolls is **/
-        glm::vec4 panel;       /**< a window's background **/
-        glm::vec4 border;      /**< a window's outline **/
-        glm::vec4 titleBar;    /**< the band across the top of a window, and a table's header **/
-        glm::vec4 text;        /**< ordinary text **/
-        glm::vec4 activeText;  /**< text on a hovered or selected widget **/
-        glm::vec4 dimText;     /**< text that is disabled or secondary **/
-        glm::vec4 widget;      /**< a button, a track, a tab that is not selected **/
-        glm::vec4 highlight;   /**< a selected row, a selected tab **/
-        glm::vec4 hover;       /**< what is drawn behind the widget the cursor is on **/
-        glm::vec4 fill;        /**< the filled part of a progress bar **/
-        glm::vec4 rule;        /**< a separator, and the line under a tab strip **/
-    };
-
-    /**
      * @param measure how wide a string is when the app draws it
      * @param write how the app draws a string
      **/
@@ -123,12 +94,13 @@ class Immediate {
     void text(const paint::Measure& measure, const paint::Write& write);
 
     /**
-     * @return the colours and metrics, to be changed in place
+     * @return the colours and metrics, to be changed in place. They start from
+     *      paint::Dressing::tools()
      **/
-    Dressing& dressing() noexcept;
+    paint::Dressing& dressing() noexcept;
 
     /**
-     * Read a theme's "tools" style into dressing().
+     * Read a theme's "tools" style into dressing(). The theme is not kept.
      *
      * A separate class from the "ui" class the retained components read, because a tool
      * panel uses the same keys at smaller sizes than a hud. A theme styles both, in two
@@ -196,7 +168,7 @@ class Immediate {
     void text(const std::string& line);
 
     /**
-     * A line of text in the dim colour, for secondary text.
+     * A line of text in the disabled-text colour, for secondary text.
      **/
     void textDisabled(const std::string& line);
 
@@ -292,8 +264,8 @@ class Immediate {
      * was typed. A field that is not drawn for a frame gives it up too, and what was typed
      * since it was last drawn is lost.
      *
-     * The label is the field's id, and is drawn dimmed in it while it is empty and does not
-     * have the keyboard.
+     * The label is the field's id, and is drawn in it in the placeholder colour while it is
+     * empty and does not have the keyboard.
      *
      * @param value read and written. A change the caller makes while the field holds the
      *        keyboard replaces what is being edited
@@ -707,10 +679,9 @@ class Immediate {
  private:
     paint::Measure measure_;
     paint::Write write_;
-    Dressing dressing_;
+    paint::Dressing dressing_;
     // what the current theme wrote over dressing_
-    style::Overlay<Dressing> overlay_;
-    boost::shared_ptr<style::Theme> theme_;
+    style::Overlay<paint::Dressing> overlay_;
 
     v3d::render::realtime::canvas::Canvas* canvas_;
     Input input_;

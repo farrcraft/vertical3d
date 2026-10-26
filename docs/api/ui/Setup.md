@@ -28,7 +28,7 @@ screen_ = shell_->screen();
 Each frame:
 
 ```cpp
-if (!screen_->begin()) {
+if (!screen_->begin(shell_->ui().get())) {
     return;                       // minimised: the frame was presented empty
 }
 if (screen_->resized()) {
@@ -39,8 +39,11 @@ shell_->draw();                         // the retained ui, then the statistics 
 engine_.quads()->submit(screen_->canvas(), pass.get());
 ```
 
-- `begin()` begins the frame through `WindowRenderer::beginFrame`, sizes the canvas to the frame,
-  and clears it. It returns false when the window is minimised or there is no renderer.
+- `begin(ui)` dresses the component renderer and the immediate layer from the ui's active theme
+  when it has changed, then begins the frame through `WindowRenderer::beginFrame`, sizes the
+  canvas to the frame, and clears it. It returns false when the window is minimised or there is
+  no renderer. A null ui keeps the theme drawn with. The theme is applied before anything draws,
+  so a theme change shows in full on the next frame.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
 - The passes, the draw order and where the canvas is submitted stay the app's.
@@ -49,8 +52,6 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   size. When it is empty, the line height is set to 1.4 times the size.
 - `scale(factor)` redraws text larger or smaller. It rebuilds everything that depends on the
   font size, calls `dress` again, and applies the theme again.
-- `theme(theme)` dresses the component renderer and the immediate layer from a theme, and
-  keeps it for later rebuilds.
 
 Do not keep a reference to `components()` across frames. `scale()` replaces it, and an old
 reference points at an object that is no longer drawn. `immediate()` and `text()` are the same

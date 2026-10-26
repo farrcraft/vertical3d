@@ -4,6 +4,7 @@
  **/
 
 #include <api/ui/Immediate.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -12,6 +13,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <boost/test/unit_test.hpp>
 
@@ -279,6 +281,89 @@ BOOST_AUTO_TEST_CASE(the_two_ways_of_writing_a_ui_read_different_classes) {
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     ui.theme(theme);
     BOOST_CHECK_CLOSE(ui.dressing().lineHeight, 18.0F, 0.001F);
+}
+
+/**
+ * Both ways of writing a ui read their base class by one set of keys, each naming one field.
+ * A theme that names every key in "ui" and in "tools" sets every field of both.
+ **/
+BOOST_AUTO_TEST_CASE(both_ways_of_writing_a_ui_read_the_same_keys) {
+    const std::pair<const char*, glm::vec4 v3d::ui::paint::Dressing::*> colours[] = {
+        { "panel", &v3d::ui::paint::Dressing::panel },
+        { "border", &v3d::ui::paint::Dressing::border },
+        { "title-bar", &v3d::ui::paint::Dressing::titleBar },
+        { "track", &v3d::ui::paint::Dressing::track },
+        { "fill", &v3d::ui::paint::Dressing::fill },
+        { "thumb", &v3d::ui::paint::Dressing::thumb },
+        { "mark", &v3d::ui::paint::Dressing::mark },
+        { "caret", &v3d::ui::paint::Dressing::caret },
+        { "placeholder", &v3d::ui::paint::Dressing::placeholder },
+        { "tab", &v3d::ui::paint::Dressing::tab },
+        { "widget", &v3d::ui::paint::Dressing::widget },
+        { "rule", &v3d::ui::paint::Dressing::rule },
+        { "text", &v3d::ui::paint::Dressing::text },
+        { "active-text", &v3d::ui::paint::Dressing::activeText },
+        { "disabled-text", &v3d::ui::paint::Dressing::disabledText },
+        { "highlight", &v3d::ui::paint::Dressing::highlight },
+        { "hover", &v3d::ui::paint::Dressing::hover },
+        { "focus", &v3d::ui::paint::Dressing::focus },
+    };
+    const std::pair<const char*, float v3d::ui::paint::Dressing::*> metrics[] = {
+        { "line-height", &v3d::ui::paint::Dressing::lineHeight },
+        { "padding", &v3d::ui::paint::Dressing::padding },
+        { "spacing", &v3d::ui::paint::Dressing::spacing },
+        { "bar-height", &v3d::ui::paint::Dressing::barHeight },
+        { "icon-size", &v3d::ui::paint::Dressing::iconSize },
+        { "panel-padding", &v3d::ui::paint::Dressing::panelPadding },
+        { "scrollbar-width", &v3d::ui::paint::Dressing::scrollbarWidth },
+        { "mark-size", &v3d::ui::paint::Dressing::markSize },
+        { "border-width", &v3d::ui::paint::Dressing::borderWidth },
+        { "focus-width", &v3d::ui::paint::Dressing::focusWidth },
+        { "radius", &v3d::ui::paint::Dressing::radius },
+        { "indent", &v3d::ui::paint::Dressing::indent },
+    };
+
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    const boost::shared_ptr<v3d::ui::style::Style> tools = style("default", Resolver::tools);
+    // a value no default holds, different for every key so that two keys read into one
+    // field would show
+    float value = 101.0F;
+    for (const auto& [name, field] : colours) {
+        colour(chrome, name, glm::vec4(value, 0.0F, 0.0F, 1.0F));
+        colour(tools, name, glm::vec4(value, 0.0F, 0.0F, 1.0F));
+        value += 1.0F;
+    }
+    for (const auto& [name, field] : metrics) {
+        metric(chrome, name, value);
+        metric(tools, name, value);
+        value += 1.0F;
+    }
+    theme->addStyle(chrome);
+    theme->addStyle(tools);
+
+    Resolver resolver;
+    resolver.theme(theme);
+    v3d::ui::Immediate ui(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    ui.theme(theme);
+
+    value = 101.0F;
+    for (const auto& [name, field] : colours) {
+        BOOST_TEST_CONTEXT(name) {
+            BOOST_CHECK_CLOSE((resolver.base().*field).x, value, 0.001F);
+            BOOST_CHECK_CLOSE((ui.dressing().*field).x, value, 0.001F);
+        }
+        value += 1.0F;
+    }
+    for (const auto& [name, field] : metrics) {
+        BOOST_TEST_CONTEXT(name) {
+            BOOST_CHECK_CLOSE(resolver.base().*field, value, 0.001F);
+            BOOST_CHECK_CLOSE(ui.dressing().*field, value, 0.001F);
+        }
+        value += 1.0F;
+    }
 }
 
 /**

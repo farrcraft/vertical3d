@@ -10,7 +10,6 @@
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Painter.h>
-#include <api/ui/paint/Palette.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
@@ -77,24 +76,6 @@ const float bulletScale = 0.28F;
 const unsigned int bulletSides = 8;
 
 /**
- * The sizes a dressing starts with, in pixels.
- **/
-constexpr float defaultLineHeight = 18.0F;
-constexpr float defaultPadding = 6.0F;
-constexpr float defaultSpacing = 4.0F;
-constexpr float defaultBarHeight = 22.0F;
-constexpr float defaultRadius = 3.0F;
-constexpr float defaultIndent = 14.0F;
-constexpr float defaultScrollbarWidth = 10.0F;
-
-/**
- * The colours a dressing starts with that the retained ui does not share.
- **/
-constexpr glm::vec4 titleBarColor{0.12F, 0.14F, 0.19F, 1.0F};
-constexpr glm::vec4 hoverColor{0.22F, 0.25F, 0.33F, 1.0F};
-constexpr glm::vec4 ruleColor{0.24F, 0.26F, 0.32F, 1.0F};
-
-/**
  * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
  **/
 const float tickInset = 0.25F;
@@ -137,28 +118,6 @@ asked(false),
 boxMin(0.0F, 0.0F),
 boxMax(0.0F, 0.0F),
 selected(-1) {
-}
-
-Immediate::Dressing::Dressing() noexcept :
-lineHeight(defaultLineHeight),
-padding(defaultPadding),
-spacing(defaultSpacing),
-barHeight(defaultBarHeight),
-borderWidth(1.0F),
-radius(defaultRadius),
-indent(defaultIndent),
-scrollbarWidth(defaultScrollbarWidth),
-panel(paint::PANEL_COLOR),
-border(paint::EDGE_COLOR),
-titleBar(titleBarColor),
-text(paint::TEXT_COLOR),
-activeText(1.0F, 1.0F, 1.0F, 1.0F),
-dimText(paint::DIM_TEXT_COLOR),
-widget(paint::RAISED_COLOR),
-highlight(paint::HIGHLIGHT_COLOR),
-hover(hoverColor),
-fill(paint::FILL_COLOR),
-rule(ruleColor) {
 }
 
 Immediate::Row::Row() noexcept :
@@ -211,6 +170,7 @@ clipped(false) {
 Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
     measure_(measure),
     write_(write),
+    dressing_(paint::Dressing::tools()),
     canvas_(nullptr),
     previousCursor_(0.0F, 0.0F),
     drag_(0.0F, 0.0F),
@@ -241,7 +201,7 @@ void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
     write_ = write;
 }
 
-Immediate::Dressing& Immediate::dressing() noexcept {
+paint::Dressing& Immediate::dressing() noexcept {
     return dressing_;
 }
 
@@ -249,36 +209,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     // the new theme starts from what was there before any theme, so where it is silent the
     // last theme's value does not linger
     overlay_.restore(&dressing_);
-    theme_ = theme;
-    if (!theme_) {
-        return;
-    }
-    const boost::shared_ptr<style::Style> chrome =
-        style::lookup(theme_, style::Resolver::tools, std::string_view());
-    if (!chrome) {
-        return;
-    }
-
-    overlay_.colour(chrome, "panel", &dressing_, &Dressing::panel);
-    overlay_.colour(chrome, "border", &dressing_, &Dressing::border);
-    overlay_.colour(chrome, "title-bar", &dressing_, &Dressing::titleBar);
-    overlay_.colour(chrome, "text", &dressing_, &Dressing::text);
-    overlay_.colour(chrome, "active-text", &dressing_, &Dressing::activeText);
-    overlay_.colour(chrome, "dim-text", &dressing_, &Dressing::dimText);
-    overlay_.colour(chrome, "widget", &dressing_, &Dressing::widget);
-    overlay_.colour(chrome, "highlight", &dressing_, &Dressing::highlight);
-    overlay_.colour(chrome, "hover", &dressing_, &Dressing::hover);
-    overlay_.colour(chrome, "fill", &dressing_, &Dressing::fill);
-    overlay_.colour(chrome, "rule", &dressing_, &Dressing::rule);
-
-    overlay_.metric(chrome, "line-height", &dressing_, &Dressing::lineHeight);
-    overlay_.metric(chrome, "padding", &dressing_, &Dressing::padding);
-    overlay_.metric(chrome, "spacing", &dressing_, &Dressing::spacing);
-    overlay_.metric(chrome, "bar-height", &dressing_, &Dressing::barHeight);
-    overlay_.metric(chrome, "border-width", &dressing_, &Dressing::borderWidth);
-    overlay_.metric(chrome, "radius", &dressing_, &Dressing::radius);
-    overlay_.metric(chrome, "indent", &dressing_, &Dressing::indent);
-    overlay_.metric(chrome, "scrollbar-width", &dressing_, &Dressing::scrollbarWidth);
+    style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), &overlay_, &dressing_);
 }
 
 void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {
@@ -492,7 +423,7 @@ Immediate::Reaction Immediate::interact(Id id, const glm::vec2& min, const glm::
 }
 
 glm::vec4 Immediate::ink(const glm::vec4& colour) const {
-    return disabled_ > 0 ? dressing_.dimText : colour;
+    return disabled_ > 0 ? dressing_.disabledText : colour;
 }
 
 glm::vec4 Immediate::face(bool lit, bool hovered) const {
@@ -664,9 +595,7 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
         *scroll = component::dragOffset(track, length, input_.cursor.y - min.y, span);
     }
 
-    // the thumb rests in the rule colour rather than the widget one, so that it reads
-    // against the track under it
-    glm::vec4 grip = dressing_.rule;
+    glm::vec4 grip = dressing_.thumb;
     if (reaction.held) {
         grip = dressing_.highlight;
     } else if (reaction.hovered) {
@@ -674,7 +603,7 @@ void Immediate::scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, flo
     }
 
     const float start = component::thumbStart({.track = track, .length = length, .offset = *scroll, .span = span});
-    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
+    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.track);
     paint::fillBox(canvas_, glm::vec2(min.x, min.y + start), glm::vec2(max.x, min.y + start + length),
         dressing_.radius, grip);
 }
@@ -692,7 +621,7 @@ void Immediate::textDisabled(const std::string& line) {
         return;
     }
     const glm::vec2 size(measure_(line), dressing_.lineHeight);
-    label(line, place(size), size, dressing_.dimText);
+    label(line, place(size), size, dressing_.disabledText);
 }
 
 void Immediate::textWrapped(const std::string& line) {
@@ -842,13 +771,13 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
 
     const bool focused = typing_ == id;
     paint::plateBox(canvas_, min, max, dressing_.radius, dressing_.borderWidth,
-        {.inside = face(false, reaction.hovered && !focused), .outline = focused ? dressing_.highlight : dressing_.border});
+        {.inside = face(false, reaction.hovered && !focused), .outline = focused ? dressing_.focus : dressing_.border});
     if (high.x <= low.x) {
         return changed;
     }
     canvas_->clip(low, high);
     if (!focused && value->empty()) {
-        this->label(label, low, glm::vec2(room, size.y - (dressing_.borderWidth * 2.0F)), dressing_.dimText);
+        this->label(label, low, glm::vec2(room, size.y - (dressing_.borderWidth * 2.0F)), dressing_.placeholder);
         canvas_->unclip();
         return changed;
     }
@@ -869,7 +798,7 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
     this->label(std::string(line), glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), ink(dressing_.text));
     if (focused) {
         const float stem = std::max(dressing_.borderWidth, 1.0F);
-        canvas_->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing_.activeText);
+        canvas_->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing_.caret);
     }
     canvas_->unclip();
     return changed;
@@ -891,7 +820,7 @@ bool Immediate::checkbox(const std::string& label, bool* value) {
     paint::fillBox(canvas_, min, min + glm::vec2(side, side), dressing_.radius, face(reaction.held, reaction.hovered));
     if (*value) {
         const glm::vec2 inset(side * tickInset, side * tickInset);
-        paint::fillBox(canvas_, min + inset, min + glm::vec2(side, side) - inset, 0.0F, ink(dressing_.fill));
+        paint::fillBox(canvas_, min + inset, min + glm::vec2(side, side) - inset, 0.0F, ink(dressing_.mark));
     }
     this->label(label, min + glm::vec2(side + dressing_.padding, 0.0F), size,
         ink(reaction.hovered ? dressing_.activeText : dressing_.text));
@@ -963,7 +892,8 @@ bool Immediate::combo(const std::string& label, int* selected, const std::vector
     paint::fillBox(canvas_, min, max, dressing_.radius, face(open || reaction.held, reaction.hovered));
     const float mark = dressing_.lineHeight * comboMark;
     const glm::vec2 markMin(max.x - dressing_.padding - mark, min.y + ((size.y - mark) * 0.5F));
-    paint::fillBox(canvas_, markMin, markMin + glm::vec2(mark, mark), 0.0F, ink(dressing_.rule));
+    paint::fillBox(canvas_, markMin, markMin + glm::vec2(mark, mark), 0.0F,
+        ink(reaction.hovered ? dressing_.activeText : dressing_.text));
     if (*selected >= 0 && static_cast<std::size_t>(*selected) < items.size()) {
         this->label(items[static_cast<std::size_t>(*selected)], min + glm::vec2(dressing_.padding, 0.0F), size,
             ink(reaction.hovered ? dressing_.activeText : dressing_.text));
@@ -1033,7 +963,7 @@ void Immediate::progressBar(float fraction, const std::string& overlay) {
     const glm::vec2 min = place(size);
     const glm::vec2 max = min + size;
 
-    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.widget);
+    paint::fillBox(canvas_, min, max, dressing_.radius, dressing_.track);
     const float part = std::clamp(fraction, 0.0F, 1.0F);
     if (part > 0.0F) {
         paint::fillBox(canvas_, min, glm::vec2(min.x + (size.x * part), max.y), dressing_.radius, ink(dressing_.fill));
@@ -1107,7 +1037,9 @@ bool Immediate::tab(const std::string& label) {
     const bool selected = retained.tab == index;
     tabs_.taken = tabs_.taken || selected;
 
-    paint::fillBox(canvas_, min, min + size, dressing_.radius, face(selected, reaction.hovered));
+    // a tab at rest is drawn as a tab, not as a widget's face
+    const bool lit = disabled_ == 0 && (selected || reaction.hovered);
+    paint::fillBox(canvas_, min, min + size, dressing_.radius, lit ? face(selected, reaction.hovered) : dressing_.tab);
     this->label(label, min + glm::vec2(dressing_.padding, 0.0F), size,
         selected ? dressing_.activeText : dressing_.text);
     return selected;
@@ -1222,7 +1154,7 @@ void Immediate::headerRow() {
     paint::fillBox(canvas_, min, max, 0.0F, dressing_.titleBar);
     for (std::size_t index = 0; index < table_.headers.size(); index++) {
         const glm::vec2 corner(columnStart(static_cast<unsigned int>(index)) + (dressing_.padding * 0.5F), min.y);
-        label(table_.headers[index], corner, glm::vec2(0.0F, dressing_.lineHeight), dressing_.dimText);
+        label(table_.headers[index], corner, glm::vec2(0.0F, dressing_.lineHeight), dressing_.disabledText);
     }
     row_.penY = max.y + dressing_.spacing;
     nextRow();

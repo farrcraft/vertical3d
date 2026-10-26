@@ -10,18 +10,10 @@
 
 namespace v3d::ui::style {
 
-Property::Property(const std::string& str) : align_(NULL_ALIGNMENT), name_(str) {
+Property::Property(const std::string& str) : name_(str) {
 }
 
 Property::~Property() {
-}
-
-Property::Alignment Property::align() const {
-    return align_;
-}
-
-void Property::align(Alignment alignment) {
-    align_ = alignment;
 }
 
 std::string_view Property::name() const {

@@ -36,7 +36,6 @@
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Color.h>
-#include <api/ui/style/property/Font.h>
 #include <api/ui/style/property/Image.h>
 #include <api/ui/style/property/Number.h>
 
@@ -123,46 +122,6 @@ void lengths(const boost::json::object& entry, const std::string& field, Length*
     }
     *first = length(values[0], *first);
     *second = length(values[1], *second);
-}
-
-/**
- * The alignment names a style property may carry. An unrecognised one, or one that is not a
- * string, reads as no alignment, not as an error, because an alignment is only a hint.
- **/
-style::Property::Alignment alignment(const boost::json::object& entry) {
-    const std::optional<std::string> named = v3d::asset::readString(entry, "align");
-    if (!named) {
-        return style::Property::NULL_ALIGNMENT;
-    }
-    const std::string& name = *named;
-    if (name == "top") {
-        return style::Property::TOP;
-    }
-    if (name == "bottom") {
-        return style::Property::BOTTOM;
-    }
-    if (name == "left") {
-        return style::Property::LEFT;
-    }
-    if (name == "right") {
-        return style::Property::RIGHT;
-    }
-    if (name == "top-left") {
-        return style::Property::TOP_LEFT;
-    }
-    if (name == "bottom-left") {
-        return style::Property::BOTTOM_LEFT;
-    }
-    if (name == "top-right") {
-        return style::Property::TOP_RIGHT;
-    }
-    if (name == "bottom-right") {
-        return style::Property::BOTTOM_RIGHT;
-    }
-    if (name == "center") {
-        return style::Property::CENTER;
-    }
-    return style::Property::NULL_ALIGNMENT;
 }
 
 /**
@@ -550,7 +509,7 @@ bool Loader::loadStyle(const boost::json::object& entry, const boost::shared_ptr
 bool Loader::loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target) {
     // each array holds one property class, so the array a property is written in, not a
     // field on the property, decides what it is read as
-    static const char* const classes[] = { "colors", "numbers", "fonts", "images" };
+    static const char* const classes[] = { "colors", "numbers", "images" };
 
     for (const char* const section : classes) {
         if (!entry.contains(section)) {
@@ -576,7 +535,6 @@ bool Loader::loadProperties(const boost::json::object& entry, const boost::share
             if (!loaded) {
                 return false;
             }
-            loaded->align(alignment(property));
             target->addProperty(loaded, propertyClass);
         }
     }
@@ -600,20 +558,6 @@ boost::shared_ptr<style::Property> Loader::loadProperty(const std::string& secti
         *propertyClass = "number";
         return boost::make_shared<style::property::Number>(name,
             static_cast<float>(boost::json::value_to<double>(property.at("value"))));
-    }
-    if (section == "fonts") {
-        boost::shared_ptr<style::property::Font> font = boost::make_shared<style::property::Font>(
-            style::property::Font::Named{.name = name, .source = optionalString(*logger_, property, "source").value_or(std::string())});
-        if (const std::optional<std::string> face = optionalString(*logger_, property, "face")) {
-            font->face(*face);
-        }
-        if (const std::optional<int> size = optionalInt(*logger_, property, "size", 1)) {
-            font->size(static_cast<unsigned int>(*size));
-        }
-        font->bold(flag(property, "bold", false));
-        font->italics(flag(property, "italics", false));
-        *propertyClass = "font";
-        return font;
     }
     const std::optional<std::string> source = v3d::asset::readString(property, "source");
     if (!source) {

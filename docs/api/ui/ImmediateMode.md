@@ -193,9 +193,8 @@ A row scrolled out of view can still respond to hover if the cursor is where its
 
 ### The `tools` theme class
 
-`Immediate::theme(theme)` reads the theme's `tools` style. `Screen::theme()` calls it for you.
-
-| Kind | Keys |
-|---|---|
-| colours | `panel`, `border`, `title-bar`, `text`, `active-text`, `dim-text`, `widget`, `highlight`, `hover`, `fill`, `rule` |
-| numbers | `line-height`, `padding`, `spacing`, `bar-height`, `border-width`, `radius`, `indent`, `scrollbar-width` |
+`Immediate::theme(theme)` reads the theme's `tools` style. `Screen::begin(ui)` calls it with the
+ui's active theme. The `tools` style takes the same keys as the retained ui's `ui` style, and
+[Themes and styles](Themes.md#the-base-classes-ui-and-tools) lists them. The immediate layer
+starts from `paint::Dressing::tools()`: the retained defaults at a tool panel's sizes, with the
+track, the tabs and the hover colour lifted to suit widgets that are drawn raised.

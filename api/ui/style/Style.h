@@ -29,9 +29,9 @@ struct Selector {
  * One entry of a theme: the properties a component of a given class and name is drawn with.
  *
  * A style is keyed by the pair, not by either half, so a theme can carry a default for every
- * button and an override for one of them. The properties are typed (a colour, a number, a
- * font, an image), and readColour() and readMetric() below read them without a cast at the
- * call site.
+ * button and an override for one of them. The properties are typed (a colour, a number,
+ * an image), and readColour() and readMetric() below read them without a cast at the call
+ * site.
  */
 class Style {
  public:

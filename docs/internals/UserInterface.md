@@ -28,7 +28,7 @@ a component type. How to use the library is in
 | `component::*` | [component/](../../api/ui/component) | one class per type, plus `Type`, `name()`, `parse()` and `traits()` in [Type.h](../../api/ui/component/Type.h) |
 | `Arranger` | [Arranger.h](../../api/ui/Arranger.h) | resolves every box in a tree and calls back to paint each one |
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
-| `paint::Dressing` | [paint/Dressing.h](../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics a component is drawn with |
+| `paint::Dressing` | [paint/Dressing.h](../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::fillBox`, `strokeBox`, `plateBox` | [paint/Painter.h](../../api/ui/paint/Painter.h) | box drawing shared by both ui models |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
@@ -273,10 +273,13 @@ the layer.
 
 ## Styles and the Resolver
 
-`style::Resolver` holds the active theme, a base `Dressing`, and one map per
+`style::Resolver` holds the theme it was last given, a base `Dressing`, and one map per
 `Resolver::Class` from style name to resolved `Dressing`.
 
-- `chrome()` reads the theme's `ui` style into the base.
+- `chrome()` reads the theme's `ui` style into the base through `style::readBase()`.
+  `Immediate::theme()` reads the `tools` style through the same function, so the two base
+  classes cannot drift apart in their keys. A key added to `Dressing` is added to `readBase()`
+  and to the table in [Themes.md](../api/ui/Themes.md#the-base-classes-ui-and-tools).
 - `resolve(class, name)` returns the cached answer, or computes one with `dress()`: a copy of
   the base, overwritten by whatever that class's style names, plus `focus` and `focus-width`.
 - The cache is dropped when the theme changes and when the base is taken by non-const

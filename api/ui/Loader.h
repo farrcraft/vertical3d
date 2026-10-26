@@ -173,15 +173,15 @@ class Loader final {
     bool loadStyle(const boost::json::object& entry, const boost::shared_ptr<style::Theme>& theme);
 
     /**
-     * Read the four kinds of property a style may hold - colours, numbers, fonts and images
-     * - each from its own array.
+     * Read the three kinds of property a style may hold - colours, numbers and images - each
+     * from its own array. Any other member of the style is not read.
      **/
     bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target);
 
     /**
      * Build one style property as the class of the array it was written in.
      *
-     * @param section which of the four arrays the property came out of
+     * @param section which of the three arrays the property came out of
      * @param propertyClass what the built property is filed under, which is the singular of
      *        the section
      * @return the property, or null when it does not carry what its class needs

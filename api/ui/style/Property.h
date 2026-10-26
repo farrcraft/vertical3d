@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::style {
 /**
@@ -18,29 +18,6 @@ class Property {
     explicit Property(const std::string& str);
     virtual ~Property();
 
-    typedef enum : std::uint8_t {
-        TOP,
-        BOTTOM,
-        LEFT,
-        RIGHT,
-        TOP_LEFT,
-        BOTTOM_LEFT,
-        TOP_RIGHT,
-        BOTTOM_RIGHT,
-        CENTER,
-        NULL_ALIGNMENT
-    } Alignment;
-
-    /**
-     * Get alignment property value.
-     * @return the alignment setting
-     */
-    Alignment align() const;
-    /**
-     * Set the property alignment.
-     * @param alignment the new alignment
-     */
-    void align(Alignment alignment);
     /**
      * Get the property name.
      * @return the property name
@@ -48,7 +25,6 @@ class Property {
     std::string_view name() const;
 
  private:
-    Alignment align_;
     std::string name_;
 };
 

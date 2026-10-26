@@ -34,6 +34,16 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     const std::string& className, const std::string_view& name);
 
 /**
+ * Read a base style into a dressing: a theme's "ui" style for the retained components, or
+ * its "tools" style for the immediate layer. Both are read by the same keys, each named for
+ * one Dressing field. Only the properties the style names are overwritten, and the overlay
+ * remembers what each replaced.
+ *
+ * @param style the base style, or null to read nothing
+ **/
+void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* overlay, paint::Dressing* dressing);
+
+/**
  * Turns a theme into the colours and metrics a component is drawn with, once per style
  * rather than once per frame.
  *
