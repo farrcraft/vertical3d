@@ -10,7 +10,7 @@ as the starting point for an app in a repository of your own.
 |---|---|
 | `CMakeLists.txt` | The root project. It selects three api libraries (`engine`, `log` and `render`), adds the repository as a subdirectory, and links `v3d::engine`, `v3d::log` and `v3d::render` |
 | `vcpkg.json`, `vcpkg-configuration.json` | The package list and registry a consumer repository carries. They match the repository's own |
-| `src/main.cxx` | `main`, which calls `v3d::engine::run<AppEngine>(argv[0], "starter")` |
+| `src/main.cxx` | `main`, which calls `v3d::engine::run<AppEngine>(argv[0], { .organization = "Vertical3D", .application = "Starter" })` |
 | `src/AppEngine.h`, `src/AppEngine.cxx` | The app. `features()` asks for a window, keyboard input and config. `start()` creates the renderer, `render()` draws the rectangle, and `release()` shuts the renderer down before the window is destroyed |
 | `data/config.json`, `data/window.json` | The config list and the window size, 1024 × 768. The build copies `data/` beside the executable |
 

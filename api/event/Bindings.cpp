@@ -50,7 +50,7 @@ bool Bindings::rebind(const std::string& command, const std::string& name) {
     // this override covers every source, so any earlier one of the command would be shadowed
     std::erase_if(overrides_, [&command](const Override& made) { return made.command == command; });
     overrides_.push_back(Override{.command = command, .source = std::string(), .name = name});
-    return build();
+    return announce(build());
 }
 
 bool Bindings::rebind(const std::string& command, const std::string& source, const std::string& name) {
@@ -61,7 +61,7 @@ bool Bindings::rebind(const std::string& command, const std::string& source, con
         return made.command == command && made.source == source;
     });
     overrides_.push_back(Override{.command = command, .source = source, .name = name});
-    return build();
+    return announce(build());
 }
 
 bool Bindings::reset(const std::string& command) {
@@ -69,7 +69,7 @@ bool Bindings::reset(const std::string& command) {
         return false;
     }
     std::erase_if(overrides_, [&command](const Override& made) { return made.command == command; });
-    return build();
+    return announce(build());
 }
 
 bool Bindings::reset() {
@@ -77,7 +77,7 @@ bool Bindings::reset() {
         return false;
     }
     overrides_.clear();
-    return build();
+    return announce(build());
 }
 
 const std::vector<Bindings::Override>& Bindings::overrides() const noexcept {
@@ -96,7 +96,18 @@ bool Bindings::restore(const std::vector<Override>& overrides) {
             logger_->get()->warn("A saved binding of {} names a source the bindings no longer have, so it is dropped", made.command);
         }
     }
-    return build();
+    return announce(build());
+}
+
+void Bindings::changed(const Changed& callback) {
+    changed_ = callback;
+}
+
+bool Bindings::announce(bool built) {
+    if (built && changed_) {
+        changed_();
+    }
+    return built;
 }
 
 bool Bindings::binds(std::string_view command, std::string_view source) const {

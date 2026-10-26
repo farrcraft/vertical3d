@@ -21,6 +21,8 @@
 
 #include "Accumulator.h"
 #include "Feature.h"
+#include "Identity.h"
+#include "Settings.h"
 #include "Statistics.h"
 
 #include <boost/json.hpp>
@@ -146,6 +148,13 @@ class Engine {
      * @return whether quit() has been called
      **/
     bool quitting() const noexcept;
+
+    /**
+     * Name the app, before initialize(). run<T> does this. An engine with an identity reads
+     * the player's settings as it starts, and saves the player's key bindings in them.
+     **/
+    void identity(const Identity& identity);
+    const Identity& identity() const noexcept;
 
     /**
      * @return Window
@@ -292,8 +301,8 @@ class Engine {
      * Bind a command to a different key than the config gave it, keeping the context and
      * the edge from the config.
      *
-     * The change is not saved. It lasts for the process unless the app stores it, for
-     * example in a document under engine::userPath().
+     * The change is saved in the player's settings when the app has an identity, and the
+     * next run starts with it.
      *
      * @param command the destination the binding drives, as "context::name"
      * @param key the source event name to bind it to, which for a keyboard binding is a
@@ -305,11 +314,20 @@ class Engine {
     /**
      * The bindings the binding config installed, for an app's controls screen: what a command
      * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
-     * the overrides to save and restore.
+     * the overrides. A change made through them is saved as rebind() saves one.
      *
      * @return null when the app has no binding config
      **/
     boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
+
+    /**
+     * What the player changed, in the document kept under the app's identity. The engine
+     * keeps the player's key bindings here, under "bindings". An app keeps its own settings
+     * beside them, and saves after each change.
+     *
+     * @return null when the app has no identity, as in a test that builds an engine itself
+     **/
+    const boost::shared_ptr<Settings>& settings() const noexcept;
 
     /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
@@ -356,8 +374,14 @@ class Engine {
       **/
      bool shutdown();
 
+     /**
+      * Read the player's settings, apply the bindings they saved, and save the bindings after
+      * each change to them from then on.
+      **/
+     void loadSettings();
+
      template <typename T, typename... Args>
-     friend int run(const char* executable, const std::string& name, Args&&... args);
+     friend int run(const char* executable, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::config::Config> config_;
@@ -369,6 +393,8 @@ class Engine {
      Statistics statistics_;
 
      std::string appPath_;
+     Identity identity_;
+     boost::shared_ptr<Settings> settings_;
      Features features_;
      bool needShutdown_;
      bool released_ = false;

@@ -38,6 +38,7 @@ asked for.
 | `held(command)` | Whether a key bound to a command is down. |
 | `rebind(command, key)` | Points a command at a different key. Protected. |
 | `bindings()` | The bindings the keys go through, for a controls screen to read, rebind and reset. Protected. |
+| `settings()` | The player's settings, kept under the app's identity. Null without one. Protected. See [Files.md](Files.md#settings). |
 | `alpha()` | How far between two simulation steps the frame is. |
 | `statistics()` | What the loop measured about its pacing. |
 | `measure(name)` | Times a scope into the statistics. Protected. |

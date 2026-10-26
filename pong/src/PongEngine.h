@@ -7,7 +7,6 @@
 
 #include <api/audio/Engine.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Settings.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/ui/Engine.h>
@@ -56,18 +55,12 @@ class PongEngine final : public v3d::engine::Engine {
     void mode(bool coop);
 
     /**
-     * Bind a paddle command to the key an Options menu item captured, and store the binding so
-     * the next run starts with it.
+     * Bind a paddle command to the key an Options menu item captured. The engine saves the
+     * binding, so the next run starts with it.
      **/
     void rebindPaddleKey(const v3d::event::Event& event);
 
-    /**
-     * Apply every paddle key the player has changed, over the ones the config binds.
-     **/
-    void applyStoredBindings();
-
     boost::shared_ptr<v3d::audio::Engine> soundEngine_;
-    boost::shared_ptr<v3d::engine::Settings> settings_;
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;

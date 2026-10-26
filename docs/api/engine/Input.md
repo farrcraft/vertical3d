@@ -113,9 +113,8 @@ The binding document is the config document of type `binding`, conventionally
   gives any of them another type, is logged, and startup fails.
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
-rebinding screen. The command keeps the context and the edge the document gave it. A rebinding
-lasts only as long as the process. To keep it, store it in [Settings](Files.md#settings-and-the-players-files)
-and apply it again at startup, as pong's `applyStoredBindings()` does.
+rebinding screen. The command keeps the context and the edge the document gave it. The engine
+saves the rebinding, and the next run starts with it.
 
 `Engine::bindings()` returns the `event::Bindings` the keys go through, or null without a binding
 config. A controls screen reads and changes them there:
@@ -137,8 +136,10 @@ config. A controls screen reads and changes them there:
   command fires once. A mapping on either edge covers one on a single edge, and is the one kept.
 - `restore()` drops a rebinding that names a command or a source the document no longer binds.
   A list saved by an older build therefore cannot keep a dead entry.
-- A rebinding is saved by the app. Store `overrides()` in [Settings](Files.md#settings-and-the-players-files)
-  when it changes, and `restore()` it at startup.
+- **The engine saves every rebinding** for an app with an identity. It restores the saved
+  `overrides()` from [Settings](Files.md#settings-and-the-players-files) after the binding config
+  loads. It saves them after each rebind, reset or restore, made through `Engine::rebind()` or
+  through these bindings. `changed(callback)` is how it hears of one.
 
 ### Commands
 

@@ -4,6 +4,7 @@ v3d_add_api_library(engine
 	"Accumulator.h" "Accumulator.cpp"
 	"Statistics.h" "Statistics.cpp"
 	"Engine.h" "Engine.cpp"
+	"Identity.h"
 	"Settings.h" "Settings.cpp"
 	"Main.h"
 	"IsometricController.h" "IsometricController.cpp"

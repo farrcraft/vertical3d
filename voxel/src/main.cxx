@@ -17,5 +17,5 @@ int main(int /* argc */, char *argv[]) {
     std::random_device entropy;
     srand(entropy());
 
-    return v3d::engine::run<Controller>(argv[0], "voxel");
+    return v3d::engine::run<Controller>(argv[0], { .organization = "Vertical3D", .application = "Voxel" });
 }

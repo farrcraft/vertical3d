@@ -121,6 +121,19 @@ class Bindings final {
     bool restore(const std::vector<Override>& overrides);
 
     /**
+     * Called after every change to the overrides, once the bindings are rebuilt: a rebind, a
+     * reset and a restore. The engine saves the player's bindings from it, so a controls
+     * screen that changes them through these bindings has them saved.
+     **/
+    typedef std::function<void()> Changed;
+
+    /**
+     * Set what is called after each change, replacing the one before. An empty callback
+     * stops the calls.
+     **/
+    void changed(const Changed& callback);
+
+    /**
      * @return every source a command is bound to, or none
      **/
     std::vector<Event> sources(std::string_view command) const;
@@ -148,6 +161,13 @@ class Bindings final {
     bool binds(std::string_view command, std::string_view source) const;
 
     /**
+     * Tell the changed() callback about a rebuild that succeeded.
+     *
+     * @return built, so a change returns what its rebuild returned
+     **/
+    bool announce(bool built);
+
+    /**
      * Add a mapping to those a build will install, unless one already there fires on
      * everything it would, and in place of one it fires on everything of.
      **/
@@ -164,6 +184,7 @@ class Bindings final {
     boost::shared_ptr<v3d::log::Logger> logger_;
     Known known_;
     std::optional<boost::json::object> document_;
+    Changed changed_;
     std::vector<Override> overrides_;
     // every command the document binds, beside the name of each source it binds it to
     std::vector<std::pair<std::string, std::string>> declared_;

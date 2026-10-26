@@ -9,5 +9,5 @@
 #include "PongEngine.h"
 
 int main(int /* argc */, char *argv[]) {
-    return v3d::engine::run<PongEngine>(argv[0], "pong");
+    return v3d::engine::run<PongEngine>(argv[0], { .organization = "Vertical3D", .application = "Pong" });
 }

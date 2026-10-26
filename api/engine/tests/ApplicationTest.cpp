@@ -4,6 +4,7 @@
  **/
 
 #include <api/engine/Application.h>
+#include <api/engine/Identity.h>
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 
@@ -28,13 +29,15 @@ struct Built final {
     std::string path;
     int option = 0;
     std::string label;
+    v3d::engine::Identity identity;
+    bool namedFirst = false;
 };
 
 Built* built = nullptr;
 
 /**
- * What run<T> requires of an engine: a constructor, initialize(), eventLoop() and shutdown().
- * It does not require a v3d::engine::Engine, which cannot run its loop in a test.
+ * What run<T> requires of an engine: a constructor, identity(), initialize(), eventLoop() and
+ * shutdown(). It does not require a v3d::engine::Engine, which cannot run its loop in a test.
  **/
 struct StubEngine final {
     StubEngine(const std::string& path, int option = 0, std::string label = std::string()) {
@@ -45,9 +48,20 @@ struct StubEngine final {
         }
     }
 
+    static void identity(const v3d::engine::Identity& identity) {
+        if (built != nullptr) {
+            built->identity = identity;
+            built->namedFirst = !initialized;
+        }
+    }
+
     static bool initialize() {
+        initialized = true;
         return true;
     }
+
+    // whether initialize() has run, so a case can tell the order run<T> calls them in
+    static inline bool initialized = false;
     static bool eventLoop() {
         return true;
     }
@@ -55,6 +69,11 @@ struct StubEngine final {
         return true;
     }
 };
+
+/** The identity the cases run the stub under. **/
+v3d::engine::Identity stub() {
+    return { .organization = "vertical3d_tests", .application = "stub" };
+}
 
 BOOST_AUTO_TEST_SUITE(application_test)
 
@@ -134,12 +153,29 @@ BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
     Built record;
     built = &record;
 
-    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", "stub", 7, std::string("scene.gltf")) == EXIT_SUCCESS);
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), 7, std::string("scene.gltf")) == EXIT_SUCCESS);
     built = nullptr;
 
     BOOST_CHECK_EQUAL(record.option, 7);
     BOOST_CHECK_EQUAL(record.label, "scene.gltf");
     BOOST_CHECK(!record.path.empty());
+}
+
+/**
+ * The engine is told who the app is before it starts, so it can read the player's settings
+ * as it starts.
+ **/
+BOOST_AUTO_TEST_CASE(run_names_the_engine_before_it_starts) {
+    Built record;
+    built = &record;
+    StubEngine::initialized = false;
+
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub()) == EXIT_SUCCESS);
+    built = nullptr;
+
+    BOOST_CHECK_EQUAL(record.identity.organization, "vertical3d_tests");
+    BOOST_CHECK_EQUAL(record.identity.application, "stub");
+    BOOST_CHECK(record.namedFirst);
 }
 
 /**
@@ -151,7 +187,7 @@ BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
     record.label = "stale";
     built = &record;
 
-    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", "stub") == EXIT_SUCCESS);
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub()) == EXIT_SUCCESS);
     built = nullptr;
 
     BOOST_CHECK_EQUAL(record.option, 0);
@@ -178,7 +214,7 @@ BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
 
     Built record;
     built = &record;
-    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), "stub") == EXIT_SUCCESS);
+    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), stub()) == EXIT_SUCCESS);
     built = nullptr;
 
     BOOST_TEST(boost::filesystem::exists(directory / L"v3d.log"));

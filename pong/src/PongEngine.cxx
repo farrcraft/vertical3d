@@ -12,7 +12,6 @@
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Settings.h>
 #include <api/engine/Statistics.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
@@ -35,15 +34,7 @@
 namespace {
 
 /**
- * The organization and application names that userPath() resolves against. Do not change
- * them: every player's settings are stored under this pair, and a new pair would lose them.
- **/
-const char* const ORGANIZATION = "Vertical3D";
-const char* const APPLICATION = "Pong";
-
-/**
- * Each menu item that captures a key, paired with the paddle command it rebinds. The item name
- * is also the key that the new binding is stored under in the settings.
+ * Each menu item that captures a key, paired with the paddle command it rebinds.
  **/
 // an array of views rather than a map of strings, because a map with static storage
 // duration allocates during static initialization and can throw where nothing can catch it
@@ -98,12 +89,6 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
 
 bool PongEngine::start() {
     window()->caption("Pong!");
-
-    // in start(), because rebind() rebuilds the bindings the engine loads from the config
-    // before start() runs
-    settings_ = boost::make_shared<v3d::engine::Settings>(ORGANIZATION, APPLICATION, logger());
-    settings_->load();
-    applyStoredBindings();
 
     soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
     v3d::audio::registerLoaders(*assets(), logger());
@@ -201,25 +186,6 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
         return;
     }
     logger()->get()->info("bound {} to {}", command, key);
-
-    // save each rebinding as it is made. No exit path is certain to run, and a crash should not
-    // lose a rebinding
-    settings_->set(std::string(event.name()), key);
-    settings_->save();
-}
-
-/**
- **/
-void PongEngine::applyStoredBindings() {
-    for (const auto& binding : PADDLE_COMMANDS) {
-        const std::string key = settings_->text(std::string(binding.first)).value_or(std::string());
-        if (key.empty()) {  // never rebound, so the config's binding stays
-            continue;
-        }
-        if (rebind(std::string(binding.second), key)) {
-            logger()->get()->info("bound {} to {} from settings", binding.second, key);
-        }
-    }
 }
 
 /**

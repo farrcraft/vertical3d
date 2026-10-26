@@ -296,13 +296,20 @@ decides it.
 
 ### Step 6 — The engine and the shell joined
 
-**Open.** Needs step 5.
+**In progress.**
 
 - A layer above `engine` and `ui::shell` builds the screen, the game menu and the overlay. Each
   app's hand wiring goes.
-- The engine saves and restores `Bindings::overrides()` through `Settings`. pong's per-key
-  settings go.
 - The engine takes the ECS snapshot before each step, for the types an app registers.
+
+Done so far:
+
+- `run<T>` takes an `engine::Identity`, the organization and application a player's files are
+  kept under, and hands it to the engine before it starts. The engine reads the player's
+  `Settings` as it starts, restores the saved binding overrides after the binding config loads,
+  and saves them after every change. `Bindings::changed()` reports a change, so one made
+  through `bindings()` is saved too. pong's per-key settings are gone, so a player's earlier
+  pong rebindings are not carried over. Three new cases.
 
 ### Step 7 — The realtime vocabulary
 

@@ -10,6 +10,7 @@
 #include <api/log/Logger.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -264,6 +265,28 @@ BOOST_FIXTURE_TEST_CASE(bindings_say_what_a_key_fires_test, Fixture) {
     BOOST_REQUIRE(bindings.rebind("game::up", "w", "q"));
     BOOST_CHECK(bindings.bound("q") == std::vector<std::string>({"game::up", "ui::quit"}));
     BOOST_TEST(bindings.bound("w").empty());
+}
+
+/**
+ * Every change to the overrides is announced once it is rebuilt: each rebind, each reset and
+ * a restore. One that changes nothing, because there is no document or the source is not
+ * bound, is not announced.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_announce_each_change_test, Fixture) {
+    std::vector<std::size_t> announced;
+    bindings.changed([this, &announced]() { announced.push_back(bindings.overrides().size()); });
+    BOOST_TEST(!bindings.rebind("ui::quit", "escape"));
+    BOOST_TEST(announced.empty());
+
+    BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
+    BOOST_REQUIRE(bindings.rebind("ui::quit", "escape"));
+    BOOST_REQUIRE(bindings.rebind("game::up", "w", "e"));
+    BOOST_TEST(!bindings.rebind("game::up", "nothing", "e"));
+    BOOST_REQUIRE(bindings.reset("ui::quit"));
+    BOOST_REQUIRE(bindings.restore({ v3d::event::Bindings::Override{.command = "ui::quit", .source = "", .name = "escape"} }));
+    BOOST_REQUIRE(bindings.reset());
+
+    BOOST_CHECK(announced == std::vector<std::size_t>({ 1U, 2U, 1U, 1U, 0U }));
 }
 
 };  // namespace

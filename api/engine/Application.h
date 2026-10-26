@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/engine/Identity.h>
 #include <api/log/Logger.h>
 
 #include <cstdlib>
@@ -59,20 +60,24 @@ std::string userPath(const std::string& org, const std::string& app);
  *          features(), start() and release(). This function is the only caller of
  *          shutdown(), which an app cannot reach
  * @param executable argv[0]
- * @param name what the app is called, used in the log line that reports a failure
+ * @param identity who the app is. The engine is given it before it starts, and keeps the
+ *        player's settings under it. Its application names the app in the log line that
+ *        reports a failure
  * @param args further constructor arguments for the app's engine, forwarded after the path.
  *        An app that parses its command line into options passes them here rather than
  *        writing its own main
  * @return the process exit status
  **/
 template <typename T, typename... Args>
-int run(const char* executable, const std::string& name, Args&&... args) {
+int run(const char* executable, const Identity& identity, Args&&... args) {
     const std::string path = appPath(executable);
     // beside the executable, whatever directory it was started from: a windowed app has no
     // console, so the log is the only place its errors appear. A directory that cannot be
     // written to sends the log to stderr, and the app still runs
     v3d::log::Logger::open(path + "v3d.log");
     T engine(path, std::forward<Args>(args)...);
+    engine.identity(identity);
+    const std::string& name = identity.application;
 
     // the renderer reports failures by throwing, and an uncaught exception on Windows shows
     // an abort dialog with no message, so the exception is caught and logged here

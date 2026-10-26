@@ -11,8 +11,11 @@
 #include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
+#include <api/engine/Identity.h>
+#include <api/engine/Settings.h>
 #include <api/event/State.h>
 #include <api/event/Type.h>
+#include <api/log/Logger.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -21,6 +24,7 @@
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
@@ -118,6 +122,14 @@ std::string appPath(const std::string& fixture) {
 
 const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
 const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
+
+/**
+ * The identity the lifecycle cases run under. It has no organization, so the engine keeps no
+ * settings for it and a case writes nothing to the player's directory.
+ **/
+v3d::engine::Identity lifecycle() {
+    return { .organization = "", .application = "lifecycle" };
+}
 
 /**
  * A key going down, as SDL delivers it. It is the only event in this file that the input
@@ -462,6 +474,32 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
 }
 
 /**
+ * A rebinding made through the bindings an app is handed is saved under the app's identity as
+ * it is made, and an engine started later under the same identity starts with it.
+ **/
+BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
+    const v3d::engine::Identity identity{ .organization = "vertical3d_tests", .application = "engine_bindings" };
+    // a document an earlier run left would be read as this run's
+    const v3d::engine::Settings left(identity.organization, identity.application, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(!left.path().empty());
+    boost::filesystem::remove(left.path());
+    {
+        TestEngine engine(appPath("good"), boundFeature);
+        engine.identity(identity);
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_REQUIRE(engine.bindings()->rebind("pong::leftPaddleUp", "arrow_up"));
+    }
+
+    TestEngine later(appPath("good"), boundFeature);
+    later.identity(identity);
+    BOOST_REQUIRE(later.initialize());
+    later.offer(keyDown(SDLK_W));
+    BOOST_CHECK(!later.held("pong::leftPaddleUp"));
+    later.offer(keyDown(SDLK_UP));
+    BOOST_CHECK(later.held("pong::leftPaddleUp"));
+}
+
+/**
  * Without Feature::KeyboardInput, held() returns false for every command.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
@@ -669,13 +707,13 @@ class LifecycleEngine final : public v3d::engine::Engine {
  **/
 BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
     Lifecycle started;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &started), EXIT_SUCCESS);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &started), EXIT_SUCCESS);
     BOOST_CHECK_EQUAL(started.started, 1);
     BOOST_CHECK_EQUAL(started.released, 1);
 
     Lifecycle failed;
     failed.starts = false;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &failed), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &failed), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(failed.started, 1);
     BOOST_CHECK_EQUAL(failed.released, 1);
 }
@@ -687,7 +725,7 @@ BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
 BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
     Lifecycle throwing;
     throwing.throws = true;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &throwing), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(throwing.released, 1);
 }
 

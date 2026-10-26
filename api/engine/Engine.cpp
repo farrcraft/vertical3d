@@ -11,6 +11,7 @@
 #include <api/config/Config.h>
 #include <api/config/Type.h>
 #include <api/config/WindowSize.h>
+#include <api/event/Bindings.h>
 #include <api/event/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/WindowFocus.h>
@@ -34,12 +35,62 @@
 #include <vector>
 
 #include "Feature.h"
+#include "Identity.h"
+#include "Settings.h"
 #include "Statistics.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::engine {
+
+namespace {
+
+/** The settings key the player's key bindings are kept under. **/
+const char* const BINDINGS = "bindings";
+
+/**
+ * The player's key bindings as the settings keep them: a list of overrides, each the command,
+ * the source it replaces, and the name it binds instead.
+ **/
+boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overrides) {
+    boost::json::array saved;
+    for (const v3d::event::Bindings::Override& made : overrides) {
+        saved.push_back(boost::json::object{ { "command", made.command }, { "source", made.source }, { "name", made.name } });
+    }
+    return saved;
+}
+
+/**
+ * The overrides a settings document holds. An entry of another shape, from a hand edit, is
+ * left out.
+ **/
+std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved) {
+    std::vector<v3d::event::Bindings::Override> overrides;
+    if (!saved.is_array()) {
+        return overrides;
+    }
+    for (const boost::json::value& entry : saved.as_array()) {
+        const boost::json::object* fields = entry.if_object();
+        if (fields == nullptr) {
+            continue;
+        }
+        const boost::json::value* command = fields->if_contains("command");
+        const boost::json::value* source = fields->if_contains("source");
+        const boost::json::value* name = fields->if_contains("name");
+        if (command == nullptr || !command->is_string() || source == nullptr || !source->is_string() ||
+            name == nullptr || !name->is_string()) {
+            continue;
+        }
+        overrides.push_back({ .command = std::string(command->as_string()), .source = std::string(source->as_string()),
+            .name = std::string(name->as_string()) });
+    }
+    return overrides;
+}
+
+};  // namespace
+
 /**
  **/
 Engine::Engine(const std::string& appPath) :
@@ -84,6 +135,48 @@ bool Engine::quitting() const noexcept {
 
 /**
  **/
+void Engine::identity(const Identity& identity) {
+    identity_ = identity;
+}
+
+/**
+ **/
+const Identity& Engine::identity() const noexcept {
+    return identity_;
+}
+
+/**
+ **/
+const boost::shared_ptr<Settings>& Engine::settings() const noexcept {
+    return settings_;
+}
+
+/**
+ **/
+void Engine::loadSettings() {
+    if (!identity_.named()) {
+        return;
+    }
+    settings_ = boost::make_shared<Settings>(identity_.organization, identity_.application, logger_);
+    // a missing document is a player who changed nothing, and every setting takes its default
+    settings_->load();
+    if (!bindings_) {
+        return;
+    }
+    const boost::json::value* saved = settings_->value(BINDINGS);
+    if (saved != nullptr) {
+        bindings_->restore(read(*saved));
+    }
+    // each change is saved as it is made. No exit path is certain to run, and a crash should
+    // not lose a rebinding
+    bindings_->changed([this]() {
+        settings_->set(BINDINGS, boost::json::value(save(bindings_->overrides())));
+        settings_->save();
+    });
+}
+
+/**
+ **/
 bool Engine::rebind(const std::string& command, const std::string& key) {
     return bindings_ && bindings_->rebind(command, key);
 }
@@ -111,6 +204,7 @@ bool Engine::initialize() {
     if (features_.has(Feature::Config) && !loadConfig()) {
         return false;
     }
+    loadSettings();
     startInput();
     if (features_.has(Feature::Window) && !openWindow()) {
         return false;
