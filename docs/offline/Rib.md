@@ -80,6 +80,9 @@ name.
   the polygon cannot be placed. The first one is logged.
 - **A coordinate system that is neither predefined nor saved is refused.** `CoordSysTransform`
   logs it and keeps the current transformation, and a lookup of it logs and gives the identity.
+- **A scene cannot save a predefined name.** `object`, `world`, `camera`, `screen`, `raster` and
+  `NDC` are set by the camera. `RiCoordinateSystem` with one of them is logged and saves
+  nothing, so the hiders read the camera the scene set up.
 - **A `Sphere`'s varying parameters hold four values**, one at each corner of its parameter
   space, as RI defines them for a quadric. A uniform one holds one. moya reads no sphere
   parameter.

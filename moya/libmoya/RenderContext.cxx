@@ -82,13 +82,9 @@ void RenderContext::initialize() {
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
 
     // the predefined coordinate systems start as the identity
-    const glm::mat4x4 def(1.0F);
-    coordinateSystems_["object"] = def;
-    coordinateSystems_["world"] = def;
-    coordinateSystems_["camera"] = def;
-    coordinateSystems_["screen"] = def;
-    coordinateSystems_["raster"] = def;
-    coordinateSystems_["NDC"] = def;
+    for (const char* name : { "object", "world", "camera", "screen", "raster", "NDC" }) {
+        predefined_[name] = glm::mat4x4(1.0F);
+    }
 }
 
 boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
@@ -139,7 +135,7 @@ void RenderContext::prepareWorld() {
     }
 
     // what a scene set between RiProjection and here is the world to camera transformation
-    saveCoordinateSystem("camera");
+    predefined_["camera"] = transform_.reference();
     // the traced scene has no camera of its own, so a traced hit's "camera" space and E
     // are this camera's
     traced_.view(coordinateSystem("camera"));
@@ -160,7 +156,7 @@ void RenderContext::prepareWorld() {
     raster = glm::scale(raster, glm::vec3(x, -y, 1.0F));
     raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
 
-    coordinateSystems_["raster"] = raster;
+    predefined_["raster"] = raster;
     traced_.projection(projected());
 
     frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
@@ -222,8 +218,7 @@ void RenderContext::screenTransform() {
     // what is on its right, so the projection goes on the left
     const v3d::render::offline::MovingTransform current = transform_;
     transform_ = projectionBase_.before(projectionMatrix());
-    // save as screen coordinate system
-    saveCoordinateSystem("screen");
+    predefined_["screen"] = transform_.reference();
     transform_ = current;
 }
 
@@ -415,11 +410,19 @@ void RenderContext::attributeEnd() {
 }
 
 void RenderContext::saveCoordinateSystem(const std::string& name) {
-    coordinateSystems_[name] = transform_.reference();
+    if (predefined_.find(name) != predefined_.end()) {
+        logger_->get()->warn("'{}' is a predefined coordinate system, and a scene cannot name one", name);
+        return;
+    }
+    named_[name] = transform_.reference();
+}
+
+bool RenderContext::known(const std::string& name) const {
+    return predefined_.find(name) != predefined_.end() || named_.find(name) != named_.end();
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
-    if (coordinateSystems_.find(name) == coordinateSystems_.end()) {
+    if (!known(name)) {
         logger_->get()->warn("the coordinate system '{}' is not known, and the transformation is kept", name);
         return;
     }
@@ -512,8 +515,12 @@ std::size_t RenderContext::motionCache() const {
 }
 
 glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
-    const auto found = coordinateSystems_.find(name);
-    if (found == coordinateSystems_.end()) {
+    const auto predefined = predefined_.find(name);
+    if (predefined != predefined_.end()) {
+        return predefined->second;
+    }
+    const auto found = named_.find(name);
+    if (found == named_.end()) {
         logger_->get()->warn("the coordinate system '{}' is not known, and the identity is used", name);
         return glm::mat4x4(1.0F);
     }
@@ -672,7 +679,7 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         if (!named.empty() && named.front() == "camera") {
             toCamera = glm::mat4x4(1.0F);
         } else if (!named.empty() && named.front() != "object" && named.front() != "world" &&
-            coordinateSystems_.find(named.front()) == coordinateSystems_.end()) {
+            !known(named.front())) {
             logger_->get()->warn("the displacement bound's space \"{}\" is not one the scene named, so object space is used",
                 named.front());
         } else if (!named.empty() && named.front() == "world") {

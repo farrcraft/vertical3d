@@ -88,8 +88,8 @@ unsigned int made = 0;
 
 };  // namespace
 
-// a token that a request reads holds RI's string for it. The context writes a file only when
-// the display type is "file", and RiDisplay passes a null type on as an empty string
+// every token holds RI's string for it. The context writes a file only when the display type
+// is "file", and RiDisplay passes a null type on as an empty string
 RtToken RI_FRAMEBUFFER = const_cast<char*>("framebuffer"),
         RI_FILE = const_cast<char*>("file");
 RtToken RI_RGB = const_cast<char*>("rgb"),
@@ -101,92 +101,98 @@ RtToken RI_RGB = const_cast<char*>("rgb"),
         RI_AZ = const_cast<char*>("az");
 RtToken RI_PERSPECTIVE = const_cast<char*>("perspective");
 RtToken RI_ORTHOGRAPHIC = const_cast<char*>("orthographic");
-RtToken RI_HIDDEN,
-        RI_PAINT;
-RtToken RI_CONSTANT,
-        RI_SMOOTH;
-RtToken RI_FLATNESS;
+RtToken RI_HIDDEN = const_cast<char*>("hidden"),
+        RI_PAINT = const_cast<char*>("paint");
+RtToken RI_CONSTANT = const_cast<char*>("constant"),
+        RI_SMOOTH = const_cast<char*>("smooth");
+RtToken RI_FLATNESS = const_cast<char*>("flatness");
 RtToken RI_FOV = const_cast<char*>("fov");
-RtToken RI_AMBIENTLIGHT,
-        RI_POINTLIGHT,
-        RI_DISTANTLIGHT,
-        RI_SPOTLIGHT;
-RtToken RI_INTENSITY,
-        RI_LIGHTCOLOR,
-        RI_FROM,
-        RI_TO,
-        RI_CONEANGLE,
-        RI_CONEDELTAANGLE,
-        RI_BEAMDISTRIBUTION;
-RtToken RI_MATTE,
-        RI_METAL,
-        RI_SHINYMETAL,
-        RI_PLASTIC,
-        RI_PAINTEDPLASTIC;
-RtToken RI_KA,
-        RI_KD,
-        RI_KS,
-        RI_ROUGHNESS,
-        RI_KR,
-        RI_TEXTURENAME,
-        RI_SPECULARCOLOR;
-RtToken RI_DEPTHCUE,
-        RI_FOG,
-        RI_BUMPY;
-RtToken RI_MINDISTANCE,
-        RI_MAXDISTANCE,
-        RI_BACKGROUND,
-        RI_DISTANCE,
-        RI_AMPLITUDE;
-RtToken RI_RASTER,
-        RI_SCREEN,
-        RI_CAMERA,
-        RI_WORLD,
-        RI_OBJECT;
-RtToken RI_INSIDE,
-        RI_OUTSIDE,
-        RI_LH,
-        RI_RH;
+RtToken RI_AMBIENTLIGHT = const_cast<char*>("ambientlight"),
+        RI_POINTLIGHT = const_cast<char*>("pointlight"),
+        RI_DISTANTLIGHT = const_cast<char*>("distantlight"),
+        RI_SPOTLIGHT = const_cast<char*>("spotlight");
+RtToken RI_INTENSITY = const_cast<char*>("intensity"),
+        RI_LIGHTCOLOR = const_cast<char*>("lightcolor"),
+        RI_FROM = const_cast<char*>("from"),
+        RI_TO = const_cast<char*>("to"),
+        RI_CONEANGLE = const_cast<char*>("coneangle"),
+        RI_CONEDELTAANGLE = const_cast<char*>("conedeltaangle"),
+        RI_BEAMDISTRIBUTION = const_cast<char*>("beamdistribution");
+RtToken RI_MATTE = const_cast<char*>("matte"),
+        RI_METAL = const_cast<char*>("metal"),
+        RI_SHINYMETAL = const_cast<char*>("shinymetal"),
+        RI_PLASTIC = const_cast<char*>("plastic"),
+        RI_PAINTEDPLASTIC = const_cast<char*>("paintedplastic");
+RtToken RI_KA = const_cast<char*>("Ka"),
+        RI_KD = const_cast<char*>("Kd"),
+        RI_KS = const_cast<char*>("Ks"),
+        RI_ROUGHNESS = const_cast<char*>("roughness"),
+        RI_KR = const_cast<char*>("Kr"),
+        RI_TEXTURENAME = const_cast<char*>("texturename"),
+        RI_SPECULARCOLOR = const_cast<char*>("specularcolor");
+RtToken RI_DEPTHCUE = const_cast<char*>("depthcue"),
+        RI_FOG = const_cast<char*>("fog"),
+        RI_BUMPY = const_cast<char*>("bumpy");
+RtToken RI_MINDISTANCE = const_cast<char*>("mindistance"),
+        RI_MAXDISTANCE = const_cast<char*>("maxdistance"),
+        RI_BACKGROUND = const_cast<char*>("background"),
+        RI_DISTANCE = const_cast<char*>("distance"),
+        RI_AMPLITUDE = const_cast<char*>("amplitude");
+RtToken RI_RASTER = const_cast<char*>("raster"),
+        RI_SCREEN = const_cast<char*>("screen"),
+        RI_CAMERA = const_cast<char*>("camera"),
+        RI_WORLD = const_cast<char*>("world"),
+        RI_OBJECT = const_cast<char*>("object");
+RtToken RI_INSIDE = const_cast<char*>("inside"),
+        RI_OUTSIDE = const_cast<char*>("outside"),
+        RI_LH = const_cast<char*>("lh"),
+        RI_RH = const_cast<char*>("rh");
 RtToken RI_P = const_cast<char*>("P");
 RtToken RI_PZ = const_cast<char*>("Pz");
 RtToken RI_PW = const_cast<char*>("Pw");
 RtToken RI_N = const_cast<char*>("N");
-RtToken RI_NP;
+RtToken RI_NP = const_cast<char*>("Np");
 RtToken RI_CS = const_cast<char*>("Cs");
 RtToken RI_OS = const_cast<char*>("Os");
 RtToken RI_S = const_cast<char*>("s");
 RtToken RI_T = const_cast<char*>("t");
 RtToken RI_ST = const_cast<char*>("st");
-RtToken RI_BILINEAR,
-        RI_BICUBIC;
-RtToken RI_LINEAR,
-        RI_CUBIC;
-RtToken RI_PRIMITIVE,
-        RI_INTERSECTION,
-        RI_UNION,
-        RI_DIFFERENCE;
-RtToken RI_PERIODIC,
-        RI_NONPERIODIC,
-        RI_CLAMP,
-        RI_BLACK;
-RtToken RI_IGNORE,
-        RI_PRINT,
-        RI_ABORT,
-        RI_HANDLER;
-RtToken RI_COMMENT,
-        RI_STRUCTURE,
-        RI_VERBATIM;
-RtToken RI_IDENTIFIER,
-        RI_NAME,
-        RI_SHADINGGROUP;
-RtToken RI_WIDTH,
-        RI_CONSTANTWIDTH;
+RtToken RI_BILINEAR = const_cast<char*>("bilinear"),
+        RI_BICUBIC = const_cast<char*>("bicubic");
+RtToken RI_LINEAR = const_cast<char*>("linear"),
+        RI_CUBIC = const_cast<char*>("cubic");
+RtToken RI_PRIMITIVE = const_cast<char*>("primitive"),
+        RI_INTERSECTION = const_cast<char*>("intersection"),
+        RI_UNION = const_cast<char*>("union"),
+        RI_DIFFERENCE = const_cast<char*>("difference");
+RtToken RI_PERIODIC = const_cast<char*>("periodic"),
+        RI_NONPERIODIC = const_cast<char*>("nonperiodic"),
+        RI_CLAMP = const_cast<char*>("clamp"),
+        RI_BLACK = const_cast<char*>("black");
+RtToken RI_IGNORE = const_cast<char*>("ignore"),
+        RI_PRINT = const_cast<char*>("print"),
+        RI_ABORT = const_cast<char*>("abort"),
+        RI_HANDLER = const_cast<char*>("handler");
+RtToken RI_COMMENT = const_cast<char*>("comment"),
+        RI_STRUCTURE = const_cast<char*>("structure"),
+        RI_VERBATIM = const_cast<char*>("verbatim");
+RtToken RI_IDENTIFIER = const_cast<char*>("identifier"),
+        RI_NAME = const_cast<char*>("name"),
+        RI_SHADINGGROUP = const_cast<char*>("shadinggroup");
+RtToken RI_WIDTH = const_cast<char*>("width"),
+        RI_CONSTANTWIDTH = const_cast<char*>("constantwidth");
 
-RtBasis RiBezierBasis,
-        RiBSplineBasis,
-        RiCatmullRomBasis,
-        RiHermiteBasis,
-        RiPowerBasis;
+// each basis is RI's matrix for it, rows first
+RtBasis RiBezierBasis = { { -1.0F, 3.0F, -3.0F, 1.0F }, { 3.0F, -6.0F, 3.0F, 0.0F }, { -3.0F, 3.0F, 0.0F, 0.0F },
+            { 1.0F, 0.0F, 0.0F, 0.0F } },
+        RiBSplineBasis = { { -1.0F / 6.0F, 3.0F / 6.0F, -3.0F / 6.0F, 1.0F / 6.0F }, { 3.0F / 6.0F, -6.0F / 6.0F, 3.0F / 6.0F, 0.0F },
+            { -3.0F / 6.0F, 0.0F, 3.0F / 6.0F, 0.0F }, { 1.0F / 6.0F, 4.0F / 6.0F, 1.0F / 6.0F, 0.0F } },
+        RiCatmullRomBasis = { { -0.5F, 1.5F, -1.5F, 0.5F }, { 1.0F, -2.5F, 2.0F, -0.5F }, { -0.5F, 0.0F, 0.5F, 0.0F },
+            { 0.0F, 1.0F, 0.0F, 0.0F } },
+        RiHermiteBasis = { { 2.0F, 1.0F, -2.0F, 1.0F }, { -3.0F, -2.0F, 3.0F, -1.0F }, { 0.0F, 1.0F, 0.0F, 0.0F },
+            { 1.0F, 0.0F, 0.0F, 0.0F } },
+        RiPowerBasis = { { 1.0F, 0.0F, 0.0F, 0.0F }, { 0.0F, 1.0F, 0.0F, 0.0F }, { 0.0F, 0.0F, 1.0F, 0.0F },
+            { 0.0F, 0.0F, 0.0F, 1.0F } };
 
 RtInt RiLastError;
 
@@ -681,11 +687,18 @@ RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[
     rc.displacement(name, list);
 }
 
+// a null space names nothing, and is ignored
 RtVoid RiCoordinateSystem(RtToken space) {
+    if (space == nullptr) {
+        return;
+    }
     renderer().activeRenderContext().saveCoordinateSystem(space);
 }
 
 RtVoid RiCoordSysTransform(RtToken space) {
+    if (space == nullptr) {
+        return;
+    }
     renderer().activeRenderContext().setCoordinateSystem(space);
 }
 

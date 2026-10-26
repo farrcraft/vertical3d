@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
 }
 
 /**
- * Each reserved coordinate system is identity until something saves over it.
+ * Each predefined coordinate system is the identity until the camera is set up.
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     v3d::moya::RenderContext rc;
@@ -82,23 +82,40 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
 
 /**
  * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem
- * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform.
+ * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform. Saving a
+ * name again replaces what it held.
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
     v3d::moya::RenderContext rc;
     const glm::mat4x4 scaled(3.0F);
 
     rc.setTransform(scaled);
-    rc.saveCoordinateSystem("world");
-    BOOST_TEST((rc.coordinateSystem("world") == scaled));
+    rc.saveCoordinateSystem("lamp");
+    BOOST_TEST((rc.coordinateSystem("lamp") == scaled));
 
     rc.setIdentityTransform();
-    rc.saveCoordinateSystem("world");
-    BOOST_TEST((rc.coordinateSystem("world") == glm::mat4x4(1.0F)));
+    rc.setCoordinateSystem("lamp");
+    rc.saveCoordinateSystem("copy");
+    BOOST_TEST((rc.coordinateSystem("copy") == scaled));
 
-    rc.setCoordinateSystem("world");
-    rc.saveCoordinateSystem("object");
-    BOOST_TEST((rc.coordinateSystem("object") == glm::mat4x4(1.0F)));
+    rc.setIdentityTransform();
+    rc.saveCoordinateSystem("lamp");
+    BOOST_TEST((rc.coordinateSystem("lamp") == glm::mat4x4(1.0F)));
+}
+
+/**
+ * A predefined name is refused by saveCoordinateSystem, so a scene cannot replace the spaces
+ * the camera set up.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_a_predefined_space_is_refused_test) {
+    v3d::moya::RenderContext rc;
+    rc.setTransform(glm::mat4x4(3.0F));
+
+    const char* predefined[] = { "object", "world", "camera", "screen", "raster", "NDC" };
+    for (const auto* name : predefined) {
+        rc.saveCoordinateSystem(name);
+        BOOST_TEST((rc.coordinateSystem(name) == glm::mat4x4(1.0F)));
+    }
 }
 
 /**
@@ -111,9 +128,9 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
     rc.setIdentityTransform();
     rc.translate(1.0F, 2.0F, 3.0F);
     rc.translate(1.0F, 2.0F, 3.0F);
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
-    glm::mat4x4 composed = rc.coordinateSystem("object");
+    glm::mat4x4 composed = rc.coordinateSystem("probe");
     BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0F, 4.0F, 6.0F)));
 }
 
@@ -125,10 +142,10 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
 
     rc.setIdentityTransform();
     rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
     // the angle is in degrees, as RiRotate takes it
-    const glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::mat4x4 composed = rc.coordinateSystem("probe");
     glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_TEST(turned.x == 0.0F, boost::test_tools::tolerance(0.0001F));
     BOOST_TEST(turned.y == 1.0F, boost::test_tools::tolerance(0.0001F));
@@ -139,9 +156,9 @@ BOOST_AUTO_TEST_CASE(render_context_scale_test) {
 
     rc.setIdentityTransform();
     rc.scale(2.0F, 3.0F, 4.0F);
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
-    const glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::mat4x4 composed = rc.coordinateSystem("probe");
     const glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
     BOOST_TEST((scaled == glm::vec3(2.0F, 3.0F, 4.0F)));
 }

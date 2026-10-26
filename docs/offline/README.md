@@ -81,9 +81,11 @@ scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics st
 **There are two ways into a `RenderContext`**: the RI C entry points in `RenderMan.cxx`, and
 `RIBHandler`. Neither calls the other. The reader cannot use the C API, because most RI
 functions take varargs and a `va_list` cannot be built at run time. Every C entry point has a
-definition, but many are empty, including every `V` form (`RiPolygonV`, `RiSphereV` and the
-rest). The RI token table in `RenderMan.cxx` is `RtToken`, that is, pointers, and most of it is
-uninitialised. A null token reaches the context as an empty string, not as an error.
+definition, but many are empty: every quadric, `RiPointsPolygons`, `RiOption` and `RiBasis`
+among them. A varargs form collects its parameters and calls its `V` form. Each token in the
+token table holds RI's string for it, and each basis matrix holds RI's values. A null name is
+ignored by the request it is passed to, or reaches the context as an empty string where RI gives
+null a meaning.
 
 ### The two hiders
 

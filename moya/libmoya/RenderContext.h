@@ -220,8 +220,9 @@ class RenderContext {
         void attributeEnd();
         /**
          * maps to RiCoordinateSystem()
-         * Saves the current transformation as a named coordinate system.
-         * The predefined names are object, world, camera, screen, raster and NDC.
+         * Saves the current transformation as a named coordinate system. The predefined
+         * names are object, world, camera, screen, raster and NDC. The camera sets them, and
+         * a predefined name given here is logged and not saved.
          **/
         void saveCoordinateSystem(const std::string & name);
         /**
@@ -390,6 +391,8 @@ class RenderContext {
          * through this.
          **/
         glm::mat4x4 coordinateSystem(const std::string & name);
+        /** Whether a coordinate system is predefined or saved by the scene. **/
+        bool known(const std::string & name) const;
 
         /**
          * The matrices from camera space into "screen", "raster" and "NDC", as the camera
@@ -524,7 +527,10 @@ class RenderContext {
         std::string name_;
         std::vector<v3d::render::offline::MovingTransform> transforms_;
         std::vector<Attributes> attributes_;
-        std::map<std::string, glm::mat4x4> coordinateSystems_;
+        /** The spaces the camera sets. A scene cannot save over one. **/
+        std::map<std::string, glm::mat4x4> predefined_;
+        /** The spaces a scene saved with RiCoordinateSystem. **/
+        std::map<std::string, glm::mat4x4> named_;
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;

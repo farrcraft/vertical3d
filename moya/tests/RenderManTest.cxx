@@ -11,9 +11,12 @@
 #include <moya/libmoya/Shading.h>
 
 #include <cmath>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -317,6 +320,114 @@ BOOST_AUTO_TEST_CASE(renderman_context_switches_to_its_handle_test) {
     BOOST_CHECK_EQUAL(context().imageWidth(), 32U);
     RiEnd();
     BOOST_CHECK_EQUAL(context().imageWidth(), 64U);
+    RiEnd();
+}
+
+/**
+ * Every token RI declares holds RI's string for it, so a caller can pass any of them.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_every_token_holds_its_name_test) {
+    const std::pair<RtToken, const char*> tokens[] = {
+        { RI_FRAMEBUFFER, "framebuffer" }, { RI_FILE, "file" },
+        { RI_RGB, "rgb" }, { RI_RGBA, "rgba" }, { RI_RGBZ, "rgbz" }, { RI_RGBAZ, "rgbaz" },
+        { RI_A, "a" }, { RI_Z, "z" }, { RI_AZ, "az" },
+        { RI_PERSPECTIVE, "perspective" }, { RI_ORTHOGRAPHIC, "orthographic" },
+        { RI_HIDDEN, "hidden" }, { RI_PAINT, "paint" },
+        { RI_CONSTANT, "constant" }, { RI_SMOOTH, "smooth" },
+        { RI_FLATNESS, "flatness" }, { RI_FOV, "fov" },
+        { RI_AMBIENTLIGHT, "ambientlight" }, { RI_POINTLIGHT, "pointlight" },
+        { RI_DISTANTLIGHT, "distantlight" }, { RI_SPOTLIGHT, "spotlight" },
+        { RI_INTENSITY, "intensity" }, { RI_LIGHTCOLOR, "lightcolor" }, { RI_FROM, "from" },
+        { RI_TO, "to" }, { RI_CONEANGLE, "coneangle" }, { RI_CONEDELTAANGLE, "conedeltaangle" },
+        { RI_BEAMDISTRIBUTION, "beamdistribution" },
+        { RI_MATTE, "matte" }, { RI_METAL, "metal" }, { RI_SHINYMETAL, "shinymetal" },
+        { RI_PLASTIC, "plastic" }, { RI_PAINTEDPLASTIC, "paintedplastic" },
+        { RI_KA, "Ka" }, { RI_KD, "Kd" }, { RI_KS, "Ks" }, { RI_ROUGHNESS, "roughness" },
+        { RI_KR, "Kr" }, { RI_TEXTURENAME, "texturename" }, { RI_SPECULARCOLOR, "specularcolor" },
+        { RI_DEPTHCUE, "depthcue" }, { RI_FOG, "fog" }, { RI_BUMPY, "bumpy" },
+        { RI_MINDISTANCE, "mindistance" }, { RI_MAXDISTANCE, "maxdistance" },
+        { RI_BACKGROUND, "background" }, { RI_DISTANCE, "distance" }, { RI_AMPLITUDE, "amplitude" },
+        { RI_RASTER, "raster" }, { RI_SCREEN, "screen" }, { RI_CAMERA, "camera" },
+        { RI_WORLD, "world" }, { RI_OBJECT, "object" },
+        { RI_INSIDE, "inside" }, { RI_OUTSIDE, "outside" }, { RI_LH, "lh" }, { RI_RH, "rh" },
+        { RI_P, "P" }, { RI_PZ, "Pz" }, { RI_PW, "Pw" }, { RI_N, "N" }, { RI_NP, "Np" },
+        { RI_CS, "Cs" }, { RI_OS, "Os" }, { RI_S, "s" }, { RI_T, "t" }, { RI_ST, "st" },
+        { RI_BILINEAR, "bilinear" }, { RI_BICUBIC, "bicubic" },
+        { RI_LINEAR, "linear" }, { RI_CUBIC, "cubic" },
+        { RI_PRIMITIVE, "primitive" }, { RI_INTERSECTION, "intersection" },
+        { RI_UNION, "union" }, { RI_DIFFERENCE, "difference" },
+        { RI_PERIODIC, "periodic" }, { RI_NONPERIODIC, "nonperiodic" },
+        { RI_CLAMP, "clamp" }, { RI_BLACK, "black" },
+        { RI_IGNORE, "ignore" }, { RI_PRINT, "print" }, { RI_ABORT, "abort" },
+        { RI_HANDLER, "handler" },
+        { RI_COMMENT, "comment" }, { RI_STRUCTURE, "structure" }, { RI_VERBATIM, "verbatim" },
+        { RI_IDENTIFIER, "identifier" }, { RI_NAME, "name" }, { RI_SHADINGGROUP, "shadinggroup" },
+        { RI_WIDTH, "width" }, { RI_CONSTANTWIDTH, "constantwidth" },
+    };
+    for (const auto& [token, name] : tokens) {
+        BOOST_TEST_CONTEXT(name) {
+            BOOST_TEST_REQUIRE((token != nullptr));
+            BOOST_TEST(std::string(token) == name);
+        }
+    }
+}
+
+/**
+ * Each basis matrix holds RI's values for it. Every row of the B-spline basis is divided by
+ * six, and every row of the Catmull-Rom basis by two.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_every_basis_holds_its_matrix_test) {
+    const float sixth = 1.0F / 6.0F;
+    const RtBasis bezier = { { -1, 3, -3, 1 }, { 3, -6, 3, 0 }, { -3, 3, 0, 0 }, { 1, 0, 0, 0 } };
+    const RtBasis bspline = { { -sixth, 3 * sixth, -3 * sixth, sixth }, { 3 * sixth, -6 * sixth, 3 * sixth, 0 },
+        { -3 * sixth, 0, 3 * sixth, 0 }, { sixth, 4 * sixth, sixth, 0 } };
+    const RtBasis catmullRom = { { -0.5F, 1.5F, -1.5F, 0.5F }, { 1, -2.5F, 2, -0.5F }, { -0.5F, 0, 0.5F, 0 },
+        { 0, 1, 0, 0 } };
+    const RtBasis hermite = { { 2, 1, -2, 1 }, { -3, -2, 3, -1 }, { 0, 1, 0, 0 }, { 1, 0, 0, 0 } };
+    const RtBasis power = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
+    const std::pair<const RtFloat*, const RtFloat*> bases[] = {
+        { &RiBezierBasis[0][0], &bezier[0][0] }, { &RiBSplineBasis[0][0], &bspline[0][0] },
+        { &RiCatmullRomBasis[0][0], &catmullRom[0][0] }, { &RiHermiteBasis[0][0], &hermite[0][0] },
+        { &RiPowerBasis[0][0], &power[0][0] },
+    };
+    for (const auto& [actual, expected] : bases) {
+        for (int each = 0; each < 16; each++) {
+            BOOST_TEST(actual[each] == expected[each], boost::test_tools::tolerance(0.00001F));
+        }
+    }
+}
+
+/**
+ * A null space is ignored by RiCoordinateSystem and RiCoordSysTransform, so the current
+ * transformation is unchanged.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_a_null_coordinate_system_is_ignored_test) {
+    RiBegin(RI_NULL);
+    RiScale(2.0F, 2.0F, 2.0F);
+    RiCoordinateSystem(RI_NULL);
+    RiCoordSysTransform(RI_NULL);
+    RiCoordinateSystem(const_cast<char*>("kept"));
+    BOOST_TEST((context().coordinateSystem("kept") == glm::scale(glm::mat4x4(1.0F), glm::vec3(2.0F))));
+    RiEnd();
+}
+
+/**
+ * RI's own name for a predefined space is refused by RiCoordinateSystem, so the camera a scene
+ * set up is the one the hiders read.
+ **/
+BOOST_AUTO_TEST_CASE(renderman_a_predefined_space_cannot_be_renamed_test) {
+    RiBegin(RI_NULL);
+    RiFormat(64, 48, 1.0F);
+    RiProjection(RI_PERSPECTIVE, RI_NULL);
+    RiTranslate(0.0F, 0.0F, 5.0F);
+    RiWorldBegin();
+    const glm::mat4x4 raster = context().coordinateSystem("raster");
+    const glm::mat4x4 camera = context().coordinateSystem("camera");
+    RiScale(3.0F, 3.0F, 3.0F);
+    RiCoordinateSystem(RI_RASTER);
+    RiCoordinateSystem(RI_CAMERA);
+    BOOST_TEST((context().coordinateSystem("raster") == raster));
+    BOOST_TEST((context().coordinateSystem("camera") == camera));
     RiEnd();
 }
 
