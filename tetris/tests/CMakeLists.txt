@@ -16,7 +16,6 @@ v3d_add_test(tetris
 target_link_libraries(v3dtest_tetris PRIVATE
 	v3dlib_asset
 	v3dlib_asset_media
-	v3dlib_config
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_image

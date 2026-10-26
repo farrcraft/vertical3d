@@ -29,8 +29,8 @@ target_link_libraries(Odyssey
 		"v3dlib_input"
 		"v3dlib_log"
 		"v3dlib_render"
-		"v3dlib_window"
 		"v3dlib_type"
+		"v3dlib_window"
 )
 
 v3d_add_app_data(Odyssey)
