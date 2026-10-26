@@ -238,6 +238,20 @@ searches through callbacks. A region that is not loaded is impassable and opaque
 **Open.** ADR first. `Play` gains a position, and `Engine::position(voice, ...)` moves a playing
 voice. A voice is either panned or placed, and switching one way clears the other.
 
+The decision is taken, and the ADR is still to write and to show before it is committed:
+
+- **`audio::Engine` holds the listener.** The game calls `listener(position, forward, up)` once a
+  frame in its own world coordinates. A voice's position is in the same coordinates, and the
+  engine turns it into the listener's space for `MIX_SetTrack3DPosition`, whose listener is fixed
+  at the origin in right-handed axes. Rejected: the game handing over listener-relative
+  positions, which every game would convert itself and which leaves FMOD without a listener.
+- **A position and a pan are exclusive.** Setting either clears the other, as SDL_mixer forces.
+  Rejected: a pan on top of a position, which the mixer cannot do.
+- **FMOD events are placed too.** `Events` gains a listener, which `audio::Engine` forwards, and a
+  position for an instance when it starts and while it plays. The null backend ignores both, and
+  an event authored as 2D is unaffected. Rejected: leaving events 2D, so an event-based game pans
+  by hand. FMOD takes its 3D data left-handed, so the backend converts.
+
 - `event::kind::Sound` gains a position, so a game can send a placed sound as an event.
 - [Audio.md](../api/engine/Audio.md) states the axes and the rule.
 - Tests: under the dummy driver, a placed voice reads back its position in mixer axes. A pan
