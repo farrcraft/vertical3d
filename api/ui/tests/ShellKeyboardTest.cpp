@@ -4,12 +4,12 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Panel.h>
@@ -39,8 +39,8 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
@@ -55,7 +55,7 @@ struct Fixture final {
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
     std::vector<std::string> sent;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::shell::Keyboard> seam;
 };
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(keys_reach_an_immediate_field_with_no_retained_ui) {
         [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Engine>(), dispatcher, nullptr);
+    v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Interface>(), dispatcher, nullptr);
     seam.immediate(&layer);
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));

@@ -9,7 +9,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
@@ -154,7 +154,7 @@ void Screen::theme(const boost::shared_ptr<style::Theme>& theme) {
 
 /**
  **/
-void Screen::draw(const Engine* ui, const StatisticsOverlay::Sample& statistics) {
+void Screen::draw(const Interface* ui, const StatisticsOverlay::Sample& statistics) {
     if (ui != nullptr) {
         components_->draw(&canvas_, *ui);
     }

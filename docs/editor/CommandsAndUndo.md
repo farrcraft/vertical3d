@@ -103,7 +103,7 @@ the same handler:
    its keys. An event it takes never reaches the bindings.
 2. A key or button is published as an `event::Source` to every listener on `sink<Source>`. The
    editor does not listen there.
-3. Unless a listener consumed the source, the event engine sends the commands bound to it on
+3. Unless a listener consumed the source, the event router sends the commands bound to it on
    `sink<Event>`. The engine listens there and runs the handler the command names, so the
    editor receives commands and never raw keys.
 

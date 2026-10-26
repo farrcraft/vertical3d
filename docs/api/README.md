@@ -174,7 +174,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   is held. See [engine/Input.md](engine/Input.md#polling-the-keyboard-and-mouse).
 - **Held command** — a command whose bound key is down now, answered by `Engine::held()`. See
   [engine/Input.md](engine/Input.md#polling-the-keyboard-and-mouse).
-- **Dispatcher** — the `entt::dispatcher` the engine creates. Devices, the event engine, the ui
+- **Dispatcher** — the `entt::dispatcher` the engine creates. Devices, the event router, the ui
   and audio publish and listen on it.
 - **Config document** — a JSON file listed in `data/config.json` under a type such as `window`
   or `binding`. See [engine/Config.md](engine/Config.md#config-documents).

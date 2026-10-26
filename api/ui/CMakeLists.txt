@@ -3,7 +3,7 @@ v3d_add_api_library(ui
 	"Component.h" "Component.cpp"
 	"Container.h" "Container.cpp"
 	"DrawOrder.h"
-	"Engine.h" "Engine.cpp"
+	"Interface.h" "Interface.cpp"
 	"Image.h" "Image.cpp"
 	"Immediate.h" "Immediate.cpp"
 	"Layout.h" "Layout.cpp"
@@ -65,7 +65,7 @@ v3d_add_api_library(ui
 # a renderer.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
 # v3dlib_image: TextRenderer.h holds the image::Image its atlas is uploaded from.
-# Boost::json: Engine.h names a boost::json::object for the theme it is handed.
+# Boost::json: Interface.h names a boost::json::object for the theme it is handed.
 # Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_log

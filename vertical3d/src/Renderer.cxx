@@ -15,7 +15,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/renderer/Line.h>
 #include <api/shell/Shell.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/shell/Screen.h>
@@ -156,7 +156,7 @@ v3d::ui::paint::Measure Renderer::measure() const {
 
 /**
  **/
-void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
+void Renderer::ui(const boost::shared_ptr<v3d::ui::Interface>& ui) {
     ui_ = ui;
     if (!ui_) {
         return;

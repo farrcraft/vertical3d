@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/engine/Engine.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -86,7 +86,7 @@ class Shell final {
     /**
      * @return the ui, or null before start()
      **/
-    const boost::shared_ptr<v3d::ui::Engine>& ui() const noexcept;
+    const boost::shared_ptr<v3d::ui::Interface>& ui() const noexcept;
 
     /**
      * @return the menu, or null before start() and without Options::menu
@@ -116,7 +116,7 @@ class Shell final {
  private:
     v3d::engine::Engine* engine_;
     Options options_;
-    boost::shared_ptr<v3d::ui::Engine> ui_;
+    boost::shared_ptr<v3d::ui::Interface> ui_;
     boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
     boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };

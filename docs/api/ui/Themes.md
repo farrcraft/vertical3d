@@ -26,7 +26,7 @@ A component's `style` key names a style within its class. A component that names
 dressed by the first style of its class in the theme. One style can therefore dress every
 panel without each panel naming it.
 
-Changing the active theme is `Engine::activeTheme(name)`. Pass the theme to the renderer with
+Changing the active theme is `Interface::activeTheme(name)`. Pass the theme to the renderer with
 `Screen::theme()` or `ComponentRenderer::theme()`.
 
 **A theme starts from the defaults, not from the theme before it.** A value the new theme does

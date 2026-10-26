@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include "Engine.h"
+#include "Router.h"
 #include "Event.h"
 #include "Mapper.h"
 
@@ -24,7 +24,7 @@
 namespace v3d::event {
 
 /**
- * Builds the event engine's Mapper named "global" from a binding document.
+ * Builds the event router's Mapper named "global" from a binding document.
  *
  * A Mapper cannot be edited in place, so rebind() rebuilds the whole mapper from the document
  * with the overrides applied. The overrides are stored apart from the mapper, because each
@@ -62,7 +62,7 @@ class Bindings final {
         bool operator==(const Override& other) const = default;
     };
 
-    Bindings(const boost::shared_ptr<Engine>& events, const boost::shared_ptr<v3d::log::Logger>& logger,
+    Bindings(const boost::shared_ptr<Router>& events, const boost::shared_ptr<v3d::log::Logger>& logger,
         const Known& known = Known());
 
     /**
@@ -185,7 +185,7 @@ class Bindings final {
     bool readSource(const boost::json::object& mapping, Event* event);
     bool readDestination(const boost::json::object& mapping, Event* event);
 
-    boost::shared_ptr<Engine> events_;
+    boost::shared_ptr<Router> events_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     Known known_;
     std::optional<boost::json::object> document_;

@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
@@ -43,13 +43,13 @@
 namespace {
 
 /**
- * A ui engine over a document written inline, which is all a config file amounts to by
+ * A ui::Interface over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
-boost::shared_ptr<v3d::ui::Engine> load(const std::string& document, bool* loaded) {
+boost::shared_ptr<v3d::ui::Interface> load(const std::string& document, bool* loaded) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher),
+    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher),
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_SUITE(theme_test)
  **/
 BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
     const boost::shared_ptr<v3d::ui::style::Theme> dark = ui->theme("dark");
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(a_theme_loads_its_styles_and_their_properties) {
  **/
 BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
     const std::vector<boost::shared_ptr<v3d::ui::style::Style>> buttons = ui->theme("dark")->getStyleSet("", "button");
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(a_button_style_carries_a_state_and_its_images) {
  **/
 BOOST_AUTO_TEST_CASE(the_document_names_the_active_theme) {
     bool loaded = false;
-    boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
+    boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
     BOOST_REQUIRE(ui->activeTheme());
     BOOST_CHECK_EQUAL(ui->activeTheme()->name(), "light");
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(an_unknown_active_theme_is_refused) {
  **/
 BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(a_theme_overrides_what_it_names_and_no_more) {
  **/
 BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(
         R"({ "themes": [ { "name": "plain" } ], "containers": [] })", &loaded);
     BOOST_REQUIRE(loaded);
 
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(a_nameless_theme_changes_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ {
             "name": "dark",
             "styles": [ {
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(the_image_pass_resolves_every_source_the_config_named) {
  **/
 BOOST_AUTO_TEST_CASE(an_image_nested_in_a_layout_is_resolved) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "panel", "name": "frame", "children": [
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(an_image_nested_in_a_layout_is_resolved) {
  **/
 BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "icon", "name": "logo", "source": "missing.tga" }
@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
  **/
 BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "button", "name": "go", "label": "Go", "position": [10, 20], "size": [100, 30],
@@ -472,7 +472,7 @@ BOOST_AUTO_TEST_CASE(a_required_member_of_the_wrong_type_is_refused) {
  **/
 BOOST_AUTO_TEST_CASE(an_optional_member_of_the_wrong_type_is_ignored) {
     bool loaded = false;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     BOOST_CHECK_NO_THROW(ui = load(R"({
         "themes": [ { "name": "dark", "styles": [ { "class": "label", "name": "s", "state": 5,
             "fonts": [ { "name": "f", "source": 5, "face": 5, "size": -12, "align": 5 } ] } ] } ],
@@ -500,7 +500,7 @@ BOOST_AUTO_TEST_CASE(an_optional_member_of_the_wrong_type_is_ignored) {
  **/
 BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(themedDocument, &loaded);
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
     ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
 
@@ -533,7 +533,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
  **/
 BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark", "styles": [
             {
                 "class": "button", "name": "default", "state": "inactive",
@@ -622,7 +622,7 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
  **/
 BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark", "styles": [
             {
                 "class": "button", "name": "default", "state": "normal",
@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE(an_image_resolved_to_part_of_a_sheet_draws_that_part) {
  **/
 BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "icon", "name": "slot", "source": "items/wood" }
@@ -709,7 +709,7 @@ BOOST_AUTO_TEST_CASE(an_icon_given_a_new_source_keeps_it_across_a_resolve) {
  **/
 BOOST_AUTO_TEST_CASE(resolving_images_passes_over_a_null_component) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "icon", "name": "slot", "source": "items/wood" }
@@ -746,7 +746,7 @@ BOOST_AUTO_TEST_CASE(a_button_given_a_new_icon_drops_the_old_image) {
  **/
 BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "editor", "visible": true, "components": [
             { "type": "toolbar", "name": "tools", "edge": "left", "buttons": [
@@ -825,7 +825,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
     bool loaded = false;
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(R"({
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
         "themes": [ { "name": "dark" } ],
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "label", "name": "score", "label": "Score", "position": [5, 5] },

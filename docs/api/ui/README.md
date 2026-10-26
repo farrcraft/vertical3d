@@ -20,7 +20,7 @@ library works inside is in [internals/UserInterface.md](../../internals/UserInte
 `api/ui` offers two models. Both draw onto the same `realtime::canvas::Canvas`, use the same box
 drawing and the same text callbacks, so they look like one ui on screen.
 
-**Retained mode** is a tree of components. `v3d::ui::Engine` builds the tree once from a JSON
+**Retained mode** is a tree of components. `v3d::ui::Interface` builds the tree once from a JSON
 document. The app looks components up by name and changes them when the game's state changes.
 `v3d::ui::paint::ComponentRenderer` draws the tree. Use it for an authored ui: a menu bar, a
 settings screen, a HUD, a game's pause menu.
@@ -86,7 +86,7 @@ can supply its own `Upload`.
 
 A control sends a command when it is activated. In the document, a command is the pair
 `command` and `context`. Both must be present, or the component carries no command. The
-`context` is resolved through the event engine, and the command is sent on the ui's
+`context` is resolved through the event router, and the command is sent on the ui's
 dispatcher as a `v3d::event::Event`. An app answers it like any other command.
 
 What activates each control:

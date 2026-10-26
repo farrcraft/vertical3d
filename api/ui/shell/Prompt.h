@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 
 #include <cstddef>
 #include <functional>
@@ -62,8 +62,8 @@ class Prompt final {
      * @param engine the ui the components are looked up in, or null for none
      * @param names what the components are called, which are Names' own when not given
      **/
-    explicit Prompt(const boost::shared_ptr<Engine>& engine);
-    Prompt(const boost::shared_ptr<Engine>& engine, const Names& names);
+    explicit Prompt(const boost::shared_ptr<Interface>& engine);
+    Prompt(const boost::shared_ptr<Interface>& engine, const Names& names);
 
     /**
      * Put the prompt up. A prompt already up is cancelled first, so its cancel handler runs.
@@ -107,7 +107,7 @@ class Prompt final {
     void show();
     boost::shared_ptr<Container> container() const;
 
-    boost::shared_ptr<Engine> engine_;
+    boost::shared_ptr<Interface> engine_;
     Names names_;
     std::string question_;
     std::vector<Answer> answers_;

@@ -8,7 +8,7 @@
 #include <api/asset/Json.h>
 #include <api/log/Logger.h>
 
-#include "Engine.h"
+#include "Router.h"
 #include "Event.h"
 #include "State.h"
 #include "Type.h"
@@ -26,7 +26,7 @@
 
 namespace v3d::event {
 
-Bindings::Bindings(const boost::shared_ptr<Engine>& events, const boost::shared_ptr<v3d::log::Logger>& logger,
+Bindings::Bindings(const boost::shared_ptr<Router>& events, const boost::shared_ptr<v3d::log::Logger>& logger,
     const Known& known) :
     events_(events),
     logger_(logger),

@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/shell/Prompt.h>
@@ -27,10 +27,10 @@ namespace {
  * A container holding what a prompt writes into: the question label and three buttons, under
  * the names a prompt looks for by default.
  **/
-boost::shared_ptr<v3d::ui::Engine> promptUi() {
+boost::shared_ptr<v3d::ui::Interface> promptUi() {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     const char* const document = R"({
       "themes": [ { "name": "default" } ],
       "containers": [
@@ -53,7 +53,7 @@ boost::shared_ptr<v3d::ui::Engine> promptUi() {
 /**
  * One of the prompt's buttons, by its place.
  **/
-boost::shared_ptr<v3d::ui::component::Button> button(const boost::shared_ptr<v3d::ui::Engine>& ui, int place) {
+boost::shared_ptr<v3d::ui::component::Button> button(const boost::shared_ptr<v3d::ui::Interface>& ui, int place) {
     return boost::dynamic_pointer_cast<v3d::ui::component::Button>(
         ui->container("prompt")->get("answer" + std::to_string(place)));
 }
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(answers_past_the_most_are_not_offered) {
  * button for each answer labelled with it, and the buttons past the answers hidden.
  **/
 BOOST_AUTO_TEST_CASE(the_config_shows_the_question_and_the_answers) {
-    const boost::shared_ptr<v3d::ui::Engine> ui = promptUi();
+    const boost::shared_ptr<v3d::ui::Interface> ui = promptUi();
     v3d::ui::shell::Prompt prompt(ui);
     prompt.open("Save changes?", { { "Save", {} }, { "Discard", {} } }, {});
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/audio/Engine.h>
+#include <api/audio/Player.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
@@ -59,7 +59,7 @@ class PongEngine final : public v3d::engine::Engine {
      **/
     void rebindPaddleKey(const v3d::event::Event& event);
 
-    boost::shared_ptr<v3d::audio::Engine> soundEngine_;
+    boost::shared_ptr<v3d::audio::Player> player_;
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;

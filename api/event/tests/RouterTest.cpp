@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/Mapper.h>
 #include <api/event/Source.h>
@@ -41,7 +41,7 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
 
 BOOST_AUTO_TEST_CASE(engine_context_test) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Engine engine(dispatcher);
+    v3d::event::Router engine(dispatcher);
 
     // a name resolves to a context, and the same name to the same one
     const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(engine_context_test) {
 
 BOOST_AUTO_TEST_CASE(engine_mapping_test) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Engine engine(dispatcher);
+    v3d::event::Router engine(dispatcher);
 
     Recorder recorder;
     dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
 BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     {
-        const v3d::event::Engine engine(dispatcher);
+        const v3d::event::Router engine(dispatcher);
         BOOST_CHECK(!dispatcher->sink<v3d::event::Unclaimed>().empty());
     }
     // the engine disconnects when it is destroyed, so the dispatcher that outlives it holds
@@ -135,7 +135,7 @@ struct Order {
  **/
 BOOST_AUTO_TEST_CASE(engine_a_key_is_heard_before_its_command_test) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Engine engine(dispatcher);
+    v3d::event::Router engine(dispatcher);
 
     const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
     const boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");

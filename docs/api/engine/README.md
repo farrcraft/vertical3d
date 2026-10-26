@@ -32,7 +32,7 @@ asked for.
 | `manifest()` | The documents `config.json` lists. Needs `Feature::Config`. See [Config.md](Config.md). |
 | `document(kind)` | One config document as a `boost::json::object`, or null. Protected. |
 | `dispatcher()` | The `entt::dispatcher` events are published on. |
-| `events()` | The event engine, which maps source events to commands. |
+| `events()` | The event router, which maps source events to commands. |
 | `window()` | The `window::Window`. Needs `Feature::Window`. See [Window.md](Window.md). |
 | `keys()`, `mouse()` | Polled input state. Need the input features. |
 | `held(command)` | Whether a key bound to a command is down. |

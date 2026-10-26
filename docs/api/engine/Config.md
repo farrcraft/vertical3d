@@ -29,8 +29,8 @@ reads these:
 |---|---|---|
 | `window` | `engine::WINDOW_DOCUMENT`. The engine, when it opens the window | `{"window": {"width": 1024, "height": 768}}`. Both must be whole numbers an `int` can hold, or startup fails. |
 | `binding` | `event::Bindings::DOCUMENT`. The engine's bindings | See [Bindings](Input.md#bindings). |
-| `ui` | `ui::Engine::DOCUMENT`. `ui::Engine::load()`, from the shell | Themes and containers. See [ui/](../ui/README.md). |
-| `sound` | `audio::Engine::DOCUMENT`. `audio::Engine::load()` | See [Audio](Audio.md#audio). |
+| `ui` | `ui::Interface::DOCUMENT`. `ui::Interface::load()`, from the shell | Themes and containers. See [ui/](../ui/README.md). |
+| `sound` | `audio::Player::DOCUMENT`. `audio::Player::load()` | See [Audio](Audio.md#audio). |
 | `camera` | `engine::CameraProfiles::DOCUMENT` | `{"cameras": [...]}`, named camera profiles. See below. |
 | `layout` | The editor's `ViewLayout::DOCUMENT` | The editor's own format. See [editor/](../../editor/README.md). |
 | `sprite` | `asset::media::SpriteSheets::DOCUMENT` | See [Sprite sheets](#sprite-sheets). |

@@ -8,7 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
@@ -117,7 +117,7 @@ class Screen final {
      *
      * @param ui what to draw, or null for nothing but the statistics
      **/
-    void draw(const Engine* ui, const StatisticsOverlay::Sample& statistics);
+    void draw(const Interface* ui, const StatisticsOverlay::Sample& statistics);
 
     v3d::render::realtime::canvas::Canvas& canvas() noexcept;
     const boost::shared_ptr<paint::TextRenderer>& text() const noexcept;

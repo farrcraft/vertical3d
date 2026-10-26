@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/shell/FileChooser.h>
 
@@ -63,10 +63,10 @@ class Sandbox final {
  * A container holding what a chooser writes into: the list, the name field and the folder
  * label, under the names a chooser looks for by default.
  **/
-boost::shared_ptr<v3d::ui::Engine> chooserUi() {
+boost::shared_ptr<v3d::ui::Interface> chooserUi() {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     const char* const document = R"({
       "themes": [ { "name": "default" } ],
       "containers": [
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(a_new_listing_has_nothing_chosen) {
     // enough in the directory opened that the row chosen before still names one of its rows
     sandbox.touch("art/c.json");
     sandbox.touch("art/d.json");
-    const boost::shared_ptr<v3d::ui::Engine> ui = chooserUi();
+    const boost::shared_ptr<v3d::ui::Interface> ui = chooserUi();
     v3d::ui::shell::FileChooser chooser(ui);
     chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json", {});
 

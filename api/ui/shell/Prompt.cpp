@@ -6,7 +6,7 @@
 #include "Prompt.h"
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 
@@ -21,13 +21,13 @@ namespace v3d::ui::shell {
 
 /**
  **/
-Prompt::Prompt(const boost::shared_ptr<Engine>& engine) :
+Prompt::Prompt(const boost::shared_ptr<Interface>& engine) :
     Prompt(engine, Names()) {
 }
 
 /**
  **/
-Prompt::Prompt(const boost::shared_ptr<Engine>& engine, const Names& names) :
+Prompt::Prompt(const boost::shared_ptr<Interface>& engine, const Names& names) :
     engine_(engine),
     names_(names),
     visible_(false) {

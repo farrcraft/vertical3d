@@ -28,7 +28,7 @@ namespace v3d::ui {
 
 class Component;
 class Container;
-class Engine;
+class Interface;
 
 namespace style {
 class Style;
@@ -180,7 +180,7 @@ class ComponentRenderer {
      *
      * The line is clipped to the background, and slid left when the caret would be past the
      * far edge, so a full box can still be typed into. The caret is drawn when the
-     * component's focused() flag, which Engine::focus() sets, is true and the box is usable.
+     * component's focused() flag, which Interface::focus() sets, is true and the box is usable.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TextBox>& box) const;
 
@@ -194,9 +194,9 @@ class ComponentRenderer {
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::TabBar>& bar) const;
 
     /**
-     * Draw every visible container of a ui engine.
+     * Draw every visible container of a ui::Interface.
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Engine& ui) const;
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Interface& ui) const;
 
     /**
      * Draw every visible component of one container.
@@ -237,9 +237,9 @@ class ComponentRenderer {
     glm::vec2 insets(const Container& container) const;
 
     /**
-     * The insets of every visible container of a ui engine.
+     * The insets of every visible container of a ui::Interface.
      **/
-    glm::vec2 insets(const Engine& ui) const;
+    glm::vec2 insets(const Interface& ui) const;
 
  private:
     /**

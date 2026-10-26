@@ -5,7 +5,7 @@
 
 #include "PongEngine.h"
 
-#include <api/audio/Engine.h>
+#include <api/audio/Player.h>
 #include <api/audio/Loaders.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
@@ -87,20 +87,20 @@ PongEngine::PongEngine(const std::string & path) :
 bool PongEngine::start() {
     window()->caption("Pong!");
 
-    soundEngine_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
+    player_ = boost::make_shared<v3d::audio::Player>(logger(), dispatcher());
     v3d::audio::registerLoaders(*assets(), logger());
     // the return is ignored. When no device opens, the engine logs why and stays silent, and
     // play() returns Voice::None.
-    soundEngine_->initialize();
+    player_->initialize();
 
     const v3d::ui::shell::GameMenu::Suspend pause = [this](bool suspended) { scene_->state().pause(suspended); };
     if (!shell_.start(pause)) {
         return false;
     }
 
-    const boost::json::object* sounds = document(v3d::audio::Engine::DOCUMENT);
+    const boost::json::object* sounds = document(v3d::audio::Player::DOCUMENT);
     if (sounds != nullptr) {
-        soundEngine_->load(*sounds, *assets());
+        player_->load(*sounds, *assets());
     }
     const boost::shared_ptr<v3d::window::Window> win = window();
     renderer_ = boost::make_shared<PongRenderer>(win, logger(), &shell_);
@@ -139,8 +139,8 @@ bool PongEngine::render() {
 /**
  **/
 bool PongEngine::release() {
-    if (soundEngine_) {
-        soundEngine_->shutdown();
+    if (player_) {
+        player_->shutdown();
     }
     // the screen draws through the renderer, so it goes first
     shell_.release();

@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/VerticalBox.h>
@@ -24,21 +24,21 @@
 namespace {
 
 /**
- * A ui engine with as many containers as a case wants, and nothing that draws: the
+ * A ui::Interface with any number of containers, and nothing that draws: the
  * traversal reads what the tree holds rather than the boxes it was drawn in.
  **/
 struct Fixture final {
     explicit Fixture(const std::string& document) :
         dispatcher(boost::make_shared<entt::dispatcher>()) {
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
         keys = boost::make_shared<v3d::ui::input::Keys>(ui, dispatcher);
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::input::Keys> keys;
 };
 
@@ -59,7 +59,7 @@ boost::shared_ptr<v3d::ui::component::Panel> panel(const std::string& name) {
     return made;
 }
 
-std::string focusedName(const boost::shared_ptr<v3d::ui::Engine>& ui) {
+std::string focusedName(const boost::shared_ptr<v3d::ui::Interface>& ui) {
     const boost::shared_ptr<v3d::ui::Component> component = ui->focused();
     return component ? std::string(component->name()) : std::string();
 }

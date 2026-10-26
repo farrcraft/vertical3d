@@ -14,10 +14,10 @@
 namespace v3d::event::kind {
 
 /**
- * A request to play a clip once. audio::Engine listens for it.
+ * A request to play a clip once. audio::Player listens for it.
  *
  * A sound is either panned or placed. One made with a pan sits between the speakers, as
- * audio::Play::pan places it. One made with a position is heard from the audio engine's
+ * audio::Play::pan places it. One made with a position is heard from the audio player's
  * listener, as audio::Play::position places it.
  **/
 class Sound final {

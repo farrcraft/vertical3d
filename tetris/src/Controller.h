@@ -8,7 +8,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/shell/Shell.h>
 
 #include <string>

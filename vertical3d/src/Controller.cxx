@@ -17,7 +17,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Toolbar.h>
@@ -214,7 +214,7 @@ bool Controller::buildViews() {
 /**
  **/
 bool Controller::buildUi() {
-    const boost::json::object* config = document(v3d::ui::Engine::DOCUMENT);
+    const boost::json::object* config = document(v3d::ui::Interface::DOCUMENT);
     if (config == nullptr) {
         logger()->get()->error("The editor has no ui config, so it would have no menus");
         return false;
@@ -223,7 +223,7 @@ bool Controller::buildUi() {
     if (!shell_.start()) {
         return false;
     }
-    const boost::shared_ptr<v3d::ui::Engine>& vgui = shell_.ui();
+    const boost::shared_ptr<v3d::ui::Interface>& vgui = shell_.ui();
     // the ui hit-tests the cursor before the app, in the order its own strips are drawn.
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer

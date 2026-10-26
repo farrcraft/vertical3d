@@ -17,7 +17,7 @@ namespace v3d::ui {
 
 class Component;
 class Container;
-class Engine;
+class Interface;
 
 namespace component {
 class TextBox;
@@ -54,7 +54,7 @@ class Cursor final {
      *        inside a text box becomes a caret position. Pass the callback the renderer
      *        drawing this ui was given, so that the two agree about where a character is
      **/
-    Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const paint::Measure& measure = paint::Measure());
 
     /**
@@ -137,7 +137,7 @@ class Cursor final {
     void place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
         bool extend) const;
 
-    boost::shared_ptr<Engine> ui_;
+    boost::shared_ptr<Interface> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     paint::Measure measure_;
     // weak, because the component belongs to the container it was loaded into. A held press

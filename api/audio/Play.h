@@ -21,7 +21,7 @@ struct Play final {
 
     /**
      * The bus the sound is mixed on, such as "music", "sfx" or "ambience". A bus is a named
-     * group of sounds whose level Engine::busGain() sets together. Empty is no bus.
+     * group of sounds whose level Player::busGain() sets together. Empty is no bus.
      **/
     std::string bus;
 
@@ -50,7 +50,7 @@ struct Play final {
     float pan;
 
     /**
-     * Where the sound is in the world, in the coordinates Engine::listener() is given. A sound
+     * Where the sound is in the world, in the coordinates Player::listener() is given. A sound
      * with a position is heard from the listener, and is quieter the further away it is.
      * Nothing is a sound that is not placed, which the pan sets between the speakers.
      **/

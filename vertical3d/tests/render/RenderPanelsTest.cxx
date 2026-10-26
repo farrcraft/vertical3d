@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Label.h>
@@ -32,12 +32,12 @@ namespace {
 /**
  * The editor's own ui, which the suite's data directory holds.
  **/
-boost::shared_ptr<v3d::ui::Engine> editorUi() {
+boost::shared_ptr<v3d::ui::Interface> editorUi() {
     std::ifstream file("data/vgui.json");
     const std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(text).as_object()));
     return ui;
 }
@@ -46,14 +46,14 @@ boost::shared_ptr<v3d::ui::Engine> editorUi() {
  * One component of a container, as its type.
  **/
 template <typename T>
-boost::shared_ptr<T> part(const boost::shared_ptr<v3d::ui::Engine>& ui, const char* container, const char* name) {
+boost::shared_ptr<T> part(const boost::shared_ptr<v3d::ui::Interface>& ui, const char* container, const char* name) {
     const boost::shared_ptr<T> found = boost::dynamic_pointer_cast<T>(ui->container(container)->get(name));
     BOOST_REQUIRE(found);
     return found;
 }
 
 BOOST_AUTO_TEST_CASE(render_panels_view_test) {
-    const boost::shared_ptr<v3d::ui::Engine> ui = editorUi();
+    const boost::shared_ptr<v3d::ui::Interface> ui = editorUi();
     v3d::editor::RenderPanels panels(ui);
 
     // the window starts hidden, and says what the render is doing
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(render_panels_view_test) {
 }
 
 BOOST_AUTO_TEST_CASE(render_panels_settings_test) {
-    const boost::shared_ptr<v3d::ui::Engine> ui = editorUi();
+    const boost::shared_ptr<v3d::ui::Interface> ui = editorUi();
     v3d::editor::RenderPanels panels(ui);
     v3d::editor::RenderSettings given;
     given.size = glm::uvec2(800, 600);
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(render_panels_settings_test) {
     BOOST_CHECK(!panels.settingsVisible());
 
     // with no ui there is nothing to show or read
-    v3d::editor::RenderPanels none((boost::shared_ptr<v3d::ui::Engine>()));
+    v3d::editor::RenderPanels none((boost::shared_ptr<v3d::ui::Interface>()));
     none.showView();
     BOOST_CHECK(!none.viewVisible());
     BOOST_CHECK(!none.settings());

@@ -5,7 +5,7 @@ What each control sends when clicked is in [README.md](README.md#commands).
 
 ## The mouse
 
-`v3d::ui::input::Cursor` routes the mouse over a `ui::Engine`. The app passes it points, and
+`v3d::ui::input::Cursor` routes the mouse over a `ui::Interface`. The app passes it points, and
 each call returns whether the ui used the point. The app acts on a point only when the ui
 did not.
 

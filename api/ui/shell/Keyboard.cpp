@@ -7,7 +7,7 @@
 
 #include <api/input/Keyboard.h>
 #include <api/ui/Component.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/component/Type.h>
 #include <api/window/Window.h>
@@ -22,7 +22,7 @@ namespace v3d::ui::shell {
 
 /**
  **/
-Keyboard::Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+Keyboard::Keyboard(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::window::Window>& window) :
     ui_(ui),
     layer_(nullptr),
@@ -41,7 +41,7 @@ Keyboard::~Keyboard() {
     // the engine holds a callback that captured this object. The engine outlives it when an
     // app keeps the ui and builds a new Keyboard
     if (ui_) {
-        ui_->onFocus(Engine::Focused());
+        ui_->onFocus(Interface::Focused());
     }
     immediate(nullptr);
 }

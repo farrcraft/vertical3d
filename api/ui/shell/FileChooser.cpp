@@ -6,7 +6,7 @@
 #include "FileChooser.h"
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/TextBox.h>
@@ -28,13 +28,13 @@ const char* const FileChooser::parent = "..";
 
 /**
  **/
-FileChooser::FileChooser(const boost::shared_ptr<Engine>& engine) :
+FileChooser::FileChooser(const boost::shared_ptr<Interface>& engine) :
     FileChooser(engine, Names()) {
 }
 
 /**
  **/
-FileChooser::FileChooser(const boost::shared_ptr<Engine>& engine, const Names& names) :
+FileChooser::FileChooser(const boost::shared_ptr<Interface>& engine, const Names& names) :
     engine_(engine),
     names_(names),
     mode_(Mode::Open),

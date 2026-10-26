@@ -6,7 +6,7 @@
 #include "RenderPanels.h"
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Icon.h>
@@ -61,7 +61,7 @@ std::optional<unsigned int> number(const boost::shared_ptr<v3d::ui::Container>& 
 
 /**
  **/
-RenderPanels::RenderPanels(const boost::shared_ptr<v3d::ui::Engine>& engine) :
+RenderPanels::RenderPanels(const boost::shared_ptr<v3d::ui::Interface>& engine) :
     engine_(engine) {
 }
 

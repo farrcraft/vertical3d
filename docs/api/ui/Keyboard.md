@@ -9,7 +9,7 @@ builds one and calls it, so most apps never call it directly.
 
 ### Focus
 
-The **focus** is the one component that receives keys. `ui::Engine` holds it.
+The **focus** is the one component that receives keys. `ui::Interface` holds it.
 
 - A ui with nothing focused takes no keys. A game's movement keys keep working until
   something is clicked into or `focusFirst()` is called.
@@ -22,17 +22,17 @@ The **focus** is the one component that receives keys. `ui::Engine` holds it.
   stops being reachable when it, anything holding it or its container is hidden, or when it is
   removed. A tab page that is not up counts as hidden. The next key or character goes on to the
   app's bindings. That includes `tab` and `escape`. A dialog that closes over a focused text
-  box therefore does not keep taking the game's keys. `Engine::reachable(component)` answers
+  box therefore does not keep taking the game's keys. `Interface::reachable(component)` answers
   whether a component is still in the tab order.
 - A component that is not usable keeps the focus, whether or not it is reachable. It stops
   being usable when it or anything holding it is disabled. `tab` and `escape` still go to the
   ui. Every other key goes through to the app's bindings.
-- `Engine::focused()` returns the focused component. `Engine::onFocus(callback)` reports
+- `Interface::focused()` returns the focused component. `Interface::onFocus(callback)` reports
   every change, in the same frame.
 - A focused component is drawn with a ring around its box, in the `focus` colour at
   `focus-width` thickness of its style class.
 
-**Starting a keyboard-driven screen.** Call `Engine::focusFirst()` as the screen goes up. It
+**Starting a keyboard-driven screen.** Call `Interface::focusFirst()` as the screen goes up. It
 puts the focus on the first focusable component. Nothing else gives out a first focus except
 a press: `tab` does nothing while nothing is focused, so a HUD nobody is looking at never
 takes the keyboard. No app in this tree calls `focusFirst()`; it is covered by

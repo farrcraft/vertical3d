@@ -61,7 +61,7 @@ this for mouse motion and resize.
 `event::publish()` sends a source event in two stages:
 
 1. Every listener on `sink<event::Source>` hears it.
-2. Unless one of them called `consume()` on it, the event engine sends the commands it is bound
+2. Unless one of them called `consume()` on it, the event router sends the commands it is bound
    to on `sink<event::Event>`.
 
 Every listener therefore hears the key before any listener hears its command, whatever order

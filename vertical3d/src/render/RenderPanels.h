@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 
@@ -29,7 +29,7 @@ namespace v3d::editor {
  **/
 class RenderPanels final {
  public:
-    explicit RenderPanels(const boost::shared_ptr<v3d::ui::Engine>& engine);
+    explicit RenderPanels(const boost::shared_ptr<v3d::ui::Interface>& engine);
 
     void showView();
     void hideView();
@@ -61,7 +61,7 @@ class RenderPanels final {
  private:
     boost::shared_ptr<v3d::ui::Container> container(const char* name) const;
 
-    boost::shared_ptr<v3d::ui::Engine> engine_;
+    boost::shared_ptr<v3d::ui::Interface> engine_;
     // the room the config gives the picture, read when the first picture is shown
     glm::vec2 room_{ 0.0F };
 };

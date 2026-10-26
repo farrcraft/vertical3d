@@ -242,6 +242,7 @@ Background: [ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-pe
 - A registry can call a listener when a component is constructed, destroyed or updated. Nothing
   in the tree uses this.
 - The `entt::dispatcher` the engine creates is separate from the registry. The engine builds it
-  in `initialize()` and hands it to the event and input engines. An app that plays sound builds
-  an `audio::Engine` over the same dispatcher, so a sound event published anywhere reaches it.
+  in `initialize()` and hands it to the event router and the input devices. An app that plays
+  sound builds an `audio::Player` over the same dispatcher, so a sound event published anywhere
+  reaches it.
   See [engine/Audio.md](engine/Audio.md#audio).

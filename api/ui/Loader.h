@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 
@@ -54,20 +54,20 @@ class Menu;
 /**
  * Builds containers and themes out of a ui config document.
  *
- * Separate from Engine, which holds the built ui. A loader runs once, and a ui is queried
+ * Separate from Interface, which holds the built ui. A loader runs once, and a ui is queried
  * for as long as the app lives. Keeping them apart keeps the parsing methods out of
- * Engine.h, which every app that draws a ui compiles.
+ * Interface.h, which every app that draws a ui compiles.
  *
- * Nothing here is kept. load() fills the two collections, and Engine takes them.
+ * Nothing here is kept. load() fills the two collections, and Interface takes them.
  **/
 class Loader final {
  public:
     /**
-     * @param eventEngine where a command's context is looked up
+     * @param router where a command's context is looked up
      * @param dispatcher what a built menu or toolbar sends its events to
      * @param logger where a document that does not parse is reported
      **/
-    Loader(const boost::shared_ptr<v3d::event::Engine>& eventEngine,
+    Loader(const boost::shared_ptr<v3d::event::Router>& router,
         const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
@@ -90,7 +90,7 @@ class Loader final {
 
     /**
      * @return the name of the theme the document makes active, or empty when it names
-     *      none. Engine then makes the first theme loaded active
+     *      none. Interface then makes the first theme loaded active
      **/
     const std::string& active() const noexcept;
 
@@ -214,7 +214,7 @@ class Loader final {
     v3d::event::Event loadCommand(const boost::json::object& entry);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
-    boost::shared_ptr<v3d::event::Engine> eventEngine_;
+    boost::shared_ptr<v3d::event::Router> router_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Container>> containers_;
     std::vector<boost::shared_ptr<style::Theme>> themes_;

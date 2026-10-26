@@ -40,7 +40,7 @@ away. The callback needs the run's active hits, so it casts rays for those alone
 [Testing.md](contributing/Testing.md) describes what the suites cover.
 
 [] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
-`audio::Engine` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
+`audio::Player` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
 heard. A software Vulkan driver does not help with either.
 `ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 

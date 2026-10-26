@@ -13,7 +13,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
@@ -92,7 +92,7 @@ class Renderer final {
     /**
      * The ui drawn over every view, or null to draw none.
      **/
-    void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
+    void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
 
     /**
      * How wide a run of text is at the size the ui is drawn in.
@@ -152,7 +152,7 @@ class Renderer final {
     // one more canvas per view for the handles, which are drawn in a pass of their own
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
-    boost::shared_ptr<v3d::ui::Engine> ui_;
+    boost::shared_ptr<v3d::ui::Interface> ui_;
     v3d::shell::Shell* shell_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;

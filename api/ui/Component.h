@@ -180,7 +180,7 @@ class Component {
     /**
      * Get whether the keyboard is on this component.
      *
-     * Written by Engine::focus(), which keeps one component focused at a time. The flag is
+     * Written by Interface::focus(), which keeps one component focused at a time. The flag is
      * stored on the component so that drawing a component reads only the component.
      **/
     bool focused() const;

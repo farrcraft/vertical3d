@@ -6,7 +6,7 @@
 #include "Loader.h"
 
 #include <api/asset/Json.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/ui/component/Bar.h>
@@ -255,11 +255,11 @@ bool flag(const boost::json::object& entry, const std::string& field, bool fallb
 
 };  // namespace
 
-Loader::Loader(const boost::shared_ptr<v3d::event::Engine>& eventEngine,
+Loader::Loader(const boost::shared_ptr<v3d::event::Router>& router,
     const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::log::Logger>& logger) :
     logger_(logger),
-    eventEngine_(eventEngine),
+    router_(router),
     dispatcher_(dispatcher) {
 }
 
@@ -314,7 +314,7 @@ bool Loader::loadThemes(const boost::json::object& doc) {
             return false;
         }
         active_ = *named;
-        // Engine makes the named theme active. It is checked here, so that a document naming
+        // Interface makes the named theme active. It is checked here, so that a document naming
         // a theme it does not carry is refused, not half loaded
         const bool known = std::any_of(themes_.begin(), themes_.end(),
             [this](const boost::shared_ptr<style::Theme>& theme) { return theme->name() == active_; });
@@ -956,7 +956,7 @@ v3d::event::Event Loader::loadCommand(const boost::json::object& entry) {
     if (context.empty() || command.empty()) {
         return v3d::event::Event();
     }
-    return v3d::event::Event(command, eventEngine_->resolveContext(context));
+    return v3d::event::Event(command, router_->resolveContext(context));
 }
 
 /**

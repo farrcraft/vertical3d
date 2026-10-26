@@ -136,7 +136,7 @@ composes nothing, such as a function key, and a control chord other than the fou
 chords, are left for the app.
 
 `shell::Keyboard` does this routing for an app, along with the platform's text input and
-clipboard. A game that draws only through `Immediate` builds one with no `ui::Engine`, offers it
+clipboard. A game that draws only through `Immediate` builds one with no `ui::Interface`, offers it
 the layer, and passes it every event from `onEvent()`:
 
 ```cpp

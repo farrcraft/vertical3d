@@ -4,7 +4,7 @@
  **/
 
 #include <api/event/Bindings.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/log/Logger.h>
@@ -33,7 +33,7 @@ const char* DOCUMENT = R"({"mappings": [
 struct Fixture {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
-        events(boost::make_shared<v3d::event::Engine>(dispatcher)),
+        events(boost::make_shared<v3d::event::Router>(dispatcher)),
         bindings(events, boost::make_shared<v3d::log::Logger>(),
             [this](const v3d::event::Event& source) {
                 asked.push_back(std::string(source.name()));
@@ -42,7 +42,7 @@ struct Fixture {
     }
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
-    boost::shared_ptr<v3d::event::Engine> events;
+    boost::shared_ptr<v3d::event::Router> events;
     std::vector<std::string> asked;
     v3d::event::Bindings bindings;
 };

@@ -43,7 +43,7 @@ enum class Stop : uint8_t {
  * their mix reads.
  *
  * It works beside the clip engine and does not replace it. Clips, buses and fades stay on
- * audio::Engine. An app that plays events gets one of these from events(). In a build with no
+ * audio::Player. An app that plays events gets one of these from events(). In a build with no
  * event backend, events() returns the null backend, so the app builds and runs either way.
  *
  * Every call returns whether it succeeded. The null backend does nothing and returns false or
@@ -111,7 +111,7 @@ class Events {
     virtual std::optional<glm::vec3> position(Instance instance) const = 0;
 
     /**
-     * Set where events are heard from. audio::Engine::listener() calls this for an event
+     * Set where events are heard from. audio::Player::listener() calls this for an event
      * backend it was given, so a game sets one listener for clips and events.
      *
      * @param listener a listener orthonormal() returned

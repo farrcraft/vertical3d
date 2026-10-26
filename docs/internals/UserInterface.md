@@ -19,8 +19,8 @@ a component type. How to use the library is in
 
 | Class | File | Responsibility |
 |---|---|---|
-| `Engine` | [Engine.h](../../api/ui/Engine.h) | the loaded ui: containers, themes, the active theme, and the focus |
-| `Loader` | [Loader.h](../../api/ui/Loader.h) | reads a JSON document into containers and themes; used once by `Engine::load()` |
+| `Interface` | [Interface.h](../../api/ui/Interface.h) | the loaded ui: containers, themes, the active theme, and the focus |
+| `Loader` | [Loader.h](../../api/ui/Loader.h) | reads a JSON document into containers and themes; used once by `Interface::load()` |
 | `Container` | [Container.h](../../api/ui/Container.h) | a named, show-and-hide group of root components; finds a component by name and picks one under a point |
 | `Component` | [Component.h](../../api/ui/Component.h) | a layout, children, flags, and the box the last draw gave it |
 | `Layout`, `Length` | [Layout.h](../../api/ui/Layout.h), [Length.h](../../api/ui/Length.h) | the requested box, and how it resolves against a parent |
@@ -45,7 +45,7 @@ a component type. How to use the library is in
 
 Boundaries the split keeps:
 
-- **Reading a document is the `Loader`'s.** `Engine.h` declares `Container` and
+- **Reading a document is the `Loader`'s.** `Interface.h` declares `Container` and
   `style::Theme`, and includes no component header. It names `boost::json::object` only for the
   document `load()` is handed. An app that draws a ui does not compile against every component.
 - **Box arithmetic is the `Arranger`'s, and painting is `ComponentRenderer`'s.** They are
@@ -156,7 +156,7 @@ children are live and in what order:
 - a flow box visits its children in the order it holds them
 - anything else visits its children by depth
 
-The draw pass, `Container::pick()` and `Engine::tabOrder()` all use it. A control on a page
+The draw pass, `Container::pick()` and `Interface::tabOrder()` all use it. A control on a page
 that is not shown is therefore neither drawn, picked nor focused.
 
 `Container::pick(point)` walks the same order in reverse:
@@ -175,7 +175,7 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
 
 ### Cursor
 
-`input::Cursor` holds the `Engine`, the dispatcher, an optional `Measure`, and two weak
+`input::Cursor` holds the `Interface`, the dispatcher, an optional `Measure`, and two weak
 pointers: the component a press is held on, and the component hovered. They are weak so that
 a container unloaded mid-press is not kept alive.
 
@@ -186,7 +186,7 @@ a container unloaded mid-press is not kept alive.
    takes it. Within a container:
    - each menu bar's `press()`, then each toolbar's `press()`
    - then `Container::pick()`
-3. On a picked component: holds it, gives it the focus through `Engine::focus()` (which
+3. On a picked component: holds it, gives it the focus through `Interface::focus()` (which
    ignores a component that is not focusable), and calls `act()`.
 
 `act()` is a switch on the component type:
@@ -217,9 +217,9 @@ nothing.
 
 1. Returns false when nothing is focused.
 2. Clears the focus and returns false when the focused component is `usable()` but not
-   `Engine::reachable()`: it was hidden or removed while it held the focus, so the key goes on
+   `Interface::reachable()`: it was hidden or removed while it held the focus, so the key goes on
    to the app.
-3. `tab` calls `Engine::focusNext(!shifted)` and returns true.
+3. `tab` calls `Interface::focusNext(!shifted)` and returns true.
 4. `escape` clears the focus and returns true.
 5. Returns false when the focused component is not `usable()`. Tab and escape are handled
    first, so the focus can always leave a disabled component.
@@ -248,12 +248,12 @@ implementation for both ui models.
 
 ### Focus
 
-`Engine::focus(component)` writes `Component::focused()` on the old and new components, then
+`Interface::focus(component)` writes `Component::focused()` on the old and new components, then
 calls the `onFocus()` listener if the focus changed. The flag lives on the component so that
 painting a component reads only the component. The engine holds the focused component as a
 weak pointer.
 
-`Engine::tabOrder()` builds the list that `focusFirst()` and `focusNext()` move through, by
+`Interface::tabOrder()` builds the list that `focusFirst()` and `focusNext()` move through, by
 walking every visible container with `forEachDrawn()` and collecting usable, focusable
 components. Strips' buttons and menu items are not children, so they are not in it.
 
@@ -261,14 +261,14 @@ components. Strips' buttons and menu items are not children, so they are not in 
 
 `shell::Keyboard` turns `SDL_EVENT_KEY_DOWN` into `Keys::press()` with the name from
 `input::keyName()` and the modifiers from the event, and `SDL_EVENT_TEXT_INPUT` into
-`Keys::text()`. It registers `follow()` with `Engine::onFocus()`, and `follow()` turns
+`Keys::text()`. It registers `follow()` with `Interface::onFocus()`, and `follow()` turns
 `Window::textInput()` on exactly while the focused component's traits say it takes text, or
 the immediate layer it was offered has a field with the keyboard. It listens to the layer
 through `Immediate::onTyping()`. It gives both listeners back in its destructor. A second
 text-taking component type needs only its `traits().text` flag set.
 
 The retained ui is offered each key first, through `Keys`, and the immediate layer gets only
-what `Keys` returned false for. With no `ui::Engine`, `Keys` takes nothing, so every key goes to
+what `Keys` returned false for. With no `ui::Interface`, `Keys` takes nothing, so every key goes to
 the layer.
 
 ## Styles and the Resolver
@@ -413,7 +413,7 @@ Background: [ADR-0047](../adr/0047-code-exhaustive-enum-switches.md)
   containers in the same document order, so an earlier container takes a press where it
   overlaps a later one drawn above it. Within a container the order is correct.
 - **A component disabled while focused keeps `focused()`.** It draws no ring and takes no
-  key, but `Engine::focused()` still returns it and `onFocus()` was not called. Moving the
+  key, but `Interface::focused()` still returns it and `onFocus()` was not called. Moving the
   focus from `Component::enabled()` would need the component to know its engine.
 - **A clip is a rectangle.** A rounded panel clips its children to its box. Lifting this
   would need the batch to carry a radius and the quad shader to mask a rounded rectangle.

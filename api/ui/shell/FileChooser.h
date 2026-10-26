@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 
 #include <cstdint>
 #include <functional>
@@ -69,8 +69,8 @@ class FileChooser final {
      * @param engine the ui the components are looked up in, or null for none
      * @param names what the components are called, which are Names' own when not given
      **/
-    explicit FileChooser(const boost::shared_ptr<Engine>& engine);
-    FileChooser(const boost::shared_ptr<Engine>& engine, const Names& names);
+    explicit FileChooser(const boost::shared_ptr<Interface>& engine);
+    FileChooser(const boost::shared_ptr<Interface>& engine, const Names& names);
 
     /**
      * Put the chooser up, listing a directory.
@@ -139,7 +139,7 @@ class FileChooser final {
     void show();
     boost::shared_ptr<Container> container() const;
 
-    boost::shared_ptr<Engine> engine_;
+    boost::shared_ptr<Interface> engine_;
     Names names_;
     Mode mode_;
     boost::filesystem::path directory_;

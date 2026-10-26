@@ -154,7 +154,7 @@ SDL_Event keyUp(SDL_Keycode key) {
 }
 
 /**
- * An empty feature mask builds the asset manager, the dispatcher and the event engine, and
+ * An empty feature mask builds the asset manager, the dispatcher and the event router, and
  * nothing more. It reads no config, and opens no input devices and no window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {

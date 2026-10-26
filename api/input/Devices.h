@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 
 #include <SDL3/SDL.h>
 
@@ -26,11 +26,11 @@ namespace v3d::input {
  * Owns the input devices an app asked for, the keyboard and the mouse, and offers each polled
  * event to them.
  **/
-class Engine final {
+class Devices final {
  public:
     /**
      **/
-    Engine(const boost::shared_ptr<v3d::event::Engine> & eventEngine, const boost::shared_ptr<entt::dispatcher> &dispatcher, DeviceTypes devices);
+    Devices(const boost::shared_ptr<v3d::event::Router> & router, const boost::shared_ptr<entt::dispatcher> &dispatcher, DeviceTypes devices);
 
     /**
      **/
@@ -61,7 +61,7 @@ class Engine final {
     boost::shared_ptr<Keyboard> keyboard_;
     boost::shared_ptr<Mouse> mouse_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
-    boost::shared_ptr<v3d::event::Engine> eventEngine_;
+    boost::shared_ptr<v3d::event::Router> router_;
 };
 
 };  // namespace v3d::input

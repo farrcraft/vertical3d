@@ -70,7 +70,7 @@ otherwise.
 1. The logger.
 2. The asset manager, rooted at `<app path>/data/`, with the picture and model loaders
    registered on it.
-3. The event dispatcher (`entt::dispatcher`) and the event engine.
+3. The event dispatcher (`entt::dispatcher`) and the event router.
 4. With `Feature::Config`: the config, read from `data/config.json`, and the bindings, if the
    config lists a binding document.
 5. With `Feature::KeyboardInput` or `Feature::MouseInput`: the input devices.

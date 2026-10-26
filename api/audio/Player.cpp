@@ -3,7 +3,7 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
 **/
 
-#include "Engine.h"
+#include "Player.h"
 
 #include <api/asset/Json.h>
 #include <api/asset/Manager.h>
@@ -32,15 +32,15 @@
 
 namespace v3d::audio {
 
-Engine::Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
+Player::Player(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
     dispatcher_(dispatcher), logger_(logger) {
 }
 
-Engine::~Engine() {
+Player::~Player() {
     shutdown();
 }
 
-void Engine::shutdown() {
+void Player::shutdown() {
     // no sound event reaches an engine that has let its device go
     sound_.release();
     // the tracks go before the mixer that handed them out, and before the clips they were
@@ -63,7 +63,7 @@ void Engine::shutdown() {
     }
 }
 
-bool Engine::initialize() {
+bool Player::initialize() {
     // the mixer opens a device from SDL's audio subsystem. The game engine initializes only
     // video, so this starts audio. The subsystem is reference counted, and this call pairs
     // with the SDL_QuitSubSystem in shutdown().
@@ -84,11 +84,11 @@ bool Engine::initialize() {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 
-    sound_ = dispatcher_->sink<v3d::event::kind::Sound>().connect<&Engine::soundEvent>(*this);
+    sound_ = dispatcher_->sink<v3d::event::kind::Sound>().connect<&Player::soundEvent>(*this);
     return mixer_ != nullptr;
 }
 
-void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
+void Player::soundEvent(const v3d::event::kind::Sound& sound) {
     Play how;
     how.pan = sound.pan();
     how.position = sound.position();
@@ -97,7 +97,7 @@ void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     }
 }
 
-bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
+bool Player::load(const boost::json::object& doc, const Resolve& resolve) {
     // every lookup is guarded, because boost::json::object::at throws for a key it does
     // not hold and a rejected config has to reach the caller as a false return
     if (!doc.contains("sounds") || !doc.at("sounds").is_array()) {
@@ -136,14 +136,14 @@ bool Engine::load(const boost::json::object& doc, const Resolve& resolve) {
     return loaded;
 }
 
-bool Engine::load(const boost::json::object& config, v3d::asset::Manager& assets) {
+bool Player::load(const boost::json::object& config, v3d::asset::Manager& assets) {
     return load(config, [&assets](const std::string& source) -> boost::shared_ptr<AudioClip> {
         const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source);
         return sound ? sound->clip() : boost::shared_ptr<AudioClip>();
     });
 }
 
-bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
+bool Player::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
     // play() hands the audio to the mixer. A clip that never read its file is refused here,
     // so the mixer never receives a null
     if (!clip || clip->audio() == nullptr) {
@@ -156,16 +156,16 @@ bool Engine::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string
     return true;
 }
 
-bool Engine::has(const std::string_view & clip) const {
+bool Player::has(const std::string_view & clip) const {
     return sounds_.contains(std::string(clip));
 }
 
-bool Engine::playClip(const std::string_view & clip) {
+bool Player::playClip(const std::string_view & clip) {
     // a one shot plays on a track like any other sound, so stopAll() stops it too
     return play(clip, Play()) != Voice::None;
 }
 
-void Engine::reap() {
+void Player::reap() {
     for (std::map<Voice, Playing>::iterator playing = voices_.begin(); playing != voices_.end();) {
         if (MIX_TrackPlaying(playing->second.track)) {
             ++playing;
@@ -175,12 +175,12 @@ void Engine::reap() {
     }
 }
 
-std::map<Voice, Engine::Playing>::iterator Engine::retire(const std::map<Voice, Playing>::iterator & playing) {
+std::map<Voice, Player::Playing>::iterator Player::retire(const std::map<Voice, Playing>::iterator & playing) {
     free_.push_back(playing->second.track);
     return voices_.erase(playing);
 }
 
-std::map<Voice, Engine::Playing>::iterator Engine::live(Voice voice) {
+std::map<Voice, Player::Playing>::iterator Player::live(Voice voice) {
     std::map<Voice, Playing>::iterator found = voices_.find(voice);
     if (found == voices_.end()) {
         return found;
@@ -194,7 +194,7 @@ std::map<Voice, Engine::Playing>::iterator Engine::live(Voice voice) {
     return found;
 }
 
-MIX_Track* Engine::claim() {
+MIX_Track* Player::claim() {
     if (!free_.empty()) {
         MIX_Track* track = free_.back();
         free_.pop_back();
@@ -203,7 +203,7 @@ MIX_Track* Engine::claim() {
     return MIX_CreateTrack(mixer_);
 }
 
-Voice Engine::play(const std::string_view & clip, const Play & how) {
+Voice Player::play(const std::string_view & clip, const Play & how) {
     // an engine whose initialize() opened no device has nothing to play into
     if (mixer_ == nullptr) {
         return Voice::None;
@@ -264,7 +264,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
     return voice;
 }
 
-bool Engine::stop(Voice voice, int fadeOutMs) {
+bool Player::stop(Voice voice, int fadeOutMs) {
     const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
@@ -274,7 +274,7 @@ bool Engine::stop(Voice voice, int fadeOutMs) {
     return MIX_StopTrack(found->second.track, frames > 0 ? frames : 0);
 }
 
-void Engine::stopAll(int fadeOutMs) {
+void Player::stopAll(int fadeOutMs) {
     if (mixer_ == nullptr) {
         return;
     }
@@ -283,12 +283,12 @@ void Engine::stopAll(int fadeOutMs) {
     // handed to the next sound before it had finished
 }
 
-bool Engine::playing(Voice voice) const {
+bool Player::playing(Voice voice) const {
     const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
     return found != voices_.end() && MIX_TrackPlaying(found->second.track);
 }
 
-bool Engine::gain(Voice voice, float level) {
+bool Player::gain(Voice voice, float level) {
     const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
@@ -297,7 +297,7 @@ bool Engine::gain(Voice voice, float level) {
     return MIX_SetTrackGain(found->second.track, level * busGain(found->second.bus));
 }
 
-float Engine::volume(Voice voice) const {
+float Player::volume(Voice voice) const {
     const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
     if (found == voices_.end() || !MIX_TrackPlaying(found->second.track)) {
         return 0.0F;
@@ -305,7 +305,7 @@ float Engine::volume(Voice voice) const {
     return MIX_GetTrackGain(found->second.track);
 }
 
-bool Engine::pan(Voice voice, float value) {
+bool Player::pan(Voice voice, float value) {
     const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
@@ -314,7 +314,7 @@ bool Engine::pan(Voice voice, float value) {
     return place(found->second.track, value);
 }
 
-bool Engine::position(Voice voice, const glm::vec3& position) {
+bool Player::position(Voice voice, const glm::vec3& position) {
     const std::map<Voice, Playing>::iterator found = live(voice);
     if (found == voices_.end()) {
         return false;
@@ -323,7 +323,7 @@ bool Engine::position(Voice voice, const glm::vec3& position) {
     return place(found->second.track, position);
 }
 
-std::optional<glm::vec3> Engine::heard(Voice voice) const {
+std::optional<glm::vec3> Player::heard(Voice voice) const {
     const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
     if (found == voices_.end() || !found->second.position || !MIX_TrackPlaying(found->second.track)) {
         return std::nullopt;
@@ -335,7 +335,7 @@ std::optional<glm::vec3> Engine::heard(Voice voice) const {
     return glm::vec3(point.x, point.y, point.z);
 }
 
-bool Engine::listener(const Listener& listener) {
+bool Player::listener(const Listener& listener) {
     const std::optional<Listener> facing = orthonormal(listener);
     if (!facing) {
         return false;
@@ -353,18 +353,18 @@ bool Engine::listener(const Listener& listener) {
     return true;
 }
 
-const Listener& Engine::listener() const noexcept {
+const Listener& Player::listener() const noexcept {
     return listener_;
 }
 
-void Engine::attach(const boost::shared_ptr<Events>& events) {
+void Player::attach(const boost::shared_ptr<Events>& events) {
     events_ = events;
     if (events_) {
         events_->listener(listener_);
     }
 }
 
-bool Engine::place(MIX_Track* track, float pan) {
+bool Player::place(MIX_Track* track, float pan) {
     const Stereo gains = stereo(pan);
     if (gains.left == 1.0F && gains.right == 1.0F) {
         return MIX_SetTrackStereo(track, nullptr);
@@ -373,13 +373,13 @@ bool Engine::place(MIX_Track* track, float pan) {
     return MIX_SetTrackStereo(track, &mixed);
 }
 
-bool Engine::place(MIX_Track* track, const glm::vec3& position) const {
+bool Player::place(MIX_Track* track, const glm::vec3& position) const {
     const glm::vec3 heard = relative(listener_, position);
     const MIX_Point3D point{heard.x, heard.y, heard.z};
     return MIX_SetTrack3DPosition(track, &point);
 }
 
-bool Engine::busGain(const std::string & bus, float level) {
+bool Player::busGain(const std::string & bus, float level) {
     if (bus.empty()) {
         return false;
     }
@@ -395,7 +395,7 @@ bool Engine::busGain(const std::string & bus, float level) {
     return set;
 }
 
-float Engine::busGain(const std::string & bus) const {
+float Player::busGain(const std::string & bus) const {
     const std::map<std::string, float>::const_iterator found = buses_.find(bus);
     return found == buses_.end() ? 1.0F : found->second;
 }

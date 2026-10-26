@@ -2,7 +2,7 @@ v3d_add_test(event
 	"TestMain.cpp"
 	"BindingsTest.cpp"
 	"CommandsTest.cpp"
-	"EngineTest.cpp"
+	"RouterTest.cpp"
 	"EventTest.cpp"
 	"MapperTest.cpp")
 

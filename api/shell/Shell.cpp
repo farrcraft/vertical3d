@@ -9,7 +9,7 @@
 #include <api/asset/Manifest.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Statistics.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -38,13 +38,13 @@ Shell::Shell(v3d::engine::Engine* engine, const Options& options) :
 /**
  **/
 bool Shell::start(const v3d::ui::shell::GameMenu::Suspend& suspend) {
-    ui_ = boost::make_shared<v3d::ui::Engine>(engine_->events(), engine_->dispatcher(), engine_->logger());
+    ui_ = boost::make_shared<v3d::ui::Interface>(engine_->events(), engine_->dispatcher(), engine_->logger());
     if (options_.menu) {
         menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui_, suspend);
     }
     const boost::shared_ptr<v3d::asset::Manifest>& manifest = engine_->manifest();
     const boost::shared_ptr<v3d::asset::kind::Json> document =
-        manifest ? manifest->get(v3d::ui::Engine::DOCUMENT) : boost::shared_ptr<v3d::asset::kind::Json>();
+        manifest ? manifest->get(v3d::ui::Interface::DOCUMENT) : boost::shared_ptr<v3d::asset::kind::Json>();
     return !document || ui_->load(document->document());
 }
 
@@ -64,7 +64,7 @@ void Shell::release() {
 
 /**
  **/
-const boost::shared_ptr<v3d::ui::Engine>& Shell::ui() const noexcept {
+const boost::shared_ptr<v3d::ui::Interface>& Shell::ui() const noexcept {
     return ui_;
 }
 

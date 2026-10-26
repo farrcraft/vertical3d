@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/Image.h>
 
@@ -36,7 +36,7 @@ class Theme;
  *
  * ui::Loader reads the document; this holds the result for as long as the app lives.
  **/
-class Engine {
+class Interface {
  public:
     /**
      * The name config.json gives the kind of a ui document.
@@ -55,7 +55,7 @@ class Engine {
      **/
     typedef std::function<v3d::ui::Image(const std::string& source)> Resolve;
 
-    Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    Interface(const boost::shared_ptr<v3d::event::Router>& router, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
     bool load(const boost::json::object& config);
@@ -225,7 +225,7 @@ class Engine {
     std::vector<boost::shared_ptr<Component>> tabOrder() const;
 
     boost::shared_ptr<v3d::log::Logger> logger_;
-    boost::shared_ptr<v3d::event::Engine> eventEngine_;
+    boost::shared_ptr<v3d::event::Router> router_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Container>> containers_;
     std::vector<boost::shared_ptr<style::Theme>> themes_;

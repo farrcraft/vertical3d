@@ -19,7 +19,7 @@ namespace v3d::audio {
  * One loaded sound.
  *
  * A clip is loaded against no mixer, so it can be read through the asset manager without
- * an audio::Engine and played through whichever mixer an app later opens. It holds a
+ * an audio::Player and played through whichever mixer an app later opens. It holds a
  * MIX_Init reference for as long as it holds audio, because the library counts them.
  **/
 class AudioClip final {

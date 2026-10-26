@@ -19,15 +19,15 @@
 namespace v3d::event {
 /**
  **/
-class Engine {
+class Router {
  public:
      /**
       **/
-    explicit Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    explicit Router(const boost::shared_ptr<entt::dispatcher>& dispatcher);
     // the dispatcher holds a delegate to this object, which a copy or a move would leave
     // pointing at the original
-    Engine(const Engine&) = delete;
-    Engine& operator=(const Engine&) = delete;
+    Router(const Router&) = delete;
+    Router& operator=(const Router&) = delete;
 
     /**
      **/

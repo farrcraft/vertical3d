@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/RadioButton.h>
 #include <api/ui/component/Scrollbar.h>
@@ -53,13 +53,13 @@ v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
 }
 
 /**
- * A ui engine over a document written inline, which is all a config file amounts to by
+ * A ui::Interface over a document written inline, which is all a config file amounts to by
  * the time it reaches the loader.
  **/
-boost::shared_ptr<v3d::ui::Engine> load(const std::string& config) {
+boost::shared_ptr<v3d::ui::Interface> load(const std::string& config) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher),
+    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher),
         dispatcher,
         boost::make_shared<v3d::log::Logger>());
 
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_check_box_a_radio_button_and_a_clip) {
   ]
 })";
 
-    const boost::shared_ptr<v3d::ui::Engine> ui = load(document);
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(document);
     const boost::shared_ptr<v3d::ui::Container> container = ui->container("options");
     BOOST_REQUIRE(container);
 

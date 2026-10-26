@@ -55,21 +55,21 @@ enum class Voice : uint32_t { None = 0 };
  * from the listener, which the game moves once a frame in its world coordinates. The engine
  * gives the mixer each placed sound's position relative to the listener.
  **/
-class Engine final {
+class Player final {
  public:
     /**
      * The name config.json gives the kind of a sound document.
      **/
     static constexpr std::string_view DOCUMENT = "sound";
 
-    Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
+    Player(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
     /**
      * Calls shutdown(), so the device, the tracks and the dispatcher connection are released
      * whether or not the owner called shutdown() itself.
      **/
-    ~Engine();
-    Engine(const Engine&) = delete;
-    Engine& operator=(const Engine&) = delete;
+    ~Player();
+    Player(const Player&) = delete;
+    Player& operator=(const Player&) = delete;
 
     /**
      * Turns the source a sound config names into a loaded clip. An app whose clips do not

@@ -8,7 +8,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
 #include <api/shell/Shell.h>
 

@@ -105,7 +105,7 @@ Escape is never captured; it leaves the menu.
   `ecs::Previous<T>` before each step. The renderer draws the ball and paddles through
   `ecs::interpolated` with `Engine::alpha()`. See [api/ECS.md](api/ECS.md).
 - **Sound.** The scene triggers `event::kind::Sound("hit")` on the dispatcher, and
-  `audio::Engine` plays the clip named in `sounds.json`.
+  `audio::Player` plays the clip named in `sounds.json`.
 - **The game menu.** `ui::shell::GameMenu` drives the menu in `vgui.json`, and its callback
   pauses the game while the menu is up.
 

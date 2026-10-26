@@ -5,7 +5,7 @@
 v3d_add_test(audio
 	"TestMain.cpp"
 	"AudioClipTest.cpp"
-	"EngineTest.cpp"
+	"PlayerTest.cpp"
 	"PanTest.cpp"
 	"ListenerTest.cpp"
 	"LoaderTest.cpp"

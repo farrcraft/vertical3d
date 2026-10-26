@@ -4,7 +4,7 @@
  **/
 
 #include <api/audio/AudioClip.h>
-#include <api/audio/Engine.h>
+#include <api/audio/Player.h>
 #include <api/audio/Events.h>
 #include <api/audio/Listener.h>
 #include <api/audio/Play.h>
@@ -30,8 +30,8 @@
 
 namespace {
 
-boost::shared_ptr<v3d::audio::Engine> engine() {
-    return boost::make_shared<v3d::audio::Engine>(
+boost::shared_ptr<v3d::audio::Player> engine() {
+    return boost::make_shared<v3d::audio::Player>(
         boost::make_shared<v3d::log::Logger>(),
         boost::make_shared<entt::dispatcher>());
 }
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_load_without_resolver_test) {
 
     BOOST_TEST(!sound->load(config(R"({"sounds": [
         {"clip_id": "hit", "file": "hit.wav"}
-    ]})"), v3d::audio::Engine::Resolve()));
+    ]})"), v3d::audio::Player::Resolve()));
     BOOST_TEST(!sound->has("hit"));
 }
 
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_without_initialize_test) {
 /**
  * The track functions with no device. The clip table and the voice bookkeeping can be
  * tested. Whether a sound is audible cannot, so these tests run without the device that
- * audio::Engine::initialize() opens.
+ * audio::Player::initialize() opens.
  **/
 BOOST_AUTO_TEST_CASE(audio_engine_play_without_a_device_test) {
     v3dtest::writeWav("hit.wav");
@@ -374,14 +374,14 @@ BOOST_AUTO_TEST_CASE(audio_engine_shutdown_twice_after_a_play_without_a_device_t
 BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     {
-        v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
+        v3d::audio::Player sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
         sound.initialize();
         BOOST_CHECK(!dispatcher->sink<v3d::event::kind::Sound>().empty());
     }
     BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
 
     // and shutdown() lets it go too, since a silent engine should not be asked to play
-    v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
+    v3d::audio::Player sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
     sound.initialize();
     sound.shutdown();
     BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
@@ -512,12 +512,12 @@ BOOST_FIXTURE_TEST_CASE(audio_engine_a_pan_and_a_position_clear_each_other_test,
 }
 
 /**
- * A sound event made with a position plays placed. The first voice an engine gives out is 1,
- * which is how the case finds the one shot the event started.
+ * A sound event made with a position plays placed. The first voice a player gives out is 1, so
+ * the case finds the one shot the event started by that number.
  **/
 BOOST_FIXTURE_TEST_CASE(audio_engine_a_sound_event_with_a_position_plays_placed_test, DummyDevice) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
+    v3d::audio::Player sound(boost::make_shared<v3d::log::Logger>(), dispatcher);
     BOOST_REQUIRE(sound.addClip(clip, "bed"));
     BOOST_REQUIRE(sound.initialize());
     BOOST_TEST(sound.listener(facing({0.0F, 0.0F, 2.0F}, {0.0F, 0.0F, -1.0F})));

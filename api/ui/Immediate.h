@@ -65,7 +65,7 @@ class Immediate {
     typedef std::uint64_t Id;
 
     /**
-     * What the cursor did since the last frame. An app fills this from its input engine.
+     * What the cursor did since the last frame. An app fills this from its input devices.
      * pressed and released are the edges of down, and each is true for one frame.
      **/
     struct Input final {

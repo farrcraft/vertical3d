@@ -7,7 +7,7 @@
 
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/Slider.h>
@@ -74,7 +74,7 @@ bool activates(std::string_view key) noexcept {
 
 };  // namespace
 
-Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+Keys::Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const Clipboard& clipboard) :
     ui_(ui),
     dispatcher_(dispatcher),

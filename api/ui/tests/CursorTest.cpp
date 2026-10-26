@@ -4,14 +4,14 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/Type.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
@@ -40,7 +40,7 @@ namespace {
 const float characterWidth = 10.0F;
 
 /**
- * A ui engine holding one container, built by hand rather than loaded, plus the renderer
+ * A ui::Interface holding one container, built by hand rather than loaded, plus the renderer
  * that places what it holds and the router that answers a cursor over it.
  *
  * Nothing is picked until something has been drawn, so every case here draws
@@ -56,8 +56,8 @@ struct Fixture final {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
 
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         bool loaded = false;
         loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object());
@@ -94,7 +94,7 @@ struct Fixture final {
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
 };
@@ -563,8 +563,8 @@ BOOST_AUTO_TEST_CASE(a_disabled_strip_takes_nothing) {
  **/
 BOOST_AUTO_TEST_CASE(a_document_marks_a_strip_as_scenery) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
     const bool loaded = ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "menubar", "name": "menus", "pickable": false, "menus": [] },

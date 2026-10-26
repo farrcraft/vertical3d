@@ -10,8 +10,8 @@
 #include <api/ecs/Previous.h>
 #include <api/event/Bindings.h>
 #include <api/event/Commands.h>
-#include <api/event/Engine.h>
-#include <api/input/Engine.h>
+#include <api/event/Router.h>
+#include <api/input/Devices.h>
 #include <api/log/Logger.h>
 #include <api/window/Window.h>
 
@@ -85,7 +85,7 @@ class Engine {
      * not the commands the bindings make from them. Polling the keyboard does not replace
      * this, because a press and a release inside one frame poll as no change.
      *
-     * Returning true consumes the event, and the input engine never maps it to a command.
+     * Returning true consumes the event, and it is never mapped to a command.
      * One click then cannot both press a button and issue an order. ui::Cursor::press()
      * applies the same rule inside api/ui. The engine handles quit, resize and focus events
      * whatever this returns.
@@ -171,7 +171,7 @@ class Engine {
     const boost::shared_ptr<v3d::asset::Manifest>& manifest() const noexcept;
     const boost::shared_ptr<v3d::asset::Manager>& assets() const noexcept;
     const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
-    const boost::shared_ptr<v3d::event::Engine>& events() const noexcept;
+    const boost::shared_ptr<v3d::event::Router>& events() const noexcept;
 
     /**
      * The keys held now, and the edges: the keys pressed or released during this frame's
@@ -278,7 +278,7 @@ class Engine {
     /**
      * One of the documents config.json names, or null when there is no config or it names
      * none of that kind. The library that reads a kind declares its name, as
-     * ui::Engine::DOCUMENT, and an app names its own. An app treats every such document as
+     * ui::Interface::DOCUMENT, and an app names its own. An app treats every such document as
      * optional.
      **/
     const boost::json::object* document(std::string_view kind) const;
@@ -411,7 +411,7 @@ class Engine {
      boost::shared_ptr<v3d::window::Window> window_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
-     boost::shared_ptr<v3d::event::Engine> eventEngine_;
+     boost::shared_ptr<v3d::event::Router> router_;
      Accumulator accumulator_;
      Statistics statistics_;
 
@@ -426,7 +426,7 @@ class Engine {
      v3d::event::Commands commands_;
      bool quitting_;
      bool minimized_ = false;
-     boost::shared_ptr<v3d::input::Engine> inputEngine_;
+     boost::shared_ptr<v3d::input::Devices> devices_;
 };
 
 };  // namespace v3d::engine

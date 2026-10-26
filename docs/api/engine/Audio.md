@@ -5,15 +5,15 @@ optional backend.
 
 ## Audio
 
-`api/audio` plays sound through SDL3_mixer. The engine does not create an audio engine or link
+`api/audio` plays sound through SDL3_mixer. The engine does not create an audio player or link
 the library, so an app that plays sound does three things in `start()`:
 
 ```cpp
 // link v3d::audio, then:
-sound_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
+sound_ = boost::make_shared<v3d::audio::Player>(logger(), dispatcher());
 v3d::audio::registerLoaders(*assets(), logger());      // the .wav loader
 sound_->initialize();                                  // open the audio device
-if (const boost::json::object* sounds = document(v3d::audio::Engine::DOCUMENT)) {
+if (const boost::json::object* sounds = document(v3d::audio::Player::DOCUMENT)) {
     sound_->load(*sounds, *assets());
 }
 ```
@@ -28,7 +28,7 @@ The sound document lists clips by id:
   asset. The manager must have had `audio::registerLoaders()` called on it. A clip whose source
   is not a file can be loaded with the overload of `load()` that takes a `Resolve` callback.
 - To play a one-shot from anywhere, publish a sound event:
-  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio engine listens for it. A
+  `dispatcher()->trigger(v3d::event::kind::Sound("hit"))`. The audio player listens for it. A
   second argument pans it: `Sound("hit", -0.5F)` sounds left of centre. A position in its place
   places it: `Sound("hit", glm::vec3(2.0F, 0.0F, -5.0F))`.
 - `playClip(id)` also plays a one-shot. `play(id, how)` returns a `Voice` for a sound you need
@@ -131,7 +131,7 @@ sound_->attach(events_);                                 // hear events from sou
   a released instance is refused rather than confused with a newer one.
 - An instance belongs to the backend that started it, and nothing stops it when its owner goes.
   An owner that ends before the sound should, such as a scene, stops it in its destructor.
-- **Events and clips are separate.** Clips, buses and fades stay on `audio::Engine` and
+- **Events and clips are separate.** Clips, buses and fades stay on `audio::Player` and
   SDL3_mixer, whichever event backend is built. With FMOD, the two each open their own device.
 - **An event can be placed.** `play(event, point)` and `start(event, point)` place an event before
   it starts, and `position(instance, point)` moves one `start()` started. `position(instance)`
@@ -140,7 +140,7 @@ sound_->attach(events_);                                 // hear events from sou
   right-handed, and for a listener of the other hand the backend reflects the world through
   x = 0 on its way to FMOD and back. FMOD's distance unit is a metre by default, so a world unit
   is heard as a metre.
-- **Events hear from the clip engine's listener.** `audio::Engine::attach(events)` hands the
+- **Events hear from the clip engine's listener.** `audio::Player::attach(events)` hands the
   backend the listener at once, and again at every `listener()` after. A game that plays events
   without a clip engine calls `events->listener(listener)` itself, with a listener
   `audio::orthonormal()` returned. The null backend refuses every position and listener.

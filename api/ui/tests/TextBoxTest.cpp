@@ -4,12 +4,12 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
@@ -42,7 +42,7 @@ float measured(std::string_view text) {
 }
 
 /**
- * A ui engine holding one container, the renderer that places what it holds, and both
+ * A ui::Interface holding one container, the renderer that places what it holds, and both
  * routers - the cursor that gives the focus and the keys that follow it.
  **/
 struct Fixture final {
@@ -53,8 +53,8 @@ struct Fixture final {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
 
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
@@ -90,7 +90,7 @@ struct Fixture final {
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
     boost::shared_ptr<v3d::ui::input::Keys> keys;

@@ -18,7 +18,7 @@
 namespace v3d::ui {
 
 class Component;
-class Engine;
+class Interface;
 
 namespace component {
 class Scrollbar;
@@ -36,7 +36,7 @@ namespace v3d::ui::input {
  * Turns a key into an edit on whatever has the focus.
  *
  * The keyboard counterpart of input::Cursor, with the same shape. It receives what the
- * app's input engine saw and returns whether the ui took it. It chooses the operation, and
+ * app's input devices saw and returns whether the ui took it. It chooses the operation, and
  * the component carries it out. Nothing here searches the tree for a component. The engine
  * holds the focus, so a key goes to one component or to none.
  *
@@ -56,7 +56,7 @@ namespace v3d::ui::input {
  * selection. The app supplies the clipboard, as it supplies text measuring.
  *
  * A ui with nothing focused takes neither kind of input, so a game's movement keys keep
- * working until something is clicked into or Engine::focusFirst() is called.
+ * working until something is clicked into or Interface::focusFirst() is called.
  **/
 class Keys final {
  public:
@@ -71,7 +71,7 @@ class Keys final {
      * @param clipboard where a cut and a copy hand the selected run, and where a paste
      *        reads one from
      **/
-    Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const Clipboard& clipboard = Clipboard());
 
     /**
@@ -165,7 +165,7 @@ class Keys final {
      **/
     void send(const v3d::event::Event& event) const;
 
-    boost::shared_ptr<Engine> ui_;
+    boost::shared_ptr<Interface> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     Clipboard clipboard_;
 };

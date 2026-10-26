@@ -8,7 +8,7 @@
 #include <api/event/Commands.h>
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/menu/Menu.h>
 
 #include <string>
@@ -22,7 +22,7 @@ const char* const GameMenu::toggleCommand = "showGameMenu";
 
 /**
  **/
-GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names) :
+GameMenu::GameMenu(const boost::shared_ptr<Interface>& engine, const Suspend& suspend, const Names& names) :
     engine_(engine),
     suspend_(suspend),
     containerName_(names.container),
@@ -31,7 +31,7 @@ GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspe
 
 /**
  **/
-GameMenu::GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend) :
+GameMenu::GameMenu(const boost::shared_ptr<Interface>& engine, const Suspend& suspend) :
     GameMenu(engine, suspend, Names()) {
 }
 

@@ -3,10 +3,10 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "Engine.h"
+#include "Devices.h"
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include "Device.h"
 #include "KeyState.h"
 #include "Keyboard.h"
@@ -20,15 +20,15 @@ namespace v3d::input {
 
 /**
  **/
-Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher, DeviceTypes devices) :
+Devices::Devices(const boost::shared_ptr<v3d::event::Router>& router, const boost::shared_ptr<entt::dispatcher>& dispatcher, DeviceTypes devices) :
     dispatcher_(dispatcher) {
     if (devices.has(DeviceType::Keyboard)) {
-        const boost::shared_ptr<v3d::event::Context> keyboardContext = eventEngine->resolveContext("keyboard");
+        const boost::shared_ptr<v3d::event::Context> keyboardContext = router->resolveContext("keyboard");
         keyboard_ = boost::make_shared<Keyboard>(keyboardContext, dispatcher_);
         devices_.push_back(keyboard_);
     }
     if (devices.has(DeviceType::Mouse)) {
-        const boost::shared_ptr<v3d::event::Context> mouseContext = eventEngine->resolveContext("mouse");
+        const boost::shared_ptr<v3d::event::Context> mouseContext = router->resolveContext("mouse");
         mouse_ = boost::make_shared<Mouse>(mouseContext, dispatcher_);
         devices_.push_back(mouse_);
     }
@@ -36,7 +36,7 @@ Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const b
 
 /**
  **/
-void Engine::flush() {
+void Devices::flush() {
     for (const boost::shared_ptr<Device>& device : devices_) {
         device->flush();
     }
@@ -44,19 +44,19 @@ void Engine::flush() {
 
 /**
  **/
-const KeyState* Engine::keys() const {
+const KeyState* Devices::keys() const {
     return keyboard_ ? &keyboard_->state() : nullptr;
 }
 
 /**
  **/
-const MouseState* Engine::mouse() const {
+const MouseState* Devices::mouse() const {
     return mouse_ ? &mouse_->state() : nullptr;
 }
 
 /**
  **/
-bool Engine::filterEvent(const SDL_Event& event) {
+bool Devices::filterEvent(const SDL_Event& event) {
     for (auto it = devices_.begin(); it != devices_.end(); it++) {
         if ((*it)->handleEvent(event)) {
             return true;

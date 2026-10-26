@@ -3,9 +3,9 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "Engine.h"
+#include "Interface.h"
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/DrawOrder.h>
 #include <api/ui/Image.h>
@@ -31,17 +31,17 @@
 
 namespace v3d::ui {
 
-Engine::Engine(const boost::shared_ptr<v3d::event::Engine>& eventEngine, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+Interface::Interface(const boost::shared_ptr<v3d::event::Router>& router, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::log::Logger>& logger) :
-    eventEngine_(eventEngine), dispatcher_(dispatcher), logger_(logger) {
+    router_(router), dispatcher_(dispatcher), logger_(logger) {
 }
 
-const boost::shared_ptr<entt::dispatcher>& Engine::dispatcher() const noexcept {
+const boost::shared_ptr<entt::dispatcher>& Interface::dispatcher() const noexcept {
     return dispatcher_;
 }
 
-bool Engine::load(const boost::json::object& config) {
-    Loader loader(eventEngine_, dispatcher_, logger_);
+bool Interface::load(const boost::json::object& config) {
+    Loader loader(router_, dispatcher_, logger_);
     if (!loader.load(config)) {
         return false;
     }
@@ -59,7 +59,7 @@ bool Engine::load(const boost::json::object& config) {
 
 /**
  **/
-std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
+std::size_t Interface::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
         for (const boost::shared_ptr<style::Style>& target : theme->getStyleSet("", "")) {
@@ -82,7 +82,7 @@ std::size_t Engine::resolveThemeImages(const Resolve& resolve) {
     return resolved;
 }
 
-std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component) {
+std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boost::shared_ptr<Component>& component) {
     // a container accepts a null entry, and a null component has no image to resolve
     if (!component) {
         return 0;
@@ -119,7 +119,7 @@ std::size_t Engine::resolveComponentImages(const Resolve& resolve, const boost::
     return resolved;
 }
 
-std::size_t Engine::resolveContainerImages(const Resolve& resolve) {
+std::size_t Interface::resolveContainerImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<Container>& container : containers_) {
         for (const boost::shared_ptr<Component>& component : container->components()) {
@@ -129,7 +129,7 @@ std::size_t Engine::resolveContainerImages(const Resolve& resolve) {
     return resolved;
 }
 
-std::size_t Engine::resolveImages(const Resolve& resolve) {
+std::size_t Interface::resolveImages(const Resolve& resolve) {
     if (!resolve) {
         return 0;
     }
@@ -139,7 +139,7 @@ std::size_t Engine::resolveImages(const Resolve& resolve) {
 /**
  **/
 template <typename T>
-bool Engine::resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target) {
+bool Interface::resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target) {
     // a component naming no image is not a failure - most of them name none
     if (source.empty()) {
         return false;
@@ -155,7 +155,7 @@ bool Engine::resolveIcon(const Resolve& resolve, const std::string& source, cons
 
 /**
  **/
-boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) const {
+boost::shared_ptr<style::Theme> Interface::theme(const std::string_view& name) const {
     auto it = themes_.begin();
     for (; it != themes_.end(); ++it) {
         if ((*it)->name() == name) {
@@ -167,7 +167,7 @@ boost::shared_ptr<style::Theme> Engine::theme(const std::string_view& name) cons
 
 /**
  **/
-void Engine::focus(const boost::shared_ptr<Component>& component) {
+void Interface::focus(const boost::shared_ptr<Component>& component) {
     // a component that is not focusable, or not usable, is treated as null
     const boost::shared_ptr<Component> wanted =
         component && component->focusable() && usable(*component) ? component : boost::shared_ptr<Component>();
@@ -191,19 +191,19 @@ void Engine::focus(const boost::shared_ptr<Component>& component) {
 
 /**
  **/
-void Engine::onFocus(const Focused& moved) {
+void Interface::onFocus(const Focused& moved) {
     moved_ = moved;
 }
 
 /**
  **/
-boost::shared_ptr<Component> Engine::focused() const {
+boost::shared_ptr<Component> Interface::focused() const {
     return focused_.lock();
 }
 
 /**
  **/
-bool Engine::reachable(const boost::shared_ptr<Component>& component) const {
+bool Interface::reachable(const boost::shared_ptr<Component>& component) const {
     if (!component) {
         return false;
     }
@@ -232,7 +232,7 @@ void focusable(const boost::shared_ptr<Component>& component,
 
 /**
  **/
-std::vector<boost::shared_ptr<Component>> Engine::tabOrder() const {
+std::vector<boost::shared_ptr<Component>> Interface::tabOrder() const {
     std::vector<boost::shared_ptr<Component>> order;
     for (const boost::shared_ptr<Container>& holder : containers_) {
         if (!holder || !holder->visible()) {
@@ -247,7 +247,7 @@ std::vector<boost::shared_ptr<Component>> Engine::tabOrder() const {
 
 /**
  **/
-bool Engine::focusFirst() {
+bool Interface::focusFirst() {
     const std::vector<boost::shared_ptr<Component>> order = tabOrder();
     if (order.empty()) {
         return false;
@@ -258,7 +258,7 @@ bool Engine::focusFirst() {
 
 /**
  **/
-bool Engine::focusNext(bool forward) {
+bool Interface::focusNext(bool forward) {
     const boost::shared_ptr<Component> was = focused_.lock();
     if (!was) {
         return false;
@@ -288,13 +288,13 @@ bool Engine::focusNext(bool forward) {
 
 /**
  **/
-boost::shared_ptr<style::Theme> Engine::activeTheme() const {
+boost::shared_ptr<style::Theme> Interface::activeTheme() const {
     return activeTheme_;
 }
 
 /**
  **/
-bool Engine::activeTheme(const std::string_view& name) {
+bool Interface::activeTheme(const std::string_view& name) {
     const boost::shared_ptr<style::Theme> found = theme(name);
     if (!found) {
         logger_->get()->error("No such ui theme [{}]", name);
@@ -304,7 +304,7 @@ bool Engine::activeTheme(const std::string_view& name) {
     return true;
 }
 
-boost::shared_ptr<Container> Engine::container(const std::string_view& name) {
+boost::shared_ptr<Container> Interface::container(const std::string_view& name) {
     auto containers = containers_.begin();
     for (; containers != containers_.end(); ++containers) {
         if ((*containers)->name() == name) {
@@ -315,7 +315,7 @@ boost::shared_ptr<Container> Engine::container(const std::string_view& name) {
 }
 /**
  **/
-const std::vector<boost::shared_ptr<Container>>& Engine::containers() const noexcept {
+const std::vector<boost::shared_ptr<Container>>& Interface::containers() const noexcept {
     return containers_;
 }
 

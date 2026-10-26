@@ -47,7 +47,7 @@ class Event {
 
     /**
      * Whether a press is the platform repeating a key that is held down, not a new press. The
-     * event engine copies it from the key to each command the key is bound to. A command that
+     * event router copies it from the key to each command the key is bound to. A command that
      * acts while its key is held, such as moving a piece, takes repeats. A command that toggles
      * something, such as a menu, ignores them, or holding the key would flick it on and off.
      **/

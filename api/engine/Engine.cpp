@@ -10,12 +10,12 @@
 #include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
 #include <api/event/Bindings.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
-#include <api/input/Engine.h>
+#include <api/input/Devices.h>
 #include <api/input/KeyState.h>
 #include <api/input/Keyboard.h>
 #include <api/input/Mouse.h>
@@ -197,7 +197,7 @@ bool Engine::initialize() {
     v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
-    eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
+    router_ = boost::make_shared<v3d::event::Router>(dispatcher_);
     commandListener_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
     if (features_.has(Feature::Config) && !loadConfig()) {
@@ -229,7 +229,7 @@ bool Engine::loadConfig() {
     // a binding config is optional: an app with none sends no commands from a key
     const boost::shared_ptr<v3d::asset::kind::Json> mappings = manifest_->get(v3d::event::Bindings::DOCUMENT);
     if (mappings) {
-        bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
+        bindings_ = boost::make_shared<v3d::event::Bindings>(router_, logger_,
             [](const v3d::event::Event& source) {
                 const std::string_view device = source.context() ? source.context()->name() : std::string_view();
                 if (device == "keyboard") {
@@ -258,7 +258,7 @@ void Engine::startInput() {
         devices |= v3d::input::DeviceType::Mouse;
     }
     if (!devices.empty()) {
-        inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
+        devices_ = boost::make_shared<v3d::input::Devices>(router_, dispatcher_, devices);
     }
 }
 
@@ -393,10 +393,10 @@ std::vector<std::string> Engine::unhandled() const {
 /**
  **/
 std::vector<std::string> Engine::unhandled(const boost::json::object& document) const {
-    // the bindings install what they read into an event engine. They get a private one here,
+    // the bindings install what they read into an event router. They get a private one here,
     // not the one the loop routes through
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Engine>(dispatcher), boost::make_shared<v3d::log::Logger>());
+    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Router>(dispatcher), boost::make_shared<v3d::log::Logger>());
     if (!bindings.load(document)) {
         return std::vector<std::string>{ "mappings" };
     }
@@ -414,7 +414,7 @@ bool Engine::render() {
 void Engine::route(const SDL_Event& event) {
     // the app sees the event first, because its ui draws over the scene and the cursor
     // points at the ui first. An event the app consumes never reaches the bindings
-    if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
+    if (!onEvent(event) && devices_ && devices_->filterEvent(event)) {
         return;
     }
     // quit, resize and focus are window events rather than input, so the engine handles
@@ -517,8 +517,8 @@ bool Engine::eventLoop() {
         }
         // the edges belong to this frame, and everything that reads them has now run. The
         // loop clears them so that an app does not have to
-        if (inputEngine_) {
-            inputEngine_->flush();
+        if (devices_) {
+            devices_->flush();
         }
     }
     return true;
@@ -527,13 +527,13 @@ bool Engine::eventLoop() {
 /**
  **/
 const v3d::input::KeyState* Engine::keys() const {
-    return inputEngine_ ? inputEngine_->keys() : nullptr;
+    return devices_ ? devices_->keys() : nullptr;
 }
 
 /**
  **/
 const v3d::input::MouseState* Engine::mouse() const {
-    return inputEngine_ ? inputEngine_->mouse() : nullptr;
+    return devices_ ? devices_->mouse() : nullptr;
 }
 
 /**
@@ -604,8 +604,8 @@ const entt::registry& Engine::registry() const noexcept {
     return registry_;
 }
 
-const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {
-    return eventEngine_;
+const boost::shared_ptr<v3d::event::Router>& Engine::events() const noexcept {
+    return router_;
 }
 
 };  // namespace v3d::engine

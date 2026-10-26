@@ -3,7 +3,7 @@
  * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "Engine.h"
+#include "Router.h"
 
 #include "Context.h"
 #include "Event.h"
@@ -18,20 +18,20 @@
 
 namespace v3d::event {
 
-Engine::Engine(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
-    source_ = dispatcher->sink<Unclaimed>().connect<&Engine::handleSourceEvent>(*this);
+Router::Router(const boost::shared_ptr<entt::dispatcher>& dispatcher) : dispatcher_(dispatcher) {
+    source_ = dispatcher->sink<Unclaimed>().connect<&Router::handleSourceEvent>(*this);
 }
 
 /**
  **/
-void Engine::addMapper(const boost::shared_ptr<Mapper>& mapper) {
+void Router::addMapper(const boost::shared_ptr<Mapper>& mapper) {
     const std::string mapperName(mapper->name());
     mappers_[mapperName] = mapper;
 }
 
 /**
  **/
-void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
+void Router::handleSourceEvent(const Unclaimed& unclaimed) {
     const Source& source = *unclaimed.source;
     for (auto it = mappers_.begin(); it != mappers_.end(); it++) {
         std::vector<Event> destinations = it->second->destinations(source);
@@ -47,7 +47,7 @@ void Engine::handleSourceEvent(const Unclaimed& unclaimed) {
 
 /**
  **/
-boost::shared_ptr<Context> Engine::resolveContext(const std::string_view& name) {
+boost::shared_ptr<Context> Router::resolveContext(const std::string_view& name) {
     for (auto it = contexts_.begin(); it != contexts_.end(); it++) {
         if ((*it)->name() == name) {
             return *it;

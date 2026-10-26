@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -246,8 +246,8 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_list) {
 })";
 
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
         boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
 
