@@ -1,5 +1,6 @@
 v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "TextureFont.cxx" "TextureFontCache.h" "TextureFontCache.cxx"
-	"TextureTextBuffer.h" "TextureTextBuffer.cxx")
+	"TextureTextBuffer.h" "TextureTextBuffer.cxx"
+	"Utf8.h" "Utf8.cxx")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image glm::glm)

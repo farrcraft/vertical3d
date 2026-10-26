@@ -14,9 +14,11 @@
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "Text.h"
 
@@ -51,9 +53,9 @@ class TextRenderer {
         const boost::shared_ptr<v3d::image::Image>&)> Upload;
 
     /**
-     * Printable ascii - the glyphs an app draws unless it names its own set.
+     * Printable ascii, as UTF-8 - the glyphs an app draws unless it names its own set.
      **/
-    static const wchar_t* const ascii;
+    static const char* const ascii;
 
     /**
      * The font in the shared data directory, used when the caller names no other.
@@ -90,7 +92,7 @@ class TextRenderer {
      * Load a font, pack its glyphs into an atlas and upload it.
      *
      * The atlas is uploaded once, here, so every glyph that will ever be drawn has to be in
-     * charcodes. A font that cannot be loaded, and one whose glyphs do not all fit the
+     * charset. A font that cannot be loaded, and one whose glyphs do not all fit the
      * atlas, both leave this measuring zero and drawing nothing, and the log says which. The
      * app then loses its labels but still draws its frame.
      *
@@ -98,18 +100,18 @@ class TextRenderer {
      * @param size the size the font is rasterized at. The glyphs are distance fields, so
      *        this is the base every drawn size is a ratio of rather than the only size
      * @param font the asset to load, resolved against the manager's path
-     * @param charcodes the glyphs to pack
+     * @param charset the glyphs to pack, as a UTF-8 string
      * @param spread the distance field spread, or zero to pack coverage glyphs that only
      *        draw correctly at size
      * @param atlas the width and height of the atlas to pack into, which has to hold every
-     *        charcode at size
+     *        glyph at size
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         const boost::shared_ptr<v3d::log::Logger>& logger,
         const Upload& upload,
         float size = baseSize,
         const std::string& font = defaultFont,
-        const wchar_t* charcodes = ascii,
+        std::string_view charset = ascii,
         unsigned int spread = defaultSpread,
         const glm::uvec2& atlas = glm::uvec2(defaultAtlas));
 
@@ -130,15 +132,6 @@ class TextRenderer {
      * @return the size the atlas was rasterized at, which a drawn size is a ratio of
      **/
     float size() const noexcept;
-
-    /**
-     * The code points a UTF-8 string holds, one per character.
-     *
-     * A byte that does not begin a well formed sequence becomes U+FFFD, the replacement
-     * character, and decoding resumes at the next byte. Overlong forms and surrogates count
-     * as malformed.
-     **/
-    static std::u32string decode(std::string_view utf8);
 
     /**
      * How wide a string is when it is drawn at a size, in pixels.
@@ -182,29 +175,14 @@ class TextRenderer {
     Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0F);
 
  private:
-    /**
-     * How much a requested size scales what the atlas holds. Zero, and anything else that
-     * is not a size, means the base - so a caller that does not care never scales.
-     **/
-    float ratio(float size) const noexcept;
-
-    /**
-     * Decode the code point that starts at *index and move *index past it. Malformed input
-     * yields U+FFFD and moves one byte, as decode() describes.
-     **/
-    static char32_t next(std::string_view utf8, std::size_t* index);
-
-    /**
-     * The packed glyph for a code point, or null. This never packs one, because the atlas
-     * is already on the device.
-     **/
-    boost::shared_ptr<v3d::font::TextureFont::Glyph> packed(char32_t point) const;
-
     boost::shared_ptr<v3d::font::TextureFontCache> cache_;
     boost::shared_ptr<v3d::font::TextureTextBuffer> buffer_;
     v3d::font::TextureTextBuffer::Markup markup_;
     v3d::render::realtime::TextureHandle atlas_;
     float size_;
+    // what draw() hands the canvas, kept between draws so a frame of labels does not allocate
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> vertices_;
+    std::vector<uint32_t> indices_;
 };
 
 };  // namespace v3d::ui::paint

@@ -43,7 +43,7 @@ v3d::font::TextureTextBuffer::Markup plain(const boost::shared_ptr<v3d::font::Te
 /**
  * How far a line of text laid out at a size reaches from where the pen started.
  **/
-float advanceOf(const boost::shared_ptr<v3d::font::TextureFont>& font, const std::wstring& text, float size) {
+float advanceOf(const boost::shared_ptr<v3d::font::TextureFont>& font, const std::string& text, float size) {
     v3d::font::TextureTextBuffer buffer;
     glm::vec2 pen(0.0F, 0.0F);
     const v3d::font::TextureTextBuffer::Markup markup = plain(font, size);
@@ -66,9 +66,9 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_scales_to_the_markup_size_test) {
     const boost::shared_ptr<v3d::font::TextureFont> font =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
     font->atlas(cache.atlas());
-    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"Hamburgefonstiv"), true);
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("Hamburgefonstiv"), true);
 
-    const std::wstring line = L"Hamburgefonstiv";
+    const std::string line = "Hamburgefonstiv";
 
     const float base = advanceOf(font, line, kBase);
     BOOST_REQUIRE(base > 0.0F);
@@ -94,17 +94,17 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_quad_scales_and_the_atlas_does_not_test) 
     const boost::shared_ptr<v3d::font::TextureFont> font =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
     font->atlas(cache.atlas());
-    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"M"), true);
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("M"), true);
 
     v3d::font::TextureTextBuffer atBase;
     glm::vec2 basePen(0.0F, 100.0F);
     const v3d::font::TextureTextBuffer::Markup baseMarkup = plain(font, kBase);
-    atBase.addText(&basePen, baseMarkup, L"M");
+    atBase.addText(&basePen, baseMarkup, "M");
 
     v3d::font::TextureTextBuffer atDouble;
     glm::vec2 doublePen(0.0F, 100.0F);
     const v3d::font::TextureTextBuffer::Markup doubleMarkup = plain(font, kBase * 2.0F);
-    atDouble.addText(&doublePen, doubleMarkup, L"M");
+    atDouble.addText(&doublePen, doubleMarkup, "M");
 
     // one glyph is one quad, so both buffers hold four vertices
     BOOST_REQUIRE_EQUAL(atBase.vertices().size(), 4U);
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_newline_in_a_default_markup_moves_one_lin
     const boost::shared_ptr<v3d::font::TextureFont> font =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
     font->atlas(cache.atlas());
-    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"ab"), true);
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("ab"), true);
 
     const float line = font->height() - font->descender();
     BOOST_REQUIRE(line > 0.0F);
@@ -149,17 +149,59 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_newline_in_a_default_markup_moves_one_lin
     glm::vec2 unsizedPen(10.0F, 100.0F);
     v3d::font::TextureTextBuffer::Markup markup;
     markup.font_ = font;
-    unsized.addText(&unsizedPen, markup, L"a\nb");
+    unsized.addText(&unsizedPen, markup, "a\nb");
 
     BOOST_CHECK_CLOSE(unsizedPen.y, 100.0F + line, 0.01F);
-    BOOST_CHECK_CLOSE(unsizedPen.x, 10.0F + font->glyph(L'b')->advance_.x, 0.01F);
+    BOOST_CHECK_CLOSE(unsizedPen.x, 10.0F + font->glyph(U'b')->advance_.x, 0.01F);
 
     v3d::font::TextureTextBuffer sized;
     glm::vec2 sizedPen(10.0F, 100.0F);
     const v3d::font::TextureTextBuffer::Markup baseMarkup = plain(font, kBase);
-    sized.addText(&sizedPen, baseMarkup, L"a\nb");
+    sized.addText(&sizedPen, baseMarkup, "a\nb");
 
     BOOST_CHECK_CLOSE(unsizedPen.y, sizedPen.y, 0.01F);
+}
+
+/**
+ * The layout draws only glyphs already packed. A character that is not draws nothing, moves
+ * the pen by nothing, and is not packed by being laid out.
+ **/
+BOOST_AUTO_TEST_CASE(texturetextbuffer_lays_out_only_packed_glyphs_test) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(512, 512, 1, logger);
+
+    const boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
+    font->atlas(cache.atlas());
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("a"), true);
+
+    v3d::font::TextureTextBuffer buffer;
+    glm::vec2 pen(0.0F, 0.0F);
+    buffer.addText(&pen, plain(font, kBase), "aza");
+
+    BOOST_CHECK_CLOSE(pen.x, font->packed(U'a')->advance_.x * 2.0F, 0.01F);
+    BOOST_CHECK_EQUAL(buffer.vertices().size(), 8U);
+    BOOST_CHECK(font->packed(U'z') == nullptr);
+}
+
+/**
+ * A font measures a UTF-8 string as far as the layout moves the pen, at any size, and a
+ * character it has not packed adds nothing.
+ **/
+BOOST_AUTO_TEST_CASE(texturefont_width_matches_the_layout_test) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(512, 512, 1, logger);
+
+    const boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
+    font->atlas(cache.atlas());
+    // e with an acute accent, U+00E9, as UTF-8, and the euro sign, U+20AC, which is not packed
+    const std::string line = "Hamburgefonstiv\xC3\xA9";
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs(line), true);
+
+    BOOST_CHECK_CLOSE(font->width(line), advanceOf(font, line, kBase), 0.01F);
+    BOOST_CHECK_CLOSE(font->width(line, kBase * 2.0F), advanceOf(font, line, kBase * 2.0F), 0.01F);
+    BOOST_CHECK_CLOSE(font->width(line + "\xE2\x82\xAC"), font->width(line), 0.01F);
 }
 
 };  // namespace

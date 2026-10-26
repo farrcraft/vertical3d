@@ -8,6 +8,7 @@
 #include <api/render/realtime/Handle.h>
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include "Stacks.h"
@@ -15,10 +16,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-
-namespace v3d::font {
-class TextBuffer;
-};  // namespace v3d::font
 
 namespace v3d::render::realtime::canvas {
 
@@ -258,16 +255,17 @@ class Canvas final {
     void segment(const Segment& shape, const glm::vec4& colour);
 
     /**
-     * Append text that a font's text buffer has already laid out.
+     * Append text that has already been laid out, as vertices and the triangles over them.
      *
-     * The buffer holds positions, atlas coordinates and colours, so this copies them
-     * into the stream against the atlas texture. Laying the text out is the font
-     * library's job.
+     * The run is drawn against the atlas the glyphs were packed into, and is marked as text,
+     * so it never merges with a picture that samples the same texture. Laying the text out is
+     * the caller's job.
      *
-     * @param text a laid out text buffer, whose contents are copied rather than kept
+     * @param vertices positions, atlas coordinates and colours, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
      * @param atlas the texture the glyphs were packed into
      **/
-    void text(const v3d::font::TextBuffer& text, const TextureHandle& atlas);
+    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
 
     /**
      * @return the vertex stream, in the layout the quad pipeline declares

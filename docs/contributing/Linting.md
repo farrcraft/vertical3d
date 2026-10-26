@@ -73,9 +73,9 @@ image(VK_NULL_HANDLE),
 view(VK_NULL_HANDLE) {
 }
 
-const wchar_t* const charcodes =
-L" !\"#$%&'()*+,-./0123456789:;<=>?"
-L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
+const char* const charset =
+" !\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 ```
 
 cpplint misreads only the constructor of a nested class: `Plain::Plain()` may indent its

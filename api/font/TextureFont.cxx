@@ -8,6 +8,8 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 
+#include "Utf8.h"
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_STROKER_H
@@ -18,9 +20,9 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cwchar>
 #include <iterator>
 #include <string>
+#include <string_view>
 
 #include <boost/make_shared.hpp>
 
@@ -203,12 +205,10 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     return glyph;
 }
 
-boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) const {
-    const wchar_t lineCode = static_cast<wchar_t>(-1);
-
+boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(char32_t charcode) const {
     for (const boost::shared_ptr<Glyph>& candidate : glyphs_) {
         if ((candidate->charcode_ == charcode) &&
-            ((charcode == lineCode) ||
+            ((charcode == SOLID) ||
                 ((candidate->outline_ == outline_) &&
                     (candidate->outlineThickness_ == outlineThickness_)))) {
             return candidate;
@@ -217,15 +217,13 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(wchar_t charcode) cons
     return boost::shared_ptr<Glyph>();
 }
 
-boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
-    const wchar_t lineCode = static_cast<wchar_t>(-1);
-
+boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(char32_t charcode) {
     boost::shared_ptr<Glyph> glyph = packed(charcode);
     if (glyph) {
         return glyph;
     }
-    // -1 is used for line drawing (overline, underline, strikethrough) and background
-    if (charcode == lineCode) {
+    // the white square is drawn for lines (overline, underline, strikethrough) and backgrounds
+    if (charcode == SOLID) {
         const glm::ivec4 region = atlas_->region(4, 4);
 
         if (region.x < 0) {
@@ -246,7 +244,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
         const float width = static_cast<float>(atlas_->width());
         const float height = static_cast<float>(atlas_->height());
 
-        glyph->charcode_ = lineCode;
+        glyph->charcode_ = SOLID;
 
         glyph->st_[0].s = static_cast<float>(region.x + 2) / width;
         glyph->st_[0].t = static_cast<float>(region.y + 2) / height;
@@ -258,10 +256,7 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::glyph(wchar_t charcode) {
         return glyph;
     }
 
-    wchar_t buffer[2] = { 0, 0 };
-    buffer[0] = charcode;
-
-    if (loadGlyphs(buffer)) {
+    if (pack(std::u32string(1, charcode))) {
         return glyphs_[glyphs_.size() - 1];
     }
 
@@ -441,7 +436,24 @@ bool strokeGlyph(FT_Library library, FT_Face face, TextureFont::OutlineType outl
 
 };  // namespace
 
-bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
+bool TextureFont::loadGlyphs(std::string_view utf8) {
+    return pack(decode(utf8));
+}
+
+float TextureFont::width(std::string_view utf8, float size) const {
+    float width = 0.0F;
+    std::size_t index = 0;
+    while (index < utf8.size()) {
+        const boost::shared_ptr<Glyph> found = packed(next(utf8, &index));
+        if (found) {
+            width += found->advance_.x;
+        }
+    }
+    // the metrics are in pixels of the size the face was rasterized at
+    return size > 0.0F && size_ > 0.0F ? width * (size / size_) : width;
+}
+
+bool TextureFont::pack(const std::u32string& charcodes) {
     if (!atlas_) {
         return false;
     }
@@ -462,7 +474,7 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
     }
 
     unsigned int missed = 0;
-    for (unsigned int i = 0; i < wcslen(charcodes); ++i) {
+    for (std::size_t i = 0; i < charcodes.size(); ++i) {
         const FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
         const FT_Int32 flags = glyphLoadFlags(freetype_->library_, outline_, hinting_ != 0,
             atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
@@ -540,7 +552,7 @@ bool TextureFont::loadGlyphs(const wchar_t* charcodes) {
 
     if (missed > 0) {
         logger_->get()->error("{} of {} glyphs did not fit the {}x{} atlas at size {}",
-            missed, wcslen(charcodes), atlas_->width(), atlas_->height(), size_);
+            missed, charcodes.size(), atlas_->width(), atlas_->height(), size_);
         return false;
     }
 

@@ -16,10 +16,10 @@
 namespace {
 const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
 
-const wchar_t* const kPrintable =
-L" !\"#$%&'()*+,-./0123456789:;<=>?"
-L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-L"`abcdefghijklmnopqrstuvwxyz{|}~";
+const char* const kPrintable =
+" !\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+"`abcdefghijklmnopqrstuvwxyz{|}~";
 
 /**
  * TextureFontCache does not load anything: it owns the atlas the fonts share and keeps the
@@ -80,10 +80,10 @@ BOOST_AUTO_TEST_CASE(texturefont_glyph_test) {
     BOOST_CHECK(font->height() > 0.0F);
 
     // glyphs are rendered into the shared atlas on demand
-    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"abc"), true);
-    const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = font->glyph(L'a');
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("abc"), true);
+    const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = font->glyph(U'a');
     BOOST_REQUIRE(glyph != nullptr);
-    BOOST_CHECK_EQUAL(glyph->charcode_, L'a');
+    BOOST_CHECK(glyph->charcode_ == U'a');
     BOOST_CHECK(glyph->width_ > 0U);
     BOOST_CHECK(glyph->height_ > 0U);
     BOOST_CHECK(glyph->advance_[0] > 0.0F);
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE(texturefont_distance_field_packing_test) {
     BOOST_CHECK_EQUAL(coverage->spread(), 0U);
     BOOST_REQUIRE_EQUAL(coverage->loadGlyphs(kPrintable), true);
 
-    const boost::shared_ptr<v3d::font::TextureFont::Glyph> wide = field->glyph(L'm');
-    const boost::shared_ptr<v3d::font::TextureFont::Glyph> narrow = coverage->glyph(L'm');
+    const boost::shared_ptr<v3d::font::TextureFont::Glyph> wide = field->glyph(U'm');
+    const boost::shared_ptr<v3d::font::TextureFont::Glyph> narrow = coverage->glyph(U'm');
     BOOST_REQUIRE(wide != nullptr);
     BOOST_REQUIRE(narrow != nullptr);
     BOOST_CHECK(wide->width_ > narrow->width_);
@@ -195,18 +195,18 @@ BOOST_AUTO_TEST_CASE(texturefont_packed_never_loads_test) {
     const boost::shared_ptr<v3d::font::TextureFont> font =
         boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), 12.0F, logger);
     font->atlas(cache.atlas());
-    BOOST_REQUIRE_EQUAL(font->loadGlyphs(L"a"), true);
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("a"), true);
 
-    BOOST_CHECK(font->packed(L'a') != nullptr);
-    BOOST_CHECK(font->packed(L'a') == font->glyph(L'a'));
+    BOOST_CHECK(font->packed(U'a') != nullptr);
+    BOOST_CHECK(font->packed(U'a') == font->glyph(U'a'));
 
     // asked twice, because a load on the first call would answer the second
-    BOOST_CHECK(font->packed(L'z') == nullptr);
-    BOOST_CHECK(font->packed(L'z') == nullptr);
+    BOOST_CHECK(font->packed(U'z') == nullptr);
+    BOOST_CHECK(font->packed(U'z') == nullptr);
 
     // glyph() is the call that loads
-    BOOST_CHECK(font->glyph(L'z') != nullptr);
-    BOOST_CHECK(font->packed(L'z') != nullptr);
+    BOOST_CHECK(font->glyph(U'z') != nullptr);
+    BOOST_CHECK(font->packed(U'z') != nullptr);
 }
 
 };  // namespace

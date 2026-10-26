@@ -66,7 +66,7 @@ Boost.
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
 | `window` | log | **SDL3**, glm |
-| `render` | log, animation, asset, asset_media, ecs, font, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
+| `render` | log, animation, asset, asset_media, ecs, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
 | `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
 | `shell` | engine, ui, asset | none of its own |

@@ -27,7 +27,7 @@ v3d_add_test(render
 	"DecodedModelTest.cpp"
 	"UploadQueueTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_animation v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_animation v3dlib_ecs v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 
 # a model is decoded from a copy of the asset suite's fixtures
 target_compile_definitions(v3dtest_render PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")

@@ -86,7 +86,7 @@ set(V3D_API_model_REQUIRES animation)
 set(V3D_API_model_PACKAGES glm)
 
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log animation asset asset_media ecs font image model type window)
+set(V3D_API_render_REQUIRES log animation asset asset_media ecs image model type window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but a separate library: the offline renderer is built on it. It names

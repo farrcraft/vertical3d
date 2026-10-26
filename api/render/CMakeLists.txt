@@ -136,12 +136,10 @@ else()
 	set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES COMPILE_OPTIONS "-w")
 endif()
 
-# PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
-# needs the font library only if it names one itself. The ecs components the lit renderer
-# reads are named in its sources and in no header, and so are the model and image assets
-# DecodedModel loads. DecodedModel.cpp names a texture beside its model with
-# boost::filesystem.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
+# PRIVATE: the ecs components the lit renderer reads are named in its sources and in no header,
+# and so are the model and image assets DecodedModel loads. DecodedModel.cpp names a texture
+# beside its model with boost::filesystem.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_ecs v3dlib_asset_media Boost::filesystem)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

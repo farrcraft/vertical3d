@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <string_view>
 
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
@@ -27,9 +28,15 @@ class TextureFont {
         OUTLINE_TYPE_OUTER = 3
     } OutlineType;
 
+    /**
+     * The charcode of the opaque white square that lines and backgrounds are drawn with. It
+     * is not a code point, so no text names it.
+     **/
+    static constexpr char32_t SOLID = 0xFFFFFFFF;
+
     typedef struct {
         unsigned int id_;
-        wchar_t charcode_;
+        char32_t charcode_;
         unsigned int width_;
         unsigned int height_;
         glm::ivec2 offset_;
@@ -51,11 +58,11 @@ class TextureFont {
         unsigned int spread = 0);
 
     /**
-     * The glyph for a charcode, or null when it was not loaded. -1 is the opaque white square
-     * a line or a background is drawn with, made the first time it is asked for - and null
-     * when the atlas has no room for it.
+     * The glyph for a code point, packed the first time it is asked for, or null when it
+     * cannot be. SOLID is the white square, made the first time it is asked for, and null when
+     * the atlas has no room for it.
      **/
-    boost::shared_ptr<Glyph> glyph(wchar_t charcode);
+    boost::shared_ptr<Glyph> glyph(char32_t charcode);
 
     /**
      * The glyph already packed for a charcode, or null.
@@ -63,14 +70,14 @@ class TextureFont {
      * glyph() rasterizes and packs a charcode it has not seen. This never does, so the atlas
      * is unchanged. A caller that has uploaded the atlas looks glyphs up through this.
      **/
-    boost::shared_ptr<Glyph> packed(wchar_t charcode) const;
+    boost::shared_ptr<Glyph> packed(char32_t charcode) const;
 
     /**
      **/
     void atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas);
 
     /**
-     * Rasterize each charcode and pack it into the atlas.
+     * Rasterize each character of a UTF-8 string and pack it into the atlas.
      *
      * A glyph that does not fit is counted rather than drawn. Because of the count, this
      * can fail after having packed most of what it was given. Text drawn with a partly
@@ -79,7 +86,17 @@ class TextureFont {
      *
      * @return whether every charcode was packed
      **/
-    bool loadGlyphs(const wchar_t * charcodes);
+    bool loadGlyphs(std::string_view utf8);
+
+    /**
+     * How wide a UTF-8 string is when it is laid out at a size, in pixels.
+     *
+     * A code point with no packed glyph adds nothing, the same as the layout draws nothing for
+     * it. Nothing is packed.
+     *
+     * @param size the size it is laid out at. Zero or less means the font's own size
+     **/
+    float width(std::string_view utf8, float size = 0.0F) const;
 
     float size() const;
 
@@ -101,6 +118,11 @@ class TextureFont {
     static boost::shared_ptr<Glyph> createGlyph();
 
  private:
+    /**
+     * Rasterize each code point and pack it, as loadGlyphs() does.
+     **/
+    bool pack(const std::u32string& charcodes);
+
     /** The number of weights in the filter applied across subpixels. **/
     static constexpr std::size_t LCD_FILTER_TAPS = 5;
 

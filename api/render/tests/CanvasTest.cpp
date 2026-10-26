@@ -3,14 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/TextBuffer.h>
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace {
@@ -254,8 +256,8 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
 }
 
 /**
- * Text is copied out of a laid out text buffer against the atlas it was packed into, with
- * the buffer's indices rebased onto the canvas's own vertex stream.
+ * Laid out text is copied in against the atlas it was packed into, with its indices rebased
+ * onto the canvas's own vertex stream.
  **/
 BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -263,19 +265,14 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
 
-    // one glyph quad, as a text buffer would have laid it out
-    v3d::font::TextBuffer buffer;
+    // one glyph quad, as a font would have laid it out
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> quad;
     for (int corner = 0; corner < 4; corner++) {
-        buffer.addVertex(glm::vec3(static_cast<float>(corner), 0.0F, 0.0F));
-        buffer.addTextureCoordinate(glm::vec2(0.0F, 0.0F));
-        buffer.addColor(white);
+        quad.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
     }
-    const unsigned int order[6] = {0, 2, 1, 0, 3, 2};
-    for (int index = 0; index < 6; index++) {
-        buffer.addIndex(order[index]);
-    }
+    const std::vector<uint32_t> order = {0, 2, 1, 0, 3, 2};
 
-    canvas.text(buffer, atlas);
+    canvas.text(quad, order, atlas);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2);
     BOOST_CHECK(canvas.batches()[1].texture == atlas);
@@ -286,17 +283,33 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 }
 
 /**
- * A text buffer with nothing in it adds neither vertices nor a batch, so drawing an empty
- * string does not split the batch a caller is in the middle of.
+ * Text with nothing in it adds neither vertices nor a batch, so drawing an empty string does
+ * not split the batch a caller is in the middle of.
  **/
 BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
-    const v3d::font::TextBuffer buffer;
-    canvas.text(buffer, v3d::render::realtime::TextureHandle(9));
+    canvas.text({}, {}, v3d::render::realtime::TextureHandle(9));
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+}
+
+/**
+ * A run with an index past its own vertices draws nothing, rather than a triangle through a
+ * vertex the run did not add.
+ **/
+BOOST_AUTO_TEST_CASE(text_with_an_index_past_its_vertices_draws_nothing) {
+    v3d::render::realtime::canvas::Canvas canvas;
+
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
+    const std::vector<v3d::render::realtime::canvas::Canvas::Vertex> one = {
+        {.position = glm::vec2(0.0F), .uv = glm::vec2(0.0F), .colour = white}};
+    const std::vector<uint32_t> order = {0, 0, 1};
+    canvas.text(one, order, v3d::render::realtime::TextureHandle(9));
+
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4);
 }
 
 /**

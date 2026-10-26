@@ -83,9 +83,11 @@ canvas.unclip();
 
 ### Text
 
-`Canvas::text(textBuffer, atlas)` copies text that a `v3d::font` text buffer has already laid
-out. The atlas is a single-channel texture of signed distances. The quad shader turns the
-distance into a smooth edge about one pixel wide at any scale. Text and other quads that
+`Canvas::text(vertices, indices, atlas)` copies text that has already been laid out, as
+vertices and the triangles over them. `ui::paint::TextRenderer` lays the text out with
+`v3d::font`, and `render` does not depend on `font`. The atlas is a single-channel texture of
+signed distances. The quad shader turns the distance into a smooth edge about one pixel wide at
+any scale. Text and other quads that
 sample the same atlas are drawn as separate batches.
 
 ### User interface

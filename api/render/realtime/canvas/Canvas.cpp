@@ -5,13 +5,13 @@
 
 #include "Canvas.h"
 
-#include <api/font/TextBuffer.h>
 #include <api/render/realtime/Handle.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace v3d::render::realtime::canvas {
@@ -359,33 +359,29 @@ void Canvas::arc(const Arc& shape, const glm::vec4& colour) {
 
 /**
  **/
-void Canvas::text(const v3d::font::TextBuffer& text, const TextureHandle& atlas) {
-    const std::vector<glm::vec3>& positions = text.vertices();
-    const std::vector<glm::vec2>& uvs = text.uvs();
-    const std::vector<glm::vec4>& colours = text.colors();
-    const std::vector<unsigned int>& order = text.indices();
-
-    if (positions.empty() || order.empty()) {
+void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas) {
+    if (vertices.empty() || indices.empty()) {
         return;
     }
-    // the three streams are filled a vertex at a time, so a mismatch means a partly built
-    // buffer. Draw nothing rather than read off the end of the shorter one
-    if (uvs.size() < positions.size() || colours.size() < positions.size()) {
+    // an index past the run would name a vertex this run did not add, so a run with one
+    // draws nothing
+    const auto outside = [&vertices](uint32_t index) {
+        return index >= vertices.size();
+    };
+    if (std::ranges::any_of(indices, outside)) {
         return;
     }
 
     open(atlas, true);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    for (std::size_t index = 0; index < positions.size(); index++) {
-        // glyphs are laid out in three dimensions. A 2D canvas has no use for the third
-        vertex({.position = glm::vec2(positions[index].x, positions[index].y), .uv = uvs[index], .colour = colours[index]});
+    for (const Vertex& laid : vertices) {
+        vertex(laid);
     }
-
-    for (std::size_t index = 0; index < order.size(); index++) {
-        indices_.push_back(first + order[index]);
+    for (const uint32_t index : indices) {
+        indices_.push_back(first + index);
     }
-    batches_.back().indices += static_cast<uint32_t>(order.size());
+    batches_.back().indices += static_cast<uint32_t>(indices.size());
 }
 
 /**
