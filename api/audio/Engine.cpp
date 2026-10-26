@@ -13,6 +13,8 @@
 #include <api/log/Logger.h>
 
 #include "AudioClip.h"
+#include "Events.h"
+#include "Listener.h"
 #include "Play.h"
 
 #include <SDL3_mixer/SDL_mixer.h>
@@ -26,6 +28,8 @@
 #include <boost/foreach.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -88,6 +92,7 @@ bool Engine::initialize() {
 void Engine::soundEvent(const v3d::event::kind::Sound& sound) {
     Play how;
     how.pan = sound.pan();
+    how.position = sound.position();
     if (play(sound.clip(), how) == Voice::None) {
         logger_->get()->error("unable to play clip: {}", sound.clip());
     }
@@ -223,7 +228,11 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
     }
 
     MIX_SetTrackGain(track, how.gain * busGain(how.bus));
-    place(track, how.pan);
+    if (how.position) {
+        place(track, *how.position);
+    } else {
+        place(track, how.pan);
+    }
 
     // the properties are the only way to name a loop count or a fade, and the id belongs to
     // this call rather than to the track
@@ -251,6 +260,7 @@ Voice Engine::play(const std::string_view & clip, const Play & how) {
     playing.track = track;
     playing.bus = how.bus;
     playing.gain = how.gain;
+    playing.position = how.position;
     voices_[voice] = playing;
     return voice;
 }
@@ -301,7 +311,58 @@ bool Engine::pan(Voice voice, float value) {
     if (found == voices_.end()) {
         return false;
     }
+    found->second.position.reset();
     return place(found->second.track, value);
+}
+
+bool Engine::position(Voice voice, const glm::vec3& position) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    found->second.position = position;
+    return place(found->second.track, position);
+}
+
+std::optional<glm::vec3> Engine::heard(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end() || !found->second.position || !MIX_TrackPlaying(found->second.track)) {
+        return std::nullopt;
+    }
+    MIX_Point3D point{};
+    if (!MIX_GetTrack3DPosition(found->second.track, &point)) {
+        return std::nullopt;
+    }
+    return glm::vec3(point.x, point.y, point.z);
+}
+
+bool Engine::listener(const Listener& listener) {
+    const std::optional<Listener> facing = orthonormal(listener);
+    if (!facing) {
+        return false;
+    }
+    listener_ = *facing;
+    // the mixer's listener cannot move, so every placed sound is moved around it instead
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        if (playing.second.position) {
+            place(playing.second.track, *playing.second.position);
+        }
+    }
+    if (events_) {
+        events_->listener(listener_);
+    }
+    return true;
+}
+
+const Listener& Engine::listener() const noexcept {
+    return listener_;
+}
+
+void Engine::attach(const boost::shared_ptr<Events>& events) {
+    events_ = events;
+    if (events_) {
+        events_->listener(listener_);
+    }
 }
 
 bool Engine::place(MIX_Track* track, float pan) {
@@ -311,6 +372,12 @@ bool Engine::place(MIX_Track* track, float pan) {
     }
     const MIX_StereoGains mixed{gains.left, gains.right};
     return MIX_SetTrackStereo(track, &mixed);
+}
+
+bool Engine::place(MIX_Track* track, const glm::vec3& position) const {
+    const glm::vec3 heard = relative(listener_, position);
+    const MIX_Point3D point{heard.x, heard.y, heard.z};
+    return MIX_SetTrack3DPosition(track, &point);
 }
 
 bool Engine::busGain(const std::string & bus, float level) {

@@ -12,7 +12,11 @@
 #include <string>
 #include <string_view>
 
+#include "Listener.h"
+
 #include <boost/shared_ptr.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -74,6 +78,46 @@ class Events {
      *         null backend
      **/
     virtual Instance start(std::string_view event) = 0;
+
+    /**
+     * Start an event as a one shot at a point in the world. An event authored as 2D ignores
+     * the position.
+     *
+     * @param position where the event plays, in the coordinates listener() is given
+     * @return whether it started
+     **/
+    virtual bool play(std::string_view event, const glm::vec3& position) = 0;
+
+    /**
+     * Start an event at a point in the world and keep hold of it, so that it can be moved with
+     * position() and stopped. The position is set before the event starts, so it is never heard
+     * from anywhere else.
+     *
+     * @return the instance, or Instance::None as start() returns it
+     **/
+    virtual Instance start(std::string_view event, const glm::vec3& position) = 0;
+
+    /**
+     * Move an event that start() started.
+     *
+     * @return false for an instance that is not playing
+     **/
+    virtual bool position(Instance instance, const glm::vec3& position) = 0;
+
+    /**
+     * @return where an event is, as the backend holds it, or nothing for an instance that is
+     *         not playing. An event started with no position is at the origin
+     **/
+    virtual std::optional<glm::vec3> position(Instance instance) const = 0;
+
+    /**
+     * Set where events are heard from. audio::Engine::listener() calls this for an event
+     * backend it was given, so a game sets one listener for clips and events.
+     *
+     * @param listener a listener orthonormal() returned
+     * @return whether the backend took it, which the null backend never does
+     **/
+    virtual bool listener(const Listener& listener) = 0;
 
     /**
      * Stop an event that start() started. A fade out keeps it playing until the fade ends.

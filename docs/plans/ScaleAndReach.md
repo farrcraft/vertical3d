@@ -235,27 +235,27 @@ searches through callbacks. A region that is not loaded is impassable and opaque
 
 ### Step 9 — A voice with a position
 
-**Open.** ADR first. `Play` gains a position, and `Engine::position(voice, ...)` moves a playing
-voice. A voice is either panned or placed, and switching one way clears the other.
+**Done.** [ADR-0112](../adr/0112-audio-a-voice-is-placed-in-world-coordinates.md) chose a
+listener held by `audio::Engine`, with positions in the game's world coordinates, over positions
+handed over relative to the listener. A pan and a position are exclusive, and FMOD events are
+placed too.
 
-The decision is taken, and the ADR is still to write and to show before it is committed:
-
-- **`audio::Engine` holds the listener.** The game calls `listener(position, forward, up)` once a
-  frame in its own world coordinates. A voice's position is in the same coordinates, and the
-  engine turns it into the listener's space for `MIX_SetTrack3DPosition`, whose listener is fixed
-  at the origin in right-handed axes. Rejected: the game handing over listener-relative
-  positions, which every game would convert itself and which leaves FMOD without a listener.
-- **A position and a pan are exclusive.** Setting either clears the other, as SDL_mixer forces.
-  Rejected: a pan on top of a position, which the mixer cannot do.
-- **FMOD events are placed too.** `Events` gains a listener, which `audio::Engine` forwards, and a
-  position for an instance when it starts and while it plays. The null backend ignores both, and
-  an event authored as 2D is unaffected. Rejected: leaving events 2D, so an event-based game pans
-  by hand. FMOD takes its 3D data left-handed, so the backend converts.
-
-- `event::kind::Sound` gains a position, so a game can send a placed sound as an event.
-- [Audio.md](../api/engine/Audio.md) states the axes and the rule.
-- Tests: under the dummy driver, a placed voice reads back its position in mixer axes. A pan
-  after a position clears it, and the reverse. Whether attenuation is audible is not testable.
+- `audio::Listener` is a position and three axes, and `orthonormal()` squares them. Right is given,
+  not worked out from forward and up, because the default `camera::Profile::Hand` puts up x
+  direction on the right of the screen. `relative()` turns a world point into SDL_mixer's axes.
+- `Play::position`, `Engine::position(voice, point)` and `Engine::listener()` place a voice, and
+  every placed voice is placed again when the listener moves. A pan clears a position and a
+  position clears a pan. `heard(voice)` reads the position back from the mixer.
+  `event::kind::Sound` takes a position in place of a pan.
+- `Events` gains a listener, a placed `play()` and `start()`, and `position()` to move and read an
+  instance. `Engine::attach(events)` forwards the listener. FMOD runs right-handed, and for a
+  mirrored listener the backend reflects the world through x = 0. The null backend refuses all of
+  it. [Audio.md](../api/engine/Audio.md) states the axes and the rules.
+- Tests: the listener's conversion in both hands, and its refusals. Under the dummy driver, a
+  placed voice reads back in mixer axes after the listener moves and turns, a pan and a position
+  clear each other, and a placed sound event plays placed. A recording backend checks the
+  forwarding. With the SDK configured, the FMOD case moves the example mower and reads it back
+  through a change of hand. Whether attenuation is audible is not tested.
 
 ### Step 10 — Packing and unpacking sprite sheets
 

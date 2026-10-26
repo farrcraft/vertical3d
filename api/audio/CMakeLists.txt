@@ -1,4 +1,5 @@
 v3d_add_api_library(audio "AudioClip.h" "AudioClip.cpp" "Engine.h" "Engine.cpp" "Play.h" "Play.cpp"
+	"Listener.h" "Listener.cpp"
 	"Loaders.h" "Loaders.cpp" "kind/Sound.h" "kind/Sound.cpp" "loader/Wav.h" "loader/Wav.cpp"
 	"Events.h" "Events.cpp" "NullEvents.h" "NullEvents.cpp")
 
@@ -34,7 +35,8 @@ endif()
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # EnTT: Engine.h holds a dispatcher and a scoped_connection to it.
-target_link_libraries(v3dlib_audio PUBLIC v3dlib_log EnTT::EnTT)
+# glm: a listener and a sound's position are glm vectors.
+target_link_libraries(v3dlib_audio PUBLIC v3dlib_log EnTT::EnTT glm::glm)
 
 # PRIVATE: AudioClip.h declares the MIX_ handles it names rather than including the header
 # that defines them, so only these sources compile SDL_mixer.h.

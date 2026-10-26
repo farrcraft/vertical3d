@@ -17,16 +17,21 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "AudioClip.h"
+#include "Events.h"
+#include "Listener.h"
 #include "Play.h"
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <entt/entt.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -44,6 +49,10 @@ enum class Voice : uint32_t { None = 0 };
 /**
  * Plays loaded clips through one audio device, and plays each Sound event the dispatcher
  * carries.
+ *
+ * A sound is either panned between the speakers or placed in the world. A placed sound is heard
+ * from the listener, which the game moves once a frame in its world coordinates. The engine
+ * gives the mixer each placed sound's position relative to the listener.
  **/
 class Engine final {
  public:
@@ -154,11 +163,52 @@ class Engine final {
     float volume(Voice voice) const;
 
     /**
-     * Move one sound between the speakers, as Play::pan places it when it starts.
+     * Move one sound between the speakers, as Play::pan places it when it starts. This clears
+     * the position of a placed sound.
      *
      * @return false for a voice that is not playing
      **/
     bool pan(Voice voice, float value);
+
+    /**
+     * Move one sound to a point in the world, as Play::position places it when it starts. This
+     * clears the pan of a panned sound.
+     *
+     * @return false for a voice that is not playing
+     **/
+    bool position(Voice voice, const glm::vec3& position);
+
+    /**
+     * @return where the mixer hears a placed sound from, relative to the listener: x to the
+     *         right, y up and z behind. Nothing for a sound that is not placed, and for a voice
+     *         that is not playing
+     **/
+    std::optional<glm::vec3> heard(Voice voice) const;
+
+    /**
+     * Set where sound is heard from, in the world coordinates a sound's position is in. Every
+     * placed sound is heard from here at once, and so is every event of the backend attach()
+     * was given. A game calls this once a frame, from its camera or its player.
+     *
+     * The listener is kept with or without a device, and starts at the origin facing -z with
+     * +x to its right.
+     *
+     * @return false for a listener that faces no way: a forward, an up or a right of zero, a
+     *         forward and an up that are parallel, a right in their plane, or a value that is
+     *         not finite. The last listener is kept
+     **/
+    bool listener(const Listener& listener);
+
+    /**
+     * @return the listener, as orthonormal() made it
+     **/
+    const Listener& listener() const noexcept;
+
+    /**
+     * Hear events from the same listener as clips. The backend is given the listener now, and
+     * again every time listener() is set. Null detaches it.
+     **/
+    void attach(const boost::shared_ptr<Events>& events);
 
     /**
      * Set the level of a bus. Every sound on the bus plays at its own gain times this level:
@@ -187,6 +237,7 @@ class Engine final {
         MIX_Track* track;
         std::string bus;
         float gain;  /**< the sound's own volume, before its bus's level scales it **/
+        std::optional<glm::vec3> position;  /**< where a placed sound is in the world **/
     };
 
     /**
@@ -195,6 +246,11 @@ class Engine final {
      * exactly as an unpanned track would.
      **/
     static bool place(MIX_Track* track, float pan);
+
+    /**
+     * Give a track a position relative to the listener, from one in the world.
+     **/
+    bool place(MIX_Track* track, const glm::vec3& position) const;
 
     /**
      * Take the tracks of every finished sound back, so a game that starts one shots does
@@ -230,6 +286,8 @@ class Engine final {
     std::map<std::string, boost::shared_ptr<AudioClip>> sounds_;
     std::map<Voice, Playing> voices_;
     std::map<std::string, float> buses_;  /**< the level each bus was set to **/
+    Listener listener_;
+    boost::shared_ptr<Events> events_;  /**< the event backend that hears from listener_ **/
     std::vector<MIX_Track*> free_;   /**< reaped tracks, waiting to be played again **/
     uint32_t nextVoice_ = 1;         /**< never reused, so a stale handle stays stale **/
     // declared after dispatcher_, so it disconnects before the dispatcher is destroyed

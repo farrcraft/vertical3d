@@ -5,7 +5,10 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -40,11 +43,18 @@ struct Play final {
     float gain;
 
     /**
-     * Where the sound sits between the speakers: -1 is left, 0 the centre and 1 right. The
-     * game converts a position to a pan, because which way is left depends on its camera.
-     * stereo() gives the gains a pan becomes.
+     * Where the sound sits between the speakers: -1 is left, 0 the centre and 1 right.
+     * stereo() gives the gains a pan becomes. A sound with a position is not panned, and this
+     * is not used.
      **/
     float pan;
+
+    /**
+     * Where the sound is in the world, in the coordinates Engine::listener() is given. A sound
+     * with a position is heard from the listener, and is quieter the further away it is.
+     * Nothing is a sound that is not placed, which the pan sets between the speakers.
+     **/
+    std::optional<glm::vec3> position;
 };
 
 /**

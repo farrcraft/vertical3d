@@ -10,6 +10,9 @@
 #include <string_view>
 
 #include "Events.h"
+#include "Listener.h"
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -29,6 +32,36 @@ bool NullEvents::play(std::string_view /* event */) {
  **/
 Instance NullEvents::start(std::string_view /* event */) {
     return Instance::None;
+}
+
+/**
+ **/
+bool NullEvents::play(std::string_view /* event */, const glm::vec3& /* position */) {
+    return false;
+}
+
+/**
+ **/
+Instance NullEvents::start(std::string_view /* event */, const glm::vec3& /* position */) {
+    return Instance::None;
+}
+
+/**
+ **/
+bool NullEvents::position(Instance /* instance */, const glm::vec3& /* position */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<glm::vec3> NullEvents::position(Instance /* instance */) const {
+    return std::nullopt;
+}
+
+/**
+ **/
+bool NullEvents::listener(const Listener& /* listener */) {
+    return false;
 }
 
 /**

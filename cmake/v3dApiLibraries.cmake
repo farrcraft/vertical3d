@@ -34,7 +34,7 @@ set(V3D_API_asset_media_PACKAGES cgltf glm)
 
 set(V3D_API_audio_PATH "audio")
 set(V3D_API_audio_REQUIRES log event asset)
-set(V3D_API_audio_PACKAGES SDL3_mixer EnTT)
+set(V3D_API_audio_PACKAGES SDL3_mixer EnTT glm)
 
 set(V3D_API_brep_PATH "brep")
 set(V3D_API_brep_REQUIRES type)

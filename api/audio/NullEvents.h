@@ -5,10 +5,14 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
 
 #include "Events.h"
+#include "Listener.h"
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -22,6 +26,11 @@ class NullEvents final : public Events {
     bool bank(const std::string& path) override;
     bool play(std::string_view event) override;
     Instance start(std::string_view event) override;
+    bool play(std::string_view event, const glm::vec3& position) override;
+    Instance start(std::string_view event, const glm::vec3& position) override;
+    bool position(Instance instance, const glm::vec3& position) override;
+    std::optional<glm::vec3> position(Instance instance) const override;
+    bool listener(const Listener& listener) override;
     bool stop(Instance instance, Stop how) override;
     bool playing(Instance instance) const override;
     bool parameter(std::string_view name, float value) override;

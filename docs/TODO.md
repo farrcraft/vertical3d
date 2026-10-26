@@ -48,20 +48,6 @@ Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4
   caller with large casters passes a margin big enough for them.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
-## Audio
-
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 9.
-
-`audio::Engine` plays a voice on a named bus, with a fade, a gain and a pan.
-
-[] **A voice has no position.**
-
-- A pan places a sound between the speakers. Nothing places it in a 3D scene, or makes it
-  quieter with distance.
-- SDL_mixer 3.2's `MIX_SetTrack3DPosition` places a track and attenuates it by distance, with
-  the listener fixed at the origin. A caller would give each position relative to its listener.
-- Background: [LitScenesAtScale, step 10](plans/completed/LitScenesAtScale.md#step-10--close-phase-3).
-
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.

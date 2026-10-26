@@ -4,6 +4,7 @@
  **/
 
 #include <api/audio/Events.h>
+#include <api/audio/Listener.h>
 #include <api/log/Logger.h>
 
 #include <SDL3/SDL_timer.h>
@@ -13,11 +14,14 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -211,6 +215,63 @@ BOOST_AUTO_TEST_CASE(the_fmod_backend_sets_a_bus_and_a_vca) {
     }
     BOOST_TEST(!events->volume("bus:/No Such Bus").has_value());
     BOOST_TEST(warnings.count() == 2U);
+}
+
+/**
+ * An event started at a point is there before its first frame, and moves when it is moved. The
+ * position read back is FMOD's own, in the world's axes, because the backend starts FMOD
+ * right-handed. A one shot can be placed too, and a stopped event takes no position.
+ **/
+BOOST_AUTO_TEST_CASE(the_fmod_backend_places_an_event) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::audio::Events> events = v3d::audio::events(logger);
+    BOOST_REQUIRE(events->name() == "fmod");
+
+    const std::string media = V3D_FMOD_EXAMPLE_BANKS;
+    BOOST_REQUIRE(events->bank(media + "/Master.bank"));
+    BOOST_REQUIRE(events->bank(media + "/Master.strings.bank"));
+    BOOST_REQUIRE(events->bank(media + "/SFX.bank"));
+    BOOST_REQUIRE(events->bank(media + "/Vehicles.bank"));
+
+    v3d::audio::Listener listener;
+    listener.position = glm::vec3(1.0F, 0.0F, 0.0F);
+    BOOST_TEST(events->listener(listener));
+
+    const v3d::audio::Instance mower = events->start("event:/Vehicles/Ride-on Mower", glm::vec3(2.0F, 0.0F, -3.0F));
+    BOOST_REQUIRE(mower != v3d::audio::Instance::None);
+    std::optional<glm::vec3> at = events->position(mower);
+    BOOST_REQUIRE(at.has_value());
+    BOOST_TEST(at.value_or(glm::vec3(0.0F)).x == 2.0F);
+    BOOST_TEST(at.value_or(glm::vec3(0.0F)).z == -3.0F);
+
+    SDL_Delay(10);
+    events->update();
+    BOOST_TEST(events->position(mower, glm::vec3(5.0F, 1.0F, 0.0F)));
+    at = events->position(mower);
+    BOOST_REQUIRE(at.has_value());
+    BOOST_TEST(at.value_or(glm::vec3(0.0F)).x == 5.0F);
+    BOOST_TEST(at.value_or(glm::vec3(0.0F)).y == 1.0F);
+
+    // a mirrored listener reflects what FMOD is given, and a position reads back unreflected,
+    // both for an event placed before the listener turned and for one placed after
+    v3d::audio::Listener mirrored = listener;
+    mirrored.right = -mirrored.right;
+    BOOST_TEST(events->listener(mirrored));
+    BOOST_TEST(events->position(mower).value_or(glm::vec3(0.0F)).x == 5.0F);
+    BOOST_TEST(events->position(mower, glm::vec3(-2.0F, 0.0F, 0.0F)));
+    BOOST_TEST(events->position(mower).value_or(glm::vec3(0.0F)).x == -2.0F);
+    BOOST_TEST(events->listener(listener));
+    BOOST_TEST(events->position(mower).value_or(glm::vec3(0.0F)).x == -2.0F);
+
+    BOOST_TEST(events->play("event:/UI/Cancel", glm::vec3(0.0F, 0.0F, -1.0F)));
+
+    BOOST_TEST(events->stop(mower, v3d::audio::Stop::Immediately));
+    for (int frames = 0; frames < 300 && events->playing(mower); ++frames) {
+        SDL_Delay(10);
+        events->update();
+    }
+    BOOST_TEST(!events->position(mower, glm::vec3(0.0F)));
+    BOOST_TEST(!events->position(mower).has_value());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

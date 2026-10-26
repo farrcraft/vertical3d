@@ -18,10 +18,14 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "Events.h"
+#include "Listener.h"
 
 #include <fmod_studio.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -37,6 +41,23 @@ const int maximumChannels = 512;
  **/
 bool isVca(std::string_view path) noexcept {
     return path.starts_with("vca:/");
+}
+
+FMOD_VECTOR vector(const glm::vec3& v) noexcept {
+    return FMOD_VECTOR{v.x, v.y, v.z};
+}
+
+/**
+ * The attributes of an event at a point, already in FMOD's axes. It has no velocity, so FMOD
+ * adds no doppler, and it faces the way a default listener does, which only an event authored
+ * with a cone hears.
+ **/
+FMOD_3D_ATTRIBUTES at(const glm::vec3& position) noexcept {
+    FMOD_3D_ATTRIBUTES attributes{};
+    attributes.position = vector(position);
+    attributes.forward = vector(Listener().forward);
+    attributes.up = vector(Listener().up);
+    return attributes;
 }
 
 };  // namespace
@@ -57,7 +78,7 @@ FmodEvents::FmodEvents(const boost::shared_ptr<v3d::log::Logger>& logger) :
     if (result != FMOD_OK) {
         throw std::runtime_error(std::string("FMOD could not create a Studio system: ") + FMOD_ErrorString(result));
     }
-    result = system_->initialize(maximumChannels, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr);
+    result = system_->initialize(maximumChannels, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_3D_RIGHTHANDED, nullptr);
     if (result != FMOD_OK) {
         system_->release();
         system_ = nullptr;
@@ -88,7 +109,7 @@ bool FmodEvents::bank(const std::string& path) {
 
 /**
  **/
-FMOD::Studio::EventInstance* FmodEvents::create(const std::string& path) {
+FMOD::Studio::EventInstance* FmodEvents::create(const std::string& path, const std::optional<glm::vec3>& position) {
     FMOD::Studio::EventDescription* description = nullptr;
     FMOD_RESULT result = system_->getEvent(path.c_str(), &description);
     if (result != FMOD_OK) {
@@ -103,13 +124,29 @@ FMOD::Studio::EventInstance* FmodEvents::create(const std::string& path) {
         logger_->get()->warn("FMOD could not create an instance of {}: {}", path, FMOD_ErrorString(result));
         return nullptr;
     }
+    if (position) {
+        const FMOD_3D_ATTRIBUTES attributes = at(reflect(*position));
+        instance->set3DAttributes(&attributes);
+    }
     return instance;
 }
 
 /**
  **/
 bool FmodEvents::play(std::string_view event) {
-    FMOD::Studio::EventInstance* instance = create(std::string(event));
+    return oneShot(event, std::nullopt);
+}
+
+/**
+ **/
+bool FmodEvents::play(std::string_view event, const glm::vec3& position) {
+    return oneShot(event, position);
+}
+
+/**
+ **/
+bool FmodEvents::oneShot(std::string_view event, const std::optional<glm::vec3>& position) {
+    FMOD::Studio::EventInstance* instance = create(std::string(event), position);
     if (instance == nullptr) {
         return false;
     }
@@ -122,7 +159,19 @@ bool FmodEvents::play(std::string_view event) {
 /**
  **/
 Instance FmodEvents::start(std::string_view event) {
-    FMOD::Studio::EventInstance* instance = create(std::string(event));
+    return keep(event, std::nullopt);
+}
+
+/**
+ **/
+Instance FmodEvents::start(std::string_view event, const glm::vec3& position) {
+    return keep(event, position);
+}
+
+/**
+ **/
+Instance FmodEvents::keep(std::string_view event, const std::optional<glm::vec3>& position) {
+    FMOD::Studio::EventInstance* instance = create(std::string(event), position);
     if (instance == nullptr) {
         return Instance::None;
     }
@@ -133,6 +182,57 @@ Instance FmodEvents::start(std::string_view event) {
     const Instance started = static_cast<Instance>(nextInstance_++);
     started_[started] = instance;
     return started;
+}
+
+/**
+ **/
+bool FmodEvents::position(Instance instance, const glm::vec3& position) {
+    if (!playing(instance)) {
+        return false;
+    }
+    const FMOD_3D_ATTRIBUTES attributes = at(reflect(position));
+    return started_.at(instance)->set3DAttributes(&attributes) == FMOD_OK;
+}
+
+/**
+ **/
+std::optional<glm::vec3> FmodEvents::position(Instance instance) const {
+    if (!playing(instance)) {
+        return std::nullopt;
+    }
+    FMOD_3D_ATTRIBUTES attributes{};
+    if (started_.at(instance)->get3DAttributes(&attributes) != FMOD_OK) {
+        return std::nullopt;
+    }
+    return reflect(glm::vec3(attributes.position.x, attributes.position.y, attributes.position.z));
+}
+
+/**
+ **/
+bool FmodEvents::listener(const Listener& listener) {
+    const bool mirror = mirrored(listener);
+    if (mirror != mirrored_) {
+        // every event placed so far is in the old reflection, and moves to the new one
+        mirrored_ = mirror;
+        for (const std::pair<const Instance, FMOD::Studio::EventInstance*>& started : started_) {
+            FMOD_3D_ATTRIBUTES placed{};
+            if (started.second->get3DAttributes(&placed) == FMOD_OK) {
+                placed.position.x = -placed.position.x;
+                started.second->set3DAttributes(&placed);
+            }
+        }
+    }
+    FMOD_3D_ATTRIBUTES attributes{};
+    attributes.position = vector(reflect(listener.position));
+    attributes.forward = vector(reflect(listener.forward));
+    attributes.up = vector(reflect(listener.up));
+    return system_->setListenerAttributes(0, &attributes) == FMOD_OK;
+}
+
+/**
+ **/
+glm::vec3 FmodEvents::reflect(const glm::vec3& point) const noexcept {
+    return mirrored_ ? glm::vec3(-point.x, point.y, point.z) : point;
 }
 
 /**
