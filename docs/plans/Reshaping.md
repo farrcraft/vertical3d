@@ -230,8 +230,8 @@ Steps on different lines do not block each other.
   bit for bit, so the moya references are unchanged.
 - A scene's named space reaches the traced scene when it is saved. `ptransform("lamp", P)`
   answers under both hiders.
-- Five new cases. The three in `CameraTest` fail to build without the change, and the named
-  space and NDC cases fail.
+- Five new cases. The NDC case fails without the change. The other four fail to build, the
+  named space case because its file also reads the new `camera()`.
 
 ### Step 3 — RenderContext as a facade
 
