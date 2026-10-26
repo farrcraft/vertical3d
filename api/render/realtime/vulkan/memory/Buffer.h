@@ -38,8 +38,7 @@ class Buffer final {
  public:
     /**
      * @param device the device to allocate on
-     * @param spec what the buffer is bound as, and the size to start at, which grow() raises
-     *        as the content demands
+     * @param spec what the buffer is bound as, and its size, which never changes
      **/
     Buffer(const boost::shared_ptr<device::Device>& device, const BufferSpec& spec);
 
@@ -51,7 +50,7 @@ class Buffer final {
     Buffer& operator=(const Buffer&) = delete;
 
     /**
-     * @return the underlying buffer handle, which a call to grow() invalidates
+     * @return the underlying buffer handle
      **/
     VkBuffer handle() const noexcept;
 

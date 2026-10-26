@@ -163,7 +163,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
 
     context_ = engine_.context();
     if (!context_) {
-        throw std::runtime_error("The voxel renderer needs a device to build its pipeline against, and the render engine did not start");
+        throw std::runtime_error("The voxel renderer needs a device to build its pipeline against, and the window renderer did not start");
     }
 
     createLayout();

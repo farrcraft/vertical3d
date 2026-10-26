@@ -19,7 +19,7 @@ namespace v3d::render::realtime::vulkan::pipeline {
  * An image the shaders sample from, and the sampler they read it through.
  *
  * Both are held by shared pointer. A texture that memory::TextureFactory built is the only
- * holder of its image. One registered from a frame::RenderTarget shares the target's image,
+ * holder of its image. One registered from a render target shares the target's image,
  * so the image outlives whichever of the two releases it first. Either way, a released
  * texture is destroyed when its last reference goes, and the Ring holds a reference until no
  * frame can read it.

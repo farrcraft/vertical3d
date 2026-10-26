@@ -199,7 +199,7 @@ as a PNG.
 It takes two calls, because a GPU submit has to complete between them:
 
 ```cpp
-vulkan::frame::Capture capture(device, logger);
+vulkan::frame::Capture capture(context->device(), context->ring(), logger);
 vulkan::frame::Capture::Source source;
 source.image = target->image();
 source.extent = target->extent();
@@ -218,7 +218,9 @@ capture.write("frame.png");
 - **A capture recorded and never written costs a copy and is thrown away silently.**
 - A source with `depth` set copies depth instead of colour, and `capture.depth()` returns one
   float per pixel. Only `VK_FORMAT_D32_SFLOAT` can be read this way.
-- The readback buffer is allocated on the first `record()`.
+- The readback buffer is allocated on the first `record()`. A larger source replaces it, and
+  the old one is retired through the ring, because a copy recorded earlier may still be writing
+  into it.
 
 Testing with captures is covered in [contributing/Testing.md](../../contributing/Testing.md).
 

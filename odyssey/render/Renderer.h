@@ -21,7 +21,7 @@
 
 namespace odyssey::render {
 /**
- * Everything odyssey draws, built as one canvas of quads and handed to the render engine.
+ * Everything odyssey draws, built as one canvas of quads and handed to the window renderer.
  *
  * Tiles and sprites both go through the batched quad pipeline, so a screen of them reaches
  * the device as one batch per texture. There is one pass, drawn in submission order, and no

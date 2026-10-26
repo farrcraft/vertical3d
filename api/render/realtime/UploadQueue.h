@@ -27,9 +27,9 @@ namespace v3d::render::realtime {
  * has arrived, in the order it was posted, up to a byte budget.
  *
  * Every store that streams follows one rule for a request that fails. The queue reports the
- * failure once, through the store's failed callback. The store logs it, keeps the handle's
- * stand-in until the handle is released, and frees the path, so that asking for it again reads
- * the file again.
+ * failure once, through the store's failed callback. The store logs it and frees the path, so
+ * that asking for it again reads the file again. A texture's handle draws white until it is
+ * released, and a mesh's handle resolves to nothing.
  *
  * @param Tag the handle's tag
  * @param Value what a job returns, which must be copyable

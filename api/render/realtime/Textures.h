@@ -42,7 +42,7 @@ class RenderTarget;
  * so a context that draws no quads, such as a headless one or one loading meshes, can still
  * register textures.
  *
- * What is registered belongs to pipeline::Resources. The white texture lives as long as the
+ * What is registered belongs to Resources. The white texture lives as long as the
  * context. Any other texture lives until it is released here, along with its slot.
  **/
 class Textures final {

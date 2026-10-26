@@ -23,8 +23,9 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * DeviceContext keeps one for all the passes that draw into the swapchain image, not one per
  * pass. Those passes need depth at the same size, and a pass that shares the buffer with the
- * pass before it can keep the depth that pass wrote. It is sized by the swapchain and
- * recreated with it. A render target with depth holds its own, at the target's size.
+ * pass before it can keep the depth that pass wrote. It is sized by the swapchain, and replaced
+ * by a new one when the swapchain changes size. A render target with depth holds its own, at
+ * the target's size.
  *
  * A window with no area has no depth buffer, as it has no swapchain. valid() then returns
  * false, and nothing is drawn.
@@ -113,7 +114,7 @@ class DepthBuffer final {
     VkSampler sampler() const noexcept;
 
     /**
-     * The image described as something pipeline::Resources can hold, sharing it rather than
+     * The image described as a texture a registry can hold, sharing it rather than
      * copying it, so that a draw item can sample what a pass tested against.
      *
      * @return the image and its sampler, or an empty texture when this was not built sampled
