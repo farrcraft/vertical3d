@@ -15,6 +15,7 @@
 
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -37,7 +38,7 @@ const int windowHeight = 120;
 
 /**
  **/
-Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations) {
+Windowed::Windowed(std::optional<render::realtime::vulkan::memory::Allocator::Kind> allocations) {
     // where a captured frame is written, beside the executable
     boost::filesystem::create_directory("data_out");
 
@@ -50,7 +51,8 @@ Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations
         SDL_Quit();
         throw std::runtime_error(std::string("SDL could not create a window: ") + SDL_GetError());
     }
-    engine = boost::make_shared<render::realtime::Engine3D>(logger, nullptr, VK_FORMAT_UNDEFINED, allocations);
+    engine = allocations ? boost::make_shared<render::realtime::Engine3D>(logger, nullptr, VK_FORMAT_UNDEFINED, *allocations)
+        : boost::make_shared<render::realtime::Engine3D>(logger, nullptr);
     try {
         engine->initialize(window);
     } catch (...) {

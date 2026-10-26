@@ -310,6 +310,9 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
  * offset gives a wrong picture, not a reported error. A suballocated region starts part way
  * into its block, and the direct path's offset is always zero.
+ *
+ * Passes before the change: direct allocation was the default then, and drew the same way. It
+ * guards the path no app takes any more.
  **/
 BOOST_AUTO_TEST_CASE(a_directly_allocated_device_clears_the_same_way) {
     v3d::test::Headless headless(colourFormat, width, height,

@@ -10,6 +10,8 @@
 #include <api/render/realtime/Window.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
+#include <optional>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::test {
@@ -29,12 +31,12 @@ const int skipExitCode = 77;
  **/
 struct Windowed {
     /**
-     * @param allocations what the engine is asked to build its device's allocator as
+     * @param allocations what the engine is asked to build its device's allocator as. Without
+     *        one, the engine is built without naming a kind, so it takes its own default
      * @throw std::runtime_error when SDL cannot start, the window cannot be made, or no device
      *        can present to it
      **/
-    explicit Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations =
-        render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+    explicit Windowed(std::optional<render::realtime::vulkan::memory::Allocator::Kind> allocations = std::nullopt);
 
     ~Windowed();
 
