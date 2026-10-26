@@ -22,10 +22,15 @@ void MyApp::tick(unsigned int delta) {
     }
     const auto cascades = lighting::fitCascades(camera.projection() * camera.view(),
         lighting::splitView(near, 120.0F, 3, 0.75F), settings.light, {.texels = 2048});
+    LitScene::Shadows shadows;  // nothing, when the view gives no cascades
+    if (cascades) {
+        shadows = *cascades;
+    }
     boost::shared_ptr<Frame> frame = renderer_->frame();
     Pass* lit = scene_->draw(frame.get(), frame->pass(WindowRenderer::colourPass).get(), registry(),
         *meshes_, {.view = camera.view(), .projection = camera.projection(), .settings = settings,
-        .shadows = *cascades, .alpha = alpha(), .poses = entity::poses(registry(), alpha(), *meshes_)});
+        .shadows = shadows, .alpha = alpha(), .poses = entity::poses(registry(), alpha(), *meshes_)});
+    worldQuads_->submit(effects, lit);  // a World built against scene_->target()'s formats
     // anything else drawn into the colour pass goes after the grade, such as the ui
     renderer_->renderFrame();
 }
@@ -40,7 +45,9 @@ void MyApp::tick(unsigned int delta) {
   reads the scene target, so the frame records shadow, lit, then the app's pass, whatever order
   the passes were made in.
 - **The passes are named after the scene**: `Spec::name`, which defaults to `"lit"`, and
-  `"lit shadow 0"` upwards. Two scenes in one frame have passes of their own.
+  `"lit shadow 0"` upwards. Two scenes in one frame have passes of their own, and each grades
+  into a pass of its own, because a grade covers the whole of its pass.
+- **`draw()` is called once a frame.** A second call before the frame is submitted throws.
 - **The grade covers the whole of the pass it goes into.** Call `draw()` before anything else
   is submitted to that pass.
 - **`draw()` returns the lit pass**, for draws of the app's own after the meshes, such as world

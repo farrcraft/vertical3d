@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Grade.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/MeshRegistry.h>
@@ -16,10 +17,12 @@
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/renderer/Lit.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -46,7 +49,7 @@ class Frame;
  * Each reader names what it reads.
  *
  * The passes are named after the scene, so two scenes drawn into one frame have passes of
- * their own.
+ * their own. Each grades into a pass of its own, since a grade covers the whole of its pass.
  **/
 class LitScene final {
  public:
@@ -115,7 +118,8 @@ class LitScene final {
      * Replace the scene target with one of a new size, as a window that changed size needs.
      * The grade reads the new target from the next frame drawn.
      *
-     * @throw std::runtime_error if either dimension is zero, and the scene keeps its old target
+     * @throw std::runtime_error if either dimension is zero, and the scene keeps its old target,
+     *        or if the grade cannot bind the new one, and it goes on grading the old one
      **/
     void resize(uint32_t width, uint32_t height);
 
@@ -123,14 +127,16 @@ class LitScene final {
      * Add this frame's passes, and draw the registry's meshes into them.
      *
      * Call it once a frame, while the frame is built, and before anything else is submitted to
-     * the pass the grade goes into, since the grade covers the whole of it.
+     * the pass the grade goes into, since the grade covers the whole of it. A second call before
+     * the frame is submitted would add its draws to the first call's passes, and rewrite the
+     * scene those draws name, so it throws.
      *
      * @param into the pass the graded scene is drawn into, such as the window's colour pass. It
      *        is the caller's, and draws into something of the output format
      * @return the lit pass, for anything else the scene draws after its meshes, such as world
      *         quads built against target()'s formats
-     * @throw std::runtime_error if the shot names more cascades than the map has layers, or
-     *        names shadows for a scene built with none
+     * @throw std::runtime_error if the shot names more cascades than the map has layers, names
+     *        shadows for a scene built with none, or the scene was drawn into this frame already
      **/
     Pass* draw(Frame* frame, Pass* into, const entt::registry& registry, const MeshRegistry& meshes, const Shot& shot);
 
@@ -152,10 +158,13 @@ class LitScene final {
  private:
     std::string name_;
     glm::vec4 clearColour_;
+    boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<Textures> textures_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    /** the ring's recording() when the scene was last drawn, which a second draw is refused at **/
+    std::optional<uint64_t> drawn_;
     boost::shared_ptr<RenderTarget> scene_;
-    /**< null for a scene with no shadow **/
-    boost::shared_ptr<RenderTarget> map_;
+    boost::shared_ptr<RenderTarget> map_;  /**< null for a scene with no shadow **/
     TextureHandle mapTexture_;
     renderer::Lit lit_;
     Grade grade_;

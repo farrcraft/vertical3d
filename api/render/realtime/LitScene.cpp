@@ -18,6 +18,7 @@
 #include <api/render/realtime/renderer/Lit.h>
 
 #include <cstdint>
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -69,7 +70,9 @@ renderer::Lit::Spec litSpec(const LitScene::Spec& spec, const RenderTarget& scen
 LitScene::LitScene(const DeviceContext& context, const Spec& spec) :
     name_(spec.name),
     clearColour_(spec.clearColour),
+    logger_(context.logger()),
     textures_(context.textures()),
+    ring_(context.ring()),
     scene_(sceneTarget(context, spec)),
     map_(shadowMap(context, spec)),
     lit_(context, litSpec(spec, *scene_, map_)),
@@ -77,15 +80,29 @@ LitScene::LitScene(const DeviceContext& context, const Spec& spec) :
     if (map_) {
         mapTexture_ = textures_->depthTexture(*map_);
     }
-    source_ = grade_.source(*scene_);
+    try {
+        source_ = grade_.source(*scene_);
+    } catch (...) {
+        // no destructor runs for a constructor that throws
+        if (mapTexture_.valid()) {
+            textures_->release(mapTexture_);
+        }
+        throw;
+    }
 }
 
 /**
  **/
 LitScene::~LitScene() {
-    grade_.release(source_);
-    if (mapTexture_.valid()) {
-        textures_->release(mapTexture_);
+    // a destructor must not throw. A release only retires objects through the ring, which
+    // throws only when out of memory. They then stay registered until the context is destroyed
+    try {
+        grade_.release(source_);
+        if (mapTexture_.valid()) {
+            textures_->release(mapTexture_);
+        }
+    } catch (const std::exception& error) {
+        logger_->get()->error("The lit scene {} could not release its grade source and shadow map: {}", name_, error.what());
     }
 }
 
@@ -93,9 +110,11 @@ LitScene::~LitScene() {
  **/
 void LitScene::resize(uint32_t width, uint32_t height) {
     scene_->recreate(width, height);
-    // the source names the old images, which recreate() retired, so it is bound again
-    grade_.release(source_);
+    // the source names the old images, which recreate() retired, so the new ones are bound
+    // before the old source goes, and a bind that throws leaves the old source in use
+    const MaterialHandle replaced = source_;
     source_ = grade_.source(*scene_);
+    grade_.release(replaced);
 }
 
 /**
@@ -111,6 +130,10 @@ Pass* LitScene::draw(Frame* frame, Pass* into, const entt::registry& registry, c
         throw std::runtime_error("The lit scene " + name_ + " has a shadow map of " + std::to_string(map_->layers()) +
             " layers, and a frame named " + std::to_string(cascades->count) + " cascades");
     }
+    if (drawn_ == ring_->recording()) {
+        throw std::runtime_error("The lit scene " + name_ + " was drawn into this frame already");
+    }
+    drawn_ = ring_->recording();
 
     // the scene is written first, because every draw below adds its object to it
     const float texel = map_ ? 1.0F / static_cast<float>(map_->extent().width) : 1.0F;

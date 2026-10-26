@@ -1024,7 +1024,8 @@ BOOST_AUTO_TEST_CASE(a_lit_scene_draws_a_shadow_pass_per_cascade) {
     LitScene scene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
         .shadowTexels = 256, .cascades = 3});
 
-    const std::vector<float> splits = lighting::splitView(0.1F, 20.0F, 3, 0.75F);
+    // the isometric camera stands 30 units from what it looks at, so the cascades reach past it
+    const std::vector<float> splits = lighting::splitView(0.1F, 60.0F, 3, 0.75F);
     const std::optional<lighting::Cascades> cascades = lighting::fitCascades(
         stage.camera.projection() * stage.camera.view(), splits, lighting::Settings().light, {.texels = 256});
     BOOST_REQUIRE(cascades);
@@ -1041,7 +1042,46 @@ BOOST_AUTO_TEST_CASE(a_lit_scene_draws_a_shadow_pass_per_cascade) {
         BOOST_CHECK_EQUAL(frame.pass("lit shadow " + std::to_string(cascade))->layer(), cascade);
     }
 
-    BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_cascades.png"));
+    const boost::shared_ptr<v3d::image::Image> shadowed = headless.picture(frame, *stage.output, "data_out/lit_scene_cascades.png");
+    BOOST_REQUIRE(shadowed);
+
+    // the same view with no shadow: the crate's shadow is ground the cascades darkened
+    Frame unshadowed;
+    const boost::shared_ptr<Pass> plain = unshadowed.pass("grade");
+    plain->target(stage.output);
+    scene.draw(&unshadowed, plain.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
+    const boost::shared_ptr<v3d::image::Image> lit = headless.picture(unshadowed, *stage.output, "data_out/lit_scene_no_cascades.png");
+    BOOST_REQUIRE(lit);
+    const Shading shading = compare({.without = lit, .with = shadowed});
+    BOOST_TEST_MESSAGE("ground darkened " << shading.darkened);
+    BOOST_CHECK_GT(shading.darkened, 0U);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A second draw of one scene into a frame not yet submitted is refused. It would add its draws
+ * to the first draw's passes and rewrite the scene they name. After the frame is drawn, the
+ * scene can be drawn into the next one.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_scene_is_drawn_once_a_frame) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene scene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
+        .shadowTexels = 0});
+
+    Frame frame;
+    const boost::shared_ptr<Pass> into = frame.pass("grade");
+    into->target(stage.output);
+    scene.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
+    BOOST_CHECK_THROW(scene.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(std::monostate())),
+        std::runtime_error);
+    BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_once.png"));
+
+    Frame next;
+    const boost::shared_ptr<Pass> again = next.pass("grade");
+    again->target(stage.output);
+    BOOST_CHECK_NO_THROW(scene.draw(&next, again.get(), stage.registry, stage.meshes, stage.shot(std::monostate())));
+    BOOST_REQUIRE(headless.picture(next, *stage.output, "data_out/lit_scene_next.png"));
     BOOST_CHECK(headless.silent());
 }
 
@@ -1091,8 +1131,9 @@ BOOST_AUTO_TEST_CASE(a_lit_scene_refuses_more_cascades_than_its_map_holds) {
 }
 
 /**
- * Two scenes drawn into one frame each have passes of their own, named after the scene, and both
- * are recorded ahead of the pass that grades them.
+ * Two scenes drawn into one frame each have passes of their own, named after the scene, and each
+ * grades into a pass of its own, since a grade covers the whole of its pass. Each scene is
+ * recorded ahead of the pass that grades it.
  **/
 BOOST_AUTO_TEST_CASE(two_lit_scenes_in_one_frame_have_passes_of_their_own) {
     v3d::test::Headless headless(colourFormat, width, height);
@@ -1102,17 +1143,24 @@ BOOST_AUTO_TEST_CASE(two_lit_scenes_in_one_frame_have_passes_of_their_own) {
     LitScene far(*headless.context, LitScene::Spec{.name = "far", .width = width / 2, .height = height / 2,
         .output = colourFormat, .shadowTexels = 0});
 
+    const boost::shared_ptr<RenderTarget> farOutput = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
+
     Frame frame;
     const boost::shared_ptr<Pass> into = frame.pass("grade");
     into->target(stage.output);
+    const boost::shared_ptr<Pass> farInto = frame.pass("grade far");
+    farInto->target(farOutput);
     near.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(stage.light()));
-    far.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
+    far.draw(&frame, farInto.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
 
     const std::vector<std::string> names = recorded(frame);
-    BOOST_REQUIRE_EQUAL(names.size(), 4U);
-    BOOST_CHECK_EQUAL(names.back(), "grade");
-    BOOST_CHECK(std::find(names.begin(), names.end(), "near shadow 0") < std::find(names.begin(), names.end(), "near"));
-    BOOST_CHECK(std::find(names.begin(), names.end(), "far") != names.end());
+    BOOST_REQUIRE_EQUAL(names.size(), 5U);
+    const auto at = [&names](const std::string& name) { return std::find(names.begin(), names.end(), name); };
+    BOOST_CHECK(at("near shadow 0") < at("near"));
+    BOOST_CHECK(at("near") < at("grade"));
+    BOOST_CHECK(at("far") < at("grade far"));
+    BOOST_CHECK(at("grade far") != names.end());
     BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_two.png"));
     BOOST_CHECK(headless.silent());
 }
