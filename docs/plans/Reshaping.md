@@ -318,16 +318,34 @@ where the shell lives.
 
 ### Step 7 — The realtime vocabulary
 
-**Open.**
+**Closed.**
 
-- `render::realtime::Engine` folds into its subclass, and both are named for what they are.
-- `vulkan/` holds only the raw wrappers. Targets, renderers and `Textures` move to a level an
-  app names without `vulkan::`.
-- Every renderer takes the device context and a spec struct. `RenderTarget` takes a spec.
-- One streaming component serves `Textures` and `MeshRegistry`, with one failure policy.
-- Release follows one rule. `Buffer::grow` and `DepthBuffer::recreate` either retire through the
-  ring, or the rule states the idle wait.
-- The device tests gain a helper that records a frame and reads back a target.
+- `render::realtime::Engine` is folded into its subclass. The renderer an app holds is
+  `WindowRenderer`, and the context it owns is `WindowContext`. Neither takes the asset manager,
+  which nothing read, so pong and voxel no longer link `v3dlib_asset`.
+- `vulkan/` holds only the wrappers, and includes nothing above it. The renderers are in
+  `renderer/`, and `RenderTarget`, `Recorder`, `Mesh`, `Resources` and `Material` are at the
+  root. An app names `vulkan::` only to build a pipeline or a buffer of its own.
+- **Different from the plan:** the swapchain takes the present modes to try, best first, and
+  reports the one it got. `Present.h` maps a request to that list and back, because the
+  swapchain included it.
+- Every renderer, `Grade` and `RenderTarget` takes `(const DeviceContext&, Spec)` and copies
+  out what it uses. None holds the context, which owns the `Quad`, `Line` and `World` it builds.
+  **Different from the plan:** `RenderTarget` takes the context as well as a spec, so all of
+  them are built one way.
+- `UploadQueue` holds what the worker decoded and uploads it to a byte budget, for `Textures`
+  and `MeshRegistry`. A failed request is logged and frees its path. A texture's handle draws
+  white until it is released, and a mesh's resolves to nothing. A texture used to keep its
+  path, so a file that had failed once read white for good.
+- Every release goes through the ring but the swapchain's, which waits for the device because a
+  present has no fence. `Capture` replaces a readback it outgrows and retires the old one. The
+  context replaces its depth buffer on a new extent and retires the old one. `Buffer::grow` and
+  `DepthBuffer::recreate` are gone.
+- `Headless::draw()` and `picture()` record a frame whose passes name their own targets and
+  read one target back. Twenty-two cases use them. A case that draws into the frame's own image,
+  records several frames, or reads one layer still spells the steps out.
+- Seven new cases. The upload queue's four fail to build without it, and the texture case for a
+  freed path fails. The two release cases fail to build, because `Ring::retiring()` is new.
 
 ### Step 8 — A lit scene
 
