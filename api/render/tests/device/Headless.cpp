@@ -5,16 +5,23 @@
 
 #include "Headless.h"
 
+#include <api/image/Image.h>
+#include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <cstdint>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <boost/filesystem.hpp>
@@ -73,6 +80,43 @@ void Headless::submitAndWait(VkCommandBuffer commands) {
     // submit() has already advanced the ring past the slot this was submitted from, so
     // waitFrame() would wait on a different fence
     context->ring()->waitIdle();
+}
+
+/**
+ **/
+void Headless::draw(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+    render::realtime::vulkan::frame::Capture* capture, Read read) {
+    VkCommandBuffer commands = context->ring()->begin();
+    render::realtime::Recorder::record(commands, frame, render::realtime::Recorder::Target(), *context->resources(),
+        context->frameUniforms().get());
+
+    render::realtime::vulkan::frame::Capture::Source source;
+    source.extent = target.extent();
+    if (read == Read::Depth) {
+        source.image = target.depthImage();
+        source.format = target.depthFormat();
+        source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+        source.depth = true;
+    } else {
+        source.image = target.image();
+        source.format = target.format();
+        source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+    capture->record(commands, source);
+    submitAndWait(commands);
+}
+
+/**
+ **/
+boost::shared_ptr<image::Image> Headless::picture(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+    const std::string& path) {
+    render::realtime::vulkan::frame::Capture capture(device, context->ring(), logger);
+    draw(frame, target, &capture);
+    if (!capture.write(path)) {
+        return boost::shared_ptr<image::Image>();
+    }
+    image::reader::Png png(logger);
+    return png.read(path);
 }
 
 /**

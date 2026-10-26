@@ -8,7 +8,6 @@
 #include <api/ecs/component/Playback.h>
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
-#include <api/image/reader/Png.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/MeshRegistry.h>
@@ -19,7 +18,6 @@
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
-#include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
@@ -50,7 +48,6 @@ using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::entity::Poses;
-using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::Recorder;
 using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::renderer::Lit;
@@ -125,23 +122,6 @@ v3d::type::camera::Camera camera(const glm::vec3& target, float zoom) {
     return camera;
 }
 
-boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkCommandBuffer commands,
-    const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
-    Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
-    if (!capture.write(path)) {
-        return boost::shared_ptr<v3d::image::Image>();
-    }
-    v3d::image::reader::Png png(headless->logger);
-    return png.read(path);
-}
-
 /**
  * The pixel a point in the world lands on.
  **/
@@ -174,10 +154,7 @@ boost::shared_ptr<v3d::image::Image> drawStrips(v3d::test::Headless* headless, c
         v3d::render::realtime::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-    return readBack(headless, commands, target, path);
+    return headless->picture(frame, *target, path);
 }
 
 bool clear(const unsigned char* texel) {
@@ -249,10 +226,7 @@ BOOST_AUTO_TEST_CASE(every_entity_sharing_a_mesh_is_drawn_where_it_stands) {
     drawn->scene(scene);
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, drawn.get());
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_crowd.png");
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *target, "data_out/lit_crowd.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -367,10 +341,7 @@ BOOST_AUTO_TEST_CASE(entities_sharing_a_mesh_are_drawn_in_one_draw_per_part) {
         v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
         *items = pass->items().size();
 
-        VkCommandBuffer commands = headless.context->ring()->begin();
-        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-            headless.context->frameUniforms().get());
-        return readBack(&headless, commands, target, path);
+        return headless.picture(frame, *target, path);
     };
 
     std::size_t sharedItems = 0;
@@ -440,12 +411,12 @@ BOOST_AUTO_TEST_CASE(a_crowd_larger_than_the_object_buffer_draws_every_object) {
         // instance
         BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
-        VkCommandBuffer commands = headless.context->ring()->begin();
-        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-            headless.context->frameUniforms().get());
         if (drawn == 2) {
-            picture = readBack(&headless, commands, target, "data_out/lit_crowd_grown.png");
+            picture = headless.picture(frame, *target, "data_out/lit_crowd_grown.png");
         } else {
+            VkCommandBuffer commands = headless.context->ring()->begin();
+            Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
+                headless.context->frameUniforms().get());
             headless.submit(commands);
         }
     }

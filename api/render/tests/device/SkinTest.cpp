@@ -133,18 +133,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
         v3d::render::realtime::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    headless->draw(frame, *target, &capture);
     if (!capture.write(path)) {
         return boost::shared_ptr<v3d::image::Image>();
     }
@@ -399,18 +389,8 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
     Capture capture(headless.device, headless.context->ring(), headless.logger);
-    Capture::Source source;
-    source.image = map->depthImage();
-    source.extent = map->extent();
-    source.format = map->depthFormat();
-    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    source.depth = true;
-    capture.record(commands, source);
-    headless.submitAndWait(commands);
+    headless.draw(frame, *map, &capture, v3d::test::Headless::Read::Depth);
 
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();

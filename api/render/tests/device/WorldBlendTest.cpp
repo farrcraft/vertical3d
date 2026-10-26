@@ -9,7 +9,6 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/renderer/World.h>
 
@@ -30,7 +29,6 @@
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
 using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::renderer::World;
 
@@ -84,18 +82,8 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
         headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend, tint);
     }
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    headless->draw(frame, *target, &capture);
 
     const std::string path = "data_out/" + name + ".png";
     if (!capture.write(path)) {

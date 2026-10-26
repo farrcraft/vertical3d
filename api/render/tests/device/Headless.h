@@ -5,12 +5,19 @@
 
 #pragma once
 
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
+#include <api/render/realtime/Frame.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
+#include <api/render/realtime/vulkan/frame/Capture.h>
 
 #include <vulkan/vulkan.h>
+
+#include <cstdint>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 
@@ -74,6 +81,41 @@ struct Headless {
      * @param commands a buffer from ring()->begin(), still recording
      **/
     void submit(VkCommandBuffer commands);
+
+    /**
+     * Which image of a render target draw() copies out.
+     **/
+    enum class Read : uint8_t {
+        Colour,  /**< the colour image, which the frame leaves in SHADER_READ_ONLY_OPTIMAL **/
+        Depth    /**< the depth image, which has to be sampled, and is left in DEPTH_READ_ONLY_OPTIMAL **/
+    };
+
+    /**
+     * Record a frame, copy a render target out of it, submit, and wait.
+     *
+     * Every pass of the frame names its own target, because the frame is given no image of
+     * its own. Once this returns, the capture holds what the frame left in the target, for
+     * write(), depth() or checkReference().
+     *
+     * @param frame what to draw, with the context's frame uniforms
+     * @param target one of the targets the frame's passes draw into
+     * @param capture where the copy goes
+     * @param read which of the target's images is copied
+     **/
+    void draw(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+        render::realtime::vulkan::frame::Capture* capture, Read read = Read::Colour);
+
+    /**
+     * draw() a frame, write the target's colour to a png, and read the png back.
+     *
+     * The picture is read from the file, so a case that checks texels by hand reads the same
+     * bytes a reference comparison does, and the file is left for a person to look at.
+     *
+     * @param path where the png is written
+     * @return the picture, or null when the png cannot be written or read
+     **/
+    boost::shared_ptr<image::Image> picture(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+        const std::string& path);
 
     /**
      * @return whether the validation layer was on and reported no errors and no warnings

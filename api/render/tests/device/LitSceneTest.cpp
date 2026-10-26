@@ -83,26 +83,6 @@ entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::
 }
 
 /**
- * Capture a target's colour into a picture and read it back, so a case can look at its texels.
- **/
-boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkCommandBuffer commands,
-    const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
-    Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
-    if (!capture.write(path)) {
-        return boost::shared_ptr<v3d::image::Image>();
-    }
-    v3d::image::reader::Png png(headless->logger);
-    return png.read(path);
-}
-
-/**
  * How the shadow changed a picture: the pixels that are white ground without it and grey with
  * it, and the pixels that changed in any other way. A white surface in shadow drops from the lit
  * band to the mid one, and its edge blends the two, so it stays grey and gets no lighter.
@@ -213,12 +193,12 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
         pass->scene(scene);
         v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
+        if (drawn == frames) {
+            return headless->picture(frame, *target, path);
+        }
         VkCommandBuffer commands = headless->context->ring()->begin();
         Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
             headless->context->frameUniforms().get());
-        if (drawn == frames) {
-            return readBack(headless, commands, target, path);
-        }
         headless->submit(commands);
     }
 }
@@ -285,19 +265,9 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    // the pass names its own target, so the frame is given no image
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
+    // the pass names its own target, so draw() gives the frame no image
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    headless->draw(frame, *target, &capture);
 
     BOOST_CHECK(headless->silent());
     BOOST_REQUIRE(capture.write(path));
@@ -381,19 +351,8 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     // the two that cast share a mesh, so they are one draw of two instances
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-
     Capture capture(headless.device, headless.context->ring(), headless.logger);
-    Capture::Source source;
-    source.image = map->depthImage();
-    source.extent = map->extent();
-    source.format = map->depthFormat();
-    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    source.depth = true;
-    capture.record(commands, source);
-    headless.submitAndWait(commands);
+    headless.draw(frame, *map, &capture, v3d::test::Headless::Read::Depth);
 
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
@@ -507,10 +466,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     v3d::render::realtime::entity::meshes(nearer, 1.0F, meshes, &lit, settings.outline, pass.get());
     v3d::render::realtime::entity::meshes(farther, 1.0F, meshes, &lit, settings.outline, pass.get());
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_unwritten_pass.png");
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *target, "data_out/lit_unwritten_pass.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -724,10 +680,7 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     BOOST_CHECK_EQUAL(ordered[1]->name(), "lit");
     BOOST_CHECK_EQUAL(ordered[2]->name(), "grade");
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, output, "data_out/lit_scene.png");
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *output, "data_out/lit_scene.png");
     grade.release(graded);
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
@@ -790,10 +743,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_parts.png");
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *target, "data_out/lit_parts.png");
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -868,10 +818,7 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
     world.submit(ground, pass.get());
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_world_quads.png");
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *target, "data_out/lit_world_quads.png");
 
     BOOST_CHECK(headless.silent());
     BOOST_REQUIRE(picture);
@@ -930,10 +877,7 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
         pass->scene(lit.scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F)));
         v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
-        VkCommandBuffer commands = headless.context->ring()->begin();
-        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-            headless.context->frameUniforms().get());
-        const boost::shared_ptr<v3d::image::Image> picture = readBack(&headless, commands, target, "data_out/lit_coloured.png");
+        const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *target, "data_out/lit_coloured.png");
         BOOST_REQUIRE(picture);
 
         const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
@@ -1029,10 +973,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
         v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
         world.submit(drops, pass.get(), 0, World::Blend::Additive);
 
-        VkCommandBuffer commands = headless.context->ring()->begin();
-        Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-            headless.context->frameUniforms().get());
-        frames.push_back(readBack(&headless, commands, target, "data_out/rain_" + std::to_string(shot) + ".png"));
+        frames.push_back(headless.picture(frame, *target, "data_out/rain_" + std::to_string(shot) + ".png"));
         BOOST_REQUIRE(frames.back());
     }
     BOOST_CHECK(headless.silent());

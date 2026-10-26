@@ -51,24 +51,6 @@ const uint32_t copyShader[] =
 ;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
 
 /**
- * Record a frame whose every pass names its own target, then copy one target out.
- **/
-void record(v3d::test::Headless* headless, const Frame& frame, const boost::shared_ptr<RenderTarget>& output,
-    Capture* capture) {
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
-    Capture::Source source;
-    source.image = output->image();
-    source.extent = output->extent();
-    source.format = output->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture->record(commands, source);
-    headless->submitAndWait(commands);
-}
-
-/**
  * Every value a channel can take, spread over a square so that red, green and blue all vary
  * independently. A square of 64 by 64 is 4096 texels, and each channel sweeps 0 to 255 along
  * its own axis.
@@ -142,7 +124,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
     headless->context->quads()->submit(canvas, drawn.get());
 
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    record(headless, frame, output, &capture);
+    headless->draw(frame, *output, &capture);
     graded.release(source);
 
     if (!capture.write(path)) {
@@ -256,7 +238,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     headless.context->quads()->submit(canvas, drawn.get());
 
     Capture capture(headless.device, headless.context->ring(), headless.logger);
-    record(&headless, frame, output, &capture);
+    headless.draw(frame, *output, &capture);
     BOOST_CHECK(copy.release(source));
 
     BOOST_CHECK(headless.silent());
@@ -337,7 +319,7 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     copy.reset();
 
     Capture capture(headless.device, headless.context->ring(), headless.logger);
-    record(&headless, frame, output, &capture);
+    headless.draw(frame, *output, &capture);
     BOOST_CHECK(headless.silent());
 
     BOOST_REQUIRE(capture.write("data_out/post_destroyed_after_queueing.png"));

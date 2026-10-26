@@ -18,7 +18,6 @@
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/type/animation/SpriteClip.h>
 #include <api/type/animation/Track.h>
@@ -51,7 +50,6 @@ using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::component::Particles;
 using v3d::render::realtime::component::Sprite;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
 using v3d::render::realtime::RenderTarget;
 using v3d::type::animation::SpriteClip;
 using v3d::type::animation::Track;
@@ -187,17 +185,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->camera(camera.view(), camera.projection());
     headless->context->worldQuads()->submit(canvas, pass.get());
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    headless->draw(frame, *target, &capture);
 
     const std::string path = "data_out/" + name + ".png";
     if (!capture.write(path)) {

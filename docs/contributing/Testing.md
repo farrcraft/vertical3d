@@ -239,6 +239,13 @@ back with `vulkan::frame::Capture`. Every case asserts two things:
   image (see [Reference images](#reference-images)). The rest check chosen pixels or values by
   hand.
 
+A case builds a `v3d::test::Headless` from `device/Headless.h`: an instance, a device and a
+context of its own. For a frame whose every pass names its own target, `draw(frame, target,
+&capture)` records the frame, copies the target's colour or depth into the capture, submits, and
+waits. `picture(frame, target, path)` does the same, writes the colour to a png, and returns it
+read back from the file. A case that draws into the frame's own image, records several frames,
+or copies one layer still records and submits by hand.
+
 Some cases build a pipeline rather than drawing, because only a device can reject a pipeline
 shape that no renderer in the tree uses. One of them reads how much the pipeline cache holds after
 each build. It shows that a pipeline asked for twice is compiled once.

@@ -91,18 +91,8 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     writer->target(slots);
     writer->clearColour(colour);
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
     Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = output->image();
-    source.extent = output->extent();
-    source.format = output->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    headless->draw(frame, *output, &capture);
     return centre(headless, &capture, path);
 }
 
