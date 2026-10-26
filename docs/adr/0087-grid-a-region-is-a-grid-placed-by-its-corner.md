@@ -1,7 +1,8 @@
 # ADR-0087: Grid: a region is a grid placed by its corner
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-16
+**Amended by**: [ADR-0111](0111-grid-a-search-may-span-a-set-of-placed-grids.md)
 **Documented in**: [docs/api/Grid.md](../api/Grid.md)
 
 ## Context

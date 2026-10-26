@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "GridSet.h"
 #include "LineOfSight.h"
 #include "TileCoord.h"
 #include "TileGrid.h"
@@ -49,6 +50,21 @@ class Sight final {
      *        takes them
      **/
     void look(const TileGrid& grid, TileCoord from, const SightBlocker& blocks = {});
+
+    /**
+     * Look at one grid of a set from a world tile, which may lie in another grid of the set.
+     *
+     * What is in sight is traced across the whole set, so a viewer standing by a seam sees into
+     * the grid beside it, and remembers what it saw there. Each grid keeps a Sight of its own,
+     * and each is looked at in turn. Tiles are still asked about, by visible() and
+     * remembered(), in the board's own coordinates.
+     *
+     * A board not in the set has nothing in sight, as blind() leaves it.
+     *
+     * @param from the viewer's world tile
+     * @param blocks asked about world tiles
+     **/
+    void look(const GridSet& grids, const TileGrid& board, TileCoord from, const SightBlocker& blocks = {});
 
     /**
      * Put every tile out of sight, keeping what is remembered, for a board the viewer is not on.

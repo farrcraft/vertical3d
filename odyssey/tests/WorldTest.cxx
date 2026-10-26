@@ -9,6 +9,7 @@
 #include <api/asset/Type.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
+#include <api/grid/Pathfinding.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
@@ -166,22 +167,50 @@ BOOST_AUTO_TEST_CASE(an_approached_region_loads_placed_by_its_corner) {
 }
 
 /**
- * Crossing into the next region puts the one left behind out of sight. What was seen there stays
- * remembered.
+ * Sight crosses the seam between two loaded regions. From the west side of the doorway the
+ * player sees into the east region, and from just past it back into the west. A tile that falls
+ * out of range stays remembered.
  **/
-BOOST_AUTO_TEST_CASE(crossing_a_seam_puts_the_old_region_out_of_sight) {
+BOOST_AUTO_TEST_CASE(sight_crosses_a_seam_and_remembers_what_falls_behind) {
     Fixture fixture("world_cross");
     BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
     fixture.world->stream(at(5, 1));
     BOOST_REQUIRE(fixture.drain());
+    BOOST_REQUIRE(fixture.world->loaded(1));
 
     fixture.world->look(at(5, 1));
     BOOST_CHECK(fixture.world->sight(0).visible(at(4, 1)));
+    // east (2, 1), world (8, 1), down the open row through the doorway
+    BOOST_CHECK(fixture.world->sight(1).visible(at(2, 1)));
 
     fixture.world->look(at(6, 1));
-    BOOST_CHECK(!fixture.world->sight(0).visible(at(4, 1)));
-    BOOST_CHECK(fixture.world->sight(0).remembered(at(4, 1)));
+    BOOST_CHECK(fixture.world->sight(0).visible(at(4, 1)));
     BOOST_CHECK(fixture.world->sight(1).visible(at(0, 1)));
+
+    // world (2, 1) is eight tiles from world (10, 2), past the range of seven
+    fixture.world->look(at(10, 2));
+    BOOST_CHECK(!fixture.world->sight(0).visible(at(2, 1)));
+    BOOST_CHECK(fixture.world->sight(0).remembered(at(2, 1)));
+}
+
+/**
+ * A route over the loaded regions goes through the doorway into the next region. While that
+ * region is not loaded it is a wall, and a route into it is not found.
+ **/
+BOOST_AUTO_TEST_CASE(a_route_crosses_into_a_loaded_region_only) {
+    Fixture fixture("world_route");
+    BOOST_REQUIRE(fixture.world->load(document(twoRegions)));
+    BOOST_REQUIRE(!fixture.world->loaded(1));
+    BOOST_CHECK(v3d::grid::findPath(fixture.world->grids(), at(2, 1), at(9, 1)).empty());
+
+    fixture.world->stream(at(5, 1));
+    BOOST_REQUIRE(fixture.drain());
+    BOOST_REQUIRE(fixture.world->loaded(1));
+    const std::vector<TileCoord> route = v3d::grid::findPath(fixture.world->grids(), at(2, 1), at(9, 1));
+    BOOST_REQUIRE(!route.empty());
+    BOOST_CHECK(route.front() == at(2, 1));
+    BOOST_CHECK(route.back() == at(9, 1));
+    BOOST_CHECK(std::ranges::find(route, at(6, 1)) != route.end());
 }
 
 /**

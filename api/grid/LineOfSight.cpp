@@ -5,6 +5,8 @@
 
 #include "LineOfSight.h"
 
+#include "GridSet.h"
+
 #include "TileCoord.h"
 #include "TileGrid.h"
 
@@ -98,7 +100,11 @@ void trace(TileCoord from, TileCoord to, OnStep onStep) {
 };  // namespace
 
 bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const SightBlocker& blocks) {
-    if (!grid.contains(from) || !grid.contains(to)) {
+    return hasLineOfSight(GridSet::local(grid), from, to, blocks);
+}
+
+bool hasLineOfSight(const GridSet& grids, TileCoord from, TileCoord to, const SightBlocker& blocks) {
+    if (!grids.contains(from) || !grids.contains(to)) {
         return false;
     }
 
@@ -108,8 +114,9 @@ bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const Si
         std::swap(from, to);
     }
 
-    const auto blocked = [&grid, &blocks](TileCoord tile) {
-        return grid.cover(tile) == Cover::Full || (blocks && blocks(tile));
+    // a tile in no grid blocks, which the line between two tiles of one grid never meets
+    const auto blocked = [&grids, &blocks](TileCoord tile) {
+        return grids.opaque(tile) || (blocks && blocks(tile));
     };
 
     bool clear = true;

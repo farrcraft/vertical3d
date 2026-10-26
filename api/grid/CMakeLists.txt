@@ -7,6 +7,7 @@ v3d_add_api_library(grid
 "Pathfinding.h" "Pathfinding.cpp"
 "LineOfSight.h" "LineOfSight.cpp"
 "Sight.h" "Sight.cpp"
+"GridSet.h" "GridSet.cpp"
 "Overlay.h" "Overlay.cpp"
 "Picture.h" "Picture.cpp"
 "Terrain.h"

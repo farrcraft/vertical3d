@@ -8,6 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
+#include <api/grid/GridSet.h>
 #include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
@@ -136,6 +137,13 @@ class World final {
     bool passable(v3d::grid::TileCoord tile) const;
 
     /**
+     * Every loaded region's grid, as one board in world tiles, for a route or a line of sight
+     * that crosses a seam. A region that is not loaded is a wall to it. It names the maps loaded
+     * now, so it is built again for each search rather than kept.
+     **/
+    v3d::grid::GridSet grids() const;
+
+    /**
      * @return the least x and y, and one past the greatest, of every region's world tiles
      **/
     v3d::grid::TileCoord min() const noexcept;
@@ -150,8 +158,9 @@ class World final {
     void stream(v3d::grid::TileCoord player);
 
     /**
-     * Look from where the player stands, within the region it stands in. Every other region is
-     * out of sight, and keeps only what it remembers.
+     * Look from where the player stands, across every loaded region, so the player sees past a
+     * seam into the region beside it. A region that is not loaded is out of sight, and keeps
+     * only what it remembers.
      **/
     void look(v3d::grid::TileCoord player);
 

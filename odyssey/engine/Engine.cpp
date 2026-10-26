@@ -10,9 +10,8 @@
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/event/kind/MouseMotion.h>
-#include <api/grid/TileCoord.h>
 #include <api/grid/Pathfinding.h>
-#include <api/grid/TileGrid.h>
+#include <api/grid/TileCoord.h>
 #include <odyssey/render/Renderer.h>
 #include <odyssey/system/Movement.h>
 #include <odyssey/tile/World.h>
@@ -23,7 +22,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -105,16 +103,11 @@ void Engine::walkToCursor() {
     const v3d::grid::TileCoord goal{
         view.x + (static_cast<int>(cursor_.x) / unit::tile_width),
         view.y + (static_cast<int>(cursor_.y) / unit::tile_height)};
-    // a route stays within the region the player stands in
-    const std::optional<std::size_t> region = world_->regionAt(from);
-    if (!region || world_->regionAt(goal) != region || !world_->passable(goal)) {
+    // a route crosses every loaded region, and stops at one that is not loaded
+    if (!world_->passable(goal)) {
         return;
     }
-    const v3d::grid::TileGrid& grid = *world_->map(*region)->grid();
-    std::vector<v3d::grid::TileCoord> route = v3d::grid::findPath(grid, world_->local(*region, from), world_->local(*region, goal));
-    for (v3d::grid::TileCoord& tile : route) {
-        tile = world_->world(*region, tile);
-    }
+    std::vector<v3d::grid::TileCoord> route = v3d::grid::findPath(world_->grids(), from, goal);
     odyssey::engine::Path& path = registry().get<odyssey::engine::Path>(player_->entity());
     path.tiles = std::move(route);
     // the first tile findPath returns is the one the player stands on, so the next is index 1

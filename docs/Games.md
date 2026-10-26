@@ -203,7 +203,7 @@ written yet. Sources are in `odyssey/`.
 | Input | Command | Effect |
 |---|---|---|
 | W, A, S, D | `odyssey::moveForward`, `moveLeft`, `moveBackward`, `moveRight` | Step one tile; also stops a walk in progress |
-| Left click | `odyssey::use` | Walk to the clicked tile along the shortest path, within the region the player stands in |
+| Left click | `odyssey::use` | Walk to the clicked tile along the shortest path, across every loaded region |
 | Escape | `ui::quit` | Quit |
 
 A walk moves one tile every 0.15 seconds.
@@ -228,9 +228,9 @@ A walk moves one tile every 0.15 seconds.
   player comes within 4 tiles of it, and released once the player is more than 10 tiles from it.
   A region whose map cannot be read is asked for again only after the player has gone away.
 - A step from one region's edge onto the next region's first tile crosses between them, once the
-  next one is loaded. A clicked route and the player's sight stay within the region the player
-  stands in. The next region is dark until the player crosses into it, and the region left behind
-  is drawn from memory.
+  next one is loaded. A clicked route and the player's sight cross every loaded region, so the
+  player walks and sees through the doorway into the next one. A region that is not loaded is a
+  wall to both, and what falls out of sight is drawn from memory.
 - The screen shows 20 × 12 tiles and scrolls to keep the player near its middle, inside the
   world's edges.
 
@@ -266,8 +266,8 @@ sight.
 **What odyssey is the reference for:**
 
 - **`api/grid`.** Each region's map is parsed with `grid::fromPicture` into a `grid::TileGrid`
-  placed by its corner. A click is routed with `grid::findPath`, and `grid::Sight` remembers
-  what the player has seen. The tile kinds and the file formats are odyssey's own;
+  placed by its corner. A click is routed with `grid::findPath` over a `grid::GridSet` of the
+  loaded regions, and `grid::Sight` remembers what the player has seen. The tile kinds and the file formats are odyssey's own;
   the grid stores only passability and cover. See [api/Grid.md](api/Grid.md).
 - **Regions loaded while the game runs.** `tile::World` reads a region on an `asset::Worker` and
   hands it over in `tick()`. See [api/Assets.md](api/Assets.md#loading-on-a-worker-thread).

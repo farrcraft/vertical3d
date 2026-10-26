@@ -9,6 +9,7 @@
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
 #include <api/asset/kind/Json.h>
+#include <api/grid/GridSet.h>
 #include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
@@ -245,6 +246,19 @@ bool World::passable(v3d::grid::TileCoord tile) const {
 
 /**
  **/
+v3d::grid::GridSet World::grids() const {
+    v3d::grid::GridSet set;
+    for (const Region& region : *regions_) {
+        if (region.map) {
+            // the regions are placed whole tiles apart and never overlap, which load() checks
+            set.add(*region.map->grid());
+        }
+    }
+    return set;
+}
+
+/**
+ **/
 v3d::grid::TileCoord World::min() const noexcept {
     return min_;
 }
@@ -368,17 +382,14 @@ void World::release(std::size_t index) {
 /**
  **/
 void World::look(v3d::grid::TileCoord player) {
-    const std::optional<std::size_t> region = regionAt(player);
-    for (std::size_t index = 0; index < regions_->size(); index++) {
-        if (index != region) {
-            (*regions_)[index].sight.blind();
+    const v3d::grid::GridSet set = grids();
+    for (Region& region : *regions_) {
+        if (region.map) {
+            region.sight.look(set, *region.map->grid(), player);
+        } else {
+            region.sight.blind();
         }
     }
-    if (!region || !(*regions_)[*region].map) {
-        return;
-    }
-    Region& here = (*regions_)[*region];
-    here.sight.look(*here.map->grid(), local(*region, player));
 }
 
 };  // namespace odyssey::tile

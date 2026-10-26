@@ -7,7 +7,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 
+#include "GridSet.h"
 #include "LineOfSight.h"
 #include "TileCoord.h"
 #include "TileGrid.h"
@@ -22,29 +24,36 @@ int Sight::range() const noexcept {
 }
 
 void Sight::look(const TileGrid& grid, TileCoord from, const SightBlocker& blocks) {
-    if (width_ != grid.width() || height_ != grid.height()) {
+    look(GridSet::local(grid), grid, from, blocks);
+}
+
+void Sight::look(const GridSet& grids, const TileGrid& board, TileCoord from, const SightBlocker& blocks) {
+    if (width_ != board.width() || height_ != board.height()) {
         // a board of another size is a different board, so its memory starts empty
-        width_ = grid.width();
-        height_ = grid.height();
+        width_ = board.width();
+        height_ = board.height();
         const std::size_t tiles = static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_);
         visible_.assign(tiles, 0);
         remembered_.assign(tiles, 0);
     }
 
     std::ranges::fill(visible_, 0);
-    // trace only the square of tiles within range. A tile outside it is out of sight, and the
-    // square is exactly the set of tiles within range Chebyshev steps
-    const int minX = std::max(from.x - range_, 0);
-    const int minY = std::max(from.y - range_, 0);
-    const int maxX = std::min(from.x + range_, width_ - 1);
-    const int maxY = std::min(from.y + range_, height_ - 1);
+    const std::optional<TileCoord> origin = grids.origin(board);
+    if (!origin) {
+        return;
+    }
+    // trace only the board's tiles within range. A tile outside the square is out of sight, and
+    // the square is exactly the set of tiles within range Chebyshev steps
+    const int minX = std::max(from.x - range_, origin->x);
+    const int minY = std::max(from.y - range_, origin->y);
+    const int maxX = std::min(from.x + range_, origin->x + width_ - 1);
+    const int maxY = std::min(from.y + range_, origin->y + height_ - 1);
     for (int y = minY; y <= maxY; y++) {
         for (int x = minX; x <= maxX; x++) {
-            const TileCoord tile{x, y};
-            if (!hasLineOfSight(grid, from, tile, blocks)) {
+            if (!hasLineOfSight(grids, from, TileCoord{x, y}, blocks)) {
                 continue;
             }
-            const std::size_t at = index(tile);
+            const std::size_t at = index(TileCoord{x - origin->x, y - origin->y});
             visible_[at] = 1;
             remembered_[at] = 1;
         }

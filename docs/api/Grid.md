@@ -77,10 +77,46 @@ a grid read from a picture the same way. A point on the seam belongs to the high
 the first column or row of the grid beyond it. The grid before the seam puts the point just off
 its board.
 
-Pathfinding, line of sight and the overlay each work within one grid. A route or a line that
-crosses regions is the game's to join. Two grids placed so that they overlap are not detected.
+Two grids placed so that they overlap are not detected by the grids themselves. A `GridSet`
+refuses them.
 
-Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md)
+### Searching across regions
+
+`GridSet` ([api/grid/GridSet.h](../../api/grid/GridSet.h)) is the grids a game has loaded, which
+a search treats as one board in world tiles. `findPath`, `reachableTiles`, `DistanceField` and
+`hasLineOfSight` each take one in place of a grid.
+
+```cpp
+v3d::grid::GridSet loaded;
+for (const TileGrid& region : regionsLoadedNow) {
+    loaded.add(region);   // throws std::invalid_argument with refusal()'s reason
+}
+std::vector<TileCoord> route = v3d::grid::findPath(loaded, playerTile, goalTile);
+```
+
+- **World tile (x, y) is the tile whose minimum corner is at world X = x * tileSize,
+  Z = y * tileSize.** `origin(grid)` is the world tile a grid's tile (0, 0) is, and the filter
+  and the blocker are asked about world tiles.
+- **A tile in no grid of the set is impassable and blocks sight.** A region that is not loaded
+  is a wall: a route never plans through it and sight never sees into it. A route found over
+  what is loaded therefore stays valid when another region arrives.
+- **The rules are one grid's.** A diagonal step between two blocked tiles is refused when they
+  lie in different grids, sight is symmetric across a seam, and a route may leave a region and
+  come back into it, which two routes joined at the seam cannot find.
+- **A grid joins only when it fits.** `refusal(grid)` says why one cannot: a tile size other than
+  the set's, a corner that is not a whole number of tiles from the world's origin, or a tile a
+  grid already in the set holds.
+- **A set holds references.** Build it from what is loaded when a search is made, and do not keep
+  it past a release. A `DistanceField` keeps where the grids lie and reads none of them after it
+  is built, so it may outlive them.
+- `GridSet::local(grid)` is one grid in its own coordinates. Every search over one grid runs as a
+  search over that set, so the two give the same route, tie for tie.
+- `Sight::look(set, board, from)` looks at one grid of a set from a world tile. Each region keeps
+  its own `Sight`, and each is looked at in turn, so a viewer by a seam sees into the region beside
+  it and remembers what it saw.
+
+Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md),
+[ADR-0111](../adr/0111-grid-a-search-may-span-a-set-of-placed-grids.md)
 
 ## Movement
 
@@ -237,7 +273,8 @@ odyssey is the app that uses this library:
   `tile::Kind` decides passability and cover.
 - A region is loaded on a worker as the player approaches it and released once the player is
   far away. A step crosses the seam between two loaded regions.
-- A click routes the player with `findPath()`.
+- A click routes the player with `findPath()` over a `GridSet` of the loaded regions, so a route
+  goes through the doorway into the next region. Sight is traced across the same set.
 - Each region keeps a `Sight`, which outlives the region's map, so a region released and loaded
   again is remembered as it was.
 - The map format and how far the player sees are odyssey's own.

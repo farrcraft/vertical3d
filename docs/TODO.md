@@ -34,22 +34,6 @@ and its section names the plan or roadmap that orders it.
 
 Background: [OfflineRenderingPhases4To6](plans/completed/OfflineRenderingPhases4To6.md#step-17--held-area-lights-displacement-and-acceleration).
 
-## Tile grids
-
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 8.
-
-`api/grid` is a library of its own, and odyssey uses it. The grid owns a map's picture and
-terrain legend; the rest of a map belongs to the game. [Grid.md](api/Grid.md) describes the
-library.
-
-[] **A route and sight stop at a region's edge.**
-
-- A region is a grid placed by its corner, and [Grid.md](api/Grid.md#regions) states the rules.
-  odyssey loads its regions as the player approaches and crosses between them by stepping.
-- `findPath` and `hasLineOfSight` each take one grid, so odyssey's clicked routes and its sight
-  stay within the region the player stands in. The next region is dark until the player crosses.
-- Joining them needs a search over several grids, or a game that stitches one together.
-
 ## Lit scenes
 
 [ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.
