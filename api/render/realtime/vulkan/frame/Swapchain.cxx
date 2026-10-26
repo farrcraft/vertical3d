@@ -191,6 +191,7 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
 
 /**
  **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - offered, then wanted, as the header says
 VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes, const std::vector<VkPresentModeKHR>& wanted) {
     for (const VkPresentModeKHR mode : wanted) {
         if (std::find(modes.begin(), modes.end(), mode) != modes.end()) {

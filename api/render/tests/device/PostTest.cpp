@@ -94,6 +94,7 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
  * @param outputFormat what the grade draws into
  **/
 boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const boost::shared_ptr<v3d::image::Image>& strip,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the scene's format, then the output's
     const std::vector<unsigned char>& texels, uint32_t size, const std::string& path, VkFormat sceneFormat = colourFormat,
     VkFormat outputFormat = colourFormat) {
     const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless->context,

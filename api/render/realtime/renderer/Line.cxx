@@ -12,13 +12,10 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/Resources.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
 
 #include <cstddef>

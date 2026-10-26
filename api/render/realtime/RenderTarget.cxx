@@ -6,7 +6,6 @@
 #include "RenderTarget.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
