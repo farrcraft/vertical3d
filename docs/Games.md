@@ -1,9 +1,9 @@
 # The games and tools
 
 This document is for someone working on the four games (pong, tetris, voxel and odyssey) or
-learning the api from them. It also covers the two small command-line programs, imagetool and
-v3dshell. Each section says how to run the program, what its controls and data files are, and
-which api features it is the best example of.
+learning the api from them. It also covers imagetool, a small command-line program. Each
+section says how to run the program, what its controls and data files are, and which api
+features it is the best example of.
 
 - [Running a game](#running-a-game)
 - [Pong](#pong)
@@ -11,7 +11,6 @@ which api features it is the best example of.
 - [Voxel](#voxel)
 - [Odyssey](#odyssey)
 - [imagetool](#imagetool)
-- [v3dshell](#v3dshell)
 
 The editor in `vertical3d/` has its own document, [editor/](editor/README.md). The offline renderer
 `moya` is covered in [offline/](offline/README.md).
@@ -318,8 +317,3 @@ match the files they came from.
 **An unpack writes one png for each sprite**, to `<sheet>/<sprite>.png` beside the document.
 The sheet's image is read from beside the document, and has to be the size the sheet states. A
 sheet or sprite name with a directory in it is refused.
-
-## v3dshell
-
-An empty program: `main` returns success and does nothing. It is a placeholder for a future
-command shell for Vertical3D.

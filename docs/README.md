@@ -51,7 +51,7 @@ For anyone working inside a library rather than using it.
 | Document | Covers |
 |---|---|
 | [editor/](editor/README.md) | The `vertical3d` editor and `api/brep` |
-| [Games.md](Games.md) | pong, tetris, voxel and odyssey, plus imagetool and v3dshell |
+| [Games.md](Games.md) | pong, tetris, voxel and odyssey, plus imagetool |
 
 ## The project record
 

@@ -49,7 +49,6 @@ Each application is a top-level directory and builds with the libraries.
 | **odyssey** | A tile-based roguelike in early development: a tile map, routes and line of sight, and a player sprite |
 | **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
 | **imagetool** | A command-line tool for images. It reads an image, prints its size and bit depth with `--info`, cuts out a rectangle with `--crop x,y,width,height`, and writes the result with `--outfile` |
-| **v3dshell** | A placeholder for a command shell. Its `main` is empty |
 
 [examples/](examples/) is separate: each example is its own CMake project that uses the
 libraries the way an app in another repository would.

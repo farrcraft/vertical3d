@@ -72,6 +72,9 @@ These have no automated test:
   audio subsystem to start, and fails on a machine where it cannot.
 - The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
   tested with an upload that returns a handle and draws nothing.
+- The FMOD event backend, in CI. Its cases in `FmodEventsTest.cpp` build only when
+  `V3D_FMOD_ROOT` names an FMOD install, and CI has none: FMOD cannot be redistributed, and its
+  download needs an account. They run on a machine where FMOD is installed.
 
 `Engine::eventLoop()` renders, so a test cannot drive it. The order in which an event reaches the
 app, the bindings and the engine is in `Engine::route()`, which a test calls directly with no

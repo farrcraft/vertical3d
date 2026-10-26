@@ -28,6 +28,13 @@ scale by each caster's transform instead.
 
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
+## Offline rendering
+
+[] **A shader's traced rays include the hits that did not trace.** `trace()` casts one ray for
+every hit of a run, whatever branch each hit took, because a shader callback is given no mask of
+the hits that reached it. The rays of the hits that did not call `trace()` are cast and thrown
+away. The callback needs the run's active hits, so it casts rays for those alone.
+
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
@@ -57,7 +64,7 @@ around `start()` and `stop()`.
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
-[EditorScene](plans/EditorScene.md) orders every group here.
+[EditorScene](plans/EditorScene.md) orders the importers and the curve and handle masks.
 
 6 of the menu's 83 commands have no handler, and only log themselves when chosen. Each group
 below is a piece of work of its own, in any order.
@@ -87,6 +94,11 @@ finishes would let `Delegate` hand over pictures as they improve.
 [] **A live render starts again from nothing.** An edit restarts the whole render, because moya
 reads a scene once. Taking edits into a running render needs moya to keep its scene and update
 it, which the editor's interface already sends.
+
+[] **A console.** Nothing drives the editor but its menus and bindings. A console panel, and a
+headless mode that runs a script against a project, would call the same operations they do.
+Each command needs typed arguments and has to name what it acts on, which the document layer in
+[Reshaping](plans/Reshaping.md) step 13 builds.
 
 [] **A batch renders one frame at a time.** Its frames are independent files, and could run as
 several moya.exe processes at once.

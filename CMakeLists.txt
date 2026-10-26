@@ -143,7 +143,6 @@ add_subdirectory("api")
 
 if(V3D_BUILD_APPS)
 	add_subdirectory("moya")
-	add_subdirectory("v3dshell")
 	add_subdirectory("pong")
 	add_subdirectory("tetris")
 	add_subdirectory("voxel")

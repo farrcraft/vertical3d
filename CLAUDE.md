@@ -8,7 +8,7 @@ before working on it.
 
 A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named
 `v3dlib_*`, one per subdirectory) plus the apps that consume them at the top level — pong,
-tetris, voxel, odyssey, vertical3d, moya, imagetool, v3dshell. Every one of those
+tetris, voxel, odyssey, vertical3d, moya, imagetool. Every one of those
 directories builds with the tree. [examples/](examples/) is the exception: it consumes the
 repository rather than being part of it.
 
