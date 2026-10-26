@@ -29,6 +29,10 @@
 #include <glm/vec4.hpp>
 
 
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
 namespace v3d::render::realtime::renderer {
 
 /**
@@ -97,24 +101,34 @@ class Lit final {
     };
 
     /**
-     * @param textures whose layout set 1 is, and whose white texture stands in for a
-     *        shadow map until a scene names one
-     * @param colour the format of what the cel pass draws into, which must be an sRGB one
-     * @param depth the format of that pass's depth
-     * @param shadow the depth format of the target a shadow pass draws into, or
-     *        VK_FORMAT_UNDEFINED for a scene that casts no shadow and builds no shadow pipeline
-     * @param front the winding of a face that faces the camera, as it lands on screen. Clockwise
-     *        is right for a camera on type::camera::Profile::Hand::UpCrossDirection, and
-     *        counter clockwise for one on DirectionCrossUp, which mirrors the image. The cel,
-     *        outline and shadow pipelines all cull by it, so the light's matrix is built in the
-     *        camera's hand too: see lighting::shadowLight.
+     * What the lit pipelines are built against.
+     **/
+    struct Spec final {
+        VkFormat colour = VK_FORMAT_UNDEFINED;  /**< what the cel pass draws into, which must be an sRGB format **/
+        VkFormat depth = VK_FORMAT_UNDEFINED;   /**< the format of that pass's depth **/
+        /**
+         * The depth format of the target a shadow pass draws into, or VK_FORMAT_UNDEFINED for
+         * a scene that casts no shadow and builds no shadow pipeline.
+         **/
+        VkFormat shadow = VK_FORMAT_UNDEFINED;
+        Shaders shaders = Shaders::embedded();
+        /**
+         * The winding of a face that faces the camera, as it lands on screen. Clockwise is
+         * right for a camera on type::camera::Profile::Hand::UpCrossDirection, and counter
+         * clockwise for one on DirectionCrossUp, which mirrors the image. The cel, outline and
+         * shadow pipelines all cull by it, so the light's matrix is built in the camera's hand
+         * too: see lighting::shadowLight.
+         **/
+        VkFrontFace front = VK_FRONT_FACE_CLOCKWISE;
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
+     *        the meshes are drawn through. Set 1 is the textures' layout, and their white
+     *        texture stands in for a shadow map until a scene names one
      * @throw std::runtime_error if a pipeline or the scene layout cannot be created
      **/
-    Lit(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
-        const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-        const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
-        VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders = Shaders::embedded(),
-        VkFrontFace front = VK_FRONT_FACE_CLOCKWISE);
+    Lit(const DeviceContext& context, const Spec& spec);
 
     Lit(const Lit&) = delete;
     Lit& operator=(const Lit&) = delete;

@@ -72,8 +72,8 @@ canvas::World::Corners rect(float minX, float maxX) {
  **/
 boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const canvas::World& canvas,
     World::Blend blend, const std::string& name, const std::vector<glm::vec4>& tints = {glm::vec4(1.0F)}) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, headless->context->ring(), width, height, colourFormat, false);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = false});
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("world");

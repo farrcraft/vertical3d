@@ -7,8 +7,10 @@
 
 #include "Clip.h"
 
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -18,7 +20,6 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -53,17 +54,14 @@ const VkDeviceSize initialVertexBytes = 64ULL * 1024;
 
 /**
  **/
-Line::Line(const boost::shared_ptr<vulkan::device::Device>& device,
-    const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
-    const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
-    VkFormat colour, VkFormat depth) :
-    device_(device),
-    cache_(cache),
-    resources_(resources),
-    ring_(ring),
-    uniforms_(uniforms) {
+Line::Line(const DeviceContext& context, const Spec& spec) :
+    device_(context.device()),
+    cache_(context.pipelineCache()),
+    resources_(context.resources()),
+    ring_(context.ring()),
+    uniforms_(context.frameUniforms()) {
     stream_ = boost::make_shared<vulkan::frame::StreamRing>(device_, ring_, vulkan::frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = 0});
-    createPipelines({.colour = colour, .depth = depth});
+    createPipelines({.colour = spec.colour, .depth = spec.depth});
 }
 
 /**

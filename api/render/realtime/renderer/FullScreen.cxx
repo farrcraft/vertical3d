@@ -5,17 +5,18 @@
 
 #include "FullScreen.h"
 
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Material.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/Material.h>
-#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <cstdint>
@@ -47,11 +48,9 @@ const uint32_t setsPerPool = 8;
 
 /**
  **/
-FullScreen::FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
-    const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-    const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const Spec& spec) :
-    device_(device),
-    resources_(resources),
+FullScreen::FullScreen(const DeviceContext& context, const Spec& spec) :
+    device_(context.device()),
+    resources_(context.resources()),
     count_(spec.sources) {
     if (count_ == 0) {
         std::stringstream msg;
@@ -66,7 +65,7 @@ FullScreen::FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, 
         bindings[binding].descriptorCount = 1;
         bindings[binding].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     }
-    sources_ = boost::make_shared<vulkan::pipeline::DescriptorPool>(device_, ring, bindings, setsPerPool, spec.name);
+    sources_ = boost::make_shared<vulkan::pipeline::DescriptorPool>(device_, context.ring(), bindings, setsPerPool, spec.name);
 
     vulkan::pipeline::Builder builder(device_);
     builder.name(spec.name)
@@ -76,11 +75,11 @@ FullScreen::FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, 
         .depth(false, false)
         // every pixel is written once, from what is read, so nothing under it needs blending
         .blend(false)
-        .set(uniforms->layout())
+        .set(context.frameUniforms()->layout())
         .set(sources_->layout())
         .colourFormat(spec.colour)
         .depthFormat(spec.depth);
-    pipeline_ = resources_->add(builder.build(cache));
+    pipeline_ = resources_->add(builder.build(context.pipelineCache()));
 }
 
 /**

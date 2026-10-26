@@ -92,8 +92,8 @@ glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::ShadedPass* shaded,
     using v3d::render::realtime::Recorder;
     using v3d::render::realtime::RenderTarget;
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, headless->context->ring(), size, size, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat, .depth = true});
     const v3d::type::camera::Camera view = camera();
 
     v3d::render::realtime::Frame frame;

@@ -96,20 +96,22 @@ A pass draws into the window unless it names a `RenderTarget`. A render target
 is an offscreen image that a later pass can sample.
 
 ```cpp
-using RenderTarget;
+using v3d::render::realtime::RenderTarget;
 auto context = renderer_->context();
 
 // colour and depth, the size of a scene view
-auto scene = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    width, height, VK_FORMAT_R8G8B8A8_SRGB, /* depth */ true);
+auto scene = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
 
 // depth only, sampled later: a shadow map
-auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    2048, 2048, VK_FORMAT_UNDEFINED, /* depth */ true, /* sampledDepth */ true);
+auto map = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = 2048, .height = 2048, .colour = VK_FORMAT_UNDEFINED, .depth = true,
+        .sampledDepth = true});
 ```
 
-The constructor is `RenderTarget(device, ring, width, height, colour, depth = false,
-sampledDepth = false, images = 1, layers = 1)`.
+The constructor is `RenderTarget(context, spec)`. A `Spec` names the width and height, the
+colour format, whether there is depth and whether it is sampled, how many images, and how many
+layers. A target needs a size, and a colour format or sampled depth.
 
 - **Size and format are yours.** A target does not follow the window. An app that wants one the
   window's size calls `recreate(width, height)` when `beginFrame()` reports a new size.

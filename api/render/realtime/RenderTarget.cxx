@@ -5,6 +5,7 @@
 
 #include "RenderTarget.h"
 
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -95,26 +96,24 @@ void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, V
 
 /**
  **/
-RenderTarget::RenderTarget(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the order the header gives callers
-    uint32_t width, uint32_t height, VkFormat colour, bool depth, bool sampledDepth, uint32_t images, uint32_t layers) :
-    device_(device),
-    ring_(ring),
-    format_(colour),
-    images_(images),
-    layers_(layers),
+RenderTarget::RenderTarget(const DeviceContext& context, const Spec& spec) :
+    device_(context.device()),
+    ring_(context.ring()),
+    format_(spec.colour),
+    images_(spec.images),
+    layers_(spec.layers),
     extent_(),
-    wantsDepth_(depth),
-    sampledDepth_(sampledDepth) {
+    wantsDepth_(spec.depth),
+    sampledDepth_(spec.sampledDepth) {
     // a slot is chosen by the Ring's frame(), so any other count would make previous() a frame
     // that is not the one before
     if (images_ != 1 && images_ != ring_->framesInFlight()) {
         throw std::runtime_error("A vulkan render target holds one image or one per frame in flight");
     }
-    if (layers_ == 0 || (layers_ > 1 && (colour != VK_FORMAT_UNDEFINED || !depth || !sampledDepth))) {
+    if (layers_ == 0 || (layers_ > 1 && (format_ != VK_FORMAT_UNDEFINED || !wantsDepth_ || !sampledDepth_))) {
         throw std::runtime_error("A vulkan render target of more than one layer holds sampled depth and no colour");
     }
-    create(width, height);
+    create(spec.width, spec.height);
 }
 
 /**

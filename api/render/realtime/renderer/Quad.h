@@ -36,6 +36,7 @@ class Image;
 };  // namespace v3d::image
 
 namespace v3d::render::realtime {
+class DeviceContext;
 class RenderTarget;
 };  // namespace v3d::render::realtime
 
@@ -62,21 +63,24 @@ namespace v3d::render::realtime::renderer {
 class Quad final {
  public:
     /**
-     * @param device the device to build the pipeline and buffers on
-     * @param cache the pipeline cache every pipeline is compiled against
-     * @param resources where the pipeline, textures and materials are registered
-     * @param ring which frame in flight is being recorded, and when its buffers are free
-     * @param uniforms set 0, whose layout the quad pipelines declare so that a pass can
-     *        bind one camera across them and every other pipeline in the engine
-     * @param colour the format of the image the pass draws into, which dynamic rendering
-     *        needs at pipeline creation because there is no render pass to take it from
-     * @param depth the format of the depth image, for the second of the two pipelines
+     * What the quad pipelines are built against.
+     **/
+    struct Spec final {
+        /**
+         * The format of the image the pass draws into, which dynamic rendering needs at
+         * pipeline creation because there is no render pass to take it from.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        VkFormat depth = VK_FORMAT_UNDEFINED;  /**< the depth format, for the second of the two pipelines **/
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
+     *        the quads are built on and drawn through. Set 0's layout is declared so that a
+     *        pass can bind one camera across the quads and every other pipeline
      * @throw std::runtime_error if the pipelines or their resources cannot be created
      **/
-    Quad(const boost::shared_ptr<vulkan::device::Device>& device,
-        const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
-        const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
-        const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
+    Quad(const DeviceContext& context, const Spec& spec);
 
     /**
      **/

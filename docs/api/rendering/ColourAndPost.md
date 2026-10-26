@@ -14,7 +14,7 @@ spec.name = "vignette";
 spec.fragment = vignetteSpirv;                // reads uv at location 0
 spec.sources = 1;                             // images bound at set 1, bindings 0 upwards
 spec.colour = swapchainFormat;                // what the pass draws into
-renderer::FullScreen post(device, cache, resources, ring, uniforms, spec);
+renderer::FullScreen post(*context, spec);
 
 MaterialHandle source = post.source({sceneTexture});   // once, and again after a resize
 colour->reads(scene);
@@ -34,8 +34,8 @@ post.submit(source, colour.get());
 table.
 
 ```cpp
-Grade grade(logger(), context, swapchainFormat, VK_FORMAT_UNDEFINED, strip);   // once
-MaterialHandle source = grade.source(*scene);                                  // again after a resize
+Grade grade(*context, {.colour = swapchainFormat, .strip = strip});   // once
+MaterialHandle source = grade.source(*scene);                         // again after a resize
 
 colour->reads(scene);
 grade.submit(source, colour.get());

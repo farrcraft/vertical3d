@@ -88,8 +88,8 @@ bool drain(Worker* worker) {
  * texel at its centre as RGBA.
  **/
 std::vector<unsigned char> drawn(v3d::test::Headless* headless, const TextureHandle& texture, const std::string& path) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));

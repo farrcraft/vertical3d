@@ -21,6 +21,8 @@
 
 namespace v3d::render::realtime {
 
+class DeviceContext;
+
 /**
  * An image a pass draws into that is not the swapchain's, and that a later pass samples.
  *
@@ -54,31 +56,46 @@ namespace v3d::render::realtime {
 class RenderTarget final {
  public:
     /**
-     * @param device the device to allocate on
-     * @param ring the frames in flight. Images that recreate() releases are retired through it.
-     * @param width in pixels
-     * @param height in pixels
-     * @param colour the format of the colour image, or VK_FORMAT_UNDEFINED for none. A shadow
-     *        map target has sampled depth and no colour, and every colour accessor then
-     *        returns null.
-     * @param depth whether to allocate a depth image the same size, for a pass that tests
-     * @param sampledDepth whether that depth image is also read by a later pass, as a
-     *        shadow map is. It costs a sampler and can change which depth format
-     *        the device gives, so a pipeline drawing into this has to be built against
-     *        depthFormat(), not against DepthBuffer::chooseFormat's default
-     * @param images one, or the Ring's frames in flight for a target a pass reads the previous
-     *        frame of. Each image of a target with more than one starts cleared and readable,
-     *        so previous() can be read on the first frame
-     * @param layers how many layers the depth image has, which more than one needs a target
-     *        with sampled depth and no colour
+     * What a target holds.
+     **/
+    struct Spec final {
+        uint32_t width = 0;   /**< in pixels **/
+        uint32_t height = 0;  /**< in pixels **/
+        /**
+         * The format of the colour image, or VK_FORMAT_UNDEFINED for none. A shadow map target
+         * has sampled depth and no colour, and every colour accessor then returns null.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        bool depth = false;  /**< whether to allocate a depth image the same size, for a pass that tests **/
+        /**
+         * Whether that depth image is also read by a later pass, as a shadow map is. It costs a
+         * sampler and can change which depth format the device gives, so a pipeline drawing
+         * into this has to be built against depthFormat(), not against
+         * DepthBuffer::chooseFormat's default.
+         **/
+        bool sampledDepth = false;
+        /**
+         * One, or the ring's frames in flight for a target a pass reads the previous frame of.
+         * Each image of a target with more than one starts cleared and readable, so previous()
+         * can be read on the first frame.
+         **/
+        uint32_t images = 1;
+        /**
+         * How many layers the depth image has. More than one needs sampled depth and no
+         * colour.
+         **/
+        uint32_t layers = 1;
+    };
+
+    /**
+     * @param context the device to allocate on, and the ring that images recreate() releases
+     *        are retired through
      * @throw std::runtime_error if allocation fails or either dimension is zero. A target with
      *        no colour and no sampled depth throws too, because it would have nothing to read.
      *        Images that are neither one nor the frames in flight throw, as does more than one
      *        layer with a colour image or without sampled depth
      **/
-    RenderTarget(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-        uint32_t width, uint32_t height, VkFormat colour, bool depth = false, bool sampledDepth = false,
-        uint32_t images = 1, uint32_t layers = 1);
+    RenderTarget(const DeviceContext& context, const Spec& spec);
 
     /**
      **/

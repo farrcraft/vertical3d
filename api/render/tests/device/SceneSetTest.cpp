@@ -114,7 +114,8 @@ BOOST_AUTO_TEST_SUITE(scene_set_test)
  **/
 BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -167,7 +168,8 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
  **/
 BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;

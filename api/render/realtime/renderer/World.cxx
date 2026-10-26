@@ -5,9 +5,11 @@
 
 #include "World.h"
 
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/device/Device.h>
@@ -17,7 +19,6 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/Formats.h>
-#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -65,18 +66,15 @@ const VkDeviceSize initialIndexBytes = 16ULL * 1024;
 
 /**
  **/
-World::World(const boost::shared_ptr<vulkan::device::Device>& device,
-    const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
-    const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
-    const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth) :
-    device_(device),
-    cache_(cache),
-    resources_(resources),
-    ring_(ring),
-    uniforms_(uniforms),
-    textures_(textures) {
+World::World(const DeviceContext& context, const Spec& spec) :
+    device_(context.device()),
+    cache_(context.pipelineCache()),
+    resources_(context.resources()),
+    ring_(context.ring()),
+    uniforms_(context.frameUniforms()),
+    textures_(context.textures()) {
     stream_ = boost::make_shared<vulkan::frame::StreamRing>(device_, ring_, vulkan::frame::StreamRing::Sizes{.vertexBytes = initialVertexBytes, .indexBytes = initialIndexBytes});
-    createPipelines({.colour = colour, .depth = depth});
+    createPipelines({.colour = spec.colour, .depth = spec.depth});
 }
 
 /**

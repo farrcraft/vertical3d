@@ -20,14 +20,13 @@ Build the targets and the renderer once:
 
 ```cpp
 auto context = renderer_->context();
-auto scene = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    width, height, VK_FORMAT_R8G8B8A8_SRGB, true);
-auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true, 1, cascades);  // a layer per cascade
+auto scene = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
+auto map = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true,
+        .images = 1, .layers = cascades});  // a layer per cascade
 
-renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
-    context->ring(), context->frameUniforms(), context->textures(),
-    scene->format(), scene->depthFormat(), map->depthFormat());
+renderer::Lit lit(*context, {.colour = scene->format(), .depth = scene->depthFormat(), .shadow = map->depthFormat()});
 ```
 
 Pass `VK_FORMAT_UNDEFINED` as the last format for a scene with no shadows. A shadow map of one
@@ -38,10 +37,9 @@ hand mirrors the image, which reverses the winding of every face on screen. `Lit
 clockwise front face unless told otherwise, which is right for the default hand:
 
 ```cpp
-renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
-    context->ring(), context->frameUniforms(), context->textures(),
-    scene->format(), scene->depthFormat(), map->depthFormat(),
-    renderer::Lit::Shaders::embedded(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
+renderer::Lit lit(*context,
+    renderer::Lit::Spec{.colour = scene->format(), .depth = scene->depthFormat(), .shadow = map->depthFormat(),
+        .front = VK_FRONT_FACE_COUNTER_CLOCKWISE});
 ```
 
 The cel, outline and shadow pipelines all cull by this face. The light's matrix therefore has to
@@ -269,8 +267,7 @@ models and graded with them. `WindowRenderer::worldQuads()` is built for the win
 cannot draw into an sRGB scene target. Build a `World` against the target's formats:
 
 ```cpp
-renderer::World litQuads(context->device(), context->pipelineCache(), context->resources(),
-    context->ring(), context->frameUniforms(), context->textures(), scene->format(), scene->depthFormat());
+renderer::World litQuads(*context, renderer::World::Spec{.colour = scene->format(), .depth = scene->depthFormat()});
 // ... after meshes():
 litQuads.submit(worldCanvas, pass.get());
 ```
@@ -286,7 +283,8 @@ the constructor:
 ```cpp
 renderer::Lit::Shaders shaders = renderer::Lit::Shaders::embedded();
 shaders.cel = loadSpirv("shaders/my_cel.frag.spv");
-renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
+renderer::Lit lit(*context,
+    {.colour = scene->format(), .depth = scene->depthFormat(), .shadow = map->depthFormat(), .shaders = shaders});
 ```
 
 A replacement must declare the same sets as the built-in shaders. A shadow stage declares one

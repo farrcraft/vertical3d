@@ -9,7 +9,9 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <vulkan/vulkan.h>
 
@@ -55,13 +57,20 @@ class Grade final {
     static const uint32_t SIZE = 16;
 
     /**
-     * @param formats the colour format of what the grade draws into, and the depth format of
-     *        the pass it is drawn in, or undefined for none
-     * @param strip the table, or empty for the identity
+     * What the grade draws into, and the table it starts with.
+     **/
+    struct Spec final {
+        VkFormat colour = VK_FORMAT_UNDEFINED;  /**< the format of what the grade draws into **/
+        VkFormat depth = VK_FORMAT_UNDEFINED;   /**< the depth format of the pass it is drawn in, or undefined for none **/
+        boost::shared_ptr<image::Image> strip;  /**< the table, or empty for the identity **/
+    };
+
+    /**
+     * @param context the device, resources, ring and frame uniforms the grade is built on, and
+     *        the logger a failed release is reported through
      * @throw std::runtime_error if the pipeline or the table cannot be made
      **/
-    Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-        const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
+    Grade(const DeviceContext& context, const Spec& spec);
 
     /**
      * Release the table, and every source not yet released, through the Ring, so a frame in
@@ -147,7 +156,9 @@ class Grade final {
     TextureHandle createTable(const std::vector<uint8_t>& texels);
 
     boost::shared_ptr<log::Logger> logger_;
-    boost::shared_ptr<DeviceContext> context_;
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::memory::Uploader> uploader_;
     boost::shared_ptr<renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
     boost::shared_ptr<renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;

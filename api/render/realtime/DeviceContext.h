@@ -59,6 +59,11 @@ class DeviceContext {
     boost::shared_ptr<vulkan::device::Device> device() const;
 
     /**
+     * @return where the context and what is built on it report
+     **/
+    boost::shared_ptr<v3d::log::Logger> logger() const;
+
+    /**
      * @return the frames recorded ahead of the device. Anything keeping a resource per frame
      *         in flight indexes it by this
      **/

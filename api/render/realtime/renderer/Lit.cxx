@@ -5,18 +5,19 @@
 
 #include "Lit.h"
 
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/type/Model.h>
 
@@ -148,16 +149,13 @@ Lit::Shaders Lit::Shaders::embedded() {
 
 /**
  **/
-Lit::Lit(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
-    const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-    const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const boost::shared_ptr<Textures>& textures,
-    VkFormat colour, VkFormat depth, VkFormat shadow, const Shaders& shaders, VkFrontFace front) :
-    device_(device),
-    cache_(cache),
-    resources_(resources),
-    ring_(ring),
-    uniforms_(uniforms),
-    textures_(textures) {
+Lit::Lit(const DeviceContext& context, const Spec& spec) :
+    device_(context.device()),
+    cache_(context.pipelineCache()),
+    resources_(context.resources()),
+    ring_(context.ring()),
+    uniforms_(context.frameUniforms()),
+    textures_(context.textures()) {
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
     block.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -191,11 +189,12 @@ Lit::Lit(const boost::shared_ptr<vulkan::device::Device>& device, const boost::s
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
     // read as an array of layers, as every shadow map is, so the binding has one kind of view
-    unshadowed_ = boost::make_shared<RenderTarget>(device_, ring_, 1, 1, VK_FORMAT_UNDEFINED, true, true);
+    unshadowed_ = boost::make_shared<RenderTarget>(context,
+        RenderTarget::Spec{.width = 1, .height = 1, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     unshadowed_->clear();
     unshadowedTexture_ = unshadowed_->depthTexture();
 
-    createPipelines(shaders, colour, depth, shadow, front);
+    createPipelines(spec.shaders, spec.colour, spec.depth, spec.shadow, spec.front);
 }
 
 /**

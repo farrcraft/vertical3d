@@ -114,13 +114,13 @@ boost::shared_ptr<v3d::image::Image> invertingStrip() {
 boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const boost::shared_ptr<v3d::image::Image>& strip,
     const std::vector<unsigned char>& texels, uint32_t size, const std::string& path, VkFormat sceneFormat = colourFormat,
     VkFormat outputFormat = colourFormat) {
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        size, size, sceneFormat);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        size, size, outputFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = sceneFormat});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = outputFormat});
     const TextureHandle uploaded = headless->context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless->logger, headless->context, {.colour = outputFormat}, strip);
+    Grade graded(*headless->context, Grade::Spec{.colour = outputFormat, .strip = strip});
     const MaterialHandle source = graded.source(*scene);
 
     Canvas canvas;
@@ -226,17 +226,16 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     const uint32_t width = 64;
     const uint32_t height = 32;
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     FullScreen::Spec spec;
     spec.name = "copy";
     spec.fragment.assign(std::begin(copyShader), std::end(copyShader));
     spec.colour = colourFormat;
-    FullScreen copy(headless.device, headless.context->pipelineCache(), headless.context->resources(),
-        headless.context->ring(), headless.context->frameUniforms(), spec);
+    FullScreen copy(*headless.context, spec);
     const MaterialHandle source = copy.source({headless.context->textures()->texture(*scene)});
 
     // the quad case's canvas, whose picture the reference holds
@@ -277,15 +276,14 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
 BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
 
     FullScreen::Spec spec;
     spec.name = "copy";
     spec.fragment.assign(std::begin(copyShader), std::end(copyShader));
     spec.colour = colourFormat;
-    FullScreen copy(headless.device, headless.context->pipelineCache(), headless.context->resources(),
-        headless.context->ring(), headless.context->frameUniforms(), spec);
+    FullScreen copy(*headless.context, spec);
     const TextureHandle texture = headless.context->textures()->texture(*scene);
 
     const MaterialHandle source = copy.source({texture});
@@ -316,8 +314,8 @@ BOOST_AUTO_TEST_CASE(a_source_released_twice_hands_its_set_back_once) {
 BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
     std::vector<unsigned char> texels;
     for (uint32_t texel = 0; texel < size * size; texel++) {
         texels.insert(texels.end(), {0x00, 0xFF, 0xFF, 0xFF});
@@ -328,8 +326,7 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     spec.name = "copy";
     spec.fragment.assign(std::begin(copyShader), std::end(copyShader));
     spec.colour = colourFormat;
-    boost::shared_ptr<FullScreen> copy = boost::make_shared<FullScreen>(headless.device, headless.context->pipelineCache(),
-        headless.context->resources(), headless.context->ring(), headless.context->frameUniforms(), spec);
+    boost::shared_ptr<FullScreen> copy = boost::make_shared<FullScreen>(*headless.context, spec);
     const MaterialHandle source = copy->source({texture});
 
     Frame frame;
@@ -454,13 +451,13 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
     const uint32_t size = 64;
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless.logger, headless.context, {.colour = colourFormat});
+    Grade graded(*headless.context, Grade::Spec{.colour = colourFormat});
     const MaterialHandle source = graded.source(*scene);
     BOOST_CHECK(!graded.replace(std::vector<uint8_t>(16)));
     BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
@@ -491,13 +488,13 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
     const uint32_t size = 64;
     v3d::test::Headless headless(colourFormat, size, size);
     const std::vector<unsigned char> texels = sweep(size);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
     const TextureHandle uploaded = headless.context->textures()->texture(texels.data(), size, size, 4);
 
-    Grade graded(headless.logger, headless.context, {.colour = colourFormat});
+    Grade graded(*headless.context, Grade::Spec{.colour = colourFormat});
     const MaterialHandle source = graded.source(*scene);
 
     Capture before(headless.device, headless.context->ring(), headless.logger);
@@ -529,12 +526,12 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
 BOOST_AUTO_TEST_CASE(a_destroyed_grade_releases_its_table_and_sources) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, colourFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat});
     const std::size_t before = headless.context->resources()->textureCount();
 
     {
-        Grade graded(headless.logger, headless.context, {.colour = colourFormat});
+        Grade graded(*headless.context, Grade::Spec{.colour = colourFormat});
         BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 1);
         BOOST_CHECK(graded.source(*scene).valid());
         BOOST_CHECK_EQUAL(headless.context->resources()->textureCount(), before + 2);

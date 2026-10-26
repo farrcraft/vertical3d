@@ -23,6 +23,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
 namespace v3d::render::realtime::renderer {
 
 /**
@@ -53,11 +57,11 @@ class FullScreen final {
     };
 
     /**
+     * @param context the device, pipeline cache, resources, ring and frame uniforms the
+     *        pipeline is built on
      * @throw std::runtime_error if the pipeline cannot be built, or names no source
      **/
-    FullScreen(const boost::shared_ptr<vulkan::device::Device>& device, const boost::shared_ptr<vulkan::pipeline::Cache>& cache,
-        const boost::shared_ptr<Resources>& resources, const boost::shared_ptr<vulkan::frame::Ring>& ring,
-        const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms, const Spec& spec);
+    FullScreen(const DeviceContext& context, const Spec& spec);
 
     FullScreen(const FullScreen&) = delete;
     FullScreen& operator=(const FullScreen&) = delete;

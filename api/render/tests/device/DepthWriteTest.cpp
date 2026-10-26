@@ -77,8 +77,8 @@ enum class Drawn : std::uint8_t {
  * @return "red", "green" or "neither", for the pixel at the middle of row 16
  **/
 std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::optional<bool> write, const std::string& path) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, headless->context->ring(), width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
     const glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);

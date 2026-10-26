@@ -114,18 +114,18 @@ struct Drawn final {
  **/
 Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::string& path, const v3d::type::camera::Camera& camera) {
     Drawn drawn;
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        size, size, colourFormat, true);
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true, 1, static_cast<uint32_t>(splits.size()));
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = colourFormat, .depth = true});
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true,
+            .images = 1, .layers = static_cast<uint32_t>(splits.size())});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
     v3d::asset::media::registerLoaders(*assets, headless->logger);
     MeshRegistry meshes(headless->logger, headless->context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
     const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0F)));
-    Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
-        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), map->depthFormat());
+    Lit lit(*headless->context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = map->depthFormat()});
 
     entt::registry registry;
     for (const Standing& cube : standing()) {

@@ -150,10 +150,10 @@ Shading compare(const Drawn& drawn) {
 boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless, float strength, const std::string& path,
     int frames = 1) {
     const uint32_t mapSize = 256;
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        width, height, colourFormat, true);
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
 
@@ -162,8 +162,7 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
     const MeshHandle ground = meshes.add("ground", cube(glm::vec4(1.0F)));
 
-    Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
-        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), map->depthFormat());
+    Lit lit(*headless->context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = map->depthFormat()});
 
     entt::registry registry;
     place(&registry, crate, glm::vec3(0.0F, 0.5F, 0.0F), glm::vec3(1.0F), true);
@@ -238,8 +237,8 @@ boost::shared_ptr<v3d::image::Image> drawShadowed(v3d::test::Headless* headless,
  **/
 void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand hand, VkFrontFace front,
     const std::string& path) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
 
@@ -247,9 +246,8 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     MeshRegistry meshes(headless->logger, headless->context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
 
-    Lit lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
-        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED,
-        Lit::Shaders::embedded(), front);
+    Lit lit(*headless->context,
+        Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED, .front = front});
 
     entt::registry registry;
     const entt::entity entity = registry.create();
@@ -343,8 +341,8 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
 void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
         return;
@@ -355,10 +353,10 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle block = meshes.add("block", cube(glm::vec4(1.0F)));
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat(),
-        Lit::Shaders::embedded(), front);
+    Lit lit(*headless.context,
+        Lit::Spec{.colour = colourFormat,
+            .depth = v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()),
+            .shadow = map->depthFormat(), .front = front});
 
     // the light looks along +z from two units out, over a sphere of one. A face at z = -1 is
     // therefore a quarter of the way into its range, and one at z = 1 three quarters. Each
@@ -449,9 +447,8 @@ BOOST_AUTO_TEST_CASE(lit_pipelines_are_created_without_a_warning) {
     const uint32_t before = headless.instance->warnings();
 
     const VkFormat depth = v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical());
-    const Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat, depth, depth,
-        Lit::Shaders::embedded(), VK_FRONT_FACE_CLOCKWISE);
+    const Lit lit(*headless.context,
+        Lit::Spec{.colour = colourFormat, .depth = depth, .shadow = depth, .front = VK_FRONT_FACE_CLOCKWISE});
 
     BOOST_CHECK_EQUAL(headless.instance->warnings() - before, 0U);
     BOOST_CHECK(headless.silent());
@@ -469,8 +466,8 @@ BOOST_AUTO_TEST_CASE(lit_pipelines_are_created_without_a_warning) {
  **/
 BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
     v3d::asset::media::registerLoaders(*assets, headless.logger);
@@ -478,8 +475,7 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_writes_leaves_lit_writing) {
     const MeshHandle red = meshes.add("red", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
     const MeshHandle green = meshes.add("green", cube(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F)));
 
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+    Lit lit(*headless.context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED});
 
     v3d::type::camera::Isometric orbit;
     orbit.target(glm::vec3(0.0F));
@@ -533,9 +529,10 @@ BOOST_AUTO_TEST_CASE(a_released_mesh_is_not_walked) {
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), VK_FORMAT_UNDEFINED);
+    Lit lit(*headless.context,
+        Lit::Spec{.colour = colourFormat,
+            .depth = v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()),
+            .shadow = VK_FORMAT_UNDEFINED});
 
     entt::registry registry;
     const MeshHandle kept = meshes.add("kept", cube(glm::vec4(1.0F)));
@@ -633,12 +630,12 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     const VkFormat swapchainFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
     v3d::test::Headless headless(swapchainFormat, frameWidth, frameHeight);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        frameWidth, frameHeight, swapchainFormat, true);
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        frameWidth, frameHeight, swapchainFormat);
+    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = frameWidth, .height = frameHeight, .colour = swapchainFormat, .depth = true});
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = frameWidth, .height = frameHeight, .colour = swapchainFormat});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
 
@@ -652,9 +649,8 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     BOOST_REQUIRE(meshes.resolve(primitives) != nullptr);
     BOOST_REQUIRE(meshes.resolve(textured) != nullptr);
 
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), swapchainFormat, scene->depthFormat(), map->depthFormat());
-    v3d::render::realtime::Grade grade(headless.logger, headless.context, {.colour = swapchainFormat});
+    Lit lit(*headless.context, Lit::Spec{.colour = swapchainFormat, .depth = scene->depthFormat(), .shadow = map->depthFormat()});
+    v3d::render::realtime::Grade grade(*headless.context, v3d::render::realtime::Grade::Spec{.colour = swapchainFormat});
     const v3d::render::realtime::MaterialHandle graded = grade.source(*scene);
 
     entt::registry registry;
@@ -758,8 +754,8 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
  **/
 BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
 
@@ -767,8 +763,7 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle pair = meshes.add("pair", twoCubes());
 
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+    Lit lit(*headless.context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED});
 
     entt::registry registry;
     place(&registry, pair, glm::vec3(0.0F), glm::vec3(1.0F), false);
@@ -830,8 +825,8 @@ BOOST_AUTO_TEST_CASE(a_model_is_drawn_a_part_at_a_time) {
  **/
 BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless.logger);
 
@@ -839,11 +834,8 @@ BOOST_AUTO_TEST_CASE(world_quads_are_hidden_by_a_lit_scene) {
     MeshRegistry meshes(headless.logger, headless.context, assets);
     const MeshHandle crate = meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F)));
 
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
-    World world(headless.device, headless.context->pipelineCache(), headless.context->resources(),
-        headless.context->ring(), headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-        target->depthFormat());
+    Lit lit(*headless.context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED});
+    World world(*headless.context, World::Spec{.colour = colourFormat, .depth = target->depthFormat()});
 
     entt::registry registry;
     place(&registry, crate, glm::vec3(0.0F), glm::vec3(1.0F), false);
@@ -920,10 +912,10 @@ BOOST_AUTO_TEST_CASE(the_light_has_a_colour) {
     camera.createView();
 
     for (const glm::vec3& colour : {glm::vec3(1.0F), glm::vec3(1.0F, 0.0F, 0.0F)}) {
-        const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-            width, height, colourFormat, true);
-        Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-            headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
+        const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
+        Lit lit(*headless.context,
+            Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED});
 
         lighting::Settings settings;
         settings.outline = 0.0F;
@@ -1015,13 +1007,11 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
                 glm::vec3(3.0F, 6.0F, 3.0F), 1.0F / 60.0F);
         }
 
-        const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-            width, height, colourFormat, true);
-        Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-            headless.context->frameUniforms(), headless.context->textures(), colourFormat, target->depthFormat(), VK_FORMAT_UNDEFINED);
-        World world(headless.device, headless.context->pipelineCache(), headless.context->resources(),
-            headless.context->ring(), headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-            target->depthFormat());
+        const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
+        Lit lit(*headless.context,
+            Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = VK_FORMAT_UNDEFINED});
+        World world(*headless.context, World::Spec{.colour = colourFormat, .depth = target->depthFormat()});
 
         v3d::render::realtime::canvas::DepthOrder order;
         const glm::vec3 forward = camera.profile().direction();

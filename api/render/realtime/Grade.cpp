@@ -11,7 +11,6 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
-#include <api/render/realtime/vulkan/pipeline/Formats.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/render/realtime/renderer/FullScreen.h>
@@ -64,29 +63,29 @@ const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE *
 
 /**
  **/
-Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-    const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip) :
-    logger_(logger),
-    context_(context) {
-    const bool encodes = renderer::Quad::linearises(formats.colour);
+Grade::Grade(const DeviceContext& context, const Spec& spec) :
+    logger_(context.logger()),
+    device_(context.device()),
+    resources_(context.resources()),
+    uploader_(context.uploader()) {
+    const bool encodes = renderer::Quad::linearises(spec.colour);
     const auto build = [&](const std::string& name, std::vector<uint32_t> fragment) {
-        renderer::FullScreen::Spec spec;
-        spec.name = name;
-        spec.fragment = std::move(fragment);
-        spec.sources = 2;
-        spec.colour = formats.colour;
-        spec.depth = formats.depth;
-        return boost::make_shared<renderer::FullScreen>(context_->device(), context_->pipelineCache(),
-            context_->resources(), context_->ring(), context_->frameUniforms(), spec);
+        renderer::FullScreen::Spec pipeline;
+        pipeline.name = name;
+        pipeline.fragment = std::move(fragment);
+        pipeline.sources = 2;
+        pipeline.colour = spec.colour;
+        pipeline.depth = spec.depth;
+        return boost::make_shared<renderer::FullScreen>(context, pipeline);
     };
     shown_ = build("grade", encodes ? words(gradeLinearTargetShader) : words(gradeShader));
     decoded_ = build("grade-linear-scene", encodes ? words(gradeLinearShader) : words(gradeLinearSceneShader));
 
-    std::vector<uint8_t> texels = table(strip);
+    std::vector<uint8_t> texels = table(spec.strip);
     if (texels.empty()) {
-        if (strip) {
-            logger->get()->warn("A grade's strip is {}x{}, not {}x{}, so the grade is the identity", strip->width(),
-                strip->height(), SIZE * SIZE, SIZE);
+        if (spec.strip) {
+            logger_->get()->warn("A grade's strip is {}x{}, not {}x{}, so the grade is the identity", spec.strip->width(),
+                spec.strip->height(), SIZE * SIZE, SIZE);
         }
         texels = identity();
     }
@@ -97,7 +96,7 @@ Grade::Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_p
     vulkan::pipeline::Sampler::Spec point;
     point.filter = VK_FILTER_NEAREST;
     point.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-    nearest_ = boost::make_shared<vulkan::pipeline::Sampler>(context_->device(), point);
+    nearest_ = boost::make_shared<vulkan::pipeline::Sampler>(device_, point);
 }
 
 /**
@@ -108,10 +107,10 @@ Grade::~Grade() {
     try {
         for (const std::pair<const MaterialHandle, Source>& source : sources_) {
             pass(source.second).release(source.second.current);
-            context_->resources()->release(source.second.scene);
+            resources_->release(source.second.scene);
         }
         sources_.clear();
-        context_->resources()->release(tableTexture_);
+        resources_->release(tableTexture_);
     } catch (const std::exception& error) {
         logger_->get()->error("A grade could not release its table and sources: {}", error.what());
     }
@@ -128,7 +127,7 @@ MaterialHandle Grade::source(const RenderTarget& scene, uint32_t slot) {
     // an _SRGB scene is decoded as it is read, so it is graded by the stage that encodes it again
     const bool decoded = renderer::Quad::linearises(scene.format());
     renderer::FullScreen& reader = decoded ? *decoded_ : *shown_;
-    const TextureHandle sceneTexture = context_->resources()->add(texture);
+    const TextureHandle sceneTexture = resources_->add(texture);
     MaterialHandle material;
     try {
         material = reader.source({sceneTexture, tableTexture_});
@@ -137,7 +136,7 @@ MaterialHandle Grade::source(const RenderTarget& scene, uint32_t slot) {
         if (material.valid()) {
             reader.release(material);
         }
-        context_->resources()->release(sceneTexture);
+        resources_->release(sceneTexture);
         throw;
     }
     return material;
@@ -151,7 +150,7 @@ bool Grade::release(const MaterialHandle& source) {
         return false;
     }
     pass(found->second).release(found->second.current);
-    context_->resources()->release(found->second.scene);
+    resources_->release(found->second.scene);
     sources_.erase(found);
     return true;
 }
@@ -180,7 +179,7 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
             }
             pass(source.second).release(rebound[undone++]);
         }
-        context_->resources()->release(replacement);
+        resources_->release(replacement);
         throw;
     }
 
@@ -189,7 +188,7 @@ bool Grade::replace(const std::vector<uint8_t>& texels) {
         pass(source.second).release(source.second.current);
         source.second.current = rebound[next++];
     }
-    context_->resources()->release(tableTexture_);
+    resources_->release(tableTexture_);
     tableTexture_ = replacement;
     return true;
 }
@@ -218,8 +217,8 @@ renderer::FullScreen& Grade::pass(const Source& source) const {
 TextureHandle Grade::createTable(const std::vector<uint8_t>& texels) {
     // sampled linearly between entries, the factory's default, so sixteen entries an edge are
     // enough
-    const vulkan::memory::TextureFactory factory(context_->device(), context_->uploader());
-    return context_->resources()->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
+    const vulkan::memory::TextureFactory factory(device_, uploader_);
+    return resources_->add(factory.volume(texels.data(), SIZE, SIZE, SIZE));
 }
 
 /**

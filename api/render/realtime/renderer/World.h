@@ -30,6 +30,10 @@
 
 #include <glm/vec4.hpp>
 
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
 namespace v3d::render::realtime::renderer {
 
 /**
@@ -68,22 +72,24 @@ class World final {
     };
 
     /**
-     * @param device the device to build the pipelines and buffers on
-     * @param cache the pipeline cache every pipeline is compiled against
-     * @param resources where the pipelines are registered
-     * @param ring which frame in flight is being recorded, and when its buffers are free
-     * @param uniforms set 0, which every world quad pipeline declares and reads. A world
-     *        canvas is in world space, so the pass's camera is its only transform.
-     * @param textures where a texture becomes the set 1 descriptor a draw item names
-     * @param colour the format of the image the pass draws into, which dynamic rendering
-     *        needs at pipeline creation because there is no render pass to take it from
-     * @param depth the format of the depth image, for the second of the two pipelines
+     * What the world quad pipelines are built against.
+     **/
+    struct Spec final {
+        /**
+         * The format of the image the pass draws into, which dynamic rendering needs at
+         * pipeline creation because there is no render pass to take it from.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        VkFormat depth = VK_FORMAT_UNDEFINED;  /**< the depth format, for the second of the two pipelines **/
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
+     *        the quads are built on and drawn through. Every pipeline reads set 0. A world
+     *        canvas is in world space, so the pass's camera is its only transform
      * @throw std::runtime_error if the pipelines cannot be created
      **/
-    World(const boost::shared_ptr<vulkan::device::Device>& device,
-        const boost::shared_ptr<vulkan::pipeline::Cache>& cache, const boost::shared_ptr<Resources>& resources,
-        const boost::shared_ptr<vulkan::frame::Ring>& ring, const boost::shared_ptr<vulkan::frame::FrameUniforms>& uniforms,
-        const boost::shared_ptr<Textures>& textures, VkFormat colour, VkFormat depth);
+    World(const DeviceContext& context, const Spec& spec);
 
     /**
      **/

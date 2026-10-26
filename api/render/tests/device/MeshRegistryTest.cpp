@@ -454,8 +454,8 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
     const MeshHandle handle = meshes->add("triangle", triangle(""));
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
 
     // a depth-only draw of the model's positions, which is all the stride needs to agree on
     Builder builder(headless.device);
@@ -501,8 +501,8 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
     const MeshHandle handle = meshes->add("triangle", triangle(""));
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
 
     Builder builder(headless.device);
     builder.name("mesh-depth")
@@ -566,8 +566,8 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
     BOOST_REQUIRE(entry->parts[0].texture != headless.context->textures()->white());
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     // the vertex stage covers the target from the index alone, so the mesh's three indices
     // draw a triangle over every pixel whatever its positions are

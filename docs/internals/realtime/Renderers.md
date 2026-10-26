@@ -5,13 +5,15 @@ items.
 
 ## The renderers
 
-Each renderer in `renderer/` takes the context's device, pipeline cache, resources, ring
-and frame uniforms. `Quad`, `Line`, `World` and `Lit` also take the colour and depth formats they
-draw into, and each of them compiles a variant per depth state.
+Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `Grade` and
+`RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
+resources, ring, frame uniforms and textures. It holds no pointer to the context, because the
+context owns the `Quad`, `Line` and `World` it builds. `Quad`, `Line` and `World` take the
+colour and depth formats they draw into, and each of them compiles a variant per depth state.
 
-- `Quad`, `World` and `Lit` also take the texture service, which binds the textures they sample.
+- `Quad`, `World` and `Lit` bind the textures they sample through the context's `Textures`.
 - `Lit` also takes the shadow map's format, its shaders and the front face.
-- `FullScreen` takes a `Spec`: its fragment shader, how many images it samples, and the formats
+- `FullScreen` takes its fragment shader, how many images it samples, and the formats
   of the pass it draws in.
 
 | Renderer | Pipelines | Depth variant | Notes |
@@ -33,7 +35,7 @@ one-pixel edge at any scale. Other batches return `colour * texel`.
 **Lit front faces are clockwise by default.** A model is wound counter-clockwise seen from
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
 `Profile::Hand::DirectionCrossUp` also mirrors x, which reverses the winding again, so `Lit`
-takes the front face as its last constructor argument. All six pipelines cull by it.
+takes the front face in its `Spec`. All six pipelines cull by it.
 `lighting::shadowLight()` builds its view the way `type::camera::Camera` does in the hand it is
 given, so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
