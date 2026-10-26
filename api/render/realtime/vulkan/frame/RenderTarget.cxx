@@ -15,6 +15,7 @@
 #include "DepthBuffer.h"
 #include "Ring.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
@@ -68,17 +69,21 @@ void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& exten
 /**
  * Clear a slot's images. Each goes from undefined into the layout a pass draws in, and then
  * into the layout the recorder leaves a target in after its last pass. A slot no pass has
- * drawn into then looks like one a pass has. A null image is one the slot does not have.
+ * drawn into then looks like one a pass has. A null image is one the slot does not have, and
+ * each depth view is one layer of the depth image.
  **/
-void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth, VkImageView depthView,
-    const VkExtent2D& extent) {
+void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth,
+    const std::vector<VkImageView>& depthViews, const VkExtent2D& extent) {
     if (colour != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourForDrawing(colour)});
     }
     if (depth != VK_NULL_HANDLE) {
         memory::record(commands, {memory::depthForDrawing(depth)});
     }
-    clear(commands, {.colour = colourView, .depth = depthView}, extent);
+    clear(commands, {.colour = colourView, .depth = depthViews.empty() ? VK_NULL_HANDLE : depthViews.front()}, extent);
+    for (std::size_t layer = 1; layer < depthViews.size(); layer++) {
+        clear(commands, {.colour = VK_NULL_HANDLE, .depth = depthViews[layer]}, extent);
+    }
     if (colour != VK_NULL_HANDLE) {
         memory::record(commands, {memory::colourAfterDrawing(colour, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)});
     }
@@ -92,11 +97,13 @@ void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, V
 /**
  **/
 RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
-    uint32_t width, uint32_t height, VkFormat colour, bool depth, bool sampledDepth, uint32_t images) :
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - images and layers keep the order the header gives callers
+    uint32_t width, uint32_t height, VkFormat colour, bool depth, bool sampledDepth, uint32_t images, uint32_t layers) :
     device_(device),
     ring_(ring),
     format_(colour),
     images_(images),
+    layers_(layers),
     extent_(),
     wantsDepth_(depth),
     sampledDepth_(sampledDepth) {
@@ -104,6 +111,9 @@ RenderTarget::RenderTarget(const boost::shared_ptr<device::Device>& device, cons
     // that is not the one before
     if (images_ != 1 && images_ != ring_->framesInFlight()) {
         throw std::runtime_error("A vulkan render target holds one image or one per frame in flight");
+    }
+    if (layers_ == 0 || (layers_ > 1 && (colour != VK_FORMAT_UNDEFINED || !depth || !sampledDepth))) {
+        throw std::runtime_error("A vulkan render target of more than one layer holds sampled depth and no colour");
     }
     create(width, height);
 }
@@ -142,7 +152,7 @@ void RenderTarget::create(uint32_t width, uint32_t height) {
         }
         if (wantsDepth_) {
             // a target's depth is a DepthBuffer, the same class the swapchain passes use
-            slot.depth = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_);
+            slot.depth = boost::make_shared<DepthBuffer>(device_, width, height, sampledDepth_, layers_);
         }
     }
 
@@ -191,8 +201,12 @@ void RenderTarget::ready(const std::vector<Slot>& slots, const VkExtent2D& exten
     uploader.submit([&slots, &extent](VkCommandBuffer commands) {
         for (const Slot& slot : slots) {
             const bool depth = slot.depth && slot.depth->sampled();
+            std::vector<VkImageView> layers;
+            for (uint32_t layer = 0; depth && layer < slot.depth->layers(); layer++) {
+                layers.push_back(slot.depth->view(layer));
+            }
             readied(commands, slot.image ? slot.image->handle() : VK_NULL_HANDLE, slot.image ? slot.image->view() : VK_NULL_HANDLE,
-                depth ? slot.depth->image() : VK_NULL_HANDLE, depth ? slot.depth->view() : VK_NULL_HANDLE, extent);
+                depth ? slot.depth->image() : VK_NULL_HANDLE, layers, extent);
         }
     });
 }
@@ -216,8 +230,20 @@ void RenderTarget::destroy() {
 
 /**
  **/
+void RenderTarget::clear() {
+    ready(slots_, extent_);
+}
+
+/**
+ **/
 uint32_t RenderTarget::images() const noexcept {
     return images_;
+}
+
+/**
+ **/
+uint32_t RenderTarget::layers() const noexcept {
+    return layers_;
 }
 
 /**
@@ -281,8 +307,8 @@ VkImage RenderTarget::depthImage() const noexcept {
 
 /**
  **/
-VkImageView RenderTarget::depthView() const noexcept {
-    return slot().depth ? slot().depth->view() : VK_NULL_HANDLE;
+VkImageView RenderTarget::depthView(uint32_t layer) const noexcept {
+    return slot().depth ? slot().depth->view(layer) : VK_NULL_HANDLE;
 }
 
 /**

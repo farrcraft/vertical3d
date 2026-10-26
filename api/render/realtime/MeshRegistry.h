@@ -99,6 +99,12 @@ class MeshRegistry final {
         boost::shared_ptr<vulkan::memory::Mesh> mesh;
         std::vector<Part> parts;  /**< in the model's order, which is the order they are drawn **/
         boost::shared_ptr<const Skin> skin;  /**< null for a static model **/
+        /**
+         * A sphere around the model's vertices in its own space, as they were registered: xyz
+         * the centre, w the radius. A skinned model is posed away from it, so it bounds only
+         * the bind pose
+         **/
+        glm::vec4 bound{0.0F};
     };
 
     /**

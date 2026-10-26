@@ -43,11 +43,15 @@ class DepthBuffer final {
      * @param width in pixels, matching what the passes draw into
      * @param height in pixels, matching what the passes draw into
      * @param sampled whether a later pass will read this, which costs a sampler, a usage
-     *        bit and a narrower choice of format
-     * @throw std::runtime_error if the device offers no depth format, or allocation fails
+     *        bit and a narrower choice of format. A sampled buffer is read as an array of its
+     *        layers, through a sampler2DArray, however many layers it has
+     * @param layers how many layers the image has, each drawn into on its own. More than one
+     *        needs sampled, since only a reader can tell the layers apart
+     * @throw std::runtime_error if the device offers no depth format, allocation fails, or
+     *        there is more than one layer and the buffer is not sampled
      **/
     DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-        bool sampled = false);
+        bool sampled = false, uint32_t layers = 1);
 
     /**
      **/
@@ -73,9 +77,15 @@ class DepthBuffer final {
     VkImage image() const noexcept;
 
     /**
-     * @return the view attached as the depth attachment
+     * @return the view a pass attaches to draw into one layer, or null for a layer the buffer
+     *         does not have
      **/
-    VkImageView view() const noexcept;
+    VkImageView view(uint32_t layer = 0) const noexcept;
+
+    /**
+     * @return how many layers the image has
+     **/
+    uint32_t layers() const noexcept;
 
     /**
      * @return the format the image was created with, which a pipeline is built against
@@ -147,6 +157,7 @@ class DepthBuffer final {
     boost::shared_ptr<pipeline::Sampler> sampler_;
     VkExtent2D extent_;
     bool sampled_;
+    uint32_t layers_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

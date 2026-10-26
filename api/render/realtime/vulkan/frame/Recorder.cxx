@@ -76,13 +76,19 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
     if (!offscreen) {
         return frame;
     }
+    if (pass.layer() >= offscreen->layers()) {
+        std::stringstream msg;
+        msg << "The " << pass.name() << " pass draws into layer " << pass.layer() << " of a target with "
+            << offscreen->layers() << " layers";
+        throw std::runtime_error(msg.str());
+    }
 
     Recorder::Target into;
     into.image = offscreen->image();
     into.view = offscreen->view();
     into.extent = offscreen->extent();
     into.depthImage = offscreen->depthImage();
-    into.depthView = offscreen->depthView();
+    into.depthView = offscreen->depthView(pass.layer());
     into.sampledDepth = offscreen->sampledDepth();
     into.format = offscreen->format();
     into.depthFormat = offscreen->depthFormat();

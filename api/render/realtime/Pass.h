@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -107,6 +108,20 @@ class Pass final {
      * Passing an empty pointer puts the pass back on the swapchain image.
      **/
     void target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) noexcept;
+
+    /**
+     * Which layer of a layered target's depth the pass draws into, as one cascade of a shadow
+     * map does. Zero, the default, is the only layer of any other target. Recorder throws for
+     * a layer the target does not have.
+     *
+     * Kept across reset(), as the target is.
+     **/
+    void layer(uint32_t layer) noexcept;
+
+    /**
+     * @return the layer the pass draws into
+     **/
+    uint32_t layer() const noexcept;
 
     /**
      * @return the target the pass draws into, or an empty pointer for the swapchain image
@@ -271,6 +286,7 @@ class Pass final {
     std::vector<DrawItem> items_;
     boost::shared_ptr<vulkan::frame::RenderTarget> target_;
     std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>> reads_;
+    uint32_t layer_ = 0;
     VkDescriptorSet scene_;
     std::optional<DepthBias> bias_;
     std::optional<bool> write_;

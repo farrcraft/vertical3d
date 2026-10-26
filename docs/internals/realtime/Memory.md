@@ -34,7 +34,16 @@ change the format. A sampled buffer:
 - filters with `NEAREST`, so each read is one stored depth. The cel shader averages a 3x3 set
   of comparisons itself, and a device need not support linear filtering of a depth format,
 - is left in `DEPTH_READ_ONLY_OPTIMAL` by the recorder after its last writer. That layout allows
-  the depth aspect to be sampled and depth-tested at the same time.
+  the depth aspect to be sampled and depth-tested at the same time,
+- is arrayed: its view is a 2D array view over every layer, read as a `sampler2DArray`, with one
+  layer or several. Each layer also has a 2D view of its own, which a pass attaches to draw into
+  that layer alone (`DepthBuffer::view(layer)`).
+
+**Layers.** `memory::Image::Spec` takes a layer count and whether the image is arrayed. An image
+of more than one layer is always arrayed. An arrayed image's `view()` is the array view, and
+`layerView(n)` the 2D view of layer n. A depth buffer of more than one layer must be sampled,
+since only a reader can tell its layers apart. Every barrier names all the layers of an image,
+so a layered target changes layout in one barrier.
 
 `pipeline::Texture::descriptor()` names `DEPTH_READ_ONLY_OPTIMAL` for a depth image wherever one
 is sampled, a canvas included. The swapchain's depth buffer is never sampled.
@@ -43,10 +52,11 @@ A pass that samples a target's depth and draws into it in the same frame breaks 
 promise. The recorder cannot detect it; the validation layer reports it.
 
 **Render targets** own a depth buffer per image slot, sized with the target. `RenderTarget`
-throws when it has no colour and no sampled depth. Its images, on resize or destruction, are
+throws when it has no colour and no sampled depth, and when it has more than one layer and a
+colour image or no sampled depth. Its images, on resize or destruction, are
 retired through the ring rather than destroyed at once. A target of more than one image clears
 every slot at construction and leaves it readable (`ready()`), so `previous()` is defined on the
-first frame.
+first frame. `clear()` does the same for any target, every layer included.
 
 ## Memory
 
@@ -257,7 +267,7 @@ serves every primitive from one pool.
 
 `Textures::depthTexture(target)` and `texture(target)` return the white texture for a target with
 nothing of that kind to sample. A descriptor written against an image without sampled usage is
-undefined, and a white shadow map reads as unshadowed. `release()` never releases the white
+undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never releases the white
 texture, so such a handle can be released like any other.
 
 Background: [ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md)

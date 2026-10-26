@@ -100,6 +100,18 @@ const boost::shared_ptr<vulkan::frame::RenderTarget>& Pass::target() const noexc
 
 /**
  **/
+void Pass::layer(uint32_t layer) noexcept {
+    layer_ = layer;
+}
+
+/**
+ **/
+uint32_t Pass::layer() const noexcept {
+    return layer_;
+}
+
+/**
+ **/
 void Pass::reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) {
     if (target && std::find(reads_.begin(), reads_.end(), target) == reads_.end()) {
         reads_.push_back(target);

@@ -1,7 +1,7 @@
 # Scale and Reach — Cascades, Non-Blocking Loads, Cross-Region Worlds, Sound in Space
 
 Drafted 2026-10-24 against `ab4bdea1`. This plan takes the open feature and performance entries
-in [TODO.md](../TODO.md) that are not editor work: offline rendering, tile grids, sprite sheets,
+in [TODO.md](../../TODO.md) that are not editor work: offline rendering, tile grids, sprite sheets,
 lit scenes, loading and audio. When it closes, a lit scene casts cascaded shadows, and a load
 never blocks the main thread on a copy. A texture can be requested like a mesh. A route and sight
 cross region seams, a voice has a position, and imagetool packs and unpacks sprite sheets.
@@ -39,7 +39,7 @@ The tree was read at `ab4bdea1`. Line numbers are from that commit.
 
 * **`findPath` and `hasLineOfSight` take one grid** (`api/grid/Pathfinding.h:60`,
   `api/grid/LineOfSight.h:47`). Their filters are `std::function<bool(TileCoord)>`.
-* **ADR-0087 left a route across regions to the game.** [Grid.md](../api/Grid.md#regions) says
+* **ADR-0087 left a route across regions to the game.** [Grid.md](../../api/Grid.md#regions) says
   so. odyssey refuses a click outside the player's region (`odyssey/engine/Engine.cpp:100-124`)
   and blinds every other region (`odyssey/tile/World.cpp:349-362`).
 * **odyssey's `Sight` uses only `api/grid`** (`odyssey/tile/Sight.h:8-9`). It has its own test,
@@ -129,7 +129,7 @@ A run cost about 1 microsecond before it shaded a point and about half that per 
 ran its surface shader and every light over three points. Two decisions came out of it, both
 amending ADR-0093.
 
-- [ADR-0113](../adr/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) chose
+- [ADR-0113](../../adr/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) chose
   batches at every depth over a row's first hits alone, over one hit a run with a faster
   machine, and over deferred shading sorted per bucket. `Tracer::see()` takes a batch of rays
   with a time each. Hits that share a surface shader, its placement, an object space and their
@@ -137,7 +137,7 @@ amending ADR-0093.
   and so are the rays that continue through a surface. `Renderer::Shape`'s stencil holds a
   group of three per hit, each with its own steps. The ray hider casts a row pass by pass, and
   gives the film its samples in the old order. A grid's `trace()` is one batch too.
-- [ADR-0114](../adr/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) chose
+- [ADR-0114](../../adr/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) chose
   to shade a hit's neighbours only when its surface shader, or a light on it, differentiates.
   The emitter sets `Program::differentiates` beside `traces`.
 - moya logs the hider's time. Best of three, before and after, at 320 by 240: bump 877 to
@@ -154,23 +154,36 @@ amending ADR-0093.
 
 ### Step 3 — Cascaded shadow maps
 
-**Open.** ADR first.
+**Done.** [ADR-0115](../../adr/0115-rendering-cascaded-shadows-in-a-layered-map.md) chose a depth
+target with a layer per cascade over an atlas, a pass per cascade whose draws push its index
+over a scene set per cascade and over multiview, and the practical split scheme as the default.
 
-- A function fits a slice of the view between two distances, as `fitShadowToView` fits one, with
-  a radius that holds still as the camera turns. A second splits the view into slices.
-- `SceneUniforms` holds a matrix and a far distance per cascade. `cel.frag` picks a fragment's
-  cascade by its view depth, and blends across a seam.
-- The shadow pass draws each cascade into its layer with its own matrix.
-- One cascade reproduces today's single map, so a caller of `fitShadowToView` keeps working.
-- [Lighting.md](../api/rendering/Lighting.md) states the new layout for a game that replaces the
-  lit shaders.
-- Tests: slices cover the view without gaps, and keep their radius under rotation and their snap
-  under motion. A device case draws a long view with three cascades with a silent validation log.
-  Pass timings record the cost of each cascade.
+- `lighting::splitView()` gives the splits, and `fitCascades()` fits each slice as
+  `fitShadowToView()` fits one map, with a blend band each cascade shares with the one before.
+  `casts()` tests a caster's sphere against a cascade's box.
+- `SceneUniforms` holds a matrix, a far end and a radius for each of four cascades, the near
+  plane, the count and the blend. `cel.frag` reads a `sampler2DArray`, picks a fragment's cascade
+  by its distance from the near plane, blends across a seam, and scales the normal bias by the
+  cascade's radius. One matrix packs as a cascade that reaches every distance.
+- `memory::Image` has layers and a view of each, a sampled `DepthBuffer` is always arrayed, a
+  `RenderTarget` can have several depth layers and a public `clear()`, and `Pass::layer()` names
+  the layer a pass draws into. Every barrier names every layer. `Capture` reads one layer.
+- The shadow pipelines push `Lit::Cascade`. With no map, `Lit` binds a cleared map of one layer
+  of its own. `entity::casters()` takes a `Casting` and culls static casters by a sphere
+  `MeshRegistry` takes around each model's vertices.
+- Tests: the splits at both ends of lambda and their refusals. The cascades cover a perspective
+  and a narrow orthographic view with no gap, checked against the camera rather than the fit,
+  hold their radius as the camera turns and their texels as it slides, and pack as the shaders
+  read them. A caster casts into a cascade only within its box. A device case draws a long view
+  with three cascades: a silent validation log, a caster's depth in each layer, the near
+  cascade culling, each cube's shadow on the ground, and a timing for each cascade's pass. The
+  device suites are clean under synchronization validation. Hand mutations of the layer
+  sampled, the matrix pushed, the layer drawn, the culling, the blend overlap and the lambda
+  each fail a case.
 
 ### Step 4 — An upload that returns at once
 
-**Done.** [ADR-0108](../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
+**Done.** [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
 chose a submission of its own per upload, on the graphics queue, over copies recorded into the
 frame and over a transfer queue. `Uploader::submit(record, keep)` replaces `oneShot` and does not
 wait. The Uploader takes the ring, and retires the staging buffer it is handed with the command
@@ -189,7 +202,7 @@ uploads have run.
 
 ### Step 5 — A texture request
 
-**Done.** [ADR-0109](../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
+**Done.** [ADR-0109](../../adr/0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 chose one bindless array of textures, which a draw indexes by slot, over swapping the image
 behind a stable handle and over a pending material. The binding model has moved: every texture
 is a slot of `pipeline::TextureArray` at set 1, quads and world quads push their slot, and a lit
@@ -219,7 +232,7 @@ textures of 512 by 512 and 48 meshes of 64 by 64 vertices, and times each poll w
 - At the old 4 MiB, on direct allocation, a texture poll took 3 to 6 ms and a mesh poll 12 to
   26 ms against a share of 2.1 ms. Making device memory was most of it: on suballocated memory
   the same polls took a quarter as long.
-- [ADR-0110](../adr/0110-memory-suballocate-by-default.md) made suballocation the default,
+- [ADR-0110](../../adr/0110-memory-suballocate-by-default.md) made suballocation the default,
   amending ADR-0053, whose own revisit condition this was. Every suite and reference picture
   passes on it.
 - The budget is now 1 MiB. On an AMD Radeon RX 6600 a texture poll takes 0.2 to 0.6 ms and a
@@ -232,11 +245,11 @@ textures of 512 by 512 and 48 meshes of 64 by 64 vertices, and times each poll w
 `look()` also takes the `SightBlocker` that `hasLineOfSight()` takes, so a game's smoke reaches
 it. The test moved to the grid suite, building its rows with `setCover()` instead of odyssey's
 map reader, and gained a case for the blocker and for a second range. odyssey's range is
-`World::SIGHT_RANGE`. [Grid.md](../api/Grid.md#remembered-sight) describes it.
+`World::SIGHT_RANGE`. [Grid.md](../../api/Grid.md#remembered-sight) describes it.
 
 ### Step 8 — Routes and sight across regions
 
-**Done.** [ADR-0111](../adr/0111-grid-a-search-may-span-a-set-of-placed-grids.md) chose a search
+**Done.** [ADR-0111](../../adr/0111-grid-a-search-may-span-a-set-of-placed-grids.md) chose a search
 over a set of placed grids, amending ADR-0087, over stitching the loaded grids into one and over
 searches through callbacks. A region that is not loaded is impassable and opaque.
 
@@ -255,7 +268,7 @@ searches through callbacks. A region that is not loaded is impassable and opaque
 
 ### Step 9 — A voice with a position
 
-**Done.** [ADR-0112](../adr/0112-audio-a-voice-is-placed-in-world-coordinates.md) chose a
+**Done.** [ADR-0112](../../adr/0112-audio-a-voice-is-placed-in-world-coordinates.md) chose a
 listener held by `audio::Engine`, with positions in the game's world coordinates, over positions
 handed over relative to the listener. A pan and a position are exclusive, and FMOD events are
 placed too.
@@ -270,7 +283,7 @@ placed too.
 - `Events` gains a listener, a placed `play()` and `start()`, and `position()` to move and read an
   instance. `Engine::attach(events)` forwards the listener. FMOD runs right-handed, and for a
   mirrored listener the backend reflects the world through x = 0. The null backend refuses all of
-  it. [Audio.md](../api/engine/Audio.md) states the axes and the rules.
+  it. [Audio.md](../../api/engine/Audio.md) states the axes and the rules.
 - Tests: the listener's conversion in both hands, and its refusals. Under the dummy driver, a
   placed voice reads back in mixer axes after the listener moves and turns, a pan and a position
   clear each other, and a placed sound event plays placed. A recording backend checks the
@@ -295,4 +308,27 @@ sprites at load time without a document. The document half is three calls a test
 
 ## Outcome
 
-Written when the plan closes.
+Closed 2026-10-25. Every step landed. A lit scene casts cascaded shadows, an upload returns at
+once, a texture is requested as a mesh is, a route and sight cross region seams, a voice and an
+FMOD event have a position, imagetool packs and unpacks sprite sheets, and the ray hider shades
+its hits in batches.
+
+What turned out differently from the plan:
+
+- **Step 2 became two decisions.** A profile showed a run's fixed cost, not the stencil alone,
+  was the larger part. Batches reach every depth, not a row's first hits only
+  ([ADR-0113](../../adr/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md)), and a
+  hit's neighbours are shaded only for a shader that differentiates
+  ([ADR-0114](../../adr/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md)).
+  The ray-traced scenes rendered 1.5 to 3.9 times faster, with the pictures unchanged.
+- **Step 6 changed the default allocator.** Measuring the budget showed device memory was most
+  of an upload's cost, so suballocation became the default
+  ([ADR-0110](../../adr/0110-memory-suballocate-by-default.md)) before the budget was set.
+- **Step 9's listener carries its right.** The default camera hand puts up x direction on the
+  right of the screen, so a listener built from forward and up alone heard every sound on the
+  wrong side.
+- **Step 3 culls casters per cascade**, which needed a sphere around each registered mesh.
+
+Left open, in [TODO.md](../../TODO.md): `fitShadow` bounds caster positions rather than their
+extent. The FMOD backend's placement, like the rest of it, has no CI gate, and a traced ray is
+cast for every hit of a run whatever branch it took, because a callback has no lane mask.

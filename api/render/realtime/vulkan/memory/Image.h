@@ -10,6 +10,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <vector>
 
 #include "Allocation.h"
 
@@ -45,6 +46,16 @@ class Image final {
         VkImageAspectFlags aspect;      /**< the aspects the view names **/
         uint32_t mipLevels;
         VkComponentMapping components;  /**< the view's swizzle, identity unless set **/
+        /**
+         * How many layers a 2D image has. An image of more than one is always arrayed. Ignored
+         * by a 3D image, which has one
+         **/
+        uint32_t layers;
+        /**
+         * Whether view() is a 2D array view over every layer, as a sampler2DArray reads, rather
+         * than a 2D view. Each layer also gets a 2D view of its own, from layerView()
+         **/
+        bool arrayed;
     };
 
     /**
@@ -67,9 +78,22 @@ class Image final {
     VkImage handle() const noexcept;
 
     /**
-     * @return the view, for an attachment or a descriptor set
+     * @return the view, for an attachment or a descriptor set: a 2D array view for an arrayed
+     *         image, and a 2D or 3D view otherwise
      **/
     VkImageView view() const noexcept;
+
+    /**
+     * @return a 2D view of one layer, which an attachment that draws into that layer alone
+     *         names. view() for an image that is not arrayed, and null for a layer it does not
+     *         have
+     **/
+    VkImageView layerView(uint32_t layer) const noexcept;
+
+    /**
+     * @return how many layers the image has
+     **/
+    uint32_t layers() const noexcept;
 
     /**
      * @return what the image was made from
@@ -91,6 +115,7 @@ class Image final {
     VkImage image_;
     Allocation memory_;
     VkImageView view_;
+    std::vector<VkImageView> layerViews_;  /**< one per layer, for an arrayed image only **/
 };
 
 };  // namespace v3d::render::realtime::vulkan::memory

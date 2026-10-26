@@ -47,6 +47,10 @@ namespace v3d::render::realtime::vulkan::frame {
  * into current() and what the previous frame drew is still readable at previous(). One
  * image cannot do that, because it would be read as last frame and written as this one at
  * once. The accessors that take no slot return current()'s.
+ *
+ * A depth-only target can have several layers, as the cascades of a shadow map do. A pass
+ * draws into one layer, named by Pass::layer(), and a reader samples every layer as one
+ * sampler2DArray.
  **/
 class RenderTarget final {
  public:
@@ -66,13 +70,16 @@ class RenderTarget final {
      * @param images one, or the Ring's frames in flight for a target a pass reads the previous
      *        frame of. Each image of a target with more than one starts cleared and readable,
      *        so previous() can be read on the first frame
+     * @param layers how many layers the depth image has, which more than one needs a target
+     *        with sampled depth and no colour
      * @throw std::runtime_error if allocation fails, if either dimension is zero, if there
-     *        is no colour and no sampled depth, or if images is neither one nor the frames in
-     *        flight. A target with no colour and no sampled depth would have nothing to read
+     *        is no colour and no sampled depth, if images is neither one nor the frames in
+     *        flight, or if there is more than one layer and a colour image or no sampled depth.
+     *        A target with no colour and no sampled depth would have nothing to read
      **/
     RenderTarget(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
         uint32_t width, uint32_t height, VkFormat colour, bool depth = false, bool sampledDepth = false,
-        uint32_t images = 1);
+        uint32_t images = 1, uint32_t layers = 1);
 
     /**
      **/
@@ -98,9 +105,22 @@ class RenderTarget final {
     void recreate(uint32_t width, uint32_t height);
 
     /**
+     * Clear every image to transparent black and the far plane, and leave each in the layout a
+     * reader samples it in, as though a pass had drawn into it. A target read before any pass
+     * has drawn into it then reads a defined image. It waits for nothing, and runs before the
+     * next frame's passes.
+     **/
+    void clear();
+
+    /**
      * @return how many images the target holds
      **/
     uint32_t images() const noexcept;
+
+    /**
+     * @return how many layers the depth image has
+     **/
+    uint32_t layers() const noexcept;
 
     /**
      * @return the slot the frame being built draws into: the Ring's frame() modulo images()
@@ -145,9 +165,10 @@ class RenderTarget final {
     VkImage depthImage() const noexcept;
 
     /**
-     * @return the depth attachment's view, or null when there is none
+     * @return the view a pass attaches to draw into one layer of the depth image, or null when
+     *         there is no depth or no such layer
      **/
-    VkImageView depthView() const noexcept;
+    VkImageView depthView(uint32_t layer = 0) const noexcept;
 
     /**
      * @return the depth format, or VK_FORMAT_UNDEFINED when there is no depth image
@@ -227,6 +248,7 @@ class RenderTarget final {
     boost::shared_ptr<Ring> ring_;
     VkFormat format_;
     uint32_t images_;
+    uint32_t layers_;
     std::vector<Slot> slots_;
     boost::shared_ptr<pipeline::Sampler> sampler_;
     VkExtent2D extent_;

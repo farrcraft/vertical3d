@@ -7,10 +7,15 @@
 
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/lighting/Shadow.h>
 
 #include "Poses.h"
 
+#include <cstdint>
+#include <optional>
+
 #include <entt/entt.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::render::realtime::vulkan::renderer {
 class Lit;
@@ -41,16 +46,35 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
     float outline, Pass* pass, const Poses& poses = Poses());
 
 /**
+ * Which cascade a shadow pass draws, and what it covers.
+ **/
+struct Casting final {
+    /** the cascade, which is the pass's layer and the matrix it is drawn through **/
+    uint32_t cascade = 0;
+    /**
+     * The sphere the cascade covers, from lighting::Cascades::bounds, and the direction towards
+     * the light. A static caster that cannot throw a shadow into it is left out. Nothing draws
+     * every caster, as a map of one layer fitted to the casters needs
+     **/
+    std::optional<lighting::ShadowBounds> covers;
+    glm::vec3 towards{0.0F, 1.0F, 0.0F};
+};
+
+/**
  * Every entity carrying both an ecs::component::Transform and a component::Mesh that casts a
  * shadow, submitted to a shadow pass with Lit::shadow(). Placed and posed as meshes() places
  * and poses it, so a shadow follows what casts it between steps.
  *
- * The pass is the caller's. It draws into a target with sampled depth and no colour, and names
- * the scene Lit::scene() returned for this frame and a depth bias, and scene() is called first,
- * as for meshes(). The lit pass names the target in Pass::reads(), so the frame records this
- * one first.
+ * The pass is the caller's. It draws into a target with sampled depth and no colour, into the
+ * layer of the cascade it draws, and names the scene Lit::scene() returned for this frame and a
+ * depth bias. scene() is called first, as for meshes(). The lit pass names the target in
+ * Pass::reads(), so the frame records this one first. A shadow map of several cascades takes a
+ * pass and a call for each.
+ *
+ * A static caster is culled against the cascade by a sphere around its model, scaled by its
+ * transform. A skinned one is never culled, since its pose can reach past its bind pose.
  **/
 void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, vulkan::renderer::Lit* lit,
-    Pass* pass, const Poses& poses = Poses());
+    Pass* pass, const Poses& poses = Poses(), const Casting& casting = Casting());
 
 };  // namespace v3d::render::realtime::entity

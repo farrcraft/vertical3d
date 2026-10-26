@@ -10,6 +10,7 @@
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
@@ -189,6 +190,11 @@ Lit::Lit(const boost::shared_ptr<device::Device>& device, const boost::shared_pt
         std::vector<VkDescriptorSetLayoutBinding>{block, map, palette, objects}, ring_->framesInFlight(), "scene");
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
+    // read as an array of layers, as every shadow map is, so the binding has one kind of view
+    unshadowed_ = boost::make_shared<frame::RenderTarget>(device_, ring_, 1, 1, VK_FORMAT_UNDEFINED, true, true);
+    unshadowed_->clear();
+    unshadowedTexture_ = unshadowed_->depthTexture();
+
     createPipelines(shaders, colour, depth, shadow, front);
 }
 
@@ -242,7 +248,8 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
             .depth(true, true)
             .depthBias(true)
             .colourFormats({})
-            .depthFormat(shadow);
+            .depthFormat(shadow)
+            .push({.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(Cascade)});
         declare(&caster, uniforms_->layout(), textures_->layout(), scenes_->layout());
         (skinned ? skinnedShadow_ : shadow_) = resources_->add(caster.build(cache_));
     }
@@ -382,9 +389,14 @@ VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const Textur
     }
 
     const pipeline::Texture* texture = resources_->texture(shadowMap);
-    if (texture == nullptr || !texture->image) {
-        // white reads as the far plane, so nothing is in shadow
-        texture = resources_->texture(textures_->white());
+    // the white texture is what Textures gives for a target with no depth to read, which is no
+    // shadow map
+    if (texture == nullptr || !texture->image || shadowMap == textures_->white()) {
+        // the far plane in every texel, so nothing is in shadow
+        texture = &unshadowedTexture_;
+    }
+    if (!texture->image->spec().arrayed) {
+        throw std::runtime_error("Lit::scene names a shadow map that is not a sampled depth target, which is read as layers");
     }
     const VkDescriptorImageInfo image = texture->descriptor();
 

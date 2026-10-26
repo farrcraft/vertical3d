@@ -11,6 +11,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
 #include <string_view>
 #include <vector>
 
@@ -56,6 +57,8 @@ class Capture final {
          * It is also the depth format the renderer prefers.
          **/
         bool depth;
+        /** which layer of a layered image, such as one cascade of a shadow map **/
+        uint32_t layer;
     };
 
     /**

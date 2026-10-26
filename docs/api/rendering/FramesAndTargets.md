@@ -109,7 +109,7 @@ auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
 ```
 
 The constructor is `RenderTarget(device, ring, width, height, colour, depth = false,
-sampledDepth = false, images = 1)`.
+sampledDepth = false, images = 1, layers = 1)`.
 
 - **Size and format are yours.** A target does not follow the window. An app that wants one the
   window's size calls `recreate(width, height)` when `beginFrame()` reports a new size.
@@ -122,6 +122,16 @@ sampledDepth = false, images = 1)`.
   `target->depthFormat()`.
 - **A pass that both samples a target's depth and draws into it is not allowed.** The renderer
   does not detect it; the validation layer reports it.
+- **A depth-only target can have several layers**, as a shadow map with a layer per cascade
+  does. It needs sampled depth and no colour, or the constructor throws. A pass draws into one
+  layer, set with `Pass::layer(n)`, and recording a pass whose layer the target lacks throws.
+  Every pass that draws into the target clears its own layer, and the target is moved into its
+  drawing layout once, before the first of them, and made readable once, after the last.
+- **Sampled depth is read as an array of layers**, a `sampler2DArray`, whether it has one layer
+  or several. Layer n is the third coordinate's n.
+- **`clear()` clears every image and layer** to transparent black and the far plane, and leaves
+  them readable, as though a pass had drawn into them. A target read before any pass draws into
+  it then reads something defined.
 
 ### Sampling a target
 

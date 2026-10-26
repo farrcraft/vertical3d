@@ -23,14 +23,15 @@ auto context = renderer_->context();
 auto scene = boost::make_shared<RenderTarget>(context->device(), context->ring(),
     width, height, VK_FORMAT_R8G8B8A8_SRGB, true);
 auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true);
+    mapSize, mapSize, VK_FORMAT_UNDEFINED, true, true, 1, cascades);  // a layer per cascade
 
 vulkan::renderer::Lit lit(context->device(), context->pipelineCache(), context->resources(),
     context->ring(), context->frameUniforms(), context->textures(),
     scene->format(), scene->depthFormat(), map->depthFormat());
 ```
 
-Pass `VK_FORMAT_UNDEFINED` as the last format for a scene with no shadows.
+Pass `VK_FORMAT_UNDEFINED` as the last format for a scene with no shadows. A shadow map of one
+cascade has one layer, which is the default.
 
 **A camera on `Profile::Hand::DirectionCrossUp` needs a counter-clockwise front face.** That
 hand mirrors the image, which reverses the winding of every face on screen. `Lit` culls with a
@@ -48,6 +49,8 @@ be built in the camera's hand too: pass the hand to `lighting::shadowLight()`.
 
 ### Each frame
 
+With one shadow map fitted by `fitShadow` or `fitShadowToView`:
+
 ```cpp
 lighting::Settings settings;
 const glm::mat4 light = lighting::shadowLight(settings.light, bounds);
@@ -61,6 +64,32 @@ casting->depth(true);
 casting->scene(sceneSet);
 casting->depthBias(settings.constantBias, settings.slopeBias);
 entity::casters(registry, alpha(), meshes, &lit, casting.get());
+```
+
+With cascades, there is a shadow pass for each, drawing into its own layer:
+
+```cpp
+const std::vector<float> splits = lighting::splitView(near, 120.0F, 3, 0.75F);
+const std::optional<lighting::Cascades> cascades = lighting::fitCascades(
+    camera.projection() * camera.view(), splits, settings.light, {.texels = mapSize});
+VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, *cascades, 1.0F / mapSize),
+    context->textures()->depthTexture(*map));
+
+for (uint32_t cascade = 0; cascade < cascades->count; cascade++) {
+    boost::shared_ptr<Pass> casting = frame->pass("shadow " + std::to_string(cascade));
+    casting->target(map);
+    casting->layer(cascade);
+    casting->depth(true);
+    casting->scene(sceneSet);
+    casting->depthBias(settings.constantBias, settings.slopeBias);
+    entity::casters(registry, alpha(), meshes, &lit, casting.get(), poses,
+        {.cascade = cascade, .covers = cascades->bounds[cascade], .towards = settings.light});
+}
+```
+
+Then the lit pass, either way:
+
+```cpp
 
 pass->target(scene);
 pass->depth(true);
@@ -85,7 +114,12 @@ Rules:
   throws when the frame is recorded.
 - **The shadow pass names a depth bias.** The shadow pipeline is built with depth bias, and a
   pass without one throws.
-- With no shadow map passed to `scene()`, the white texture stands in and nothing is shadowed.
+- **A shadow draw pushes its cascade.** The shadow pipelines declare one push constant,
+  `Lit::Cascade`, which picks the matrix the draw goes through. `casters()` pushes the cascade
+  its `Casting` names, which is zero by default.
+- **The shadow map is read as an array of layers.** `scene()` takes the depth of a target built
+  with sampled depth, of one layer or several, and throws for any other texture. With no shadow
+  map, a map of one layer cleared to the far plane stands in, and nothing is shadowed.
 - `meshes()` submits every entity's outline, then every entity's surface. Each entity is drawn
   between its last two simulation steps, using `alpha`.
 - Entities that draw the same registry entry are drawn together: one draw per part, with an
@@ -94,6 +128,11 @@ Rules:
   grouped with the first.
 - `casters()` submits only entities whose `component::Mesh::castsShadow` is set, grouped as
   `meshes()` groups them.
+- **`casters()` culls against a cascade** when its `Casting` names the sphere the cascade
+  covers. A static caster is left out when a sphere around its model, scaled by its transform,
+  does not meet the box the cascade is drawn through (`lighting::casts()`). A skinned caster is
+  always drawn, because its pose can reach past the bind pose its sphere is taken from. With no
+  sphere named, every caster is drawn.
 - An entity whose mesh handle was released is skipped.
 
 ### Fitting the shadow map
@@ -131,6 +170,47 @@ pipeline does. A light built in the other hand stores each caster's far side in 
 casters move somewhere new. A map fitted by `fitShadowToView` every frame follows the camera
 instead.
 
+### Cascades
+
+One map spread over a long view gives every texel a large piece of the world, and a near
+shadow loses its detail. Cascades split the view by distance into up to
+`lighting::maximumCascades` (4) slices, each with a layer of the shadow map of its own. A near
+slice is small, so its texels are small.
+
+- **Distances are measured from the camera's near plane, along its view direction.** A split is
+  where a cascade ends.
+- **`lighting::splitView(near, distance, count, lambda)`** gives the splits by the practical
+  split scheme. `near` is the camera's near plane, its distance from the eye. Lambda 1 gives
+  logarithmic splits, which keep each cascade's far end the same multiple of its near end, as
+  the eye measures them. Lambda 0 gives cascades of equal length. Between, it blends the two;
+  0.5 to 0.8 is usual. The last split is `distance`. It returns nothing for a near plane or a
+  distance that is not positive and finite, or a count outside 1 to 4.
+- **A game can give its own splits** instead, increasing and above zero.
+- **`lighting::fitCascades(viewProjection, splits, towards, fit)`** fits a cascade to each slice,
+  as `fitShadowToView` fits one map: a sphere whose radius holds still as the camera turns,
+  with its centre moved to a whole texel. It returns the matrix each cascade is drawn through,
+  the sphere it covers, where it ends, and the near plane. `CascadeFit` holds the layer's
+  width in texels, the blend and the camera's hand.
+- **Each cascade starts inside the one before it.** Cascade i covers from split i - 1, less the
+  blend, to split i. The blend is a fraction of the split, 0.1 by default, held between 0 and
+  0.5.
+- **The lit pass picks a fragment's cascade by its distance from the near plane**: the first
+  whose split is beyond it. Past the last split there is no shadow. Over the last part of a
+  cascade, the blend, the fragment fades from that cascade's shadow into the next's, so the
+  change in detail does not show as a line.
+- **The normal bias grows with the cascade.** `Settings::normalBias` is for the first
+  cascade, and each later one moves the lookup further, by its radius over the first's,
+  because its texels are wider.
+- `fitCascades` returns nothing for splits that are empty, more than 4, not increasing, or not
+  above zero, a light direction that is zero or not finite, fewer than 4 texels, or a matrix
+  that cannot be inverted.
+- **One map is a single cascade.** `pack(settings, light, texel)` packs one matrix as a cascade
+  that reaches every distance, so a map fitted by `fitShadow` or `fitShadowToView` is drawn as
+  before.
+- Each cascade's shadow pass is a pass of its own, so the pass timings show what each costs.
+
+Background: [ADR-0115](../../adr/0115-rendering-cascaded-shadows-in-a-layered-map.md)
+
 ### Skinned models
 
 Skinned models are drawn by the same calls with one more argument. Compute the poses once per
@@ -165,11 +245,11 @@ entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get(), po
 | `colour`, `shadowColour` | The light's colour (mid and lit bands) and the shadow band's colour. White leaves the bands unchanged. |
 | `outline` | How far the outline is pushed out, in model units. Zero draws no outline. |
 | `constantBias`, `slopeBias` | Depth bias for the shadow pass. Too little and a surface shadows itself; too much and a shadow detaches from its caster. |
-| `normalBias` | How far a lookup moves along the normal before reading the shadow map. |
+| `normalBias` | How far a lookup moves along the normal before reading the shadow map, in the first cascade. |
 | `shadowStrength` | How much of a band a shadow removes. Zero still draws the shadow pass but ignores it. |
 
-`lighting::pack(settings, lightViewProjection, texel)` turns the settings into the
-`SceneUniforms` that `scene()` takes. Changing `colour` and `shadowColour` over time is how a
+`lighting::pack(settings, lightViewProjection, texel)`, or `pack(settings, cascades, texel)`,
+turns the settings into the `SceneUniforms` that `scene()` takes. Changing `colour` and `shadowColour` over time is how a
 scene's light changes through a day.
 
 ### The outline
@@ -209,14 +289,15 @@ shaders.cel = loadSpirv("shaders/my_cel.frag.spv");
 vulkan::renderer::Lit lit(..., scene->format(), scene->depthFormat(), map->depthFormat(), shaders);
 ```
 
-A replacement must declare the same sets as the built-in shaders, and no push constants:
+A replacement must declare the same sets as the built-in shaders. A shadow stage declares one
+push constant, a `uint` naming its cascade, at offset 0, and no other stage declares any:
 
 | Binding | Holds |
 |---|---|
 | set 0, binding 0 | The camera (`Camera` block) |
 | set 1, binding 0 | Every texture, an array of combined image samplers. An object's albedo is the one at its `albedo` slot |
-| set 2, binding 0 | The scene (`Scene` block, laid out as `SceneUniforms`) |
-| set 2, binding 1 | The shadow map |
+| set 2, binding 0 | The scene (`Scene` block, laid out as `SceneUniforms`, with a light matrix, a far end and a radius for each of 4 cascades) |
+| set 2, binding 1 | The shadow map, a `sampler2DArray` with a layer per cascade |
 | set 2, binding 2 | The joint palette, a read-only storage buffer (skinned shaders) |
 | set 2, binding 3 | The objects, a read-only storage buffer of `Lit::Object`: model matrix, base colour, outline, first joint, albedo slot (96 bytes each) |
 

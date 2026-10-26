@@ -21,7 +21,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
-| [ScaleAndReach](ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice, and sprite sheet packing |
 
 ## Completed plans
 
@@ -29,6 +28,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [ScaleAndReach](completed/ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | 2026-10-25 | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice and placed events, sprite sheet packing, and ray hits shaded in batches |
 | [SettingsAndPortability](completed/SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | 2026-10-25 | Settings widgets and a text field in `Immediate`, a canvas segment, key bindings an app can read, reset and save, FMOD bus volume and pause, a requested present mode, wheel zoom and edge pan, a portability driver, and the platform-free libraries built with Clang on Linux |
 | [Hardening](completed/Hardening.md) | moya, shading language, image, voxel, apps | 2026-10-24 | RI's C interface and the reyes hider following RI, `output`, `faceforward` and message passing as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
 | [EditorModelling](completed/EditorModelling.md) | Editor, brep, ui, engine | 2026-10-24 | A dirty flag that asks before discarding work, selection sets and a rubber band, component moves, split, extrude, inset and merge with undo, fixed views and resizable panes |

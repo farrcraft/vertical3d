@@ -56,6 +56,7 @@ content went. Numbers are never reused.
 | [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
 | [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
 | [0110](0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted |
+| [0115](0115-rendering-cascaded-shadows-in-a-layered-map.md) | Rendering: cascaded shadows in a layered map | accepted |
 
 ## Offline rendering
 

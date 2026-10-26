@@ -21,16 +21,11 @@ and its section names the plan or roadmap that orders it.
 
 ## Lit scenes
 
-[ScaleAndReach](plans/ScaleAndReach.md) orders this, in step 3.
+[] **`lighting::fitShadow` covers each caster's position and a margin, not its extent or
+scale.** A caller with large casters passes a margin big enough for them. A registered mesh
+carries a sphere around its vertices (`MeshRegistry::Entry::bound`), which the fit could
+scale by each caster's transform instead.
 
-[] **There are no cascaded shadow maps.**
-
-- `lighting::fitShadowToView` fits one map to the camera's view out to a distance. Over a long
-  view, one map spreads its texels thinly, and near shadows lose detail.
-- Cascades split the view into slices by distance, each with its own map, and the lit shader
-  picks the slice a fragment falls in.
-- `lighting::fitShadow` covers each caster's position and a margin, not its extent or scale. A
-  caller with large casters passes a margin big enough for them.
 - Background: [LitScene, step 8](plans/completed/LitScene.md#step-8--a-shadow-map).
 
 ## Tests

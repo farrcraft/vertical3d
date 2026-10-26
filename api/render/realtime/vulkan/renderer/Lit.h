@@ -10,11 +10,13 @@
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <vulkan/vulkan.h>
 
@@ -40,8 +42,9 @@ namespace v3d::render::realtime::vulkan::renderer {
  * and pushes nothing.
  *
  * Every pipeline here declares the camera at set 0, the albedo at set 1 in the Textures
- * material layout, and the scene at set 2, and no push constants. What they draw is linear
- * light, so the target they draw into must be an sRGB one, which encodes on store.
+ * material layout, and the scene at set 2. The shadow pipelines also declare a push constant,
+ * the cascade a draw is drawn into, which the others do not. What they draw is linear light,
+ * so the target they draw into must be an sRGB one, which encodes on store.
  *
  * Front faces are clockwise, because a model is wound counter clockwise seen from outside and
  * the cameras in api/type flip y into Vulkan's clip space.
@@ -66,11 +69,12 @@ class Lit final {
      * The SPIR-V each pipeline is built from. The defaults are the api's own, embedded at
      * build time. A game that loads its own shaders from disk passes in what it loaded.
      *
-     * A replacement must declare the same descriptor sets as the defaults and no push
-     * constants, which including shaders/lit/lit.glsl provides. A vertex stage reads its object
-     * at its instance index, and a fragment stage at an index its vertex stage hands it. A
-     * missing or extra binding fails at pipeline creation. A block with its members reordered
-     * is not detected.
+     * A replacement must declare the same descriptor sets as the defaults, which including
+     * shaders/lit/lit.glsl provides. A shadow stage declares one push constant, a uint naming
+     * the cascade, and no other stage declares any. A vertex stage reads its object at its
+     * instance index, and a fragment stage at an index its vertex stage hands it. A missing or
+     * extra binding fails at pipeline creation. A block with its members reordered is not
+     * detected.
      *
      * A vertex stage is given the attributes its default reads and no others. The cel pass
      * gets the position, normal and uv, the outline the position and normal, and the shadow
@@ -134,11 +138,19 @@ class Lit final {
     /**
      * The pipeline a caster is drawn into a shadow map with. It is built with depth bias, so
      * the pass it is drawn in must name one, from lighting::Settings::constantBias and
-     * slopeBias.
+     * slopeBias. A draw with it pushes a Cascade.
      *
      * @return the pipeline, or an unset handle when this was built with no shadow format
      **/
     PipelineHandle shadow() const noexcept;
+
+    /**
+     * The push constant a draw with shadow() or skinnedShadow() carries: which cascade, and so
+     * which layer and matrix, it is drawn into.
+     **/
+    struct Cascade final {
+        uint32_t index = 0;
+    };
 
     /**
      * The pipelines a skinned model is drawn with, in place of cel(), outline() and shadow().
@@ -157,7 +169,8 @@ class Lit final {
      * last submission to finish, as StreamRing::claim() does. Call it while the frame is
      * built, before the Ring begins the frame, and before any object() call for the frame.
      *
-     * @param shadowMap the depth a shadow pass drew, or an unset handle for no shadow
+     * @param shadowMap the depth the shadow passes drew, a sampled depth target of a layer
+     *        per cascade, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame, from entity::Poses::palette()
      **/
     VkDescriptorSet scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
@@ -229,6 +242,12 @@ class Lit final {
     boost::shared_ptr<pipeline::DescriptorPool> scenes_;
     std::vector<Slot> slots_;
     Slot* current_ = nullptr;   /**< the slot the last scene() wrote **/
+    /**
+     * A shadow map of one layer cleared to the far plane, which a scene with no shadow map
+     * reads, so that nothing is in shadow
+     **/
+    boost::shared_ptr<frame::RenderTarget> unshadowed_;
+    pipeline::Texture unshadowedTexture_;
     PipelineHandle cel_;
     PipelineHandle outline_;
     PipelineHandle shadow_;

@@ -14,7 +14,7 @@ depth state.
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
 | `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
-| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias; built only when given a shadow format |
+| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
 `DeviceContext` builds `Quad`, `Line` and `World` on first request against its colour format and
@@ -40,6 +40,11 @@ adds to, so the walks run after it. The palette and object buffers are one per f
 grow by doubling, and retire an outgrown buffer through the ring. An object buffer that grows
 copies the objects already added, because the frame's draws name them by index. A static
 object has `firstJoint = 0`, and its pipeline ignores it.
+
+The shadow map binding holds a 2D array view, a layer per cascade. With no map, it holds a map of
+one layer and one texel that `Lit` owns, cleared to the far plane at construction, so the
+binding always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
+own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
 
 **Skinned vertex.** `MeshRegistry::SkinnedVertex` is `type::Model::Vertex` (32 bytes) followed by
 `type::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.

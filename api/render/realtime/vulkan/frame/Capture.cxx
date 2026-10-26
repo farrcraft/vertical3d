@@ -43,7 +43,8 @@ image(VK_NULL_HANDLE),
 extent{0, 0},
 format(VK_FORMAT_UNDEFINED),
 layout(VK_IMAGE_LAYOUT_UNDEFINED),
-depth(false) {
+depth(false),
+layer(0) {
 }
 
 /**
@@ -70,7 +71,7 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
     VkBufferImageCopy region{};
     region.imageSubresource.aspectMask = aspect;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.baseArrayLayer = source.layer;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {width_, height_, 1};

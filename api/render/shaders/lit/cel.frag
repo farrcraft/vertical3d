@@ -20,18 +20,20 @@ layout(location = 3) flat in uint instance;
 // every texture the context holds. An object's albedo is the one at its slot, and the slot may
 // differ between the fragments of one draw's instances
 layout(set = 1, binding = 0) uniform sampler2D textures[];
-layout(set = 2, binding = 1) uniform sampler2D shadowMap;
+// a layer for each cascade
+layout(set = 2, binding = 1) uniform sampler2DArray shadowMap;
 
 layout(location = 0) out vec4 colour;
 
 /**
- * How much of a 3x3 neighbourhood of the shadow map lies nearer the light than this fragment,
- * scaled by the shadow's strength. Zero is fully lit.
+ * How much of a 3x3 neighbourhood of one cascade's layer lies nearer the light than this
+ * fragment. Zero is fully lit.
  **/
-float occlusion(vec3 position, vec3 normal) {
+float occluded(vec3 position, vec3 normal, int cascade) {
     // moving the lookup off the surface along its normal removes the acne that depth bias
-    // leaves on curved geometry
-    const vec4 clip = scene.lightViewProjection * vec4(position + normal * scene.shadow.z, 1.0);
+    // leaves on curved geometry. A wider cascade has wider texels, so it moves further
+    const float bias = scene.shadow.z * (scene.radii[cascade] / scene.radii[0]);
+    const vec4 clip = scene.lightViewProjection[cascade] * vec4(position + normal * bias, 1.0);
     const vec3 ndc = clip.xyz / clip.w;
     const vec2 at = ndc.xy * 0.5 + 0.5;
 
@@ -41,14 +43,42 @@ float occlusion(vec3 position, vec3 normal) {
         return 0.0;
     }
 
-    float occluded = 0.0;
+    float hidden = 0.0;
     for (int y = -1; y <= 1; ++y) {
         for (int x = -1; x <= 1; ++x) {
-            const float nearest = texture(shadowMap, at + vec2(x, y) * scene.shadow.x).r;
-            occluded += ndc.z > nearest ? 1.0 : 0.0;
+            const float nearest = texture(shadowMap, vec3(at + vec2(x, y) * scene.shadow.x, float(cascade))).r;
+            hidden += ndc.z > nearest ? 1.0 : 0.0;
         }
     }
-    return (occluded / 9.0) * scene.shadow.y;
+    return hidden / 9.0;
+}
+
+/**
+ * How shadowed a fragment is, scaled by the shadow's strength. Zero is fully lit.
+ *
+ * The cascade is the first whose far end is beyond the fragment's distance from the camera's
+ * near plane, and past the last there is no shadow. Over the last part of a cascade, the blend,
+ * the fragment fades into the next one, so the change in detail between them does not show as
+ * a line.
+ **/
+float occlusion(vec3 position, vec3 normal) {
+    const float distance = dot(scene.plane.xyz, position) + scene.plane.w;
+    const int count = int(scene.cascades.x);
+    int cascade = 0;
+    while (cascade < count && distance >= scene.far[cascade]) {
+        ++cascade;
+    }
+    if (cascade >= count) {
+        return 0.0;
+    }
+
+    float shadowed = occluded(position, normal, cascade);
+    const float band = scene.far[cascade] * scene.cascades.y;
+    const float into = distance - (scene.far[cascade] - band);
+    if (cascade + 1 < count && band > 0.0 && into > 0.0) {
+        shadowed = mix(shadowed, occluded(position, normal, cascade + 1), into / band);
+    }
+    return shadowed * scene.shadow.y;
 }
 
 void main() {

@@ -52,6 +52,7 @@ v3d_add_test(render_device
 	"device/LitSceneTest.cpp"
 	"device/SkinTest.cpp"
 	"device/LitCrowdTest.cpp"
+	"device/CascadeTest.cpp"
 	"device/RenderTargetTest.cpp"
 	"device/PostTest.cpp"
 	"device/PipelineBuilderTest.cpp"

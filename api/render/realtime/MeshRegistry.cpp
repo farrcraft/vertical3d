@@ -18,6 +18,7 @@
 #include "Handle.h"
 #include "Textures.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -33,7 +34,10 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/weak_ptr.hpp>
+#include <glm/common.hpp>
+#include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
 
@@ -97,6 +101,29 @@ std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
         }
     }
     return total;
+}
+
+/**
+ * A sphere around a model's vertices: the middle of the box that holds them, and the farthest
+ * of them from it. A model with no vertices is a point at the origin.
+ **/
+glm::vec4 bound(const type::Model& model) {
+    const std::vector<type::Model::Vertex>& vertices = model.vertices();
+    if (vertices.empty()) {
+        return glm::vec4(0.0F);
+    }
+    glm::vec3 lowest = vertices.front().position;
+    glm::vec3 highest = lowest;
+    for (const type::Model::Vertex& vertex : vertices) {
+        lowest = glm::min(lowest, vertex.position);
+        highest = glm::max(highest, vertex.position);
+    }
+    const glm::vec3 centre = (lowest + highest) * 0.5F;
+    float radius = 0.0F;
+    for (const type::Model::Vertex& vertex : vertices) {
+        radius = std::max(radius, glm::length(vertex.position - centre));
+    }
+    return glm::vec4(centre, radius);
 }
 
 };  // namespace
@@ -257,6 +284,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     if (!model.skeleton().empty()) {
         slot.entry.skin = boost::make_shared<const Skin>(Skin{ model.skeleton(), model.clips() });
     }
+    slot.entry.bound = bound(model);
     MeshHandle handle = pending;
     try {
         for (const type::Model::Part& source : model.parts()) {
