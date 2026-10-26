@@ -275,9 +275,9 @@ of which is the documentation of one method per RI request.
   `RIBHandler` as well as by the reader, because the C interface has no reader in front of it.
 - **Different from the plan:** `RiSphere` passes no parameter to the handler. RI ends its named
   arguments on a float, and a `va_list` cannot be started from one.
-- Eight new cases. The notice case and the C cases for the sphere, the mesh and the motion block
-  fail to build without the change. The reader's coordinate system case fails to build, and the
-  moya ones for coordinate systems and an empty name fail.
+- Seven new cases. The C cases for the sphere, the mesh and the motion block fail without the
+  change. The other four fail to build, because the handler's constructor and the handler
+  interface both changed. The displacement case sets its search path through `RiOption` now.
 
 ### Step 5 — The engine without Vulkan
 
