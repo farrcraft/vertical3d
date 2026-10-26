@@ -471,14 +471,15 @@ BOOST_AUTO_TEST_CASE(imagewriter_encodes_to_bytes_test) {
         BOOST_TEST_CONTEXT(kind) {
             const std::optional<std::string> encoded = factory.encode(image, kind);
             BOOST_REQUIRE(encoded);
-            const boost::shared_ptr<v3d::image::Image> decoded =
-                factory.read(reinterpret_cast<const unsigned char*>(encoded->data()), encoded->size(), kind);
+            const boost::shared_ptr<v3d::image::Image> decoded = encoded
+                ? factory.read(reinterpret_cast<const unsigned char*>(encoded->data()), encoded->size(), kind)
+                : boost::shared_ptr<v3d::image::Image>();
             BOOST_REQUIRE(decoded != nullptr);
             BOOST_CHECK_EQUAL(decoded->width(), side);
             BOOST_CHECK_EQUAL(decoded->height(), side);
         }
     }
-    BOOST_CHECK_GT(factory.encode(image, "jpg")->size(), 4096U);
+    BOOST_CHECK_GT(factory.encode(image, "jpg").value_or(std::string()).size(), 4096U);
 }
 
 /**

@@ -267,6 +267,7 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 
     // one glyph quad, as a font would have laid it out
     std::vector<v3d::render::realtime::canvas::Canvas::Vertex> quad;
+    quad.reserve(4);
     for (int corner = 0; corner < 4; corner++) {
         quad.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
     }

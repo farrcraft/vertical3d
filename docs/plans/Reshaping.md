@@ -394,12 +394,20 @@ decides `config`.
 
 ### Step 10 — Font and image
 
-**Open.** Needs step 9.
+**Closed.**
 
-- `font` takes UTF-8 and measures and lays out text. `TextRenderer` stops decoding.
-- `Canvas` takes quads or a vertex span, so `render` no longer depends on `font`.
-- Image writers encode to bytes, and callers write through `asset::writeFile`.
+- `font` decodes UTF-8, and a glyph's charcode is a `char32_t`. `loadGlyphs()` and the layout
+  take UTF-8, and `TextureFont::width()` measures it. The layout draws only glyphs already
+  packed, so it never adds to an atlas on the device. The white square is
+  `TextureFont::SOLID`. `TextRenderer` no longer decodes, filters or measures.
+- `Canvas::text()` takes laid out vertices and indices, so `render` does not link `font`.
+- A `Writer` encodes to bytes. `Factory::encode()` and `Factory::kind()` replace
+  `Factory::write()`, and moya, `Capture`, imagetool and the suites write through
+  `asset::writeFile`. `TextureAtlas::write()` is gone, since `image` writes no file.
 - The asset image loader reads through `asset::readFile` and decodes from memory.
+- Five new cases. They cover the UTF-8 decoder's `next()`, the layout of an unpacked glyph, a
+  font's width against its layout, and the canvas refusing an index past its run. The fifth
+  encodes every format to bytes its reader decodes.
 
 ### Step 11 — One ui styling vocabulary
 
