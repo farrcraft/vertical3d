@@ -5,29 +5,30 @@
 
 #pragma once
 
-#include <api/dag/Node.h>
-#include <api/dag/Transform.h>
+#include <api/type/Transform.h>
 
 #include <cstdint>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
 /**
  * One thing the scene holds: a mesh, a camera, a light or a group.
  *
- * Every kind has two ids, a placement from its dag::Transform base, and an object selection
- * flag. The id from its dag::Node base is unique within one run of the editor, and a selection
- * names an item by it. The document id is unique within one document and is saved with it, so
- * anything saved that refers to an item names it by that.
+ * Every kind has two ids, a placement, and an object selection flag. id() is unique within one
+ * run of the editor, and a selection names an item by it. The document id is unique within one
+ * document and is saved with it, so anything saved that refers to an item names it by that.
  *
  * The placement is local: it is measured in the space of the item's parent, which the scene
  * holds. Where the item is in the world comes from the scene's evaluation.
  *
  * An item cannot be copied, because a copy would share its id.
  **/
-class Item : public v3d::dag::Node, public v3d::dag::Transform {
+class Item {
  public:
     /**
      * Which class an item is. as() checks it before it casts.
@@ -35,9 +36,42 @@ class Item : public v3d::dag::Node, public v3d::dag::Transform {
     enum class Kind : std::uint8_t { Mesh, Camera, Light, Group };
 
     Item();
-    ~Item() override;
+    virtual ~Item();
+    Item(const Item&) = delete;
+    Item& operator=(const Item&) = delete;
 
     virtual Kind kind() const noexcept = 0;
+
+    /**
+     * The item's id within this run of the editor. Each item constructed gets an id no earlier
+     * item had, and a later item a larger one.
+     **/
+    unsigned int id() const noexcept;
+
+    /**
+     * The placement, a translation, a rotation and a scale. Each setter moves revision(), a
+     * setter that writes what is already there included.
+     **/
+    const v3d::type::Transform& placement() const noexcept;
+    void placement(const v3d::type::Transform& placement) noexcept;
+
+    glm::vec3 translation() const noexcept;
+    void translation(const glm::vec3& translation) noexcept;
+    glm::quat rotation() const noexcept;
+    void rotation(const glm::quat& rotation) noexcept;
+    glm::vec3 scale() const noexcept;
+    void scale(const glm::vec3& scale) noexcept;
+
+    /**
+     * Add an offset to the translation. A drag of the translate manipulator measures a delta,
+     * not a destination, so it moves the item through this.
+     **/
+    void translate(const glm::vec3& offset) noexcept;
+
+    /**
+     * @return translation * rotation * scale, the placement as a matrix in the parent's space
+     **/
+    glm::mat4 matrix() const;
 
     /**
      * The item's id within its document, or 0 before the scene first assigns one. The scene
@@ -69,6 +103,8 @@ class Item : public v3d::dag::Node, public v3d::dag::Transform {
     void changed() noexcept;
 
  private:
+    unsigned int id_;
+    v3d::type::Transform placement_;
     bool selected_;
     std::int64_t documentId_;
     std::uint64_t changes_ = 0;

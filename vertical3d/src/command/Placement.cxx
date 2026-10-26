@@ -5,9 +5,12 @@
 
 #include "Placement.h"
 
-#include <api/dag/Transform.h>
+#include <api/type/Transform.h>
 
 #include <cmath>
+
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -41,31 +44,10 @@ bool close(const glm::quat& first, const glm::quat& second) {
 
 /**
  **/
-Placement Placement::of(const v3d::dag::Transform& transform) {
-    Placement placement;
-    placement.translation = transform.translation();
-    placement.rotation = transform.rotation();
-    placement.scale = transform.scale();
-    return placement;
-}
-
-/**
- **/
-void Placement::applyTo(v3d::dag::Transform* transform) const {
-    if (transform == nullptr) {
-        return;
-    }
-    transform->translation(translation);
-    transform->rotation(rotation);
-    transform->scale(scale);
-}
-
-/**
- **/
-bool Placement::same(const Placement& other) const {
-    return close(translation, other.translation) &&
-        close(rotation, other.rotation) &&
-        close(scale, other.scale);
+bool same(const v3d::type::Transform& first, const v3d::type::Transform& second) {
+    return close(first.position, second.position) &&
+        close(first.rotation, second.rotation) &&
+        close(first.scale, second.scale);
 }
 
 };  // namespace v3d::editor

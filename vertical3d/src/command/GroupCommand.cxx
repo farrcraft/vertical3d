@@ -56,8 +56,8 @@ GroupCommand::GroupCommand(const boost::shared_ptr<Scene>& scene, const Items& i
     const Evaluation evaluation = scene_->evaluate();
     glm::vec3 centre(0.0F);
     for (const boost::shared_ptr<Item>& item : gathered) {
-        const Member member{ .item = item, .parent = scene_->parent(item->id()), .before = Placement::of(*item) };
-        centre += member.parent == parent_ ? member.before.translation : glm::vec3(evaluation.placed(item->id()).world[3]);
+        const Member member{ .item = item, .parent = scene_->parent(item->id()), .before = item->placement() };
+        centre += member.parent == parent_ ? member.before.position : glm::vec3(evaluation.placed(item->id()).world[3]);
         members_.push_back(member);
     }
     centre /= static_cast<float>(members_.size());
@@ -67,13 +67,13 @@ GroupCommand::GroupCommand(const boost::shared_ptr<Scene>& scene, const Items& i
         member.after = member.before;
         if (member.parent == parent_) {
             // the group only moves the origin, so the rest of the placement carries over exactly
-            member.after.translation -= centre;
+            member.after.position -= centre;
             continue;
         }
         // taken apart into a rotation and the scale along the item's own axes. Whatever the
         // two cannot hold is a shear, and is lost
         const glm::mat4& world = evaluation.placed(member.item->id()).world;
-        member.after.translation = glm::vec3(world[3]) - centre;
+        member.after.position = glm::vec3(world[3]) - centre;
         member.after.rotation = orientation(world);
         const glm::mat3 stretch = glm::transpose(glm::mat3_cast(member.after.rotation)) * glm::mat3(world);
         member.after.scale = glm::vec3(stretch[0][0], stretch[1][1], stretch[2][2]);
@@ -91,7 +91,7 @@ void GroupCommand::redo() {
     scene_->parent(group_->id(), parent_ ? parent_->id() : 0);
     for (const Member& member : members_) {
         scene_->parent(member.item->id(), group_->id());
-        member.after.applyTo(member.item.get());
+        member.item->placement(member.after);
     }
     group_->selected(true);
 }
@@ -105,7 +105,7 @@ void GroupCommand::undo() {
     // the items are moved out before the group goes, since removing it would take them too
     for (const Member& member : members_) {
         scene_->parent(member.item->id(), member.parent ? member.parent->id() : 0);
-        member.before.applyTo(member.item.get());
+        member.item->placement(member.before);
         member.item->selected(true);
     }
     group_->selected(false);

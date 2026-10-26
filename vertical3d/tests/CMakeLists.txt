@@ -92,7 +92,6 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_asset
 	v3dlib_asset_media
 	v3dlib_brep
-	v3dlib_dag
 	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
@@ -140,7 +139,6 @@ v3d_add_shader(v3dtest_vertical3d_device "../shaders/shaded.frag")
 
 target_link_libraries(v3dtest_vertical3d_device PRIVATE
 	v3dlib_brep
-	v3dlib_dag
 	v3dlib_image
 	v3dlib_log
 	v3dlib_render

@@ -216,7 +216,7 @@ void TransformTool::cancel() {
 void TransformTool::commit() {
     Target target;
     std::swap(target, dragged_);
-    std::vector<Placement> before;
+    std::vector<v3d::type::Transform> before;
     before.swap(before_);
     std::vector<VertexCommand::Shape> shapes;
     shapes.swap(shapes_);
@@ -245,8 +245,8 @@ void TransformTool::commit() {
     std::vector<TransformCommand::Change> changes;
     bool moved = false;
     for (std::size_t index = 0; index < items.size() && index < before.size(); index++) {
-        const Placement after = Placement::of(*items[index]);
-        moved = moved || !after.same(before[index]);
+        const v3d::type::Transform after = items[index]->placement();
+        moved = moved || !same(after, before[index]);
         changes.push_back({.item = items[index], .before = before[index], .after = after});
     }
     if (moved) {
@@ -339,7 +339,7 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
         }
     } else {
         for (const boost::shared_ptr<Item>& item : target.items()) {
-            before_.push_back(Placement::of(*item));
+            before_.push_back(item->placement());
         }
     }
 }

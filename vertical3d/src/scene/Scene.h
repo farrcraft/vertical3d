@@ -46,8 +46,8 @@ using Curves = std::map<std::string, v3d::type::animation::Curve>;
  * Its cameras are part of the document. They are not the views' cameras: the views own
  * theirs, and engine::CameraProfiles owns the table they are built from.
  *
- * Items are found by the id their dag::Node base carries rather than by position, so a
- * selection outlives an insertion or a removal.
+ * Items are found by their id() rather than by position, so a selection outlives an insertion
+ * or a removal.
  *
  * The scene also gives each item its document id. Ids are never reused within a document, so
  * the scene keeps the next one to give, and a saved document keeps it too.

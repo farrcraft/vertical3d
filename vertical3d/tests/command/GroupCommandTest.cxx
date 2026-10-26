@@ -117,8 +117,8 @@ BOOST_AUTO_TEST_CASE(group_undo_test) {
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     scene->add(first);
     scene->add(second);
-    const v3d::editor::Placement firstBefore = v3d::editor::Placement::of(*first);
-    const v3d::editor::Placement secondBefore = v3d::editor::Placement::of(*second);
+    const v3d::type::Transform firstBefore = first->placement();
+    const v3d::type::Transform secondBefore = second->placement();
 
     v3d::editor::GroupCommand command(scene, { first, second });
     command.redo();
@@ -132,8 +132,8 @@ BOOST_AUTO_TEST_CASE(group_undo_test) {
     BOOST_CHECK(!scene->item(group));
     BOOST_CHECK(!scene->parent(first->id()));
     BOOST_CHECK(!scene->parent(second->id()));
-    BOOST_CHECK(v3d::editor::Placement::of(*first).same(firstBefore));
-    BOOST_CHECK(v3d::editor::Placement::of(*second).same(secondBefore));
+    BOOST_CHECK(v3d::editor::same(first->placement(), firstBefore));
+    BOOST_CHECK(v3d::editor::same(second->placement(), secondBefore));
     BOOST_CHECK(first->selected());
     BOOST_CHECK(second->selected());
 

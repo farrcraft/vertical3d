@@ -24,7 +24,7 @@ TransformCommand::TransformCommand(const std::vector<Change>& changes, const std
 void TransformCommand::undo() {
     for (const Change& change : changes_) {
         if (change.item) {
-            change.before.applyTo(change.item.get());
+            change.item->placement(change.before);
         }
     }
 }
@@ -34,7 +34,7 @@ void TransformCommand::undo() {
 void TransformCommand::redo() {
     for (const Change& change : changes_) {
         if (change.item) {
-            change.after.applyTo(change.item.get());
+            change.item->placement(change.after);
         }
     }
 }

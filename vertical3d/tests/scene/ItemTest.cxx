@@ -4,7 +4,9 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/type/Transform.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -14,9 +16,22 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace {
+
+bool near(const glm::vec3& actual, const glm::vec3& expected) {
+    const float tolerance = 0.0001F;
+    return glm::all(glm::lessThan(glm::abs(actual - expected), glm::vec3(tolerance)));
+}
+
+glm::vec3 apply(const glm::mat4& transform, const glm::vec3& point) {
+    return glm::vec3(transform * glm::vec4(point, 1.0F));
+}
 
 BOOST_AUTO_TEST_CASE(item_identity_test) {
     const v3d::editor::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
@@ -60,6 +75,87 @@ BOOST_AUTO_TEST_CASE(item_placement_test) {
     light.translation(glm::vec3(4.0F, 0.0F, 0.0F));
     const glm::vec4 placed = light.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
     BOOST_CHECK_CLOSE(placed.x, 5.0F, 0.01F);
+}
+
+/**
+ * A later item has a larger id than any earlier one.
+ **/
+BOOST_AUTO_TEST_CASE(item_id_order_test) {
+    const v3d::editor::Group first;
+    const v3d::editor::Group second;
+    BOOST_CHECK_GT(second.id(), first.id());
+}
+
+/**
+ * A new item is at the origin, unrotated and unscaled. A default glm::quat is uninitialised, so
+ * this checks that the rotation starts as the identity.
+ **/
+BOOST_AUTO_TEST_CASE(item_default_placement_test) {
+    const v3d::editor::Group group;
+    BOOST_CHECK(near(group.translation(), glm::vec3(0.0F)));
+    BOOST_CHECK(near(group.scale(), glm::vec3(1.0F)));
+    BOOST_CHECK(near(apply(group.matrix(), glm::vec3(3.0F, 4.0F, 5.0F)), glm::vec3(3.0F, 4.0F, 5.0F)));
+}
+
+/**
+ * translation() replaces the position, and translate() adds to it.
+ **/
+BOOST_AUTO_TEST_CASE(item_translate_test) {
+    v3d::editor::Group group;
+    group.translation(glm::vec3(4.0F, 5.0F, 6.0F));
+    group.translate(glm::vec3(1.0F, 1.0F, 1.0F));
+    BOOST_CHECK(near(group.translation(), glm::vec3(5.0F, 6.0F, 7.0F)));
+    BOOST_CHECK(near(apply(group.matrix(), glm::vec3(0.0F)), glm::vec3(5.0F, 6.0F, 7.0F)));
+}
+
+/**
+ * The scale is applied first, so it acts along the item's own axes, not the rotated ones.
+ **/
+BOOST_AUTO_TEST_CASE(item_compose_test) {
+    v3d::editor::Group group;
+    group.rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
+    group.scale(glm::vec3(2.0F, 3.0F, 1.0F));
+    group.translation(glm::vec3(10.0F, 0.0F, 0.0F));
+
+    // x scales by 2 and then turns onto +y, and y scales by 3 and then turns onto -x
+    BOOST_CHECK(near(apply(group.matrix(), glm::vec3(1.0F, 0.0F, 0.0F)), glm::vec3(10.0F, 2.0F, 0.0F)));
+    BOOST_CHECK(near(apply(group.matrix(), glm::vec3(0.0F, 1.0F, 0.0F)), glm::vec3(7.0F, 0.0F, 0.0F)));
+}
+
+/**
+ * placement() holds what the setters wrote, and setting it back restores all three parts.
+ **/
+BOOST_AUTO_TEST_CASE(item_whole_placement_test) {
+    v3d::editor::Group group;
+    group.translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    group.scale(glm::vec3(2.0F));
+    const v3d::type::Transform kept = group.placement();
+    BOOST_CHECK_EQUAL(kept.position.x, 1.0F);
+    BOOST_CHECK((kept.matrix() == group.matrix()));
+
+    group.translation(glm::vec3(0.0F));
+    group.scale(glm::vec3(1.0F));
+    group.placement(kept);
+    BOOST_CHECK(near(group.translation(), glm::vec3(1.0F, 2.0F, 3.0F)));
+    BOOST_CHECK(near(group.scale(), glm::vec3(2.0F)));
+}
+
+/**
+ * Every placement setter moves the revision, one that writes what is already there included,
+ * and reading does not.
+ **/
+BOOST_AUTO_TEST_CASE(item_placement_revision_test) {
+    v3d::editor::Group group;
+    const std::uint64_t start = group.revision();
+    group.translation(glm::vec3(0.0F));
+    group.translate(glm::vec3(0.0F));
+    group.rotation(glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    group.scale(glm::vec3(1.0F));
+    group.placement(group.placement());
+    BOOST_CHECK_EQUAL(group.revision(), start + 5U);
+
+    static_cast<void>(group.matrix());
+    BOOST_CHECK_EQUAL(group.revision(), start + 5U);
 }
 
 BOOST_AUTO_TEST_CASE(item_selection_test) {

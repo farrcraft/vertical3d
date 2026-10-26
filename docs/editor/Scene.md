@@ -135,8 +135,9 @@ can be tested without it.
 It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
 order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
-**Items.** A scene item is a `v3d::editor::Item`. It derives from `v3d::dag::Node` and
-`v3d::dag::Transform`, and carries the object selection flag. There are four kinds:
+**Items.** A scene item is a `v3d::editor::Item`. It has an id unique within one run of the
+editor, a placement that is a `type::Transform`, and the object selection flag. There are four
+kinds:
 
 | Kind | Class | Holds |
 |---|---|---|
@@ -155,15 +156,16 @@ order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hie
     saved that refers to an item names it by its document id.
 
   An item cannot be copied, because a copy would share both ids.
-- **Placement.** `Transform` holds a translation, a rotation and a scale, measured in the space
-  of the item's parent. `matrix()` composes them as translation × rotation × scale, which is the
-  item's local matrix. Where the item is in the world comes from the scene's evaluation.
-  `translation(v)` sets the position; `translate(v)` adds an offset to it. A camera and a light
-  ignore their scale. Every setter adds one to `Transform::changes()`.
+- **Placement.** `placement()` is a translation, a rotation and a scale, measured in the space of
+  the item's parent. A command undoes a gesture by setting all three at once. `matrix()` composes
+  them as translation × rotation × scale, which is the item's local matrix. Where the item is in
+  the world comes from the scene's evaluation. `translation(v)` sets the position, and
+  `translate(v)` adds an offset to it. A camera and a light ignore their scale.
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
-  its placement, its lens or emission, and a mesh's geometry. It is the sum of
-  `Transform::changes()`, the item's own count of changes to what its kind holds, and for a mesh
-  `BRep::changes()`. Each only goes up, so the sum moves exactly when one of them does. A change
+  its placement, its lens or emission, and a mesh's geometry. It is the item's own count of
+  changes, which every placement setter and every setter of what its kind holds adds one to, and
+  for a mesh `BRep::changes()` as well. A setter that writes what is already there counts too.
+  Each count only goes up, so the sum moves exactly when one of them does. A change
   of selection does not move it. A save writes an item again only when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,

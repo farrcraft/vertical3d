@@ -5,40 +5,18 @@
 
 #pragma once
 
-#include <api/dag/Transform.h>
-
-#include <glm/ext/quaternion_float.hpp>
-#include <glm/vec3.hpp>
+#include <api/type/Transform.h>
 
 namespace v3d::editor {
 
 /**
- * Where a mesh is, all three parts of it at once.
+ * Whether two placements are the same to within a tolerance.
  *
- * A manipulator writes one of translation, rotation and scale on the object's transform.
- * A gesture is undone by restoring the whole placement, so the record does not depend on
- * which manipulator made it.
+ * A manipulator writes one of translation, rotation and scale on an item. A gesture is undone
+ * by restoring the item's whole placement, so the record does not depend on which manipulator
+ * made it. A gesture that measured nothing still composes a rotation and adds a zero offset, so
+ * the two ends of it differ in the last bits without the item having moved.
  **/
-struct Placement {
-    glm::vec3 translation{ 0.0F, 0.0F, 0.0F };
-    glm::quat rotation{ 1.0F, 0.0F, 0.0F, 0.0F };
-    glm::vec3 scale{ 1.0F, 1.0F, 1.0F };
-
-    /**
-     **/
-    static Placement of(const v3d::dag::Transform& transform);
-
-    /**
-     **/
-    void applyTo(v3d::dag::Transform* transform) const;
-
-    /**
-     * @return whether the two are the same placement to within a tolerance
-     *
-     * A gesture that measured nothing still composes a rotation and adds a zero offset,
-     * so the two ends of it differ in the last bits without the object having moved.
-     **/
-    bool same(const Placement& other) const;
-};
+bool same(const v3d::type::Transform& first, const v3d::type::Transform& second);
 
 };  // namespace v3d::editor

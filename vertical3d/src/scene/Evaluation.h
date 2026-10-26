@@ -28,7 +28,7 @@ struct Placed {
 /**
  * Where every item of a scene is, at the moment the scene was evaluated.
  *
- * It is a copy, keyed by each item's dag::Node id. An edit made after the evaluation does not
+ * It is a copy, keyed by each item's id(). An edit made after the evaluation does not
  * show in it, so a reader that has to see an edit evaluates the scene again after it.
  **/
 class Evaluation final {

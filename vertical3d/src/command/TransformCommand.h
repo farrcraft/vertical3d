@@ -31,8 +31,8 @@ class TransformCommand final : public Command {
     /** One item, where it was before the change, and where it is after it. **/
     struct Change {
         boost::shared_ptr<Item> item;
-        Placement before;
-        Placement after;
+        v3d::type::Transform before;
+        v3d::type::Transform after;
     };
 
     /**

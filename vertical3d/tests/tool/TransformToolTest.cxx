@@ -254,8 +254,8 @@ struct TwoCubes {
      **/
     void gesture(const std::string& mode, const glm::vec2& from, const glm::vec2& to) const {
         transformTool->activate(mode);
-        const v3d::editor::Placement leftBefore = v3d::editor::Placement::of(*left);
-        const v3d::editor::Placement rightBefore = v3d::editor::Placement::of(*right);
+        const v3d::type::Transform leftBefore = left->placement();
+        const v3d::type::Transform rightBefore = right->placement();
         const std::size_t depth = history->undoDepth();
 
         transformTool->motion(from);
@@ -264,17 +264,17 @@ struct TwoCubes {
         transformTool->button(1, false, to);
         BOOST_REQUIRE_EQUAL(history->undoDepth(), depth + 1);
 
-        const v3d::editor::Placement leftAfter = v3d::editor::Placement::of(*left);
-        const v3d::editor::Placement rightAfter = v3d::editor::Placement::of(*right);
-        BOOST_CHECK(!leftAfter.same(leftBefore));
-        BOOST_CHECK(!rightAfter.same(rightBefore));
+        const v3d::type::Transform leftAfter = left->placement();
+        const v3d::type::Transform rightAfter = right->placement();
+        BOOST_CHECK(!v3d::editor::same(leftAfter, leftBefore));
+        BOOST_CHECK(!v3d::editor::same(rightAfter, rightBefore));
 
         BOOST_CHECK_EQUAL(history->undo()->name(), mode);
-        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftBefore));
-        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightBefore));
+        BOOST_CHECK(v3d::editor::same(left->placement(), leftBefore));
+        BOOST_CHECK(v3d::editor::same(right->placement(), rightBefore));
         history->redo();
-        BOOST_CHECK(v3d::editor::Placement::of(*left).same(leftAfter));
-        BOOST_CHECK(v3d::editor::Placement::of(*right).same(rightAfter));
+        BOOST_CHECK(v3d::editor::same(left->placement(), leftAfter));
+        BOOST_CHECK(v3d::editor::same(right->placement(), rightAfter));
     }
 
     boost::shared_ptr<v3d::editor::Scene> scene;
@@ -388,7 +388,7 @@ struct Components {
      **/
     void check(const std::vector<v3d::brep::Index>& moved) const {
         const Snapshot before(*cube->geometry());
-        const v3d::editor::Placement placed = v3d::editor::Placement::of(*cube);
+        const v3d::type::Transform placed = cube->placement();
         drag();
         BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
         const Snapshot after(*cube->geometry());
@@ -400,8 +400,8 @@ struct Components {
             BOOST_CHECK_SMALL(shift.y, 0.0001F);
             BOOST_CHECK_SMALL(shift.z, 0.0001F);
         }
-        BOOST_CHECK(v3d::editor::Placement::of(*cube).same(placed));
-        BOOST_CHECK(cube->translation() == placed.translation);
+        BOOST_CHECK(v3d::editor::same(cube->placement(), placed));
+        BOOST_CHECK(cube->translation() == placed.position);
         for (v3d::brep::Index face = 0; face < cube->geometry()->faceCount(); face++) {
             BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), v3d::brep::newellNormal(*cube->geometry(), face)), 0.0001F);
         }

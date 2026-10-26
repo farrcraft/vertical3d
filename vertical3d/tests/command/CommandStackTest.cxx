@@ -303,14 +303,14 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 BOOST_AUTO_TEST_CASE(transform_command_test) {
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
 
-    const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
+    const v3d::type::Transform before = cube->placement();
 
     cube->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     cube->rotation(glm::angleAxis(1.0F, glm::vec3(0.0F, 1.0F, 0.0F)));
     cube->scale(glm::vec3(2.0F, 2.0F, 2.0F));
-    const v3d::editor::Placement after = v3d::editor::Placement::of(*cube);
+    const v3d::type::Transform after = cube->placement();
 
-    BOOST_CHECK(!before.same(after));
+    BOOST_CHECK(!v3d::editor::same(before, after));
 
     v3d::editor::TransformCommand command({{.item = cube, .before = before, .after = after}}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
@@ -319,27 +319,27 @@ BOOST_AUTO_TEST_CASE(transform_command_test) {
     command.undo();
     BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
     BOOST_CHECK_CLOSE(cube->scale().x, 1.0F, 0.1F);
-    BOOST_CHECK(v3d::editor::Placement::of(*cube).same(before));
+    BOOST_CHECK(v3d::editor::same(cube->placement(), before));
 
     command.redo();
-    BOOST_CHECK(v3d::editor::Placement::of(*cube).same(after));
+    BOOST_CHECK(v3d::editor::same(cube->placement(), after));
     BOOST_CHECK_CLOSE(cube->translation().y, 2.0F, 0.1F);
 }
 
 BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
-    const v3d::editor::Placement one;
-    v3d::editor::Placement two;
+    const v3d::type::Transform one;
+    v3d::type::Transform two;
 
     // the default placement is the one a mesh is built with
-    BOOST_CHECK(one.same(two));
+    BOOST_CHECK(v3d::editor::same(one, two));
 
     // a gesture that measured nothing still composes a rotation, so the two ends of it
     // differ in the last bits without the object having moved
-    two.translation.x = 1e-9F;
-    BOOST_CHECK(one.same(two));
+    two.position.x = 1e-9F;
+    BOOST_CHECK(v3d::editor::same(one, two));
 
-    two.translation.x = 0.001F;
-    BOOST_CHECK(!one.same(two));
+    two.position.x = 0.001F;
+    BOOST_CHECK(!v3d::editor::same(one, two));
 }
 
 BOOST_AUTO_TEST_CASE(create_camera_and_light_command_test) {

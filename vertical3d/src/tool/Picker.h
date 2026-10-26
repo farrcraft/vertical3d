@@ -51,7 +51,7 @@ class Picker final : public SceneVisitor {
          **/
         bool valid;
         /**
-         * The dag::Node id of the item. A selection names an item by this id.
+         * The id() of the item. A selection names an item by this id.
          **/
         unsigned int item;
         /**

@@ -147,7 +147,7 @@ class TransformTool final : public Tool {
     glm::vec2 last_;
     SelectMask mask_;
     Target dragged_;
-    std::vector<Placement> before_;
+    std::vector<v3d::type::Transform> before_;
     std::vector<VertexCommand::Shape> shapes_;
 };
 

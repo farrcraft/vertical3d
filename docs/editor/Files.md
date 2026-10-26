@@ -94,7 +94,7 @@ an open renumber nothing. `BRep::INVALID_ID` is stored as it is.
 
 **Not stored:**
 
-- **The run's ids.** An item's `dag::Node` id means nothing in another run. Its document id is
+- **The run's ids.** An item's `id()` means nothing in another run. Its document id is
   stored instead.
 - **Selection.** It describes what the user is doing, not what the document holds.
 - **A vertex's edge.** Nothing in the editor sets it.

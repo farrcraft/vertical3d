@@ -58,8 +58,8 @@ class GroupCommand final : public Command {
     struct Member {
         boost::shared_ptr<Item> item;
         boost::shared_ptr<Item> parent;
-        Placement before;
-        Placement after;
+        v3d::type::Transform before;
+        v3d::type::Transform after;
     };
 
     boost::shared_ptr<Scene> scene_;

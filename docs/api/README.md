@@ -22,7 +22,6 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models, and sprite sheets. |
 | [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
-| [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
 | [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
 | [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings, and the readers for the window and camera documents. It opens the window. |
@@ -54,7 +53,6 @@ Boost.
 | `image` | log | libpng, libjpeg, glm |
 | `asset` | log | (Boost only) |
 | `event` | log, asset | glm, EnTT |
-| `dag` | type | glm |
 | `database` | none | SQLite |
 | `ecs` | type | glm, EnTT |
 | `brep` | type | glm |
@@ -73,7 +71,7 @@ The same picture as layers, lowest first. A library uses only libraries in the r
 
 ```
 log   type   grid   database               no device, no window
-image  asset  dag  ecs  brep
+image  asset  ecs  brep
 font   asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input  window                              SDL3

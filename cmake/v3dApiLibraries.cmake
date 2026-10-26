@@ -11,7 +11,7 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset asset_media audio brep dag database ecs engine event font grid image input log
+	asset asset_media audio brep database ecs engine event font grid image input log
 	render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
@@ -39,10 +39,6 @@ set(V3D_API_audio_PACKAGES SDL3_mixer EnTT glm)
 set(V3D_API_brep_PATH "brep")
 set(V3D_API_brep_REQUIRES type)
 set(V3D_API_brep_PACKAGES glm)
-
-set(V3D_API_dag_PATH "dag")
-set(V3D_API_dag_REQUIRES type)
-set(V3D_API_dag_PACKAGES glm)
 
 # SQLite, for documents that are saved incrementally. No header includes it.
 set(V3D_API_database_PATH "database")

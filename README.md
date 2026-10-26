@@ -25,7 +25,6 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
 | [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
 | [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, models and skeletons, animation clips, particle effects, random numbers |
-| [`dag`](api/dag/) | Scene nodes: an id and a transform for each item in the editor's scene |
 | [`database`](api/database/) | SQLite connections, statements and transactions |
 | [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
 | [`font`](api/font/) | Glyph layout and atlas packing |

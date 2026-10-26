@@ -99,7 +99,7 @@ component: odyssey's player stands on a `grid::TileCoord`, the type its pathfind
 
 `Transform` ([api/ecs/component/Transform.h](../../api/ecs/component/Transform.h)) is the
 position of a thing's origin (a sprite's feet, a mesh's own origin), its rotation and its
-scale. It is the same type an editor mesh's `dag::Transform` holds.
+scale. It is the same type an editor item's placement is.
 
 - `aboutY(radians)` builds a turn about `+Y`, for a world that turns about one axis. A positive
   angle turns `+Z` towards `+X`.
