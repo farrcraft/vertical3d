@@ -5,11 +5,8 @@
 
 #include "Controller.h"
 
-#include <api/config/Type.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Statistics.h>
 #include <api/event/Event.h>
-#include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <string>
@@ -20,11 +17,9 @@
 
 #include <boost/make_shared.hpp>
 
-Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
-    v3d::ui::shell::GameMenu::declare(commands(), menu_);
-    commands().addPress("tetris::toggleStatistics", [this]() {
-        renderer_->statistics()->toggle();
-    });
+Controller::Controller(const std::string& path) :
+    v3d::engine::Engine(path),
+    shell_(this, { .menu = true, .statistics = "tetris::toggleStatistics" }) {
     commands().addPress("tetris::debugMode", [this]() {
         scene_->debug(!scene_->debug());
         scene_->board()->debug(scene_->debug());
@@ -50,19 +45,15 @@ Controller::Controller(const std::string& path) : v3d::engine::Engine(path) {
     // what the menu's items send
     commands().addPress("ui::newGame", [this]() {
         scene_->reset();
-        menu_->toggle();
+        shell_.menu()->toggle();
     });
 }
 
 bool Controller::start() {
     window()->caption("Tetris!");
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
-        scene_->pause(suspended);
-    });
-    const boost::json::object* ui = document(v3d::config::Type::Ui);
-    if (ui != nullptr && !vgui_->load(*ui)) {
+    const v3d::ui::shell::GameMenu::Suspend pause = [this](bool suspended) { scene_->pause(suspended); };
+    if (!shell_.start(pause)) {
         return false;
     }
 
@@ -72,9 +63,8 @@ bool Controller::start() {
     }
 
     const boost::shared_ptr<v3d::window::Window> win = window();
-    renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets());
+    renderer_ = boost::make_shared<TetrisRenderer>(win, logger(), assets(), &shell_);
     renderer_->scene(scene_);
-    renderer_->ui(vgui_);
 
     // TetrisScene::resize() ignores the size. TetrisRenderer::layout() places the well from the
     // canvas size on every frame
@@ -96,14 +86,15 @@ bool Controller::simulate(float step) {
 }
 
 bool Controller::render() {
-    const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw();
     return true;
 }
 
 /**
  **/
 bool Controller::release() {
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();

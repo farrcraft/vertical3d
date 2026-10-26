@@ -15,11 +15,11 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/renderer/Line.h>
+#include <api/shell/Shell.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/Target.h>
@@ -92,10 +92,11 @@ constexpr float panelPaddingScale = 0.3F;
  **/
 Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
     logger_(logger),
     assetManager_(assetManager),
     engine_(logger, assetManager),
+    shell_(shell),
     background_(background) {
     engine_.initialize(window);
     engine_.clearColour(background_);
@@ -108,7 +109,8 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
         style->barHeight = size * barHeightScale;
         style->panelPadding = size * panelPaddingScale;
     };
-    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+    shell_->present(&engine_, options);
+    screen_ = shell_->screen();
 
     shaded_ = boost::make_shared<ShadedPass>(engine_.context());
     if (!shaded_->nonSolid()) {
@@ -145,12 +147,6 @@ void Renderer::transformTool(const boost::shared_ptr<TransformTool>& transform) 
  **/
 void Renderer::selectTool(const boost::shared_ptr<SelectTool>& select) {
     select_ = select;
-}
-
-/**
- **/
-const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& Renderer::statistics() const {
-    return screen_->statistics();
 }
 
 /**
@@ -196,7 +192,7 @@ glm::vec2 Renderer::insets() const {
 
 /**
  **/
-void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void Renderer::draw() {
     if (!screen_->begin()) {
         return;
     }
@@ -251,7 +247,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         }
     }
 
-    drawUi(frame, statistics);
+    drawUi(frame);
 
     engine_.renderFrame();
     if (shaded_) {
@@ -261,11 +257,10 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
 
 /**
  **/
-void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
-    const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame) {
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
-    screen_->draw(ui_.get(), statistics);
+    shell_->draw();
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
 
     // the rubber band is drawn in window pixels, which is the space this canvas is in

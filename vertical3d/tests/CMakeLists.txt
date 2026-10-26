@@ -101,10 +101,11 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_log
 	v3dlib_moya
 	v3dlib_render
-	v3dlib_window
 	v3dlib_render_offline
 	v3dlib_type
-	v3dlib_ui)
+	v3dlib_shell
+	v3dlib_ui
+	v3dlib_window)
 
 # the batch cases run moya.exe where the build puts it, beside the libraries it loads
 add_dependencies(v3dtest_vertical3d moya)

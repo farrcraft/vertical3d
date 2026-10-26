@@ -5,13 +5,11 @@
 
 #include "Controller.h"
 
-#include <api/config/Type.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Statistics.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/input/MouseState.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
-#include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -48,11 +46,11 @@ const std::pair<const char*, Player::Movement> MOVES[] = {
 
 Controller::Controller(const std::string& appPath) :
     v3d::engine::Engine(appPath),
+    shell_(this, { .menu = true, .statistics = "" }),
     debug_(false) {
     for (const auto& [command, direction] : MOVES) {
         commands().addHeld(command);
     }
-    v3d::ui::shell::GameMenu::declare(commands(), menu_);
     // the debug overlay is readable whether or not the world is running
     commands().addPress("voxel::debug", [this]() {
         debug_ = !debug_;
@@ -68,12 +66,8 @@ bool Controller::start() {
     // pointer at the window's edge
     window()->relativeMouse(true);
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
-        suspend(suspended);
-    });
-    const boost::json::object* ui = document(v3d::config::Type::Ui);
-    if (ui != nullptr && !vgui_->load(*ui)) {
+    const v3d::ui::shell::GameMenu::Suspend pause = [this](bool suspended) { suspend(suspended); };
+    if (!shell_.start(pause)) {
         return false;
     }
 
@@ -82,8 +76,7 @@ bool Controller::start() {
     scene_ = boost::make_shared<Scene>();
 
     const boost::shared_ptr<v3d::window::Window> win = window();
-    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets());
-    renderer_->ui(vgui_);
+    renderer_ = boost::make_shared<Renderer>(scene_, win, logger(), assets(), &shell_);
 
     // give the camera's projection the window's aspect
     renderer_->resize(glm::ivec2(window()->width(), window()->height()));
@@ -124,11 +117,7 @@ bool Controller::simulate(float step) {
 /**
  **/
 bool Controller::render() {
-    const v3d::engine::Statistics& measured = statistics();
-    v3d::ui::shell::StatisticsOverlay::Sample sample{ measured.mean(), measured.last(), measured.steps(), {} };
-    for (const v3d::engine::Statistics::Row& row : measured.rows()) {
-        sample.spans.push_back({ row.name, row.mean });
-    }
+    v3d::ui::shell::StatisticsOverlay::Sample sample = shell_.sample();
     // the device's own times, for the passes it drew a few frames ago
     for (const v3d::render::realtime::vulkan::frame::Timings::Timing& pass : renderer_->timings()) {
         sample.spans.push_back({ "gpu " + pass.name, nanoseconds(pass.milliseconds) });
@@ -142,7 +131,7 @@ bool Controller::render() {
 v3d::ui::Immediate::Input Controller::tools() const {
     v3d::ui::Immediate::Input input;
     // no cursor while the menu is closed, because mouselook has the mouse
-    if (!menu_ || !menu_->visible()) {
+    if (!shell_.menu() || !shell_.menu()->visible()) {
         return input;
     }
     const v3d::input::MouseState* pointer = mouse();
@@ -160,6 +149,8 @@ v3d::ui::Immediate::Input Controller::tools() const {
 /**
  **/
 bool Controller::release() {
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
@@ -180,7 +171,7 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
         return;
     }
     // the mouse does not turn the player while the menu is open
-    if (menu_->visible()) {
+    if (shell_.menu()->visible()) {
         return;
     }
     const glm::vec2 moved = event.motion();

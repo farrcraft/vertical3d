@@ -168,16 +168,17 @@ bindings it ships with `Engine::unhandled(document)`. Every game's suite does th
 - The engine registers `ui::quit`, which ends the loop once the app agrees (see
   [Lifecycle.md](Lifecycle.md#rules)), and `ui::fullscreen`, which switches
   the window between full screen and a window. An app binds them and writes no handler.
-- `ui::shell::GameMenu::declare(commands(), menu_)` registers the pause menu's commands, before
-  the menu exists. See [ShellComponents.md](../ui/ShellComponents.md#gamemenu).
+- An app's `shell::Shell` registers the pause menu's commands and the statistics command as it
+  is built, in the app's constructor. See [Shell.md](Shell.md).
 
 ```cpp
-AppEngine::AppEngine(const std::string& path) : v3d::engine::Engine(path) {
+AppEngine::AppEngine(const std::string& path) :
+    v3d::engine::Engine(path),
+    shell_(this, { .menu = true, .statistics = "app::toggleStatistics" }) {
     commands().addHeld("app::moveLeft");                  // read with held() in simulate()
-    commands().addPress("app::toggleStatistics", [this]() {
-        renderer_->statistics()->toggle();                // built in start()
+    commands().addPress("app::jump", [this]() {
+        scene_->jump();                                   // built in start()
     });
-    v3d::ui::shell::GameMenu::declare(commands(), menu_);
 }
 ```
 

@@ -73,10 +73,11 @@ target_link_libraries(vertical3d PRIVATE
 	v3dlib_log
 	v3dlib_moya
 	v3dlib_render
-	v3dlib_window
 	v3dlib_render_offline
 	v3dlib_type
+	v3dlib_shell
 	v3dlib_ui
+	v3dlib_window
 )
 
 # a batch render runs moya.exe, which the editor finds beside itself

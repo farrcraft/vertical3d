@@ -19,6 +19,7 @@ creates and holds; [rendering/](../rendering/README.md) covers it. Menus and oth
 | [Files.md](Files.md) | Save the player's settings, and write files safely |
 | [Audio.md](Audio.md) | Load and play sounds |
 | [Window.md](Window.md) | Size the window, go full screen, take text input, and present to it |
+| [Shell.md](Shell.md) | Build the ui, the screen, the game menu and the statistics overlay with one object |
 
 ## What the engine gives an app
 
@@ -51,6 +52,8 @@ makes it that game. Do not write your own version of these:
 
 - **`main`** — `v3d::engine::run<T>`, described in [Lifecycle.md](Lifecycle.md#the-run-function).
 - **The app path** — `v3d::engine::appPath(argv[0])`.
+- **The shell** — `v3d::shell::Shell` builds the ui, the screen, the pause menu and the statistics
+  overlay below, and declares their commands. An app holds one. See [Shell.md](Shell.md).
 - **Text** — `v3d::ui::paint::TextRenderer` owns the font, the glyph atlas and text drawing.
 - **The pause menu** — `v3d::ui::shell::GameMenu` is the menu the escape key opens over a game.
   It pauses the game through a callback and handles its own navigation commands.

@@ -7,7 +7,9 @@ What an app builds once, in its `start()`, before it can draw or drive a ui.
 ### Screen: the renderers and the canvas
 
 An app built on `Engine3D` uses `v3d::ui::shell::Screen` and builds none of the pieces itself.
-A `Screen` builds:
+An app on the game engine has its `shell::Shell` build the screen, through
+`present(renderer, options)`. [engine/Shell.md](../engine/Shell.md) covers it. A `Screen`
+builds:
 
 - the `TextRenderer`, uploading its atlas through the `Engine3D`
 - the `ComponentRenderer` over that text
@@ -19,7 +21,8 @@ A `Screen` builds:
 v3d::ui::shell::Screen::Options options;
 options.size = fontSize;          // text size at a scale of one
 options.immediate = true;         // also build an Immediate layer
-screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+shell_->present(&engine_, options);   // or build a Screen directly, without the game engine
+screen_ = shell_->screen();
 ```
 
 Each frame:
@@ -32,7 +35,7 @@ if (screen_->resized()) {
     resize(screen_->canvas().width(), screen_->canvas().height());   // the app's own things
 }
 // ... the app draws its own content into screen_->canvas() if it likes ...
-screen_->draw(ui_.get(), statistics);   // the retained ui, then the statistics over it
+shell_->draw();                         // the retained ui, then the statistics over it
 engine_.quads()->submit(screen_->canvas(), pass.get());
 ```
 
@@ -59,10 +62,12 @@ does not use `Engine3D` builds `TextRenderer` itself with its own `Upload`.
 
 ### Loading the document
 
+An app on the game engine has its shell build the ui and load the `ui` config document into it,
+in `Shell::start()`. Without the game engine, build and load it directly:
+
 ```cpp
-vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-const boost::json::object* ui = document(v3d::config::Type::Ui);
-if (ui && !vgui_->load(*ui)) {
+vgui_ = boost::make_shared<v3d::ui::Engine>(events, dispatcher, logger);
+if (!vgui_->load(document)) {
     return false;
 }
 vgui_->resolveImages(resolver);   // once the renderer exists; see Images

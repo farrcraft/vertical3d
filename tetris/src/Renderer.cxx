@@ -12,9 +12,8 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
-#include <api/ui/Engine.h>
+#include <api/shell/Shell.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
 #include <api/window/Window.h>
 
 #include "GameBoard.h"
@@ -72,22 +71,18 @@ constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
 /**
  **/
 TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
-    logger_(logger), engine_(logger, assetManager) {
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
+    shell_(shell), logger_(logger), engine_(logger, assetManager) {
     engine_.initialize(window);
     engine_.clearColour(backgroundColour);
 
     loadPieces(assetManager, logger);
 
+    // after the engine is initialized, because the screen's atlas is uploaded through it
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
-    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
-}
-
-/**
- **/
-const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& TetrisRenderer::statistics() const {
-    return screen_->statistics();
+    shell_->present(&engine_, options);
+    screen_ = shell_->screen();
 }
 
 /**
@@ -138,12 +133,6 @@ void TetrisRenderer::scene(const boost::shared_ptr<TetrisScene>& scene) {
 
 /**
  **/
-void TetrisRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
-    ui_ = ui;
-}
-
-/**
- **/
 void TetrisRenderer::shutdown() {
     engine_.shutdown();
 }
@@ -175,7 +164,7 @@ TetrisRenderer::Layout TetrisRenderer::layout() const {
 
 /**
  **/
-void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void TetrisRenderer::draw() {
     if (!scene_) {
         return;
     }
@@ -193,7 +182,7 @@ void TetrisRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& stati
     drawFalling(metrics);
     drawPanel(metrics);
 
-    screen_->draw(ui_.get(), statistics);
+    shell_->draw();
 
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::Engine3D::colourPass);

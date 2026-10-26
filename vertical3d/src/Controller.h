@@ -14,6 +14,7 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
+#include <api/shell/Shell.h>
 #include <api/ui/Engine.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
@@ -375,8 +376,9 @@ class Controller final : public v3d::engine::Engine {
     void placeViews();
 
     std::string path_;
+    // the ui, the screen and the statistics overlay. The editor's menu is its own menu bar
+    v3d::shell::Shell shell_;
     boost::shared_ptr<Scene> scene_;
-    boost::shared_ptr<v3d::ui::Engine> vgui_;
     boost::shared_ptr<v3d::ui::input::Cursor> uiCursor_;
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser_;

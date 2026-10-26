@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	asset asset_media audio brep config dag database ecs engine event font grid image input log
-	render render_offline type ui window)
+	render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -94,6 +94,12 @@ set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 set(V3D_API_render_offline_PATH "render/offline")
 set(V3D_API_render_offline_REQUIRES log image type)
 set(V3D_API_render_offline_PACKAGES glm)
+
+# What every app builds around its own code: the ui, the screen, the menu and the statistics
+# overlay. It joins engine and ui, which do not depend on each other.
+set(V3D_API_shell_PATH "shell")
+set(V3D_API_shell_REQUIRES engine ui config asset)
+set(V3D_API_shell_PACKAGES)
 
 set(V3D_API_type_PATH "type")
 set(V3D_API_type_REQUIRES)

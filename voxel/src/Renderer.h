@@ -11,7 +11,7 @@
 #include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/ui/Engine.h>
+#include <api/shell/Shell.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -44,8 +44,13 @@ class Renderer {
     /**
      * @throw std::runtime_error if the pipeline or its uniforms cannot be built
      **/
+    /**
+     * @param shell the app's shell, which builds its screen over this renderer's engine. It
+     *        outlives the renderer
+     **/
     Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
-        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+        const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
+        v3d::shell::Shell* shell);
 
     /**
      **/
@@ -61,8 +66,8 @@ class Renderer {
 
     /**
      * Draw the frame.
-     * @param statistics what the loop measured about its own pacing, which the debug
-     *        window reads. The app passes it in because api/ui cannot depend on api/engine
+     * @param statistics what the loop measured about its own pacing and the device's pass
+     *        times, which the debug window reads
      * @param tools what the cursor did, for the immediate layer - Controller::tools()
      **/
     void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
@@ -75,11 +80,6 @@ class Renderer {
     void tick(unsigned int delta);
 
     void debug(bool status);
-
-    /**
-     * The ui whose containers are drawn over the terrain, or null to draw none.
-     **/
-    void ui(const boost::shared_ptr<v3d::ui::Engine>& engine);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -136,8 +136,7 @@ class Renderer {
 
     bool debug_;
 
-
-    boost::shared_ptr<v3d::ui::Engine> ui_;
-    // built after the engine is initialized, because its atlas is uploaded through it
-    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
+    v3d::shell::Shell* shell_;
+    // the shell's screen, built over engine_
+    v3d::ui::shell::Screen* screen_ = nullptr;
 };

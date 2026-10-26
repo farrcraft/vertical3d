@@ -9,12 +9,12 @@
 #include <api/config/CameraProfiles.h>
 #include <api/config/Type.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Statistics.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/image/Image.h>
+#include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
@@ -99,6 +99,16 @@ int wholeFrame(float frame, const Timeline& timeline, bool up) {
     return static_cast<int>(up ? std::ceil(held) : std::floor(held));  // checked: a key's frame is finite, and the clamp holds it in the range
 }
 
+/**
+ * The editor's shell. It has no game menu, because the editor's menu is its menu bar.
+ **/
+v3d::shell::Shell::Options shellOptions() {
+    v3d::shell::Shell::Options options;
+    options.menu = false;
+    options.statistics = "view::show::statistics";
+    return options;
+}
+
 };  // namespace
 
 /**
@@ -106,6 +116,7 @@ int wholeFrame(float frame, const Timeline& timeline, bool up) {
 Controller::Controller(const std::string& path) :
     v3d::engine::Engine(path),
     path_(path),
+    shell_(this, shellOptions()),
     cursor_(0.0F, 0.0F),
     uiGrab_(false) {
     registerCommands();
@@ -150,7 +161,7 @@ bool Controller::start() {
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
-    renderer_ = boost::make_shared<Renderer>(window(), logger(), assets());
+    renderer_ = boost::make_shared<Renderer>(window(), logger(), assets(), &shell_);
     renderer_->views(views_);
     renderer_->scene(scene_);
     renderer_->transformTool(transformTool_);
@@ -159,7 +170,7 @@ bool Controller::start() {
     if (!buildUi()) {
         return false;
     }
-    renderer_->ui(vgui_);
+    renderer_->ui(shell_.ui());
 
     for (const std::string& name : refused_) {
         logger()->get()->error("{} is registered twice", name);
@@ -210,23 +221,23 @@ bool Controller::buildUi() {
         return false;
     }
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-    if (!vgui_->load(*config)) {
+    if (!shell_.start()) {
         return false;
     }
+    const boost::shared_ptr<v3d::ui::Engine>& vgui = shell_.ui();
     // the ui hit-tests the cursor before the app, in the order its own strips are drawn.
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer
-    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
-    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
-    chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
-    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui_);
-    panels_ = boost::make_shared<RenderPanels>(vgui_);
+    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
+    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
+    chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
+    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
+    panels_ = boost::make_shared<RenderPanels>(vgui);
     delegate_ = boost::make_shared<MoyaDelegate>(logger());
     // moya.exe is built beside the editor
     batch_ = boost::make_shared<Batch>(logger(), boost::filesystem::path(path_) / MOYA);
 
-    const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
+    const boost::shared_ptr<v3d::ui::Container> container = vgui->container(uiContainer);
     if (!container) {
         logger()->get()->error("The ui config has no {} container", uiContainer);
         return false;
@@ -468,7 +479,6 @@ void Controller::registerCommands() {
     press("view::camera::orthographic", [this]() { toggleProjection(); });
     // not a view flag: the readout covers the window rather than one pane, so the renderer
     // shows it and nothing here reads it back
-    press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
 
     // these are held: the modifier going down chooses what a drag of the primary button
     // performs, and it coming up puts the tool back to whatever is latched
@@ -1073,8 +1083,7 @@ void Controller::placeViews() {
 /**
  **/
 bool Controller::render() {
-    const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw();
     return true;
 }
 
@@ -1093,6 +1102,8 @@ bool Controller::release() {
     if (batch_) {
         batch_->cancel();
     }
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();

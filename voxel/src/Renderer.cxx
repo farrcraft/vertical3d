@@ -19,7 +19,7 @@
 #include <api/render/realtime/vulkan/pipeline/Material.h>
 #include <api/render/realtime/vulkan/pipeline/Resources.h>
 #include <api/type/geometry/Frustum.h>
-#include <api/ui/Engine.h>
+#include <api/shell/Shell.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -151,13 +151,15 @@ constexpr glm::vec3 palette[materialCount] = {
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
-    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<v3d::asset::Manager>& assetManager,
+    v3d::shell::Shell* shell) :
     scene_(scene),
     logger_(logger),
     engine_(logger, assetManager),
     drawnChunks_(0),
     meshedChunks_(0),
-    debug_(false) {
+    debug_(false),
+    shell_(shell) {
     engine_.initialize(window);
     engine_.clearColour(sky);
 
@@ -182,7 +184,8 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     // the debug readout is an immediate mode panel: it is written as calls every frame
     // rather than kept as a tree in step with what it shows
     options.immediate = true;
-    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+    shell_->present(&engine_, options);
+    screen_ = shell_->screen();
 }
 
 /**
@@ -268,12 +271,6 @@ void Renderer::createPipeline() {
         .depthFormat(context_->depthFormat());
 
     pipeline_ = context_->resources()->add(builder.build(context_->pipelineCache()));
-}
-
-/**
- **/
-void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& engine) {
-    ui_ = engine;
 }
 
 /**
@@ -365,7 +362,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     if (debug_) {
         drawDebug(statistics, tools);
     }
-    screen_->draw(ui_.get(), statistics);
+    shell_->draw(statistics);
 
     // the text goes in a second pass. The terrain pass is depth tested and sorted front to
     // back, and the text over it must be drawn in painter order with no depth test

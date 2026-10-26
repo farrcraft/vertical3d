@@ -12,10 +12,10 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
+#include <api/shell/Shell.h>
 #include <api/ui/Engine.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
@@ -53,11 +53,13 @@ namespace v3d::editor {
 class Renderer final {
  public:
     /**
+     * @param shell the editor's shell, which builds its screen over this renderer's engine.
+     *        It outlives the renderer
      * @throw std::runtime_error if the device or the line pipelines cannot be built
      **/
     Renderer(const boost::shared_ptr<v3d::window::Window>& window,
         const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell);
 
     /**
      **/
@@ -109,16 +111,8 @@ class Renderer final {
 
     /**
      * Draw one frame: two passes per view, then the ui pass.
-     *
-     * @param statistics what the loop measured about the frame being drawn, which the
-     *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
-
-    /**
-     * The frame statistics drawn over the views, for whatever shows and hides them.
-     **/
-    const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
+    void draw();
 
     /**
      * Upload a rendered picture as a texture the ui can draw, in place of the last one.
@@ -136,8 +130,7 @@ class Renderer final {
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
-    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
-        const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
@@ -160,8 +153,9 @@ class Renderer final {
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Engine> ui_;
-    // built after the engine is initialized, because its atlas is uploaded through it
-    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
+    v3d::shell::Shell* shell_;
+    // the shell's screen, built over engine_
+    v3d::ui::shell::Screen* screen_ = nullptr;
 
     glm::vec4 background_;
     // the last rendered picture's texture, released when the next one arrives

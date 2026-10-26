@@ -9,8 +9,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
-#include <api/ui/Engine.h>
-#include <api/ui/shell/GameMenu.h>
+#include <api/shell/Shell.h>
 
 #include <string>
 
@@ -64,8 +63,8 @@ class PongEngine final : public v3d::engine::Engine {
 
     boost::shared_ptr<PongScene> scene_;
     boost::shared_ptr<PongRenderer> renderer_;
-    boost::shared_ptr<v3d::ui::Engine> vgui_;
-    boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
+    // the ui, the menu, the screen and the statistics overlay
+    v3d::shell::Shell shell_;
     // disconnects this object's delegate from the dispatcher when this object is destroyed
     entt::scoped_connection sources_;
 };

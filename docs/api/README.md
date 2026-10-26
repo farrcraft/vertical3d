@@ -34,6 +34,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
+| [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms, models, skeletons, animation, particle effects and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
@@ -67,7 +68,8 @@ Boost.
 | `window` | log | **SDL3**, glm |
 | `render` | log, asset, asset_media, ecs, font, image, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
-| `engine` | log, asset, asset_media, config, event, input, type, window | **SDL3**, EnTT |
+| `engine` | log, asset, asset_media, config, ecs, event, input, type, window | **SDL3**, EnTT |
+| `shell` | engine, ui, config, asset | none of its own |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
@@ -81,6 +83,7 @@ audio                                      SDL3_mixer
 engine                                     SDL3, no Vulkan
 render                                     Vulkan, SDL3
 ui                                         Vulkan, SDL3 (through render)
+shell                                      joins engine and ui
 ```
 
 Three consequences matter when choosing what to link:

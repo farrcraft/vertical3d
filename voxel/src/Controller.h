@@ -10,7 +10,7 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/ui/Engine.h>
 #include <api/ui/Immediate.h>
-#include <api/ui/shell/GameMenu.h>
+#include <api/shell/Shell.h>
 
 #include <string>
 
@@ -82,8 +82,8 @@ class Controller final : public v3d::engine::Engine {
 
         boost::shared_ptr<Scene> scene_;
         boost::shared_ptr<Renderer> renderer_;
-        boost::shared_ptr<v3d::ui::Engine> vgui_;
-        boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
+        // the ui, the menu and the screen. The debug readout shows the frame's statistics
+        v3d::shell::Shell shell_;
         bool debug_;
     // disconnects this object's delegate from the dispatcher when this object is destroyed
     entt::scoped_connection motion_;

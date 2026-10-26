@@ -10,14 +10,16 @@ the api rather than customised it.
 
 ### GameMenu
 
-`GameMenu` is the pause menu a game puts up over itself.
+`GameMenu` is the pause menu a game puts up over itself. An app on the game engine has its
+`shell::Shell` build it with `Options::menu`, as [engine/Shell.md](../engine/Shell.md) shows. The
+shell calls `declare()` in its constructor and builds the menu in `start()`:
 
 ```cpp
-// in the app's constructor
-v3d::ui::shell::GameMenu::declare(commands(), menu_);
+// in a constructor
+v3d::ui::shell::GameMenu::declare(commands, menu_);
 
-// in start()
-menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
+// once the ui is loaded
+menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [this](bool suspended) {
     scene_->pause(suspended);
 });
 ```

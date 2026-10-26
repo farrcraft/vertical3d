@@ -296,13 +296,16 @@ decides it.
 
 ### Step 6 — The engine and the shell joined
 
-**In progress.**
+**Closed.** [ADR-0117](../adr/0117-apps-the-game-shell-is-an-object-an-app-holds.md) decides
+where the shell lives.
 
-- A layer above `engine` and `ui::shell` builds the screen, the game menu and the overlay. Each
-  app's hand wiring goes.
-
-Done so far:
-
+- `api/shell` holds `shell::Shell`, an object an app holds above `engine` and `ui`. Its
+  constructor declares the menu's commands and the statistics command, `start()` builds the ui
+  and the menu, `present()` builds the screen over the app's renderer, and `release()` drops
+  them before the renderer goes. pong, tetris, voxel and the editor use it, and their own
+  wiring of the ui, the menu, the screen and the overlay is gone. Four new cases.
+- **Different from the plan:** odyssey does not use it yet. It has no game menu or overlay to
+  move, and step 18 gives it them on the shell.
 - `run<T>` takes an `engine::Identity`, the organization and application a player's files are
   kept under, and hands it to the engine before it starts. The engine reads the player's
   `Settings` as it starts, restores the saved binding overrides after the binding config loads,

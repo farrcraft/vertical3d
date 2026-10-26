@@ -8,9 +8,8 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
-#include <api/ui/Engine.h>
+#include <api/shell/Shell.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
 #include <api/window/Window.h>
 
 #include "PongScene.h"
@@ -49,7 +48,8 @@ constexpr float rightScoreColumn = 0.75F;
 /**
  **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
+    shell_(shell),
     engine_(logger, assetManager) {
     engine_.initialize(window);
     engine_.clearColour(barColour);
@@ -57,9 +57,10 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window,
     // the rules are written in the court's units, and the court is fitted to the window
     court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
+    // after the engine is initialized, because the screen's atlas is uploaded through it
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
-    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+    shell_->present(&engine_, options);
 }
 
 /**
@@ -70,33 +71,22 @@ void PongRenderer::scene(const boost::shared_ptr<PongScene>& scene) {
 
 /**
  **/
-void PongRenderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
-    ui_ = ui;
-}
-
-/**
- **/
-const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& PongRenderer::statistics() const {
-    return screen_->statistics();
-}
-
-/**
- **/
 void PongRenderer::shutdown() {
     engine_.shutdown();
 }
 
 /**
  **/
-void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha) {
-    if (!scene_) {
+void PongRenderer::draw(float alpha) {
+    v3d::ui::shell::Screen* screen = shell_->screen();
+    if (!scene_ || screen == nullptr) {
         return;
     }
 
-    if (!screen_->begin()) {
+    if (!screen->begin()) {
         return;
     }
-    const v3d::render::realtime::canvas::Canvas& ui = screen_->canvas();
+    const v3d::render::realtime::canvas::Canvas& ui = screen->canvas();
     court_.resize(glm::uvec2(ui.width(), ui.height()));
     court_.clear();
 
@@ -106,7 +96,7 @@ void PongRenderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statist
     drawBall(alpha);
     drawScores();
 
-    screen_->draw(ui_.get(), statistics);
+    shell_->draw();
 
     // the screen's canvas is a layer of its own, in front of the court
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
@@ -143,8 +133,8 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    screen_->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
-    screen_->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
+    shell_->screen()->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
+    shell_->screen()->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
 }
 
 /**

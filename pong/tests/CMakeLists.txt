@@ -25,8 +25,9 @@ target_link_libraries(v3dtest_pong PRIVATE
 	v3dlib_event
 	v3dlib_log
 	v3dlib_render
-	v3dlib_window
+	v3dlib_shell
 	v3dlib_type
-	v3dlib_ui)
+	v3dlib_ui
+	v3dlib_window)
 
 v3d_copy_data(v3dtest_pong app "${CMAKE_CURRENT_SOURCE_DIR}/../data")

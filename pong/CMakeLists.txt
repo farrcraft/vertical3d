@@ -23,9 +23,10 @@ target_link_libraries(pong PRIVATE
 	v3dlib_event
 	v3dlib_log
 	v3dlib_render
-	v3dlib_window
+	v3dlib_shell
 	v3dlib_type
 	v3dlib_ui
+	v3dlib_window
 )
 
 v3d_add_app_data(pong)

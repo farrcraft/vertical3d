@@ -11,11 +11,9 @@
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Statistics.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
-#include <api/ui/Engine.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <array>
@@ -60,7 +58,9 @@ std::string_view paddleCommand(std::string_view item) {
 };  // namespace
 
 
-PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
+PongEngine::PongEngine(const std::string & path) :
+    v3d::engine::Engine(path),
+    shell_(this, { .menu = true, .statistics = "pong::toggleStatistics" }) {
     // the renderer draws the ball and the paddles between the last two steps
     interpolate<v3d::ecs::component::Position2D>();
     interpolate<v3d::ecs::component::Position1D>();
@@ -68,10 +68,6 @@ PongEngine::PongEngine(const std::string & path) : v3d::engine::Engine(path) {
     for (const std::string_view command : PongScene::paddleCommands) {
         commands().addHeld("pong::" + std::string(command));
     }
-    v3d::ui::shell::GameMenu::declare(commands(), menu_);
-    commands().addPress("pong::toggleStatistics", [this]() {
-        renderer_->statistics()->toggle();
-    });
 
     // what the menu's items send
     commands().add("ui::setMaxScore", [this](const v3d::event::Event& event) {
@@ -98,24 +94,19 @@ bool PongEngine::start() {
     // play() returns Voice::None.
     soundEngine_->initialize();
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-    menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
-        scene_->state().pause(suspended);
-    });
+    const v3d::ui::shell::GameMenu::Suspend pause = [this](bool suspended) { scene_->state().pause(suspended); };
+    if (!shell_.start(pause)) {
+        return false;
+    }
 
     const boost::json::object* sounds = document(v3d::config::Type::Sound);
     if (sounds != nullptr) {
         soundEngine_->load(*sounds, *assets());
     }
-    const boost::json::object* ui = document(v3d::config::Type::Ui);
-    if (ui != nullptr && !vgui_->load(*ui)) {
-        return false;
-    }
     const boost::shared_ptr<v3d::window::Window> win = window();
-    renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets());
+    renderer_ = boost::make_shared<PongRenderer>(win, logger(), assets(), &shell_);
     scene_ = boost::make_shared<PongScene>(&registry(), dispatcher());
     renderer_->scene(scene_);
-    renderer_->ui(vgui_);
 
     // a key captured for a rebinding is taken before it reaches the bindings
     sources_ = dispatcher()->sink<v3d::event::Source>().connect<&PongEngine::handleSource>(*this);
@@ -142,8 +133,7 @@ bool PongEngine::simulate(float step) {
 }
 
 bool PongEngine::render() {
-    const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() }, alpha());
+    renderer_->draw(alpha());
     return true;
 }
 
@@ -153,6 +143,8 @@ bool PongEngine::release() {
     if (soundEngine_) {
         soundEngine_->shutdown();
     }
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
@@ -189,7 +181,8 @@ void PongEngine::rebindPaddleKey(const v3d::event::Event& event) {
 /**
  **/
 void PongEngine::handleSource(const v3d::event::Source& source) {
-    if (!menu_ || !menu_->capturing() || source.state() != v3d::event::State::Pressed) {
+    const boost::shared_ptr<v3d::ui::shell::GameMenu>& menu = shell_.menu();
+    if (!menu || !menu->capturing() || source.state() != v3d::event::State::Pressed) {
         return;
     }
     // escape is never captured as a paddle key. Its binding steps back out of the menu, which
@@ -204,6 +197,6 @@ void PongEngine::handleSource(const v3d::event::Source& source) {
     }
     // the capturing menu item takes the key's name. Consuming the source stops the key's own
     // bindings from firing
-    menu_->capture(std::string(source.name()));
+    menu->capture(std::string(source.name()));
     source.consume();
 }

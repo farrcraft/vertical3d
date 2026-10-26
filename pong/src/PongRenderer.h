@@ -9,9 +9,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Engine3D.h>
-#include <api/ui/Engine.h>
-#include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
+#include <api/shell/Shell.h>
 
 #include <string>
 
@@ -31,26 +29,19 @@
  **/
 class PongRenderer final {
  public:
+    /**
+     * @param shell the app's shell, which builds its screen over this renderer's engine. It
+     *        outlives the renderer
+     **/
     PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell);
 
     /**
-     * @param statistics what the loop measured about the frame being drawn
      * @param alpha how far the frame is between the last simulation step and the next
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics, float alpha);
+    void draw(float alpha);
 
     void scene(const boost::shared_ptr<PongScene>& scene);
-
-    /**
-     * The ui whose containers are drawn over the game, or null to draw none.
-     **/
-    void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
-
-    /**
-     * The frame statistics drawn over the game, for whatever shows and hides them.
-     **/
-    const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -64,12 +55,9 @@ class PongRenderer final {
     void drawPaddle(const Paddle& paddle, float alpha);
 
     boost::shared_ptr<PongScene> scene_;
-    boost::shared_ptr<v3d::ui::Engine> ui_;
+    v3d::shell::Shell* shell_;
 
     v3d::render::realtime::Engine3D engine_;
     // the court, in its own units, under the screen's canvas
     v3d::render::realtime::canvas::Canvas court_;
-
-    // built after the engine is initialized, because its atlas is uploaded through it
-    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
 };
