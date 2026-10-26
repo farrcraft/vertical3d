@@ -160,7 +160,8 @@ int packSheet(const SheetRequest & request, const boost::shared_ptr<v3d::log::Lo
     if (!request.silent) {
         std::cout << "Writing: " << image.string() << ", " << packing.sheet->width() << "x" << packing.sheet->height() << "\n";
     }
-    if (!factory.write(image.string(), packing.sheet)) {
+    const std::optional<std::string> encoded = factory.encode(packing.sheet, v3d::image::Factory::kind(image.string()));
+    if (!encoded || !v3d::asset::writeFile(image, *encoded)) {
         std::cout << "error writing file!" << "\n";
         return EXIT_FAILURE;
     }
@@ -224,7 +225,8 @@ int unpackSheet(const boost::filesystem::path & document, const v3d::asset::medi
         if (!silent) {
             std::cout << "Writing: " << file.string() << "\n";
         }
-        if (!factory->write(file.string(), sprite.image)) {
+        const std::optional<std::string> encoded = factory->encode(sprite.image, "png");
+        if (!encoded || !v3d::asset::writeFile(file, *encoded)) {
             std::cout << "error writing " << file.string() << "!\n";
             return EXIT_FAILURE;
         }
@@ -450,7 +452,8 @@ int run(int argc, char *argv[]) {
         if (!silent) {
             std::cout << "Writing: " << outfile << "\n";
         }
-        if (!factory.write(outfile, image)) {
+        const std::optional<std::string> encoded = factory.encode(image, v3d::image::Factory::kind(outfile));
+        if (!encoded || !v3d::asset::writeFile(outfile, *encoded)) {
             std::cout << "error writing file!" << "\n";
             exit(EXIT_FAILURE);
         }

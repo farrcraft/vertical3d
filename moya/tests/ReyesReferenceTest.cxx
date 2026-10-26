@@ -73,8 +73,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     if (reference == nullptr) {
         // write what was rendered, so a missing reference can be inspected, or committed when
         // it is being regenerated on purpose
-        boost::filesystem::create_directory("data_out");
-        factory.write(RENDERED, rendered);
+        keep(rendered, RENDERED);
     }
     BOOST_REQUIRE_MESSAGE(reference != nullptr,
         std::string("cannot read the reference image ") + REFERENCE + " - what was rendered is in " + RENDERED);
@@ -82,8 +81,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
     // the tolerance is for float rounding across compilers, not for "close enough"
     const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
-        boost::filesystem::create_directory("data_out");
-        factory.write(RENDERED, rendered);
+        keep(rendered, RENDERED);
     }
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what was rendered instead is in " + RENDERED);
@@ -112,8 +110,7 @@ BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
 
     const v3d::image::Difference difference = v3d::image::compare(*rendered, *reference, 1);
     if (!difference.match) {
-        boost::filesystem::create_directory("data_out");
-        factory.write(RIB_RENDERED, rendered);
+        keep(rendered, RIB_RENDERED);
     }
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what the rib scene rendered instead is in " + RIB_RENDERED);

@@ -9,13 +9,17 @@
 
 #include "Image.h"
 
+#include <optional>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::image {
 /**
- *  
+ * One image format, encoded.
+ *
+ * A writer encodes to bytes and writes no file. The caller writes them, through
+ * asset::writeFile for a file that has to be replaced atomically.
  **/
 class Writer {
  public:
@@ -23,11 +27,11 @@ class Writer {
     virtual ~Writer() = default;
 
     /**
-     * Write the image to the file. Each format implements it.
+     * Encode the image in this format. Each format implements it.
      *
-     * @return false when the file was not written
+     * @return the encoded file, or nothing when the image cannot be encoded in this format
      **/
-    virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img) = 0;
+    virtual std::optional<std::string> encode(const boost::shared_ptr<Image> & img) = 0;
  protected:
     /**
      * @return the log a format reports a failure to

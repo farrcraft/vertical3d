@@ -5,6 +5,7 @@
 
 #include "Reference.h"
 
+#include <api/asset/Writer.h>
 #include <api/image/Compare.h>
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
@@ -21,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -240,14 +242,22 @@ void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int co
     BOOST_CHECK_EQUAL(planes.value(coverage, 44, row), 0.0F);
 }
 
+void keep(const boost::shared_ptr<v3d::image::Image> & rendered, const std::string & output) {
+    boost::filesystem::create_directory("data_out");
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    const std::optional<std::string> encoded = factory.encode(rendered, v3d::image::Factory::kind(output));
+    if (encoded) {
+        v3d::asset::writeFile(output, *encoded);
+    }
+}
+
 void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* reference,
     const char* output) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
     const boost::shared_ptr<v3d::image::Image> committed = factory.read(reference);
     if (committed == nullptr) {
-        boost::filesystem::create_directory("data_out");
-        factory.write(output, rendered);
+        keep(rendered, output);
     }
     BOOST_REQUIRE_MESSAGE(committed != nullptr,
         std::string("cannot read the reference image ") + reference +
@@ -255,8 +265,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
 
     const v3d::image::Difference difference = v3d::image::compare(*rendered, *committed, 1);
     if (!difference.match) {
-        boost::filesystem::create_directory("data_out");
-        factory.write(output, rendered);
+        keep(rendered, output);
     }
     BOOST_CHECK_MESSAGE(difference.match,
         difference.description() + " - what was rendered instead is in " + output);

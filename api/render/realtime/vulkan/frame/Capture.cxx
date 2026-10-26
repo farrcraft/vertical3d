@@ -5,6 +5,7 @@
 
 #include "Capture.h"
 
+#include <api/asset/Writer.h>
 #include <api/image/Image.h>
 #include <api/image/writer/Png.h>
 #include <api/log/Logger.h>
@@ -17,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -114,7 +116,8 @@ bool Capture::write(std::string_view filename) {
     readback_->read(pixels.data(), static_cast<VkDeviceSize>(pixels.size()));
 
     image::writer::Png png(logger_);
-    if (!png.write(filename, convert(pixels.data(), width_, height_, format_))) {
+    const std::optional<std::string> encoded = png.encode(convert(pixels.data(), width_, height_, format_));
+    if (!encoded || !v3d::asset::writeFile(std::string(filename), *encoded)) {
         return false;
     }
 

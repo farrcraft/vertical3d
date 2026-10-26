@@ -5,7 +5,6 @@
 
 #include "Png.h"
 
-#include <api/image/File.h>
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
 #include <api/log/Logger.h>
@@ -14,32 +13,44 @@
 
 #include <csetjmp>
 #include <cstddef>
-#include <cstdio>
+#include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace {
 
 /**
- * What libpng's error and warning handlers report through: the file being written, and the log.
+ * What libpng's error and warning handlers report through, the log.
  **/
 struct Reporting {
-    std::string name;
     v3d::log::Logger* logger = nullptr;
 };
 
 void warned(png_structp png, png_const_charp message) {
     const Reporting* reporting = static_cast<const Reporting*>(png_get_error_ptr(png));
-    reporting->logger->get()->warn("libpng, writing {}: {}", reporting->name, message);
+    reporting->logger->get()->warn("libpng, encoding: {}", message);
 }
 
 /**
- * Reports the error and returns, and libpng then longjmps to the png_jmpbuf that encode() set.
+ * Reports the error and returns, and libpng then longjmps to the png_jmpbuf that compress() set.
  **/
 void failed(png_structp png, png_const_charp message) {
     const Reporting* reporting = static_cast<const Reporting*>(png_get_error_ptr(png));
-    reporting->logger->get()->error("libpng, writing {}: {}", reporting->name, message);
+    reporting->logger->get()->error("libpng, encoding: {}", message);
+}
+
+/**
+ * Where libpng puts what it encodes: on the end of the string its io pointer names.
+ **/
+void append(png_structp png, png_bytep data, png_size_t length) {
+    std::string* bytes = static_cast<std::string*>(png_get_io_ptr(png));
+    bytes->append(reinterpret_cast<const char*>(data), length);
+}
+
+/**
+ * The string holds everything as soon as it is appended, so there is nothing to flush.
+ **/
+void flush(png_structp /* png */) {
 }
 
 /**
@@ -61,12 +72,12 @@ struct Picture {
  *
  * @return false when libpng reported an error
  **/
-// C4611 warns of any setjmp in C++. Nothing in encode() has a destructor for a longjmp to skip
+// C4611 warns of any setjmp in C++. Nothing in compress() has a destructor for a longjmp to skip
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4611)
 #endif
-bool encode(png_structp png, png_infop info, Picture* picture) {
+bool compress(png_structp png, png_infop info, Picture* picture) {
     if (setjmp(png_jmpbuf(png))) {  // NOLINT(cert-err52-cpp) - libpng reports an error by longjmp
         return false;
     }
@@ -92,9 +103,9 @@ Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
 
 /**
  **/
-bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+std::optional<std::string> Png::encode(const boost::shared_ptr<Image>& img) {
     if (!img) {
-        return false;
+        return std::nullopt;
     }
 
     // png_set_sBIT reads whichever members the colour type covers, so the ones this writer does
@@ -118,7 +129,7 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         }
     }
 
-    // both the file and Image are top down, so the rows go out in the order they are in
+    // both a png and Image are top down, so the rows go out in the order they are in
     const std::size_t stride = static_cast<std::size_t>(picture.width) * static_cast<std::size_t>(img->format());
     std::vector<png_bytep> rows(picture.height);
     png_bytep data = img->data();
@@ -127,22 +138,20 @@ bool Png::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     }
     picture.rows = rows.data();
 
-    FILE* fp = openFile(static_cast<std::string>(filename), "wb");
-    if (fp == nullptr) {
-        return false;
-    }
-    // the name lives as long as the write, because libpng's handlers read it
-    Reporting reporting{.name = static_cast<std::string>(filename), .logger = logger().get()};
+    Reporting reporting{.logger = logger().get()};
+    std::string encoded;
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, &reporting, failed, warned);
     png_infop info = png == nullptr ? nullptr : png_create_info_struct(png);
     bool written = false;
     if (info != nullptr) {
-        png_init_io(png, fp);
-        written = encode(png, info, &picture);
+        png_set_write_fn(png, &encoded, append, flush);
+        written = compress(png, info, &picture);
     }
     png_destroy_write_struct(&png, &info);
-    fclose(fp);
-    return written;
+    if (!written) {
+        return std::nullopt;
+    }
+    return encoded;
 }
 
 };  // namespace v3d::image::writer

@@ -5,6 +5,7 @@
 
 #include "Display.h"
 
+#include <api/asset/Writer.h>
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
@@ -13,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
@@ -74,7 +76,8 @@ void Display::finish(v3d::render::offline::FrameBuffer* planes, const boost::sha
     // only the three colour channels are written, whatever the display mode. The coverage and
     // depth planes stay in the framebuffer
     v3d::image::Factory factory(logger);
-    if (!factory.write(name_, planes->image(Planes::CHANNELS))) {
+    const std::optional<std::string> encoded = factory.encode(planes->image(Planes::CHANNELS), v3d::image::Factory::kind(name_));
+    if (!encoded || !v3d::asset::writeFile(name_, *encoded)) {
         logger->get()->error("the picture could not be written to '{}'", name_);
     }
 }

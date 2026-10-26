@@ -275,13 +275,17 @@ a height and a bit depth.
 
 ### Reading and writing
 
-`image::Factory` ([api/image/Factory.h](../../api/image/Factory.h)) reads and writes by file
-extension: `png`, `jpg`, `jpeg`, `bmp` and `tga`.
+`image::Factory` ([api/image/Factory.h](../../api/image/Factory.h)) reads and encodes by
+format: `png`, `jpg`, `jpeg`, `bmp` and `tga`. **It writes no file.** It encodes an image to
+bytes, and the caller writes them through `asset::writeFile`, which replaces a file atomically.
 
 ```cpp
 v3d::image::Factory factory(logger);
 boost::shared_ptr<v3d::image::Image> picture = factory.read("sprite.png");
-factory.write("out.tga", picture);
+const std::optional<std::string> bytes = factory.encode(picture, v3d::image::Factory::kind("out.tga"));
+if (bytes) {
+    v3d::asset::writeFile("out.tga", *bytes);
+}
 ```
 
 - `read(data, size, kind)` decodes from memory. Pass the format key, such as `"png"`, because a
@@ -291,11 +295,14 @@ factory.write("out.tga", picture);
   a channel. 32 bits reads as RGBA, and as opaque when its alpha is zero everywhere, since most
   writers leave it unused. Every other depth comes back as RGB.
 - Each read returns null when the file will not open or does not decode.
-- `write` returns false when the file is not written. An error from libpng is logged, and the
-  png write returns false rather than ending the process. A TGA is written with the 26-byte TGA
-  2.0 footer.
+- `kind(filename)` is the format key a file name gives: its extension, lower case, without the
+  dot.
+- `encode` returns nothing when no writer has the key or the image does not encode. An error
+  from libpng or libjpeg is logged, and the encode returns nothing rather than ending the
+  process. A TGA is encoded with the 26-byte TGA 2.0 footer.
 - Through the asset manager, an image file loads as `asset::media::kind::Image`, and `image()`
-  returns the `image::Image`.
+  returns the `image::Image`. The loader reads the file through `asset::readFile` and decodes it
+  from memory.
 
 **The readers do not agree on greyscale.** Know which you are reading:
 
@@ -344,7 +351,7 @@ atlas.region(r.x, r.y, r.z, r.w, pixels, 32 * 4);        // blit into it
   slightly towards the gutter. If that shows, inset the uvs by half a texel, as tetris does.
 - Each region costs two texels more per axis than its size. The largest region a 16 × 16 atlas
   can hold is 12 × 12.
-- `image()` returns the packed image for upload, and `write(filename)` saves it.
+- `image()` returns the packed image, for upload or to encode.
 
 Without a gutter, a linear sampler at a region's edge reads the neighbouring region's texels.
 The visible result is a thin line of the wrong colour along a sprite's edge, with nothing in the

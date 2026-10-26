@@ -7,6 +7,9 @@
 
 #include <api/image/Writer.h>
 
+#include <optional>
+#include <string>
+
 namespace v3d::image::writer {
 /** 
  **/
@@ -17,7 +20,7 @@ class Png : public v3d::image::Writer {
     explicit Png(const boost::shared_ptr<v3d::log::Logger> & logger);
     ~Png() = default;
 
-    virtual bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
+    std::optional<std::string> encode(const boost::shared_ptr<Image> & img) override;
 };
 
 };  // namespace v3d::image::writer

@@ -9,7 +9,8 @@
 
 namespace v3d::asset::media::loader {
 /**
- * Every image format, through image::Factory, which reads the format from the extension.
+ * Every image format. The file is read through asset::readFile and decoded from memory by
+ * image::Factory, which takes the format from the extension.
  * Every format produces the one kind, kind::Image.
  **/
 class Image final : public Loader {

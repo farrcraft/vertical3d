@@ -23,6 +23,7 @@
 #include <cctype>
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -32,13 +33,9 @@
 
 namespace v3d::image {
 
-namespace {
-
 /**
- * The key a file's readers and writers are registered under: its extension, lower case and
- * without the dot. A name with no extension yields an empty key, which nothing is under.
  **/
-std::string format(std::string_view filename) {
+std::string Factory::kind(std::string_view filename) {
     std::string ext = boost::filesystem::path(std::string(filename)).extension().string();
     if (!ext.empty()) {
         ext.erase(0, 1);
@@ -47,8 +44,6 @@ std::string format(std::string_view filename) {
         [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
     return ext;
 }
-
-};  // namespace
 
 /**
  **/
@@ -76,22 +71,20 @@ void Factory::add(const std::string& name, const boost::shared_ptr<Writer>& writ
     writers_[name] = writer;
 }
 
-bool Factory::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
-    const boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
-
-    const std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(format(filename));
-    if (it != writers_.end()) {
-        const boost::shared_ptr<Writer> writer = (*it).second;
-        return writer->write(full_path.string(), img);
+std::optional<std::string> Factory::encode(const boost::shared_ptr<Image>& img, std::string_view kind) {
+    const std::map<std::string, boost::shared_ptr<Writer> >::iterator it = writers_.find(std::string(kind));
+    if (it == writers_.end()) {
+        logger_->get()->error("Nothing encodes the image format {}", kind);
+        return std::nullopt;
     }
-    return false;
+    return it->second->encode(img);
 }
 
 boost::shared_ptr<Image> Factory::read(std::string_view filename) {
     const boost::filesystem::path full_path = boost::filesystem::system_complete(static_cast<std::string>(filename));
     std::string filepath = full_path.string();
 
-    const std::string ext = format(filename);
+    const std::string ext = kind(filename);
 
     logger_->get()->debug("ImageFactory::read - reading file {} with reader bound to extension {} from path {}", filename, ext, filepath);
 

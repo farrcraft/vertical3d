@@ -19,7 +19,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Image.h"
-#include "Factory.h"
 
 namespace {
 
@@ -50,11 +49,6 @@ TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int
     nodes_.push_back(glm::ivec3(1, 1, width - 2));
 
     image_.reset(new Image(glm::uvec2(width, height), static_cast<uint8_t>(depth * 8)));
-}
-
-void TextureAtlas::write(const std::string& filename) {
-    Factory factory(logger_);
-    factory.write(filename, image_);
 }
 
 TextureAtlas::~TextureAtlas() {

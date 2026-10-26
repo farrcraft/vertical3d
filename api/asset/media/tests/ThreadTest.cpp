@@ -5,6 +5,7 @@
 
 #include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
+#include <api/asset/Writer.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
@@ -19,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 #include <latch>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -63,8 +65,11 @@ boost::shared_ptr<v3d::asset::Manager> prepare(const std::vector<std::string>& m
 
     v3d::image::Factory factory(logger);
     const boost::shared_ptr<v3d::image::Image> picture = gradient();
-    BOOST_REQUIRE(factory.write(std::string(ROOT) + "/gradient.png", picture));
-    BOOST_REQUIRE(factory.write(std::string(ROOT) + "/gradient.jpg", picture));
+    for (const char* name : {"gradient.png", "gradient.jpg"}) {
+        const std::optional<std::string> encoded = factory.encode(picture, v3d::image::Factory::kind(name));
+        BOOST_REQUIRE(encoded);
+        BOOST_REQUIRE(v3d::asset::writeFile(boost::filesystem::path(ROOT) / name, *encoded));
+    }
     for (const std::string& model : models) {
         boost::filesystem::copy_file(boost::filesystem::path("data") / model, boost::filesystem::path(ROOT) / model,
             boost::filesystem::copy_options::overwrite_existing);

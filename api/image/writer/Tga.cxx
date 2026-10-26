@@ -12,13 +12,11 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fstream>
-#include <ios>
 #include <new>
 #include <limits>
 #include <cstring>
+#include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace {
@@ -66,35 +64,29 @@ Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
 
 /**
  **/
-bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+std::optional<std::string> Tga::encode(const boost::shared_ptr<Image>& img) {
     if (!img) {
-        return false;
+        return std::nullopt;
     }
 
-    // checked before the open, which truncates: a picture the header cannot describe
-    // leaves any file already at that name as it was
+    // the header holds each side in 16 bits
     if (img->width() > std::numeric_limits<uint16_t>::max() ||
         img->height() > std::numeric_limits<uint16_t>::max()) {
-        return false;
+        return std::nullopt;
     }
 
     // a side is at most 65535 pixels and a pixel at most 4 bytes, so the size is computed in
-    // size_t, which holds it. The scratch copy is made before the open, so a picture too large
-    // to copy leaves any file already at that name as it was
+    // size_t, which holds it
     const unsigned int bytespp = img->bpp() / 8;
     const std::size_t size = static_cast<std::size_t>(img->width()) * img->height() * bytespp;
     std::vector<unsigned char> scratch;
+    std::string encoded;
     try {
         scratch.resize(size);
+        encoded.reserve(sizeof(tga_header) + size + sizeof(tga_footer));
     } catch (const std::bad_alloc &) {
-        logger()->get()->error("a {} by {} picture is too large to write as a TGA", img->width(), img->height());
-        return false;
-    }
-
-    std::fstream file;
-    file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
-    if (file.fail()) {
-        return false;
+        logger()->get()->error("a {} by {} picture is too large to encode as a TGA", img->width(), img->height());
+        return std::nullopt;
     }
 
     tga_header fheader;
@@ -110,15 +102,9 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // flips the picture
     fheader.descriptor_ = 0x20;
 
-    file.write(reinterpret_cast<char*>(&fheader), sizeof(fheader));
+    encoded.append(reinterpret_cast<const char*>(&fheader), sizeof(fheader));
 
     const unsigned char* data = img->data();
-
-    if (file.fail()) {
-        file.close();
-        return false;
-    }
-
     if (grey) {
         // one channel is one channel in either order, so there is nothing to swap
         memcpy(scratch.data(), data, size);
@@ -126,7 +112,7 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         swapRedBlue(data, scratch.data(), {.pixels = size / bytespp, .channels = bytespp});
     }
 
-    file.write(reinterpret_cast<char*>(scratch.data()), static_cast<std::streamsize>(size));
+    encoded.append(reinterpret_cast<const char*>(scratch.data()), size);
 
     tga_footer footer;
     memset(&footer, 0, sizeof(tga_footer));
@@ -135,10 +121,8 @@ bool Tga::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // size record, not a C string.
     memcpy(footer.signature_, "TRUEVISION-XFILE", sizeof(footer.signature_));
     footer.reserved_ = '.';
-    file.write(reinterpret_cast<char*>(&footer), sizeof(footer));
-
-    file.close();
-    return true;
+    encoded.append(reinterpret_cast<const char*>(&footer), sizeof(footer));
+    return encoded;
 }
 
 };  // namespace v3d::image::writer

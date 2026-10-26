@@ -5,20 +5,22 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
+#include <api/asset/Writer.h>
 #include <api/asset/media/Loaders.h>
 #include <api/engine/Statistics.h>
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
+#include <api/model/Model.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/model/Model.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -96,7 +98,9 @@ void writeTextures(v3d::test::Headless* headless, const boost::filesystem::path&
         for (std::size_t at = 0; at < bytes; at++) {
             (*image)[static_cast<unsigned int>(at)] = static_cast<unsigned char>((at * 7) + index);
         }
-        BOOST_REQUIRE(factory.write((directory / ("region_" + std::to_string(index) + ".png")).string(), image));
+        const std::optional<std::string> encoded = factory.encode(image, "png");
+        BOOST_REQUIRE(encoded);
+        BOOST_REQUIRE(v3d::asset::writeFile(directory / ("region_" + std::to_string(index) + ".png"), *encoded));
     }
 }
 

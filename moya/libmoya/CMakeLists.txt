@@ -39,7 +39,7 @@ else()
 endif()
 
 # PUBLIC: the framebuffer is part of the render context's interface, and the render context's
-# header includes the log's. moya's headers name glm types. PRIVATE: only the render context's
-# source writes images.
+# header includes the log's. moya's headers name glm types. PRIVATE: only Display writes an image,
+# encoding it with image and writing the file through asset.
 target_link_libraries("v3dlib_moya" PUBLIC v3dlib_log v3dlib_render_offline v3dlib_type glm::glm)
-target_link_libraries("v3dlib_moya" PRIVATE v3dlib_image)
+target_link_libraries("v3dlib_moya" PRIVATE v3dlib_asset v3dlib_image)

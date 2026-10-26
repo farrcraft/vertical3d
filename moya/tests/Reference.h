@@ -218,6 +218,11 @@ void motionScene(v3d::moya::RenderContext & rc);
 void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row);
 
 /**
+ * Write what a case rendered to a file under data_out, so a failure can be looked at.
+ **/
+void keep(const boost::shared_ptr<v3d::image::Image> & rendered, const std::string & output);
+
+/**
  * A rendered image against a committed one, writing what it rendered when they differ.
  **/
 void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* reference,

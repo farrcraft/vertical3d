@@ -10,7 +10,9 @@
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
+#include <string_view>
 
 namespace v3d::image {
 /**
@@ -38,7 +40,23 @@ class Factory {
      **/
     boost::shared_ptr<Image> read(const unsigned char* data, std::size_t size, std::string_view kind);
 
-    bool write(std::string_view filename, const boost::shared_ptr<Image> & img);
+    /**
+     * Encode an image in a format, for the caller to write.
+     *
+     * Nothing here writes a file. A caller writes the bytes through asset::writeFile, which
+     * replaces a file atomically.
+     *
+     * @param kind the format's key, as kind() gives it for a file name
+     * @return the encoded file, or nothing when no writer has that key or the image does not
+     *         encode
+     **/
+    std::optional<std::string> encode(const boost::shared_ptr<Image> & img, std::string_view kind);
+
+    /**
+     * The key a file's format is registered under: its extension, lower case and without the
+     * dot. A name with no extension gives an empty key, which nothing is under.
+     **/
+    static std::string kind(std::string_view filename);
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
