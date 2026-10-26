@@ -5,8 +5,6 @@
 
 #pragma once
 
-namespace v3d::ecs::component {
-
 /**
  * An entity's position along a line. A plain aggregate: snapshot() copies it, and simulation
  * writes value directly every step.
@@ -21,4 +19,3 @@ struct Position1D final {
  **/
 Position1D interpolate(const Position1D& from, const Position1D& to, float alpha);
 
-};  // namespace v3d::ecs::component

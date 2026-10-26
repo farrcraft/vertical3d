@@ -1,7 +1,10 @@
 add_executable(pong
+	"src/component/Color3.h"
 	"src/component/Direction.h"
 	"src/component/Offset.h"
 	"src/component/PaddleSize.h"
+	"src/component/Position1D.h" "src/component/Position1D.cxx"
+	"src/component/Position2D.h" "src/component/Position2D.cxx"
 	"src/component/Score.h"
 	"src/component/Size.h"
 	"src/component/Travel.h"

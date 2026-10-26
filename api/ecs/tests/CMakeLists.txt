@@ -2,9 +2,9 @@
 # device, and no files copied beside the executable.
 v3d_add_test(ecs
 	"TestMain.cpp"
-	"ComponentTest.cpp"
 	"EmitterTest.cpp"
 	"PlaybackTest.cpp"
+	"Positions.h"
 	"PreviousTest.cpp"
 	"RefTest.cpp"
 	"SystemTest.cpp"

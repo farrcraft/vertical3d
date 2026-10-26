@@ -4,10 +4,10 @@
  **/
 
 #include <api/ecs/Previous.h>
-#include <api/ecs/component/Position1D.h>
-#include <api/ecs/component/Position2D.h>
 #include <api/event/kind/Sound.h>
 #include <pong/src/PongScene.h>
+#include <pong/src/component/Position1D.h>
+#include <pong/src/component/Position2D.h>
 
 #include <algorithm>
 #include <cmath>
@@ -345,8 +345,8 @@ BOOST_AUTO_TEST_CASE(pong_scene_a_point_settles_the_ball_test) {
     fixture.scene_.ball().direction(glm::vec2(-60.0F, 0.0F));
     fixture.scene_.left().position(500.0F);
 
-    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
-    v3d::ecs::snapshot<v3d::ecs::component::Position1D>(fixture.registry_);
+    v3d::ecs::snapshot<Position2D>(fixture.registry_);
+    v3d::ecs::snapshot<Position1D>(fixture.registry_);
     fixture.scene_.tick(STEP);
 
     BOOST_TEST(near(fixture.scene_.ball().drawn(0.0F), glm::vec2(400.0F, 300.0F)));
@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(pong_scene_a_point_settles_the_ball_test) {
 BOOST_AUTO_TEST_CASE(pong_scene_ball_drawn_between_steps_test) {
     Fixture fixture;
 
-    v3d::ecs::snapshot<v3d::ecs::component::Position2D>(fixture.registry_);
+    v3d::ecs::snapshot<Position2D>(fixture.registry_);
     fixture.scene_.tick(STEP);
 
     BOOST_TEST(near(fixture.scene_.ball().drawn(0.5F), glm::vec2(399.5F, 300.0F)));

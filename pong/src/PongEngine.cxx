@@ -7,13 +7,13 @@
 
 #include <api/audio/Engine.h>
 #include <api/audio/Loaders.h>
-#include <api/ecs/component/Position1D.h>
-#include <api/ecs/component/Position2D.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
 #include <api/ui/shell/GameMenu.h>
+#include <pong/src/component/Position1D.h>
+#include <pong/src/component/Position2D.h>
 
 #include <array>
 #include <utility>
@@ -61,8 +61,8 @@ PongEngine::PongEngine(const std::string & path) :
     v3d::engine::Engine(path),
     shell_(this, { .menu = true, .statistics = "pong::toggleStatistics" }) {
     // the renderer draws the ball and the paddles between the last two steps
-    interpolate<v3d::ecs::component::Position2D>();
-    interpolate<v3d::ecs::component::Position1D>();
+    interpolate<Position2D>();
+    interpolate<Position1D>();
     // simulate() reads whether each paddle command's key is held
     for (const std::string_view command : PongScene::paddleCommands) {
         commands().addHeld("pong::" + std::string(command));

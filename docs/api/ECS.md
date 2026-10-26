@@ -21,12 +21,12 @@ reaches it directly, so the subclass passes the registry to whatever else needs 
 a system, a reference for the render functions.
 
 An entity's components are added by the class that owns the entity's id, and read back through
-the registry:
+the registry. Here `Position2D` is one of pong's own components:
 
 ```cpp
-registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0F));
+registry().emplace<Position2D>(id_, glm::vec2(0.0F));
 ...
-auto& position = registry().get<v3d::ecs::component::Position2D>(id_);
+auto& position = registry().get<Position2D>(id_);
 position.value += velocity * step;
 ```
 
@@ -81,22 +81,19 @@ can use. All are in `v3d::ecs::component`.
 | Component | What it is |
 |---|---|
 | `Transform` | Where a thing stands in a 3D world: a position, a quaternion and a scale. It is `type::Transform`. |
-| `Position1D` | A position along a line, `float value`. |
-| `Position2D` | A position on a plane, `glm::vec2 value`. |
-| `Color3` | A colour, `glm::vec3 value`. |
 | `Playback` | Which animation clip an entity is playing, how far in, and the clip it is fading out of. |
 | `Emitter` | A particle effect carried by an entity, and the particles it has made. |
 
-Each is a plain value. Write its fields directly; there are no setters. `Transform`,
-`Position1D`, `Position2D` and `Playback` each have an `interpolate()` beside them, so they can
-be drawn between steps.
+Each is a plain value. Write its fields directly; there are no setters. `Transform` and
+`Playback` each have an `interpolate()` beside them, so they can be drawn between steps.
 
 ### Your own components
 
 A component does not need to live in `api/ecs`. Define the rest beside the app's own code. pong
-keeps `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and `Direction` in
-[pong/src/component/](../../pong/src/component). Any type works as a component: odyssey's
-player stands on a `grid::TileCoord`, the type its pathfinding already uses.
+keeps `Position1D`, `Position2D`, `Color3`, `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and
+`Direction` in [pong/src/component/](../../pong/src/component). Its two positions each have an
+`interpolate()` beside them, so the engine can draw them between steps. Any type works as a
+component: odyssey's player stands on a `grid::TileCoord`, the type its pathfinding already uses.
 
 ### Transform
 
@@ -108,8 +105,8 @@ scale. It is the same type an editor mesh's `dag::Transform` holds.
   angle turns `+Z` towards `+X`.
 - `matrix()` and `interpolate()` are described in [Types.md](Types.md#transform).
 
-The api has two ways to say where a thing is. `Transform` is for things drawn in a 3D world.
-`Position1D` and `Position2D` are for simpler 2D games such as pong.
+`Transform` is for things drawn in a 3D world. A 2D game such as pong defines positions of its
+own.
 
 ### Playback
 

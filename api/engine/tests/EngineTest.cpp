@@ -4,7 +4,6 @@
  **/
 
 #include <api/ecs/Previous.h>
-#include <api/ecs/component/Position2D.h>
 #include <api/event/Bindings.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
@@ -29,6 +28,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
+
+#include <glm/common.hpp>
+#include <glm/vec2.hpp>
 
 namespace {
 
@@ -502,6 +504,17 @@ BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
 }
 
 /**
+ * A position on a plane, which the engine can draw between two steps.
+ **/
+struct Position2D final {
+    glm::vec2 value{0.0F};
+};
+
+Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
+    return Position2D{glm::mix(from.value, to.value, alpha)};
+}
+
+/**
  * An engine whose simulation moves every Position2D one unit along x, so a case can tell what
  * a step saw before it moved anything.
  **/
@@ -515,7 +528,7 @@ class SteppingEngine final : public v3d::engine::Engine {
     using Engine::step;
 
     bool simulate(float /* step */) override {
-        for (auto [entity, position] : registry().view<v3d::ecs::component::Position2D>().each()) {
+        for (auto [entity, position] : registry().view<Position2D>().each()) {
             position.value.x += 1.0F;
         }
         return true;
@@ -528,19 +541,19 @@ class SteppingEngine final : public v3d::engine::Engine {
  **/
 BOOST_AUTO_TEST_CASE(engine_snapshots_registered_types_before_a_step_test) {
     SteppingEngine engine(appPath("good"));
-    engine.interpolate<v3d::ecs::component::Position2D>();
-    engine.interpolate<v3d::ecs::component::Position2D>();
+    engine.interpolate<Position2D>();
+    engine.interpolate<Position2D>();
     entt::registry& registry = engine.registry();
     const entt::entity ball = registry.create();
-    registry.emplace<v3d::ecs::component::Position2D>(ball, glm::vec2(3.0F, 0.0F));
+    registry.emplace<Position2D>(ball, glm::vec2(3.0F, 0.0F));
 
     BOOST_REQUIRE(engine.step(0.01F));
-    BOOST_REQUIRE(registry.all_of<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball));
-    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball).value.value.x, 3.0F);
-    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::component::Position2D>(ball).value.x, 4.0F);
+    BOOST_REQUIRE(registry.all_of<v3d::ecs::Previous<Position2D>>(ball));
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<Position2D>>(ball).value.value.x, 3.0F);
+    BOOST_CHECK_EQUAL(registry.get<Position2D>(ball).value.x, 4.0F);
 
     BOOST_REQUIRE(engine.step(0.01F));
-    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<v3d::ecs::component::Position2D>>(ball).value.value.x, 4.0F);
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<Position2D>>(ball).value.value.x, 4.0F);
 }
 
 /**
