@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Asset.h>
+#include <api/asset/Loader.h>
 #include <api/asset/Manager.h>
 #include <api/asset/kind/Json.h>
 #include <api/asset/kind/Text.h>

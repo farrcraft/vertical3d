@@ -10,6 +10,7 @@
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <api/log/Logger.h>
+#include <api/type/Transform.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>

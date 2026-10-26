@@ -4,6 +4,7 @@
  **/
 
 #include <api/brep/BRep.h>
+#include <api/type/Transform.h>
 #include <vertical3d/src/command/GroupCommand.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/Evaluation.h>

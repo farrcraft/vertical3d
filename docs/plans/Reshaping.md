@@ -368,15 +368,29 @@ where the shell lives.
 
 ### Step 9 — The core library boundaries
 
-**Open.** An ADR decides `asset::Type`, and one decides `config`.
+**Closed.** [ADR-0118](../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) decides
+the loader's key, and [ADR-0119](../adr/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
+decides `config`.
 
-- `type` keeps geometry, transforms and value types. Models, skeletons and animation move to a
-  library of their own. Effects move beside the systems that run them.
-- `config` is dissolved into the libraries its parts belong to.
-- `dag` folds into the editor's `Item`. `command/Placement` uses `type::Transform`.
-- pong's components move from `ecs` into pong.
-- A loader is keyed by an open identifier. Images are one kind.
-- The secondary `Engine` classes are named for their roles.
+- A loader is registered for the asset class it produces. A load picks the loader by extension
+  and checks the class, and a file whose extension no loader reads is loaded by the loader for
+  the class asked for. `asset::Type` is gone, and every image format is `kind::Image`. Three new
+  cases.
+- `asset::Manifest` holds the documents `config.json` lists, under open kinds. Each library that
+  reads a kind declares its name, as `ui::Interface::DOCUMENT`. One new case.
+- `windowSize` and `CameraProfiles` are in `engine`, and `SpriteSheets` is in `asset_media`.
+  **Different from the plan:** `CameraProfiles` is not beside `type::camera::Profile`, because
+  `type` would then link `log`, `asset` and Boost.JSON.
+- **Different from the plan:** two libraries leave `type`, not one. `animation` holds
+  skeletons, poses, clips, curves and tracks. `model` holds `model::Model` over it, so the
+  editor's keys and a sprite clip do not bring a model with them. The particle effects are
+  `ecs::effect`, beside the `Emitter` component that steps them.
+- `dag` is gone. `Item` holds its id and a `type::Transform` placement, and a command records an
+  item's whole placement as one. Five new cases.
+- pong's `Position1D`, `Position2D` and `Color3` are pong's. The ecs and engine suites draw
+  positions of their own between steps.
+- `ui::Interface`, `audio::Player`, `event::Router` and `input::Devices` replace the four
+  secondary `Engine` classes.
 
 ### Step 10 — Font and image
 

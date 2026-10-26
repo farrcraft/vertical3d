@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/Transform.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>

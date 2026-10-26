@@ -5,8 +5,8 @@
 
 #include "TransformTool.h"
 
-#include <vertical3d/src/scene/Item.h>
 #include <api/log/Logger.h>
+#include <api/type/Transform.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
@@ -16,6 +16,7 @@
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
+#include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>

@@ -13,6 +13,7 @@ namespace v3d::asset::kind {
 
 /**
  **/
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - where the text came from, then the text
 Text::Text(const std::string& name, const std::string& content) :
     Asset(name),
     content_(content) {
