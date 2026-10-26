@@ -88,7 +88,7 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();

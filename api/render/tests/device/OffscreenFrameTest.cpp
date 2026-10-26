@@ -104,7 +104,7 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
     Capture::Source source;
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(a_directly_allocated_device_clears_the_same_way) {
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
     Capture::Source source;

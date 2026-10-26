@@ -12,6 +12,7 @@
 #include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 
+#include "Ring.h"
 #include "Swapchain.h"
 
 #include <cstddef>
@@ -27,8 +28,10 @@ namespace v3d::render::realtime::vulkan::frame {
 
 /**
  **/
-Capture::Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<log::Logger>& logger) :
+Capture::Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+    const boost::shared_ptr<log::Logger>& logger) :
     device_(device),
+    ring_(ring),
     logger_(logger),
     width_(0),
     height_(0),
@@ -59,10 +62,12 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
     format_ = source.format;
 
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width_) * height_ * 4;
-    if (!readback_) {
+    if (!readback_ || readback_->size() < bytes) {
+        const boost::shared_ptr<memory::Buffer> outgrown = readback_;
         readback_ = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT, .bytes = bytes});
-    } else {
-        readback_->grow(bytes);
+        if (outgrown) {
+            ring_->retire([outgrown]() {});
+        }
     }
 
     const VkImageAspectFlags aspect = depth_ ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;

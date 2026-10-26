@@ -164,12 +164,14 @@ class DeviceContext {
      *
      * WindowContext's swapchain is created after the DeviceContext, and is recreated whenever the
      * window changes size, so WindowContext calls describe() each time. A renderer already built
-     * keeps the format it was compiled with.
+     * keeps the format it was compiled with. A depth buffer already allocated is replaced by
+     * one of the new extent, and the old one is retired through the ring.
      *
      * @param colour the colour format of the destination
      * @param extent its size
+     * @throw std::runtime_error if the new depth buffer cannot be allocated
      **/
-    void describe(VkFormat colour, const VkExtent2D& extent) noexcept;
+    void describe(VkFormat colour, const VkExtent2D& extent);
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;

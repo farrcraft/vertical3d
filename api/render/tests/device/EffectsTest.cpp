@@ -190,7 +190,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();

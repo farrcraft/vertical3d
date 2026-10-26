@@ -138,6 +138,12 @@ void Ring::retire(std::function<void()> destroy) {
 
 /**
  **/
+std::size_t Ring::retiring() const noexcept {
+    return retired_.pending();
+}
+
+/**
+ **/
 VkFence Ring::submitting() {
     pending_ = false;
     VkFence fence = inFlight_[frame_];

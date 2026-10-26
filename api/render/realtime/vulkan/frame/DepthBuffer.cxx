@@ -6,7 +6,6 @@
 #include "DepthBuffer.h"
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/device/Result.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
@@ -132,16 +131,6 @@ void DepthBuffer::destroy() {
     image_.reset();
     extent_.width = 0;
     extent_.height = 0;
-}
-
-/**
- **/
-void DepthBuffer::recreate(uint32_t width, uint32_t height) {
-    // a frame in flight may still be testing against the image about to go away
-    const VkResult result = vkDeviceWaitIdle(device_->handle());
-    device::check(result, "Unable to wait for the vulkan device before recreating the depth buffer");
-    destroy();
-    create(width, height);
 }
 
 /**

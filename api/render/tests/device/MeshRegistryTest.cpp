@@ -609,7 +609,7 @@ BOOST_AUTO_TEST_CASE(a_textured_mesh_released_after_its_items_are_queued_draws_i
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();

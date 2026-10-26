@@ -102,7 +102,7 @@ std::vector<unsigned char> drawn(v3d::test::Headless* headless, const TextureHan
     pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::Target described;
     described.image = target->image();

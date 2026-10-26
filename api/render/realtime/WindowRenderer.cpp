@@ -142,7 +142,7 @@ bool WindowRenderer::capture(std::string_view path) {
         return false;
     }
     if (!capture_) {
-        capture_ = boost::make_shared<vulkan::frame::Capture>(context_->device(), logger_);
+        capture_ = boost::make_shared<vulkan::frame::Capture>(context_->device(), context_->ring(), logger_);
     }
     capturePath_ = path;
     return true;

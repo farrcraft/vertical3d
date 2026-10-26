@@ -187,7 +187,7 @@ Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::str
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get(), &timings);
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -203,7 +203,7 @@ Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::str
 
     // each layer read back on its own, for a caster's depth anywhere in it
     for (uint32_t cascade = 0; map->depthFormat() == VK_FORMAT_D32_SFLOAT && cascade < cascades->count; cascade++) {
-        Capture layer(headless->device, headless->logger);
+        Capture layer(headless->device, headless->context->ring(), headless->logger);
         Capture::Source depth;
         depth.image = map->depthImage();
         depth.extent = map->extent();

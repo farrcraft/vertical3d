@@ -137,7 +137,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
         headless.context->frameUniforms().get());
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     Capture::Source source;
     source.image = map->depthImage();
     source.extent = map->extent();

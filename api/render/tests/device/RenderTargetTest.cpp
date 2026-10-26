@@ -95,7 +95,7 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = output->image();
     source.extent = output->extent();

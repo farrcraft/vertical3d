@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
 
     const PipelineHandle pipeline = scenePipeline(&headless, pool.layout());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     draw(&headless, target, pipeline, scene, &capture);
 
     BOOST_CHECK(headless.silent());
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
 
     const PipelineHandle pipeline = scenePipeline(&headless, pool.layout());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     BOOST_CHECK_THROW(draw(&headless, target, pipeline, VK_NULL_HANDLE, &capture), std::runtime_error);
 }
 

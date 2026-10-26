@@ -61,12 +61,6 @@ class DepthBuffer final {
     DepthBuffer& operator=(const DepthBuffer&) = delete;
 
     /**
-     * Replace the image with one at the new size. The format never changes, so no pipeline
-     * built against it has to be rebuilt.
-     **/
-    void recreate(uint32_t width, uint32_t height);
-
-    /**
      * @return whether there is an image to draw into
      **/
     bool valid() const noexcept;

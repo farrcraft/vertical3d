@@ -113,7 +113,7 @@ std::string drawCoincident(v3d::test::Headless* headless, Drawn drawn, std::opti
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();

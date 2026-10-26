@@ -9,6 +9,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -125,6 +126,11 @@ class Ring final {
      * destructor once the device is idle. It is the last use of whatever it captured.
      **/
     void retire(std::function<void()> destroy);
+
+    /**
+     * @return how many retired objects are waiting for their frames to finish
+     **/
+    std::size_t retiring() const noexcept;
 
     /**
      * Reset the current frame's fence and return it, for the submit that ends the frame to

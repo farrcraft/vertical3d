@@ -87,7 +87,7 @@ entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::
  **/
 boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkCommandBuffer commands,
     const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -292,7 +292,7 @@ void drawLitCube(v3d::test::Headless* headless, v3d::type::camera::Profile::Hand
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
         headless->context->frameUniforms().get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -387,7 +387,7 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
         headless.context->frameUniforms().get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     Capture::Source source;
     source.image = map->depthImage();
     source.extent = map->extent();

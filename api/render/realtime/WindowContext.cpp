@@ -78,10 +78,6 @@ void WindowContext::resize() {
     // the swapchain's extent, not the window's. The surface may require an extent other than
     // the one requested, and everything sized against the swapchain has to match it
     describe(swapchain_->format(), swapchain_->extent());
-    if (hasDepth()) {
-        // the depth buffer is only correct while it is the size of what it is attached to
-        depth()->recreate(swapchain_->extent().width, swapchain_->extent().height);
-    }
 }
 
 /**

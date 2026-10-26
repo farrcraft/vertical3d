@@ -109,9 +109,17 @@ VkFormat DeviceContext::depthFormat() const noexcept {
 
 /**
  **/
-void DeviceContext::describe(VkFormat colour, const VkExtent2D& extent) noexcept {
+void DeviceContext::describe(VkFormat colour, const VkExtent2D& extent) {
+    const bool resized = extent.width != extent_.width || extent.height != extent_.height;
     colourFormat_ = colour;
     extent_ = extent;
+    if (depth_ && resized) {
+        // the depth buffer is only correct while it is the size of what it is attached to. A
+        // frame in flight may still be testing against the old one
+        const boost::shared_ptr<vulkan::frame::DepthBuffer> outgrown = depth_;
+        depth_ = boost::make_shared<vulkan::frame::DepthBuffer>(device_, extent_.width, extent_.height);
+        ring_->retire([outgrown]() {});
+    }
 }
 
 /**

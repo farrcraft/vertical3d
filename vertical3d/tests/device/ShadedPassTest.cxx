@@ -103,7 +103,7 @@ glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::ShadedPass* shaded,
     pass->camera(view.view(), view.projection());
     shaded->submit(scene, display, pass.get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::Target described;
     described.image = target->image();

@@ -110,7 +110,7 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
 
     headless->context->worldQuads()->submit(canvas, pass.get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::Target described;

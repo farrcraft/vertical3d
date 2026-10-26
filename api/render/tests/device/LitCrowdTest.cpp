@@ -127,7 +127,7 @@ v3d::type::camera::Camera camera(const glm::vec3& target, float zoom) {
 
 boost::shared_ptr<v3d::image::Image> readBack(v3d::test::Headless* headless, VkCommandBuffer commands,
     const boost::shared_ptr<RenderTarget>& target, const std::string& path) {
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();

@@ -119,7 +119,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
     // every pass names a target of its own, so the frame is given no image
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->depthImage();
     source.extent = target->extent();
@@ -173,7 +173,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->depthImage();
     source.extent = target->extent();

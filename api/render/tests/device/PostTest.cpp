@@ -141,7 +141,7 @@ boost::shared_ptr<v3d::image::Image> grade(v3d::test::Headless* headless, const 
     drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, drawn.get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     record(headless, frame, output, &capture);
     graded.release(source);
 
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(a_copying_pass_is_the_identity) {
     drawn->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, drawn.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     record(&headless, frame, output, &capture);
     BOOST_CHECK(copy.release(source));
 
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(a_pass_destroyed_after_its_source_is_queued_draws_it) {
     BOOST_CHECK(copy->release(source));
     copy.reset();
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     record(&headless, frame, output, &capture);
     BOOST_CHECK(headless.silent());
 
@@ -465,7 +465,7 @@ BOOST_AUTO_TEST_CASE(a_replaced_table_regrades_its_sources) {
     BOOST_CHECK(!graded.replace(std::vector<uint8_t>(16)));
     BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &capture));
     BOOST_CHECK(graded.release(source));
     BOOST_CHECK(headless.silent());
@@ -500,12 +500,12 @@ BOOST_AUTO_TEST_CASE(a_table_replaced_after_a_submit_keeps_the_frame_silent) {
     Grade graded(headless.logger, headless.context, {.colour = colourFormat});
     const MaterialHandle source = graded.source(*scene);
 
-    Capture before(headless.device, headless.logger);
+    Capture before(headless.device, headless.context->ring(), headless.logger);
     headless.submit(recordGrade(&headless, graded, source, scene, output, uploaded, size, &before));
 
     BOOST_REQUIRE(graded.replace(Grade::table(invertingStrip())));
 
-    Capture after(headless.device, headless.logger);
+    Capture after(headless.device, headless.context->ring(), headless.logger);
     headless.submitAndWait(recordGrade(&headless, graded, source, scene, output, uploaded, size, &after));
     for (int frame = 0; frame < 3; frame++) {
         headless.submit(headless.context->ring()->begin());

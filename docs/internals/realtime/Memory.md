@@ -7,11 +7,12 @@ resource is released while frames that use it may still be in flight.
 
 `vulkan::frame::DepthBuffer` is a depth image, its view, and (when sampled) a sampler.
 
-**The window's depth buffer.** `DeviceContext` owns one, sized by the context's extent and
-rebuilt with it. It is allocated the first frame a pass on the swapchain asks for depth, and
-never otherwise, so a 2D app pays nothing. `DeviceContext::depthFormat()` is known from the
-device before the image exists, so pipelines can be built first. Every pass on the swapchain that
-tests depth shares this one image.
+**The window's depth buffer.** `DeviceContext` owns one, sized by the context's extent. It is
+allocated the first frame a pass on the swapchain asks for depth, and never otherwise, so a 2D
+app pays nothing. When `describe()` gives the context a new extent, the depth buffer is replaced
+by one of that size and the old one is retired through the ring.
+`DeviceContext::depthFormat()` is known from the device before the image exists, so pipelines
+can be built first. Every pass on the swapchain that tests depth shares this one image.
 
 **Format choice.** `DepthBuffer::chooseFormat(physical, sampled)` returns the first of
 `D32_SFLOAT`, `D32_SFLOAT_S8_UINT`, `D24_UNORM_S8_UINT` whose optimal-tiling features include
@@ -109,9 +110,9 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 | `memory::DeviceBuffer` | Device local, filled by staging copy | Geometry built once and drawn many times |
 | `memory::Mesh` | Two `DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
 
-- `Buffer::grow(bytes)` doubles until large enough and **replaces the allocation**, invalidating
-  `handle()`. It waits for the device first. `Buffer::read()` is slow (coherent, not cached), so
-  use it for one-off readback only.
+- **A `Buffer` never changes size.** Whatever outgrows one makes a new one and retires the old
+  one through the ring, as `StreamRing` and `Capture` do. `Buffer::read()` is slow (coherent,
+  not cached), so use it for one-off readback only.
 - `DeviceBuffer::upload()` submits its copy and returns, so no frame may be reading the buffer.
   The constructors are its only callers, and fill a buffer nothing has read.
 - **`memory::Uploader::submit(record, keep)` does not wait.** It records a command buffer of its
@@ -180,6 +181,14 @@ about to be begun. `Ring::begin()` runs every callback whose frames have finishe
 finished once `framesInFlight` more frames have begun, because beginning a frame waits on the
 fence of the slot's previous use. The ring's destructor waits for the device and runs everything
 left.
+
+**Every release goes through the ring, except the swapchain's.** A material, a texture, a set, a
+descriptor pool, an outgrown stream or readback buffer, a target's images and the window's depth
+buffer are all retired, so nothing waits for the device to release them.
+`Swapchain::recreate()` is the one exception, and waits for the device before it destroys the old
+chain. The presentation engine may still hold an image after every fence the ring waits on has
+signalled, and Vulkan 1.3 gives no fence for a present. The other device waits release nothing:
+a capture's readback, the ring's destructor, and shutdown.
 
 **A release and the items already queued.** A draw item names its material by handle, and the
 recorder resolves it when the frame is recorded. A release therefore cannot take effect at

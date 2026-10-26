@@ -86,9 +86,11 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
   except in a lit pipeline, which reads it from the scene's object buffer by instance index.
 - **Never write a barrier inline.** Use or add a function in `memory/Barriers.h`.
 - **Never destroy a GPU object a frame may still use.** Retire it through `Ring::retire()`. This
-  covers materials, textures, sets, descriptor pools, outgrown stream buffers and target images.
-- **Never share one stream buffer between two submissions.** `Buffer::grow()` replaces the
-  allocation and invalidates the handle earlier draw items hold.
+  covers materials, textures, sets, descriptor pools, outgrown stream and readback buffers,
+  target images and the window's depth buffer. Only `Swapchain::recreate()` waits for the device
+  instead.
+- **Never share one stream buffer between two submissions.** The second submission's writes land
+  while the device may still be reading the first's.
 - **Write per-frame data after `Ring::waitFrame()`** and before the ring begins the frame.
   `StreamRing::claim()` and `Lit::scene()` do this, and `Lit::object()` writes into the slot
   `scene()` waited for. Anything new keeping per-frame data must do the same.

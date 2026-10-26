@@ -61,16 +61,6 @@ class Buffer final {
     VkDeviceSize size() const noexcept;
 
     /**
-     * Make the buffer at least this large, doubling until it is.
-     *
-     * Growing replaces the allocation, so this waits for the device to finish with the
-     * old one. A buffer only grows in the first few frames after a size changes.
-     *
-     * @return whether the buffer was reallocated, which invalidates handle()
-     **/
-    bool grow(VkDeviceSize bytes);
-
-    /**
      * Copy into the mapped allocation.
      * @throw std::runtime_error if the write would run off the end
      **/

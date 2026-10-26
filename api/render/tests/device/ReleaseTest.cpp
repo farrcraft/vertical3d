@@ -5,11 +5,13 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -158,7 +160,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -245,7 +247,7 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     TextureHandle green = flat(&headless, 0x00, 0xFF, 0x00);
     BOOST_REQUIRE_EQUAL(green.id(), red.id());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     draw(&headless, target, green, &capture);
     headless.context->ring()->waitIdle();
 
@@ -320,6 +322,63 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
 
     BOOST_CHECK(!headless.context->textures()->release(white));
     BOOST_CHECK(headless.context->resources()->texture(white) != nullptr);
+}
+
+/**
+ * A capture of a larger image replaces the readback buffer and retires the old one through the
+ * ring, because the copy recorded into an earlier frame may still be writing into it. The frames
+ * before the case run out first, so the only retirement left is the one the capture makes.
+ **/
+BOOST_AUTO_TEST_CASE(a_capture_retires_the_readback_it_outgrows) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> small = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> large = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width * 2, height * 2,
+        colourFormat);
+    const TextureHandle texture = flat(&headless, 0x00, 0xFF, 0x00);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
+
+    draw(&headless, small, texture, &capture);
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        idle(&headless);
+    }
+    BOOST_CHECK_EQUAL(headless.context->ring()->retiring(), 0U);
+    draw(&headless, large, texture, &capture);
+    BOOST_CHECK_EQUAL(headless.context->ring()->retiring(), 1U);
+
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(capture.write("data_out/release_capture_outgrown.png"));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A context given a new extent replaces the depth buffer it allocated with one of that size, and
+ * retires the old one through the ring, because a frame in flight may still test against it. The
+ * same extent again keeps the buffer.
+ **/
+BOOST_AUTO_TEST_CASE(a_new_extent_retires_the_depth_buffer) {
+    /** A context whose destination a case can describe, as WindowContext does after a resize. **/
+    class Described final : public v3d::render::realtime::DeviceContext {
+     public:
+        using DeviceContext::DeviceContext;
+        using DeviceContext::describe;
+    };
+
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<Described> context = boost::make_shared<Described>(headless.logger, headless.device, colourFormat,
+        VkExtent2D{width, height});
+    const boost::shared_ptr<v3d::render::realtime::vulkan::frame::DepthBuffer> first = context->depth();
+    const std::size_t before = context->ring()->retiring();
+
+    context->describe(colourFormat, VkExtent2D{width, height});
+    BOOST_CHECK(context->depth() == first);
+    BOOST_CHECK_EQUAL(context->ring()->retiring(), before);
+
+    context->describe(colourFormat, VkExtent2D{width * 2, height * 2});
+    BOOST_CHECK(context->depth() != first);
+    BOOST_CHECK_EQUAL(context->depth()->extent().width, width * 2);
+    BOOST_CHECK_EQUAL(context->depth()->extent().height, height * 2);
+    BOOST_CHECK_EQUAL(context->ring()->retiring(), before + 1);
+    BOOST_CHECK(headless.silent());
 }
 
 /**
