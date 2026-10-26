@@ -115,10 +115,12 @@ v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEF
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
 # v3dlib_window: WindowRenderer.h and WindowContext.h take the window they present to.
+# v3dlib_model: MeshRegistry.h and DecodedModel.h take the model::Model a mesh is built from.
+# v3dlib_animation: component/Particles.h holds the animation::SpriteClip a particle plays.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright:
 # WindowContext.h and every vulkan/ header carry VkDevice and its neighbours, and Surface.h
 # carries SDL_Window.
-target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type v3dlib_window Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
+target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_animation v3dlib_asset v3dlib_image v3dlib_model v3dlib_type v3dlib_window Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
 # PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h and
 # Allocation.h declare the handles they name rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)

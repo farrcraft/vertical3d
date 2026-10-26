@@ -18,12 +18,13 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 
 | Library | What it is for |
 |---|---|
+| [`animation`](../../api/animation/) | Skeletons, poses, animation clips, keyframe curves and the tracks particle effects follow. |
 | [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, the manifest an app lists its documents in, atomic file writes and document migration. |
 | [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models, and sprite sheets. |
 | [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
 | [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
-| [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
+| [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry, and the particle effects its emitter steps. |
 | [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings, and the readers for the window and camera documents. It opens the window. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
 | [`font`](../../api/font/) | Rasterizes a typeface with FreeType into a texture atlas and lays out text. |
@@ -31,10 +32,11 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
+| [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
 | [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
-| [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms, models, skeletons, animation, particle effects and random numbers. |
+| [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
 | [`window`](../../api/window/) | The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses no graphics API. See [engine/Window.md](engine/Window.md). |
 
@@ -49,20 +51,22 @@ Boost.
 |---|---|---|
 | `log` | none | spdlog |
 | `type` | none | glm |
+| `animation` | none | glm |
 | `grid` | none | glm |
 | `image` | log | libpng, libjpeg, glm |
 | `asset` | log | (Boost only) |
 | `event` | log, asset | glm, EnTT |
 | `database` | none | SQLite |
-| `ecs` | type | glm, EnTT |
+| `ecs` | animation, type | glm, EnTT |
 | `brep` | type | glm |
+| `model` | animation | glm |
 | `font` | log, image | FreeType, glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
-| `asset_media` | log, asset, image, type | cgltf, glm |
+| `asset_media` | log, animation, asset, image, model | cgltf, glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
 | `window` | log | **SDL3**, glm |
-| `render` | log, asset, asset_media, ecs, font, image, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
+| `render` | log, animation, asset, asset_media, ecs, font, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
 | `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
 | `shell` | engine, ui, asset | none of its own |
@@ -70,8 +74,8 @@ Boost.
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   grid   database               no device, no window
-image  asset  ecs  brep
+log   type   animation   grid   database   no device, no window
+image  asset  ecs  brep  model
 font   asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input  window                              SDL3
@@ -90,8 +94,8 @@ Three consequences matter when choosing what to link:
 - **Only `audio` needs SDL3_mixer.** The engine does not link it, so an app that plays sound
   links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio)
   shows how.
-- **`type`, `grid`, `ecs`, `image` and `asset` need no device and no window**, so a
-  test of game rules built on them runs anywhere.
+- **`type`, `animation`, `model`, `grid`, `ecs`, `image` and `asset` need no device and no
+  window**, so a test of game rules built on them runs anywhere.
 
 A project outside the tree chooses which libraries to build with the `V3D_LIBRARIES` CMake
 variable. [UsingTheApi.md](UsingTheApi.md) covers that.
@@ -218,9 +222,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 ### Geometry, models and effects
 
 - **Mesh** — four different things: a `brep::BRep` the editor models with, the
-  `editor::Mesh` scene item that places one, a `type::Model` a file loads into, and a
+  `editor::Mesh` scene item that places one, a `model::Model` a file loads into, and a
   device-side mesh in the renderer. See [Types.md](Types.md#models).
-- **Model** — `type::Model`: one vertex array, one index list, materials and parts. See
+- **Model** — `model::Model`: one vertex array, one index list, materials and parts. See
   [Types.md](Types.md#models).
 - **Part** — a range of a model's indices drawn with one material. See
   [Types.md](Types.md#models).

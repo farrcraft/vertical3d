@@ -25,7 +25,7 @@
 #include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/renderer/Lit.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
 
@@ -78,12 +78,12 @@ boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headles
 /**
  * The strip as a static model: the same vertices, parts and materials with its skin taken off.
  **/
-v3d::type::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
+v3d::model::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
     const boost::shared_ptr<v3d::asset::media::kind::Model> loaded =
         boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load<v3d::asset::media::kind::Model>(STRIP));
     BOOST_REQUIRE(loaded && loaded->model());
-    v3d::type::Model model = *loaded->model();
-    model.skeleton() = v3d::type::Skeleton();
+    v3d::model::Model model = *loaded->model();
+    model.skeleton() = v3d::animation::Skeleton();
     model.influences().clear();
     model.clips().clear();
     return model;
@@ -342,21 +342,21 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     }
 
     // a square at z = -0.5 facing -z, towards the light, wound counter clockwise from there
-    v3d::type::Model square;
+    v3d::model::Model square;
     const glm::vec3 corners[4] = {{0.5F, -0.5F, -0.5F}, {-0.5F, -0.5F, -0.5F}, {-0.5F, 0.5F, -0.5F}, {0.5F, 0.5F, -0.5F}};
     for (const glm::vec3& corner : corners) {
-        v3d::type::Model::Vertex vertex;
+        v3d::model::Model::Vertex vertex;
         vertex.position = corner;
         vertex.normal = glm::vec3(0.0F, 0.0F, -1.0F);
         square.vertices().push_back(vertex);
-        v3d::type::Model::Influence influence;
+        v3d::model::Model::Influence influence;
         influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
         square.influences().push_back(influence);
     }
     square.indices() = {0, 1, 2, 0, 2, 3};
     square.materials().emplace_back();
     square.parts().push_back({0, 6, 0});
-    v3d::type::Skeleton::Joint joint;
+    v3d::animation::Skeleton::Joint joint;
     joint.translation = glm::vec3(0.0F, 0.0F, 0.5F);
     square.skeleton().joints.push_back(joint);
 

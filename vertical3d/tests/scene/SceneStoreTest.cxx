@@ -10,7 +10,7 @@
 #include <api/database/Database.h>
 #include <api/database/Statement.h>
 #include <api/log/Logger.h>
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Evaluation.h>
@@ -614,12 +614,12 @@ BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
     const Scratch scratch("animation");
     const boost::shared_ptr<v3d::editor::Scene> written = everyKind();
     const v3d::editor::Items kinds = written->items();
-    const std::vector<v3d::type::animation::Curve::Key> keys{
-        { .frame = 1.0F, .value = 0.0F, .interpolation = v3d::type::animation::Curve::Interpolation::Step },
+    const std::vector<v3d::animation::Curve::Key> keys{
+        { .frame = 1.0F, .value = 0.0F, .interpolation = v3d::animation::Curve::Interpolation::Step },
         { .frame = 8.5F, .value = 2.0F, .in = 0.5F, .out = -1.0F, .automatic = false },
         { .frame = 20.0F, .value = 5.0F } };
-    const v3d::type::animation::Curve shaped(keys);
-    v3d::type::animation::Curve fade;
+    const v3d::animation::Curve shaped(keys);
+    v3d::animation::Curve fade;
     fade.set(2.0F, 40.0F);
     fade.set(12.0F, 0.0F);
     BOOST_REQUIRE(written->curve(kinds[0]->id(), "translation.y", shaped));
@@ -674,7 +674,7 @@ BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {
     const Scratch scratch("curve_change");
     const boost::shared_ptr<v3d::editor::Scene> scene = everyKind();
     const v3d::editor::Items kinds = scene->items();
-    v3d::type::animation::Curve curve;
+    v3d::animation::Curve curve;
     curve.set(1.0F, 0.0F);
     BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", curve));
     BOOST_REQUIRE(scene->curve(kinds[1]->id(), "lens.fov", curve));
@@ -691,7 +691,7 @@ BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {
     BOOST_CHECK_EQUAL(query(scratch, "SELECT count FROM curves WHERE property = 'scale.x'"), 2);
 
     // and a curve taken away deletes its row, as does removing the item that had one
-    BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", v3d::type::animation::Curve()));
+    BOOST_REQUIRE(scene->curve(kinds[0]->id(), "scale.x", v3d::animation::Curve()));
     scene->remove(kinds[1]->id());
     BOOST_REQUIRE(store.write(scratch.path(), *scene));
     BOOST_CHECK_EQUAL(store.written().curves, 2U);
@@ -734,7 +734,7 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
     scene.add(group);
     scene.parent(scene.items()[0]->id(), group->id());
-    v3d::type::animation::Curve curve;
+    v3d::animation::Curve curve;
     curve.set(3.0F, 1.0F);
     BOOST_REQUIRE(scene.curve(group->id(), "rotation.y", curve));
     BOOST_REQUIRE(store.write(scratch.path(), scene));

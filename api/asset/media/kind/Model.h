@@ -7,7 +7,7 @@
 
 #include <api/asset/Asset.h>
 #include <api/image/Image.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <string>
@@ -23,18 +23,18 @@ class Model : public Asset {
  public:
     /**
      **/
-    Model(const std::string& name, const boost::shared_ptr<v3d::type::Model>& model,
+    Model(const std::string& name, const boost::shared_ptr<v3d::model::Model>& model,
         const std::vector<boost::shared_ptr<v3d::image::Image>>& baseColours = {});
 
     /**
      **/
-    boost::shared_ptr<v3d::type::Model> model();
+    boost::shared_ptr<v3d::model::Model> model();
 
     /**
      * A material's base colour texture, when the file stored its pixels instead of a uri.
      *
      * A .glb packs its images into its own buffer, and a .gltf may inline one as a data uri.
-     * Neither has a path for the material to name, so type::Model::Material's
+     * Neither has a path for the material to name, so model::Model::Material's
      * baseColourTexture is empty. The decoded pixels arrive here instead, for the app to
      * upload the way it uploads any other image.
      *
@@ -49,7 +49,7 @@ class Model : public Asset {
     boost::shared_ptr<v3d::image::Image> baseColourImage(std::size_t material) const;
 
  private:
-    boost::shared_ptr<v3d::type::Model> model_;
+    boost::shared_ptr<v3d::model::Model> model_;
     std::vector<boost::shared_ptr<v3d::image::Image>> baseColours_;  /**< by material, and short when the last have none **/
 };
 };  // namespace v3d::asset::media::kind

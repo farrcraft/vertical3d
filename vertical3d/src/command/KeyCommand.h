@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -50,8 +50,8 @@ class KeyCommand final : public Command {
     struct Change {
         boost::shared_ptr<Item> item;
         std::string path;
-        v3d::type::animation::Curve before;
-        v3d::type::animation::Curve after;
+        v3d::animation::Curve before;
+        v3d::animation::Curve after;
     };
 
     /**

@@ -13,7 +13,7 @@
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <algorithm>
 #include <chrono>
@@ -60,12 +60,12 @@ constexpr unsigned int gridSide = 64;
  * A grid of gridSide by gridSide vertices, in one part with no texture. The offset moves it, so
  * no two of a region's grids are the same model.
  **/
-v3d::type::Model grid(float offset) {
-    v3d::type::Model model;
+v3d::model::Model grid(float offset) {
+    v3d::model::Model model;
     model.vertices().resize(static_cast<std::size_t>(gridSide) * gridSide);
     for (unsigned int row = 0; row < gridSide; row++) {
         for (unsigned int column = 0; column < gridSide; column++) {
-            v3d::type::Model::Vertex& vertex = model.vertices()[(static_cast<std::size_t>(row) * gridSide) + column];
+            v3d::model::Model::Vertex& vertex = model.vertices()[(static_cast<std::size_t>(row) * gridSide) + column];
             vertex.position = glm::vec3(static_cast<float>(column) + offset, 0.0F, static_cast<float>(row));
             vertex.normal = glm::vec3(0.0F, 1.0F, 0.0F);
             vertex.uv = glm::vec2(static_cast<float>(column), static_cast<float>(row)) / static_cast<float>(gridSide - 1);
@@ -78,7 +78,7 @@ v3d::type::Model grid(float offset) {
                 {corner, corner + gridSide, corner + 1, corner + 1, corner + gridSide, corner + gridSide + 1});
         }
     }
-    model.materials().push_back(v3d::type::Model::Material());
+    model.materials().push_back(v3d::model::Model::Material());
     model.parts().push_back({0, static_cast<std::uint32_t>(model.indices().size()), 0});
     return model;
 }
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(a_poll_at_the_default_budget_fits_its_share_of_a_frame, *bo
 
     const boost::shared_ptr<MeshRegistry> meshes = boost::make_shared<MeshRegistry>(headless.logger, headless.context, assets);
     // built before anything is timed, as the worker decodes a model before a poll uploads it
-    std::vector<v3d::type::Model> models;
+    std::vector<v3d::model::Model> models;
     models.reserve(regionMeshes);
     for (unsigned int index = 0; index < regionMeshes; index++) {
         models.push_back(grid(static_cast<float>(index)));
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(a_poll_at_the_default_budget_fits_its_share_of_a_frame, *bo
             const v3d::engine::Statistics::Scope scope = statistics.scope("meshes");
             // a run of nothing yet is under any budget, so every run adds at least one
             while (added < regionMeshes && spent < MeshRegistry::DEFAULT_UPLOAD_BUDGET) {
-                const v3d::type::Model& model = models[added];
+                const v3d::model::Model& model = models[added];
                 meshes->add("region_mesh_" + std::to_string(added), model);
                 spent += model.vertexBytes() + (model.indices().size() * sizeof(std::uint32_t));
                 added++;

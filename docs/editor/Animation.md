@@ -26,7 +26,7 @@ taken as 0.
 
 ## Curves
 
-A curve is a `v3d::type::animation::Curve`, which [Types.md](../api/Types.md#curve) describes.
+A curve is a `v3d::animation::Curve`, which [Types.md](../api/Types.md#curve) describes.
 Its keys sit on frames, each with its own interpolation (step, linear or Bezier) and its own
 slopes. Before its first key a curve holds the first key's value, and after its last it holds
 the last's.

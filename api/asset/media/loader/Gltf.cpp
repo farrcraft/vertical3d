@@ -12,10 +12,10 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/type/Model.h>
-#include <api/type/Skeleton.h>
-#include <api/type/animation/Channel.h>
-#include <api/type/animation/Clip.h>
+#include <api/model/Model.h>
+#include <api/animation/Skeleton.h>
+#include <api/animation/Channel.h>
+#include <api/animation/Clip.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -192,7 +192,7 @@ glm::mat4 worldOf(const cgltf_node& node) {
  * animates to give its transform as a translation, a rotation and a scale. A node given as a
  * matrix is decomposed, which is exact for any matrix without shear.
  **/
-void restOf(const cgltf_node& node, v3d::type::Skeleton::Joint* joint) {
+void restOf(const cgltf_node& node, v3d::animation::Skeleton::Joint* joint) {
     if (node.has_matrix != 0) {
         const glm::mat4 local = glm::make_mat4(node.matrix);
         joint->translation = glm::vec3(local[3]);
@@ -240,7 +240,7 @@ std::vector<int32_t> skinParents(const cgltf_skin& skin) {
  * Read a skin into a skeleton whose parents precede their children, keeping the skin's own
  * order wherever it already does, and record how the rest of the traversal reaches its joints.
  **/
-v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
+v3d::animation::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
     const std::vector<int32_t> parents = skinParents(skin);
     rig->skin = &skin;
     rig->order.assign(skin.joints_count, 0);
@@ -259,10 +259,10 @@ v3d::type::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
         }
     }
 
-    v3d::type::Skeleton skeleton;
+    v3d::animation::Skeleton skeleton;
     for (const cgltf_size joint : sequence) {
         const cgltf_node& node = *skin.joints[joint];
-        v3d::type::Skeleton::Joint read;
+        v3d::animation::Skeleton::Joint read;
         read.name = node.name != nullptr ? node.name : std::string();
         read.parent = parents[joint] < 0 ? -1 : rig->order[static_cast<std::size_t>(parents[joint])];
         restOf(node, &read);
@@ -429,8 +429,8 @@ void releaseRead(const cgltf_memory_options* /* memory */, const cgltf_file_opti
  * one. A weight given to a joint the skin does not have is left out. A vertex whose weights
  * then sum to zero or less follows the first root.
  **/
-v3d::type::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
-    v3d::type::Model::Influence influence;
+v3d::model::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
+    v3d::model::Model::Influence influence;
     influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
     if (attributes.joints == nullptr || attributes.weights == nullptr) {
         dropped->unweighted = true;
@@ -514,7 +514,7 @@ void appendIndices(const cgltf_primitive& primitive, const Span& span, std::vect
  * Append one primitive's vertices to the merged array, placed by its node and with its
  * indices rebased onto the array.
  **/
-void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* model, Dropped* dropped) {
+void appendPrimitive(const Placed& placed, const Rig& rig, v3d::model::Model* model, Dropped* dropped) {
     const cgltf_primitive& primitive = *placed.primitive;
     const Attributes& attributes = placed.attributes;
     // a normal is turned by the inverse transpose, so it stays perpendicular to its surface
@@ -526,7 +526,7 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
     model->vertices().resize(baseVertex + count);
 
     for (cgltf_size index = 0; index < count; ++index) {
-        v3d::type::Model::Vertex& vertex = model->vertices()[baseVertex + index];
+        v3d::model::Model::Vertex& vertex = model->vertices()[baseVertex + index];
         cgltf_accessor_read_float(attributes.position, index, &vertex.position.x, 3);
         vertex.position = glm::vec3(placed.world * glm::vec4(vertex.position, 1.0F));
         if (attributes.normal != nullptr) {
@@ -543,7 +543,7 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
     if (rig.skin != nullptr) {
         dropped->influences = dropped->influences || attributes.moreInfluences;
         for (cgltf_size index = 0; index < count; ++index) {
-            v3d::type::Model::Influence influence;
+            v3d::model::Model::Influence influence;
             influence.joints[0] = placed.joint;
             influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
             model->influences().push_back(placed.skinned ? influenceOf(attributes, index, rig, dropped) : influence);
@@ -558,9 +558,9 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::type::Model* mod
  * joint, or a path other than translation, rotation and scale. Morph target weights are
  * dropped without a report, because a model has no morph targets.
  **/
-bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::type::animation::Channel* channel,
+bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::animation::Channel* channel,
     Dropped* dropped) {
-    using v3d::type::animation::Channel;
+    using v3d::animation::Channel;
     if (source.sampler == nullptr || source.target_node == nullptr) {
         return false;
     }
@@ -614,14 +614,14 @@ bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::typ
 /**
  * Every animation in the file as a clip of the skeleton's joints, named as the file named it.
  **/
-std::vector<v3d::type::animation::Clip> readClips(const cgltf_data& data, const Rig& rig, Dropped* dropped) {
-    std::vector<v3d::type::animation::Clip> clips;
+std::vector<v3d::animation::Clip> readClips(const cgltf_data& data, const Rig& rig, Dropped* dropped) {
+    std::vector<v3d::animation::Clip> clips;
     for (cgltf_size index = 0; index < data.animations_count; ++index) {
         const cgltf_animation& animation = data.animations[index];
-        v3d::type::animation::Clip clip;
+        v3d::animation::Clip clip;
         clip.name = animation.name != nullptr ? animation.name : std::string();
         for (cgltf_size channel = 0; channel < animation.channels_count; ++channel) {
-            v3d::type::animation::Channel read;
+            v3d::animation::Channel read;
             if (!readChannel(animation.channels[channel], rig, &read, dropped)) {
                 continue;
             }
@@ -641,8 +641,8 @@ std::vector<v3d::type::animation::Clip> readClips(const cgltf_data& data, const 
  * @param embedded set to the image when it is stored inside the file instead of named by uri.
  *        The caller decodes it.
  **/
-v3d::type::Model::Material readMaterial(const cgltf_material& source, const cgltf_image** embedded) {
-    v3d::type::Model::Material material;
+v3d::model::Model::Material readMaterial(const cgltf_material& source, const cgltf_image** embedded) {
+    v3d::model::Model::Material material;
     if (source.has_pbr_metallic_roughness == 0) {
         return material;
     }
@@ -736,7 +736,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     }
 
     const std::vector<const cgltf_node*> starts = roots(*data);
-    const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
+    const boost::shared_ptr<v3d::model::Model> model = boost::make_shared<v3d::model::Model>();
 
     // a model has one skeleton, read from the first skin a mesh is bound to
     Rig rig;
@@ -767,7 +767,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     std::vector<boost::shared_ptr<v3d::image::Image>> baseColours;
 
     for (const Bucket& bucket : buckets) {
-        v3d::type::Model::Part part;
+        v3d::model::Model::Part part;
         part.firstIndex = static_cast<std::uint32_t>(model->indices().size());
         part.material = static_cast<std::uint32_t>(model->materials().size());
         for (const Placed& placed : bucket.primitives) {
@@ -778,7 +778,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
 
         const cgltf_image* embedded = nullptr;
         model->materials().push_back(bucket.material != nullptr ? readMaterial(*bucket.material, &embedded)
-                                                                : v3d::type::Model::Material());
+                                                                : v3d::model::Model::Material());
         // decoded before cgltf_free(), which frees the image's bytes
         baseColours.push_back(embedded != nullptr ? decodeEmbedded(*embedded, name) : boost::shared_ptr<v3d::image::Image>());
     }

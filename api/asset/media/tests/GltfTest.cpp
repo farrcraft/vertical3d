@@ -11,11 +11,11 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/type/Model.h>
-#include <api/type/Skeleton.h>
-#include <api/type/animation/Channel.h>
-#include <api/type/animation/Clip.h>
-#include <api/type/animation/Pose.h>
+#include <api/model/Model.h>
+#include <api/animation/Skeleton.h>
+#include <api/animation/Channel.h>
+#include <api/animation/Clip.h>
+#include <api/animation/Pose.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -61,11 +61,11 @@ const char* BLENDER = "blender_strip.glb";
  * The strip's skeleton, which both skin fixtures share once read: root, middle and top in a
  * chain a unit apart, with an armature standing the given distance along z above them.
  **/
-void checkSkeleton(const v3d::type::Skeleton& skeleton, float armature) {
+void checkSkeleton(const v3d::animation::Skeleton& skeleton, float armature) {
     BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3U);
     const char* const names[3] = {"root", "middle", "top"};
     for (std::size_t joint = 0; joint < 3; ++joint) {
-        const v3d::type::Skeleton::Joint& read = skeleton.joints[joint];
+        const v3d::animation::Skeleton::Joint& read = skeleton.joints[joint];
         BOOST_CHECK_EQUAL(read.name, names[joint]);
         BOOST_CHECK_EQUAL(read.parent, static_cast<std::int32_t>(joint) - 1);
         BOOST_CHECK(read.translation == glm::vec3(0.0F, joint == 0 ? 0.0F : 1.0F, 0.0F));
@@ -80,8 +80,8 @@ void checkSkeleton(const v3d::type::Skeleton& skeleton, float armature) {
  * Which joints the strip's rows follow, in the skeleton's order: root below y = 1, half and
  * half at it, middle between, half and half at 2, and top above. Two vertices a row.
  **/
-void checkInfluences(const v3d::type::Model& model) {
-    const std::vector<v3d::type::Model::Influence>& influences = model.influences();
+void checkInfluences(const v3d::model::Model& model) {
+    const std::vector<v3d::model::Model::Influence>& influences = model.influences();
     BOOST_CHECK_EQUAL(influences[0].joints[0], 0U);
     BOOST_CHECK_EQUAL(influences[4].joints[0], 0U);
     BOOST_CHECK_EQUAL(influences[4].joints[1], 1U);
@@ -94,7 +94,7 @@ void checkInfluences(const v3d::type::Model& model) {
 /**
  * Both parts, their ranges and their materials, which the two parts fixtures share.
  **/
-void checkParts(const v3d::type::Model& model) {
+void checkParts(const v3d::model::Model& model) {
     // where the vertices land: each primitive's triangle moved by its node and then turned a
     // quarter about +z by the parent. They are in the order the parts hold them: A and C in
     // material 0's part, then B in material 1's. Whole numbers throughout, so exact
@@ -133,19 +133,19 @@ boost::shared_ptr<v3d::asset::media::kind::Model> loadAsset(const char* name) {
     return boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(asset);
 }
 
-boost::shared_ptr<v3d::type::Model> load(const char* name) {
+boost::shared_ptr<v3d::model::Model> load(const char* name) {
     v3d::asset::Manager manager("data", logger());
     v3d::asset::media::registerLoaders(manager, logger());
     const boost::shared_ptr<v3d::asset::Asset> asset = manager.load<v3d::asset::media::kind::Model>(name);
     if (!asset) {
-        return boost::shared_ptr<v3d::type::Model>();
+        return boost::shared_ptr<v3d::model::Model>();
     }
     const boost::shared_ptr<v3d::asset::media::kind::Model> model = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(asset);
-    return model ? model->model() : boost::shared_ptr<v3d::type::Model>();
+    return model ? model->model() : boost::shared_ptr<v3d::model::Model>();
 }
 
 BOOST_AUTO_TEST_CASE(gltf_merges_every_primitive_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
 
     BOOST_REQUIRE(model);
     // three triangles of three vertices, in one array and one index run
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(gltf_merges_every_primitive_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_rebases_the_indices_of_later_primitives_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     // the first two primitives both index 0, 1, 2 in the file. Without the rebase the
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(gltf_rebases_the_indices_of_later_primitives_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_synthesises_indices_for_a_primitive_without_them_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     // the third primitive is drawn straight out of its vertex array in the file. Its three
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(gltf_synthesises_indices_for_a_primitive_without_them_test)
 }
 
 BOOST_AUTO_TEST_CASE(gltf_every_index_addresses_a_real_vertex_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     for (const std::uint32_t index : model->indices()) {
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(gltf_every_index_addresses_a_real_vertex_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_reads_the_vertex_attributes_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     // the three triangles are stepped along x, so the position says which primitive a
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_vertex_attributes_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_reads_the_base_colour_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE_EQUAL(model->materials().size(), 1U);
 
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_base_colour_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_names_the_texture_rather_than_decoding_it_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     // the material names its image and the app resolves it. The fixture ships no
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(gltf_resolves_by_extension_test) {
 }
 
 BOOST_AUTO_TEST_CASE(gltf_vertex_bytes_is_the_array_size_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     // what a device buffer is made from: eight floats a vertex, and the loader fills them
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE(gltf_vertex_bytes_is_the_array_size_test) {
  * primitive drawn with it.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_part_per_material_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(PARTS);
+    const boost::shared_ptr<v3d::model::Model> model = load(PARTS);
     BOOST_REQUIRE(model);
     checkParts(*model);
 
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_part_per_material_test) {
  * are 0, 1, 2 like A's.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_part_indexes_its_own_vertices_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(PARTS);
+    const boost::shared_ptr<v3d::model::Model> model = load(PARTS);
     BOOST_REQUIRE(model);
 
     const std::vector<std::uint32_t> expected{ 0, 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -344,10 +344,10 @@ BOOST_AUTO_TEST_CASE(gltf_a_part_indexes_its_own_vertices_test) {
  * and a quarter turn about +z makes it +y.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_node_turns_the_normals_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(PARTS);
+    const boost::shared_ptr<v3d::model::Model> model = load(PARTS);
     BOOST_REQUIRE(model);
 
-    for (const v3d::type::Model::Vertex& vertex : model->vertices()) {
+    for (const v3d::model::Model::Vertex& vertex : model->vertices()) {
         BOOST_CHECK_SMALL(vertex.normal.x, 1e-6F);
         BOOST_CHECK_CLOSE(vertex.normal.y, 1.0F, 1e-4F);
         BOOST_CHECK_SMALL(vertex.normal.z, 1e-6F);
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_node_turns_the_normals_test) {
  * A file that names no scene is read from every root node, and comes out the same.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_file_with_no_scene_reads_its_roots_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SCENELESS);
+    const boost::shared_ptr<v3d::model::Model> model = load(SCENELESS);
     BOOST_REQUIRE(model);
     checkParts(*model);
 }
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_file_with_no_scene_reads_its_roots_test) {
  * A file of one material is one part covering every index.
  **/
 BOOST_AUTO_TEST_CASE(gltf_one_material_is_one_part_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     BOOST_REQUIRE_EQUAL(model->parts().size(), 1U);
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE(gltf_one_material_is_one_part_test) {
  * A model with no skin has no skeleton and no influences.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_static_model_has_no_skeleton_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> model = load(FIXTURE);
     BOOST_REQUIRE(model);
 
     BOOST_CHECK(model->skeleton().empty());
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_static_model_has_no_skeleton_test) {
  * whole number and is compared exactly.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_a_skeleton_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     checkSkeleton(model->skeleton(), 0.0F);
     BOOST_CHECK(model->skeleton().root == glm::mat4(1.0F));
@@ -403,12 +403,12 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_skeleton_test) {
  * on them.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_the_influences_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE_EQUAL(model->influences().size(), model->vertices().size());
     checkInfluences(*model);
 
-    const std::vector<v3d::type::Model::Influence>& influences = model->influences();
+    const std::vector<v3d::model::Model::Influence>& influences = model->influences();
     BOOST_CHECK(influences[0].weights == glm::vec4(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK(influences[4].weights == glm::vec4(0.5F, 0.5F, 0.0F, 0.0F));
     BOOST_CHECK(influences[13].weights == glm::vec4(1.0F, 0.0F, 0.0F, 0.0F));
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_influences_test) {
  * z, and the strip is read where its vertices say.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_skinned_mesh_is_not_placed_by_its_node_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE(!model->parts().empty());
 
@@ -432,11 +432,11 @@ BOOST_AUTO_TEST_CASE(gltf_a_skinned_mesh_is_not_placed_by_its_node_test) {
  * is at rest, the mesh stands where its node puts it: half a unit above top, which is at y = 2.
  **/
 BOOST_AUTO_TEST_CASE(gltf_an_unskinned_mesh_follows_a_joint_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE_EQUAL(model->parts().size(), 2U);
 
-    const v3d::type::Model::Part& tip = model->parts()[1];
+    const v3d::model::Model::Part& tip = model->parts()[1];
     const std::uint32_t first = model->indices()[tip.firstIndex];
     BOOST_CHECK(model->vertices()[first].position == glm::vec3(0.0F, 2.5F, 0.0F));
     BOOST_CHECK_EQUAL(model->influences()[first].joints[0], 2U);
@@ -449,14 +449,14 @@ BOOST_AUTO_TEST_CASE(gltf_an_unskinned_mesh_follows_a_joint_test) {
  * which read normalised and sum to one.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_skeleton_listed_child_first_is_reordered_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SHUFFLED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SHUFFLED);
     BOOST_REQUIRE(model);
     checkSkeleton(model->skeleton(), 4.0F);
     BOOST_CHECK(model->skeleton().root == glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 4.0F)));
 
     BOOST_REQUIRE_EQUAL(model->influences().size(), model->vertices().size());
     checkInfluences(*model);
-    for (const v3d::type::Model::Influence& influence : model->influences()) {
+    for (const v3d::model::Model::Influence& influence : model->influences()) {
         BOOST_CHECK_CLOSE(influence.weights.x + influence.weights.y + influence.weights.z + influence.weights.w, 1.0F, 1e-4F);
     }
     BOOST_CHECK_CLOSE(model->influences()[4].weights.x, 0.5F, 0.5F);
@@ -468,12 +468,12 @@ BOOST_AUTO_TEST_CASE(gltf_a_skeleton_listed_child_first_is_reordered_test) {
  * bend also moves the tip, which is not a joint, and that channel is dropped.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_the_clips_test) {
-    using v3d::type::animation::Channel;
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    using v3d::animation::Channel;
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE_EQUAL(model->clips().size(), 3U);
 
-    const v3d::type::animation::Clip& bend = model->clips()[0];
+    const v3d::animation::Clip& bend = model->clips()[0];
     BOOST_CHECK_EQUAL(bend.name, "bend");
     BOOST_CHECK_EQUAL(bend.duration, 1.0F);
     BOOST_REQUIRE_EQUAL(bend.channels.size(), 1U);
@@ -485,7 +485,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_clips_test) {
     BOOST_REQUIRE_EQUAL(model->clips()[1].channels.size(), 1U);
     BOOST_CHECK(model->clips()[1].channels[0].interpolation == Channel::Interpolation::Step);
 
-    const v3d::type::animation::Clip& cubic = model->clips()[2];
+    const v3d::animation::Clip& cubic = model->clips()[2];
     BOOST_CHECK_EQUAL(cubic.name, "cubic");
     BOOST_REQUIRE_EQUAL(cubic.channels.size(), 1U);
     BOOST_CHECK_EQUAL(cubic.channels[0].joint, 2U);
@@ -500,14 +500,14 @@ BOOST_AUTO_TEST_CASE(gltf_reads_the_clips_test) {
  * loader and the sampler agreeing about the file end to end.
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_clip_read_bends_the_skeleton_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(SKINNED);
+    const boost::shared_ptr<v3d::model::Model> model = load(SKINNED);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE(!model->clips().empty());
 
-    v3d::type::animation::Pose pose = v3d::type::animation::rest(model->skeleton());
-    v3d::type::animation::sample(model->clips()[0], 1.0F, &pose);
+    v3d::animation::Pose pose = v3d::animation::rest(model->skeleton());
+    v3d::animation::sample(model->clips()[0], 1.0F, &pose);
     std::vector<glm::mat4> palette;
-    v3d::type::animation::palette(model->skeleton(), pose, &palette);
+    v3d::animation::palette(model->skeleton(), pose, &palette);
     BOOST_REQUIRE_EQUAL(palette.size(), 3U);
 
     // the top joint's bind position, carried by its skinning matrix to where it stands now
@@ -521,11 +521,11 @@ BOOST_AUTO_TEST_CASE(gltf_a_clip_read_bends_the_skeleton_test) {
  * A model with no skeleton has no clips, and neither has a skin with no animations.
  **/
 BOOST_AUTO_TEST_CASE(gltf_no_animations_are_no_clips_test) {
-    const boost::shared_ptr<v3d::type::Model> still = load(FIXTURE);
+    const boost::shared_ptr<v3d::model::Model> still = load(FIXTURE);
     BOOST_REQUIRE(still);
     BOOST_CHECK(still->clips().empty());
 
-    const boost::shared_ptr<v3d::type::Model> skinned = load(SHUFFLED);
+    const boost::shared_ptr<v3d::model::Model> skinned = load(SHUFFLED);
     BOOST_REQUIRE(skinned);
     BOOST_CHECK(skinned->clips().empty());
 }
@@ -537,10 +537,10 @@ BOOST_AUTO_TEST_CASE(gltf_no_animations_are_no_clips_test) {
  * key a frame with a channel on every joint.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(BLENDER);
+    const boost::shared_ptr<v3d::model::Model> model = load(BLENDER);
     BOOST_REQUIRE(model);
 
-    const v3d::type::Skeleton& skeleton = model->skeleton();
+    const v3d::animation::Skeleton& skeleton = model->skeleton();
     BOOST_REQUIRE_EQUAL(skeleton.joints.size(), 3U);
     const char* const names[3] = {"root", "middle", "top"};
     for (std::size_t joint = 0; joint < 3; ++joint) {
@@ -554,7 +554,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
     // the exporter's inverse bind matrices agree with its rest pose and its armature: at rest,
     // every joint's skinning matrix is the identity, to rounding
     std::vector<glm::mat4> palette;
-    v3d::type::animation::palette(skeleton, v3d::type::animation::rest(skeleton), &palette);
+    v3d::animation::palette(skeleton, v3d::animation::rest(skeleton), &palette);
     for (const glm::mat4& matrix : palette) {
         for (int column = 0; column < 4; ++column) {
             for (int row = 0; row < 4; ++row) {
@@ -577,14 +577,14 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_blender_rig_test) {
  * swings from (0, 2, 0) to (0, 1, 1).
  **/
 BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load(BLENDER);
+    const boost::shared_ptr<v3d::model::Model> model = load(BLENDER);
     BOOST_REQUIRE(model);
     BOOST_REQUIRE(!model->clips().empty());
 
-    v3d::type::animation::Pose pose = v3d::type::animation::rest(model->skeleton());
-    v3d::type::animation::sample(model->clips()[0], model->clips()[0].duration, &pose);
+    v3d::animation::Pose pose = v3d::animation::rest(model->skeleton());
+    v3d::animation::sample(model->clips()[0], model->clips()[0].duration, &pose);
     std::vector<glm::mat4> palette;
-    v3d::type::animation::palette(model->skeleton(), pose, &palette);
+    v3d::animation::palette(model->skeleton(), pose, &palette);
     BOOST_REQUIRE_EQUAL(palette.size(), 3U);
 
     const glm::vec4 top = palette[2] * glm::vec4(0.0F, 2.0F, 0.0F, 1.0F);
@@ -601,7 +601,7 @@ BOOST_AUTO_TEST_CASE(gltf_a_blender_clip_bends_the_rig_test) {
  * api/asset/tests/data/make_modes_fixture.ts generates it.
  **/
 BOOST_AUTO_TEST_CASE(gltf_strips_and_fans_become_lists_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load("primitive_modes.gltf");
+    const boost::shared_ptr<v3d::model::Model> model = load("primitive_modes.gltf");
     BOOST_REQUIRE(model);
 
     BOOST_REQUIRE_EQUAL(model->indices().size(), 12U);
@@ -677,9 +677,9 @@ class Heard final {
 BOOST_AUTO_TEST_CASE(gltf_a_joint_outside_the_skin_is_dropped_test) {
     const Heard heard("joint_outside_skin.gltf");
     BOOST_REQUIRE(heard.asset());
-    const v3d::type::Model & model = *heard.asset()->model();
+    const v3d::model::Model & model = *heard.asset()->model();
     BOOST_REQUIRE_EQUAL(model.influences().size(), 3U);
-    const v3d::type::Model::Influence & first = model.influences()[0];
+    const v3d::model::Model::Influence & first = model.influences()[0];
     BOOST_CHECK(first.weights == glm::vec4(0.0F, 1.0F, 0.0F, 0.0F));
     BOOST_CHECK_EQUAL(first.joints[1], 0U);
     BOOST_TEST(heard.said("joints outside its skin"));
@@ -704,7 +704,7 @@ BOOST_AUTO_TEST_CASE(gltf_an_image_with_no_bytes_is_logged_test) {
  * read onto asset::readFile, which this case cannot tell apart from cgltf's own.
  **/
 BOOST_AUTO_TEST_CASE(gltf_reads_an_external_buffer_test) {
-    const boost::shared_ptr<v3d::type::Model> model = load("external_buffer.gltf");
+    const boost::shared_ptr<v3d::model::Model> model = load("external_buffer.gltf");
     BOOST_REQUIRE(model);
     BOOST_REQUIRE_EQUAL(model->vertices().size(), 3U);
     BOOST_CHECK(model->vertices()[1].position == glm::vec3(1.0F, 0.0F, 0.0F));

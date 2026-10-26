@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -38,7 +38,7 @@ using Meshes = std::vector<boost::shared_ptr<Mesh>>;
 /**
  * The curves of one item, each by the path of the property it drives.
  **/
-using Curves = std::map<std::string, v3d::type::animation::Curve>;
+using Curves = std::map<std::string, v3d::animation::Curve>;
 
 /**
  * What the editor is editing: the items of one document, of every kind, in one list.
@@ -124,7 +124,7 @@ class Scene final {
      * @return false, changing nothing, when the item is not in the scene or its kind does not
      *         declare the property
      **/
-    bool curve(unsigned int id, const std::string& path, const v3d::type::animation::Curve& curve);
+    bool curve(unsigned int id, const std::string& path, const v3d::animation::Curve& curve);
 
     /**
      * @return every frame any of the items has a key on, rising, each once

@@ -19,8 +19,8 @@
 #include <api/render/realtime/component/Sprite.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/RenderTarget.h>
-#include <api/type/animation/SpriteClip.h>
-#include <api/type/animation/Track.h>
+#include <api/animation/SpriteClip.h>
+#include <api/animation/Track.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
 
@@ -51,8 +51,8 @@ using v3d::render::realtime::component::Particles;
 using v3d::render::realtime::component::Sprite;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::RenderTarget;
-using v3d::type::animation::SpriteClip;
-using v3d::type::animation::Track;
+using v3d::animation::SpriteClip;
+using v3d::animation::Track;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -107,7 +107,7 @@ void flame(entt::registry* registry, const glm::vec3& at, const TextureHandle& t
     registry->emplace<Transform>(entity).position = at;
     Emitter& emitter = registry->emplace<Emitter>(entity, 11U);
     emitter.description.rate = 40.0F;
-    emitter.description.shape = v3d::type::effect::Emitter::Shape::Sphere;
+    emitter.description.shape = v3d::ecs::effect::Emitter::Shape::Sphere;
     emitter.description.extent = glm::vec3(0.15F);
     emitter.description.spread = 0.3F;
     emitter.description.speedMin = 0.8F;

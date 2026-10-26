@@ -13,7 +13,7 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 
 #include <chrono>
 #include <fstream>
@@ -101,7 +101,7 @@ std::string read(const boost::filesystem::path& path) {
 
 BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
     const Scratch scratch("frames");
-    v3d::type::animation::Curve slide;
+    v3d::animation::Curve slide;
     slide.set(1.0F, 0.0F);
     slide.set(2.0F, 0.5F);
     BOOST_REQUIRE(scene.curve(mesh->id(), "translation.x", slide));

@@ -55,7 +55,7 @@ drawn from one file are one upload.
 ```cpp
 MeshRegistry meshes(logger(), renderer_->context(), assets());
 MeshHandle crate = meshes.load("models/crate.gltf");    // relative to the asset manager's root
-MeshHandle floor = meshes.add("floor", model);           // a type::Model built in code
+MeshHandle floor = meshes.add("floor", model);           // a model::Model built in code
 const MeshRegistry::Entry* entry = meshes.resolve(crate);  // nullptr once released
 meshes.release(crate);
 ```
@@ -72,7 +72,7 @@ meshes.release(crate);
 - A texture a model names that cannot be found is logged and drawn white.
 - Parts that name the same image share one texture, across all entries.
 - A model with a part outside its indices or materials is refused with `std::runtime_error`.
-- The vertex layout is `type::Model::Vertex`: position, normal and uv, 32 bytes. A model with a
+- The vertex layout is `model::Model::Vertex`: position, normal and uv, 32 bytes. A model with a
   skeleton is uploaded as `MeshRegistry::SkinnedVertex`, 56 bytes, which adds four joint
   indices and four weights.
 - `clip(handle, name)` returns the index of a skinned entry's animation clip, for

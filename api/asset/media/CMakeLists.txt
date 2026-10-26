@@ -10,9 +10,13 @@ v3d_add_api_library(asset_media
 	"loader/Image.h" "loader/Image.cpp")
 
 # PUBLIC: the kinds derive from asset::Asset and the loaders from asset::Loader, and each kind
-# names the payload it carries - an image::Image or a type::Model. glm, because SpriteSheet.h
+# names the payload it carries - an image::Image or a model::Model. glm, because SpriteSheet.h
 # hands out a region as a uv pair.
-target_link_libraries(v3dlib_asset_media PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type glm::glm)
+target_link_libraries(v3dlib_asset_media PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_model glm::glm)
+
+# PRIVATE: the gltf loader builds the skeleton and the clips, and no header here names them
+# apart from the model that holds them.
+target_link_libraries(v3dlib_asset_media PRIVATE v3dlib_animation)
 
 # PRIVATE: only the gltf loader and the translation unit owning cgltf's implementation
 # include the header, and no header here names a cgltf type.

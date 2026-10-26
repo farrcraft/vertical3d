@@ -25,7 +25,7 @@
 #include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -149,7 +149,7 @@ class Partless final : public v3d::asset::Loader {
     }
 
     boost::shared_ptr<v3d::asset::Asset> load(std::string_view name) override {
-        const boost::shared_ptr<v3d::type::Model> model = boost::make_shared<v3d::type::Model>();
+        const boost::shared_ptr<v3d::model::Model> model = boost::make_shared<v3d::model::Model>();
         model->vertices().resize(3);
         model->indices() = { 0, 1, 2 };
         return boost::make_shared<v3d::asset::media::kind::Model>(std::string(name), model,
@@ -160,16 +160,16 @@ class Partless final : public v3d::asset::Loader {
 /**
  * Two triangles in code, a part each, naming a texture apiece - empty for none.
  **/
-v3d::type::Model twoParts(const std::string& first, const std::string& second) {
-    v3d::type::Model model;
+v3d::model::Model twoParts(const std::string& first, const std::string& second) {
+    v3d::model::Model model;
     const glm::vec3 corners[6] = {{0, 0, 0.5F}, {1, 0, 0.5F}, {0, 1, 0.5F}, {1, 0, 0.5F}, {1, 1, 0.5F}, {0, 1, 0.5F}};
     for (const glm::vec3& corner : corners) {
-        v3d::type::Model::Vertex vertex;
+        v3d::model::Model::Vertex vertex;
         vertex.position = corner;
         model.vertices().push_back(vertex);
     }
     model.indices() = {0, 1, 2, 3, 4, 5};
-    v3d::type::Model::Material material;
+    v3d::model::Model::Material material;
     material.baseColourTexture = first;
     model.materials().push_back(material);
     material.baseColourTexture = second;
@@ -182,14 +182,14 @@ v3d::type::Model twoParts(const std::string& first, const std::string& second) {
 /**
  * One triangle in code, naming a texture beside the fixtures.
  **/
-v3d::type::Model triangle(const std::string& texture) {
-    v3d::type::Model model;
+v3d::model::Model triangle(const std::string& texture) {
+    v3d::model::Model model;
     model.vertices().resize(3);
     model.vertices()[0].position = glm::vec3(-0.5F, -0.5F, 0.5F);
     model.vertices()[1].position = glm::vec3(0.5F, -0.5F, 0.5F);
     model.vertices()[2].position = glm::vec3(0.0F, 0.5F, 0.5F);
     model.indices() = {0, 1, 2};
-    v3d::type::Model::Material material;
+    v3d::model::Model::Material material;
     material.baseColourTexture = texture;
     model.materials().push_back(material);
     model.parts().push_back({0, 3, 0});
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(a_decoded_model_without_its_albedos_is_refused) {
 
     v3d::render::realtime::DecodedModel missing;
     missing.path = "short";
-    missing.model = boost::make_shared<const v3d::type::Model>(twoParts("", ""));
+    missing.model = boost::make_shared<const v3d::model::Model>(twoParts("", ""));
     missing.albedos.resize(1);
     BOOST_CHECK_THROW(meshes->add(missing), std::runtime_error);
 
@@ -428,15 +428,15 @@ BOOST_AUTO_TEST_CASE(a_part_outside_the_model_is_refused) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
 
-    v3d::type::Model past = twoParts("", "");
+    v3d::model::Model past = twoParts("", "");
     past.parts()[1].indexCount = 4;
     BOOST_CHECK_THROW(meshes->add("past the indices", past), std::runtime_error);
 
-    v3d::type::Model unknown = twoParts("", "");
+    v3d::model::Model unknown = twoParts("", "");
     unknown.parts()[1].material = 2;
     BOOST_CHECK_THROW(meshes->add("an unknown material", unknown), std::runtime_error);
 
-    v3d::type::Model none = twoParts("", "");
+    v3d::model::Model none = twoParts("", "");
     none.parts().clear();
     BOOST_CHECK_THROW(meshes->add("no parts", none), std::runtime_error);
 
@@ -461,7 +461,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_in_flight_outlives_its_frame) {
     Builder builder(headless.device);
     builder.name("mesh-depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding({.binding = 0, .stride = sizeof(v3d::type::Model::Vertex)})
+        .vertexBinding({.binding = 0, .stride = sizeof(v3d::model::Model::Vertex)})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)
@@ -507,7 +507,7 @@ BOOST_AUTO_TEST_CASE(a_mesh_released_after_its_items_are_queued_outlives_its_fra
     Builder builder(headless.device);
     builder.name("mesh-depth")
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .vertexBinding({.binding = 0, .stride = sizeof(v3d::type::Model::Vertex)})
+        .vertexBinding({.binding = 0, .stride = sizeof(v3d::model::Model::Vertex)})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = 0})
         .cull(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE)
         .depth(true, true)

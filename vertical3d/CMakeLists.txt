@@ -61,6 +61,7 @@ add_executable("vertical3d"
 	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")
 
 target_link_libraries(vertical3d PRIVATE
+	v3dlib_animation
 	v3dlib_asset
 	v3dlib_asset_media
 	v3dlib_brep

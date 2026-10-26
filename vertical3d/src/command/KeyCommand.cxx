@@ -5,7 +5,7 @@
 
 #include "KeyCommand.h"
 
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>

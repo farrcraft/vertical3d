@@ -4,7 +4,7 @@
  **/
 
 #include <api/brep/BRep.h>
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
@@ -354,8 +354,8 @@ BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
 /**
  * A curve of two keys, with the values given at frames 1 and 11.
  **/
-v3d::type::animation::Curve between(float first, float second) {
-    v3d::type::animation::Curve curve;
+v3d::animation::Curve between(float first, float second) {
+    v3d::animation::Curve curve;
     curve.set(1.0F, first);
     curve.set(11.0F, second);
     return curve;
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(scene_curves_test) {
     BOOST_CHECK_EQUAL(frames[1], 11.0F);
 
     // an empty curve removes one, and removing an item takes its curves
-    BOOST_CHECK(scene.curve(mesh->id(), "translation.x", v3d::type::animation::Curve()));
+    BOOST_CHECK(scene.curve(mesh->id(), "translation.x", v3d::animation::Curve()));
     BOOST_CHECK(scene.curves(mesh->id()).empty());
     scene.remove(light->id());
     scene.add(light);

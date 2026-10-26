@@ -12,7 +12,7 @@
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include "DecodedModel.h"
 #include "Handle.h"
@@ -41,16 +41,16 @@ namespace v3d::render::realtime {
 
 // the layout a pipeline drawing an entry declares, which nothing at runtime checks: each
 // member follows the one before it with no padding
-static_assert(sizeof(type::Model::Vertex) == 32, "a model vertex is a position, a normal and a uv");
-static_assert(offsetof(type::Model::Vertex, position) == 0, "the position is at location 0");
-static_assert(offsetof(type::Model::Vertex, normal) == sizeof(glm::vec3), "the normal is at location 1");
-static_assert(offsetof(type::Model::Vertex, uv) == 2 * sizeof(glm::vec3), "the uv is at location 2");
+static_assert(sizeof(model::Model::Vertex) == 32, "a model vertex is a position, a normal and a uv");
+static_assert(offsetof(model::Model::Vertex, position) == 0, "the position is at location 0");
+static_assert(offsetof(model::Model::Vertex, normal) == sizeof(glm::vec3), "the normal is at location 1");
+static_assert(offsetof(model::Model::Vertex, uv) == 2 * sizeof(glm::vec3), "the uv is at location 2");
 // and a skinned one's, which renderer::Lit's skinned pipelines declare
-static_assert(sizeof(MeshRegistry::SkinnedVertex) == sizeof(type::Model::Vertex) + sizeof(type::Model::Influence),
+static_assert(sizeof(MeshRegistry::SkinnedVertex) == sizeof(model::Model::Vertex) + sizeof(model::Model::Influence),
     "a skinned vertex is a model vertex and its influence");
 static_assert(offsetof(MeshRegistry::SkinnedVertex, influence) == 32, "the influence follows the vertex");
-static_assert(offsetof(type::Model::Influence, joints) == 0, "the joints are at location 3");
-static_assert(offsetof(type::Model::Influence, weights) == 8, "the weights are at location 4");
+static_assert(offsetof(model::Model::Influence, joints) == 0, "the joints are at location 3");
+static_assert(offsetof(model::Model::Influence, weights) == 8, "the weights are at location 4");
 
 namespace {
 
@@ -58,7 +58,7 @@ namespace {
  * The mesh on the device: the model's vertices as they are, or interleaved with their
  * influences for a model with a skeleton.
  **/
-boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const type::Model& model) {
+boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const model::Model& model) {
     if (model.skeleton().empty()) {
         return boost::make_shared<Mesh>(context->device(), context->uploader(),
             std::as_bytes(std::span(model.vertices())), static_cast<uint32_t>(model.vertices().size()),
@@ -92,20 +92,20 @@ std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
  * A sphere around a model's vertices: the middle of the box that holds them, and the farthest
  * of them from it. A model with no vertices is a point at the origin.
  **/
-glm::vec4 bound(const type::Model& model) {
-    const std::vector<type::Model::Vertex>& vertices = model.vertices();
+glm::vec4 bound(const model::Model& model) {
+    const std::vector<model::Model::Vertex>& vertices = model.vertices();
     if (vertices.empty()) {
         return glm::vec4(0.0F);
     }
     glm::vec3 lowest = vertices.front().position;
     glm::vec3 highest = lowest;
-    for (const type::Model::Vertex& vertex : vertices) {
+    for (const model::Model::Vertex& vertex : vertices) {
         lowest = glm::min(lowest, vertex.position);
         highest = glm::max(highest, vertex.position);
     }
     const glm::vec3 centre = (lowest + highest) * 0.5F;
     float radius = 0.0F;
-    for (const type::Model::Vertex& vertex : vertices) {
+    for (const model::Model::Vertex& vertex : vertices) {
         radius = std::max(radius, glm::length(vertex.position - centre));
     }
     return glm::vec4(centre, radius);
@@ -188,7 +188,7 @@ std::size_t MeshRegistry::poll(std::size_t budget) {
 
 /**
  **/
-MeshHandle MeshRegistry::add(const std::string& name, const type::Model& model,
+MeshHandle MeshRegistry::add(const std::string& name, const model::Model& model,
     const std::vector<boost::shared_ptr<image::Image>>& albedos) {
     const std::optional<std::pair<MeshHandle, bool>> known = registered(name);
     if (known && !known->second) {
@@ -222,7 +222,7 @@ MeshHandle MeshRegistry::add(const DecodedModel& decoded) {
 
 /**
  **/
-MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+MeshHandle MeshRegistry::upload(const std::string& key, const model::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
     const MeshHandle& pending) {
     if (model.empty() || model.indices().empty()) {
         throw std::runtime_error("The model " + key + " holds no geometry to upload");
@@ -237,7 +237,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
         throw std::runtime_error("The model " + key + " does not have one albedo per material");
     }
     // checked before anything is acquired, so that a bad part acquires nothing
-    for (const type::Model::Part& part : model.parts()) {
+    for (const model::Model::Part& part : model.parts()) {
         if (part.material >= model.materials().size() ||
             static_cast<std::size_t>(part.firstIndex) + part.indexCount > model.indices().size()) {
             throw std::runtime_error("The model " + key + " has a part outside its indices or its materials");
@@ -253,7 +253,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     slot.entry.bound = bound(model);
     MeshHandle handle = pending;
     try {
-        for (const type::Model::Part& source : model.parts()) {
+        for (const model::Model::Part& source : model.parts()) {
             Part part;
             part.firstIndex = source.firstIndex;
             part.indexCount = source.indexCount;

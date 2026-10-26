@@ -33,8 +33,8 @@ position.value += velocity * step;
 Use `try_get` when a component may be missing. odyssey's renderer uses it to draw the player
 only when the player has a position.
 
-`api/ecs` (`v3dlib_ecs`) depends on `api/type`, glm and EnTT, and on no device. Game rules
-written over it can be tested headless.
+`api/ecs` (`v3dlib_ecs`) depends on `api/animation`, `api/type`, glm and EnTT, and on no
+device. Game rules written over it can be tested headless.
 
 ### Holding an entity across frames
 
@@ -139,7 +139,7 @@ Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-
 ### Emitter
 
 `Emitter` ([api/ecs/component/Emitter.h](../../api/ecs/component/Emitter.h)) holds a
-`type::effect::Emitter` description and a `type::effect::State` with the particles. Construct it
+`ecs::effect::Emitter` description and an `ecs::effect::State` with the particles. Construct it
 with a seed to make its particles reproducible. [Types.md](Types.md#particle-effects) describes
 the description fields and the simulation.
 
@@ -153,7 +153,7 @@ the description fields and the simulation.
 - **Do not snapshot `Emitter`.** Each particle keeps its own previous position, and the renderer
   draws it between steps from that.
 - When an effect fires is the game's decision: it sets `description.rate`, or calls
-  `type::effect::burst()`.
+  `ecs::effect::burst()`.
 - A particle's look is one texture and one clip per emitter. Smoke rising from a flame is a
   second emitter, on the same entity or a child.
 

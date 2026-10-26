@@ -4,7 +4,7 @@
  **/
 
 #include <api/brep/BRep.h>
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 #include <vertical3d/src/command/KeyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Item.h>

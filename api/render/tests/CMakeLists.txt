@@ -27,7 +27,7 @@ v3d_add_test(render
 	"DecodedModelTest.cpp"
 	"UploadQueueTest.cpp")
 
-target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
+target_link_libraries(v3dtest_render PRIVATE v3dlib_render v3dlib_animation v3dlib_ecs v3dlib_font v3dlib_image v3dlib_type v3dlib_asset v3dlib_asset_media v3dlib_log Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES} Freetype::Freetype)
 
 # a model is decoded from a copy of the asset suite's fixtures
 target_compile_definitions(v3dtest_render PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
@@ -99,7 +99,7 @@ v3d_add_shader(v3dtest_render_device "shaders/albedo.frag")
 # the mesh registry's cases load models, and the asset suite already keeps the fixtures
 target_compile_definitions(v3dtest_render_device PRIVATE V3D_ASSET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../asset/tests/data")
 
-target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_engine v3dlib_ecs v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_log v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
+target_link_libraries(v3dtest_render_device PRIVATE v3dlib_render v3dlib_animation v3dlib_engine v3dlib_ecs v3dlib_model v3dlib_image v3dlib_asset v3dlib_asset_media v3dlib_log v3dlib_type Boost::filesystem EnTT::EnTT ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_device PROPERTIES SKIP_RETURN_CODE 77)
 
 # A third binary, because these cases present to a window, which needs a display as well as a

@@ -7,9 +7,9 @@
 
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/component/Mesh.h>
-#include <api/type/animation/Clip.h>
-#include <api/type/animation/Clock.h>
-#include <api/type/animation/Pose.h>
+#include <api/animation/Clip.h>
+#include <api/animation/Clock.h>
+#include <api/animation/Pose.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Playback.h>
@@ -36,15 +36,15 @@ struct Track {
  * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
  * not one the skin has.
  **/
-type::animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track) {
+animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track) {
     const uint32_t clip = track.clip;
     const float time = track.time;
     const float duration = track.duration;
     const bool loops = track.loops;
-    type::animation::Pose pose = type::animation::rest(skin.skeleton);
+    animation::Pose pose = animation::rest(skin.skeleton);
     if (clip < skin.clips.size()) {
-        const type::animation::Clock clock(duration, loops);
-        type::animation::sample(skin.clips[clip], clock.sample(time), &pose);
+        const animation::Clock clock(duration, loops);
+        animation::sample(skin.clips[clip], clock.sample(time), &pose);
     }
     return pose;
 }
@@ -52,14 +52,14 @@ type::animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track
 /**
  * The pose a playback stands in, faded out of the clip it is leaving.
  **/
-type::animation::Pose posed(const MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
-    type::animation::Pose current = sampled(skin, {.clip = playback.clip, .time = playback.time, .duration = playback.duration, .loops = playback.loops});
+animation::Pose posed(const MeshRegistry::Skin& skin, const ecs::component::Playback& playback) {
+    animation::Pose current = sampled(skin, {.clip = playback.clip, .time = playback.time, .duration = playback.duration, .loops = playback.loops});
     if (playback.from == ecs::component::Playback::none || playback.fade >= 1.0F) {
         return current;
     }
-    const type::animation::Pose leaving =
+    const animation::Pose leaving =
         sampled(skin, {.clip = playback.from, .time = playback.fromTime, .duration = playback.fromDuration, .loops = playback.fromLoops});
-    return type::animation::blend(leaving, current, playback.fade);
+    return animation::blend(leaving, current, playback.fade);
 }
 
 };  // namespace
@@ -100,10 +100,10 @@ Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& mes
             continue;
         }
         const MeshRegistry::Skin& skin = *entry->skin;
-        const type::animation::Pose pose = registry.all_of<ecs::component::Playback>(entity)
+        const animation::Pose pose = registry.all_of<ecs::component::Playback>(entity)
             ? posed(skin, ecs::interpolated<ecs::component::Playback>(registry, entity, alpha))
-            : type::animation::rest(skin.skeleton);
-        type::animation::palette(skin.skeleton, pose, &joints);
+            : animation::rest(skin.skeleton);
+        animation::palette(skin.skeleton, pose, &joints);
         result.add(entity, joints);
     }
     return result;

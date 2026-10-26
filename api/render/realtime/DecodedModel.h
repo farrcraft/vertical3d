@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <functional>
 #include <string>
@@ -40,7 +40,7 @@ struct DecodedModel final {
     };
 
     std::string path;  /**< what the model is registered under **/
-    boost::shared_ptr<const type::Model> model;
+    boost::shared_ptr<const model::Model> model;
     std::vector<Albedo> albedos;  /**< one per material, by index **/
 };
 

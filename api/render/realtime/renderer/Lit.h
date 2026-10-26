@@ -168,7 +168,7 @@ class Lit final {
 
     /**
      * The pipelines a skinned model is drawn with, in place of cel(), outline() and shadow().
-     * Their vertex is a type::Model::Vertex followed by its type::Model::Influence, which is
+     * Their vertex is a model::Model::Vertex followed by its model::Model::Influence, which is
      * MeshRegistry::SkinnedVertex.
      **/
     PipelineHandle skinnedCel() const noexcept;

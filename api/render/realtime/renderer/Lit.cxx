@@ -18,7 +18,7 @@
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -102,8 +102,8 @@ enum class Reads : uint8_t {
  * layout MeshRegistry uploads a skinned model in.
  **/
 void vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads) {
-    using Vertex = type::Model::Vertex;
-    using Influence = type::Model::Influence;
+    using Vertex = model::Model::Vertex;
+    using Influence = model::Model::Influence;
     builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(Vertex, position)});
     if (reads != Reads::Position) {

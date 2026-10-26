@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -136,7 +136,7 @@ class SceneStore final {
     /**
      * The curves as the document holds them, by their owner's document id and their property.
      **/
-    using SavedCurves = std::map<std::pair<std::int64_t, std::string>, v3d::type::animation::Curve>;
+    using SavedCurves = std::map<std::pair<std::int64_t, std::string>, v3d::animation::Curve>;
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;

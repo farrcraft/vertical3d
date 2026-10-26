@@ -12,7 +12,7 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <atomic>
 #include <cstddef>
@@ -90,14 +90,14 @@ bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::sha
     if (!expectedModel || !actualModel || !expectedModel->model() || !actualModel->model()) {
         return false;
     }
-    const v3d::type::Model& left = *expectedModel->model();
-    const v3d::type::Model& right = *actualModel->model();
+    const v3d::model::Model& left = *expectedModel->model();
+    const v3d::model::Model& right = *actualModel->model();
     if (left.vertices().size() != right.vertices().size() || left.indices() != right.indices() ||
         left.parts().size() != right.parts().size() || left.materials().size() != right.materials().size()) {
         return false;
     }
     if (std::memcmp(left.vertices().data(), right.vertices().data(),
-        left.vertices().size() * sizeof(v3d::type::Model::Vertex)) != 0) {
+        left.vertices().size() * sizeof(v3d::model::Model::Vertex)) != 0) {
         return false;
     }
     for (std::size_t material = 0; material < left.materials().size(); material++) {

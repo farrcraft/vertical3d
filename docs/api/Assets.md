@@ -406,7 +406,7 @@ and the drawing of text. See [ui/](ui/README.md).
 ## Models and glTF
 
 The glTF loader ([api/asset/media/loader/Gltf.h](../../api/asset/media/loader/Gltf.h)) reads
-`.gltf` and `.glb` files into an `asset::media::kind::Model`. Its `model()` is a `type::Model`,
+`.gltf` and `.glb` files into an `asset::media::kind::Model`. Its `model()` is a `model::Model`,
 described in [Types.md](Types.md#models).
 
 ### What the loader builds
@@ -472,7 +472,7 @@ described in [Types.md](Types.md#models).
 
 ### Drawing a model
 
-A `type::Model` holds no device resources. To draw it, register it with the renderer's
+A `model::Model` holds no device resources. To draw it, register it with the renderer's
 `MeshRegistry`, which uploads it once per path. [rendering/](rendering/README.md) covers that.
 
 Background: [ADR-0069](../adr/0069-models-material-parts-over-one-vertex-buffer.md)

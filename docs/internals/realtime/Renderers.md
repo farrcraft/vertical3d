@@ -53,8 +53,8 @@ one layer and one texel that `Lit` owns, cleared to the far plane at constructio
 binding always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
 own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
 
-**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `type::Model::Vertex` (32 bytes) followed by
-`type::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
+**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes) followed by
+`model::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
 
 **`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
 A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the

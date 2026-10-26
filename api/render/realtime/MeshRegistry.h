@@ -12,7 +12,7 @@
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/UploadQueue.h>
 #include <api/render/realtime/Mesh.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -47,7 +47,7 @@ class DeviceContext;
  * texture from the context's Textures, shared by every part naming the same image, and the
  * white texture for a part naming none. A draw reads it by the texture's slot.
  *
- * The vertex layout is type::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
+ * The vertex layout is model::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
  * that draws an entry declares that layout. A model with a skeleton is uploaded as a
  * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
@@ -78,16 +78,16 @@ class MeshRegistry final {
      * renderer::Lit's skinned pipelines read this layout.
      **/
     struct SkinnedVertex final {
-        type::Model::Vertex vertex;
-        type::Model::Influence influence;
+        model::Model::Vertex vertex;
+        model::Model::Influence influence;
     };
 
     /**
      * What a skinned entry is posed by, shared by every entity drawing it.
      **/
     struct Skin final {
-        type::Skeleton skeleton;
-        std::vector<type::animation::Clip> clips;
+        animation::Skeleton skeleton;
+        std::vector<animation::Clip> clips;
     };
 
     /**
@@ -179,7 +179,7 @@ class MeshRegistry final {
      * @throw std::runtime_error if the model holds no geometry, a part outside it, or a skeleton
      *        without an influence for every vertex
      **/
-    MeshHandle add(const std::string& name, const type::Model& model,
+    MeshHandle add(const std::string& name, const model::Model& model,
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
@@ -258,7 +258,7 @@ class MeshRegistry final {
      * @throw std::runtime_error if the model holds no geometry, no parts, a part outside it, or
      *        not one albedo per material
      **/
-    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+    MeshHandle upload(const std::string& key, const model::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
         const MeshHandle& pending = MeshHandle());
 
     /**

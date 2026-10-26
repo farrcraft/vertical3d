@@ -11,8 +11,8 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset asset_media audio brep database ecs engine event font grid image input log
-	render render_offline shell type ui window)
+	animation asset asset_media audio brep database ecs engine event font grid image input log
+	model render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -22,6 +22,10 @@ set(V3D_API_LIBRARIES
 # so there is no selection that does not need it and v3dDependencies.cmake resolves it
 # unconditionally.
 
+set(V3D_API_animation_PATH "animation")
+set(V3D_API_animation_REQUIRES)
+set(V3D_API_animation_PACKAGES glm)
+
 set(V3D_API_asset_PATH "asset")
 set(V3D_API_asset_REQUIRES log)
 set(V3D_API_asset_PACKAGES)
@@ -29,7 +33,7 @@ set(V3D_API_asset_PACKAGES)
 # Under api/asset but a separate library: the loaders for formats that have to be decoded
 # rather than read. A selection that only reads documents does not pull in their packages.
 set(V3D_API_asset_media_PATH "asset/media")
-set(V3D_API_asset_media_REQUIRES log asset image type)
+set(V3D_API_asset_media_REQUIRES log animation asset image model)
 set(V3D_API_asset_media_PACKAGES cgltf glm)
 
 set(V3D_API_audio_PATH "audio")
@@ -46,7 +50,7 @@ set(V3D_API_database_REQUIRES)
 set(V3D_API_database_PACKAGES unofficial-sqlite3)
 
 set(V3D_API_ecs_PATH "ecs")
-set(V3D_API_ecs_REQUIRES type)
+set(V3D_API_ecs_REQUIRES animation type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
@@ -77,8 +81,12 @@ set(V3D_API_log_PATH "log")
 set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
 
+set(V3D_API_model_PATH "model")
+set(V3D_API_model_REQUIRES animation)
+set(V3D_API_model_PACKAGES glm)
+
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log asset asset_media ecs font image type window)
+set(V3D_API_render_REQUIRES log animation asset asset_media ecs font image model type window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but a separate library: the offline renderer is built on it. It names

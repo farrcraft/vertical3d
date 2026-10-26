@@ -12,10 +12,10 @@
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
-#include <api/type/animation/SpriteClip.h>
-#include <api/type/animation/Track.h>
-#include <api/type/effect/Emitter.h>
-#include <api/type/effect/Particle.h>
+#include <api/animation/SpriteClip.h>
+#include <api/animation/Track.h>
+#include <api/ecs/effect/Emitter.h>
+#include <api/ecs/effect/Particle.h>
 
 #include <vector>
 
@@ -32,9 +32,9 @@ using v3d::ecs::component::Emitter;
 using v3d::render::realtime::canvas::DepthOrder;
 using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::component::Particles;
-using v3d::type::animation::SpriteClip;
-using v3d::type::animation::Track;
-using v3d::type::effect::Particle;
+using v3d::animation::SpriteClip;
+using v3d::animation::Track;
+using v3d::ecs::effect::Particle;
 
 namespace canvas = v3d::render::realtime::canvas;
 

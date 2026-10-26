@@ -5,7 +5,7 @@
 
 #include "Scene.h"
 
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 
 #include "Camera.h"
 #include "Evaluation.h"
@@ -209,7 +209,7 @@ Curves Scene::curves(unsigned int id) const {
 
 /**
  **/
-bool Scene::curve(unsigned int id, const std::string& path, const v3d::type::animation::Curve& curve) {
+bool Scene::curve(unsigned int id, const std::string& path, const v3d::animation::Curve& curve) {
     const boost::shared_ptr<Item> found = item(id);
     if (!found || !declares(found->kind(), path)) {
         return false;
@@ -241,14 +241,14 @@ std::vector<float> Scene::keyedFrames(const Items& items) const {
             continue;
         }
         for (const auto& [path, curve] : owned->second) {
-            for (const v3d::type::animation::Curve::Key& key : curve.keys()) {
+            for (const v3d::animation::Curve::Key& key : curve.keys()) {
                 frames.push_back(key.frame);
             }
         }
     }
     std::sort(frames.begin(), frames.end());
     frames.erase(std::unique(frames.begin(), frames.end(),
-        [](float first, float second) { return second - first <= v3d::type::animation::Curve::SAME_FRAME; }), frames.end());
+        [](float first, float second) { return second - first <= v3d::animation::Curve::SAME_FRAME; }), frames.end());
     return frames;
 }
 

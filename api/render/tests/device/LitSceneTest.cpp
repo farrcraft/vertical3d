@@ -30,10 +30,10 @@
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/render/realtime/renderer/World.h>
-#include <api/type/animation/Track.h>
+#include <api/animation/Track.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
-#include <api/type/effect/Weather.h>
+#include <api/ecs/effect/Weather.h>
 
 #include <algorithm>
 #include <cmath>
@@ -964,14 +964,14 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     rain.description.lifeMin = 10.0F;
     rain.description.lifeMax = 10.0F;
     rain.description.cap = 4000;
-    rain.description.size = v3d::type::animation::Track<float>(0.03F);
-    rain.description.colour = v3d::type::animation::Track<glm::vec4>(glm::vec4(0.6F, 0.7F, 0.9F, 0.5F));
+    rain.description.size = v3d::animation::Track<float>(0.03F);
+    rain.description.colour = v3d::animation::Track<glm::vec4>(glm::vec4(0.6F, 0.7F, 0.9F, 0.5F));
     v3d::render::realtime::component::Particles look;
     look.facing = v3d::render::realtime::component::Particles::Facing::Velocity;
     look.stretch = 0.04F;
     registry.emplace<v3d::render::realtime::component::Particles>(shower, look);
 
-    v3d::type::effect::Weather weather;
+    v3d::ecs::effect::Weather weather;
     weather.density = 6.0F;
     weather.intensity = 1.0F;
     weather.target = 1.0F;
@@ -980,7 +980,7 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     std::vector<boost::shared_ptr<v3d::image::Image>> frames;
     for (int shot = 0; shot < 3; shot++) {
         for (int stepped = 0; stepped < 30; stepped++) {
-            v3d::type::effect::fall(rain.description, &weather, &rain.state, glm::vec3(-3.0F, 0.0F, -3.0F),
+            v3d::ecs::effect::fall(rain.description, &weather, &rain.state, glm::vec3(-3.0F, 0.0F, -3.0F),
                 glm::vec3(3.0F, 6.0F, 3.0F), 1.0F / 60.0F);
         }
 

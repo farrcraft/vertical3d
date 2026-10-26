@@ -89,6 +89,7 @@ v3d_add_test(vertical3d
 	"../src/manipulator/ScaleManipulator.cxx")
 
 target_link_libraries(v3dtest_vertical3d PRIVATE
+	v3dlib_animation
 	v3dlib_asset
 	v3dlib_asset_media
 	v3dlib_brep
@@ -138,6 +139,7 @@ v3d_add_shader(v3dtest_vertical3d_device "../shaders/shaded.vert")
 v3d_add_shader(v3dtest_vertical3d_device "../shaders/shaded.frag")
 
 target_link_libraries(v3dtest_vertical3d_device PRIVATE
+	v3dlib_animation
 	v3dlib_brep
 	v3dlib_image
 	v3dlib_log

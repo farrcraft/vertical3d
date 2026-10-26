@@ -7,7 +7,7 @@
 
 #include <api/asset/Asset.h>
 #include <api/image/Image.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <string>
@@ -17,7 +17,7 @@ namespace v3d::asset::media::kind {
 
 /**
  **/
-Model::Model(const std::string& name, const boost::shared_ptr<v3d::type::Model>& model,
+Model::Model(const std::string& name, const boost::shared_ptr<v3d::model::Model>& model,
     const std::vector<boost::shared_ptr<v3d::image::Image>>& baseColours) :
     Asset(name),
     model_(model),
@@ -26,7 +26,7 @@ Model::Model(const std::string& name, const boost::shared_ptr<v3d::type::Model>&
 
 /**
  **/
-boost::shared_ptr<v3d::type::Model> Model::model() {
+boost::shared_ptr<v3d::model::Model> Model::model() {
     return model_;
 }
 

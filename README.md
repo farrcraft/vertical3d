@@ -24,7 +24,9 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`shell`](api/shell/) | The ui, screen, pause menu and statistics overlay every app builds, as one object |
 | [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
 | [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
-| [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, models and skeletons, animation clips, particle effects, random numbers |
+| [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, random numbers |
+| [`animation`](api/animation/) | Skeletons, poses, animation clips, keyframe curves and tracks |
+| [`model`](api/model/) | The geometry, materials, skeleton and clips a model file gives |
 | [`database`](api/database/) | SQLite connections, statements and transactions |
 | [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
 | [`font`](api/font/) | Glyph layout and atlas packing |
@@ -33,7 +35,7 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`event`](api/event/) | Mapping input to named commands, and dispatching them |
 | [`input`](api/input/) | Keyboard and mouse state |
 | [`audio`](api/audio/) | Sound playback through SDL3_mixer, with placed voices, and FMOD Studio events when built with FMOD |
-| [`ecs`](api/ecs/) | Components and systems on EnTT |
+| [`ecs`](api/ecs/) | Components and systems on EnTT, and particle effects |
 | [`grid`](api/grid/) | Tile grids: pathfinding, line of sight and overlay geometry |
 | [`log`](api/log/) | Logging through spdlog |
 

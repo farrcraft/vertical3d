@@ -1,10 +1,11 @@
 # Types and maths
 
 This page is for someone writing an app against the api. It covers `api/type`: geometry
-queries, random numbers, typed flags, cameras, transforms, models and skeletons, animation and
-particle effects. Terms are defined in the [glossary](README.md#glossary).
+queries, random numbers, typed flags, cameras and transforms. It also covers the libraries
+beside it: models in `api/model`, skeletons and animation in `api/animation`, and the particle
+effects in `api/ecs/effect`. Terms are defined in the [glossary](README.md#glossary).
 
-- [What the library is](#what-the-library-is)
+- [What the libraries are](#what-the-libraries-are)
 - [Geometry queries](#geometry-queries)
 - [Random numbers](#random-numbers)
 - [Flags](#flags)
@@ -14,14 +15,20 @@ particle effects. Terms are defined in the [glossary](README.md#glossary).
 - [Animation](#animation)
 - [Particle effects](#particle-effects)
 
-## What the library is
+## What the libraries are
 
 `v3dlib_type` depends on glm and nothing else. It holds no device, window or file handle, so
 everything in it can be used and tested headless, and the offline renderer uses it as well as
-the realtime one. The namespaces are `v3d::type` and, below it, `geometry`, `camera`,
-`animation` and `effect`.
+the realtime one. The namespaces are `v3d::type` and, below it, `geometry` and `camera`.
 
-What `api/type` does not do:
+- `v3dlib_animation` holds skeletons, poses, clips, curves and tracks, in `v3d::animation`. It
+  depends on glm alone.
+- `v3dlib_model` holds `model::Model`, the geometry, materials, skeleton and clips a model file
+  gives. It depends on `animation`.
+- The particle effects are `v3d::ecs::effect`, in `v3dlib_ecs` beside the component that steps
+  them.
+
+What these libraries do not do:
 
 - It does not load files. [Assets.md](Assets.md) covers loading a model.
 - It does not draw. [rendering/](rendering/README.md) covers that.
@@ -296,12 +303,12 @@ quaternion rotation and a scale. ECS entities and editor meshes are both placed 
 | Type | What it is |
 |---|---|
 | `brep::BRep` | Half-edge topology the editor models with. See [editor/](../editor/README.md). |
-| `type::Model` | Interleaved vertices, indices, materials and parts: what a model file loads into. |
-| The renderer's mesh | Two device buffers, made from a `type::Model`. See [rendering/](rendering/README.md). |
+| `model::Model` | Interleaved vertices, indices, materials and parts: what a model file loads into. |
+| The renderer's mesh | Two device buffers, made from a `model::Model`. See [rendering/](rendering/README.md). |
 
-### type::Model
+### model::Model
 
-`type::Model` ([api/type/Model.h](../../api/type/Model.h)) holds one vertex array and one index
+`model::Model` ([api/model/Model.h](../../api/model/Model.h)) holds one vertex array and one index
 list for a whole file, so a model is one upload.
 
 - **`Vertex`** is a position, a normal and a uv, interleaved: 32 bytes. This layout is an
@@ -322,8 +329,8 @@ list for a whole file, so a model is one upload.
 
 ### Skeleton
 
-`type::Skeleton` ([api/type/Skeleton.h](../../api/type/Skeleton.h)) is the list of joints a
-skinned model is bent by.
+`animation::Skeleton` ([api/animation/Skeleton.h](../../api/animation/Skeleton.h)) is the list
+of joints a skinned model is bent by.
 
 - **Every parent comes before its children.** A pose can therefore be made global in one pass
   from the front.
@@ -336,8 +343,8 @@ skinned model is bent by.
 
 ## Animation
 
-Animation data and arithmetic are in `v3d::type::animation`
-([api/type/animation/](../../api/type/animation/)). Playing an animation on an entity is
+Animation data and arithmetic are in `v3d::animation`
+([api/animation/](../../api/animation/), `v3dlib_animation`). Playing an animation on an entity is
 `ecs::component::Playback`, covered in [ECS.md](ECS.md#playback).
 
 | Type or function | What it is |
@@ -407,7 +414,7 @@ Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-
 
 ## Particle effects
 
-Particle simulation is in `v3d::type::effect` ([api/type/effect/](../../api/type/effect/)). The
+Particle simulation is in `v3d::ecs::effect` ([api/ecs/effect/](../../api/ecs/effect/)). The
 component that steps an emitter from an entity is in [ECS.md](ECS.md#emitter), and drawing
 particles is in [rendering/](rendering/README.md).
 

@@ -14,7 +14,7 @@
 #include <api/database/Statement.h>
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
-#include <api/type/animation/Curve.h>
+#include <api/animation/Curve.h>
 
 #include <algorithm>
 #include <array>
@@ -675,7 +675,7 @@ struct Loaded {
     struct Animated {
         std::int64_t owner = 0;
         std::string path;
-        v3d::type::animation::Curve curve;
+        v3d::animation::Curve curve;
     };
 
     Items items;
@@ -770,16 +770,16 @@ bool load(v3d::database::Database* database, std::int32_t version, Loaded* loade
 /**
  * A curve's keys, from its blob.
  **/
-bool decodeKeys(std::span<const std::byte> bytes, std::int64_t count, v3d::type::animation::Curve* curve,
+bool decodeKeys(std::span<const std::byte> bytes, std::int64_t count, v3d::animation::Curve* curve,
     std::string* problem) {
     if (count < 0 || static_cast<std::size_t>(count) * KEY_SIZE != bytes.size()) {
         *problem = "its keys do not fill their blob exactly";
         return false;
     }
     Cursor cursor(bytes);
-    std::vector<v3d::type::animation::Curve::Key> keys;
+    std::vector<v3d::animation::Curve::Key> keys;
     for (std::int64_t index = 0; index < count; index++) {
-        v3d::type::animation::Curve::Key key;
+        v3d::animation::Curve::Key key;
         key.frame = cursor.next<float>();
         key.value = cursor.next<float>();
         key.in = cursor.next<float>();
@@ -787,16 +787,16 @@ bool decodeKeys(std::span<const std::byte> bytes, std::int64_t count, v3d::type:
         const auto interpolation = cursor.next<std::uint8_t>();
         const auto automatic = cursor.next<std::uint8_t>();
         static_cast<void>(cursor.next<std::uint16_t>());
-        if (interpolation > static_cast<std::uint8_t>(v3d::type::animation::Curve::Interpolation::Bezier) || automatic > 1) {
+        if (interpolation > static_cast<std::uint8_t>(v3d::animation::Curve::Interpolation::Bezier) || automatic > 1) {
             *problem = "a key's interpolation or its slopes are not ones this build reads";
             return false;
         }
-        key.interpolation = static_cast<v3d::type::animation::Curve::Interpolation>(interpolation);
+        key.interpolation = static_cast<v3d::animation::Curve::Interpolation>(interpolation);
         key.automatic = automatic == 1;
         keys.push_back(key);
     }
     try {
-        *curve = v3d::type::animation::Curve(keys);
+        *curve = v3d::animation::Curve(keys);
     } catch (const std::invalid_argument&) {
         *problem = "its keys are not finite or do not rise in frame";
         return false;
@@ -807,9 +807,9 @@ bool decodeKeys(std::span<const std::byte> bytes, std::int64_t count, v3d::type:
 /**
  * A curve's keys, as its blob.
  **/
-std::vector<std::byte> encodeKeys(const v3d::type::animation::Curve& curve) {
+std::vector<std::byte> encodeKeys(const v3d::animation::Curve& curve) {
     std::vector<std::byte> bytes;
-    for (const v3d::type::animation::Curve::Key& key : curve.keys()) {
+    for (const v3d::animation::Curve::Key& key : curve.keys()) {
         put(&bytes, key.frame);
         put(&bytes, key.value);
         put(&bytes, key.in);

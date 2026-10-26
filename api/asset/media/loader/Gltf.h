@@ -14,7 +14,7 @@ struct cgltf_image;
 
 namespace v3d::asset::media::loader {
 /**
- * Reads glTF 2.0, in either the .gltf or the .glb packaging, into a v3d::type::Model.
+ * Reads glTF 2.0, in either the .gltf or the .glb packaging, into a v3d::model::Model.
  *
  * The loader traverses the scene's node hierarchy from its roots, not the file's mesh list,
  * so that node transforms apply. Every mesh a node names is merged into one vertex array and
@@ -42,7 +42,7 @@ namespace v3d::asset::media::loader {
  * skeleton's joints. A file with no skeleton has no clips.
  *
  * Only the base colour of the metallic-roughness model is read. A texture in a separate file
- * arrives as its uri, on v3d::type::Model::Material. A texture stored inside the file, in a
+ * arrives as its uri, on v3d::model::Model::Material. A texture stored inside the file, in a
  * .glb's own buffer or as a data uri, has no name. It arrives decoded, on
  * v3d::asset::media::kind::Model::baseColourImage().
  **/
