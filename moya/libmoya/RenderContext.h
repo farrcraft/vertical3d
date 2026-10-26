@@ -19,9 +19,11 @@
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/reyes/Samples.h>
 
-#include "Polygon.h"
+#include "Attributes.h"
 #include "FrameBuffer.h"
+#include "Polygon.h"
 #include "Shading.h"
+#include "Transforms.h"
 
 #include <cstddef>
 #include <functional>
@@ -216,9 +218,8 @@ class RenderContext {
         void popTransform();
         /**
          * maps to RiAttributeBegin() and RiAttributeEnd()
-         * Saves and restores the current transformation, colour, opacity, shading rate,
-         * surface shader and the set of lights that are on. An end with nothing saved does
-         * nothing.
+         * Saves and restores the current transformation and the Attributes. An end with
+         * nothing saved does nothing.
          **/
         void attributeBegin();
         void attributeEnd();
@@ -471,26 +472,11 @@ class RenderContext {
          * The options below carry RI's defaults as member initialisers, so that both
          * constructors set every one of them.
          */
-        /**
-         * What RiAttributeBegin saves and RiAttributeEnd puts back.
-         **/
-        class Attributes {
+        /** What RiAttributeBegin saves and RiAttributeEnd puts back. **/
+        class Saved final {
          public:
             v3d::render::offline::MovingTransform transform;
-            glm::vec3 color = glm::vec3(1.0F);
-            glm::vec3 opacity = glm::vec3(1.0F);
-            float shadingRate = 1.0F;
-            v3d::render::offline::sl::InstancePtr surface;
-            glm::mat4x4 surfacePlacement = glm::mat4x4(1.0F);
-            /**
-             * Which lights are switched on, by handle. The lights themselves last for the
-             * frame, and AttributeEnd restores only this set.
-             **/
-            std::vector<std::string> lit;
-            boost::shared_ptr<v3d::render::offline::Area> areaLight;
-            unsigned int lightSamples = 16;
-            v3d::render::offline::sl::Placed displacement;
-            float displacementBound = 0.0F;
+            Attributes attributes;
         };
 
         /**
@@ -506,21 +492,13 @@ class RenderContext {
             boost::shared_ptr<v3d::render::offline::Area> area;
         };
 
-        /** The area light the geometry being declared joins, until its attribute block ends. **/
-        boost::shared_ptr<v3d::render::offline::Area> areaLight_;
-        /** `Attribute "light" "nsamples"`, which an area light takes when it is made. **/
-        unsigned int lightSamples_ = 16;
-        /** The displacement shader in force, and its bound in camera space. **/
-        v3d::render::offline::sl::Placed displacement_;
-        float displacementBound_ = 0.0F;
+        Transforms transforms_;
+        Attributes attributes_;
+        std::vector<Saved> saved_;
         /** The attributes already reported as not used, so each is reported once. **/
         std::vector<std::string> unusedAttributes_;
 
         std::string name_;
-        std::vector<v3d::render::offline::MovingTransform> transforms_;
-        std::vector<Attributes> attributes_;
-        /** The spaces a scene saved with RiCoordinateSystem. **/
-        std::map<std::string, glm::mat4x4> named_;
         v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;
@@ -549,9 +527,6 @@ class RenderContext {
         boost::shared_ptr<v3d::render::offline::Textures> textures_;
         boost::shared_ptr<reyes::GridShader> shader_;
         std::vector<LightSource> lights_;
-        v3d::render::offline::sl::InstancePtr surface_;
-        glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0F);
-        std::vector<std::string> lit_;
         v3d::render::offline::trace::Scene traced_;
         /** Whether any shader the scene bound calls trace or transmission. **/
         bool tracing_ = false;
@@ -567,25 +542,21 @@ class RenderContext {
         v3d::render::offline::CameraOptions options_;
         v3d::render::offline::Camera camera_;
         v3d::render::offline::rib::CropWindow crop_;
-        glm::vec3 color_ = glm::vec3(1.0F);
-        glm::vec3 opacity_ = glm::vec3(1.0F);
         boost::shared_ptr<Hider> hider_;
         // an empty display name writes no file. RI's default display is a framebuffer,
         // which moya does not have
         std::string displayName_;
         std::string displayType_;
         std::string displayMode_;
-        // the current transformation, which moves inside a motion block
-        v3d::render::offline::MovingTransform transform_;
         v3d::render::offline::Sampling sampling_;
 
         /*
          * The framebuffer is tiled into buckets of bucketWidth_ by bucketHeight_ pixels.
          * gridSize_ is the number of micropolygons in a grid, so a grid is sqrt(gridSize_)
-         * micropolygons a side. shadingRate_ is the area of one micropolygon in pixels, so a
-         * primitive whose raster bound is wider or taller than sqrt(gridSize_ * shadingRate_)
-         * pixels is split before it is diced. A smaller shading rate gives smaller
-         * micropolygons.
+         * micropolygons a side. The shading rate, an attribute, is the area of one
+         * micropolygon in pixels, so a primitive whose raster bound is wider or taller than
+         * sqrt(gridSize_ * shading rate) pixels is split before it is diced. A smaller shading
+         * rate gives smaller micropolygons.
          */
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
@@ -595,7 +566,6 @@ class RenderContext {
         bool gridPinned_ = false;
         static constexpr unsigned int defaultMotionCacheLog2 = 20;
         std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
-        float shadingRate_ = 1.0F;
 };
 
 /**

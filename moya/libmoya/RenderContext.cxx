@@ -57,16 +57,6 @@
 
 namespace v3d::moya {
 
-namespace {
-
-/** Whether a name is one of the spaces the camera defines, which a scene cannot save over. **/
-bool predefined(const std::string & name) {
-    return name == "object" || name == "world" || name == "camera" || name == "screen" || name == "raster" ||
-        name == "NDC";
-}
-
-};  // namespace
-
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
     return v3d::render::offline::sl::project(matrix, point);
 }
@@ -107,7 +97,7 @@ unsigned int RenderContext::gridSize() const {
 }
 
 float RenderContext::shadingRate() const {
-    return shadingRate_;
+    return attributes_.shadingRate;
 }
 
 reyes::Samples & RenderContext::samples() {
@@ -136,10 +126,10 @@ void RenderContext::prepareWorld() {
     // what a scene set between RiProjection and here is the world to camera transformation.
     // The camera is built from the options as they stand now, because RI lets a screen window,
     // format or clipping follow the projection
-    camera_ = options_.freeze(transform_.reference());
+    camera_ = options_.freeze(transforms_.current().reference());
     traced_.camera(camera_);
     // inside the world block the current transformation is object to world
-    transform_.replace(glm::mat4x4(1.0F));
+    transforms_.current().replace(glm::mat4x4(1.0F));
 
     frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(options_.width(), options_.height())}));
 }
@@ -166,14 +156,14 @@ const v3d::render::offline::Camera & RenderContext::camera() const {
 
 void RenderContext::projection(std::string name, float fov) {
     // the projection applies after the transformation in force here
-    if (!options_.projection(name, fov, transform_.reference())) {
+    if (!options_.projection(name, fov, transforms_.current().reference())) {
         logger_->get()->warn("the projection '{}' is not known, and is not used", name);
         return;
     }
     camera_.screen = options_.screen();
 
     // what the scene sets from here to WorldBegin is the world to camera transformation
-    transform_.replace(glm::mat4x4(1.0F));
+    transforms_.current().replace(glm::mat4x4(1.0F));
 }
 
 void RenderContext::hider(const std::string & name) {
@@ -211,66 +201,38 @@ void RenderContext::clipping(const v3d::render::offline::rib::Clipping & planes)
 }
 
 void RenderContext::pushTransform(void) {
-    transforms_.push_back(transform_);
+    transforms_.push();
 }
 
 void RenderContext::popTransform(void) {
-    if (transforms_.empty()) {
-        return;
-    }
-    transform_ = transforms_.back();
-    transforms_.pop_back();
+    transforms_.pop();
 }
 
 void RenderContext::attributeBegin() {
-    Attributes saved;
-    saved.transform = transform_;
-    saved.color = color_;
-    saved.opacity = opacity_;
-    saved.shadingRate = shadingRate_;
-    saved.surface = surface_;
-    saved.surfacePlacement = surfacePlacement_;
-    saved.lit = lit_;
-    saved.areaLight = areaLight_;
-    saved.lightSamples = lightSamples_;
-    saved.displacement = displacement_;
-    saved.displacementBound = displacementBound_;
-    attributes_.push_back(saved);
+    saved_.push_back({.transform = transforms_.current(), .attributes = attributes_});
 }
 
 void RenderContext::attributeEnd() {
-    if (attributes_.empty()) {
+    if (saved_.empty()) {
         return;
     }
-    const Attributes & saved = attributes_.back();
-    transform_ = saved.transform;
-    color_ = saved.color;
-    opacity_ = saved.opacity;
-    shadingRate_ = saved.shadingRate;
-    surface_ = saved.surface;
-    surfacePlacement_ = saved.surfacePlacement;
-    // only the set of lights that are on is restored. A light lasts for the frame, not
-    // for the block that created it
-    lit_ = saved.lit;
-    areaLight_ = saved.areaLight;
-    lightSamples_ = saved.lightSamples;
-    displacement_ = saved.displacement;
-    displacementBound_ = saved.displacementBound;
-    attributes_.pop_back();
+    // the lights a block created last for the frame. Only the set that is on is an attribute
+    transforms_.current() = saved_.back().transform;
+    attributes_ = saved_.back().attributes;
+    saved_.pop_back();
 }
 
 void RenderContext::saveCoordinateSystem(const std::string& name) {
-    if (predefined(name)) {
+    if (!transforms_.save(name)) {
         logger_->get()->warn("'{}' is a predefined coordinate system, and a scene cannot name one", name);
         return;
     }
-    named_[name] = transform_.reference();
     // a shader reads the spaces the scene named, under either hider, through the traced scene
-    traced_.named(named_);
+    traced_.named(transforms_.named());
 }
 
 bool RenderContext::known(const std::string& name) const {
-    return predefined(name) || named_.find(name) != named_.end();
+    return transforms_.known(name);
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
@@ -278,47 +240,47 @@ void RenderContext::setCoordinateSystem(const std::string& name) {
         logger_->get()->warn("the coordinate system '{}' is not known, and the transformation is kept", name);
         return;
     }
-    transform_.replace(coordinateSystem(name));
+    transforms_.current().replace(coordinateSystem(name));
 }
 
 void RenderContext::setIdentityTransform() {
-    transform_.replace(glm::mat4(1.0F));
+    transforms_.current().replace(glm::mat4(1.0F));
 }
 
 void RenderContext::setTransform(const glm::mat4x4& trans) {
-    transform_.replace(trans);
+    transforms_.current().replace(trans);
 }
 
 void RenderContext::motionBegin(const std::vector<float> & times) {
-    transform_.begin(times);
+    transforms_.current().begin(times);
 }
 
 void RenderContext::motionEnd() {
-    transform_.end();
+    transforms_.current().end();
 }
 
 void RenderContext::concatTransform(const glm::mat4x4& trans) {
-    transform_.concat(trans);
+    transforms_.current().concat(trans);
 }
 
 void RenderContext::color(const glm::vec3& value) {
-    color_ = value;
+    attributes_.color = value;
 }
 
 glm::vec3 RenderContext::color() const {
-    return color_;
+    return attributes_.color;
 }
 
 void RenderContext::opacity(const glm::vec3& value) {
-    opacity_ = value;
+    attributes_.opacity = value;
 }
 
 glm::vec3 RenderContext::opacity() const {
-    return opacity_;
+    return attributes_.opacity;
 }
 
 void RenderContext::shadingRate(float size) {
-    shadingRate_ = size;
+    attributes_.shadingRate = size;
 }
 
 void RenderContext::bucketSize(unsigned int width, unsigned int height) {
@@ -367,40 +329,24 @@ std::size_t RenderContext::motionCache() const {
 }
 
 glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
-    if (name == "camera") {
-        return camera_.view;
-    }
-    if (name == "screen") {
-        return camera_.screen;
-    }
-    if (name == "raster") {
-        return camera_.raster;
-    }
-    if (name == "NDC") {
-        return camera_.ndc;
-    }
-    if (predefined(name)) {
-        return glm::mat4x4(1.0F);
-    }
-    const auto found = named_.find(name);
-    if (found == named_.end()) {
+    glm::mat4x4 matrix(1.0F);
+    if (!transforms_.space(name, camera_, &matrix)) {
         logger_->get()->warn("the coordinate system '{}' is not known, and the identity is used", name);
-        return glm::mat4x4(1.0F);
     }
-    return found->second;
+    return matrix;
 }
 
 void RenderContext::translate(float dx, float dy, float dz) {
-    transform_.concat(glm::translate(glm::mat4x4(1.0F), glm::vec3(dx, dy, dz)));
+    transforms_.current().concat(glm::translate(glm::mat4x4(1.0F), glm::vec3(dx, dy, dz)));
 }
 
 // RiRotate takes its angle in degrees and glm takes radians
 void RenderContext::rotate(float angle, const glm::vec3 & axis) {
-    transform_.concat(glm::rotate(glm::mat4x4(1.0F), glm::radians(angle), axis));
+    transforms_.current().concat(glm::rotate(glm::mat4x4(1.0F), glm::radians(angle), axis));
 }
 
 void RenderContext::scale(float sx, float sy, float sz) {
-    transform_.concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
+    transforms_.current().concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
 namespace {
@@ -477,18 +423,18 @@ void fillVertices(Polygon* poly) {
 
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
-    surface_ = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
-    bound(surface_);
+    attributes_.surface.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
+    bound(attributes_.surface.shader);
     // RI makes a shader's own space the transformation in force when the scene instanced
     // it. A "point \"shader\" (0, 0, 1)" parameter is stated in that space
-    surfacePlacement_ = coordinateSystem("camera") * transform_.reference();
+    attributes_.surface.placement = coordinateSystem("camera") * transforms_.current().reference();
 }
 
 void RenderContext::displacement(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
-    displacement_.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
-    bound(displacement_.shader);
-    displacement_.placement = coordinateSystem("camera") * transform_.reference();
+    attributes_.displacement.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::DISPLACEMENT, parameters);
+    bound(attributes_.displacement.shader);
+    attributes_.displacement.placement = coordinateSystem("camera") * transforms_.current().reference();
 }
 
 void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & request,
@@ -496,7 +442,7 @@ void RenderContext::lightSource(const v3d::render::offline::rib::LightSource & r
     LightSource light;
     light.handle = request.handle;
     light.shader = shaders_->instance(request.shader, v3d::render::offline::sl::ShaderType::LIGHT, parameters);
-    light.placement = coordinateSystem("camera") * transform_.reference();
+    light.placement = coordinateSystem("camera") * transforms_.current().reference();
     if (!light.shader) {
         // the library has already logged why. The light is left out, not replaced by a
         // light of some other kind
@@ -516,8 +462,8 @@ void RenderContext::areaLightSource(const v3d::render::offline::rib::LightSource
         return;
     }
     lights_.back().area = boost::make_shared<v3d::render::offline::Area>(request.handle);
-    lights_.back().area->samples(lightSamples_);
-    areaLight_ = lights_.back().area;
+    lights_.back().area->samples(attributes_.lightSamples);
+    attributes_.areaLight = lights_.back().area;
 }
 
 void RenderContext::attribute(const std::string & name, const v3d::render::offline::rib::ParameterList & parameters) {
@@ -525,7 +471,7 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         const float count = parameters.number("nsamples", 1.0F);
         // capped, so a count past what an unsigned holds is not cast into one
         constexpr float MOST_SAMPLES = 4096.0F;
-        lightSamples_ = std::isfinite(count) && count >= 1.0F ? static_cast<unsigned int>(std::min(count, MOST_SAMPLES)) : 1U;
+        attributes_.lightSamples = std::isfinite(count) && count >= 1.0F ? static_cast<unsigned int>(std::min(count, MOST_SAMPLES)) : 1U;
         return;
     }
     if (name == "displacementbound" && parameters.has("sphere")) {
@@ -538,7 +484,7 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         // space, where every primitive is culled. A scale that differs between axes is taken
         // at its largest, so the bound still holds the surface
         const std::vector<std::string> & named = parameters.strings("coordinatesystem");
-        glm::mat4x4 toCamera = coordinateSystem("camera") * transform_.reference();
+        glm::mat4x4 toCamera = coordinateSystem("camera") * transforms_.current().reference();
         if (!named.empty() && named.front() == "camera") {
             toCamera = glm::mat4x4(1.0F);
         } else if (!named.empty() && named.front() != "object" && named.front() != "world" &&
@@ -554,7 +500,7 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
         }
         const glm::mat3 linear(toCamera);
         const float stretch = std::max(glm::length(linear[0]), std::max(glm::length(linear[1]), glm::length(linear[2])));
-        displacementBound_ = radius * stretch;
+        attributes_.displacementBound = radius * stretch;
         return;
     }
     if (std::find(unusedAttributes_.begin(), unusedAttributes_.end(), name) == unusedAttributes_.end()) {
@@ -564,16 +510,11 @@ void RenderContext::attribute(const std::string & name, const v3d::render::offli
 }
 
 const boost::shared_ptr<v3d::render::offline::Area> & RenderContext::areaLight() const {
-    return areaLight_;
+    return attributes_.areaLight;
 }
 
 void RenderContext::illuminate(const std::string & handle, bool on) {
-    const std::vector<std::string>::iterator found = std::find(lit_.begin(), lit_.end(), handle);
-    if (on && found == lit_.end()) {
-        lit_.push_back(handle);
-    } else if (!on && found != lit_.end()) {
-        lit_.erase(found);
-    }
+    attributes_.illuminate(handle, on);
 }
 
 void RenderContext::imager(const std::string & name,
@@ -598,20 +539,20 @@ v3d::render::offline::Textures & RenderContext::textures() {
 
 Shading RenderContext::shading() {
     Shading state;
-    state.surface = surface_;
-    state.placement = surfacePlacement_;
-    state.object = coordinateSystem("camera") * transform_.reference();
-    state.opacity = opacity_;
+    state.surface = attributes_.surface.shader;
+    state.placement = attributes_.surface.placement;
+    state.object = coordinateSystem("camera") * transforms_.current().reference();
+    state.opacity = attributes_.opacity;
     if (!state.surface) {
         // a scene that names no surface draws "constant", which does no shading. RI leaves
         // the default surface to the renderer
         state.surface = shaders_->instance("constant",
             v3d::render::offline::sl::ShaderType::SURFACE,
             v3d::render::offline::rib::ParameterList());
-        state.placement = coordinateSystem("camera") * transform_.reference();
+        state.placement = coordinateSystem("camera") * transforms_.current().reference();
     }
     for (const LightSource & light : lights_) {
-        if (std::find(lit_.begin(), lit_.end(), light.handle) == lit_.end()) {
+        if (!attributes_.shines(light.handle)) {
             continue;
         }
         v3d::render::offline::sl::Placed shining;
@@ -620,8 +561,8 @@ Shading RenderContext::shading() {
         shining.area = light.area;
         state.lights.push_back(shining);
     }
-    state.displacement = displacement_;
-    state.displacementBound = displacementBound_;
+    state.displacement = attributes_.displacement;
+    state.displacementBound = attributes_.displacementBound;
     return state;
 }
 
@@ -645,7 +586,7 @@ v3d::render::offline::trace::Scene & RenderContext::traced() {
 }
 
 const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Shading & state) {
-    if (tracedLights_ && tracedFor_ == lit_ && tracedLightsFor_ == lights_.size()) {
+    if (tracedLights_ && tracedFor_ == attributes_.lit && tracedLightsFor_ == lights_.size()) {
         return tracedLights_;
     }
     // a light's placement takes it to camera space, and the traced scene is in world space
@@ -657,7 +598,7 @@ const v3d::render::offline::trace::Lights & RenderContext::tracedLights(const Sh
         on->push_back(placed);
     }
     tracedLights_ = on;
-    tracedFor_ = lit_;
+    tracedFor_ = attributes_.lit;
     tracedLightsFor_ = lights_.size();
     return tracedLights_;
 }
@@ -670,7 +611,7 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         traceDisplaced(poly, state);
         return;
     }
-    const glm::mat4x4 & toWorld = transform_.reference();
+    const glm::mat4x4 & toWorld = transforms_.current().reference();
     const glm::mat3 toWorldNormal = glm::transpose(glm::inverse(glm::mat3(toWorld)));
 
     // a fan, since RI says a polygon is planar and convex
@@ -685,8 +626,8 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
         }
         const bool shaded = corners[0].hasNormal() && corners[1].hasNormal() && corners[2].hasNormal();
         v3d::render::offline::trace::Triangle triangle = shaded ?
-            v3d::render::offline::trace::Triangle(points, color_, normals) :
-            v3d::render::offline::trace::Triangle(points, color_);
+            v3d::render::offline::trace::Triangle(points, attributes_.color, normals) :
+            v3d::render::offline::trace::Triangle(points, attributes_.color);
         if (corners[0].hasTexCoord() && corners[1].hasTexCoord() && corners[2].hasTexCoord()) {
             triangle.st(corners[0].st(), corners[1].st(), corners[2].st());
         }
@@ -694,9 +635,9 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
             triangle.colours(corners[0].color(), corners[1].color(), corners[2].color());
         }
         shade(&triangle, state);
-        traced_.add(triangle, transform_);
-        if (areaLight_) {
-            areaLight_->add(points[0], points[1], points[2]);
+        traced_.add(triangle, transforms_.current());
+        if (attributes_.areaLight) {
+            attributes_.areaLight->add(points[0], points[1], points[2]);
         }
     }
 }
@@ -704,7 +645,7 @@ void RenderContext::trace(const Polygon & poly, const Shading & state) {
 void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) {
     // a copy in camera space, where the displacement shader runs, with each vertex given the
     // plane and the colour addPolygon() would give it
-    const glm::mat4x4 toCamera = coordinateSystem("camera") * transform_.reference();
+    const glm::mat4x4 toCamera = coordinateSystem("camera") * transforms_.current().reference();
     const glm::mat3 toCameraNormal = glm::transpose(glm::inverse(glm::mat3(toCamera)));
     Polygon eye;
     for (std::size_t i = 0; i < poly.vertexCount(); i++) {
@@ -722,7 +663,7 @@ void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) 
             eye[i].normal(plane);
         }
         if (!eye[i].hasColor()) {
-            eye[i].color(color_);
+            eye[i].color(attributes_.color);
         }
     }
     boost::shared_ptr<reyes::MicroPolygonGrid> grid;
@@ -752,12 +693,12 @@ void RenderContext::traceDisplaced(const Polygon & poly, const Shading & state) 
                 const Vertex & first = quad[fan[0]];
                 const Vertex & second = quad[fan[1]];
                 const Vertex & third = quad[fan[2]];
-                v3d::render::offline::trace::Triangle triangle({first.point(), second.point(), third.point()}, color_,
+                v3d::render::offline::trace::Triangle triangle({first.point(), second.point(), third.point()}, attributes_.color,
                     {first.normal(), second.normal(), third.normal()});
                 triangle.st(first.st(), second.st(), third.st());
                 triangle.colours(first.color(), second.color(), third.color());
                 shade(&triangle, state);
-                traced_.add(triangle, transform_);
+                traced_.add(triangle, transforms_.current());
             }
         }
     }
@@ -776,8 +717,8 @@ void RenderContext::shade(v3d::render::offline::trace::Primitive* primitive, con
 
 bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
     // an area light keeps its sphere whichever hider draws it, and the reyes hider draws none
-    if (areaLight_ && shape.radius > 0.0F) {
-        areaLight_->add({.placement = transform_.reference(), .radius = shape.radius});
+    if (attributes_.areaLight && shape.radius > 0.0F) {
+        attributes_.areaLight->add({.placement = transforms_.current().reference(), .radius = shape.radius});
     }
     if (!hider_->traces()) {
         return false;
@@ -790,14 +731,14 @@ bool RenderContext::addSphere(const v3d::render::offline::rib::Sphere & shape) {
         return true;
     }
     // placed by the reference end of its motion, as a polygon's points are
-    v3d::render::offline::trace::Sphere sphere(shape, transform_.reference(), color_);
+    v3d::render::offline::trace::Sphere sphere(shape, transforms_.current().reference(), attributes_.color);
     shade(&sphere, shading());
-    traced_.add(sphere, transform_);
+    traced_.add(sphere, transforms_.current());
     return true;
 }
 
 bool RenderContext::flatMotion() {
-    if (!transform_.moving() || transform_.placeable()) {
+    if (!transforms_.current().moving() || transforms_.current().placeable()) {
         return false;
     }
     // both ends of its motion flatten it, so there is no pose to move it from
@@ -825,9 +766,9 @@ bool RenderContext::handedOn(const boost::shared_ptr<Polygon>& poly) {
     if (!poly->placed()) {
         const Shading state = shading();
         trace(*poly, state);
-        poly->place(coordinateSystem("camera") * transform_.reference(), color_, poly->geometricNormal(),
+        poly->place(coordinateSystem("camera") * transforms_.current().reference(), attributes_.color, poly->geometricNormal(),
             state);
-        poly->motion(transform_.before(coordinateSystem("camera")));
+        poly->motion(transforms_.current().before(coordinateSystem("camera")));
     }
     // dicing interpolates four corners, so a polygon with more is broken into pieces of four
     // corners or fewer. Each piece is placed as its parent was, and is measured in turn
@@ -961,8 +902,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     if (poly->diceable()) {
         // a raster bound wider or taller than one grid's side is split. A grid has gridSize_
         // micropolygons, and RI states the shading rate as the area of one in pixels, so a
-        // side is sqrt(gridSize_ * shadingRate_) pixels
-        const float size = std::sqrt(static_cast<float>(gridSize_) * shadingRate_);
+        // side is sqrt(gridSize_ * attributes_.shadingRate) pixels
+        const float size = std::sqrt(static_cast<float>(gridSize_) * attributes_.shadingRate);
         const glm::vec3 bound_size = measured_max - measured_min;
         if ((bound_size[0] > size) || (bound_size[1] > size)) {
             poly->diceable(false);

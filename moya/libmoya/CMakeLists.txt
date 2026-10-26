@@ -1,4 +1,5 @@
 add_library("v3dlib_moya" 
+	"Attributes.h" "Attributes.cxx"
 	"reyes/Bucket.h" "reyes/Bucket.cxx"
 	"reyes/Footprint.h" "reyes/Footprint.cxx"
 	"FrameBuffer.h" "FrameBuffer.cxx"
@@ -16,6 +17,7 @@ add_library("v3dlib_moya"
 	"reyes/Primitive.h" "reyes/Primitive.cxx"
 	"reyes/Samples.h" "reyes/Samples.cxx"
 	"Shading.h"
+	"Transforms.h" "Transforms.cxx"
 	"Vertex.h" "Vertex.cxx"
 )
 
