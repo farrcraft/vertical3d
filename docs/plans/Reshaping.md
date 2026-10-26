@@ -411,12 +411,23 @@ decides `config`.
 
 ### Step 11 — One ui styling vocabulary
 
-**Open.**
+**Closed.**
 
-- The retained and immediate ui use one set of property names, one default palette and one
-  theme reader. The values can still differ by class.
-- The active theme is held in one place.
-- Theme `fonts` and `align` either take effect or are removed from `Themes.md`.
+- Both ui models draw with one `paint::Dressing`, read from a theme by one set of keys through
+  `style::readBase()`. The `ui` and `tools` classes still set different values. Its default
+  constructor and `Dressing::tools()` build both sets of defaults from one palette, and
+  `Palette.h` is gone. `Themes.md` has the one key table, with which model draws each key.
+- The immediate layer's keys follow the retained ones. `dim-text` is `disabled-text`, and
+  `placeholder` for an empty field. Its caret, check mark, focused field, scrollbar thumb,
+  tracks and tabs read `caret`, `mark`, `focus`, `thumb`, `track` and `tab`, so their default
+  colours changed. A combo's arrow is drawn in the text colour.
+- The active theme is the `Interface`'s. `Screen::begin(ui)` hands it to the component renderer
+  and the immediate layer when it changes, before either draws. `Screen::theme()` is gone, and
+  the immediate layer keeps no theme. pong, tetris and voxel did not pass their theme on before.
+- Theme fonts and `align` are removed. A style's `fonts` array is not read, and
+  `style::property::Font` and `Property::Alignment` are gone.
+- Three new cases, which fail to build without the change. The theme case checks that a
+  style's fonts are not read.
 
 ### Step 12 — Immediate and Loader split
 

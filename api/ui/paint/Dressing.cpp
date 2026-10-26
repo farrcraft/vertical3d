@@ -9,6 +9,25 @@ namespace v3d::ui::paint {
 
 namespace {
 
+// the sizes the retained ui starts with, in pixels
+constexpr float LINE_HEIGHT = 34.0F;
+constexpr float PADDING = 24.0F;
+constexpr float SPACING = 4.0F;
+constexpr float BAR_HEIGHT = 28.0F;
+constexpr float ICON_SIZE = 22.0F;
+constexpr float PANEL_PADDING = 4.0F;
+constexpr float SCROLLBAR_WIDTH = 12.0F;
+constexpr float MARK_SIZE = 16.0F;
+constexpr float FOCUS_WIDTH = 2.0F;
+constexpr float INDENT = 14.0F;
+
+// the sizes the immediate layer starts with where they differ, in pixels
+constexpr float TOOLS_LINE_HEIGHT = 18.0F;
+constexpr float TOOLS_PADDING = 6.0F;
+constexpr float TOOLS_BAR_HEIGHT = 22.0F;
+constexpr float TOOLS_SCROLLBAR_WIDTH = 10.0F;
+constexpr float TOOLS_RADIUS = 3.0F;
+
 // the colours both ui models start from, so that the two look the same
 
 /** the background of a panel or a window, slightly see-through **/
@@ -41,18 +60,18 @@ constexpr glm::vec4 ACCENT_COLOR{0.42F, 0.66F, 0.95F, 1.0F};
 };  // namespace
 
 Dressing::Dressing() noexcept :
-lineHeight(34.0F),
-padding(24.0F),
-spacing(4.0F),
-barHeight(28.0F),
-iconSize(22.0F),
-panelPadding(4.0F),
-scrollbarWidth(12.0F),
-markSize(16.0F),
+lineHeight(LINE_HEIGHT),
+padding(PADDING),
+spacing(SPACING),
+barHeight(BAR_HEIGHT),
+iconSize(ICON_SIZE),
+panelPadding(PANEL_PADDING),
+scrollbarWidth(SCROLLBAR_WIDTH),
+markSize(MARK_SIZE),
 borderWidth(1.0F),
-focusWidth(2.0F),
+focusWidth(FOCUS_WIDTH),
 radius(0.0F),
-indent(14.0F),
+indent(INDENT),
 panel(PANEL_COLOR),
 border(EDGE_COLOR),
 titleBar(TITLE_BAR_COLOR),
@@ -75,11 +94,11 @@ focus(ACCENT_COLOR) {
 
 Dressing Dressing::tools() noexcept {
     Dressing dressing;
-    dressing.lineHeight = 18.0F;
-    dressing.padding = 6.0F;
-    dressing.barHeight = 22.0F;
-    dressing.scrollbarWidth = 10.0F;
-    dressing.radius = 3.0F;
+    dressing.lineHeight = TOOLS_LINE_HEIGHT;
+    dressing.padding = TOOLS_PADDING;
+    dressing.barHeight = TOOLS_BAR_HEIGHT;
+    dressing.scrollbarWidth = TOOLS_SCROLLBAR_WIDTH;
+    dressing.radius = TOOLS_RADIUS;
     // an immediate widget at rest is already raised, so the cursor lifts it further, and a
     // track or a tab sits at the widget's level
     dressing.track = RAISED_COLOR;

@@ -9,6 +9,7 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/input/LineEdit.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
