@@ -204,10 +204,12 @@ Steps on different lines do not block each other.
 - The traced rays of hits that did not trace are a TODO.md entry. The FMOD backend's missing CI
   coverage is a limitation, not work, so Testing.md states it instead.
 - `v3dshell/` is deleted. TODO.md has an editor entry for a console over the operation layer.
-- Every stale statement in the survey is corrected, ADR-0047 included. So are those found on
-  the way: the renderer constructors in `Renderers.md`, `engine::Engine::alpha()` named from
-  inside the renderer, two `Controller.h` comments, `CONTRIBUTING.md`'s plain `ctest`, the
-  closed `asset::Type`, and theme fonts and `align`, which nothing draws with.
+- Every stale statement in the survey is corrected, ADR-0047 included. The ones found on the
+  way are corrected too:
+  - the renderer constructors in `Renderers.md`
+  - `engine::Engine::alpha()`, named from inside the renderer
+  - two `Controller.h` comments, and `CONTRIBUTING.md`'s plain `ctest`
+  - the closed `asset::Type`, and theme fonts and `align`, which nothing draws with
 - `roadmap/README.md` links only TODO.md sections that exist.
 - Five new cases, each failing first.
 
