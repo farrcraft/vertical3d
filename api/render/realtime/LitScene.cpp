@@ -54,6 +54,14 @@ boost::shared_ptr<RenderTarget> shadowMap(const DeviceContext& context, const Li
         .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true, .layers = spec.cascades});
 }
 
+/**
+ * The lit pipelines, built against the scene target and the shadow map, if there is one.
+ **/
+renderer::Lit::Spec litSpec(const LitScene::Spec& spec, const RenderTarget& scene, const boost::shared_ptr<RenderTarget>& map) {
+    return renderer::Lit::Spec{.colour = scene.format(), .depth = scene.depthFormat(),
+        .shadow = map ? map->depthFormat() : VK_FORMAT_UNDEFINED, .shaders = spec.shaders, .front = spec.front};
+}
+
 };  // namespace
 
 /**
@@ -64,8 +72,7 @@ LitScene::LitScene(const DeviceContext& context, const Spec& spec) :
     textures_(context.textures()),
     scene_(sceneTarget(context, spec)),
     map_(shadowMap(context, spec)),
-    lit_(context, renderer::Lit::Spec{.colour = scene_->format(), .depth = scene_->depthFormat(),
-        .shadow = map_ ? map_->depthFormat() : VK_FORMAT_UNDEFINED, .shaders = spec.shaders, .front = spec.front}),
+    lit_(context, litSpec(spec, *scene_, map_)),
     grade_(context, Grade::Spec{.colour = spec.output, .depth = spec.outputDepth, .strip = spec.grade}) {
     if (map_) {
         mapTexture_ = textures_->depthTexture(*map_);
