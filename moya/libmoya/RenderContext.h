@@ -7,6 +7,8 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/Area.h>
+#include <api/render/offline/Camera.h>
+#include <api/render/offline/CameraOptions.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -101,13 +103,10 @@ class RenderContext {
         unsigned int imageHeight() const;
         float pixelAspect() const;
 
-        /** The picture's size when no Format names one. **/
-        static constexpr unsigned int defaultWidth = 320;
-        static constexpr unsigned int defaultHeight = 240;
-        /** RI's default frame aspect ratio, the aspect of defaultWidth by defaultHeight. **/
-        static constexpr float defaultFrameAspectRatio = 4.0F / 3.0F;
-        /** RI's default "fov" for a "perspective" projection, in degrees. **/
-        static constexpr float defaultFov = 90.0F;
+        /** The camera options' defaults, which CameraOptions states. **/
+        static constexpr unsigned int defaultWidth = v3d::render::offline::CameraOptions::defaultWidth;
+        static constexpr unsigned int defaultHeight = v3d::render::offline::CameraOptions::defaultHeight;
+        static constexpr float defaultFov = v3d::render::offline::CameraOptions::defaultFov;
 
         /**
          * maps to RiFormat(xres, yres, aspect)
@@ -174,6 +173,11 @@ class RenderContext {
          * depth of field.
          **/
         bool perspective() const;
+        /**
+         * The camera as WorldBegin fixed it. Before WorldBegin its screen matrix is the one
+         * the last RiProjection gave, and every other matrix is the identity.
+         **/
+        const v3d::render::offline::Camera & camera() const;
 
         /**
          * maps to RiDisplay()
@@ -386,19 +390,15 @@ class RenderContext {
         bool addSphere(const v3d::render::offline::rib::Sphere & shape);
 
         /**
-         * The matrix of a named coordinate system. A name that is neither predefined nor
-         * saved is logged, and gives the identity. Every read of a coordinate system goes
-         * through this.
+         * The matrix of a named coordinate system. "camera" is world to camera, and "screen",
+         * "raster" and "NDC" are each from camera space, as the camera holds them. "object"
+         * and "world" are the identity. A space the scene saved is its transformation into
+         * world space. A name that is neither predefined nor saved is logged, and gives the
+         * identity.
          **/
         glm::mat4x4 coordinateSystem(const std::string & name);
         /** Whether a coordinate system is predefined or saved by the scene. **/
         bool known(const std::string & name) const;
-
-        /**
-         * The matrices from camera space into "screen", "raster" and "NDC", as the camera
-         * options stand. prepareWorld() gives them to the traced scene.
-         **/
-        v3d::render::offline::trace::Scene::Projection projected();
 
         /**
          * maps to RiDeclare()
@@ -444,10 +444,6 @@ class RenderContext {
         void initialize();
 
  private:
-        /** Save as "screen" the projection after the transformation in force at RiProjection. **/
-        void screenTransform();
-        /** The matrix the projection name, field of view, screen window and clipping give. **/
-        glm::mat4x4 projectionMatrix() const;
         /**
          * Add a polygon to the traced scene as a fan of triangles, placed by the current
          * transformation and shaded by the given state.
@@ -473,12 +469,8 @@ class RenderContext {
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
-         * constructors set every one of them. riEpsilon and riInfinity hold the values of
-         * RI_EPSILON and RI_INFINITY, because RenderMan.h is the C interface and is not
-         * included here.
+         * constructors set every one of them.
          */
-        static constexpr float riEpsilon = 1.0e-10F;
-        static constexpr float riInfinity = 1.0e38F;
         /**
          * What RiAttributeBegin saves and RiAttributeEnd puts back.
          **/
@@ -527,8 +519,6 @@ class RenderContext {
         std::string name_;
         std::vector<v3d::render::offline::MovingTransform> transforms_;
         std::vector<Attributes> attributes_;
-        /** The spaces the camera sets. A scene cannot save over one. **/
-        std::map<std::string, glm::mat4x4> predefined_;
         /** The spaces a scene saved with RiCoordinateSystem. **/
         std::map<std::string, glm::mat4x4> named_;
         v3d::render::offline::rib::Declarations declarations_;
@@ -574,23 +564,11 @@ class RenderContext {
         boost::shared_ptr<reyes::Samples> samples_;
         Progress progress_;
         bool stopped_ = false;
-        // camera options
-        unsigned int xres_ = defaultWidth;
-        unsigned int yres_ = defaultHeight;
-        float pixelAspect_ = 1.0F;
+        v3d::render::offline::CameraOptions options_;
+        v3d::render::offline::Camera camera_;
         v3d::render::offline::rib::CropWindow crop_;
-        float frameAspect_ = defaultFrameAspectRatio;
-        float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0F, 1.0F };  // the screen window: left, right, bottom, top
-        // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a
-        // scene names the frame aspect or the screen window, that value stops following. With
-        // a named projection, prepareWorld() only rebuilds the screen transform
-        bool frameAspectNamed_ = false;
-        bool screenNamed_ = false;
-        bool projectionNamed_ = false;
         glm::vec3 color_ = glm::vec3(1.0F);
         glm::vec3 opacity_ = glm::vec3(1.0F);
-        std::string projection_ = "orthographic";
-        float fov_ = defaultFov;
         boost::shared_ptr<Hider> hider_;
         // an empty display name writes no file. RI's default display is a framebuffer,
         // which moya does not have
@@ -599,10 +577,6 @@ class RenderContext {
         std::string displayMode_;
         // the current transformation, which moves inside a motion block
         v3d::render::offline::MovingTransform transform_;
-        // the transformation in force at RiProjection; the projection applies after it
-        v3d::render::offline::MovingTransform projectionBase_;
-        float near_ = riEpsilon;  // near clipping plane
-        float far_ = riInfinity;  // far clipping plane
         v3d::render::offline::Sampling sampling_;
 
         /*

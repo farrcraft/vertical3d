@@ -5,6 +5,7 @@
 
 #include "RayHider.h"
 
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/Film.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampler.h>
@@ -146,9 +147,9 @@ bool RayHider::traces() const {
     return true;
 }
 
-void RayHider::camera(const Camera & camera) {
+void RayHider::camera(const v3d::render::offline::Camera & camera) {
     camera_ = camera;
-    toWorld_ = glm::inverse(camera.toCamera);
+    toWorld_ = glm::inverse(camera.view);
 }
 
 glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
@@ -157,7 +158,7 @@ glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
     // them at a depth keeps the answer clear of the projection's depth terms. RI's default
     // clipping range makes those terms as badly conditioned as a float allows, so the whole
     // matrix is not inverted
-    const glm::mat4x4 & matrix = camera_.toRaster;
+    const glm::mat4x4 & matrix = camera_.raster;
     // the system is A (x, y) = b, where a row of A and of b is one raster coordinate's equation
     const float a00 = matrix[0][0] - (raster.x * matrix[0][3]);
     const float a01 = matrix[1][0] - (raster.x * matrix[1][3]);
@@ -201,11 +202,7 @@ v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Samp
 }
 
 void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
-    Camera camera;
-    camera.toCamera = context->coordinateSystem("camera");
-    camera.toRaster = context->coordinateSystem("raster") * context->coordinateSystem("screen");
-    camera.perspective = context->perspective();
-    camera.hither = context->hither();
+    v3d::render::offline::Camera camera = context->camera();
     camera.width = planes->width();
     camera.height = planes->height();
     this->camera(camera);
@@ -229,8 +226,8 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     const unsigned int right = std::min(window.y, width);
     // the depth plane holds raster space z, as the reyes hider's does
     const std::function<float(const glm::vec3 &)> rasterDepth = [this](const glm::vec3 & point) {
-        const glm::vec3 eye(camera_.toCamera * glm::vec4(point, 1.0F));
-        return project(camera_.toRaster, eye).z;
+        const glm::vec3 eye(camera_.view * glm::vec4(point, 1.0F));
+        return project(camera_.raster, eye).z;
     };
     /*
         A row is cast pass by pass, every unsettled pixel's set of samples as one batch. Each

@@ -124,10 +124,12 @@ named. The language is in `api/render/offline/sl`.
   it, with either end of a two-space form projected. A point whose w is at or below 1e-6 is
   left undivided. `sl::project` is that divide, and moya's own projection calls it. A vector or
   a normal is not divided, because it has no position.
-- **Both hiders answer the projected spaces from one camera.** `trace::Scene::projection()`
-  holds the camera to screen, raster and NDC matrices, which moya sets when the world begins.
-  A grid and a traced hit both read them, so a shader that reads a projected position gets the
-  same value under either hider.
+- **Both hiders answer every space from one table.** A renderer answers `"current"`,
+  `"shader"` and `"object"` itself. Every other name goes to the traced scene: the spaces the
+  `Camera` defines, which moya sets when the world begins, and the spaces the scene named with
+  `RiCoordinateSystem`. `trace::Scene::fromWorld()` answers from world space, a traced hit's
+  current space, and `fromCamera()` from camera space, a grid's. A shader that reads a space
+  gets the same value under either hider.
 
 ### Built-in shaders
 

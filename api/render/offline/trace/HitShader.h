@@ -47,8 +47,8 @@ class Tracer;
  * returns.
  *
  * **A hit's current space is world space**, because the scene is held in world space. moya's
- * grids shade in camera space. Because the two differ, each renderer answers space() itself,
- * and the library holds no fixed table of spaces.
+ * grids shade in camera space. Each renderer answers current, shader and object space itself.
+ * Every other space comes from the scene's table, Scene::fromWorld(), from world space.
  **/
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:

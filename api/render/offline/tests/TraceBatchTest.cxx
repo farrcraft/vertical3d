@@ -4,6 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -67,9 +68,9 @@ struct Held {
 
 /** A camera whose raster space is world space scaled up, so a pixel is 1 / scale wide. **/
 void camera(Scene* scene, float scale) {
-    Scene::Projection projection;
-    projection.raster = glm::scale(glm::mat4x4(1.0F), glm::vec3(scale));
-    scene->projection(projection);
+    v3d::render::offline::Camera camera;
+    camera.raster = glm::scale(glm::mat4x4(1.0F), glm::vec3(scale));
+    scene->camera(camera);
 }
 
 /**

@@ -215,14 +215,23 @@ Steps on different lines do not block each other.
 
 ### Step 2 — A shared offline camera
 
-**Open.**
+**Closed.**
 
-- `offline::Camera` in `api/render/offline` holds the RI camera options. At WorldBegin it
-  derives the world-to-camera, screen, raster and NDC matrices.
-- It replaces `RayHider::Camera`, `trace::Scene::view()` and the raster products rebuilt in the
-  hiders.
-- One space table for the shading-language renderer, used by `GridShader` and `HitShader`. A
-  space the scene named answers under both hiders.
+- The camera is two classes in `api/render/offline`. `CameraOptions` holds RI's camera
+  options and their defaulting rules. At WorldBegin it freezes into a `Camera`: a value holding
+  the view and the matrices from camera space into screen, raster and NDC. A test can fill a
+  `Camera` in directly, as the trace suites do.
+- `Camera` replaces `RayHider::Camera`, `trace::Scene::Projection` and the scene's view. Every
+  `raster * screen` product is gone, because `"raster"` is camera to raster everywhere now.
+  `"NDC"` in the context was the identity, and is the camera's now.
+- The traced scene holds the camera and the spaces the scene named, and answers any of them
+  from world space or from camera space. `GridShader` and `HitShader` answer only current,
+  shader and object space themselves. Asking from camera space keeps the grid's answers
+  bit for bit, so the moya references are unchanged.
+- A scene's named space reaches the traced scene when it is saved. `ptransform("lamp", P)`
+  answers under both hiders.
+- Five new cases. The three in `CameraTest` fail to build without the change, and the named
+  space and NDC cases fail.
 
 ### Step 3 — RenderContext as a facade
 

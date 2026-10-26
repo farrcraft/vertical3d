@@ -17,9 +17,10 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
   number becomes 0.
 - **Raster y runs downward from the upper left.** This is RI's convention and `image::Image`'s
   row order.
-- **Raster space is `raster * screen` applied to a camera space point**: the projection first,
-  then the scale into pixels. A matrix applies to the point on its right. Reversing either the
-  y direction or the order writes a correct render upside down, or in eye units.
+- **Raster space is the projection, then the scale into pixels**, applied to a camera space
+  point. `Camera::raster` holds the two together. A matrix applies to the point on its right.
+  Reversing either the y direction or the order writes a correct render upside down, or in eye
+  units.
 - **A depth is raster space z under either hider**: the projection, then the raster matrix. A
   ray hit is carried back into camera space and projected the same way.
 
@@ -87,17 +88,21 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   the scene names either. A scene can set `FrameAspectRatio` or `ScreenWindow` without the other
   reverting it. The default screen window for an image wider than tall is `[-a, a]` by
   `[-1, 1]`, where `a` is the frame aspect.
+- **The camera options are `render::offline::CameraOptions`**, and the camera they give is a
+  `render::offline::Camera`. `CameraOptions` holds RI's rules for the format, frame aspect,
+  screen window, clipping and projection. `freeze()` builds the camera at `WorldBegin`: the view,
+  and the matrices from camera space into screen, raster and NDC. `RenderContext` holds both.
 - **The camera options take effect at `WorldBegin`, in any order.** A `Format`,
   `FrameAspectRatio`, `ScreenWindow` or `Clipping` named after `Projection` still shapes the
-  screen transform, which `prepareWorld()` builds again from the options as they stand.
+  camera, which `prepareWorld()` builds from the options as they stand.
 - **The world to camera transformation applies as it stands.** `RenderContext::prepareWorld()`
-  saves the current transformation as the `"camera"` coordinate system. By the RI standard,
-  that transformation is the world to camera one. A transpose or an inverse of it is correct
-  only when it is a pure rotation.
-- **Both hiders project through the same coordinate systems**, `"camera"`, `"screen"` and
-  `"raster"`. Any camera one hider accepts, the other accepts: an off-centre `ScreenWindow`, a
-  matrix that scales, and a matrix that reverses handedness. RI's camera basis for a general
-  look-at reverses handedness.
+  takes the current transformation as the camera's view. By the RI standard, that
+  transformation is the world to camera one. A transpose or an inverse of it is correct only
+  when it is a pure rotation.
+- **Both hiders project through the same camera.** The reyes hider reads the context's
+  `camera()`, and the ray hider is given the same one. Any camera one hider accepts, the other
+  accepts: an off-centre `ScreenWindow`, a matrix that scales, and a matrix that reverses
+  handedness. RI's camera basis for a general look-at reverses handedness.
 - **The ray hider finds a primary ray by inverting the camera to raster transformation.** It
   solves for camera x and y at a chosen depth, instead of inverting the whole matrix, because
   RI's default clipping range ruins the depth terms of a full inverse. Rays start on the near

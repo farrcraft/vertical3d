@@ -4,6 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -61,9 +62,9 @@ v3d::render::offline::sl::Placed derivatives(Chosen which) {
  * everywhere, as under an orthographic camera.
  **/
 void camera(Scene* scene, float scale) {
-    Scene::Projection projection;
-    projection.raster = glm::scale(glm::mat4x4(1.0F), glm::vec3(scale));
-    scene->projection(projection);
+    v3d::render::offline::Camera camera;
+    camera.raster = glm::scale(glm::mat4x4(1.0F), glm::vec3(scale));
+    scene->camera(camera);
 }
 
 /** The hit a ray down onto a point makes, coming from a few units along a direction. **/

@@ -5,11 +5,14 @@
 
 #pragma once
 
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/type/geometry/Ray.h>
 
 #include <cstddef>
+#include <map>
+#include <string>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -47,34 +50,31 @@ class Scene final {
         std::vector<glm::mat4x4> backward;
     };
 
-    /**
-     * The matrices from camera space into the projected spaces a shader can name. Each is the
-     * identity until the renderer sets the camera.
-     **/
-    class Projection final {
-     public:
-        /** The projection, with the visible picture over [-1, 1] in x and y. **/
-        glm::mat4x4 screen = glm::mat4x4(1.0F);
-        /** Pixels: x to the right and y down from the upper left corner of the picture. **/
-        glm::mat4x4 raster = glm::mat4x4(1.0F);
-        /** Raster divided by the resolution, over [0, 1], with z over [0, 1] from near to far. **/
-        glm::mat4x4 ndc = glm::mat4x4(1.0F);
-    };
-
     Scene();
 
     /**
-     * The world to camera transformation that defines a hit's "camera" space, and the
-     * position of its E. The renderer sets the camera; until it does, the two spaces are
-     * the same.
+     * The camera the scene is seen through. It defines a hit's "camera", "screen", "raster"
+     * and "NDC" spaces, and the position of its E. Until the renderer sets it, every one of
+     * those spaces is world space.
      **/
-    void view(const glm::mat4x4 & toCamera);
-    glm::mat4x4 view() const;
-    glm::vec3 eye() const;
+    void camera(const v3d::render::offline::Camera & camera);
+    const v3d::render::offline::Camera & camera() const;
 
-    /** The camera's projection, which defines a hit's "screen", "raster" and "NDC" spaces. **/
-    void projection(const Projection & projected);
-    const Projection & projection() const;
+    /**
+     * The spaces a scene named with RiCoordinateSystem, each held as its transformation into
+     * world space.
+     **/
+    void named(const std::map<std::string, glm::mat4x4> & spaces);
+
+    /**
+     * The matrix from world space into a space a shader names: one the camera defines, or one
+     * the scene named.
+     *
+     * @return false, leaving matrix untouched, for any other name
+     **/
+    bool fromWorld(const std::string & name, glm::mat4x4* matrix) const;
+    /** The same, from camera space. **/
+    bool fromCamera(const std::string & name, glm::mat4x4* matrix) const;
 
     /**
      * A primitive whose geometry was placed by the reference() matrix of a transformation
@@ -89,7 +89,7 @@ class Scene final {
 
     /**
      * Drop every primitive and the motions that carry them, so a renderer that will trace no
-     * ray does not hold the scene's geometry. The camera, the projection, the lights, the
+     * ray does not hold the scene's geometry. The camera, the named spaces, the lights, the
      * background and the trace depth are kept. A ray then meets nothing.
      **/
     void clear();
@@ -171,8 +171,8 @@ class Scene final {
     void traceDepth(unsigned int depth);
 
  private:
-    glm::mat4x4 view_ = glm::mat4x4(1.0F);
-    Projection projection_;
+    v3d::render::offline::Camera camera_;
+    std::map<std::string, glm::mat4x4> named_;
     /** The motion a primitive placed by this transformation is carried by, or -1. **/
     int motion(const v3d::render::offline::MovingTransform & placed);
 

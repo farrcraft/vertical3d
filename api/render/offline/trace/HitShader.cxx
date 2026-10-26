@@ -62,29 +62,10 @@ bool HitShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(hits_.front()->primitive->object());
         return true;
     }
-    if (tracer_->scene() == nullptr) {
-        return false;
-    }
-    const Scene & scene = *tracer_->scene();
-    if (name == "camera") {
-        *matrix = scene.view();
-        return true;
-    }
-    // the projected spaces are the camera's, which builds the ray through each pixel, so a
-    // point taken to raster space lands on the pixel whose ray reached it
-    if (name == "screen") {
-        *matrix = scene.projection().screen * scene.view();
-        return true;
-    }
-    if (name == "raster") {
-        *matrix = scene.projection().raster * scene.view();
-        return true;
-    }
-    if (name == "NDC") {
-        *matrix = scene.projection().ndc * scene.view();
-        return true;
-    }
-    return false;
+    // every other space is the scene's: one the camera defines, or one the scene named. A
+    // projected space is the camera's, which builds the ray through each pixel, so a point taken
+    // to raster space lands on the pixel whose ray reached it
+    return tracer_->scene() != nullptr && tracer_->scene()->fromWorld(name, matrix);
 }
 
 const std::vector<v3d::render::offline::sl::Placed> & HitShader::shining() const {
@@ -302,7 +283,7 @@ void HitShader::shade(std::vector<glm::vec3>* colours, std::vector<glm::vec3>* o
             held.globals.surface(&held.machine, (static_cast<unsigned int>(hit) * lanes_) + lane, point);
         }
     }
-    held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0F) : tracer_->scene()->eye());
+    held.globals.eye(&held.machine, tracer_->scene() == nullptr ? glm::vec3(0.0F) : tracer_->scene()->camera().eye());
 
     surfaceMachine_ = &held.machine;
     lightMachine_ = nullptr;

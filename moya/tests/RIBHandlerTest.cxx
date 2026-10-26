@@ -809,7 +809,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test
         { -0.5F, 0.0F, 0.0F }, { 0.0F, -0.5F, 0.0F }, { 0.0F, 0.5F, 0.0F }
     };
     // the camera sits five units back, so the cube's centre is five units along +z
-    const glm::mat4x4 toCamera = handler.context().traced().view();
+    const glm::mat4x4 toCamera = handler.context().traced().camera().view;
     const glm::vec3 cube(0.0F, 0.0F, 5.0F);
     for (std::size_t face = 0; face < 6; face++) {
         BOOST_TEST_CONTEXT("the " << names[face] << " face") {

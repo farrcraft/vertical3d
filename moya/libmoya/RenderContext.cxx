@@ -8,6 +8,8 @@
 #include <api/image/Factory.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/Area.h>
+#include <api/render/offline/Camera.h>
+#include <api/render/offline/CameraOptions.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
@@ -57,6 +59,12 @@ namespace v3d::moya {
 
 namespace {
 
+/** Whether a name is one of the spaces the camera defines, which a scene cannot save over. **/
+bool predefined(const std::string & name) {
+    return name == "object" || name == "world" || name == "camera" || name == "screen" || name == "raster" ||
+        name == "NDC";
+}
+
 };  // namespace
 
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
@@ -80,11 +88,6 @@ void RenderContext::initialize() {
     hider_ = boost::make_shared<reyes::Hider>();
     shaders_ = boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger_);
     textures_ = boost::make_shared<v3d::render::offline::Textures>(logger_);
-
-    // the predefined coordinate systems start as the identity
-    for (const char* name : { "object", "world", "camera", "screen", "raster", "NDC" }) {
-        predefined_[name] = glm::mat4x4(1.0F);
-    }
 }
 
 boost::shared_ptr<FrameBuffer> RenderContext::framebuffer() const {
@@ -125,175 +128,52 @@ unsigned int RenderContext::samplesTaken(const glm::uvec2 & pixel) const {
 }
 
 void RenderContext::prepareWorld() {
-    // a scene that named no projection gets the default. A named projection has already
-    // reset the current transformation, so only its screen transform is built again, from
-    // the screen window, format and clipping as they stand now
-    if (!projectionNamed_) {
+    // a scene that named no projection gets the default
+    if (!options_.projectionNamed()) {
         projection("orthographic");
-    } else {
-        screenTransform();
     }
 
-    // what a scene set between RiProjection and here is the world to camera transformation
-    predefined_["camera"] = transform_.reference();
-    // the traced scene has no camera of its own, so a traced hit's "camera" space and E
-    // are this camera's
-    traced_.view(coordinateSystem("camera"));
+    // what a scene set between RiProjection and here is the world to camera transformation.
+    // The camera is built from the options as they stand now, because RI lets a screen window,
+    // format or clipping follow the projection
+    camera_ = options_.freeze(transform_.reference());
+    traced_.camera(camera_);
     // inside the world block the current transformation is object to world
     transform_.replace(glm::mat4x4(1.0F));
 
-    // set raster transformation
-    glm::mat4x4 raster(1.0F);
-    /*
-        The screen transform maps to the canonical volume [-1, 1], and the raster transform
-        takes that to [0, xres] by [0, yres].
-
-        y is negated because raster space has its origin at the upper left corner and
-        counts downward. image::Image stores its rows in the same order, top row first.
-    */
-    const float x = static_cast<float>(xres_) / 2.0F;
-    const float y = static_cast<float>(yres_) / 2.0F;
-    raster = glm::scale(raster, glm::vec3(x, -y, 1.0F));
-    raster = glm::translate(raster, glm::vec3(1.0F, -1.0F, 1.0F));
-
-    predefined_["raster"] = raster;
-    traced_.projection(projected());
-
-    frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(xres_, yres_)}));
-}
-
-v3d::render::offline::trace::Scene::Projection RenderContext::projected() {
-    v3d::render::offline::trace::Scene::Projection projection;
-    projection.screen = coordinateSystem("screen");
-    projection.raster = coordinateSystem("raster") * projection.screen;
-    // raster divided by the resolution: x runs right and y runs down over [0, 1] from the
-    // upper left corner. Screen space has y up over [-1, 1], so y is negated as raster
-    // negates it. z is screen depth moved from [-1, 1] onto [0, 1]
-    glm::mat4x4 normalised = glm::scale(glm::mat4x4(1.0F), glm::vec3(0.5F, -0.5F, 0.5F));
-    normalised = glm::translate(normalised, glm::vec3(1.0F, -1.0F, 1.0F));
-    projection.ndc = normalised * projection.screen;
-    return projection;
+    frameBuffer_.reset(new FrameBuffer({.bucket = glm::uvec2(bucketWidth_, bucketHeight_), .image = glm::uvec2(options_.width(), options_.height())}));
 }
 
 unsigned int RenderContext::imageWidth() const {
-    return xres_;
+    return options_.width();
 }
 
 unsigned int RenderContext::imageHeight() const {
-    return yres_;
+    return options_.height();
 }
 
 float RenderContext::pixelAspect() const {
-    return pixelAspect_;
+    return options_.pixelAspect();
 }
 
 bool RenderContext::perspective() const {
-    return projection_ == "perspective";
+    return options_.perspective();
+}
+
+const v3d::render::offline::Camera & RenderContext::camera() const {
+    return camera_;
 }
 
 void RenderContext::projection(std::string name, float fov) {
-    if (!name.empty() && name != "perspective" && name != "orthographic") {
+    // the projection applies after the transformation in force here
+    if (!options_.projection(name, fov, transform_.reference())) {
         logger_->get()->warn("the projection '{}' is not known, and is not used", name);
         return;
     }
-
-    // only "perspective" reads fov
-    projection_ = name;
-    fov_ = fov;
-    projectionNamed_ = true;
-
-    // the projection applies after the transformation in force here. It is kept so that
-    // WorldBegin can build the screen transform again, because RI lets a screen window,
-    // format or clipping follow the projection
-    projectionBase_ = transform_;
-    screenTransform();
+    camera_.screen = options_.screen();
 
     // what the scene sets from here to WorldBegin is the world to camera transformation
     transform_.replace(glm::mat4x4(1.0F));
-}
-
-void RenderContext::screenTransform() {
-    // append the projection to the transformation in force at RiProjection. RI states the
-    // composition in row vectors, with the projection on the right. Here a matrix applies to
-    // what is on its right, so the projection goes on the left
-    const v3d::render::offline::MovingTransform current = transform_;
-    transform_ = projectionBase_.before(projectionMatrix());
-    predefined_["screen"] = transform_.reference();
-    transform_ = current;
-}
-
-glm::mat4x4 RenderContext::projectionMatrix() const {
-    const float left = screen_[0];
-    const float right = screen_[1];
-    const float bottom = screen_[2];
-    const float top = screen_[3];
-
-    // the identity, which is RI_NULL's projection
-    glm::mat4x4 projection(1.0F);
-    if (projection_ == "perspective") {
-        /*
-            RI states fov as the full angle between screen space (-1, 0) and (1, 0), so a
-            point at eye depth z reaches screen x = 1 at x = z * tan(fov / 2). The screen
-            window then selects the part of screen space the image covers.
-
-            The interface looks down +z, so w is +z rather than the -z a right handed
-            system would write. Depth runs [-1, 1] to match the orthographic branch, and
-            the frustum cull in addPolygon() reads the same range.
-        */
-        const float tangent = std::tan(glm::radians(fov_) / 2.0F);
-        projection = glm::mat4x4(0.0F);
-        projection[0][0] = 2.0F / ((right - left) * tangent);
-        projection[1][1] = 2.0F / ((top - bottom) * tangent);
-        projection[2][0] = -(right + left) / (right - left);
-        projection[2][1] = -(top + bottom) / (top - bottom);
-        projection[2][2] = (far_ + near_) / (far_ - near_);
-        projection[2][3] = 1.0F;
-        projection[3][2] = -2.0F * far_ * near_ / (far_ - near_);
-    } else if (projection_ == "orthographic") {
-        /*
-            The screen window maps to [-1, 1] on x and y, and [near, far] maps to [-1, 1]
-            on z. glm indexes a matrix as [column][row], so the translation is column 3.
-
-            [ 2 / (right - left)   0                    0                  -tx ]
-            [ 0                    2 / (top - bottom)   0                  -ty ]
-            [ 0                    0                    2 / (far - near)   -tz ]
-            [ 0                    0                    0                    1 ]
-
-            tx = (right + left) / (right - left)
-            ty = (top + bottom) / (top - bottom)
-            tz = (far + near) / (far - near)
-        */
-
-        const float far = far_;
-        const float near = near_;
-
-        const float tx = ((right + left) / (right - left));
-        const float ty = ((top + bottom) / (top - bottom));
-        const float tz = (far + near) / (far - near);
-
-        projection[0][0] = 2.0F / (right - left);
-        projection[1][0] = 0.0;
-        projection[2][0] = 0.0;
-        projection[3][0] = -tx;
-        projection[0][1] = 0.0;
-        projection[1][1] = 2.0F / (top - bottom);
-        projection[2][1] = 0.0;
-        projection[3][1] = -ty;
-        projection[0][2] = 0.0;
-        projection[1][2] = 0.0;
-        // positive, because the interface looks down +z. The negated form is for a right
-        // handed system, and here it would put the whole clip range behind the near plane
-        projection[2][2] = 2.0F / (far - near);
-        projection[3][2] = -tz;
-        projection[0][3] = 0.0;
-        projection[1][3] = 0.0;
-        projection[2][3] = 0.0;
-        projection[3][3] = 1.0;
-    } else {  // an implementation-specific projection
-        // moya has none, so an unsupported name projects through the identity
-    }
-
-    return projection;
 }
 
 void RenderContext::hider(const std::string & name) {
@@ -311,53 +191,23 @@ bool RenderContext::raytracing() const {
 }
 
 float RenderContext::hither() const {
-    return near_;
+    return options_.hither();
 }
 
 bool RenderContext::imageResolution(const glm::ivec2 & resolution, float aspect) {
-    // RI reads a side of zero or less as the device's default for that side
-    const unsigned int width = resolution.x > 0 ? static_cast<unsigned int>(resolution.x) : defaultWidth;
-    const unsigned int height = resolution.y > 0 ? static_cast<unsigned int>(resolution.y) : defaultHeight;
-    if (width > v3d::render::offline::largestResolution || height > v3d::render::offline::largestResolution) {
-        return false;
-    }
-    xres_ = width;
-    yres_ = height;
-    pixelAspect_ = aspect > 0.0F && std::isfinite(aspect) ? aspect : 1.0F;
-    if (!frameAspectNamed_) {
-        frameAspectRatio(static_cast<float>(xres_) * pixelAspect_ / static_cast<float>(yres_));
-        frameAspectNamed_ = false;
-    }
-    return true;
+    return options_.format(resolution, aspect);
 }
 
 void RenderContext::frameAspectRatio(float aspect) {
-    frameAspect_ = aspect;
-    frameAspectNamed_ = true;
-    if (screenNamed_) {
-        return;
-    }
-    // the RI default: the shorter side spans [-1, 1] and the longer spans [-a, a], so that
-    // a frame which is not square does not stretch a square window across itself
-    if (frameAspect_ >= 1.0F) {
-        screenWindow({.left = -frameAspect_, .right = frameAspect_, .bottom = -1.0F, .top = 1.0F});
-    } else {
-        screenWindow({.left = -1.0F, .right = 1.0F, .bottom = -1.0F / frameAspect_, .top = 1.0F / frameAspect_});
-    }
-    screenNamed_ = false;
+    options_.frameAspectRatio(aspect);
 }
 
 void RenderContext::screenWindow(const v3d::render::offline::rib::ScreenWindow & window) {
-    screen_[0] = window.left;
-    screen_[1] = window.right;
-    screen_[2] = window.bottom;
-    screen_[3] = window.top;
-    screenNamed_ = true;
+    options_.screenWindow(window);
 }
 
 void RenderContext::clipping(const v3d::render::offline::rib::Clipping & planes) {
-    near_ = planes.hither;
-    far_ = planes.yon;
+    options_.clipping(planes);
 }
 
 void RenderContext::pushTransform(void) {
@@ -410,15 +260,17 @@ void RenderContext::attributeEnd() {
 }
 
 void RenderContext::saveCoordinateSystem(const std::string& name) {
-    if (predefined_.find(name) != predefined_.end()) {
+    if (predefined(name)) {
         logger_->get()->warn("'{}' is a predefined coordinate system, and a scene cannot name one", name);
         return;
     }
     named_[name] = transform_.reference();
+    // a shader reads the spaces the scene named, under either hider, through the traced scene
+    traced_.named(named_);
 }
 
 bool RenderContext::known(const std::string& name) const {
-    return predefined_.find(name) != predefined_.end() || named_.find(name) != named_.end();
+    return predefined(name) || named_.find(name) != named_.end();
 }
 
 void RenderContext::setCoordinateSystem(const std::string& name) {
@@ -515,9 +367,20 @@ std::size_t RenderContext::motionCache() const {
 }
 
 glm::mat4x4 RenderContext::coordinateSystem(const std::string& name) {
-    const auto predefined = predefined_.find(name);
-    if (predefined != predefined_.end()) {
-        return predefined->second;
+    if (name == "camera") {
+        return camera_.view;
+    }
+    if (name == "screen") {
+        return camera_.screen;
+    }
+    if (name == "raster") {
+        return camera_.raster;
+    }
+    if (name == "NDC") {
+        return camera_.ndc;
+    }
+    if (predefined(name)) {
+        return glm::mat4x4(1.0F);
     }
     const auto found = named_.find(name);
     if (found == named_.end()) {
@@ -1031,8 +894,8 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     const glm::vec3 & swept_max = swept.max;
 
     // hither-yon cull
-    if ((swept_max[2] > far_ && swept_min[2] > far_)  // the bound is wholly beyond the far plane
-        || (swept_max[2] < near_ && swept_min[2] < near_)) {  // the bound is wholly nearer than the near plane
+    if ((swept_max[2] > options_.yon() && swept_min[2] > options_.yon())  // the bound is wholly beyond the far plane
+        || (swept_max[2] < options_.hither() && swept_min[2] < options_.hither())) {  // the bound is wholly nearer than the near plane
         return;
     }
 
@@ -1041,7 +904,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
     // eye plane test. A bound that spans the near plane passes the cull above. If it also
     // reaches behind the eye plane, z = 0, it cannot be projected, and is marked undiceable
     // so that it is split
-    if (bound_max[2] > near_ && bound_min[2] < near_) {
+    if (bound_max[2] > options_.hither() && bound_min[2] < options_.hither()) {
         if (bound_min[2] < 0.0) {
             poly->diceable(false);
         }
@@ -1059,7 +922,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 
     // raster applies after screen, so it is on the left: a matrix applies to what is on its
     // right
-    const glm::mat4x4 screen = coordinateSystem("raster") * coordinateSystem("screen");
+    const glm::mat4x4 screen = camera_.raster;
     // all eight corners of the eye space bound are projected, because under a perspective
     // projection the raster extremes need not lie at two diagonal corners. A corner at or
     // behind the eye has no raster position. It is left out, and the primitive is split. The
@@ -1159,8 +1022,8 @@ glm::uvec4 RenderContext::cropped() const {
     const auto first = [](unsigned int size, float fraction) {
         return static_cast<unsigned int>(std::ceil(static_cast<float>(size) * fraction));  // checked: the fraction is held to [0, 1]
     };
-    return glm::uvec4(first(xres_, crop_.xmin), first(xres_, crop_.xmax), first(yres_, crop_.ymin),
-        first(yres_, crop_.ymax));
+    return glm::uvec4(first(options_.width(), crop_.xmin), first(options_.width(), crop_.xmax), first(options_.height(), crop_.ymin),
+        first(options_.height(), crop_.ymax));
 }
 
 const std::string & RenderContext::displayName() const {

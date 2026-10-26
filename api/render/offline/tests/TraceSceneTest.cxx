@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/trace/Hit.h>
 #include <api/render/offline/trace/Intersection.h>
@@ -71,8 +72,10 @@ BOOST_AUTO_TEST_CASE(scene_test) {
     BOOST_CHECK_EQUAL(scene.all<v3d::render::offline::trace::Triangle>()[0]->colour().r, 1.0F);
 
     // the eye is where the world to camera transformation puts the camera space origin back
-    scene.view(glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 4.0F)));
-    BOOST_CHECK_EQUAL(scene.eye().z, -4.0F);
+    v3d::render::offline::Camera camera;
+    camera.view = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 4.0F));
+    scene.camera(camera);
+    BOOST_CHECK_EQUAL(scene.camera().eye().z, -4.0F);
 }
 
 /**

@@ -81,6 +81,29 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
 }
 
 /**
+ * "NDC" is the camera's: raster space divided by the picture's size. Its corners are the
+ * picture's, (0, 0) at the upper left and (1, 1) at the lower right.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_ndc_is_raster_over_the_resolution_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.projection("orthographic");
+    rc.prepareWorld();
+
+    // the default screen window is [-4/3, 4/3] by [-1, 1]
+    const glm::mat4x4 ndc = rc.coordinateSystem("NDC");
+    const glm::vec4 upperLeft = ndc * glm::vec4(-4.0F / 3.0F, 1.0F, 1.0F, 1.0F);
+    const glm::vec4 lowerRight = ndc * glm::vec4(4.0F / 3.0F, -1.0F, 1.0F, 1.0F);
+    BOOST_CHECK_SMALL(upperLeft.x, 1.0e-5F);
+    BOOST_CHECK_SMALL(upperLeft.y, 1.0e-5F);
+    BOOST_CHECK_CLOSE(lowerRight.x, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(lowerRight.y, 1.0F, 0.001F);
+    const glm::vec4 pixel = rc.coordinateSystem("raster") * glm::vec4(4.0F / 3.0F, -1.0F, 1.0F, 1.0F);
+    BOOST_CHECK_CLOSE(pixel.x, 64.0F, 0.001F);
+    BOOST_CHECK_CLOSE(pixel.y, 48.0F, 0.001F);
+}
+
+/**
  * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem
  * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform. Saving a
  * name again replaces what it held.

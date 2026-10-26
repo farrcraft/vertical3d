@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampler.h>
 #include <api/render/offline/Sampling.h>
@@ -32,24 +33,6 @@ namespace v3d::moya {
  **/
 class RayHider final : public Hider {
  public:
-    /**
-     * The camera as RiWorldBegin froze it. render() reads it from the context.
-     **/
-    class Camera final {
-     public:
-        /** The world to camera transformation. **/
-        glm::mat4x4 toCamera = glm::mat4x4(1.0F);
-        /**
-         * Camera to raster. A ray is solved from it, and a hit's depth is projected through it.
-         **/
-        glm::mat4x4 toRaster = glm::mat4x4(1.0F);
-        bool perspective = false;
-        /** Where a primary ray starts, in camera space z. **/
-        float hither = 0.0F;
-        unsigned int width = 0;
-        unsigned int height = 0;
-    };
-
     bool traces() const override;
 
     /**
@@ -67,9 +50,10 @@ class RayHider final : public Hider {
     unsigned int samplesTaken(const glm::uvec2 & pixel) const override;
 
     /**
-     * Look through a camera, for the rays render() casts.
+     * Look through a camera, for the rays render() casts. A ray is solved from its raster
+     * matrix, and starts at its hither. render() reads the camera from the context.
      **/
-    void camera(const Camera & camera);
+    void camera(const v3d::render::offline::Camera & camera);
 
     /**
      * The primary ray through a raster position, in world space, from a point on the unit
@@ -84,7 +68,7 @@ class RayHider final : public Hider {
      **/
     glm::vec3 unproject(const glm::vec2 & raster, float z) const;
 
-    Camera camera_;
+    v3d::render::offline::Camera camera_;
     glm::mat4x4 toWorld_ = glm::mat4x4(1.0F);
     std::vector<unsigned int> taken_;
 };

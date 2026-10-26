@@ -332,9 +332,7 @@ void hide(const Placement & placement, const Samples::Layer & shaded, Samples * 
  * into pixels once every bucket is done.
  */
 void hide(MicroPolygonGrid & grid, const Primitive & primitive, RenderContext & rc) {
-    // eye space to raster is the projection and then the scale into pixels. A matrix applies
-    // to what is on its right, so the projection is on the right
-    const glm::mat4x4 toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
+    const glm::mat4x4 & toRaster = rc.camera().raster;
     // an orthographic camera has no lens to blur through
     const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0F;
     Placement placement(toRaster, {.radius = radius, .focus = rc.sampling().focalDistance}, primitive.motion(),

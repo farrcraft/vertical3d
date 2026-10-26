@@ -5,6 +5,7 @@
 
 #include "Scene.h"
 
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/Types.h>
@@ -22,6 +23,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <map>
+#include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -79,24 +82,40 @@ Hierarchy::Box swept(const v3d::type::geometry::AABBox & stored, const v3d::rend
 Scene::Scene() {
 }
 
-void Scene::view(const glm::mat4x4 & toCamera) {
-    view_ = toCamera;
+void Scene::camera(const v3d::render::offline::Camera & camera) {
+    camera_ = camera;
 }
 
-glm::mat4x4 Scene::view() const {
-    return view_;
+const v3d::render::offline::Camera & Scene::camera() const {
+    return camera_;
 }
 
-glm::vec3 Scene::eye() const {
-    return glm::vec3(glm::inverse(view_)[3]);
+void Scene::named(const std::map<std::string, glm::mat4x4> & spaces) {
+    named_ = spaces;
 }
 
-void Scene::projection(const Projection & projected) {
-    projection_ = projected;
+bool Scene::fromWorld(const std::string & name, glm::mat4x4* matrix) const {
+    if (camera_.fromWorld(name, matrix)) {
+        return true;
+    }
+    const auto found = named_.find(name);
+    if (found == named_.end()) {
+        return false;
+    }
+    *matrix = glm::inverse(found->second);
+    return true;
 }
 
-const Scene::Projection & Scene::projection() const {
-    return projection_;
+bool Scene::fromCamera(const std::string & name, glm::mat4x4* matrix) const {
+    if (camera_.fromCamera(name, matrix)) {
+        return true;
+    }
+    const auto found = named_.find(name);
+    if (found == named_.end()) {
+        return false;
+    }
+    *matrix = glm::inverse(found->second) * glm::inverse(camera_.view);
+    return true;
 }
 
 int Scene::motion(const v3d::render::offline::MovingTransform & placed) {
@@ -264,7 +283,7 @@ bool Scene::around(const Hit & hit, const glm::vec2 & parameters, const Poses & 
 }
 
 float Scene::footprint(const glm::vec3 & point) const {
-    const glm::mat4x4 toRaster = projection_.raster * view_;
+    const glm::mat4x4 toRaster = camera_.raster * camera_.view;
     const glm::vec3 raster = v3d::render::offline::sl::project(toRaster, point);
     const glm::vec3 beside = v3d::render::offline::sl::project(glm::inverse(toRaster), raster + glm::vec3(1.0F, 0.0F, 0.0F));
     return glm::length(beside - point);

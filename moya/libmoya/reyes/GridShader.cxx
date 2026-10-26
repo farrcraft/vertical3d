@@ -58,10 +58,8 @@ glm::vec3 GridShader::incident(const glm::vec3 & point) const {
 }
 
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
-    // every matrix maps out of camera space, the reyes hider's current space. The context's
-    // table holds world to camera and camera to screen, so "world" is the inverse of its
-    // entry and "screen" is the entry itself
-    if (name == "current" || name == "camera") {
+    // every matrix maps out of camera space, the reyes hider's current space
+    if (name == "current") {
         *matrix = glm::mat4x4(1.0F);
         return true;
     }
@@ -71,32 +69,16 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(placement_);
         return true;
     }
-    if (name == "world") {
-        *matrix = glm::inverse(context_->coordinateSystem("camera"));
-        return true;
-    }
-    // the projected spaces are the ones the ray hider answers with, so a shader that reads
-    // one gives the same value under either hider
-    const v3d::render::offline::trace::Scene::Projection & projection = context_->traced().projection();
-    if (name == "screen") {
-        *matrix = projection.screen;
-        return true;
-    }
-    if (name == "raster") {
-        *matrix = projection.raster;
-        return true;
-    }
-    if (name == "NDC") {
-        *matrix = projection.ndc;
-        return true;
-    }
     // "object" is the transform in force at the primitive rather than at the shader. The two
     // differ in a scene that transforms between Surface and Polygon
     if (name == "object") {
         *matrix = glm::inverse(object_);
         return true;
     }
-    return false;
+    // every other space is the traced scene's: one the camera defines, or one the scene named.
+    // The ray hider answers from the same table, so a shader that reads one gives the same
+    // value under either hider
+    return context_->traced().fromCamera(name, matrix);
 }
 
 v3d::render::offline::sl::runtime::Renderer::Shape GridShader::shape() const {

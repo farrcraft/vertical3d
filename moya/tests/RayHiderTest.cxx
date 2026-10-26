@@ -4,6 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
@@ -479,20 +480,16 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     rc.screenWindow({.left = -0.5F, .right = 1.5F, .bottom = -1.0F, .top = 1.0F});
     rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.projection("perspective", 60.0F);
+    rc.prepareWorld();
 
-    v3d::moya::RayHider::Camera camera;
-    camera.toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
-    camera.perspective = true;
-    camera.hither = 0.1F;
-    camera.width = 32;
-    camera.height = 16;
+    const v3d::render::offline::Camera & camera = rc.camera();
     v3d::moya::RayHider hider;
     hider.camera(camera);
 
     for (const glm::vec2 & raster : { glm::vec2(3.5F, 2.5F), glm::vec2(30.0F, 14.0F), glm::vec2(16.0F, 8.0F) }) {
         const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0F)}, rc.sampling());
         BOOST_CHECK_CLOSE(ray.origin().z, 0.1F, 0.01F);
-        const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0F);
+        const glm::vec3 projected = v3d::moya::project(camera.raster, ray.origin() + ray.direction() * 5.0F);
         BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01F);
         BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01F);
     }
