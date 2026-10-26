@@ -7,7 +7,6 @@
 
 #include <api/audio/Engine.h>
 #include <api/audio/Loaders.h>
-#include <api/config/Type.h>
 #include <api/ecs/component/Position1D.h>
 #include <api/ecs/component/Position2D.h>
 #include <api/engine/Engine.h>
@@ -99,7 +98,7 @@ bool PongEngine::start() {
         return false;
     }
 
-    const boost::json::object* sounds = document(v3d::config::Type::Sound);
+    const boost::json::object* sounds = document(v3d::audio::Engine::DOCUMENT);
     if (sounds != nullptr) {
         soundEngine_->load(*sounds, *assets());
     }

@@ -180,7 +180,7 @@ order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hie
   it. `WireframeVisitor`, `RIBExportVisitor` and `Picker` work this way. The wireframe draws a
   camera, a light or a group as its glyph, the picker picks it by that glyph, and the export
   writes each light.
-- **Not the views' cameras.** Each viewport owns its camera. `config::CameraProfiles` holds the
+- **Not the views' cameras.** Each viewport owns its camera. `engine::CameraProfiles` holds the
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
 - **Making a camera or a light.** The Create menu's Camera and Light items make one at the

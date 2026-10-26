@@ -59,8 +59,8 @@ bool Engine::start() {
 
     worker_ = boost::make_shared<v3d::asset::Worker>();
     world_ = boost::make_shared<odyssey::tile::World>(logger(), assets(), worker_);
-    // the world document is odyssey's own type, and config.json lists it beside the others
-    if (!world_->load(config()->get("world"))) {
+    // the world document is a kind of odyssey's own, and config.json lists it beside the others
+    if (!world_->load(manifest()->get(odyssey::tile::World::DOCUMENT))) {
         // the world holds the board and its collision rules, so the game cannot run without
         // it. load() has already logged what it could not read
         return false;

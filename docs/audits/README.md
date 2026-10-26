@@ -32,7 +32,7 @@ Read the rigel survey before deciding that a rigel feature is already covered.
 
 These trees were archived rather than carried forward. **All of them are deleted.**
 
-- **QuantumXML**, in `vault/`: an XML parser, replaced by the JSON config code in `api/config`.
+- **QuantumXML**, in `vault/`: an XML parser, replaced by the JSON documents an `asset::Manifest` lists.
   Nothing was salvaged from it. It is the only tree that had no list of items to carry forward,
   so it has no record here.
 - **Rigel**: an experimental app, and the earlier prototype of the editor. Its behaviour was

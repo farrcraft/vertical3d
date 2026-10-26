@@ -271,7 +271,7 @@ sight.
 - **Regions loaded while the game runs.** `tile::World` reads a region on an `asset::Worker` and
   hands it over in `tick()`. See [api/Assets.md](api/Assets.md#loading-on-a-worker-thread).
 - **An app's own config document.** `config.json` files the world under the type `world`, and
-  the game reads it with `config()->get("world")`.
+  the game reads it with `manifest()->get(tile::World::DOCUMENT)`.
 - **`ecs::System`.** `system::Movement` derives from `v3d::ecs::System` and advances each
   entity's `Path` component in `simulate()`. The player's tile is a `grid::TileCoord` component.
   See [api/ECS.md](api/ECS.md).

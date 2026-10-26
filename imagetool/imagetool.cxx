@@ -5,9 +5,9 @@
 
 #include <api/asset/File.h>
 #include <api/asset/Writer.h>
-#include <api/config/SpriteRegion.h>
-#include <api/config/SpriteSheet.h>
-#include <api/config/SpriteSheets.h>
+#include <api/asset/media/SpriteRegion.h>
+#include <api/asset/media/SpriteSheet.h>
+#include <api/asset/media/SpriteSheets.h>
 #include <api/image/Factory.h>
 #include <api/image/Crop.h>
 #include <api/image/Image.h>
@@ -83,7 +83,7 @@ bool plainName(const std::string & name) {
  * @return false when the document exists and is not one SpriteSheets reads whole, so that
  *         rewriting it would lose what it held
  **/
-bool readSheets(const boost::filesystem::path & document, v3d::config::SpriteSheets* sheets) {
+bool readSheets(const boost::filesystem::path & document, v3d::asset::media::SpriteSheets* sheets) {
     if (!boost::filesystem::exists(document)) {
         return true;
     }
@@ -137,15 +137,15 @@ int packSheet(const SheetRequest & request, const boost::shared_ptr<v3d::log::Lo
 
     const boost::filesystem::path image(request.outfile.empty() ? request.sheet + ".png" : request.outfile);
     const boost::filesystem::path document = image.parent_path() / SPRITES_DOCUMENT;
-    v3d::config::SpriteSheets sheets(logger);
+    v3d::asset::media::SpriteSheets sheets(logger);
     if (!readSheets(document, &sheets)) {
         std::cout << "error: " << document.string() << " holds something that is not a sprite sheet, so it is not rewritten\n";
         return EXIT_FAILURE;
     }
-    v3d::config::SpriteSheet sheet({.name = request.sheet, .image = image.filename().string(),
+    v3d::asset::media::SpriteSheet sheet({.name = request.sheet, .image = image.filename().string(),
         .width = static_cast<int>(packing.sheet->width()), .height = static_cast<int>(packing.sheet->height())});
     for (const v3d::image::Placement & placement : packing.placements) {
-        v3d::config::SpriteRegion region;
+        v3d::asset::media::SpriteRegion region;
         region.x = static_cast<int>(placement.area.x);
         region.y = static_cast<int>(placement.area.y);
         region.width = static_cast<int>(placement.area.z);
@@ -178,7 +178,7 @@ int packSheet(const SheetRequest & request, const boost::shared_ptr<v3d::log::Lo
  * Cut one sheet's sprites out of its image, and write each as a png in a directory named for
  * the sheet, beside the document.
  **/
-int unpackSheet(const boost::filesystem::path & document, const v3d::config::SpriteSheet & sheet, bool silent,
+int unpackSheet(const boost::filesystem::path & document, const v3d::asset::media::SpriteSheet & sheet, bool silent,
     v3d::image::Factory* factory) {
     if (!plainName(sheet.name())) {
         std::cout << "error: the sheet name \"" << sheet.name() << "\" cannot name a directory\n";
@@ -207,7 +207,7 @@ int unpackSheet(const boost::filesystem::path & document, const v3d::config::Spr
             std::cout << "error: the sprite name \"" << sprite << "\" cannot name a file\n";
             return EXIT_FAILURE;
         }
-        const v3d::config::SpriteRegion region = sheet.get(sprite);
+        const v3d::asset::media::SpriteRegion region = sheet.get(sprite);
         placements.push_back({.name = sprite, .area = glm::uvec4(static_cast<unsigned int>(region.x),
             static_cast<unsigned int>(region.y), static_cast<unsigned int>(region.width), static_cast<unsigned int>(region.height))});
     }
@@ -242,7 +242,7 @@ int unpackSheets(const SheetRequest & request, const boost::shared_ptr<v3d::log:
         std::cout << "error: there is no " << document.string() << "\n";
         return EXIT_FAILURE;
     }
-    v3d::config::SpriteSheets sheets(logger);
+    v3d::asset::media::SpriteSheets sheets(logger);
     if (!readSheets(document, &sheets)) {
         std::cout << "error: " << document.string() << " is not a sprites document\n";
         return EXIT_FAILURE;

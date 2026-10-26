@@ -29,8 +29,8 @@ asked for.
 |---|---|
 | `logger()` | The process log. See [Logging](#logging). |
 | `assets()` | The asset manager for `<app path>/data/`. See [Assets.md](../Assets.md). |
-| `config()` | The config documents. Needs `Feature::Config`. |
-| `document(type)` | One config document as a `boost::json::object`, or null. Protected. |
+| `manifest()` | The documents `config.json` lists. Needs `Feature::Config`. See [Config.md](Config.md). |
+| `document(kind)` | One config document as a `boost::json::object`, or null. Protected. |
 | `dispatcher()` | The `entt::dispatcher` events are published on. |
 | `events()` | The event engine, which maps source events to commands. |
 | `window()` | The `window::Window`. Needs `Feature::Window`. See [Window.md](Window.md). |

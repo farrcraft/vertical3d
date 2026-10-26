@@ -4,6 +4,7 @@
 v3d_add_test(asset
 	"TestMain.cpp"
 	"ManagerTest.cpp"
+	"ManifestTest.cpp"
 	"LoaderTest.cpp"
 	"JsonTest.cpp"
 	"JsonReadTest.cpp"

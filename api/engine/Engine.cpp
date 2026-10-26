@@ -6,11 +6,9 @@
 #include "Engine.h"
 
 #include <api/asset/Manager.h>
+#include <api/asset/Manifest.h>
 #include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
-#include <api/config/Config.h>
-#include <api/config/Type.h>
-#include <api/config/WindowSize.h>
 #include <api/event/Bindings.h>
 #include <api/event/Engine.h>
 #include <api/event/Event.h>
@@ -38,6 +36,7 @@
 #include "Identity.h"
 #include "Settings.h"
 #include "Statistics.h"
+#include "WindowSize.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
@@ -223,12 +222,12 @@ bool Engine::initialize() {
 /**
  **/
 bool Engine::loadConfig() {
-    config_ = boost::make_shared<v3d::config::Config>(logger_);
-    if (!config_->load(assetManager_)) {
+    manifest_ = boost::make_shared<v3d::asset::Manifest>(logger_);
+    if (!manifest_->load(*assetManager_, "config.json")) {
         return false;
     }
     // a binding config is optional: an app with none sends no commands from a key
-    const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
+    const boost::shared_ptr<v3d::asset::kind::Json> mappings = manifest_->get(v3d::event::Bindings::DOCUMENT);
     if (mappings) {
         bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
             [](const v3d::event::Event& source) {
@@ -280,12 +279,12 @@ bool Engine::openWindow() {
     int width = -1;
     int height = -1;
     if (features_.has(Feature::Config)) {
-        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = manifest_->get(WINDOW_DOCUMENT);
         if (windowConfig) {
             // as with the bindings, a window document that cannot be read makes startup
             // return false rather than throw
             const boost::json::object& doc = windowConfig->document();
-            const std::optional<glm::ivec2> size = v3d::config::windowSize(doc);
+            const std::optional<glm::ivec2> size = windowSize(doc);
             if (!size) {
                 logger_->get()->error("The window config needs a window with a whole width and height an int can hold");
                 return false;
@@ -314,17 +313,11 @@ Features Engine::features() const {
 
 /**
  **/
-const boost::json::object* Engine::document(v3d::config::Type type) const {
-    return document(v3d::config::typeName(type));
-}
-
-/**
- **/
-const boost::json::object* Engine::document(std::string_view type) const {
-    if (!config_) {
+const boost::json::object* Engine::document(std::string_view kind) const {
+    if (!manifest_) {
         return nullptr;
     }
-    const boost::shared_ptr<v3d::asset::kind::Json> held = config_->get(type);
+    const boost::shared_ptr<v3d::asset::kind::Json> held = manifest_->get(kind);
     return held ? &held->document() : nullptr;
 }
 
@@ -591,8 +584,8 @@ const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
     return logger_;
 }
 
-const boost::shared_ptr<v3d::config::Config>& Engine::config() const noexcept {
-    return config_;
+const boost::shared_ptr<v3d::asset::Manifest>& Engine::manifest() const noexcept {
+    return manifest_;
 }
 
 const boost::shared_ptr<v3d::asset::Manager>& Engine::assets() const noexcept {

@@ -16,7 +16,7 @@
 
 #include <boost/json.hpp>
 
-namespace v3d::config {
+namespace v3d::engine {
 
 namespace {
 
@@ -151,4 +151,4 @@ const std::vector<std::string>& CameraProfiles::names() const noexcept {
     return names_;
 }
 
-};  // namespace v3d::config
+};  // namespace v3d::engine

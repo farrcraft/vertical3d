@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json/object.hpp>
@@ -37,6 +38,11 @@ class Theme;
  **/
 class Engine {
  public:
+    /**
+     * The name config.json gives the kind of a ui document.
+     **/
+    static constexpr std::string_view DOCUMENT = "ui";
+
     /**
      * How a named image becomes something to draw.
      *

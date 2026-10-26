@@ -19,7 +19,6 @@ v3d_add_test(odyssey
 target_link_libraries(v3dtest_odyssey PRIVATE
 	v3dlib_asset
 	v3dlib_asset_media
-	v3dlib_config
 	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event

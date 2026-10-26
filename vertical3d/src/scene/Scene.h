@@ -44,7 +44,7 @@ using Curves = std::map<std::string, v3d::type::animation::Curve>;
  * What the editor is editing: the items of one document, of every kind, in one list.
  *
  * Its cameras are part of the document. They are not the views' cameras: the views own
- * theirs, and config::CameraProfiles owns the table they are built from.
+ * theirs, and engine::CameraProfiles owns the table they are built from.
  *
  * Items are found by the id their dag::Node base carries rather than by position, so a
  * selection outlives an insertion or a removal.

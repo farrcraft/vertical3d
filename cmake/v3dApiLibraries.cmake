@@ -11,7 +11,7 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset asset_media audio brep config dag database ecs engine event font grid image input log
+	asset asset_media audio brep dag database ecs engine event font grid image input log
 	render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
@@ -40,10 +40,6 @@ set(V3D_API_brep_PATH "brep")
 set(V3D_API_brep_REQUIRES type)
 set(V3D_API_brep_PACKAGES glm)
 
-set(V3D_API_config_PATH "config")
-set(V3D_API_config_REQUIRES log asset type)
-set(V3D_API_config_PACKAGES glm)
-
 set(V3D_API_dag_PATH "dag")
 set(V3D_API_dag_REQUIRES type)
 set(V3D_API_dag_PACKAGES glm)
@@ -58,8 +54,8 @@ set(V3D_API_ecs_REQUIRES type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media config ecs event input type window)
-set(V3D_API_engine_PACKAGES SDL3 EnTT)
+set(V3D_API_engine_REQUIRES log asset asset_media ecs event input type window)
+set(V3D_API_engine_PACKAGES SDL3 EnTT glm)
 
 set(V3D_API_event_PATH "event")
 set(V3D_API_event_REQUIRES log asset)
@@ -98,7 +94,7 @@ set(V3D_API_render_offline_PACKAGES glm)
 # What every app builds around its own code: the ui, the screen, the menu and the statistics
 # overlay. It joins engine and ui, which do not depend on each other.
 set(V3D_API_shell_PATH "shell")
-set(V3D_API_shell_REQUIRES engine ui config asset)
+set(V3D_API_shell_REQUIRES engine ui asset)
 set(V3D_API_shell_PACKAGES)
 
 set(V3D_API_type_PATH "type")

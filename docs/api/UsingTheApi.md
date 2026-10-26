@@ -169,7 +169,7 @@ Background: [ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest
 
 Each directory under `api/` provides a `v3d::<library>` target. Link only the ones you use. Each
 library links what it needs, so `v3d::engine` brings `v3d::asset`, `v3d::asset_media`,
-`v3d::config`, `v3d::event`, `v3d::input`, `v3d::render` and others with it.
+`v3d::event`, `v3d::input`, `v3d::window` and others with it.
 
 Sound is the exception. An app that plays sound links `v3d::audio` and calls
 `v3d::audio::registerLoaders()` on its asset manager.

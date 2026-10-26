@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/config/WindowSize.h>
+#include <api/engine/WindowSize.h>
 
 #include <optional>
 
@@ -15,7 +15,7 @@
 namespace {
 
 std::optional<glm::ivec2> read(const char* document) {
-    return v3d::config::windowSize(boost::json::parse(document).as_object());
+    return v3d::engine::windowSize(boost::json::parse(document).as_object());
 }
 
 BOOST_AUTO_TEST_CASE(a_window_document_gives_its_size_test) {

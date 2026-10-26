@@ -10,15 +10,16 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 /**
- * Named sprite sheets, loaded from a document the config names as Type::Sprite.
+ * Named sprite sheets, loaded from a sprite sheet document.
  *
  * One document holds every sheet an app has, each named, and get() returns one by name. What
  * a sprite *means*, such as whether it animates or how big it is drawn, is up to the app.
@@ -30,6 +31,11 @@ namespace v3d::config {
  **/
 class SpriteSheets final {
  public:
+    /**
+     * The name config.json gives the kind of a sprite sheet document.
+     **/
+    static constexpr std::string_view DOCUMENT = "sprite";
+
     /**
      * @param logger
      **/
@@ -96,4 +102,4 @@ class SpriteSheets final {
     std::vector<std::string> names_;
 };
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

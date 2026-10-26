@@ -18,15 +18,14 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 
 | Library | What it is for |
 |---|---|
-| [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, atomic file writes and document migration. |
-| [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models. |
+| [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, the manifest an app lists its documents in, atomic file writes and document migration. |
+| [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models, and sprite sheets. |
 | [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
-| [`config`](../../api/config/) | Reads `data/config.json` and the documents it lists. Also reads camera profiles and sprite sheets. |
 | [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor scene item is placed by. |
 | [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
-| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings. It opens the window. |
+| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings, and the readers for the window and camera documents. It opens the window. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
 | [`font`](../../api/font/) | Rasterizes a typeface with FreeType into a texture atlas and lays out text. |
 | [`grid`](../../api/grid/) | Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry. |
@@ -60,7 +59,6 @@ Boost.
 | `ecs` | type | glm, EnTT |
 | `brep` | type | glm |
 | `font` | log, image | FreeType, glm |
-| `config` | log, asset, type | glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
 | `asset_media` | log, asset, image, type | cgltf, glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
@@ -68,15 +66,15 @@ Boost.
 | `window` | log | **SDL3**, glm |
 | `render` | log, asset, asset_media, ecs, font, image, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
-| `engine` | log, asset, asset_media, config, ecs, event, input, type, window | **SDL3**, EnTT |
-| `shell` | engine, ui, config, asset | none of its own |
+| `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
+| `shell` | engine, ui, asset | none of its own |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
 log   type   grid   database               no device, no window
 image  asset  dag  ecs  brep
-font   config  asset_media  event
+font   asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input  window                              SDL3
 audio                                      SDL3_mixer
@@ -94,7 +92,7 @@ Three consequences matter when choosing what to link:
 - **Only `audio` needs SDL3_mixer.** The engine does not link it, so an app that plays sound
   links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio)
   shows how.
-- **`type`, `grid`, `ecs`, `image`, `asset` and `config` need no device and no window**, so a
+- **`type`, `grid`, `ecs`, `image` and `asset` need no device and no window**, so a
   test of game rules built on them runs anywhere.
 
 A project outside the tree chooses which libraries to build with the `V3D_LIBRARIES` CMake
@@ -199,7 +197,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Gutter** — the one-texel border the atlas leaves around every region it packs. See
   [Assets.md](Assets.md#texture-atlas).
 - **Sprite sheet** — an image plus a table of named pixel rectangles in it, read by
-  `config::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
+  `asset::media::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
 - **Manifest and closure** — the manifest is the table in `cmake/v3dApiLibraries.cmake` of
   what each api library depends on. The `V3D_LIBRARIES` CMake variable names the api libraries
   a project links. CMake builds those plus everything the manifest says they depend on (the

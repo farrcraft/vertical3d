@@ -7,7 +7,6 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/Worker.h>
-#include <api/config/Config.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>

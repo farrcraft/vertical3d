@@ -18,7 +18,6 @@ v3d_add_test(pong
 
 target_link_libraries(v3dtest_pong PRIVATE
 	v3dlib_audio
-	v3dlib_config
 	v3dlib_ecs
 	v3dlib_engine
 	v3dlib_event

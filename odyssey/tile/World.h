@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -51,6 +52,11 @@ namespace odyssey::tile {
  **/
 class World final {
  public:
+    /**
+     * The name config.json gives the kind of a world document.
+     **/
+    static constexpr std::string_view DOCUMENT = "world";
+
     /**
      * How near, in tiles, the player comes to a region before it is requested.
      **/

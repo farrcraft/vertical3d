@@ -6,8 +6,7 @@
 #include "Shell.h"
 
 #include <api/asset/kind/Json.h>
-#include <api/config/Config.h>
-#include <api/config/Type.h>
+#include <api/asset/Manifest.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Statistics.h>
 #include <api/ui/Engine.h>
@@ -43,9 +42,9 @@ bool Shell::start(const v3d::ui::shell::GameMenu::Suspend& suspend) {
     if (options_.menu) {
         menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui_, suspend);
     }
-    const boost::shared_ptr<v3d::config::Config>& config = engine_->config();
+    const boost::shared_ptr<v3d::asset::Manifest>& manifest = engine_->manifest();
     const boost::shared_ptr<v3d::asset::kind::Json> document =
-        config ? config->get(v3d::config::Type::Ui) : boost::shared_ptr<v3d::asset::kind::Json>();
+        manifest ? manifest->get(v3d::ui::Engine::DOCUMENT) : boost::shared_ptr<v3d::asset::kind::Json>();
     return !document || ui_->load(document->document());
 }
 

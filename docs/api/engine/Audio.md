@@ -13,7 +13,7 @@ the library, so an app that plays sound does three things in `start()`:
 sound_ = boost::make_shared<v3d::audio::Engine>(logger(), dispatcher());
 v3d::audio::registerLoaders(*assets(), logger());      // the .wav loader
 sound_->initialize();                                  // open the audio device
-if (const boost::json::object* sounds = document(v3d::config::Type::Sound)) {
+if (const boost::json::object* sounds = document(v3d::audio::Engine::DOCUMENT)) {
     sound_->load(*sounds, *assets());
 }
 ```

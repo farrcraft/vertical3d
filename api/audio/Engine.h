@@ -19,6 +19,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "AudioClip.h"
@@ -56,6 +57,11 @@ enum class Voice : uint32_t { None = 0 };
  **/
 class Engine final {
  public:
+    /**
+     * The name config.json gives the kind of a sound document.
+     **/
+    static constexpr std::string_view DOCUMENT = "sound";
+
     Engine(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher>& dispatcher);
     /**
      * Calls shutdown(), so the device, the tracks and the dispatcher connection are released

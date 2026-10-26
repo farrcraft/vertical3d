@@ -42,6 +42,11 @@ namespace v3d::event {
 class Bindings final {
  public:
     /**
+     * The name config.json gives the kind of a binding document.
+     **/
+    static constexpr std::string_view DOCUMENT = "binding";
+
+    /**
      * Whether a source event is one a device can send.
      **/
     typedef std::function<bool(const Event& source)> Known;

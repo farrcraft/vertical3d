@@ -6,8 +6,7 @@
 #include "Controller.h"
 
 #include <api/brep/BRep.h>
-#include <api/config/CameraProfiles.h>
-#include <api/config/Type.h>
+#include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
@@ -125,7 +124,7 @@ Controller::Controller(const std::string& path) :
 /**
  **/
 bool Controller::start() {
-    if (!config()) {
+    if (!manifest()) {
         logger()->get()->error("The editor needs its config to know what to draw");
         return false;
     }
@@ -134,8 +133,8 @@ bool Controller::start() {
     project_ = boost::make_shared<Project>(logger(), boost::filesystem::path(path_) / "project");
     history_ = boost::make_shared<CommandStack>();
 
-    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
-    const boost::json::object* cameras = document(v3d::config::Type::Camera);
+    profiles_ = boost::make_shared<v3d::engine::CameraProfiles>(logger());
+    const boost::json::object* cameras = document(v3d::engine::CameraProfiles::DOCUMENT);
     if (cameras == nullptr) {
         logger()->get()->error("The editor has no camera config, so its views would have no cameras");
         return false;
@@ -145,7 +144,7 @@ bool Controller::start() {
     }
 
     layout_ = boost::make_shared<ViewLayout>(logger());
-    if (!layout_->load(config()->get(v3d::config::Type::Layout))) {
+    if (!layout_->load(manifest()->get(ViewLayout::DOCUMENT))) {
         return false;
     }
 
@@ -215,7 +214,7 @@ bool Controller::buildViews() {
 /**
  **/
 bool Controller::buildUi() {
-    const boost::json::object* config = document(v3d::config::Type::Ui);
+    const boost::json::object* config = document(v3d::ui::Engine::DOCUMENT);
     if (config == nullptr) {
         logger()->get()->error("The editor has no ui config, so it would have no menus");
         return false;

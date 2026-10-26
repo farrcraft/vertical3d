@@ -5,6 +5,7 @@
 
 #include "SpriteSheets.h"
 
+#include <api/asset/Json.h>
 #include <api/log/Logger.h>
 
 #include "SpriteRegion.h"
@@ -17,7 +18,7 @@
 
 #include <boost/json.hpp>
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 namespace {
 
@@ -37,10 +38,7 @@ int whole(const boost::json::object& entry, const char* key, int fallback) {
  * @return the value read, or an empty string if the entry is missing or not a string
  **/
 std::string text(const boost::json::object& entry, const char* key) {
-    if (!entry.contains(key) || !entry.at(key).is_string()) {
-        return std::string();
-    }
-    return boost::json::value_to<std::string>(entry.at(key));
+    return v3d::asset::readString(entry, key).value_or(std::string());
 }
 
 };  // namespace
@@ -200,4 +198,4 @@ boost::json::value SpriteSheets::document() const {
     return document;
 }
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

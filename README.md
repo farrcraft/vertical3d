@@ -29,9 +29,8 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 | [`database`](api/database/) | SQLite connections, statements and transactions |
 | [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
 | [`font`](api/font/) | Glyph layout and atlas packing |
-| [`asset`](api/asset/) | Loading files by type, and the loaders for JSON documents |
-| [`asset/media`](api/asset/media/) | Loaders for images and glTF models (`v3dlib_asset_media`) |
-| [`config`](api/config/) | JSON configuration documents |
+| [`asset`](api/asset/) | Loading files by kind, the loaders for JSON documents, and the manifest of an app's documents |
+| [`asset/media`](api/asset/media/) | Loaders for images and glTF models, and sprite sheets (`v3dlib_asset_media`) |
 | [`event`](api/event/) | Mapping input to named commands, and dispatching them |
 | [`input`](api/input/) | Keyboard and mouse state |
 | [`audio`](api/audio/) | Sound playback through SDL3_mixer, with placed voices, and FMOD Studio events when built with FMOD |

@@ -206,7 +206,7 @@ name. An unqualified `serialize()` on a `boost::json::value` finds `boost::json:
 argument-dependent lookup, and that writes the whole document on one line.
 
 What a document holds is the caller's decision. These functions decide only how it reaches the
-disk. `engine::Settings`, the editor's project manifests and `config::SpriteSheets` all write
+disk. `engine::Settings`, the editor's project manifests and `asset::media::SpriteSheets` all write
 through them. The editor's scene documents are SQLite databases, written in a transaction rather
 than by a rename. See [editor/Files.md](../editor/Files.md#scene-documents).
 
@@ -354,7 +354,7 @@ log.
 
 `image::pack()` and `image::unpack()` ([api/image/Pack.h](../../api/image/Pack.h)) move named
 images into one sheet and back out of it. They work in memory: the caller reads and writes the
-files, and the sheet's document is `config::SpriteSheets`.
+files, and the sheet's document is `asset::media::SpriteSheets`.
 
 ```cpp
 v3d::image::Packing packing = v3d::image::pack(sprites, 4096, logger);   // named images

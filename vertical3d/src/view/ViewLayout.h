@@ -9,6 +9,7 @@
 #include <api/log/Logger.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -33,6 +34,11 @@ namespace v3d::editor {
  **/
 class ViewLayout final {
  public:
+    /**
+     * The name config.json gives the kind of a layout document.
+     **/
+    static constexpr std::string_view DOCUMENT = "layout";
+
     /**
      * One viewport of the layout: which camera profile it shows, and where it is.
      **/

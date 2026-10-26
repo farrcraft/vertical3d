@@ -1,5 +1,0 @@
-# A test's literal is the value it expects, written beside the assertion that checks it.
-# Naming it would move the value away from the line that reads it, so a test may use a
-# number as it is. Every other check applies here as it does in the rest of the tree.
-InheritParentConfig: true
-Checks: '-readability-magic-numbers'

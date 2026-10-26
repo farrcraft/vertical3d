@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 /**
  **/
@@ -108,4 +108,4 @@ bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
     return true;
 }
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

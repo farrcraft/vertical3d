@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/config/CameraProfiles.h>
+#include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/kind/MouseMotion.h>
@@ -403,7 +403,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<CommandStack> history_;
     // what the caption was last set to
     std::string caption_;
-    boost::shared_ptr<v3d::config::CameraProfiles> profiles_;
+    boost::shared_ptr<v3d::engine::CameraProfiles> profiles_;
     boost::shared_ptr<ViewLayout> layout_;
     std::vector<boost::shared_ptr<ViewPort>> views_;
     boost::shared_ptr<ViewPort> activeView_;

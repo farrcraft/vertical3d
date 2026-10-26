@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 /**
  * Where one sprite sits in the sheet that holds it, in the sheet's own pixels.
@@ -19,4 +19,4 @@ struct SpriteRegion final {
     int height;
 };
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

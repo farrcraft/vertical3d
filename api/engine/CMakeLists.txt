@@ -8,18 +8,20 @@ v3d_add_api_library(engine
 	"Settings.h" "Settings.cpp"
 	"Main.h"
 	"IsometricController.h" "IsometricController.cpp"
+	"CameraProfiles.h" "CameraProfiles.cpp"
+	"WindowSize.h" "WindowSize.cpp"
 )
 
 # PUBLIC: Engine.h holds one of each of these, so an app that subclasses it compiles all of
-# them: the logger, the asset manager, the config, the event and input engines, the window,
-# and the registry. ecs, because interpolate<T>() in Engine.h snapshots through ecs::Previous.
-# type, because Feature.h is a type::Flags. SDL3, because Engine.h passes
-# each SDL_Event to the app. Boost::json, because Engine.h and Settings.h name boost::json
-# types.
+# them. They are the logger, the asset manager and its manifest, the event and input engines,
+# the window, and the registry. ecs, because interpolate<T>() in Engine.h snapshots through
+# ecs::Previous. type, because Feature.h is a type::Flags and CameraProfiles.h hands out a
+# type::camera::Profile. SDL3, because Engine.h passes each SDL_Event to the app. Boost::json,
+# because Engine.h, Settings.h and the document readers name boost::json types. glm, because
+# WindowSize.h hands out a size as an ivec2.
 target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_log
 	v3dlib_asset
-	v3dlib_config
 	v3dlib_ecs
 	v3dlib_event
 	v3dlib_input
@@ -27,7 +29,8 @@ target_link_libraries(v3dlib_engine PUBLIC
 	v3dlib_type
 	SDL3::SDL3
 	EnTT::EnTT
-	Boost::json)
+	Boost::json
+	glm::glm)
 
 # PRIVATE: initialize() registers the media loaders on the asset manager it builds, and
 # appPath() derives a path from argv[0] with boost::filesystem.

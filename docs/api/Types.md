@@ -180,7 +180,7 @@ The camera classes are in `v3d::type::camera` ([api/type/camera/](../../api/type
 - `Isometric` is an orbit around a target on the ground, snapped to four azimuths.
 - `ArcBall` turns a mouse drag into a rotation for `Camera::rotate()`.
 
-`config::CameraProfiles` reads named profiles from a config document.
+`engine::CameraProfiles` reads named profiles from a config document.
 [engine/Config.md](engine/Config.md#camera-profiles) describes the format.
 
 ### Clip space and matrices

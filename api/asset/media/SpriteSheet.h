@@ -13,7 +13,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 /**
  * One image and a table of names over rectangles in it.
@@ -107,4 +107,4 @@ class SpriteSheet final {
     std::vector<std::string> sprites_;
 };
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

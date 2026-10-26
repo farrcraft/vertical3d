@@ -21,7 +21,6 @@ add_executable(Odyssey
 target_link_libraries(Odyssey
 		"v3dlib_asset"
 		"v3dlib_asset_media"
-		"v3dlib_config"
 		"v3dlib_ecs"
 		"v3dlib_engine"
 		"v3dlib_event"

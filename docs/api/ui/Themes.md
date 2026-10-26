@@ -114,7 +114,7 @@ std::size_t resolved = vgui_->resolveImages([this](const std::string& source) {
   that bound the image inside it. One sprite sheet can serve every icon on a screen. A bare
   `TextureHandle` converts to the whole texture.
 - What a source name means is the app's choice. An app with a sprite sheet looks the name up
-  in `config::SpriteSheets` and returns the sheet's handle and the region's corners.
+  in `asset::media::SpriteSheets` and returns the sheet's handle and the region's corners.
 - Run `resolveImages()` once the renderer exists. It resolves theme images and every icon and
   button icon in every container. It returns how many were resolved, and logs each source it
   could not resolve.

@@ -5,7 +5,7 @@
 
 #include "SpriteRegion.h"
 
-namespace v3d::config {
+namespace v3d::asset::media {
 
 /**
  **/
@@ -16,4 +16,4 @@ width(0),
 height(0) {
 }
 
-};  // namespace v3d::config
+};  // namespace v3d::asset::media

@@ -10,15 +10,16 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::config {
+namespace v3d::engine {
 
 /**
- * Named camera profiles, loaded from the document the config names as Type::Camera, such as
+ * Named camera profiles, loaded from the document config.json names under DOCUMENT, such as
  * vertical3d/data/cameras.json.
  *
  * A profile entry gives the camera's eye, look-at point and up vector, not its basis vectors.
@@ -27,6 +28,11 @@ namespace v3d::config {
  **/
 class CameraProfiles final {
  public:
+    /**
+     * The name config.json gives the kind of a camera document.
+     **/
+    static constexpr std::string_view DOCUMENT = "camera";
+
     /**
      * @param logger
      **/
@@ -65,4 +71,4 @@ class CameraProfiles final {
     std::vector<std::string> names_;
 };
 
-};  // namespace v3d::config
+};  // namespace v3d::engine

@@ -5,8 +5,9 @@ These are read-only. What the player changes is saved as described in [Files.md]
 
 ## Config documents
 
-With `Feature::Config`, the engine reads `data/config.json`. It must use the indirect form: a
-list of typed entries, each naming another file in `data/`.
+With `Feature::Config`, the engine reads `data/config.json` into an `asset::Manifest`
+([api/asset/Manifest.h](../../../api/asset/Manifest.h)). The file is a list of entries, each
+naming a kind and another file in `data/`.
 
 ```json
 {
@@ -21,40 +22,52 @@ list of typed entries, each naming another file in `data/`.
 
 pong's [data/](../../../pong/data) directory is a complete example.
 
-The api recognises seven types, listed in `config::Type` in
-[api/config/Type.h](../../../api/config/Type.h):
+A kind is any name. The library that reads a kind declares its name as a constant, and the api
+reads these:
 
-| Type | What reads it | Document shape |
+| Kind | Declared by, and read by | Document shape |
 |---|---|---|
-| `window` | The engine, when it opens the window | `{"window": {"width": 1024, "height": 768}}`. Both must be whole numbers an `int` can hold, or startup fails. |
-| `binding` | The engine's bindings | See [Bindings](Input.md#bindings). |
-| `ui` | `ui::Engine::load()` | Themes and containers. See [ui/](../ui/README.md). |
-| `sound` | `audio::Engine::load()` | See [Audio](Audio.md#audio). |
-| `camera` | `config::CameraProfiles` | `{"cameras": [...]}`, named camera profiles. See below. |
-| `layout` | The editor's viewport layout | The editor's own format. See [editor/](../../editor/README.md). |
-| `sprite` | `config::SpriteSheets` | See [Sprite sheets](#sprite-sheets). |
+| `window` | `engine::WINDOW_DOCUMENT`. The engine, when it opens the window | `{"window": {"width": 1024, "height": 768}}`. Both must be whole numbers an `int` can hold, or startup fails. |
+| `binding` | `event::Bindings::DOCUMENT`. The engine's bindings | See [Bindings](Input.md#bindings). |
+| `ui` | `ui::Engine::DOCUMENT`. `ui::Engine::load()`, from the shell | Themes and containers. See [ui/](../ui/README.md). |
+| `sound` | `audio::Engine::DOCUMENT`. `audio::Engine::load()` | See [Audio](Audio.md#audio). |
+| `camera` | `engine::CameraProfiles::DOCUMENT` | `{"cameras": [...]}`, named camera profiles. See below. |
+| `layout` | The editor's `ViewLayout::DOCUMENT` | The editor's own format. See [editor/](../../editor/README.md). |
+| `sprite` | `asset::media::SpriteSheets::DOCUMENT` | See [Sprite sheets](#sprite-sheets). |
 
-**Any other type is an app's own document.** The config loads it like the others and files it
-under the type its entry names. odyssey's world is one: its entry has type `world`, and it
-reads the document with `config()->get("world")`. Inside an engine subclass,
-`document("world")` returns the same document as a `boost::json::object`, or null if the config
-lists none.
+**An app names kinds of its own the same way.** The manifest loads every entry alike. odyssey's
+world is one: `tile::World::DOCUMENT` is `world`, and the game reads the document with
+`manifest()->get(tile::World::DOCUMENT)`. Inside an engine subclass, `document(kind)` returns
+the same document as a `boost::json::object`, or null if the config lists none. A misspelt kind
+is a null document, not a compile error, so name a kind through its constant.
 
 How failures are reported:
 
 - Each of these is logged and stops startup: `config.json` missing, an entry without a `type`
   or `file`, and an entry whose `type` or `file` is not a string. An entry whose `type` is
-  empty, and a listed file that does not load, are treated the same way.
+  empty, and a listed file that does not load, are treated the same way. A failed load keeps
+  nothing it read.
 - The window document and the bindings check every key they read. A document they do not
   understand is a line in the log and a failed startup, not an exception.
 - A config document names images and never loads them. The app resolves a theme's images and a
   sprite sheet's image through its own asset manager and renderer.
 
-Background: [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md)
+Background: [ADR-0020](../../adr/0020-ui-themes-are-data-apps-load-the-images.md),
+[ADR-0119](../../adr/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
+
+A tool that does not run the engine reads the same list by building a manifest itself:
+
+```cpp
+v3d::asset::Manager assets("data", logger);
+v3d::asset::Manifest manifest(logger);
+if (manifest.load(assets, "config.json")) {
+    auto window = manifest.get(v3d::engine::WINDOW_DOCUMENT);
+}
+```
 
 ### Camera profiles
 
-`config::CameraProfiles` ([api/config/CameraProfiles.h](../../../api/config/CameraProfiles.h))
+`engine::CameraProfiles` ([api/engine/CameraProfiles.h](../../../api/engine/CameraProfiles.h))
 reads named `type::camera::Profile`s. Each entry needs a `name`. The other fields have defaults:
 `orthographic` (true), `eye` (`[0, 0, -10]`), `lookat` (`[0, 0, 0]`), `up` (`[0, 1, 0]`),
 `zoom` (10), `fov` (60, in degrees), `aspect` (1.33), `near` (0.1), `far` (100), and `adaptive`
@@ -66,8 +79,9 @@ covered in [Types.md](../Types.md#cameras).
 
 ### Sprite sheets
 
-`config::SpriteSheets` ([api/config/SpriteSheets.h](../../../api/config/SpriteSheets.h)) reads a
-table of named rectangles in an image:
+`asset::media::SpriteSheets`
+([api/asset/media/SpriteSheets.h](../../../api/asset/media/SpriteSheets.h)) reads a table of
+named rectangles in an image. It is in `v3d::asset_media`, so a tool reads it without the engine:
 
 ```json
 {

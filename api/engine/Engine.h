@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/config/Config.h>
+#include <api/asset/Manifest.h>
 #include <api/ecs/Previous.h>
 #include <api/event/Bindings.h>
 #include <api/event/Commands.h>
@@ -165,10 +165,10 @@ class Engine {
 
     /**
      * What the engine built, for an app to build on. Each is null until initialize() runs.
-     * config() stays null unless the app asks for Feature::Config.
+     * manifest() stays null unless the app asks for Feature::Config.
      **/
     const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
-    const boost::shared_ptr<v3d::config::Config>& config() const noexcept;
+    const boost::shared_ptr<v3d::asset::Manifest>& manifest() const noexcept;
     const boost::shared_ptr<v3d::asset::Manager>& assets() const noexcept;
     const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
     const boost::shared_ptr<v3d::event::Engine>& events() const noexcept;
@@ -277,14 +277,11 @@ class Engine {
 
     /**
      * One of the documents config.json names, or null when there is no config or it names
-     * none of that type. An app treats every such document as optional.
+     * none of that kind. The library that reads a kind declares its name, as
+     * ui::Engine::DOCUMENT, and an app names its own. An app treats every such document as
+     * optional.
      **/
-    const boost::json::object* document(v3d::config::Type type) const;
-
-    /**
-     * The same for a type the app names itself - one the api has no enum for.
-     **/
-    const boost::json::object* document(std::string_view type) const;
+    const boost::json::object* document(std::string_view kind) const;
 
     /**
      * Time the rest of the scope as a named span in the loop's statistics. This is how an
@@ -410,7 +407,7 @@ class Engine {
      friend int run(const char* executable, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
-     boost::shared_ptr<v3d::config::Config> config_;
+     boost::shared_ptr<v3d::asset::Manifest> manifest_;
      boost::shared_ptr<v3d::window::Window> window_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;

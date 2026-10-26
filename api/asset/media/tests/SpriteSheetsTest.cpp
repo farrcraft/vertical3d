@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/config/SpriteRegion.h>
-#include <api/config/SpriteSheet.h>
-#include <api/config/SpriteSheets.h>
+#include <api/asset/media/SpriteRegion.h>
+#include <api/asset/media/SpriteSheet.h>
+#include <api/asset/media/SpriteSheets.h>
 #include <api/asset/Writer.h>
 #include <api/log/Logger.h>
 
@@ -45,7 +45,7 @@ const char* const sheets =
 "]}";
 
 BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
 
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
     BOOST_CHECK(loaded.has("terrain"));
     BOOST_CHECK(!loaded.has("nothing"));
 
-    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    const v3d::asset::media::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.name(), "terrain");
     // the image is named rather than loaded
     BOOST_CHECK_EQUAL(terrain.image(), "terrain.png");
@@ -69,11 +69,11 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
  * in the units the image is in and a shader gets the fraction it needs.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_convert_pixels_to_uv_test) {
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
-    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    const v3d::asset::media::SpriteSheet terrain = loaded.get("terrain");
 
-    const v3d::config::SpriteRegion water = terrain.get("water");
+    const v3d::asset::media::SpriteRegion water = terrain.get("water");
     BOOST_CHECK_EQUAL(water.x, 64);
     BOOST_CHECK_EQUAL(water.width, 64);
 
@@ -115,13 +115,13 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
     " ]}"
     "]}";
 
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_CHECK_EQUAL(loaded.load(config(mixed)), false);
 
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 1U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "good");
 
-    const v3d::config::SpriteSheet good = loaded.get("good");
+    const v3d::asset::media::SpriteSheet good = loaded.get("good");
     BOOST_REQUIRE_EQUAL(good.sprites().size(), 1U);
     BOOST_CHECK_EQUAL(good.sprites()[0], "fits");
     BOOST_CHECK(good.has("fits"));
@@ -133,11 +133,11 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_reject_what_they_cannot_use_test) {
  * back an empty one rather than nothing at all.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_CHECK_EQUAL(loaded.load(config("{\"something\": 1}")), false);
     BOOST_CHECK_EQUAL(loaded.names().size(), 0U);
 
-    const v3d::config::SpriteSheet absent = loaded.get("nothing");
+    const v3d::asset::media::SpriteSheet absent = loaded.get("nothing");
     BOOST_CHECK_EQUAL(absent.name(), "");
     BOOST_CHECK_EQUAL(absent.width(), 0);
     BOOST_CHECK_EQUAL(absent.sprites().size(), 0U);
@@ -157,13 +157,13 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_missing_document_test) {
  * round trip guards against that.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
 
     // through serializeDocument rather than straight back, because the text form is what a
     // file holds and a number that widened on the way out would only show up here
     const std::string text = v3d::asset::serializeDocument(loaded.document());
-    v3d::config::SpriteSheets reloaded(logger());
+    v3d::asset::media::SpriteSheets reloaded(logger());
     BOOST_REQUIRE_EQUAL(reloaded.load(config(text)), true);
 
     BOOST_REQUIRE_EQUAL(reloaded.names().size(), loaded.names().size());
@@ -172,8 +172,8 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
         // one sheet does not move the others in the diff
         BOOST_REQUIRE_EQUAL(reloaded.names()[i], loaded.names()[i]);
 
-        const v3d::config::SpriteSheet before = loaded.get(loaded.names()[i]);
-        const v3d::config::SpriteSheet after = reloaded.get(reloaded.names()[i]);
+        const v3d::asset::media::SpriteSheet before = loaded.get(loaded.names()[i]);
+        const v3d::asset::media::SpriteSheet after = reloaded.get(reloaded.names()[i]);
         BOOST_CHECK_EQUAL(after.image(), before.image());
         BOOST_CHECK_EQUAL(after.width(), before.width());
         BOOST_CHECK_EQUAL(after.height(), before.height());
@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
         BOOST_REQUIRE_EQUAL(after.sprites().size(), before.sprites().size());
         for (size_t j = 0; j < before.sprites().size(); ++j) {
             BOOST_REQUIRE_EQUAL(after.sprites()[j], before.sprites()[j]);
-            const v3d::config::SpriteRegion one = before.get(before.sprites()[j]);
-            const v3d::config::SpriteRegion two = after.get(after.sprites()[j]);
+            const v3d::asset::media::SpriteRegion one = before.get(before.sprites()[j]);
+            const v3d::asset::media::SpriteRegion two = after.get(after.sprites()[j]);
             BOOST_CHECK_EQUAL(two.x, one.x);
             BOOST_CHECK_EQUAL(two.y, one.y);
             BOOST_CHECK_EQUAL(two.width, one.width);
@@ -196,10 +196,10 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_round_trip_test) {
  * a packer cannot emit a region the reader would drop on the way back in.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
-    v3d::config::SpriteSheet packed({.name = "hud", .image = "art/hud.png", .width = 128, .height = 64});
-    BOOST_CHECK(packed.place("heart", v3d::config::SpriteRegion()) == false);
+    v3d::asset::media::SpriteSheet packed({.name = "hud", .image = "art/hud.png", .width = 128, .height = 64});
+    BOOST_CHECK(packed.place("heart", v3d::asset::media::SpriteRegion()) == false);
 
-    v3d::config::SpriteRegion heart;
+    v3d::asset::media::SpriteRegion heart;
     heart.x = 0;
     heart.y = 0;
     heart.width = 16;
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
     BOOST_CHECK(packed.place("heart", heart));
 
     // the same validation place() applies to a region read out of a document
-    v3d::config::SpriteRegion overruns;
+    v3d::asset::media::SpriteRegion overruns;
     overruns.x = 120;
     overruns.y = 0;
     overruns.width = 16;
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
     BOOST_CHECK(!packed.place("overruns", overruns));
 
     // a corner and a size whose sum overflows an int is still off the sheet
-    v3d::config::SpriteRegion overflows;
+    v3d::asset::media::SpriteRegion overflows;
     overflows.x = 100;
     overflows.y = 0;
     overflows.width = std::numeric_limits<int>::max() - 50;
@@ -230,14 +230,14 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
     overflows.height = std::numeric_limits<int>::max() - 16;
     BOOST_CHECK(!packed.place("overflows", overflows));
 
-    v3d::config::SpriteSheets built(logger());
+    v3d::asset::media::SpriteSheets built(logger());
     BOOST_REQUIRE(built.add(packed));
 
-    v3d::config::SpriteSheets reloaded(logger());
+    v3d::asset::media::SpriteSheets reloaded(logger());
     BOOST_REQUIRE_EQUAL(reloaded.load(config(v3d::asset::serializeDocument(built.document()))), true);
     BOOST_REQUIRE_EQUAL(reloaded.names().size(), 1U);
 
-    const v3d::config::SpriteSheet hud = reloaded.get("hud");
+    const v3d::asset::media::SpriteSheet hud = reloaded.get("hud");
     BOOST_CHECK_EQUAL(hud.image(), "art/hud.png");
     BOOST_REQUIRE_EQUAL(hud.sprites().size(), 1U);
     BOOST_CHECK_EQUAL(hud.sprites()[0], "heart");
@@ -249,12 +249,12 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_build_a_document_test) {
  * update a document it only partly owns.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(sheets)), true);
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
 
-    v3d::config::SpriteSheet repacked({.name = "terrain", .image = "terrain.png", .width = 512, .height = 512});
-    v3d::config::SpriteRegion grass;
+    v3d::asset::media::SpriteSheet repacked({.name = "terrain", .image = "terrain.png", .width = 512, .height = 512});
+    v3d::asset::media::SpriteRegion grass;
     grass.x = 0;
     grass.y = 0;
     grass.width = 128;
@@ -265,19 +265,19 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_add_replaces_one_sheet_test) {
     // replaced rather than merged into, and it kept its place in the order
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
-    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    const v3d::asset::media::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.width(), 512);
     BOOST_REQUIRE_EQUAL(terrain.sprites().size(), 1U);
     BOOST_CHECK(!terrain.has("water"));
 
     // and the sheet nobody packed is untouched, because the tool loaded before writing
-    const v3d::config::SpriteSheet actors = loaded.get("actors");
+    const v3d::asset::media::SpriteSheet actors = loaded.get("actors");
     BOOST_CHECK_EQUAL(actors.image(), "actors.png");
     BOOST_CHECK(actors.has("player"));
 
     // a sheet that could not be read back is not one that can be put in
-    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet()));
-    BOOST_CHECK(!loaded.add(v3d::config::SpriteSheet({.name = "sizeless", .image = "sizeless.png", .width = 0, .height = 0})));
+    BOOST_CHECK(!loaded.add(v3d::asset::media::SpriteSheet()));
+    BOOST_CHECK(!loaded.add(v3d::asset::media::SpriteSheet({.name = "sizeless", .image = "sizeless.png", .width = 0, .height = 0})));
     BOOST_CHECK_EQUAL(loaded.names().size(), 2U);
 }
 
@@ -292,13 +292,13 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_load_keeps_the_last_of_a_repeated_name_test) 
         "{\"name\": \"actors\", \"image\": \"actors.png\", \"width\": 64, \"height\": 64},"
         "{\"name\": \"terrain\", \"image\": \"last.png\", \"width\": 128, \"height\": 128}"
         "]}";
-    v3d::config::SpriteSheets loaded(logger());
+    v3d::asset::media::SpriteSheets loaded(logger());
     BOOST_REQUIRE_EQUAL(loaded.load(config(repeated)), true);
 
     BOOST_REQUIRE_EQUAL(loaded.names().size(), 2U);
     BOOST_CHECK_EQUAL(loaded.names()[0], "terrain");
     BOOST_CHECK_EQUAL(loaded.names()[1], "actors");
-    const v3d::config::SpriteSheet terrain = loaded.get("terrain");
+    const v3d::asset::media::SpriteSheet terrain = loaded.get("terrain");
     BOOST_CHECK_EQUAL(terrain.image(), "last.png");
     BOOST_CHECK_EQUAL(terrain.width(), 128);
 }

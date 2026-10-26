@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/config/CameraProfiles.h>
+#include <api/engine/CameraProfiles.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
@@ -40,7 +40,7 @@ const char* const cameras =
 "]}";
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
-    v3d::config::CameraProfiles profiles(logger());
+    v3d::engine::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
     BOOST_REQUIRE_EQUAL(profiles.names().size(), 2U);
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
     // load() orients each profile with lookat(), so its basis vectors and its rotation agree
-    v3d::config::CameraProfiles profiles(logger());
+    v3d::engine::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config(cameras)));
 
     const v3d::type::camera::Profile top = profiles.get("Top");
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_orientation_test) {
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
     // every field but the name has a default, so a sparse profile loads rather than failing
-    v3d::config::CameraProfiles profiles(logger());
+    v3d::engine::CameraProfiles profiles(logger());
     BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"Bare\"}]}")));
 
     const v3d::type::camera::Profile bare = profiles.get("Bare");
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_defaults_test) {
 }
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
-    v3d::config::CameraProfiles profiles(logger());
+    v3d::engine::CameraProfiles profiles(logger());
 
     BOOST_CHECK(!profiles.load(config("{}")));
     BOOST_CHECK(!profiles.load(config("{\"cameras\": {}}")));
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(cameraprofiles_rejects_test) {
  * A vector holding something other than numbers is the wrong shape, and the default is kept.
  **/
 BOOST_AUTO_TEST_CASE(cameraprofiles_vector_of_strings_test) {
-    v3d::config::CameraProfiles profiles(logger());
+    v3d::engine::CameraProfiles profiles(logger());
 
     BOOST_CHECK_NO_THROW(BOOST_REQUIRE(profiles.load(config("{\"cameras\": [{\"name\": \"a\", \"eye\": [\"x\", 1, 2]}]}"))));
     BOOST_CHECK(profiles.has("a"));

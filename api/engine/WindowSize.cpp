@@ -9,7 +9,7 @@
 
 #include <optional>
 
-namespace v3d::config {
+namespace v3d::engine {
 
 std::optional<glm::ivec2> windowSize(const boost::json::object& document) {
     const boost::json::object* window = v3d::asset::readObject(document, "window");
@@ -24,4 +24,4 @@ std::optional<glm::ivec2> windowSize(const boost::json::object& document) {
     return glm::ivec2(*width, *height);
 }
 
-};  // namespace v3d::config
+};  // namespace v3d::engine
