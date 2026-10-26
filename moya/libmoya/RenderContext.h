@@ -20,18 +20,18 @@
 #include <moya/libmoya/reyes/Samples.h>
 
 #include "Attributes.h"
+#include "Display.h"
 #include "FrameBuffer.h"
 #include "Lights.h"
 #include "Polygon.h"
+#include "Progress.h"
 #include "Shaders.h"
 #include "Shading.h"
 #include "TracedScene.h"
 #include "Transforms.h"
 
 #include <cstddef>
-#include <functional>
 #include <vector>
-#include <map>
 #include <string>
 
 namespace v3d::moya {
@@ -79,17 +79,10 @@ class RenderContext {
         void render();
 
         /**
-         * Told how much of the frame the hider has finished, from 0 to 1, after each bucket of
-         * the reyes hider and each row of the ray-trace hider. It returns false to stop the
-         * render there. It runs on whatever thread renders.
-         **/
-        using Progress = std::function<bool(float done)>;
-
-        /**
          * Set what is told the render's progress. An empty callback is told nothing, and the
          * render runs to its end. The callback outlives every world, as an option does not.
          **/
-        void progress(const Progress& callback);
+        void progress(const Progress::Callback& callback);
 
         /**
          * Tell the progress callback how far the hider has got.
@@ -500,16 +493,10 @@ class RenderContext {
         boost::shared_ptr<FrameBuffer> frameBuffer_;
         boost::shared_ptr<reyes::Samples> samples_;
         Progress progress_;
-        bool stopped_ = false;
         v3d::render::offline::CameraOptions options_;
         v3d::render::offline::Camera camera_;
-        v3d::render::offline::rib::CropWindow crop_;
+        Display display_;
         boost::shared_ptr<Hider> hider_;
-        // an empty display name writes no file. RI's default display is a framebuffer,
-        // which moya does not have
-        std::string displayName_;
-        std::string displayType_;
-        std::string displayMode_;
         v3d::render::offline::Sampling sampling_;
 
         /*

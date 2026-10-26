@@ -5,7 +5,6 @@
 
 #include "RenderContext.h"
 
-#include <api/image/Factory.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/Area.h>
 #include <api/render/offline/Camera.h>
@@ -44,10 +43,12 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
+#include "Display.h"
 #include "FrameBuffer.h"
 #include "Hider.h"
 #include "Lights.h"
 #include "Polygon.h"
+#include "Progress.h"
 #include "RayHider.h"
 #include "Shaders.h"
 #include "Shading.h"
@@ -786,9 +787,7 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
 }
 
 void RenderContext::display(const v3d::render::offline::rib::Display & display) {
-    displayName_ = display.name;
-    displayType_ = display.type;
-    displayMode_ = display.mode;
+    display_.request(display);
 }
 
 void RenderContext::display(const v3d::render::offline::rib::Display & display,
@@ -800,30 +799,18 @@ void RenderContext::display(const v3d::render::offline::rib::Display & display,
 }
 
 void RenderContext::cropWindow(const v3d::render::offline::rib::CropWindow & window) {
-    v3d::render::offline::rib::CropWindow held;
-    held.xmin = std::clamp(window.xmin, 0.0F, 1.0F);
-    held.xmax = std::clamp(window.xmax, 0.0F, 1.0F);
-    held.ymin = std::clamp(window.ymin, 0.0F, 1.0F);
-    held.ymax = std::clamp(window.ymax, 0.0F, 1.0F);
-    // the negated test also refuses a bound that is not a number
-    if (!(held.xmin < held.xmax) || !(held.ymin < held.ymax)) {
+    if (!display_.crop(window)) {
         logger_->get()->warn("a crop window from ({}, {}) to ({}, {}) has no area, and is not used",
             window.xmin, window.ymin, window.xmax, window.ymax);
-        return;
     }
-    crop_ = held;
 }
 
 glm::uvec4 RenderContext::cropped() const {
-    const auto first = [](unsigned int size, float fraction) {
-        return static_cast<unsigned int>(std::ceil(static_cast<float>(size) * fraction));  // checked: the fraction is held to [0, 1]
-    };
-    return glm::uvec4(first(options_.width(), crop_.xmin), first(options_.width(), crop_.xmax), first(options_.height(), crop_.ymin),
-        first(options_.height(), crop_.ymax));
+    return display_.cropped(options_.width(), options_.height());
 }
 
 const std::string & RenderContext::displayName() const {
-    return displayName_;
+    return display_.name();
 }
 
 void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
@@ -832,19 +819,16 @@ void RenderContext::bucket(v3d::render::offline::FrameBuffer* planes) {
     samples_->resolve(planes, FrameBuffer::RED, FrameBuffer::COVERAGE, FrameBuffer::DEPTH);
 }
 
-void RenderContext::progress(const Progress& callback) {
-    progress_ = callback;
+void RenderContext::progress(const Progress::Callback& callback) {
+    progress_.callback(callback);
 }
 
 bool RenderContext::report(float done) {
-    if (!stopped_ && progress_ && !progress_(done)) {
-        stopped_ = true;
-    }
-    return !stopped_;
+    return progress_.report(done);
 }
 
 bool RenderContext::stopped() const noexcept {
-    return stopped_;
+    return progress_.stopped();
 }
 
 void RenderContext::render() {
@@ -852,7 +836,7 @@ void RenderContext::render() {
         return;
     }
 
-    stopped_ = false;
+    progress_.begin();
     // the reyes hider meets the traced scene only through a shader's trace or transmission
     if (!hider_->traces() && !shaders_->traces()) {
         traced_.scene().clear();
@@ -863,7 +847,7 @@ void RenderContext::render() {
     hider_->render(this, planes.get());
     const std::chrono::duration<double> took = std::chrono::steady_clock::now() - started;
     logger_->get()->info("rendered {} by {} pixels in {:.3f} s", planes->width(), planes->height(), took.count());
-    if (stopped_) {
+    if (progress_.stopped()) {
         return;
     }
 
@@ -875,34 +859,7 @@ void RenderContext::render() {
         imager.run(frameBuffer_->planes().get(), FrameBuffer::COVERAGE);
     }
 
-    // a pixel outside the crop window is empty, as a pixel nothing was drawn into is. A
-    // filter wider than a pixel spreads samples from inside the window into the pixels just
-    // past it, so the pixels are cleared after the hider and the imager rather than skipped
-    const glm::uvec4 window = cropped();
-    v3d::render::offline::FrameBuffer & written = *frameBuffer_->planes();
-    for (unsigned int row = 0; row < written.height(); row++) {
-        for (unsigned int column = 0; column < written.width(); column++) {
-            if (column >= window.x && column < window.y && row >= window.z && row < window.w) {
-                continue;
-            }
-            for (unsigned int plane = 0; plane < written.planes(); plane++) {
-                written.value(plane, column, row, plane == FrameBuffer::DEPTH ? std::numeric_limits<float>::max() : 0.0F);
-            }
-        }
-    }
-
-    // a display named nothing, or one that is not a file, leaves the samples in the
-    // planes rather than writing them
-    if (displayName_.empty() || displayType_ != "file") {
-        return;
-    }
-
-    // only the three colour channels are written, whatever the display mode. The coverage
-    // and depth planes stay in the framebuffer
-    v3d::image::Factory factory(logger_);
-    if (!factory.write(displayName_, frameBuffer_->planes()->image(FrameBuffer::CHANNELS))) {
-        logger_->get()->error("the picture could not be written to '{}'", displayName_);
-    }
+    display_.finish(frameBuffer_->planes().get(), logger_);
 }
 
 };  // namespace v3d::moya
