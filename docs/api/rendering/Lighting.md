@@ -4,6 +4,56 @@ The lit pass draws meshes with lights, shadows and skinning. Meshes come from th
 registry described in [TexturesAndMeshes.md](TexturesAndMeshes.md). The lighting settings and
 the shadow functions are in `realtime::lighting`, in `api/render/realtime/lighting/`.
 
+## A lit scene
+
+`LitScene` is the lit pass with everything around it: the shadow map, the sRGB target the scene
+is drawn into, the lit renderer, and the grade that carries the scene into the app's own pass.
+An app builds one and calls `draw()` once a frame.
+
+```cpp
+auto context = renderer_->context();
+scene_ = boost::make_shared<LitScene>(*context, LitScene::Spec{.width = width, .height = height,
+    .output = context->colourFormat(), .shadowTexels = 2048, .cascades = 3});
+
+void MyApp::tick(unsigned int delta) {
+    glm::ivec2 size;
+    if (!renderer_->beginFrame(&size)) {
+        return;
+    }
+    const auto cascades = lighting::fitCascades(camera.projection() * camera.view(),
+        lighting::splitView(near, 120.0F, 3, 0.75F), settings.light, {.texels = 2048});
+    boost::shared_ptr<Frame> frame = renderer_->frame();
+    Pass* lit = scene_->draw(frame.get(), frame->pass(WindowRenderer::colourPass).get(), registry(),
+        *meshes_, {.view = camera.view(), .projection = camera.projection(), .settings = settings,
+        .shadows = *cascades, .alpha = alpha(), .poses = entity::poses(registry(), alpha(), *meshes_)});
+    // anything else drawn into the colour pass goes after the grade, such as the ui
+    renderer_->renderFrame();
+}
+```
+
+- **`Shot::shadows` is what the shadows are drawn through.** `std::monostate` draws none. A
+  `glm::mat4` from `lighting::shadowLight()` is one map, and every caster is drawn into it. A
+  `lighting::Cascades` from `fitCascades()` draws a shadow pass for each cascade, and leaves out
+  a static caster that cannot reach it.
+- **`draw()` builds the passes in an order that records correctly.** Each cascade's shadow pass
+  draws into its layer of the map. The lit pass reads the map, and the pass the grade goes into
+  reads the scene target, so the frame records shadow, lit, then the app's pass, whatever order
+  the passes were made in.
+- **The passes are named after the scene**: `Spec::name`, which defaults to `"lit"`, and
+  `"lit shadow 0"` upwards. Two scenes in one frame have passes of their own.
+- **The grade covers the whole of the pass it goes into.** Call `draw()` before anything else
+  is submitted to that pass.
+- **`draw()` returns the lit pass**, for draws of the app's own after the meshes, such as world
+  quads built against `target()`'s formats.
+- **Call `resize()` when the window changes size.** The scene target is replaced, and the grade
+  reads the new one from the next frame.
+- A scene built with `shadowTexels` of zero has no map. A frame that names shadows for it
+  throws, and so does one that names more cascades than the map has layers.
+- `lit()` and `grade()` give the parts the scene holds, for an app that adds draws to the lit
+  pass or changes the grade's table.
+
+The sections below describe those parts, for an app that composes the passes itself.
+
 ## The lit pass
 
 `renderer::Lit` draws registered meshes with light, cast shadows and an outline. A lit

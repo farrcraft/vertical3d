@@ -13,7 +13,7 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Grade.h>
+#include <api/render/realtime/LitScene.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/entity/Particles.h>
@@ -35,11 +35,14 @@
 #include <api/type/camera/Isometric.h>
 #include <api/type/effect/Weather.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -51,6 +54,7 @@
 
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::Frame;
+using v3d::render::realtime::LitScene;
 using v3d::render::realtime::MeshHandle;
 using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
@@ -366,6 +370,61 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     BOOST_CHECK_EQUAL(at(0, 0), 1.0F);
 }
 
+/**
+ * A cube that casts on a ground that does not, and a camera looking down on them, for the lit
+ * scene cases. The output is a target of the headless context's format, which is the format a
+ * window's colour pass draws into.
+ **/
+struct Stage final {
+    explicit Stage(v3d::test::Headless* headless) :
+        assets(boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger)),
+        meshes(headless->logger, headless->context, assets),
+        output(boost::make_shared<RenderTarget>(*headless->context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat})) {
+        v3d::asset::media::registerLoaders(*assets, headless->logger);
+        place(&registry, meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F))), glm::vec3(0.0F, 0.5F, 0.0F),
+            glm::vec3(1.0F), true);
+        place(&registry, meshes.add("ground", cube(glm::vec4(1.0F))), glm::vec3(0.0F, -0.05F, 0.0F),
+            glm::vec3(6.0F, 0.1F, 6.0F), false);
+        v3d::type::camera::Isometric orbit;
+        orbit.target(glm::vec3(0.0F));
+        orbit.zoom(3.0F);
+        camera.profile().clipping(glm::vec2(0.1F, 100.0F));
+        orbit.apply(&camera);
+        camera.createProjection();
+        camera.createView();
+    }
+
+    /** A shot through the camera, with the given shadows. **/
+    LitScene::Shot shot(const LitScene::Shadows& shadows) const {
+        return LitScene::Shot{.view = camera.view(), .projection = camera.projection(), .shadows = shadows};
+    }
+
+    /** The light matrix of one map fitted to the casters. **/
+    glm::mat4 light() const {
+        const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0F});
+        BOOST_REQUIRE(bounds);
+        return lighting::shadowLight(lighting::Settings().light, *bounds);
+    }
+
+    boost::shared_ptr<v3d::asset::Manager> assets;
+    MeshRegistry meshes;
+    entt::registry registry;
+    v3d::type::camera::Camera camera;
+    boost::shared_ptr<RenderTarget> output;
+};
+
+/**
+ * @return the names of a frame's passes, in the order the frame records them
+ **/
+std::vector<std::string> recorded(const Frame& frame) {
+    std::vector<std::string> names;
+    for (const boost::shared_ptr<Pass>& pass : frame.ordered()) {
+        names.push_back(pass->name());
+    }
+    return names;
+}
+
 BOOST_AUTO_TEST_SUITE(lit_scene_test)
 
 /**
@@ -568,12 +627,12 @@ BOOST_AUTO_TEST_CASE(a_shadow_falls_on_the_ground) {
  * A full-size lit game scene built from the asset suite's fixtures. It holds a ground that casts
  * nothing, two upright figures and ten props at set yaws, under one key light at the defaults of
  * lighting::Settings. It is seen through an orthographic camera at 45 degrees at 1280 by 720.
- * The frame is a shadow pass, the lit scene into an sRGB target, and a grade into a target in
- * an sRGB swapchain format. The grade uses the identity table.
+ * A LitScene draws it: a shadow pass, the lit scene into an sRGB target, and a grade into a
+ * target in an sRGB swapchain format. The grade uses the identity table.
  *
- * The passes are created in the opposite order, grade first, as an engine creates its colour
- * pass before a game adds anything. Each pass names what it reads, so the frame must record a
- * pass that draws into a target before any pass that reads it.
+ * The pass the grade goes into is created first, as an engine creates its colour pass before a
+ * game adds anything. The frame still records the shadow pass, then the lit pass, then the
+ * grade, because each names what it reads.
  *
  * Lighting, PCF and filtering are left to the implementation, so there is no reference picture.
  * The case checks that the validation layer reports no errors, here and on lavapipe in CI, and
@@ -586,10 +645,6 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     const VkFormat swapchainFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
     v3d::test::Headless headless(swapchainFormat, frameWidth, frameHeight);
-    const boost::shared_ptr<RenderTarget> scene = boost::make_shared<RenderTarget>(*headless.context,
-        RenderTarget::Spec{.width = frameWidth, .height = frameHeight, .colour = swapchainFormat, .depth = true});
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless.context,
-        RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
         RenderTarget::Spec{.width = frameWidth, .height = frameHeight, .colour = swapchainFormat});
 
@@ -605,9 +660,8 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
     BOOST_REQUIRE(meshes.resolve(primitives) != nullptr);
     BOOST_REQUIRE(meshes.resolve(textured) != nullptr);
 
-    Lit lit(*headless.context, Lit::Spec{.colour = swapchainFormat, .depth = scene->depthFormat(), .shadow = map->depthFormat()});
-    v3d::render::realtime::Grade grade(*headless.context, v3d::render::realtime::Grade::Spec{.colour = swapchainFormat});
-    const v3d::render::realtime::MaterialHandle graded = grade.source(*scene);
+    LitScene lit(*headless.context, LitScene::Spec{.width = frameWidth, .height = frameHeight, .output = swapchainFormat,
+        .shadowTexels = mapSize, .clearColour = glm::vec4(0.25F, 0.3F, 0.35F, 1.0F)});
 
     entt::registry registry;
     const auto stand = [&registry](const MeshHandle& mesh, const glm::vec3& position, float yaw, const glm::vec3& scale,
@@ -648,40 +702,19 @@ BOOST_AUTO_TEST_CASE(full_lit_scene_is_drawn_and_silent) {
         BOOST_ERROR("a scene with casters gave no fit");
         return;
     }
-    const glm::mat4 light = lighting::shadowLight(settings.light, *bounds);
-    VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / static_cast<float>(mapSize)),
-        headless.context->textures()->depthTexture(*map));
-
     Frame frame;
     const boost::shared_ptr<Pass> post = frame.pass("grade");
     post->target(output);
-    post->reads(scene);
-    grade.submit(graded, post.get());
-
-    const boost::shared_ptr<Pass> drawn = frame.pass("lit");
-    drawn->target(scene);
-    drawn->depth(true);
-    drawn->reads(map);
-    drawn->clearColour(glm::vec4(0.25F, 0.3F, 0.35F, 1.0F));
-    drawn->camera(camera.view(), camera.projection());
-    drawn->scene(sceneSet);
-    v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, drawn.get());
-
-    const boost::shared_ptr<Pass> casting = frame.pass("shadow");
-    casting->target(map);
-    casting->depth(true);
-    casting->scene(sceneSet);
-    casting->depthBias(settings.constantBias, settings.slopeBias);
-    v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, casting.get());
+    lit.draw(&frame, post.get(), registry, meshes, {.view = camera.view(), .projection = camera.projection(),
+        .settings = settings, .shadows = lighting::shadowLight(settings.light, *bounds)});
 
     const std::vector<boost::shared_ptr<Pass>> ordered = frame.ordered();
     BOOST_REQUIRE_EQUAL(ordered.size(), 3U);
-    BOOST_CHECK_EQUAL(ordered[0]->name(), "shadow");
+    BOOST_CHECK_EQUAL(ordered[0]->name(), "lit shadow 0");
     BOOST_CHECK_EQUAL(ordered[1]->name(), "lit");
     BOOST_CHECK_EQUAL(ordered[2]->name(), "grade");
 
     const boost::shared_ptr<v3d::image::Image> picture = headless.picture(frame, *output, "data_out/lit_scene.png");
-    grade.release(graded);
     BOOST_REQUIRE(picture);
     BOOST_CHECK(headless.silent());
 
@@ -979,6 +1012,143 @@ BOOST_AUTO_TEST_CASE(rain_falls_in_a_lit_scene) {
     BOOST_CHECK(headless.silent());
     BOOST_CHECK(!v3d::image::compare(*frames[0], *frames[1], 0).match);
     BOOST_CHECK(!v3d::image::compare(*frames[1], *frames[2], 0).match);
+}
+
+/**
+ * A scene of three cascades draws a shadow pass for each, into the layer of its cascade, ahead
+ * of the lit pass and the grade, whatever order the frame was built in.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_scene_draws_a_shadow_pass_per_cascade) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene scene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
+        .shadowTexels = 256, .cascades = 3});
+
+    const std::vector<float> splits = lighting::splitView(0.1F, 20.0F, 3, 0.75F);
+    const std::optional<lighting::Cascades> cascades = lighting::fitCascades(
+        stage.camera.projection() * stage.camera.view(), splits, lighting::Settings().light, {.texels = 256});
+    BOOST_REQUIRE(cascades);
+
+    Frame frame;
+    const boost::shared_ptr<Pass> into = frame.pass("grade");
+    into->target(stage.output);
+    const Pass* drawn = scene.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(*cascades));
+    BOOST_CHECK_EQUAL(drawn->name(), "lit");
+
+    const std::vector<std::string> expected{"lit shadow 0", "lit shadow 1", "lit shadow 2", "lit", "grade"};
+    BOOST_CHECK(recorded(frame) == expected);
+    for (uint32_t cascade = 0; cascade < 3; cascade++) {
+        BOOST_CHECK_EQUAL(frame.pass("lit shadow " + std::to_string(cascade))->layer(), cascade);
+    }
+
+    BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_cascades.png"));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A scene built with no shadow has no map and draws no shadow pass. A frame that names shadows
+ * for it is refused, since there is nowhere to draw them.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_scene_with_no_shadow_draws_no_shadow_pass) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene scene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
+        .shadowTexels = 0});
+
+    Frame frame;
+    const boost::shared_ptr<Pass> into = frame.pass("grade");
+    into->target(stage.output);
+    scene.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
+    BOOST_CHECK((recorded(frame) == std::vector<std::string>{"lit", "grade"}));
+    BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_unshadowed.png"));
+
+    Frame shadowed;
+    const boost::shared_ptr<Pass> again = shadowed.pass("grade");
+    BOOST_CHECK_THROW(scene.draw(&shadowed, again.get(), stage.registry, stage.meshes, stage.shot(stage.light())),
+        std::runtime_error);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A frame that names more cascades than the map has layers is refused before anything is
+ * added to it.
+ **/
+BOOST_AUTO_TEST_CASE(a_lit_scene_refuses_more_cascades_than_its_map_holds) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene scene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
+        .shadowTexels = 256, .cascades = 2});
+
+    lighting::Cascades three;
+    three.count = 3;
+    Frame frame;
+    const boost::shared_ptr<Pass> into = frame.pass("grade");
+    BOOST_CHECK_THROW(scene.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(three)), std::runtime_error);
+    BOOST_CHECK_EQUAL(frame.ordered().size(), 1U);
+    BOOST_CHECK_THROW(LitScene(*headless.context, LitScene::Spec{.width = width, .height = height, .output = colourFormat,
+        .cascades = lighting::maximumCascades + 1}), std::runtime_error);
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * Two scenes drawn into one frame each have passes of their own, named after the scene, and both
+ * are recorded ahead of the pass that grades them.
+ **/
+BOOST_AUTO_TEST_CASE(two_lit_scenes_in_one_frame_have_passes_of_their_own) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene near(*headless.context, LitScene::Spec{.name = "near", .width = width, .height = height,
+        .output = colourFormat, .shadowTexels = 256});
+    LitScene far(*headless.context, LitScene::Spec{.name = "far", .width = width / 2, .height = height / 2,
+        .output = colourFormat, .shadowTexels = 0});
+
+    Frame frame;
+    const boost::shared_ptr<Pass> into = frame.pass("grade");
+    into->target(stage.output);
+    near.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(stage.light()));
+    far.draw(&frame, into.get(), stage.registry, stage.meshes, stage.shot(std::monostate()));
+
+    const std::vector<std::string> names = recorded(frame);
+    BOOST_REQUIRE_EQUAL(names.size(), 4U);
+    BOOST_CHECK_EQUAL(names.back(), "grade");
+    BOOST_CHECK(std::find(names.begin(), names.end(), "near shadow 0") < std::find(names.begin(), names.end(), "near"));
+    BOOST_CHECK(std::find(names.begin(), names.end(), "far") != names.end());
+    BOOST_REQUIRE(headless.picture(frame, *stage.output, "data_out/lit_scene_two.png"));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A resized scene draws into a target of the new size, and the grade reads that target. The
+ * old one is retired, so a frame that still reads it finishes first.
+ **/
+BOOST_AUTO_TEST_CASE(a_resized_lit_scene_grades_its_new_target) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const Stage stage(&headless);
+    LitScene scene(*headless.context, LitScene::Spec{.width = width / 2, .height = height / 2, .output = colourFormat,
+        .shadowTexels = 256});
+
+    Frame before;
+    const boost::shared_ptr<Pass> first = before.pass("grade");
+    first->target(stage.output);
+    scene.draw(&before, first.get(), stage.registry, stage.meshes, stage.shot(stage.light()));
+    BOOST_REQUIRE(headless.picture(before, *stage.output, "data_out/lit_scene_small.png"));
+
+    scene.resize(width, height);
+    BOOST_CHECK_EQUAL(scene.target().extent().width, width);
+    BOOST_CHECK_EQUAL(scene.target().extent().height, height);
+
+    Frame after;
+    const boost::shared_ptr<Pass> second = after.pass("grade");
+    second->target(stage.output);
+    scene.draw(&after, second.get(), stage.registry, stage.meshes, stage.shot(stage.light()));
+    const boost::shared_ptr<v3d::image::Image> picture = headless.picture(after, *stage.output, "data_out/lit_scene_resized.png");
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+
+    // the crate is red under the light, at the centre of the view
+    const unsigned char* centre = picture->data() + (((static_cast<std::size_t>(height / 2) * width) + (width / 2)) * 4);
+    BOOST_CHECK_GT(centre[0], 100);
+    BOOST_CHECK_LT(centre[1], 60);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

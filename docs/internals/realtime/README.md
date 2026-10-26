@@ -5,10 +5,10 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
 in [api/render/realtime](../../../api/render/realtime). The root holds what an app names: the
-contexts, the frame and its recorder, render targets, meshes, materials and the handle registry,
-and the stores a context owns. `renderer/` holds the renderers, `canvas/` the canvases an app
-fills on the CPU, `entity/` the functions that draw ECS entities, and `lighting/` the lit pass's
-settings and shadow fitting.
+contexts, the frame and its recorder, render targets, meshes, materials, the handle registry and
+the stores a context owns. The lit scene and the grade there compose renderers into passes.
+`renderer/` holds the renderers, `canvas/` the canvases an app fills on the CPU, `entity/` the
+functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
 
 `vulkan/` holds the wrappers over Vulkan objects, split into `vulkan/device`, `vulkan/frame`,
 `vulkan/memory` and `vulkan/pipeline`. **Nothing in `vulkan/` includes a header above it.** It

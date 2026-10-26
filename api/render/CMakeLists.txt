@@ -25,6 +25,7 @@ v3d_add_api_library(render
 	"realtime/lighting/SceneUniforms.h" "realtime/lighting/SceneUniforms.cpp"
 	"realtime/lighting/Shadow.h" "realtime/lighting/Shadow.cpp"
 	"realtime/Grade.h" "realtime/Grade.cpp"
+	"realtime/LitScene.h" "realtime/LitScene.cpp"
 	"realtime/SortKey.h" "realtime/SortKey.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"

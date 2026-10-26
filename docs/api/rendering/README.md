@@ -13,7 +13,7 @@ All names are in `v3d::render::realtime` unless a namespace is given. `vulkan::`
 | [Canvas.md](Canvas.md) | Draw 2D quads and text, in pixels or in a coordinate space of your own |
 | [LinesAndWorldQuads.md](LinesAndWorldQuads.md) | Draw lines and textured quads in world space, and order them by depth |
 | [TexturesAndMeshes.md](TexturesAndMeshes.md) | Upload textures, load models through the mesh registry, and release both |
-| [Lighting.md](Lighting.md) | Draw lit, shadowed and skinned meshes |
+| [Lighting.md](Lighting.md) | Draw a lit scene, and lit, shadowed and skinned meshes |
 | [ColourAndPost.md](ColourAndPost.md) | Get colour right, and add full-screen passes and a colour grade |
 | [Entities.md](Entities.md) | Draw ECS entities with the api's sprite, mesh and particle functions |
 
