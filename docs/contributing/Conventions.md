@@ -46,7 +46,7 @@ compiles just as well. To check for mistakes, run this over the source directori
 repository root, whose `out/` directory holds the vcpkg installs):
 
 ```
-grep -rn '#include "[^"]*/' api moya pong tetris voxel odyssey vertical3d imagetool examples
+grep -rn '#include "[^"]*/' api moya demos vertical3d imagetool examples
 ```
 
 It should report only generated `.inc` headers. Searching for `../` alone is not enough, because

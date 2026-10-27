@@ -41,7 +41,8 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 
 ## The applications
 
-Each application is a top-level directory and builds with the libraries.
+Each application builds with the libraries. vertical3d, moya and imagetool are top-level
+directories. The four demos, voxel, pong, tetris and odyssey, are under [demos/](demos/).
 
 | Application | What it is |
 |---|---|
@@ -73,7 +74,8 @@ Start with the documents for what you are doing:
 | Changing the renderer or the UI library | [docs/internals/](docs/internals/) |
 | Working on moya or the offline renderer | [docs/offline/](docs/offline/README.md) |
 | Working on the vertical3d editor | [docs/editor/](docs/editor/README.md) |
-| Working on a game or a tool | [docs/Games.md](docs/Games.md) |
+| Working on a demo | [docs/Demos.md](docs/Demos.md) |
+| Working on imagetool | [docs/Imagetool.md](docs/Imagetool.md) |
 | Reading an example | [examples/README.md](examples/README.md) |
 | Asking why something is designed as it is | [docs/adr/](docs/adr/), the architecture decision records |
 

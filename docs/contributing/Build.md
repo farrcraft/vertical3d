@@ -318,7 +318,7 @@ ninja -C out/build/starter
   `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_asset_media` adds that directory to its own
   include path. Its implementation is compiled once, in
   [api/asset/media/loader/CgltfImpl.cpp](../../api/asset/media/loader/CgltfImpl.cpp). That file is
-  excluded from both static analysers, as `voxel/src/noise/noiseutils.cpp` is.
+  excluded from both static analysers, as `demos/voxel/src/noise/noiseutils.cpp` is.
 - **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
   points at nothing. vcpkg still works, because the build uses the toolchain file.
 - **voxel will not link until libnoise is built.** `vendor/libnoise` is a git submodule and is

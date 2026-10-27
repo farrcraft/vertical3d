@@ -123,7 +123,7 @@ dropped is a defect even if it builds.
 ```
 cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=voxel/src/noise --recursive .
+  --exclude=demos/voxel/src/noise --recursive .
 ```
 
 **The tree is clean at this command**, so every finding is a real one and a report of zero

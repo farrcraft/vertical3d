@@ -49,8 +49,8 @@ suites there too. [Build.md](Build.md#building-off-msvc) lists them.
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
 - **One more for the frame loop on a real window**, `render_window`, from
   `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
-- **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
-  and voxel, each in `<app>/tests/`.
+- **One suite per app that has logic worth testing**, in the app's `tests/` directory: moya,
+  vertical3d, and the four demos under `demos/`.
 - **One more for the editor on a real device**, `vertical3d_device`, from
   `vertical3d/tests/device/`. It draws the editor's shaded pass through the render device
   suite's headless device, whose `Headless.cpp` it compiles. It skips where there is no device,

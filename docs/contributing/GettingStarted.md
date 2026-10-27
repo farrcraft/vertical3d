@@ -130,10 +130,10 @@ beside it:
 
 | App | Executable |
 |---|---|
-| pong | `out/build/x64-Debug/pong/pong.exe` |
-| tetris | `out/build/x64-Debug/tetris/tetris.exe` |
-| voxel | `out/build/x64-Debug/voxel/voxel.exe` |
-| odyssey | `out/build/x64-Debug/odyssey/Odyssey.exe` |
+| pong | `out/build/x64-Debug/demos/pong/pong.exe` |
+| tetris | `out/build/x64-Debug/demos/tetris/tetris.exe` |
+| voxel | `out/build/x64-Debug/demos/voxel/voxel.exe` |
+| odyssey | `out/build/x64-Debug/demos/odyssey/Odyssey.exe` |
 | vertical3d (the editor) | `out/build/x64-Debug/vertical3d/vertical3d.exe` |
 | moya | `out/build/x64-Debug/moya/moya/moya.exe` |
 | imagetool | `out/build/x64-Debug/imagetool/imagetool.exe` |

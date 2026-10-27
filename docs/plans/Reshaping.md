@@ -542,15 +542,27 @@ where component selection lives.
 
 ### Step 17 — demos/
 
-**Open.**
+**Closed.**
 
-- pong, tetris, voxel and odyssey move to `demos/`, built by the root project.
-- CI, the link rule, failsfirst, the cpplint exclusions and every path in the documents follow.
-- `Games.md` becomes the demos' page, and says which api features each demo shows.
+- pong, tetris, voxel and odyssey are in `demos/`, which the root project adds as one
+  directory. A demo's sources include each other from the repository root, as
+  `<demos/pong/src/Ball.h>`, and its executable is built under `demos/` in the build tree.
+- The cpplint exclusion is `demos/voxel/src/noise`, in CI and every document that gives the
+  command. The link rule, failsfirst and the clang-tidy header filter name no app's directory,
+  so they needed no change.
+- `Games.md` is `Demos.md`. It opens with a table of what each demo shows. imagetool is not a
+  demo, and has a page of its own, `Imagetool.md`.
+- **Found on the way:** `Games.md` still described pong saving its own key settings, a
+  snapshot in `simulate()`, and `GameMenu` wired by hand, all of which step 6 replaced. The
+  page now describes the engine saving a rebinding, `interpolate<T>()`, and the shell.
+- **Found on the way:** `api/asset/Manifest.h` and `Manifest.cpp` included `"kind/Json.h"`,
+  which cpplint's include order check reports and the include rule forbids. Both name it from
+  the root now.
+- No new case: nothing changed behaviour. Every suite passes from its new directory.
 
 ### Step 18 — odyssey on the shell
 
-**Open.** Needs step 17.
+**Open.**
 
 - odyssey gets the game menu and the overlay, and its empty stubs go.
 - Its layout and target name match the other demos.
@@ -559,7 +571,7 @@ where component selection lives.
 
 ### Step 19 — A lit demo
 
-**Open.** Needs steps 8 and 17.
+**Open.**
 
 - A demo draws a lit scene with shadows from a glTF model, and plays a placed voice.
 

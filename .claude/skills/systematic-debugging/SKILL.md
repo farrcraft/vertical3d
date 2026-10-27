@@ -67,7 +67,7 @@ Most defects here are a divergence from a pattern the codebase already gets righ
   odyssey) all run through `v3d::engine::run<T>` on the `api/` framework. For anything
   app-shaped — config, asset loading, engine initialisation, renderer construction — read how
   a working game does it before theorising about why another one does not.
-  `docs/Games.md` says which api features each game is the best example of.
+  `docs/Demos.md` says which api features each demo is the best example of.
 - Find the nearest working equivalent and read it **completely**, not just the line you
   expect to differ. List every difference, then justify each one. The bug is almost always
   in a difference you would have dismissed.

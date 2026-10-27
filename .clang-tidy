@@ -60,7 +60,7 @@ Checks: >
 #
 # The pattern is matched against the include as spelled rather than against a resolved path, so
 # the vendored header is named by its own last two segments - what reaches the filter is
-# voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
+# demos\voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)|(.*[\\/]noise[\\/]noiseutils\.h)'
 

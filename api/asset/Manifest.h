@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 
 #include <string>
@@ -12,7 +13,6 @@
 #include <unordered_map>
 
 #include "Manager.h"
-#include "kind/Json.h"
 
 #include <boost/shared_ptr.hpp>
 

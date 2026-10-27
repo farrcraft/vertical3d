@@ -16,4 +16,4 @@ jobs:
     # pinned: a newer cpplint can add checks, so a version bump can turn the tree red without
     # a code change
     - run: pip install cpplint==2.0.2
-    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=voxel/src/noise --recursive .
+    - run: cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed --exclude=demos/voxel/src/noise --recursive .

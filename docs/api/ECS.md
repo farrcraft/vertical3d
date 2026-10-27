@@ -91,9 +91,10 @@ Each is a plain value. Write its fields directly; there are no setters. `Transfo
 
 A component does not need to live in `api/ecs`. Define the rest beside the app's own code. pong
 keeps `Position1D`, `Position2D`, `Color3`, `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and
-`Direction` in [pong/src/component/](../../pong/src/component). Its two positions each have an
-`interpolate()` beside them, so the engine can draw them between steps. Any type works as a
-component: odyssey's player stands on a `grid::TileCoord`, the type its pathfinding already uses.
+`Direction` in [demos/pong/src/component/](../../demos/pong/src/component). Its two positions
+each have an `interpolate()` beside them, so the engine can draw them between steps. Any type
+works as a component: odyssey's player stands on a `grid::TileCoord`, the type its pathfinding
+already uses.
 
 ### Transform
 

@@ -5,11 +5,11 @@
 
 #include "Manifest.h"
 
+#include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 
 #include "Json.h"
 #include "Manager.h"
-#include "kind/Json.h"
 
 #include <optional>
 #include <string>

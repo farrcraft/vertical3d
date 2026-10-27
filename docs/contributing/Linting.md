@@ -36,7 +36,7 @@ Run it on the whole tree from the repository root:
 ```
 cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=voxel/src/noise --recursive .
+  --exclude=demos/voxel/src/noise --recursive .
 ```
 
 **The expected output is zero errors.**
@@ -46,7 +46,7 @@ The excludes:
 - `out`, `vendor` and `vcpkg_installed` exist only on a developer machine. They hold far more
   files than the project, mostly third-party headers. CI checks out no submodules and installs no
   packages, so it has none of them.
-- `voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
+- `demos/voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
   too.
 
 `--exclude` removes files from the lint, not from the directory walk, so a run still walks the
@@ -108,7 +108,7 @@ repository does not own.
 
 Two third-party files are excluded from both analysers:
 
-- `voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
+- `demos/voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
   compile the same file.
 - `api/asset/media/loader/CgltfImpl.cpp`.
 

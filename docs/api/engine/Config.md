@@ -20,7 +20,7 @@ naming a kind and another file in `data/`.
 }
 ```
 
-pong's [data/](../../../pong/data) directory is a complete example.
+pong's [data/](../../../demos/pong/data) directory is a complete example.
 
 A kind is any name. The library that reads a kind declares its name as a constant, and the api
 reads these:
