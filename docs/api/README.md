@@ -32,7 +32,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`grid`](../../api/grid/) | Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry. |
 | [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
-| [`interchange`](../../api/interchange/) | Scenes read from glTF in no format's terms: nodes, polygon meshes, cameras, lights and keys. See [Interchange.md](Interchange.md). |
+| [`interchange`](../../api/interchange/) | Scenes read from glTF in no format's terms: nodes, polygon meshes, cameras, lights, curves and keys. See [Interchange.md](Interchange.md). |
 | [`interchange_usd`](../../api/interchange/usd/) | The USD reader, which fills the same scene. It is the one library that links OpenUSD. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
@@ -66,8 +66,8 @@ Boost.
 | `model` | animation | glm |
 | `font` | log, image | FreeType, glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
-| `interchange` | asset, type | cgltf, glm |
-| `interchange_usd` | interchange, type | **OpenUSD**, glm |
+| `interchange` | asset, curve, type | cgltf, glm |
+| `interchange_usd` | interchange, curve, type | **OpenUSD**, glm |
 | `asset_media` | log, animation, asset, image, interchange, model | glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |

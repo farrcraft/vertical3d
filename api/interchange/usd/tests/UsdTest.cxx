@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/curve/Curve.h>
 #include <api/interchange/Scene.h>
 #include <api/interchange/usd/Usd.h>
 
@@ -11,10 +12,12 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
@@ -212,6 +215,69 @@ BOOST_AUTO_TEST_CASE(usd_reports_a_stage_it_cannot_open_test) {
 
     BOOST_CHECK(!missing.scene);
     BOOST_CHECK_NE(missing.problem.find("missing.usda"), std::string::npos);
+}
+
+/**
+ * Each kind of BasisCurves prim, and a NurbsCurves prim, read as curves of the type that is the
+ * same curve, at the mean of their widths. A prim of a basis the scene cannot hold is a group,
+ * and a curve whose points make no curve is left out. Each of those is noted.
+ **/
+BOOST_AUTO_TEST_CASE(usd_reads_curves_test) {
+    const Imported imported = v3d::interchange::readUsd("data/curves.usda");
+    BOOST_REQUIRE_MESSAGE(imported.scene, imported.problem);
+    const Scene& scene = *imported.scene;
+    const auto curvesOf = [&scene](const std::string& name) -> const v3d::interchange::Curves& {
+        const Node& node = scene.nodes[nodeNamed(scene, name)];
+        BOOST_REQUIRE_MESSAGE(node.curves, name << " has no curves");
+        return scene.curves[*node.curves];
+    };
+
+    // two closed poly curves, at the constant width
+    const v3d::interchange::Curves& lines = curvesOf("Lines");
+    BOOST_REQUIRE_EQUAL(lines.curves.size(), 2U);
+    BOOST_CHECK(std::holds_alternative<v3d::curve::Poly>(lines.curves[1].shape));
+    BOOST_CHECK(lines.curves[1].closed);
+    BOOST_CHECK_CLOSE(lines.width, 0.25F, 0.001F);
+
+    // a Bezier curve of three points, whose handles are the points between
+    const v3d::interchange::Curves& bezier = curvesOf("Bezier");
+    BOOST_REQUIRE_EQUAL(bezier.curves.size(), 1U);
+    const v3d::curve::Bezier& handles = std::get<v3d::curve::Bezier>(bezier.curves[0].shape);
+    BOOST_REQUIRE_EQUAL(handles.points.size(), 3U);
+    checkVector(handles.points[1].position, glm::vec3(3, 0, 0));
+    checkVector(handles.points[1].left, glm::vec3(2, 1, 0));
+    checkVector(handles.points[1].right, glm::vec3(4, -1, 0));
+
+    // a Catmull-Rom curve runs from its second point to its second to last, through each of them
+    const std::vector<glm::vec3> catmullRom = v3d::curve::evaluate(curvesOf("CatmullRom").curves[0], 4);
+    BOOST_REQUIRE_EQUAL(catmullRom.size(), 9U);
+    checkVector(catmullRom.front(), glm::vec3(1, 1, 0));
+    checkVector(catmullRom[4], glm::vec3(2, 0, 0));
+    checkVector(catmullRom.back(), glm::vec3(3, 1, 0));
+    // and between them it is the uniform Catmull-Rom segment: halfway from (1, 1) to (2, 0)
+    checkVector(catmullRom[2], glm::vec3(1.5F, 0.5F, 0.0F));
+
+    // a pinned B-spline starts and ends on its end points
+    const std::vector<glm::vec3> pinned = v3d::curve::evaluate(curvesOf("Pinned").curves[0], 4);
+    checkVector(pinned.front(), glm::vec3(0, 0, 0));
+    checkVector(pinned.back(), glm::vec3(3, 0, 0));
+
+    // a periodic B-spline is closed, and returns to where it starts
+    const v3d::curve::Curve& loop = curvesOf("Loop").curves[0];
+    BOOST_CHECK(loop.closed);
+    const std::vector<glm::vec3> around = v3d::curve::evaluate(loop, 4);
+    checkVector(around.back(), around.front());
+
+    // a weighted NURBS circle keeps its weights, and is round
+    for (const glm::vec3& point : v3d::curve::evaluate(curvesOf("Circle").curves[0], 8)) {
+        BOOST_CHECK_SMALL(glm::length(point) - 1.0F, TOLERANCE);
+    }
+
+    // one of the broken prim's curves has a count no Bezier curve has, and the hermite prim's
+    // basis is not one the scene holds
+    BOOST_CHECK_EQUAL(curvesOf("Broken").curves.size(), 1U);
+    BOOST_CHECK(!scene.nodes[nodeNamed(scene, "Hermite")].curves);
+    BOOST_CHECK_EQUAL(imported.notes.size(), 2U);
 }
 
 };  // namespace

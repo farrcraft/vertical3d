@@ -4,8 +4,11 @@
  **/
 
 #include <api/animation/Curve.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/interchange/Scene.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Import.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
@@ -270,6 +273,38 @@ BOOST_AUTO_TEST_CASE(a_lens_and_an_emission_are_the_editors) {
     BOOST_CHECK(spot.type == v3d::editor::Light::Type::Spot);
     BOOST_CHECK_CLOSE(spot.cone, 0.5F, 0.01F);
     BOOST_CHECK_CLOSE(spot.delta, 0.125F, 0.01F);
+}
+
+/**
+ * A node's curves become a curve item that renders, at the file's width, or at a new curve's
+ * width when the file gives none.
+ **/
+BOOST_AUTO_TEST_CASE(curves_become_a_curve_item_that_renders) {
+    Scene scene;
+    v3d::interchange::Curves wide;
+    wide.curves.push_back({ .shape = v3d::curve::Poly{ { glm::vec3(0, 0, 0), glm::vec3(1, 0, 0) } } });
+    wide.curves.push_back({ .shape = v3d::curve::CatmullRom{ { glm::vec3(0, 0, 0), glm::vec3(1, 1, 0) } } });
+    wide.width = 0.5F;
+    scene.curves.push_back(wide);
+    v3d::interchange::Curves unsized = wide;
+    unsized.width = 0.0F;
+    scene.curves.push_back(unsized);
+    scene.nodes.push_back(node("hair", std::nullopt));
+    scene.nodes.back().curves = 0;
+    scene.nodes.push_back(node("wire", std::nullopt));
+    scene.nodes.back().curves = 1;
+
+    const v3d::editor::Import imported = v3d::editor::importScene(scene, 24.0F);
+
+    BOOST_REQUIRE_EQUAL(imported.items.size(), 2U);
+    const boost::shared_ptr<v3d::editor::Curve> hair = v3d::editor::as<v3d::editor::Curve>(imported.items[0]);
+    BOOST_REQUIRE(hair);
+    BOOST_CHECK_EQUAL(hair->geometry()->size(), 2U);
+    BOOST_CHECK(hair->style().renders);
+    BOOST_CHECK_EQUAL(hair->style().width, 0.5F);
+    const boost::shared_ptr<v3d::editor::Curve> wire = v3d::editor::as<v3d::editor::Curve>(imported.items[1]);
+    BOOST_REQUIRE(wire);
+    BOOST_CHECK_EQUAL(wire->style().width, v3d::editor::Curve::defaultWidth);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -4,8 +4,9 @@ v3d_add_api_library(interchange
 	"Gltf.h" "Gltf.cxx"
 	"CgltfImpl.cxx")
 
-# PUBLIC: a scene places each node by a type::Transform. glm, for the points and values.
-target_link_libraries(v3dlib_interchange PUBLIC v3dlib_type glm::glm)
+# PUBLIC: a scene places each node by a type::Transform and holds curve::Curve values. glm, for
+# the points and values.
+target_link_libraries(v3dlib_interchange PUBLIC v3dlib_curve v3dlib_type glm::glm)
 
 # PRIVATE: the glTF reader reads its document and buffers through asset::readFile.
 target_link_libraries(v3dlib_interchange PRIVATE v3dlib_asset)

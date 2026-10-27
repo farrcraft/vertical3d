@@ -83,13 +83,13 @@ set(V3D_API_input_PACKAGES SDL3 glm EnTT)
 
 # Scenes read from interchange formats, in no format's terms. It owns cgltf's implementation.
 set(V3D_API_interchange_PATH "interchange")
-set(V3D_API_interchange_REQUIRES asset type)
+set(V3D_API_interchange_REQUIRES asset curve type)
 set(V3D_API_interchange_PACKAGES cgltf glm)
 
 # Under api/interchange but a separate library: the USD reader, the one library that links
 # OpenUSD. The package comes from the manifest's usd feature.
 set(V3D_API_interchange_usd_PATH "interchange/usd")
-set(V3D_API_interchange_usd_REQUIRES interchange type)
+set(V3D_API_interchange_usd_REQUIRES interchange curve type)
 set(V3D_API_interchange_usd_PACKAGES glm pxr)
 
 set(V3D_API_log_PATH "log")

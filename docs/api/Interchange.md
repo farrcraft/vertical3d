@@ -14,11 +14,12 @@ Background: [ADR-0123](../adr/0123-interchange-file-readers-fill-a-neutral-scene
 
 ## The scene
 
-`interchange::Scene` ([api/interchange/Scene.h](../../api/interchange/Scene.h)) holds five lists.
+`interchange::Scene` ([api/interchange/Scene.h](../../api/interchange/Scene.h)) holds six lists.
 Up is +y.
 
-- **Nodes.** Each has a name, a parent, a placement and up to one mesh, one camera and one light,
-  each by its index in the scene. A node with none of them only groups its children.
+- **Nodes.** Each has a name, a parent, a placement and up to one mesh, one camera, one light and
+  one set of curves, each by its index in the scene. A node with none of them only groups its
+  children.
   - The placement is a `type::Transform` in the parent's space, or the scene's when the node has
     no parent.
   - A parent always comes before its children in the list, so a walk in order meets every parent
@@ -38,6 +39,9 @@ Up is +y.
   one. A distant or spot light shines along its node's -z axis. A spot light gives two half
   angles: `outerCone`, where its light ends, and `innerCone`, where it starts to fade toward
   that edge.
+- **Curves.** `curve::Curve` values in the node's space, each of any type, and one width for
+  all of them in the node's units. The width is zero when the file does not give one.
+  [Curves.md](Curves.md) describes the types.
 - **Channels.** The keyed values of one part of one node's placement: its translation, its
   rotation or its scale.
   - Times are in seconds, rising.
@@ -116,9 +120,27 @@ What it reads:
   Blender writes and reads it. A sphere light gives intensity times two to its exposure times pi
   watts when it is normalized or has no radius, and that times its surface area otherwise,
   spread over a sphere of directions. A distant light's intensity is watts per square metre.
+- **Curves.** A `BasisCurves` or `NurbsCurves` prim gives its curves at the start time, at the
+  mean of its widths. Each is converted to the type that is the same curve:
+
+  | USD | Curve |
+  |---|---|
+  | `linear` | Poly, closed when periodic |
+  | `bezier` | Bezier, every third point on the curve and the two between its handles, all free |
+  | `catmullRom`, periodic | Catmull-Rom, closed |
+  | `catmullRom`, not periodic | Bezier, from the second point to the second to last, each segment's handles a sixth of the way between its neighbours |
+  | `bspline`, periodic | NURBS, cubic, closed |
+  | `bspline`, not periodic | NURBS, cubic, over evenly spaced knots |
+  | `NurbsCurves` | NURBS, with each curve's order, run of the knots and weights |
+
+  A pinned curve gains each end point reflected through its neighbour beyond its end, so it
+  starts and ends on them.
 
 Left out, each with a note:
 
 - a light of any other kind, whose prim becomes a node that only groups
 - a mesh's keyed points, which are read at rest
+- curves of a `hermite` basis, whose prim becomes a node that only groups
+- a curve whose count or knots make no curve, such as a Bezier curve of five points
+- curves' keyed points, which are read at rest
 - a prim's choice to discard its parent's placement, which is placed beneath its parent anyway

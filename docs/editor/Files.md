@@ -241,9 +241,10 @@ The file is read by `interchange::readGltf()` or `interchange::readUsd()`, descr
 [api/Interchange.md](../api/Interchange.md), and `editor::importScene()` in
 `src/scene/Import.h` makes the items from either:
 
-- **Kinds.** Each node becomes one item: a mesh, a camera or a light when it carries one, in that
-  order, and a group when it carries none. A node that carries more than one becomes the first,
-  with the others as its children. Items have no names, so a node's name is not kept.
+- **Kinds.** Each node becomes one item: a mesh, a camera, a light or a curve when it carries
+  one, in that order, and a group when it carries none. A node that carries more than one
+  becomes the first, with the others as its children. Items have no names, so a node's name is
+  not kept.
 - **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
   that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
   give items that share one geometry. A mesh that cannot be built, such as one with three faces
@@ -252,6 +253,9 @@ The file is read by `interchange::readGltf()` or `interchange::readUsd()`, descr
   each is turned half a turn about its own y. Its children and its keys are turned back, so they
   stay where the file put them. A perspective angle is taken across the picture's shorter side.
   A lens or an emission outside the editor's ranges is replaced by a new camera's or light's.
+- **Curves.** A node's curves become one curve item that renders, at the file's width, or at a
+  new curve's width when the file gives none, because curves a file holds are ones its tool
+  draws.
 - **Keys.** A key at a time in seconds goes on the frame at that time, at the timeline's rate. A
   rotation's keys become Euler angles, each set the one closest to the key before. Linear and
   step keys keep their interpolation. A cubic spline becomes Bezier keys, with the file's

@@ -8,6 +8,8 @@
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
 #include <api/brep/Builder.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/interchange/Scene.h>
 #include <api/type/Transform.h>
 
@@ -23,6 +25,7 @@
 #include <vector>
 
 #include "Camera.h"
+#include "Curve.h"
 #include "Group.h"
 #include "Item.h"
 #include "Light.h"
@@ -158,6 +161,9 @@ class Importer final {
             light->emission(emission);
             made.push_back(light);
         }
+        if (node.curves && *node.curves < scene_.curves.size()) {
+            made.push_back(curves(scene_.curves[*node.curves]));
+        }
         if (made.empty()) {
             made.push_back(boost::make_shared<Group>());
         }
@@ -182,6 +188,24 @@ class Importer final {
             add(made[other], first);
         }
         return first;
+    }
+
+    /**
+     * A curve item holding a node's curves. Curves a file holds are ones its tool draws, so the
+     * item renders, at the file's width when it gives one that is valid.
+     **/
+    static boost::shared_ptr<v3d::editor::Curve> curves(const interchange::Curves& read) {
+        const boost::shared_ptr<v3d::curve::Curves> geometry = boost::make_shared<v3d::curve::Curves>();
+        for (const v3d::curve::Curve& each : read.curves) {
+            geometry->add(each);
+        }
+        const boost::shared_ptr<v3d::editor::Curve> item = boost::make_shared<v3d::editor::Curve>(geometry);
+        v3d::editor::Curve::Style style{ .renders = true };
+        if (std::isfinite(read.width) && read.width > 0.0F) {
+            style.width = read.width;
+        }
+        item->style(style);
+        return item;
     }
 
     static bool turned(const Item& item) {

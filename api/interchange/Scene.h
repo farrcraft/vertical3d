@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/curve/Curve.h>
 #include <api/type/Transform.h>
 
 #include <cstddef>
@@ -88,9 +89,19 @@ struct Light {
 };
 
 /**
+ * Curves in their node's space, each of any type, at one width in the node's units. A format
+ * that does not say how wide its curves are leaves the width at zero.
+ **/
+struct Curves {
+    std::string name;
+    std::vector<v3d::curve::Curve> curves;
+    float width = 0.0F;
+};
+
+/**
  * One node of the hierarchy. Its placement is in its parent's space, or the scene's when it has
- * no parent. It may carry a mesh, a camera and a light, each by its index in the scene, and a
- * node with none of them only groups its children.
+ * no parent. It may carry a mesh, a camera, a light or curves, each by its index in the scene,
+ * and a node with none of them only groups its children.
  **/
 struct Node {
     std::string name;
@@ -102,6 +113,7 @@ struct Node {
     std::optional<std::size_t> mesh;
     std::optional<std::size_t> camera;
     std::optional<std::size_t> light;
+    std::optional<std::size_t> curves;
 };
 
 /**
@@ -135,6 +147,7 @@ struct Scene {
     std::vector<Mesh> meshes;
     std::vector<Camera> cameras;
     std::vector<Light> lights;
+    std::vector<Curves> curves;
     std::vector<Channel> channels;
 };
 
