@@ -21,6 +21,8 @@ a component type. How to use the library is in
 |---|---|---|
 | `Interface` | [Interface.h](../../api/ui/Interface.h) | the loaded ui: containers, themes, the active theme, and the focus |
 | `Loader` | [Loader.h](../../api/ui/Loader.h) | reads a JSON document into containers and themes; used once by `Interface::load()` |
+| `loader::ThemeReader`, `loader::ComponentReader` | [loader/](../../api/ui/loader) | the two halves of the `Loader`: themes and their styles, and containers and their components |
+| `loader::optionalString()` and the rest | [loader/Members.h](../../api/ui/loader/Members.h) | how both readers read a member, which is where the rule for a bad member lives |
 | `Container` | [Container.h](../../api/ui/Container.h) | a named, show-and-hide group of root components; finds a component by name and picks one under a point |
 | `Component` | [Component.h](../../api/ui/Component.h) | a layout, children, flags, and the box the last draw gave it |
 | `Layout`, `Length` | [Layout.h](../../api/ui/Layout.h), [Length.h](../../api/ui/Length.h) | the requested box, and how it resolves against a parent |
@@ -393,7 +395,7 @@ The steps:
 |---|---|---|
 | `name()` | [component/Type.cpp](../../api/ui/component/Type.cpp) | the document's `type` string, or empty if a document cannot name it |
 | `traits()` | [component/Type.cpp](../../api/ui/component/Type.cpp) | whether it is a strip, a flow box, holds pages, or takes text |
-| `Loader::buildComponent()` | [Loader.cpp](../../api/ui/Loader.cpp) | how it is built from a document entry |
+| `loader::ComponentReader::buildComponent()` | [loader/ComponentReader.cpp](../../api/ui/loader/ComponentReader.cpp) | how it is built from a document entry |
 | `Arranger::natural()` | [Arranger.cpp](../../api/ui/Arranger.cpp) | its natural size |
 | `ComponentRenderer::paint()` | [paint/ComponentRenderer.cpp](../../api/ui/paint/ComponentRenderer.cpp) | how it is drawn |
 | `ringed()` | [paint/ComponentRenderer.cpp](../../api/ui/paint/ComponentRenderer.cpp) | which style class its focus ring uses |
