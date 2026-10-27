@@ -9,13 +9,7 @@ For anyone building, testing or changing the tree.
 
 | Document | Covers |
 |---|---|
-| [contributing/GettingStarted.md](contributing/GettingStarted.md) | From a fresh clone to a running app and a passing test run |
-| [contributing/Build.md](contributing/Build.md) | Configuring, the CMake layout and options, shaders, linking rules, and traps |
-| [contributing/Dependencies.md](contributing/Dependencies.md) | vcpkg, the Vulkan SDK, libnoise, and adding or updating a package |
-| [contributing/Testing.md](contributing/Testing.md) | Running and writing tests, the GPU tests, reference images, and checking a rendering change |
-| [contributing/Linting.md](contributing/Linting.md) | cpplint, warnings as errors, `/analyze` and clang-tidy |
-| [contributing/Review.md](contributing/Review.md) | What counts as a review finding, what a reviewer reads, and what a fix has to do |
-| [contributing/Conventions.md](contributing/Conventions.md) | Code style, and how to write comments and documents |
+| [contributing/](contributing/README.md) | Getting started, building, dependencies, testing, linting, review and conventions |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Where engine changes are made when you found the problem from another project |
 
 ## Writing an app against the api
@@ -47,8 +41,7 @@ For anyone working inside a library rather than using it.
 
 | Document | Covers |
 |---|---|
-| [internals/realtime/](internals/realtime/README.md) | How `api/render/realtime` works: frames in flight, recording, memory, descriptor sets |
-| [internals/ui/](internals/ui/README.md) | How `api/ui` works: layout, drawing, hit testing, input routing and the immediate layer |
+| [internals/](internals/README.md) | How `api/render/realtime` and `api/ui` work inside |
 | [offline/](offline/README.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
 
 ## The applications
