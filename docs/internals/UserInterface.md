@@ -38,7 +38,8 @@ a component type. How to use the library is in
 | `input::Keys` | [input/Keys.h](../../api/ui/input/Keys.h) | routes key names and composed text to the focused component |
 | `input::LineEdit`, `input::edit()` | [input/LineEdit.h](../../api/ui/input/LineEdit.h) | one line of text with a caret and a selection, and the edit a key names on it; a `TextBox` and `Immediate::textField()` both edit through them |
 | `input::command()`, `input::send()` | [input/Command.h](../../api/ui/input/Command.h) | which event a component sends when activated, and the one place events are sent |
-| `Immediate` | [Immediate.h](../../api/ui/Immediate.h) | the immediate-mode layer |
+| `Immediate` | [Immediate.h](../../api/ui/Immediate.h) | the immediate-mode layer: only what an app calls |
+| `immediate::Context` | [immediate/Context.h](../../api/ui/immediate/Context.h) | everything an `Immediate` holds, and the layout, hit testing and drawing its widgets share |
 | `shell::Screen` | [shell/Screen.h](../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `WindowRenderer` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
 | `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../api/ui/shell) | shared game shell pieces |
@@ -301,32 +302,45 @@ property silently not found.
 
 ## The immediate layer
 
-`Immediate` keeps almost nothing between frames:
+`Immediate.h` declares only what an app calls. An `Immediate` holds one `immediate::Context`,
+which holds its state and the steps its widgets share: `place()`, `interact()`, `label()` and
+the scrolling. The widgets are written in files by subject:
 
-- `hovered_`: what the cursor was over last frame, which answers this frame's hover
-- `hovering_`: what it is over this frame, promoted at `end()`
-- `active_` and `pressAt_`: what a press went down on, and where
-- `wheeled_`: the topmost scrolling region under the cursor, which takes the wheel
-- `state_`: a `Retained` per id, holding a window's fold, drag offset and scroll, a scrolled
+| File | Holds |
+|---|---|
+| [Immediate.cpp](../../api/ui/Immediate.cpp) | the frame, ids, text, buttons and the other single-row widgets |
+| [immediate/Context.cpp](../../api/ui/immediate/Context.cpp) | layout, hit testing, ids and the drawing every widget shares |
+| [immediate/Windows.cpp](../../api/ui/immediate/Windows.cpp) | windows, and the scrolling a window and a table share |
+| [immediate/TextField.cpp](../../api/ui/immediate/TextField.cpp) | the text field, and the keys that reach it |
+| [immediate/Popups.cpp](../../api/ui/immediate/Popups.cpp) | the combo and the list it opens |
+| [immediate/Tables.cpp](../../api/ui/immediate/Tables.cpp) | tab strips and tables |
+
+The layer keeps almost nothing between frames. These are members of the context:
+
+- `hovered`: what the cursor was over last frame, which answers this frame's hover
+- `hovering`: what it is over this frame, promoted at `end()`
+- `active` and `pressAt`: what a press went down on, and where
+- `wheeled`: the topmost scrolling region under the cursor, which takes the wheel
+- `states`: a `Retained` per id, holding a window's fold, drag offset and scroll, a scrolled
   region's content height, a tab strip's selection, and the item a combo's list was clicked on
-- `typing_`, `line_` and `written_`: the text field that has the keyboard, the line it is
+- `typing`, `edit` and `written`: the text field that has the keyboard, the line it is
   editing, and what it last wrote to the caller's string. A caller's string that differs from
-  `written_` was changed by the caller, and replaces the line
-- `popup_`: the combo whose list is open, and what the list holds
-- `itemMin_`, `itemMax_` and `itemOwner_`: the box of the item placed last, and which id had to
+  `written` was changed by the caller, and replaces the line
+- `popup`: the combo whose list is open, and what the list holds
+- `itemMin`, `itemMax` and `itemOwner`: the box of the item placed last, and which id had to
   hold the cursor last frame for `itemHovered()` to be true
 
 `end()` draws the open combo's list, then takes the keyboard from a field that was not drawn
 this frame, then ages out any `Retained` entry not touched for `retention` frames. The list is
-drawn before `hovered_` is promoted, so it takes the cursor from whatever it covers.
+drawn before `hovered` is promoted, so it takes the cursor from whatever it covers.
 
 `place()` records each item's box, with the enclosing window's id as its owner, or nothing
 outside a window. When `interact()` is offered exactly that box, the widget's own id becomes
 the owner. A title bar or a scrollbar is offered a box `place()` never made, so it leaves the
 last item alone.
 
-A key reaches a field through `press()` between frames and edits `line_` at once. A return,
-tab or escape sets `letGo_` rather than taking the keyboard, so that the field writes what was
+A key reaches a field through `press()` between frames and edits `edit` at once. A return,
+tab or escape sets `letGo` rather than taking the keyboard, so that the field writes what was
 typed when it is next drawn, and gives the keyboard up after that.
 
 `interact(id, min, max)` decides hover, hold and click for one box. A widget is hovered only
@@ -341,7 +355,7 @@ table given a height always reserves the bar's width. A change to how scrolling 
 be checked in both paths.
 
 The title-bar drag uses `dragThreshold` (3 pixels) in
-[Immediate.cpp](../../api/ui/Immediate.cpp). The offset is clamped every frame against the
+[immediate/Windows.cpp](../../api/ui/immediate/Windows.cpp). The offset is clamped every frame against the
 current window size, so a window that grows near an edge moves under the cursor.
 
 ## Parents and held items
