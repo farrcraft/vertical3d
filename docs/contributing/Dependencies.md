@@ -14,8 +14,8 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 
 ## Packages from vcpkg
 
-vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json). The packages are
-installed into `out/build/<config>/vcpkg_installed/` during the first configure.
+vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json), during the first
+configure. [Build.md](Build.md#traps) says where they go, and why that directory is kept.
 
 SDL3, SDL3_mixer, Vulkan and vulkan-memory-allocator are in the manifest's `platform` feature,
 which is a default feature, so a configure installs them unless it is given

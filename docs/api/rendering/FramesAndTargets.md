@@ -253,5 +253,5 @@ calls this vsync. `presenting()` says which mode the driver granted.
 - Asked before `initialize()`, the swapchain is built with it. Asked after, the next
   `renderFrame()` rebuilds the swapchain to take it, as a resize does, and draws nothing that
   frame. `presenting()` reports the new mode from then on.
-- Each build of the swapchain logs the mode it was granted, so `v3d.log` says which one a run used.
+- Each build of the swapchain logs the mode it was granted, so the log says which one a run used.
 - The format does not change with the mode, so pipelines built against the swapchain keep working.

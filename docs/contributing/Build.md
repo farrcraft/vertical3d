@@ -286,17 +286,8 @@ library that depends on something only this repository's root provides, such as 
 an app that happens to link every library. It sets `V3D_LIBRARIES` to `engine log render`, so it
 also checks that the manifest's dependency lists are complete.
 
-To build it locally against the packages your main build already installed:
-
-```
-cmake -S examples/starter -B out/build/starter -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows \
-  -DVCPKG_INSTALLED_DIR=out/build/x64-Debug/vcpkg_installed \
-  -DVCPKG_MANIFEST_INSTALL=OFF
-ninja -C out/build/starter
-```
+[examples/README.md](../../examples/README.md#building-an-example) gives the commands that build
+it locally against the packages your main build already installed.
 
 ## Traps
 

@@ -221,7 +221,7 @@ int main(int /* argc */, char* argv[]) {
 `run()` does the following:
 
 - Works out the executable's directory from `argv[0]`. Every asset path is resolved against it.
-- Opens the log, `v3d.log`, in that directory.
+- Opens the log. [engine/README.md](engine/README.md#logging) says where it is written.
 - Calls the engine's startup and runs the loop, inside a `try` block that logs any exception.
   A windowed app has no console, so the log is the only place an error appears.
 - Shuts the engine down.
@@ -308,9 +308,9 @@ ninja -C out/build/x64-Debug
 
 ### Checking that it works
 
-Run the executable and open `v3d.log` beside it. When the Khronos validation layer from the
-Vulkan SDK is installed, the renderer turns it on and writes its messages to this log. A clean
-start looks like this:
+Run the executable and open its log. [engine/README.md](engine/README.md#logging) says where it
+is. When the Khronos validation layer from the Vulkan SDK is installed, the renderer turns it on
+and writes its messages to this log. A clean start looks like this:
 
 ```
 [info] Creating window 1024 x 768

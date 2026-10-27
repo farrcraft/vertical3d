@@ -20,8 +20,9 @@ projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
 ## Running it
 
 Build the `vertical3d` target, then run `out/build/x64-Debug/vertical3d/vertical3d.exe`. The
-editor reads its data from the `data/` directory beside the executable and logs to `v3d.log`
-in the same place. [contributing/Build.md](../contributing/Build.md) covers the build.
+editor reads its data from the `data/` directory beside the executable, and its log is where
+[api/engine/README.md](../api/engine/README.md#logging) says.
+[contributing/Build.md](../contributing/Build.md) covers the build.
 
 The default bindings are in `vertical3d/data/mappings.json`:
 

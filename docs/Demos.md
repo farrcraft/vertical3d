@@ -32,7 +32,7 @@ Every demo follows the same pattern:
   own `data/` there, and the shared fonts from the repository's root `data/`.
 - `data/config.json` lists the demo's documents by kind. Each kind is one a library reads or
   one of the demo's own.
-- The log is `v3d.log` beside the executable.
+- The log is where [api/engine/README.md](api/engine/README.md#logging) says.
 - Keys are bound to commands in `data/mappings.json`. A command is a context and a name,
   written `context::name`.
 

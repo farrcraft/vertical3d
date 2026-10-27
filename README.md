@@ -11,33 +11,9 @@ It builds on Windows with MSVC. Nothing is packaged or released; you build it fr
 
 ## The libraries
 
-The libraries are in [api/](api/), one CMake target per directory. Each target is named
-`v3dlib_<name>`, with the alias `v3d::<name>`, and its namespace matches its path, for example
-`v3d::render::realtime`.
-
-| Library | What it does |
-|---|---|
-| [`render`](api/render/) | The Vulkan renderer: frames, passes, 2D quads, lines, lit 3D meshes and post-processing |
-| [`render/offline`](api/render/offline/) | The base of the offline renderer: reading and writing RIB, the shading language, the film and the ray tracer. Needs no Vulkan (`v3dlib_render_offline`) |
-| [`engine`](api/engine/) | The application base class, the main loop, and startup of the window, config and input |
-| [`window`](api/window/) | The OS window and its platform calls. Needs no Vulkan (`v3dlib_window`) |
-| [`shell`](api/shell/) | The ui, screen, pause menu and statistics overlay every app builds, as one object |
-| [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
-| [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
-| [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, random numbers |
-| [`animation`](api/animation/) | Skeletons, poses, animation clips, keyframe curves and tracks |
-| [`model`](api/model/) | The geometry, materials, skeleton and clips a model file gives |
-| [`database`](api/database/) | SQLite connections, statements and transactions |
-| [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
-| [`font`](api/font/) | Glyph layout and atlas packing |
-| [`asset`](api/asset/) | Loading files by kind, the loaders for JSON documents, and the manifest of an app's documents |
-| [`asset/media`](api/asset/media/) | Loaders for images and glTF models, and sprite sheets (`v3dlib_asset_media`) |
-| [`event`](api/event/) | Mapping input to named commands, and dispatching them |
-| [`input`](api/input/) | Keyboard and mouse state |
-| [`audio`](api/audio/) | Sound playback through SDL3_mixer, with placed voices, and FMOD Studio events when built with FMOD |
-| [`ecs`](api/ecs/) | Components and systems on EnTT, and particle effects |
-| [`grid`](api/grid/) | Tile grids: pathfinding, line of sight and overlay geometry |
-| [`log`](api/log/) | Logging through spdlog |
+The libraries are in [api/](api/), one CMake target per directory.
+[docs/api/README.md](docs/api/README.md#the-libraries) lists them, says what each is for, and
+shows how they depend on each other.
 
 ## The applications
 

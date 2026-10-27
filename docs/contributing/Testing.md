@@ -361,7 +361,8 @@ CI checks the four reference images and every other device case. That does not c
 blended, filtered or antialiased, which is most of what the renderer draws. Check a rendering
 change locally by running an app and reading its log.
 
-1. **Run the app and read `v3d.log`.** The log is written beside the executable. When the Khronos
+1. **Run the app and read its log.** [api/engine/README.md](../api/engine/README.md#logging)
+   says where it is. When the Khronos
    validation layer is installed, the renderer turns it on and sends its messages to the log
    through `vulkan::device::Instance`. A clean run has no validation messages, so a silent log
    is the result you want. Without that routing, a loaded layer prints nothing, which looks the

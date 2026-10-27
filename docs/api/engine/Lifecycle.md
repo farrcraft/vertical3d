@@ -43,8 +43,7 @@ translation unit. An app does not include `SDL_main.h` itself.
 in order:
 
 1. Works out the app path, the directory the executable is in, from `argv[0]`.
-2. Opens the log at `v3d.log` in that directory. If that file cannot be opened, as in a
-   directory the app cannot write to, the log goes to stderr instead and the app still runs.
+2. Opens the log, as [Logging](README.md#logging) describes.
 3. Constructs `T` with the app path, followed by any extra `args` you passed. Use those for
    options parsed from the command line before the engine exists.
 4. Gives the engine the app's `engine::Identity`: the organization and the application the
