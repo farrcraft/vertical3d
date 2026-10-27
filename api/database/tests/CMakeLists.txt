@@ -1,5 +1,6 @@
 v3d_add_test(database
 	"TestMain.cpp"
+	"BinderTest.cpp"
 	"DatabaseTest.cpp"
 	"StatementTest.cpp"
 	"TransactionTest.cpp")

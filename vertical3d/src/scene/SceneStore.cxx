@@ -10,6 +10,8 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Vertex.h>
+#include <api/database/Binder.h>
+#include <api/database/Columns.h>
 #include <api/database/Database.h>
 #include <api/database/Statement.h>
 #include <api/database/Transaction.h>
@@ -25,6 +27,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <map>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -172,99 +175,25 @@ class Cursor final {
     std::size_t offset_ = 0;
 };
 
-/**
- * Reads the columns of a row in order, from the first.
- **/
-class Columns final {
- public:
-    explicit Columns(const v3d::database::Statement& row) :
-        row_(row) {
-    }
-
-    std::int64_t integer() {
-        return row_.integer(column_++);
-    }
-
-    float real() {
-        return static_cast<float>(row_.real(column_++));
-    }
-
-    std::string text() {
-        return row_.text(column_++);
-    }
-
-    std::span<const std::byte> blob() {
-        return row_.blob(column_++);
-    }
-
-    glm::vec3 vector() {
-        const float x = real();
-        const float y = real();
-        const float z = real();
-        return glm::vec3(x, y, z);
-    }
-
- private:
-    const v3d::database::Statement& row_;
-    int column_ = 0;
-};
+using v3d::database::Binder;
+using v3d::database::Columns;
 
 /**
- * Binds a statement's parameters in order, from the first, after resetting it. It remembers
- * whether every bind succeeded.
+ * Read the next three columns of a row as a vector.
  **/
-class Binder final {
- public:
-    explicit Binder(v3d::database::Statement* statement) :
-        statement_(statement),
-        bound_(statement->reset()) {
-    }
+glm::vec3 vector(Columns* row) {
+    const auto x = static_cast<float>(row->real());
+    const auto y = static_cast<float>(row->real());
+    const auto z = static_cast<float>(row->real());
+    return glm::vec3(x, y, z);
+}
 
-    Binder& integer(std::int64_t value) {
-        bound_ = bound_ && statement_->bindInteger(column_++, value);
-        return *this;
-    }
-
-    Binder& real(float value) {
-        bound_ = bound_ && statement_->bindReal(column_++, value);
-        return *this;
-    }
-
-    Binder& text(const std::string& value) {
-        bound_ = bound_ && statement_->bindText(column_++, value);
-        return *this;
-    }
-
-    Binder& blob(std::span<const std::byte> value) {
-        bound_ = bound_ && statement_->bindBlob(column_++, value);
-        return *this;
-    }
-
-    /**
-     * A reference to an item's row, which is NULL for 0.
-     **/
-    Binder& reference(std::int64_t id) {
-        const int column = column_++;
-        bound_ = bound_ && (id == 0 ? statement_->bindNull(column) : statement_->bindInteger(column, id));
-        return *this;
-    }
-
-    Binder& vector(const glm::vec3& value) {
-        return real(value.x).real(value.y).real(value.z);
-    }
-
-    /**
-     * @return whether every bind succeeded and the statement then ran to its end
-     **/
-    bool run() {
-        return bound_ && statement_->step() == v3d::database::Statement::Step::Done;
-    }
-
- private:
-    v3d::database::Statement* statement_;
-    int column_ = 1;
-    bool bound_;
-};
+/**
+ * A reference to an item's row, which is NULL for 0.
+ **/
+std::optional<std::int64_t> reference(std::int64_t id) {
+    return id == 0 ? std::nullopt : std::optional<std::int64_t>(id);
+}
 
 /**
  * A mesh's three blobs, by role.
@@ -640,10 +569,10 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
     const std::int64_t id = row.integer();
     const std::string kind = row.text();
     const std::int64_t version = row.integer();
-    const glm::vec3 translation = row.vector();
-    const glm::vec3 axis = row.vector();
-    const float w = row.real();
-    const glm::vec3 scale = row.vector();
+    const glm::vec3 translation = vector(&row);
+    const glm::vec3 axis = vector(&row);
+    const auto w = static_cast<float>(row.real());
+    const glm::vec3 scale = vector(&row);
     const std::string text = row.text();
     *parent = row.integer();
 
@@ -968,10 +897,12 @@ bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64
             break;
     }
 
+    const glm::vec3 translation = item->translation();
     const glm::quat rotation = item->rotation();
+    const glm::vec3 scale = item->scale();
     if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(kind).integer(version)
-        .vector(item->translation()).vector(glm::vec3(rotation.x, rotation.y, rotation.z)).real(rotation.w)
-        .vector(item->scale()).text(payload).reference(parent).run()) {
+        .reals({ translation.x, translation.y, translation.z, rotation.x, rotation.y, rotation.z, rotation.w })
+        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).run()) {
         return false;
     }
 
@@ -1052,7 +983,7 @@ bool store(v3d::database::Database* database, const Scene& scene, const std::map
         bool ran = true;
         if (known && found->second.item.lock() == item && found->second.revision == item->revision()) {
             if (found->second.position != position || found->second.parent != parent) {
-                ran = Binder(&writes.move).integer(position).reference(parent).integer(id).run();
+                ran = Binder(&writes.move).integer(position).integer(reference(parent)).integer(id).run();
                 written->moved++;
             }
         } else {

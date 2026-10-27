@@ -43,6 +43,28 @@ stays until the next call that fails.
 - A statement can be moved but not copied, and must not outlive its connection. An invalid
   statement refuses every call and reads as empty.
 
+## Binding and reading a row in order
+
+`Binder` and `Columns` save counting parameters and columns by hand.
+
+- **`Binder(&statement)`** resets the statement, then binds one parameter per call, from the
+  first: `integer`, `real`, `text`, `blob` and `null`. `integer(std::optional)` binds a null
+  for an empty value, and `reals({...})` binds one parameter for each value. The calls chain.
+- **A failed bind is remembered.** The binds after it are skipped, `bound()` is false, and
+  `run()` does not run the statement.
+- **`run()`** steps the statement and is true only when every bind succeeded and the statement
+  finished. It is for a statement that returns no rows.
+- **`Columns(statement)`** reads the current row's columns in order, from the first:
+  `integer`, `real`, `text` and `blob`. It holds the statement, so it is made for one row.
+
+```cpp
+database::Binder(&insert).integer(id).text(name).reals({ x, y, z }).integer(parent).run();
+
+database::Columns row(select);
+const std::int64_t id = row.integer();
+const std::string name = row.text();
+```
+
 ## Transactions
 
 `Transaction` is a write transaction that rolls back unless it is committed.
