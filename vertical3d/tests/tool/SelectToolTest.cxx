@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // a name that is not a mask leaves the tool alone
-    select->activate("curve");
+    select->activate("handle");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
 }
 
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
     // every mask's name reads back as that mask
     for (const v3d::editor::SelectMask mask : { v3d::editor::SelectMask::Object, v3d::editor::SelectMask::Vertex,
         v3d::editor::SelectMask::Edge, v3d::editor::SelectMask::Face, v3d::editor::SelectMask::Mesh,
-        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera }) {
+        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera, v3d::editor::SelectMask::Curve }) {
         v3d::editor::SelectMask read = v3d::editor::SelectMask::Face;
         BOOST_CHECK(v3d::editor::selectMask(v3d::editor::selectMaskName(mask), &read));
         BOOST_CHECK(read == mask);
@@ -418,7 +418,10 @@ BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
     BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Camera, v3d::editor::Item::Kind::Light));
     BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Light));
     BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Face, v3d::editor::Item::Kind::Mesh));
-    BOOST_CHECK(!v3d::editor::selectMask("curve", nullptr));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Mesh));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(!v3d::editor::selectMask("handle", nullptr));
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_light_mask_test) {

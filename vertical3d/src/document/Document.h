@@ -9,6 +9,7 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/RenderSettings.h>
@@ -75,6 +76,11 @@ class Document final {
      **/
     Outcome createCamera(const v3d::type::camera::Profile& at, Camera::Projection projection);
     Outcome createLight(const v3d::type::camera::Profile& at, Light::Type type);
+
+    /**
+     * Make one curve of a type at the origin.
+     **/
+    Outcome createCurve(CurveType type);
 
     /**
      * Gather items beneath a new group.

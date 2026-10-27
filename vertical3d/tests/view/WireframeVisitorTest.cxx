@@ -6,9 +6,12 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
+#include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -256,6 +259,30 @@ BOOST_AUTO_TEST_CASE(wireframe_beneath_test) {
         BOOST_CHECK(drawn[index].position.x >= 5.0F - 0.0001F);
         BOOST_CHECK(drawn[index].position.x <= 9.0F + 0.0001F);
     }
+}
+
+BOOST_AUTO_TEST_CASE(wireframe_curve_test) {
+    v3d::render::realtime::canvas::Line canvas;
+    // a curve is drawn whichever other kinds are hidden
+    v3d::editor::WireframeVisitor wireframe(&canvas, { .meshes = false, .cameras = false, .lights = false });
+
+    // a Catmull-Rom curve of four points is three segments, each drawn in as many lines as the
+    // geometry's resolution, through the item's world matrix
+    const boost::shared_ptr<v3d::editor::Curve> curve = v3d::editor::create_curve(v3d::editor::CurveType::CatmullRom);
+    curve->translation(glm::vec3(10.0F, 0.0F, 0.0F));
+    wireframe.visit(curve, at(curve));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 2U * 3U * v3d::curve::Curves::DEFAULT_RESOLUTION);
+    for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
+        BOOST_CHECK(vertex.position.x >= 8.5F);
+        BOOST_CHECK(vertex.position.x <= 11.5F);
+    }
+    BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001F);
+    const glm::vec4 unselected = canvas.vertices()[0].colour;
+
+    canvas.clear();
+    curve->selected(true);
+    wireframe.visit(curve, at(curve));
+    BOOST_CHECK((canvas.vertices()[0].colour != unselected));
 }
 
 };  // namespace

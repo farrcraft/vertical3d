@@ -35,6 +35,7 @@
 #include <vertical3d/src/render/RenderPanels.h>
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -310,6 +311,7 @@ void Controller::syncUi() {
     mark("select::mask::mesh", mask == SelectMask::Mesh);
     mark("select::mask::light", mask == SelectMask::Light);
     mark("select::mask::camera", mask == SelectMask::Camera);
+    mark("select::mask::curve", mask == SelectMask::Curve);
 
     const TransformTool::Mode mode = transformTool_->mode();
     mark("transform::select", mode == TransformTool::Mode::None);
@@ -416,6 +418,11 @@ void Controller::registerCommands() {
             atView("a light is made", [this, type](const v3d::type::camera::Profile& at) { report(document_->createLight(at, type)); });
         });
     }
+    for (const auto& [name, type] : std::vector<std::pair<const char*, CurveType>>{
+        { "create::curve::poly", CurveType::Poly }, { "create::curve::bezier", CurveType::Bezier },
+        { "create::curve::catmull_rom", CurveType::CatmullRom }, { "create::curve::nurbs", CurveType::Nurbs } }) {
+        press(name, [this, type]() { report(document_->createCurve(type)); });
+    }
     press("create::group", [this, selection]() { report(document_->group(selection())); });
     press("timeline::set", [this, selection]() { report(document_->key(selection(), document_->scene()->timeline().frame)); });
 
@@ -454,7 +461,7 @@ void Controller::registerCommands() {
         masked(SelectMask::Vertex, "merge vertices", [this]() { return document_->mergeVertices(); });
     });
 
-    for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera" }) {
+    for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve" }) {
         press(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
     }
 

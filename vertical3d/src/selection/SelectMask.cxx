@@ -31,6 +31,8 @@ bool selectMask(const std::string& name, SelectMask* mask) {
         found = SelectMask::Light;
     } else if (name == "camera") {
         found = SelectMask::Camera;
+    } else if (name == "curve") {
+        found = SelectMask::Curve;
     } else {
         return false;
     }
@@ -56,6 +58,8 @@ const char* selectMaskName(SelectMask mask) {
         return "light";
     case SelectMask::Camera:
         return "camera";
+    case SelectMask::Curve:
+        return "curve";
     case SelectMask::Object:
         break;
     }
@@ -70,6 +74,7 @@ bool selectsItems(SelectMask mask) {
     case SelectMask::Mesh:
     case SelectMask::Light:
     case SelectMask::Camera:
+    case SelectMask::Curve:
         return true;
     case SelectMask::Vertex:
     case SelectMask::Edge:
@@ -91,6 +96,8 @@ bool takes(SelectMask mask, Item::Kind kind) {
         return kind == Item::Kind::Light;
     case SelectMask::Camera:
         return kind == Item::Kind::Camera;
+    case SelectMask::Curve:
+        return kind == Item::Kind::Curve;
     case SelectMask::Vertex:
     case SelectMask::Edge:
     case SelectMask::Face:
@@ -113,6 +120,7 @@ std::optional<Component> componentOf(SelectMask mask) {
         case SelectMask::Mesh:
         case SelectMask::Camera:
         case SelectMask::Light:
+        case SelectMask::Curve:
             break;
     }
     return std::nullopt;

@@ -56,7 +56,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
-| | `kind` | `mesh`, `camera`, `light` or `group` |
+| | `kind` | `mesh`, `camera`, `light`, `group` or `curve` |
 | | `type_version` | The version of the kind's payload and blobs |
 | | `tx`, `ty`, `tz` | The translation |
 | | `rx`, `ry`, `rz`, `rw` | The rotation, a quaternion |
@@ -81,16 +81,18 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | `camera` | `projection` (`perspective` or `orthographic`), `fov` in degrees, `extent`, `clipping` as `[near, far]` | None |
 | `light` | `type` (`point`, `distant` or `spot`), `colour` as three numbers, `intensity`, `cone` and `delta` in radians | None |
 | `group` | `{}` | None |
+| `curve` | `renders`, a boolean, `width`, above zero, and `resolution`, a whole number from 1 to 1024 | `curves`: 6 unsigned 32-bit integers each, the type (0 poly, 1 Bezier, 2 Catmull-Rom, 3 NURBS), whether it is closed, whether it is weighted, the order, the number of points and the number of knots. `points`: 3 floats each, a Bezier point as its position then its left and right handle. `handles`: 2 bytes per Bezier point, the left and right handle type (0 free, 1 aligned, 2 vector, 3 automatic). `weights`: a float per point of a weighted NURBS curve. `knots`: the floats of each NURBS curve's own knots |
 
 **Each kind has a codec.** `Codec` in `src/store/Codec.h` writes and reads what a kind adds: its
-name, its version, its payload and its blobs. `MeshCodec`, `CameraCodec`, `LightCodec` and
-`GroupCodec` are the four, `codecOf(kind)` finds one by kind and `codecNamed(name)` by the name a
-row carries. `SceneStore` writes and reads what every item shares, and hands the rest to the
-codec. A new kind of item is a new codec, returned from `codecOf()` and listed in `codecs()`.
-`codecOf()` switches on every kind, so a kind with no codec does not compile.
+name, its version, its payload and its blobs. `MeshCodec`, `CameraCodec`, `LightCodec`,
+`GroupCodec` and `CurveCodec` are the five. `codecOf(kind)` finds one by kind, and
+`codecNamed(name)` by the name a row carries. `SceneStore` writes and reads what every item
+shares, and hands the rest to the codec. A new kind of item is a new codec, returned from
+`codecOf()` and listed in `codecs()`. `codecOf()` switches on every kind, so a kind with no codec
+does not compile.
 
-**Each mesh item stores its own geometry.** Two items that share a `BRep` are written with a copy
-each, and read back as two meshes.
+**Each mesh or curve item stores its own geometry.** Two items that share a `BRep` or a
+`curve::Curves` are written with a copy each, and read back as two.
 
 **The parent is checked at commit.** A changed row is deleted and written again, and its children
 still name it while that happens, so the reference is `DEFERRABLE INITIALLY DEFERRED`. The placement
@@ -118,7 +120,9 @@ the scene untouched, if:
   of the wrong type or out of range
 - a mesh does not have exactly its three blobs, a blob's `count` does not fill it exactly, a
   number in it is not finite, or the mesh fails `BRep::validate()`
-- a blob belongs to an item that is not a mesh
+- a curve item's blobs do not hold as many points, handles, weights and knots as its curves say,
+  a type or handle type is not one there is, or a curve fails `curve::problem()`
+- a blob belongs to an item whose kind writes none
 - `next_id` is missing or is not above every id the document holds
 - an item's parent is not an item the document holds, or an item is its own ancestor
 - a curve drives a property its owner's kind does not declare, has no keys, or is newer than this

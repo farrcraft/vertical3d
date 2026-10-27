@@ -22,6 +22,7 @@ add_library("v3dlib_editor"
 	"src/scene/Camera.h" "src/scene/Camera.cxx"
 	"src/scene/Light.h" "src/scene/Light.cxx"
 	"src/scene/Group.h" "src/scene/Group.cxx"
+	"src/scene/Curve.h" "src/scene/Curve.cxx"
 	"src/scene/Import.h" "src/scene/Import.cxx"
 	"src/scene/Evaluation.h" "src/scene/Evaluation.cxx"
 	"src/scene/Properties.h" "src/scene/Properties.cxx"
@@ -42,6 +43,7 @@ add_library("v3dlib_editor"
 	"src/store/CameraCodec.h" "src/store/CameraCodec.cxx"
 	"src/store/LightCodec.h" "src/store/LightCodec.cxx"
 	"src/store/GroupCodec.h" "src/store/GroupCodec.cxx"
+	"src/store/CurveCodec.h" "src/store/CurveCodec.cxx"
 	"src/command/Modelling.h" "src/command/Modelling.cxx"
 
 	"src/render/Batch.h" "src/render/Batch.cxx"
@@ -82,6 +84,7 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_animation
 	v3dlib_asset
 	v3dlib_brep
+	v3dlib_curve
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_image

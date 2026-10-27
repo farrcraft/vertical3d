@@ -7,7 +7,10 @@
 
 #include <api/type/camera/Profile.h>
 
+#include <cstdint>
+
 #include "Camera.h"
+#include "Curve.h"
 #include "Light.h"
 
 #include <boost/shared_ptr.hpp>
@@ -50,5 +53,17 @@ v3d::type::camera::Profile profile_of(const Camera::Lens& lens, const glm::mat4&
  * what the view shows. Its emission is the RI shader's default for its type.
  **/
 boost::shared_ptr<Light> create_light(const v3d::type::camera::Profile& view, Light::Type type);
+
+/**
+ * The types of curve create_curve() makes.
+ **/
+enum class CurveType : std::uint8_t { Poly, Bezier, CatmullRom, Nurbs };
+
+/**
+ * One curve of a type at the origin, lying on the ground: an S through four points from -1.5 to
+ * 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over clamped
+ * knots, so it starts and ends on its end points.
+ **/
+boost::shared_ptr<Curve> create_curve(CurveType type);
 
 };  // namespace v3d::editor

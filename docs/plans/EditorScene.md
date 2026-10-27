@@ -1,7 +1,7 @@
 # Editor Scene — Cameras, Lights, Groups, Shading, Import, Render and Playback
 
 Drafted 2026-10-24 against `ab4bdea1`. This plan takes the six editor groups in
-[TODO.md](../TODO.md#editor). When it closes, every one of the menu's 83 commands has a handler.
+[TODO.md](../TODO.md#editor). When it closes, every one of the menu's 85 commands has a handler.
 The scene holds cameras, lights and groups as well as meshes. The views draw shaded as well as
 in wireframe, a project imports glTF, the Render menu renders the scene with moya, and the
 timeline keys and plays back transforms.

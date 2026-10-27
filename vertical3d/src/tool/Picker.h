@@ -31,8 +31,8 @@ namespace v3d::editor {
  * What a click at a screen point hit, found by a ray cast on the CPU, and what a rectangle
  * on the screen holds.
  *
- * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, or a
- * camera's, light's or group's glyph is hit when it is drawn within a few pixels of the
+ * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, a curve,
+ * or a camera's, light's or group's glyph is hit when it is drawn within a few pixels of the
  * cursor. Everything is tested where the scene's evaluation puts it.
  *
  * A mask that selects whole items considers only the kinds it takes. A component mask
@@ -115,14 +115,15 @@ class Picker final : public SceneVisitor {
     void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
     void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
 
  private:
     /**
-     * A camera's, a light's or a group's glyph, drawn in its own space and placed by its world
-     * matrix. It is hit when a segment is within tolerance of the cursor, and inside a
-     * rectangle when every point of it is.
+     * An item drawn in lines in its own space and placed by a model matrix: a curve, or a
+     * camera's, a light's or a group's glyph. It is hit when a segment is within tolerance of
+     * the cursor, and inside a rectangle when every point of it is.
      **/
-    void glyph(const Item& item, const glm::mat4& world, const v3d::render::realtime::canvas::Line& drawn);
+    void lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
 
     /**
      * Ray against every triangle of the mesh, nearest along the ray winning.

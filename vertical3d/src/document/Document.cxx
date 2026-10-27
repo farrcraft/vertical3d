@@ -129,6 +129,18 @@ Outcome Document::createLight(const v3d::type::camera::Profile& at, Light::Type 
     return create(create_light(at, type), name);
 }
 
+Outcome Document::createCurve(CurveType type) {
+    const char* name = "poly curve";
+    if (type == CurveType::Bezier) {
+        name = "Bezier curve";
+    } else if (type == CurveType::CatmullRom) {
+        name = "Catmull-Rom curve";
+    } else if (type == CurveType::Nurbs) {
+        name = "NURBS curve";
+    }
+    return create(create_curve(type), name);
+}
+
 Outcome Document::group(const Items& items) {
     const boost::shared_ptr<GroupCommand> command = boost::make_shared<GroupCommand>(scene_, items);
     if (command->empty()) {

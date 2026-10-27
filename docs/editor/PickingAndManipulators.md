@@ -38,18 +38,17 @@ Rules the picker follows:
 - The view's camera matrices are rebuilt before the cast, so a pick does not depend on a frame
   having been drawn since the camera moved.
 
-**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Vertex, Edge or Face, and
-`SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the select-mask toolbar
-sets the same four, and the Select Mask menu sets all seven. Changing the mask clears the
+**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge or
+Face, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the select-mask
+toolbar sets the same four, and the Select Mask menu sets all eight. Changing the mask clears the
 component selection.
 
-- **Object, Mesh, Light and Camera select whole items.** Object takes every kind, and each of the
-  others takes only its own kind. A mask that does not take a kind never hits it, so a light
+- **Object, Mesh, Light, Camera and Curve select whole items.** Object takes every kind, and each
+  of the others takes only its own kind. A mask that does not take a kind never hits it, so a light
   behind a mesh can be clicked under the light mask.
 - **Vertex, Edge and Face select the parts of meshes.**
 
-The menu's Curve and Handle masks have no handler yet. There is no curve kind and no handle kind
-of item.
+The menu's Handle mask has no handler yet. There is no handle kind of item.
 
 **What a click does.** `SelectTool` picks on the press, not the release.
 

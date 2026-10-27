@@ -17,7 +17,7 @@ namespace v3d::editor {
 /**
  * What a click selects.
  *
- * Exactly one is in force at a time. Object, Mesh, Light and Camera select whole items:
+ * Exactly one is in force at a time. Object, Mesh, Light, Camera and Curve select whole items:
  * Object takes every kind, and each of the others takes only its own. Vertex, Edge and Face
  * select the components of meshes. Whether an item is selected lives on the item, and which
  * of a mesh item's parts are lives in the scene's components. The mask is the only thing
@@ -30,7 +30,8 @@ enum class SelectMask : std::uint8_t {
     Face,
     Mesh,
     Light,
-    Camera
+    Camera,
+    Curve
 };
 
 /**
@@ -44,7 +45,7 @@ bool selectsItems(SelectMask mask);
 bool takes(SelectMask mask, Item::Kind kind);
 
 /**
- * @param name one of "object", "vertex", "edge", "face", "mesh", "light" or "camera"
+ * @param name one of "object", "vertex", "edge", "face", "mesh", "light", "camera" or "curve"
  * @param mask set to the mask named, and untouched if the name is not one of them
  * @return whether the name named a mask
  **/

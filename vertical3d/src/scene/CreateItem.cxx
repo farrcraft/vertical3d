@@ -5,9 +5,14 @@
 
 #include "CreateItem.h"
 
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/type/camera/Profile.h>
 
+#include <vector>
+
 #include "Camera.h"
+#include "Curve.h"
 #include "Evaluation.h"
 #include "Light.h"
 
@@ -80,6 +85,38 @@ boost::shared_ptr<Light> create_light(const v3d::type::camera::Profile& view, Li
     emission.type = type;
     light->emission(emission);
     return light;
+}
+
+/**
+ **/
+boost::shared_ptr<Curve> create_curve(CurveType type) {
+    const std::vector<glm::vec3> points{ { -1.5F, 0.0F, 0.0F }, { -0.5F, 0.0F, 1.0F }, { 0.5F, 0.0F, -1.0F }, { 1.5F, 0.0F, 0.0F } };
+    v3d::curve::Curve curve;
+    switch (type) {
+        case CurveType::Poly:
+            curve.shape = v3d::curve::Poly{ points };
+            break;
+        case CurveType::Bezier: {
+            v3d::curve::Bezier bezier;
+            for (const glm::vec3& point : points) {
+                bezier.points.push_back({ .position = point, .left = point, .right = point });
+            }
+            curve.shape = bezier;
+            break;
+        }
+        case CurveType::CatmullRom:
+            curve.shape = v3d::curve::CatmullRom{ points };
+            break;
+        case CurveType::Nurbs: {
+            v3d::curve::Nurbs nurbs;
+            nurbs.points = points;
+            curve.shape = nurbs;
+            break;
+        }
+    }
+    const boost::shared_ptr<v3d::curve::Curves> geometry = boost::make_shared<v3d::curve::Curves>();
+    geometry->add(curve);
+    return boost::make_shared<Curve>(geometry);
 }
 
 };  // namespace v3d::editor

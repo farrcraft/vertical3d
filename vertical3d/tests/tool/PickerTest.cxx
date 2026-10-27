@@ -8,9 +8,12 @@
 #include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -435,6 +438,28 @@ BOOST_FIXTURE_TEST_CASE(picker_inside_glyph_test, Lit) {
     // mesh mask
     BOOST_CHECK_EQUAL(picker.inside(scene, *view, glm::vec2(0.0F), glm::vec2(400.0F), v3d::editor::SelectMask::Object).size(), 3U);
     BOOST_CHECK_EQUAL(picker.inside(scene, *view, glm::vec2(0.0F), glm::vec2(400.0F), v3d::editor::SelectMask::Mesh).size(), 1U);
+}
+
+BOOST_AUTO_TEST_CASE(picker_curve_test) {
+    // a curve across the view, from the middle of its left half to the middle of its right
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    BOOST_REQUIRE(curves->add({ .shape = v3d::curve::Poly{ { { -0.5F, 0.0F, 0.0F }, { 0.5F, 0.0F, 0.0F } } } }).empty());
+    v3d::editor::Scene scene;
+    const unsigned int id = scene.add(boost::make_shared<v3d::editor::Curve>(curves));
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+
+    // a click on the line picks it under the curve mask and the object mask
+    const glm::vec2 on = screen(view, glm::vec3(0.25F, 0.0F, 0.0F));
+    const v3d::editor::Picker::Hit hit = picker.pick(scene, *view, on, v3d::editor::SelectMask::Curve);
+    BOOST_CHECK(hit.valid);
+    BOOST_CHECK_EQUAL(hit.item, id);
+    BOOST_CHECK(picker.pick(scene, *view, on, v3d::editor::SelectMask::Object).valid);
+
+    // the mesh mask does not take a curve, and a click well off the line misses it
+    BOOST_CHECK(!picker.pick(scene, *view, on, v3d::editor::SelectMask::Mesh).valid);
+    const glm::vec2 off = screen(view, glm::vec3(0.25F, 0.5F, 0.0F));
+    BOOST_CHECK(!picker.pick(scene, *view, off, v3d::editor::SelectMask::Curve).valid);
 }
 
 };  // namespace

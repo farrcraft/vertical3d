@@ -7,6 +7,7 @@
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -57,6 +58,11 @@ class CountingVisitor final : public v3d::editor::SceneVisitor {
     void visit(const boost::shared_ptr<v3d::editor::Group>& group, const v3d::editor::Placed& /*placed*/) override {
         visited.push_back(group->id());
         kinds += "g";
+    }
+
+    void visit(const boost::shared_ptr<v3d::editor::Curve>& curve, const v3d::editor::Placed& /*placed*/) override {
+        visited.push_back(curve->id());
+        kinds += "u";
     }
 
     void leave(const boost::shared_ptr<v3d::editor::Item>& item) override {

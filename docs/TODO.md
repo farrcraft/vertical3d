@@ -64,17 +64,17 @@ around `start()` and `stop()`.
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor.
-[EditorScene](plans/EditorScene.md) orders the curve and handle masks.
+[EditorScene](plans/EditorScene.md) orders the handle mask.
 
-2 of the menu's 81 commands have no handler, and only log themselves when chosen. Each group
-below is a piece of work of its own, in any order.
+1 of the menu's 85 commands has no handler, and only logs itself when chosen. Each group below
+is a piece of work of its own, in any order.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
 writes each item's geometry in full, so they read back as two copies. Keeping them shared needs
 the geometry as a record of its own, which the mesh items refer to by id, and a new mesh version.
 
-[] **Curve and handle select masks** (`select::mask::curve`, `select::mask::handle`). There is no
-curve kind of item, and nothing defines what a handle is. EditorScene steps 13 and 14 build them.
+[] **The handle select mask** (`select::mask::handle`). Nothing defines what a handle is.
+EditorScene step 14 builds it.
 
 [] **NURBS surfaces.** The editor models polygon meshes only. A NURBS surface kind of item
 would be made by revolving, lofting or sweeping curves, and trimmed by curves on it. It needs an

@@ -198,10 +198,11 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
 }
 
 /**
- * The item one row of the items table describes, without its id or its placement.
+ * The item one row of the items table describes, without its id or its placement. The blobs
+ * it read are added to read.
  **/
 boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
-    const boost::json::object& payload, v3d::database::Statement* buffers, std::string* problem) {
+    const boost::json::object& payload, v3d::database::Statement* buffers, std::size_t* read, std::string* problem) {
     const Codec* codec = codecNamed(kind);
     if (codec == nullptr) {
         *problem = "its kind, " + kind + ", is not one this build reads";
@@ -224,6 +225,7 @@ boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::
             blobs[role] = Blob{ .count = count, .data = std::vector<std::byte>(data.begin(), data.end()) };
         }
     }
+    *read += blobs.size();
     return codec->read(payload, blobs, problem);
 }
 
@@ -231,7 +233,7 @@ boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::
  * The item a row of the items table describes, whole.
  **/
 boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
-    std::int64_t* parent, std::string* problem) {
+    std::int64_t* parent, std::size_t* read, std::string* problem) {
     Columns row(rows);
     const std::int64_t id = row.integer();
     const std::string kind = row.text();
@@ -253,7 +255,7 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
         *problem = "its payload is not an object";
         return nullptr;
     }
-    boost::shared_ptr<Item> item = readKind(id, kind, version, parsed.as_object(), buffers, problem);
+    boost::shared_ptr<Item> item = readKind(id, kind, version, parsed.as_object(), buffers, read, problem);
     if (!item) {
         return nullptr;
     }
@@ -320,12 +322,12 @@ bool load(v3d::database::Database* database, std::int32_t version, Loaded* loade
     }
 
     std::int64_t highest = 0;
-    std::size_t meshes = 0;
+    std::size_t blobs = 0;
     v3d::database::Statement::Step step = rows.step();
     for (; step == v3d::database::Statement::Step::Row; step = rows.step()) {
         std::string fault;
         std::int64_t above = 0;
-        const boost::shared_ptr<Item> item = readItem(rows, &buffers, &above, &fault);
+        const boost::shared_ptr<Item> item = readItem(rows, &buffers, &above, &blobs, &fault);
         if (!item) {
             *problem = "item " + std::to_string(rows.integer(0)) + ": " + fault;
             return false;
@@ -335,7 +337,6 @@ bool load(v3d::database::Database* database, std::int32_t version, Loaded* loade
             loaded->parents[item->documentId()] = above;
         }
         highest = std::max(highest, item->documentId());
-        meshes += item->kind() == Item::Kind::Mesh ? 1 : 0;
     }
     if (step == v3d::database::Statement::Step::Failed) {
         *problem = rows.error();
@@ -346,11 +347,10 @@ bool load(v3d::database::Database* database, std::int32_t version, Loaded* loade
         return false;
     }
 
-    // a blob that belongs to no mesh is data this build does not read
+    // a blob no item's codec read is data this build does not read
     v3d::database::Statement count = database->prepare("SELECT count(*) FROM buffers");
-    if (count.step() != v3d::database::Statement::Step::Row ||
-        static_cast<std::size_t>(count.integer(0)) != meshes * 3) {
-        *problem = "it holds blobs that belong to no mesh";
+    if (count.step() != v3d::database::Statement::Step::Row || static_cast<std::size_t>(count.integer(0)) != blobs) {
+        *problem = "it holds blobs that belong to no item";
         return false;
     }
 
@@ -537,7 +537,7 @@ struct Inserts {
 };
 
 /**
- * Write one item's row, and a mesh's blobs.
+ * Write one item's row, and its blobs.
  **/
 bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64_t position, std::int64_t parent) {
     const Codec& codec = codecOf(item->kind());

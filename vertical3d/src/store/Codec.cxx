@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "CameraCodec.h"
+#include "CurveCodec.h"
 #include "GroupCodec.h"
 #include "LightCodec.h"
 #include "MeshCodec.h"
@@ -37,6 +38,7 @@ const Codec& codecOf(Item::Kind kind) {
     static const CameraCodec camera;
     static const LightCodec light;
     static const GroupCodec group;
+    static const CurveCodec curve;
     switch (kind) {
         case Item::Kind::Mesh:
             return mesh;
@@ -44,6 +46,8 @@ const Codec& codecOf(Item::Kind kind) {
             return camera;
         case Item::Kind::Light:
             return light;
+        case Item::Kind::Curve:
+            return curve;
         case Item::Kind::Group:
             break;
     }
@@ -54,7 +58,7 @@ const Codec& codecOf(Item::Kind kind) {
  **/
 const std::vector<const Codec*>& codecs() {
     static const std::vector<const Codec*> all{ &codecOf(Item::Kind::Mesh), &codecOf(Item::Kind::Camera),
-        &codecOf(Item::Kind::Light), &codecOf(Item::Kind::Group) };
+        &codecOf(Item::Kind::Light), &codecOf(Item::Kind::Group), &codecOf(Item::Kind::Curve) };
     return all;
 }
 

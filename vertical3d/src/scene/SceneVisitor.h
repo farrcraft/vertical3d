@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "Curve.h"
 #include "Evaluation.h"
 #include "Group.h"
 #include "Item.h"
@@ -36,6 +37,7 @@ class SceneVisitor {
     virtual void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) = 0;
     virtual void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) = 0;
     virtual void visit(const boost::shared_ptr<Group>& group, const Placed& placed) = 0;
+    virtual void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) = 0;
 
     /**
      * Called once everything beneath an item has been visited. A visitor that does not care

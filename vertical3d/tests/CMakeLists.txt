@@ -51,6 +51,7 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_animation
 	v3dlib_asset
 	v3dlib_brep
+	v3dlib_curve
 	v3dlib_database
 	v3dlib_engine
 	v3dlib_event

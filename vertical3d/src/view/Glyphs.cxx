@@ -5,12 +5,14 @@
 
 #include "Glyphs.h"
 
+#include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Light.h>
 
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 #include <glm/mat4x4.hpp>
@@ -170,6 +172,20 @@ void drawGroup(const glm::vec4& colour, v3d::render::realtime::canvas::Line* can
         return;
     }
     canvas->box(glm::vec3(-GROUP_REACH), glm::vec3(GROUP_REACH), colour);
+}
+
+/**
+ **/
+void drawCurves(const v3d::curve::Curves& curves, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas) {
+    if (canvas == nullptr) {
+        return;
+    }
+    for (std::size_t index = 0; index < curves.size(); index++) {
+        const std::vector<glm::vec3>& points = curves.evaluated(index);
+        for (std::size_t each = 0; each + 1 < points.size(); each++) {
+            canvas->line(points[each], points[each + 1], colour);
+        }
+    }
 }
 
 };  // namespace v3d::editor

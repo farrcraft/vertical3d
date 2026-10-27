@@ -17,7 +17,7 @@
 namespace v3d::editor {
 
 /**
- * One thing the scene holds: a mesh, a camera, a light or a group.
+ * One thing the scene holds: a mesh, a camera, a light, a group or curves.
  *
  * Every kind has two ids, a placement, and an object selection flag. id() is unique within one
  * run of the editor, and a selection names an item by it. The document id is unique within one
@@ -33,7 +33,7 @@ class Item {
     /**
      * Which class an item is. as() checks it before it casts.
      **/
-    enum class Kind : std::uint8_t { Mesh, Camera, Light, Group };
+    enum class Kind : std::uint8_t { Mesh, Camera, Light, Group, Curve };
 
     Item();
     virtual ~Item();
@@ -113,7 +113,7 @@ class Item {
 /**
  * An item as one kind, or an empty pointer when it is another kind or there is no item.
  *
- * T is Mesh, Camera, Light or Group, each of which names its own kind as T::KIND.
+ * T is Mesh, Camera, Light, Group or Curve, each of which names its own kind as T::KIND.
  **/
 template <typename T>
 boost::shared_ptr<T> as(const boost::shared_ptr<Item>& item) {

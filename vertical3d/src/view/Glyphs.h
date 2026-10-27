@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Light.h>
@@ -61,5 +62,10 @@ void drawLight(const Light::Emission& emission, const glm::vec4& colour, v3d::re
  * A group, in its own space: a box GROUP_REACH from its origin along each axis.
  **/
 void drawGroup(const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+
+/**
+ * Curves, in their own space: a line between each pair of evaluated points of each curve.
+ **/
+void drawCurves(const v3d::curve::Curves& curves, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 };  // namespace v3d::editor

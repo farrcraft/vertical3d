@@ -14,6 +14,7 @@
 #include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -168,6 +169,18 @@ void WireframeVisitor::visit(const boost::shared_ptr<Group>& group, const Placed
     canvas_->push();
     canvas_->transform(glyphPlacement(placed.world));
     drawGroup(group->selected() ? object_ : glyph_, canvas_);
+    canvas_->pop();
+}
+
+/**
+ **/
+void WireframeVisitor::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
+    if (canvas_ == nullptr || !curve) {
+        return;
+    }
+    canvas_->push();
+    canvas_->transform(placed.world);
+    drawCurves(*curve->geometry(), curve->selected() ? object_ : wire_, canvas_);
     canvas_->pop();
 }
 

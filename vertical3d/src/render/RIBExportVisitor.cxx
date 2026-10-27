@@ -15,6 +15,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -176,6 +177,13 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/, const 
 void RIBExportVisitor::visit(const boost::shared_ptr<Group>& /*group*/, const Placed& placed) {
     groups_++;
     enter("group" + std::to_string(groups_), placed.local);
+}
+
+/**
+ **/
+void RIBExportVisitor::visit(const boost::shared_ptr<Curve>& /*curve*/, const Placed& placed) {
+    curves_++;
+    enter("curve" + std::to_string(curves_), placed.local);
 }
 
 /**

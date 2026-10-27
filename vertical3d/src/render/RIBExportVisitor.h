@@ -98,6 +98,7 @@ class RIBExportVisitor final : public SceneVisitor {
     void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
     void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
 
     /**
      * Close the item's block, if a mesh inside it opened it.
@@ -134,6 +135,7 @@ class RIBExportVisitor final : public SceneVisitor {
     unsigned int lights_ = 0;
     unsigned int cameras_ = 0;
     unsigned int groups_ = 0;
+    unsigned int curves_ = 0;
     // where the camera is and the way it looks, for the light a scene with none is given
     glm::vec3 eye_{ 0.0F };
     glm::vec3 looks_{ 0.0F, 0.0F, 1.0F };

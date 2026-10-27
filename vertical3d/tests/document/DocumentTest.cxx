@@ -3,10 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
@@ -15,6 +19,7 @@
 #include <vertical3d/src/store/Project.h>
 
 #include <string>
+#include <variant>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -81,6 +86,26 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
     BOOST_CHECK(edited.redo().done);
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
     BOOST_CHECK(!edited.redo().done);
+}
+
+/**
+ * A curve is made at the origin, of the type asked for, as one change.
+ **/
+BOOST_AUTO_TEST_CASE(a_curve_is_created_as_one_change) {
+    const Scratch scratch("curve");
+    v3d::editor::Document edited = document(scratch.path());
+    const v3d::editor::Outcome made = edited.createCurve(v3d::editor::CurveType::Nurbs);
+    BOOST_CHECK(made.done);
+    BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 items");
+    BOOST_REQUIRE_EQUAL(edited.scene()->count(), 1U);
+    const boost::shared_ptr<v3d::editor::Curve> curve = v3d::editor::as<v3d::editor::Curve>(edited.scene()->items()[0]);
+    BOOST_REQUIRE(curve);
+    BOOST_REQUIRE_EQUAL(curve->geometry()->size(), 1U);
+    BOOST_CHECK(std::holds_alternative<v3d::curve::Nurbs>(curve->geometry()->curve(0).shape));
+    BOOST_CHECK(!curve->style().renders);
+
+    BOOST_CHECK(edited.undo().done);
+    BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);
 }
 
 /**

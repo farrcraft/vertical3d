@@ -13,6 +13,7 @@
 #include <api/type/geometry/AABBox.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Group.h>
@@ -187,6 +188,7 @@ void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
     case SelectMask::Mesh:
     case SelectMask::Light:
     case SelectMask::Camera:
+    case SelectMask::Curve:
     case SelectMask::Face:
         surface(mesh);
         break;
@@ -201,7 +203,7 @@ void Picker::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed
     }
     v3d::render::realtime::canvas::Line drawn;
     drawCamera(lens, glm::vec4(1.0F), &drawn);
-    glyph(*camera, placed.world, drawn);
+    lines(*camera, glyphPlacement(placed.world), drawn);
 }
 
 /**
@@ -212,7 +214,7 @@ void Picker::visit(const boost::shared_ptr<Light>& light, const Placed& placed, 
     }
     v3d::render::realtime::canvas::Line drawn;
     drawLight(emission, glm::vec4(1.0F), &drawn);
-    glyph(*light, placed.world, drawn);
+    lines(*light, glyphPlacement(placed.world), drawn);
 }
 
 /**
@@ -223,13 +225,24 @@ void Picker::visit(const boost::shared_ptr<Group>& group, const Placed& placed) 
     }
     v3d::render::realtime::canvas::Line drawn;
     drawGroup(glm::vec4(1.0F), &drawn);
-    glyph(*group, placed.world, drawn);
+    lines(*group, glyphPlacement(placed.world), drawn);
 }
 
 /**
  **/
-void Picker::glyph(const Item& item, const glm::mat4& world, const v3d::render::realtime::canvas::Line& drawn) {
-    model_ = glyphPlacement(world);
+void Picker::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
+    if (!curve || camera_ == nullptr || !takes(mask_, Item::Kind::Curve)) {
+        return;
+    }
+    v3d::render::realtime::canvas::Line drawn;
+    drawCurves(*curve->geometry(), glm::vec4(1.0F), &drawn);
+    lines(*curve, placed.world, drawn);
+}
+
+/**
+ **/
+void Picker::lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn) {
+    model_ = model;
     current_ = item.id();
     const std::vector<v3d::render::realtime::canvas::Line::Vertex>& points = drawn.vertices();
 
@@ -365,6 +378,7 @@ void Picker::enclosed(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     case SelectMask::Mesh:
     case SelectMask::Light:
     case SelectMask::Camera:
+    case SelectMask::Curve:
         enclosedObject(mesh);
         break;
     case SelectMask::Vertex:

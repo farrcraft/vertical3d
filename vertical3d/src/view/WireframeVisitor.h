@@ -21,9 +21,9 @@
 namespace v3d::editor {
 
 /**
- * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, and every camera,
- * light and group as its glyph. Which kinds are drawn is chosen when the visitor is made, and
- * a group is always drawn.
+ * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, every curve through
+ * its evaluated points, and every camera, light and group as its glyph. Which kinds are drawn is
+ * chosen when the visitor is made, and a group and a curve are always drawn.
  *
  * A mesh is drawn through its world matrix, so the canvas carries the placement, not the
  * geometry. Each edge is drawn once, by the half edge ownsEdge() picks. A glyph is drawn
@@ -71,6 +71,11 @@ class WireframeVisitor final : public SceneVisitor {
     void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
     void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+
+    /**
+     * Append one item's curves, through its world matrix.
+     **/
+    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
 
  private:
     /**

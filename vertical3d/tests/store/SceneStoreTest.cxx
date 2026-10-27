@@ -14,6 +14,8 @@
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -158,6 +160,17 @@ void same(const boost::shared_ptr<v3d::editor::Item>& left, const boost::shared_
         case v3d::editor::Item::Kind::Group:
             // a group holds nothing but its placement
             break;
+        case v3d::editor::Item::Kind::Curve: {
+            const v3d::editor::Curve& expected = *v3d::editor::as<v3d::editor::Curve>(left);
+            const v3d::editor::Curve& actual = *v3d::editor::as<v3d::editor::Curve>(right);
+            BOOST_CHECK(expected.style() == actual.style());
+            BOOST_CHECK_EQUAL(expected.geometry()->resolution(), actual.geometry()->resolution());
+            BOOST_REQUIRE_EQUAL(expected.geometry()->size(), actual.geometry()->size());
+            for (std::size_t index = 0; index < expected.geometry()->size(); index++) {
+                BOOST_CHECK(expected.geometry()->curve(index) == actual.geometry()->curve(index));
+            }
+            break;
+        }
     }
 }
 
@@ -749,6 +762,36 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE_EQUAL(read.count(), 2U);
     BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
     BOOST_CHECK(read.curves(read.items()[1]->id()).at("rotation.y") == curve);
+}
+
+BOOST_AUTO_TEST_CASE(store_curve_round_trip_test) {
+    // a curve item of each type, one rendering and placed, comes back as it was written
+    const Scratch scratch("curves");
+    v3d::editor::Scene written;
+    for (const v3d::editor::CurveType type : { v3d::editor::CurveType::Poly, v3d::editor::CurveType::Bezier,
+        v3d::editor::CurveType::CatmullRom, v3d::editor::CurveType::Nurbs }) {
+        written.add(v3d::editor::create_curve(type));
+    }
+    const boost::shared_ptr<v3d::editor::Curve> placed = v3d::editor::as<v3d::editor::Curve>(written.items()[1]);
+    placed->translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    placed->style({ .renders = true, .width = 0.5F });
+    v3d::editor::SceneStore store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), written));
+
+    v3d::editor::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_REQUIRE_EQUAL(read.count(), 4U);
+    for (std::size_t index = 0; index < read.count(); index++) {
+        same(written.items()[index], read.items()[index]);
+    }
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE kind = 'curve' AND type_version = 1"), 4);
+
+    // a change to one curve's geometry writes that item again
+    placed->geometry()->resolution(3);
+    BOOST_REQUIRE(store.write(scratch.path(), written));
+    v3d::editor::Scene again;
+    BOOST_REQUIRE(store.read(scratch.path(), &again));
+    BOOST_CHECK_EQUAL(v3d::editor::as<v3d::editor::Curve>(again.items()[1])->geometry()->resolution(), 3U);
 }
 
 };  // namespace

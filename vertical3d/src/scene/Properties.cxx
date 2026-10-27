@@ -91,6 +91,7 @@ const std::vector<std::string>& properties(Item::Kind kind) {
             return light;
         case Item::Kind::Mesh:
         case Item::Kind::Group:
+        case Item::Kind::Curve:
             break;
     }
     return plain;

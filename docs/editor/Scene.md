@@ -151,7 +151,7 @@ It holds scene items of every kind in one list, finds them by id, and keeps them
 order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
 **Items.** A scene item is a `v3d::editor::Item`. It has an id unique within one run of the
-editor, a placement that is a `type::Transform`, and the object selection flag. There are four
+editor, a placement that is a `type::Transform`, and the object selection flag. There are five
 kinds:
 
 | Kind | Class | Holds |
@@ -160,6 +160,7 @@ kinds:
 | Camera | `Camera` | A `Lens`: perspective or orthographic, the angle of view in degrees, the orthographic half height, and the clipping distances. It looks along its own +z axis with +y up, as a camera profile with no rotation does |
 | Light | `Light` | An `Emission`: a point, distant or spot light, its colour and intensity, and a spot light's cone and soft edge in radians, with RI's standard shaders' defaults. A distant or spot light shines along its own +z axis |
 | Group | `Group` | Nothing of its own. It is a parent where no other item is to be one, and is drawn and picked as a box `GROUP_REACH` from its origin along each axis |
+| Curve | `Curve` | A shared `curve::Curves`, any number of curves each of its own type, which its transform places, and a `Style`: whether a render draws it, off by default, and the width it is rendered at. It is drawn and picked through its evaluated points. [Curves.md](../api/Curves.md) describes the types |
 
 - **Identity.** Each item has two ids.
   - `Node` gives each item an id from a process-wide counter. It is unique within one run, is
@@ -177,11 +178,12 @@ kinds:
   the world comes from the scene's evaluation. `translation(v)` sets the position, and
   `translate(v)` adds an offset to it. A camera and a light ignore their scale.
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
-  its placement, its lens or emission, and a mesh's geometry. It is the item's own count of
-  changes, which every placement setter and every setter of what its kind holds adds one to, and
-  for a mesh `BRep::changes()` as well. A setter that writes what is already there counts too.
-  Each count only goes up, so the sum moves exactly when one of them does. A change
-  of selection does not move it. A save writes an item again only when its revision has moved.
+  its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is the item's
+  own count of changes, which every placement setter and every setter of what its kind holds adds
+  one to, and for a mesh `BRep::changes()` or for a curve `Curves::changes()` as well. A setter
+  that writes what is already there counts too. Each count only goes up, so the sum moves exactly
+  when one of them does. A change of selection does not move it. A save writes an item again only
+  when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,
   and `Scene::item(id)` finds any kind.
@@ -196,7 +198,8 @@ kinds:
   handles it. The walk is depth first: an item, then everything beneath it, then `leave()` for
   it. `WireframeVisitor`, `RIBExportVisitor` and `Picker` work this way. The wireframe draws a
   camera, a light or a group as its glyph, the picker picks it by that glyph, and the export
-  writes each light.
+  writes each light. A curve is drawn and picked as lines between its evaluated points, through
+  its world matrix, and always drawn, whichever kinds a view hides.
 - **Not the views' cameras.** Each viewport owns its camera. `engine::CameraProfiles` holds the
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
@@ -205,6 +208,11 @@ kinds:
   is the selection and one undo removes it. `create_camera()` and `create_light()` in
   `src/scene/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
   when the view's would not be valid. A light takes RI's default emission for its type.
+- **Making a curve.** The Create menu's Curve items make one curve of a type, poly, Bezier,
+  Catmull-Rom or NURBS, at the origin through a `CreateCommand`, as a primitive is made.
+  `create_curve()` in `src/scene/CreateItem.h` makes an S on the ground through four points from
+  -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
+  clamped knots.
 
 Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
 [ADR-0103](../adr/0103-editor-items-have-persistent-document-ids.md)

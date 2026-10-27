@@ -103,6 +103,36 @@
                   ]
                 },
                 {
+                  "label": "Curve",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Bezier",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::bezier"
+                    },
+                    {
+                      "label": "NURBS",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::nurbs"
+                    },
+                    {
+                      "label": "Catmull-Rom",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::catmull_rom"
+                    },
+                    {
+                      "label": "Poly",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::poly"
+                    }
+                  ]
+                },
+                {
                   "label": "Group",
                   "type": "action",
                   "context": "create",

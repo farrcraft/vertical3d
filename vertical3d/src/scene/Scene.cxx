@@ -10,6 +10,7 @@
 
 #include "Camera.h"
 #include "Components.h"
+#include "Curve.h"
 #include "Evaluation.h"
 #include "Group.h"
 #include "Item.h"
@@ -62,6 +63,9 @@ void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Eval
             break;
         case Item::Kind::Group:
             visitor->visit(boost::static_pointer_cast<Group>(item), placed);
+            break;
+        case Item::Kind::Curve:
+            visitor->visit(boost::static_pointer_cast<Curve>(item), placed);
             break;
     }
     const auto beneath = tree.find(item->documentId());
