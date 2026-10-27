@@ -1,7 +1,8 @@
 # ADR-0121: Editor: component selection belongs to the item
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-26
+**Amended by**: ADR-0126
 **Documented in**: [editor/PickingAndManipulators.md](../editor/PickingAndManipulators.md)
 
 ## Context
