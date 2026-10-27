@@ -1,7 +1,8 @@
-add_executable("vertical3d"
+# The editor's sources, built once, so the executable and its suites link one copy of them
+# rather than each compiling their own.
+add_library("v3dlib_editor"
 	"src/Controller.h" "src/Controller.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
-	"src/main.cxx"
 
 	"src/view/ViewLayout.h" "src/view/ViewLayout.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
@@ -60,31 +61,35 @@ add_executable("vertical3d"
 	"src/manipulator/RotateManipulator.h" "src/manipulator/RotateManipulator.cxx"
 	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")
 
-target_link_libraries(vertical3d PRIVATE
+target_include_directories("v3dlib_editor" PUBLIC ${V3D_ROOT})
+target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_animation
 	v3dlib_asset
-	v3dlib_asset_media
 	v3dlib_brep
-	v3dlib_database
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_image
 	v3dlib_log
-	v3dlib_moya
 	v3dlib_render
 	v3dlib_render_offline
 	v3dlib_type
 	v3dlib_shell
 	v3dlib_ui
-	v3dlib_window
-)
+	v3dlib_window)
+
+# PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
+# store writes through the database, and moya renders the render window
+target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_moya)
+
+# the shaded pass's own stages, which a view draws its meshes' surfaces with
+v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")
+v3d_add_shader("v3dlib_editor" "shaders/shaded.frag")
+
+add_executable("vertical3d" "src/main.cxx")
+target_link_libraries(vertical3d PRIVATE v3dlib_editor v3dlib_engine)
 
 # a batch render runs moya.exe, which the editor finds beside itself
 v3d_copy_program(vertical3d moya)
-
-# the shaded pass's own stages, which a view draws its meshes' surfaces with
-v3d_add_shader(vertical3d "shaders/shaded.vert")
-v3d_add_shader(vertical3d "shaders/shaded.frag")
 
 v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)
