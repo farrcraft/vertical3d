@@ -28,6 +28,7 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 | [api/Cameras.md](api/Cameras.md) | The camera profile, its matrices and handedness, and the isometric orbit |
 | [api/Models.md](api/Models.md) | `model::Model`, skeletons, and loading glTF |
 | [api/Animation.md](api/Animation.md) | Clips, poses, curves, tracks and particle effects |
+| [api/Curves.md](api/Curves.md) | Curves of four types, their evaluation, Bezier handles, and conversion to basis curves |
 | [api/Grid.md](api/Grid.md) | Tile grids: movement, line of sight, terrain maps |
 | [api/Assets.md](api/Assets.md) | The asset manager and loaders, loading on a worker, JSON documents, and writing files |
 | [api/Images.md](api/Images.md) | Images, the texture atlas, and packing a sprite sheet |

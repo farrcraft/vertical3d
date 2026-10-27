@@ -435,9 +435,9 @@ weighing polygons made by the export, curves that never render, and round tubes.
 ### Step 14 — Handles
 
 **Open.** ADR first, on what a handle is. Nothing in the editor defines one: a manipulator's
-handles are drawn by the renderer, are not items, and cannot be selected. The candidates are a
-group's selection handle, which step 9's groups make possible, a Bezier curve's handle, which
-step 13's curves make possible, and an IK handle, which needs a skeleton in the scene. The
+handles are drawn by the renderer, are not items, and cannot be selected. There are three
+candidates. A group's selection handle needs step 9's groups, a Bezier curve's handle needs
+step 13's curves, and an IK handle needs a skeleton in the scene. The
 menu's `select::mask::handle` waits on it.
 
 - Whatever the ADR decides is built as an item kind or a part of one, with the handle mask

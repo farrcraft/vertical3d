@@ -23,6 +23,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models, and sprite sheets. |
 | [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
+| [`curve`](../../api/curve/) | Curves of four types (poly, Bezier, Catmull-Rom and NURBS), their evaluation, and their conversion to the basis curves renderers take. See [Curves.md](Curves.md). |
 | [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
 | [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry, and the particle effects its emitter steps. |
 | [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings, and the readers for the window and camera documents. It opens the window. |
@@ -61,6 +62,7 @@ Boost.
 | `database` | none | SQLite |
 | `ecs` | animation, type | glm, EnTT |
 | `brep` | type | glm |
+| `curve` | none | glm |
 | `model` | animation | glm |
 | `font` | log, image | FreeType, glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
@@ -78,7 +80,7 @@ Boost.
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   animation   grid   database   no device, no window
+log   type   animation   grid   database   curve   no device, no window
 image  asset  ecs  brep  model
 interchange
 interchange_usd                            OpenUSD
@@ -120,6 +122,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Use models, or load glTF | [Models.md](Models.md) |
 | Read a glTF file or a USD stage as a scene of nodes, meshes, cameras and lights | [Interchange.md](Interchange.md) |
 | Use animation or particle effects | [Animation.md](Animation.md) |
+| Draw, evaluate or convert curves: poly, Bezier, Catmull-Rom and NURBS | [Curves.md](Curves.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
 | Load files and JSON documents, or write them | [Assets.md](Assets.md) |
 | Read, write or pack images | [Images.md](Images.md) |
@@ -236,6 +239,11 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Mesh** — four different things: a `brep::BRep` the editor models with, the
   `editor::Mesh` scene item that places one, a `model::Model` a file loads into, and a
   device-side mesh in the renderer. See [Models.md](Models.md).
+- **Curve** — two different things: a `curve::Curve`, a shape in space of one of four types,
+  and an `animation::Curve`, one number keyed on frames. See [Curves.md](Curves.md) and
+  [Animation.md](Animation.md).
+- **Basis curve** — a curve as a renderer takes it: one list of points under one basis, as
+  RI's `Curves` and USD's `BasisCurves` hold it. See [Curves.md](Curves.md#basis-curves).
 - **Model** — `model::Model`: one vertex array, one index list, materials and parts. See
   [Models.md](Models.md).
 - **Part** — a range of a model's indices drawn with one material. See

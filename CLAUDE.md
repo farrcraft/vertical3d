@@ -30,7 +30,7 @@ is SDL3.
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
 | `api/engine`, `event`, `input`, `audio`, `log`, `window`, `shell` | [docs/api/engine/](docs/api/engine/README.md) |
-| `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Cameras.md](docs/api/Cameras.md), [Models.md](docs/api/Models.md), [Animation.md](docs/api/Animation.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
+| `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs`, `api/curve` | [docs/api/Types.md](docs/api/Types.md), [Cameras.md](docs/api/Cameras.md), [Models.md](docs/api/Models.md), [Animation.md](docs/api/Animation.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md), [Curves.md](docs/api/Curves.md) |
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md), [Images.md](docs/api/Images.md), [Fonts.md](docs/api/Fonts.md) |
 | `api/interchange` | [docs/api/Interchange.md](docs/api/Interchange.md) |
 | `api/database` | [docs/api/Database.md](docs/api/Database.md) |

@@ -76,9 +76,9 @@ the geometry as a record of its own, which the mesh items refer to by id, and a 
 [] **Curve and handle select masks** (`select::mask::curve`, `select::mask::handle`). There is no
 curve kind of item, and nothing defines what a handle is. EditorScene steps 13 and 14 build them.
 
-[] **NURBS surfaces.** The editor models polygon meshes only. A NURBS surface kind of item,
-made by revolving, lofting or sweeping curves and trimmed by curves on it, needs an ADR on how it
-relates to meshes, and moya's `NuPatch` and `TrimCurve` have empty bodies.
+[] **NURBS surfaces.** The editor models polygon meshes only. A NURBS surface kind of item
+would be made by revolving, lofting or sweeping curves, and trimmed by curves on it. It needs an
+ADR on how it relates to meshes, and moya's `NuPatch` and `TrimCurve` have empty bodies.
 
 [] **A timeline and a graph editor.** Keys can be set and stepped through, and the current frame
 shows only in the caption. Nothing draws the keys on a time line, scrubs the frame, sets the rate

@@ -7,12 +7,12 @@
 ## Context
 
 The editor needs curves to draw by hand, to revolve, loft and sweep into meshes, to trim the
-NURBS surfaces it will grow, as paths that items follow, and as hair. Each use wants a different
-form: Bezier curves whose handles keep a type, NURBS curves with weights for exact circles and
-for surfaces, Catmull-Rom curves for hair, and polylines for traced paths. Renderers and USD's
-hair schema take basis curves, which are points under one basis and cannot keep a handle's type
-or a NURBS weight. A half-edge mesh cannot hold an edge that bounds no face. USD files carry
-curves both as basis curves and as NURBS curves.
+NURBS surfaces it will grow, as paths that items follow, and as hair. Each use is served by a
+different form: Bezier curves whose handles keep a type, NURBS curves with weights for exact
+circles and for surfaces, Catmull-Rom curves for hair, and polylines for traced paths.
+Renderers and USD's hair schema take basis curves, which are points under one basis and cannot
+keep a handle's type or a NURBS weight. A half-edge mesh cannot hold an edge that bounds no
+face. USD files carry curves both as basis curves and as NURBS curves.
 
 ## Decision
 
