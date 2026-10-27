@@ -54,17 +54,22 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | Path | Holds |
 |---|---|
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` |
-| `src/Controller.*` | The app: startup, command registration, mouse routing, project actions |
+| `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced |
+| `src/document/` | The document: the scene, its history and its project, and every operation on them |
+| `src/control/` | The controllers for playback, the Render menu, and the routing of the mouse |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
 | `src/view/` | The viewports and their layout, the construction plane, and the shaded pass |
 | `shaders/` | The shaded pass's vertex and fragment stages, compiled into the editor at build time |
 | `src/scene/` | The scene and its kinds of item, animation and render settings, the primitives and modelling operations, wireframe drawing, RIB export, and the project files |
 | `src/command/` | The undo records and the stack that holds them |
-| `src/tool/` | The camera, select and transform tools, and picking |
+| `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking |
 | `src/manipulator/` | The translate, rotate and scale handles, and what they move |
 | `src/render/` | Rendering the scene with moya: a shot, the render window, live render and batches |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
 | `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory, and the `vertical3d_device` suite |
+
+Every source but `main.cxx` builds into the `v3dlib_editor` library, which the executable and
+both editor suites link.
 
 Everything is in the namespace `v3d::editor`. Includes are written from the repository root,
 for both the api and the editor's own headers: `#include <api/brep/BRep.h>`,

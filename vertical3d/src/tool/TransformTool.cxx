@@ -201,6 +201,18 @@ bool TransformTool::dragging() const noexcept {
 
 /**
  **/
+bool TransformTool::takes(const glm::vec2& position) const {
+    const boost::shared_ptr<Manipulator> current = manipulator();
+    if (!current || !scene_ || !view_) {
+        return false;
+    }
+    const Target target = this->target();
+    Manipulator::Axis axis = Manipulator::Axis::None;
+    return !target.empty() && current->grab(target, *view_, position, &axis);
+}
+
+/**
+ **/
 void TransformTool::cancel() {
     dragged_ = Target();
     before_.clear();
@@ -323,8 +335,7 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
 
     Manipulator::Axis axis = Manipulator::Axis::None;
     if (!current->grab(target, *view_, position, &axis)) {
-        // no handle under the cursor, so the press is not this tool's. The controller
-        // passes it on to the select tool
+        // no handle under the cursor, so the press is not this tool's
         current->active(false);
         return;
     }

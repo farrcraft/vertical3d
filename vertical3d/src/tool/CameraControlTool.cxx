@@ -131,6 +131,12 @@ bool CameraControlTool::dragging() const noexcept {
 
 /**
  **/
+bool CameraControlTool::takes(const glm::vec2& /* position */) const {
+    return mode() != CAMERA_MODE_NONE;
+}
+
+/**
+ **/
 glm::vec2 CameraControlTool::local(const glm::vec2& position) const {
     if (!view_) {
         return position;

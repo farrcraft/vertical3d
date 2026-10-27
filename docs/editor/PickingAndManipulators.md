@@ -85,15 +85,19 @@ A band selects hidden parts, as a click does, because it tests geometry and not 
 behind the camera is never inside. The band is measured in the view where it started, and is
 drawn in the `ui` pass as a one-pixel outline in window pixels.
 
-**One button, three tools.** `Controller::drag()` routes the left button in this order:
+**One button, three tools.** `Pointer` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
-2. If a camera move is in force, held by a modifier (Alt or Ctrl) or latched from the Camera
-   Manipulators menu, the drag drives the camera. A release while a move is in force still goes
-   to `TransformTool` and `SelectTool` as well, so a handle drag or a rubber band that a move
-   began mid-way ends.
-3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
-4. Otherwise `SelectTool` picks.
+2. A press on a divider between views moves the divider, and no tool sees it.
+3. Otherwise `ToolRouter` offers the press to the tools in turn, and the first that takes it has
+   the gesture until the release:
+   - `CameraControlTool` takes it while a camera move is in force, held by a modifier (Alt or
+     Ctrl) or latched from the Camera Manipulators menu.
+   - `TransformTool` takes it when the cursor is on a manipulator handle.
+   - `SelectTool` takes any press, and picks.
+
+A press is one tool's gesture from start to end. A modifier pressed in the middle of a handle
+drag or a rubber band does not start a camera move, and the release ends the gesture it began.
 
 The middle button drives the camera alone. Holding it turns the camera with the arcball, and
 letting it go ends the drag, whatever the left button is doing.

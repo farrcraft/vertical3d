@@ -186,7 +186,7 @@ The chooser is `ui::shell::FileChooser`. It drives the `chooser` container laid 
 `project::chooser::pick`, `project::chooser::accept` and `project::chooser::cancel`.
 
 **Autosave.** While the project has unsaved changes, the editor autosaves it every 60 seconds
-(`Controller::autosaveInterval`). An autosave writes the scene's changes into a recovery
+(`Document::autosaveInterval`). An autosave writes the scene's changes into a recovery
 database, `autosave/<scene file>` in the project directory, and never into the scene's document.
 It goes through a store of its own, so after the first it writes only what changed since the
 last autosave.

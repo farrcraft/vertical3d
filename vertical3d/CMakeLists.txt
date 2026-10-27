@@ -4,6 +4,12 @@ add_library("v3dlib_editor"
 	"src/Controller.h" "src/Controller.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 
+	"src/document/Document.h" "src/document/Document.cxx"
+
+	"src/control/Playback.h" "src/control/Playback.cxx"
+	"src/control/Pointer.h" "src/control/Pointer.cxx"
+	"src/control/RenderWindow.h" "src/control/RenderWindow.cxx"
+
 	"src/view/ViewLayout.h" "src/view/ViewLayout.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
@@ -49,6 +55,7 @@ add_library("v3dlib_editor"
 	"src/command/TopologyCommand.h" "src/command/TopologyCommand.cxx"
 
 	"src/tool/Tool.h"
+	"src/tool/ToolRouter.h" "src/tool/ToolRouter.cxx"
 	"src/tool/CameraControlTool.h" "src/tool/CameraControlTool.cxx"
 	"src/tool/SelectMask.h" "src/tool/SelectMask.cxx"
 	"src/tool/SelectTool.h" "src/tool/SelectTool.cxx"

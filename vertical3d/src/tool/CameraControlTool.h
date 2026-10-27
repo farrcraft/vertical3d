@@ -83,7 +83,7 @@ class CameraControlTool final : public Tool {
      * The arcball is given the view's size, because it maps a click onto a sphere the
      * size of the view rather than of the window.
      **/
-    void view(const boost::shared_ptr<ViewPort>& view);
+    void view(const boost::shared_ptr<ViewPort>& view) override;
 
     /**
      * @return the view the tool is driving, which may be null
@@ -99,7 +99,12 @@ class CameraControlTool final : public Tool {
     /**
      * @return whether a drag is under way
      **/
-    bool dragging() const noexcept;
+    bool dragging() const noexcept override;
+
+    /**
+     * @return whether a move is held or latched, which makes a press drive the camera
+     **/
+    bool takes(const glm::vec2& position) const override;
 
     // these each happen when there is a motion event and the primary mouse button is pressed
     void zoom(const glm::vec2& position);

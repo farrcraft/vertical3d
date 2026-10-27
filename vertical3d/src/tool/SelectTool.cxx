@@ -186,6 +186,12 @@ bool SelectTool::dragging() const noexcept {
 
 /**
  **/
+bool SelectTool::takes(const glm::vec2& /* position */) const {
+    return true;
+}
+
+/**
+ **/
 std::optional<SelectTool::Band> SelectTool::band() const {
     if (!held_) {
         return std::nullopt;

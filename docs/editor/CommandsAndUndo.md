@@ -1,7 +1,33 @@
 # Commands and undo
 
-How a menu item, toolbar button or key reaches the code that handles it, and how a change is
-recorded so it can be undone.
+How a menu item, toolbar button or key reaches the code that handles it, how a change is
+made and recorded so it can be undone, and how the mouse reaches the tools.
+
+## The document and its operations
+
+`v3d::editor::Document` is what the editor edits: the scene, its `CommandStack`, and the
+`Project` it is kept in, with the saved position, the autosave and the recovery that go with
+them. It is in `src/document/`.
+
+**Every change a user can ask for is an operation on the document.** An operation applies
+itself, records itself in the history, and returns an `Outcome`: whether it did what it was
+asked, and a message to show. An operation that cannot run changes nothing, records nothing,
+and says why.
+
+- **What an operation acts on is in its arguments or its name.** `group(items)` and
+  `key(items, frame)` take the items. `createCamera(at, projection)` takes the view's camera
+  profile. The modelling operations act on the scene's selected parts, as `splitEdges()` says.
+  None of them reads the select tool, the active view or the pane under the cursor.
+- **The command table supplies the arguments.** Each handler in `registerCommands()` reads the
+  selection, the frame or the active view and passes them in. The select mask is a rule of the
+  ui, not of the document, so the handler checks it before a modelling operation runs.
+- **A gesture is not an operation.** A tool changes the document while the cursor moves, and
+  records the gesture in `Document::history()` when it ends.
+- **A frame is not a change.** `Document::goTo()` moves the current frame and poses the scene,
+  and records nothing.
+
+Opening, saving, the autosave and recovery are on the document too. What asks the user first,
+the file chooser and the save prompt, stays in `Controller`.
 
 ## Undo
 
@@ -23,9 +49,8 @@ mesh exactly. A gesture that moved no vertex records nothing.
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
-  `Controller::createPoly` wraps the primitive in a mesh item, builds a `CreateCommand`, calls
-  `redo()` to add the item, and then pushes it. Creating and redoing use the same code. A
-  `CreateCommand` takes an item of any kind.
+  `Document::create()` builds a `CreateCommand`, calls `redo()` to add the item, and then pushes
+  it. Creating and redoing use the same code. A `CreateCommand` takes an item of any kind.
 - **Every path out of a drag records it.** `TransformTool::commit()` runs on release and on a
   mode change. It pushes only if the placement actually changed, so a handle grabbed and
   released without moving records nothing.
@@ -126,16 +151,31 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 
 **Adding a command:**
 
-1. Register a handler in `Controller::registerCommands()` with `press()` or `hold()`.
-2. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
+1. If it changes the document, add an operation to `Document` that applies itself, records
+   itself and returns an `Outcome`.
+2. Register a handler in `Controller::registerCommands()` with `press()` or `hold()`. A handler
+   that runs an operation passes it what it acts on, and reports its `Outcome`.
+3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
    with the same context and name.
-3. If it describes on/off state, mark it in `syncUi()`.
+4. If it describes on/off state, mark it in `syncUi()`.
 
-**Tools.** `v3d::editor::Tool` is the interface for something that keeps receiving mouse input
-while it is active: `activate(name)`, `deactivate(name)`, `motion(position)` and
-`button(button, pressed, position)`. `CameraControlTool`, `SelectTool` and `TransformTool`
-implement it. `Tool` lives in the editor because no other app holds a gesture open across
-events.
+Playback, the Render menu and the mouse each have a controller in `src/control/`: `Playback`,
+`RenderWindow` and `Pointer`. A command for one of them calls it.
+
+## Tools
+
+`v3d::editor::Tool` is the interface for something that holds a gesture of the mouse open
+across events: `activate(name)` and `deactivate(name)`, `view(view)`, `takes(position)`,
+`dragging()`, `motion(position)` and `button(button, pressed, position)`. `CameraControlTool`,
+`SelectTool` and `TransformTool` implement it. `Tool` lives in the editor because no other app
+holds a gesture open across events.
+
+**`ToolRouter` gives the primary button to one tool at a time.** A press is offered to each tool
+in the order they were added, and the first whose `takes()` says yes has the gesture. The
+release goes to that tool alone. Every tool hears every motion and every change of view. The
+editor adds the camera tool, then the transform tool, then the select tool, so a new tool has a
+slot in that order. [PickingAndManipulators.md](PickingAndManipulators.md#picking) says what
+each one takes.
 
 `CommandStack` and `Tool` are in the editor rather than the api. No other app has a document
 to undo.

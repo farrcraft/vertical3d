@@ -137,6 +137,31 @@ BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
     BOOST_CHECK_EQUAL(transform->dragging(), false);
 }
 
+/**
+ * The tool takes a press on a handle of the selection, and no other, so a router offers the
+ * rest to the select tool. Asking changes nothing: no drag starts.
+ **/
+BOOST_AUTO_TEST_CASE(transform_tool_takes_a_press_on_a_handle_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    cube->selected(true);
+    scene->add(cube);
+
+    const boost::shared_ptr<v3d::editor::TransformTool> transform = tool(scene);
+    transform->activate("translate");
+
+    BOOST_CHECK(transform->takes(glm::vec2(centre.x + 45.0F, centre.y)));
+    BOOST_CHECK(!transform->takes(glm::vec2(30.0F, 370.0F)));
+    BOOST_CHECK(!transform->dragging());
+
+    // with no mode there are no handles, and with nothing selected there is nothing to move
+    transform->activate("select");
+    BOOST_CHECK(!transform->takes(glm::vec2(centre.x + 45.0F, centre.y)));
+    transform->activate("translate");
+    scene->deselect();
+    BOOST_CHECK(!transform->takes(glm::vec2(centre.x + 45.0F, centre.y)));
+}
+
 BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());

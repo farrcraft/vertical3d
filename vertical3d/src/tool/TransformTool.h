@@ -73,7 +73,7 @@ class TransformTool final : public Tool {
     /**
      * The view a drag is measured in, set as the cursor moves between viewports.
      **/
-    void view(const boost::shared_ptr<ViewPort>& view);
+    void view(const boost::shared_ptr<ViewPort>& view) override;
 
     /**
      * @return the view the tool is transforming in, which may be null
@@ -112,7 +112,12 @@ class TransformTool final : public Tool {
      * @return whether a handle is being dragged. While it is, the same press does not
      *         also select
      **/
-    bool dragging() const noexcept;
+    bool dragging() const noexcept override;
+
+    /**
+     * @return whether a handle of the target is under the point
+     **/
+    bool takes(const glm::vec2& position) const override;
 
     /**
      * End a drag without recording it, as replacing the scene does. The mesh the gesture

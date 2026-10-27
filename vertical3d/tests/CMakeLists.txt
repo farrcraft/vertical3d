@@ -22,6 +22,11 @@ v3d_add_test(vertical3d
 	"scene/SceneStoreTest.cxx"
 	"scene/ModellingTest.cxx"
 
+	"document/DocumentTest.cxx"
+
+	"control/PlaybackTest.cxx"
+	"control/PointerTest.cxx"
+
 	"command/CommandStackTest.cxx"
 	"command/GroupCommandTest.cxx"
 	"command/KeyCommandTest.cxx"
@@ -34,6 +39,7 @@ v3d_add_test(vertical3d
 	"tool/CameraControlToolTest.cxx"
 	"tool/PickerTest.cxx"
 	"tool/SelectToolTest.cxx"
+	"tool/ToolRouterTest.cxx"
 	"tool/TransformToolTest.cxx"
 
 	"manipulator/ManipulatorTest.cxx"
