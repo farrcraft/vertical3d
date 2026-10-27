@@ -7,6 +7,8 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -186,6 +188,63 @@ BOOST_AUTO_TEST_CASE(going_to_a_frame_holds_it_in_the_range) {
     BOOST_CHECK_EQUAL(edited.scene()->timeline().frame, 1);
     // a frame is not a change to the document
     BOOST_CHECK(!edited.dirty());
+}
+
+/**
+ * A glTF file comes in as one change: its nodes become items with their hierarchy, its
+ * triangles are joined back into quads, and its keys become curves. Undo takes every item out,
+ * and redo brings back the items with their parents and curves.
+ **/
+BOOST_AUTO_TEST_CASE(a_gltf_file_imports_as_one_change) {
+    const Scratch scratch("import");
+    v3d::editor::Document edited = document(scratch.path());
+
+    const v3d::editor::Outcome imported = edited.importScene(boost::filesystem::path(V3D_INTERCHANGE_DATA) / "scene.glb");
+    BOOST_REQUIRE_MESSAGE(imported.done, imported.message);
+    BOOST_CHECK_EQUAL(imported.message, "imported 4 items from scene.glb");
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
+
+    const auto check = [&edited]() {
+        const boost::shared_ptr<v3d::editor::Scene>& scene = edited.scene();
+        BOOST_REQUIRE_EQUAL(scene->count(), 4U);
+        boost::shared_ptr<v3d::editor::Mesh> box;
+        for (const boost::shared_ptr<v3d::editor::Item>& item : scene->items()) {
+            if (item->kind() == v3d::editor::Item::Kind::Mesh) {
+                box = v3d::editor::as<v3d::editor::Mesh>(item);
+            }
+        }
+        BOOST_REQUIRE(box);
+        BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
+        const boost::shared_ptr<v3d::editor::Item> rig = scene->parent(box->id());
+        BOOST_REQUIRE(rig);
+        BOOST_CHECK(rig->kind() == v3d::editor::Item::Kind::Group);
+        BOOST_CHECK(rig->selected());
+        BOOST_CHECK_EQUAL(scene->curves(box->id()).count("translation.x"), 1U);
+    };
+    check();
+
+    BOOST_CHECK(edited.undo().done);
+    BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);
+    BOOST_CHECK(edited.redo().done);
+    check();
+}
+
+/**
+ * A file that is not glTF, or cannot be read, is refused and changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(an_import_that_cannot_be_read_changes_nothing) {
+    const Scratch scratch("refused");
+    v3d::editor::Document edited = document(scratch.path());
+
+    const v3d::editor::Outcome wrong = edited.importScene(boost::filesystem::path(V3D_INTERCHANGE_DATA) / "make_scene_fixture.py");
+    const v3d::editor::Outcome missing = edited.importScene(boost::filesystem::path(V3D_INTERCHANGE_DATA) / "missing.glb");
+
+    BOOST_CHECK(!wrong.done);
+    BOOST_CHECK_NE(wrong.message.find("not a .gltf or .glb file"), std::string::npos);
+    BOOST_CHECK(!missing.done);
+    BOOST_CHECK_NE(missing.message.find("missing.glb"), std::string::npos);
+    BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 0U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

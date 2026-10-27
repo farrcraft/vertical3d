@@ -64,6 +64,12 @@ void releaseRead(const cgltf_memory_options* /* memory */, const cgltf_file_opti
     std::free(data);  // NOLINT(cppcoreguidelines-no-malloc) - cgltf hands back what readThroughAssets() allocated
 }
 
+/**
+ * glTF gives a point or spot light in candela and a distant one in lux. Dividing by the
+ * luminous efficacy of light at 555 nanometres gives watts per steradian or per square metre.
+ **/
+constexpr float LUMENS_PER_WATT = 683.0F;
+
 std::string nameOf(const char* name) {
     return name != nullptr ? std::string(name) : std::string();
 }
@@ -310,7 +316,7 @@ class Reader final {
         Light light;
         light.name = nameOf(source.name);
         light.colour = glm::make_vec3(source.color);
-        light.intensity = source.intensity;
+        light.intensity = source.intensity / LUMENS_PER_WATT;
         if (source.type == cgltf_light_type_directional) {
             light.type = Light::Type::Distant;
         } else if (source.type == cgltf_light_type_spot) {

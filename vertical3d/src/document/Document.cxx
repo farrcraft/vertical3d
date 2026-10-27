@@ -6,12 +6,15 @@
 #include "Document.h"
 
 #include <api/brep/Primitives.h>
+#include <api/interchange/Gltf.h>
+#include <api/interchange/Scene.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/GroupCommand.h>
+#include <vertical3d/src/command/ImportCommand.h>
 #include <vertical3d/src/command/KeyCommand.h>
 #include <vertical3d/src/command/Modelling.h>
 #include <vertical3d/src/command/SettingsCommand.h>
@@ -20,6 +23,7 @@
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Import.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -29,6 +33,8 @@
 #include <vertical3d/src/store/Project.h>
 
 #include <algorithm>
+#include <cctype>
+#include <cstddef>
 #include <fstream>
 #include <string>
 
@@ -62,6 +68,7 @@ Outcome record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& 
 };  // namespace
 
 Document::Document(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& project) :
+    logger_(logger),
     scene_(boost::make_shared<Scene>()),
     history_(boost::make_shared<CommandStack>()),
     project_(boost::make_shared<Project>(logger, project)),
@@ -129,6 +136,39 @@ Outcome Document::group(const Items& items) {
     command->redo();
     history_->push(command);
     return { .done = true, .message = "grouped " + std::to_string(items.size()) + " items - " + std::to_string(scene_->count()) + " items" };
+}
+
+Outcome Document::importScene(const boost::filesystem::path& file) {
+    const std::string name = file.filename().string();
+    std::string extension = file.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(),
+        [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
+    if (extension != ".gltf" && extension != ".glb") {
+        return { .done = false, .message = "import: " + name + " is not a .gltf or .glb file" };
+    }
+    const v3d::interchange::Imported read = v3d::interchange::readGltf(file.string());
+    if (!read.scene) {
+        return { .done = false, .message = "import: " + read.problem };
+    }
+    const Import imported = editor::importScene(*read.scene, scene_->timeline().rate);
+    for (const std::string& note : read.notes) {
+        logger_->get()->warn("import {}: {}", name, note);
+    }
+    for (const std::string& note : imported.notes) {
+        logger_->get()->warn("import {}: {}", name, note);
+    }
+    if (imported.items.empty()) {
+        return { .done = false, .message = "import: " + name + " holds nothing to import" };
+    }
+    const boost::shared_ptr<ImportCommand> command = boost::make_shared<ImportCommand>(scene_, imported, name);
+    command->redo();
+    history_->push(command);
+    std::string message = "imported " + std::to_string(imported.items.size()) + " items from " + name;
+    const std::size_t left = read.notes.size() + imported.notes.size();
+    if (left > 0) {
+        message += " - " + std::to_string(left) + " things left out, which the log lists";
+    }
+    return { .done = true, .message = message };
 }
 
 Outcome Document::key(const Items& items, int frame) {

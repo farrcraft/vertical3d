@@ -51,6 +51,10 @@ The rules:
 - **The first do goes through `redo()`** where the change is not interactive.
   `Document::create()` builds a `CreateCommand`, calls `redo()` to add the item, and then pushes
   it. Creating and redoing use the same code. A `CreateCommand` takes an item of any kind.
+- **A command puts back what a removal takes.** Removing an item takes its links and its curves
+  with it. An `ImportCommand` therefore holds the imported items' parents and curves, and sets
+  them again each time it is redone. Undoing it removes the items at the top of the import,
+  and everything beneath them goes too.
 - **Every path out of a drag records it.** `TransformTool::commit()` runs on release and on a
   mode change. It pushes only if the placement actually changed, so a handle grabbed and
   released without moving records nothing.

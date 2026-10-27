@@ -178,6 +178,11 @@ class Controller final : public v3d::engine::Engine {
     void saveProjectAs();
 
     /**
+     * Choose a glTF file to import into the document.
+     **/
+    void importScene();
+
+    /**
      * Run something that replaces the document, asking first when it has unsaved changes.
      * Saving and then continuing, or discarding them and continuing, both run it. A save that
      * fails stops it, and so does cancelling.

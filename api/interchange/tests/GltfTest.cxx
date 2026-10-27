@@ -117,7 +117,8 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_spot_light_test) {
     checkVector(light.colour, glm::vec3(1.0F, 0.5F, 0.25F));
     BOOST_CHECK_CLOSE(light.outerCone, glm::radians(30.0F), 0.01F);
     BOOST_CHECK_CLOSE(light.innerCone, glm::radians(22.5F), 0.01F);
-    BOOST_CHECK_GT(light.intensity, 0.0F);
+    // Blender writes its 1000 watts as candela, the watts spread over a sphere, times 683
+    BOOST_CHECK_CLOSE(light.intensity, 1000.0F / (4.0F * glm::pi<float>()), 0.1F);
     // the light shines along its node's -z, which points down
     checkVector(lamp.placement.rotation * glm::vec3(0.0F, 0.0F, -1.0F), glm::vec3(0.0F, -1.0F, 0.0F));
 }
@@ -171,7 +172,8 @@ BOOST_AUTO_TEST_CASE(gltf_reads_an_orthographic_camera_and_a_distant_light_test)
     BOOST_REQUIRE(sun.light);
     const Light& light = scene.lights[*sun.light];
     BOOST_CHECK(light.type == Light::Type::Distant);
-    BOOST_CHECK_CLOSE(light.intensity, 3.0F, 0.01F);
+    // three lux, as watts per square metre
+    BOOST_CHECK_CLOSE(light.intensity, 3.0F / 683.0F, 0.01F);
     BOOST_CHECK_EQUAL(light.name, "SunBeam");
 }
 

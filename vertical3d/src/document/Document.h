@@ -82,6 +82,13 @@ class Document final {
     Outcome group(const Items& items);
 
     /**
+     * Read a glTF file, .gltf or .glb, and put its scene into the document as one change. Its
+     * nodes become items, with their hierarchy and their keys, and the items at the top become
+     * the selection. What the file holds that the scene cannot is logged as a warning.
+     **/
+    Outcome importScene(const boost::filesystem::path& file);
+
+    /**
      * Key every property of each item at a frame.
      **/
     Outcome key(const Items& items, int frame);
@@ -169,6 +176,7 @@ class Document final {
         const std::string& picture);
 
  private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<CommandStack> history_;
     boost::shared_ptr<Project> project_;

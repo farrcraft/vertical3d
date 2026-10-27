@@ -73,15 +73,15 @@ It adds no component type. It drives components the document names (defaults in
 | `folder` | a `label` | where the list is, or the question being asked |
 
 ```cpp
-chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::filesystem::path& chosen) {
+chooser_->open(FileChooser::Mode::Save, directory, { ".json" }, [this](const boost::filesystem::path& chosen) {
     save(chosen);
 });
 ```
 
 - The app routes the list's command to `pick()`, and its buttons' commands to `accept()` and
   `close()`.
-- The listing is `..` (except at the root), then the directories, then the files that match
-  the extension, each sorted by name.
+- The listing is `..` (except at the root), then the directories, then the files that have one
+  of the extensions, each sorted by name. With no extensions, every file is listed.
 - `pick()` on a directory steps into it, on `..` steps up, and on a file puts its name in the
   field. A new listing has no row chosen, so a `pick()` with no row named does nothing until one
   is chosen in it.
@@ -89,9 +89,10 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
   colon. A colon is refused on every platform: on Windows it makes a drive relative path or an
   alternate data stream. A name must also be its own file name, so no other form leaves the
   directory. In `Open` mode `accept()` refuses a file that does not exist.
-- In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
-  `accept()` returns false and `confirming()` is true. Listing another directory clears the
-  question. Accepting the same name again in the same directory replaces the file.
+- In `Save` mode a name with none of the extensions is given the first. Saving over an
+  existing file asks first: `accept()` returns false and `confirming()` is true. Listing another
+  directory clears the question. Accepting the same name again in the same directory replaces
+  the file.
 
 ### Prompt
 

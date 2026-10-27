@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_SUITE(file_chooser_test)
 BOOST_AUTO_TEST_CASE(a_listing_is_directories_then_the_files_that_pass) {
     const Sandbox sandbox("listing");
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json", {});
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), { ".json" }, {});
 
     BOOST_CHECK(chooser.visible());
     BOOST_CHECK(chooser.directory() == sandbox.path());
@@ -114,12 +114,36 @@ BOOST_AUTO_TEST_CASE(a_listing_is_directories_then_the_files_that_pass) {
 }
 
 /**
+ * A listing takes the files with any of the extensions, and a name saved with none of them is
+ * given the first.
+ **/
+BOOST_AUTO_TEST_CASE(a_listing_takes_any_of_several_extensions) {
+    const Sandbox sandbox("several");
+    sandbox.touch("c.txt");
+    boost::filesystem::path chosen;
+    v3d::ui::shell::FileChooser chooser(nullptr);
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".txt", ".json" },
+        [&chosen](const boost::filesystem::path& path) { chosen = path; });
+
+    const std::vector<std::string> expected = { "../", "art/", "zoo/", "a.json", "b.json", "c.txt", "notes.txt" };
+    BOOST_CHECK(names(chooser) == expected);
+    chooser.name("scene.json");
+    BOOST_CHECK(chooser.accept());
+    BOOST_CHECK(chosen == sandbox.path() / "scene.json");
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".txt", ".json" },
+        [&chosen](const boost::filesystem::path& path) { chosen = path; });
+    chooser.name("scene");
+    BOOST_CHECK(chooser.accept());
+    BOOST_CHECK(chosen == sandbox.path() / "scene.txt");
+}
+
+/**
  * Stepping into a directory and up out of it again gives back the listing it started from.
  **/
 BOOST_AUTO_TEST_CASE(stepping_in_and_up_returns_to_the_listing) {
     const Sandbox sandbox("stepping");
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json", {});
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), { ".json" }, {});
     const std::vector<std::string> before = names(chooser);
 
     chooser.pick(1);
@@ -139,7 +163,7 @@ BOOST_AUTO_TEST_CASE(a_picked_file_is_chosen_in_its_directory) {
     const Sandbox sandbox("picked");
     boost::filesystem::path chosen;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), { ".json" },
         [&chosen](const boost::filesystem::path& path) { chosen = path; });
 
     chooser.pick(4);
@@ -157,7 +181,7 @@ BOOST_AUTO_TEST_CASE(a_name_that_is_not_one_is_refused) {
     const Sandbox sandbox("refused");
     bool called = false;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), { ".json" },
         [&called](const boost::filesystem::path&) { called = true; });
 
     for (const std::string& name : { std::string(), std::string("../a.json"), std::string("art\\a.json"),
@@ -178,7 +202,7 @@ BOOST_AUTO_TEST_CASE(a_saved_name_with_a_colon_is_refused) {
     const Sandbox sandbox("colon");
     bool called = false;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".json" },
         [&called](const boost::filesystem::path&) { called = true; });
 
     for (const std::string& name : { std::string("C:evil"), std::string("C:evil.json"), std::string("scene:stream"),
@@ -198,7 +222,7 @@ BOOST_AUTO_TEST_CASE(a_saved_name_is_given_the_extension) {
     const Sandbox sandbox("extension");
     boost::filesystem::path chosen;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".json" },
         [&chosen](const boost::filesystem::path& path) { chosen = path; });
 
     chooser.name("scene");
@@ -214,7 +238,7 @@ BOOST_AUTO_TEST_CASE(saving_over_a_file_asks_first) {
     const Sandbox sandbox("replace");
     int calls = 0;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".json" },
         [&calls](const boost::filesystem::path&) { calls++; });
 
     chooser.name("a");
@@ -240,7 +264,7 @@ BOOST_AUTO_TEST_CASE(a_new_listing_asks_again) {
     sandbox.touch("art/a.json");
     int calls = 0;
     v3d::ui::shell::FileChooser chooser(nullptr);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), ".json",
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Save, sandbox.path(), { ".json" },
         [&calls](const boost::filesystem::path&) { calls++; });
 
     chooser.name("a");
@@ -264,7 +288,7 @@ BOOST_AUTO_TEST_CASE(a_new_listing_has_nothing_chosen) {
     sandbox.touch("art/d.json");
     const boost::shared_ptr<v3d::ui::Interface> ui = chooserUi();
     v3d::ui::shell::FileChooser chooser(ui);
-    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), ".json", {});
+    chooser.open(v3d::ui::shell::FileChooser::Mode::Open, sandbox.path(), { ".json" }, {});
 
     const boost::shared_ptr<v3d::ui::component::SelectList> files =
         boost::dynamic_pointer_cast<v3d::ui::component::SelectList>(ui->container("chooser")->get("files"));

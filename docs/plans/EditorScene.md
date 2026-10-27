@@ -293,6 +293,11 @@ LightWave, DXF, 3DS and MilkShape leave the Import menu, and `project::import::g
   neighbour. Joining a whole flat region would turn a grid of squares into one face.
 - `v3dlib_interchange` has landed, with the neutral scene and `interchange::readGltf()`. It owns
   cgltf's implementation, which `asset_media` links it for.
+- glTF import has landed: `project::import::gltf`, `Document::importScene()`, `ImportCommand`
+  and `editor::importScene()`, which maps the neutral scene onto items. It differs in two ways.
+  The file chooser takes a list of extensions, so one item lists both `.gltf` and `.glb`. The
+  glTF reader gives a light's power in watts, dividing glTF's candela and lux by 683 lumens per
+  watt, so a light from Blender has the power it had there.
 
 ### Step 8 — The Render menu
 

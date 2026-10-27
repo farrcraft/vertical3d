@@ -22,6 +22,7 @@ add_library("v3dlib_editor"
 	"src/scene/Camera.h" "src/scene/Camera.cxx"
 	"src/scene/Light.h" "src/scene/Light.cxx"
 	"src/scene/Group.h" "src/scene/Group.cxx"
+	"src/scene/Import.h" "src/scene/Import.cxx"
 	"src/scene/Evaluation.h" "src/scene/Evaluation.cxx"
 	"src/scene/Properties.h" "src/scene/Properties.cxx"
 	"src/scene/RenderSettings.h"
@@ -54,6 +55,7 @@ add_library("v3dlib_editor"
 	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
 	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
 	"src/command/GroupCommand.h" "src/command/GroupCommand.cxx"
+	"src/command/ImportCommand.h" "src/command/ImportCommand.cxx"
 	"src/command/KeyCommand.h" "src/command/KeyCommand.cxx"
 	"src/command/SettingsCommand.h" "src/command/SettingsCommand.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"
@@ -83,6 +85,7 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_image
+	v3dlib_interchange
 	v3dlib_log
 	v3dlib_render
 	v3dlib_render_offline

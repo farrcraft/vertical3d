@@ -14,6 +14,7 @@ v3d_add_test(vertical3d
 	"scene/EvaluationTest.cxx"
 	"scene/PropertiesTest.cxx"
 	"scene/CreateItemTest.cxx"
+	"scene/ImportTest.cxx"
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
@@ -54,6 +55,7 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_engine
 	v3dlib_event
 	v3dlib_image
+	v3dlib_interchange
 	v3dlib_log
 	v3dlib_render
 	v3dlib_render_offline
@@ -63,6 +65,9 @@ target_link_libraries(v3dtest_vertical3d PRIVATE
 # the batch cases run moya.exe where the build puts it, beside the libraries it loads
 add_dependencies(v3dtest_vertical3d moya)
 target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_MOYA="$<TARGET_FILE:moya>")
+
+# the import cases read the interchange suite's fixtures where they are kept
+target_compile_definitions(v3dtest_vertical3d PRIVATE V3D_INTERCHANGE_DATA="${V3D_ROOT}/api/interchange/tests/data")
 
 v3d_copy_data(v3dtest_vertical3d app "${CMAKE_CURRENT_SOURCE_DIR}/../data")
 

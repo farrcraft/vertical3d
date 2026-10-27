@@ -1,7 +1,7 @@
-# Projects, scene documents and RIB export
+# Projects, scene documents, importing and RIB export
 
-How a project is laid out, how its scene is saved and loaded, and how a scene is exported for
-the offline renderer.
+How a project is laid out, how its scene is saved and loaded, how another tool's scene is
+imported, and how a scene is exported for the offline renderer.
 
 ## Projects
 
@@ -224,6 +224,39 @@ A clean project does not ask. A close that arrives while the prompt is up is ign
 is `ui::shell::Prompt`, driving the `prompt` container laid out in `data/vgui.json`. Its three
 buttons send `project::prompt::answer0` to `answer2`. The tools still take clicks beside it, as
 they do beside the file chooser.
+
+## Importing
+
+Project > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file and puts its
+scene into the document as one change, which one undo takes out again. The items at the top of
+the import become the selection. `Document::importScene()` does the work, so anything that calls
+it gets the same import.
+
+The file is read by `interchange::readGltf()`, described in
+[api/Interchange.md](../api/Interchange.md), and `editor::importScene()` in
+`src/scene/Import.h` makes the items:
+
+- **Kinds.** Each node becomes one item: a mesh, a camera or a light when it carries one, in that
+  order, and a group when it carries none. A node that carries more than one becomes the first,
+  with the others as its children. Items have no names, so a node's name is not kept.
+- **Meshes.** A mesh is built with `brep::build()`, with each pair of triangles that was a quad
+  joined back into it. Nodes that share a mesh give items that share one geometry. A mesh that
+  cannot be built, such as one with three faces on an edge, leaves its node a group.
+- **Cameras and lights.** A file's camera or light points along -z and the editor's along +z, so
+  each is turned half a turn about its own y. Its children and its keys are turned back, so they
+  stay where the file put them. A perspective angle is taken across the picture's shorter side.
+  A lens or an emission outside the editor's ranges is replaced by a new camera's or light's.
+- **Keys.** A key at a time in seconds goes on the frame at that time, at the timeline's rate. A
+  rotation's keys become Euler angles, each set the one closest to the key before. Linear and
+  step keys keep their interpolation. A cubic spline becomes Bezier keys, with the file's
+  tangents as slopes for a translation or a scale, and automatic slopes for a rotation. The
+  timeline's range is not changed.
+
+What the file holds that the editor cannot, such as a skin or a mesh of lines, is logged as a
+warning, one line each, and the outcome counts them. A file that cannot be read is refused, and
+the document is left as it was.
+
+Background: [ADR-0122](../adr/0122-editor-import-gltf-and-usd-as-scenes-of-items.md)
 
 ## RIB export
 

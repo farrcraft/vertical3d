@@ -43,10 +43,10 @@ FileChooser::FileChooser(const boost::shared_ptr<Interface>& engine, const Names
 
 /**
  **/
-void FileChooser::open(Mode mode, const boost::filesystem::path& directory, const std::string& extension,
+void FileChooser::open(Mode mode, const boost::filesystem::path& directory, const std::vector<std::string>& extensions,
     const Chosen& chosen) {
     mode_ = mode;
-    extension_ = extension;
+    extensions_ = extensions;
     chosen_ = chosen;
     // the field still holds what was typed into it last time, so it is cleared
     name(std::string());
@@ -101,7 +101,7 @@ bool FileChooser::list(const boost::filesystem::path& directory) {
         boost::system::error_code kind;
         if (boost::filesystem::is_directory(found, kind)) {
             directories.push_back(Entry{ found.filename().string(), true });
-        } else if (extension_.empty() || found.extension().string() == extension_) {
+        } else if (passes(found)) {
             files.push_back(Entry{ found.filename().string(), false });
         }
     }
@@ -211,8 +211,8 @@ bool FileChooser::accept() {
         boost::filesystem::path(typed).filename().string() != typed) {
         return false;
     }
-    if (mode_ == Mode::Save && !extension_.empty() && boost::filesystem::path(typed).extension().string() != extension_) {
-        typed += extension_;
+    if (mode_ == Mode::Save && !passes(boost::filesystem::path(typed))) {
+        typed += extensions_.front();
     }
     const boost::filesystem::path chosen = directory_ / typed;
 
@@ -269,6 +269,13 @@ void FileChooser::show() {
     if (folder) {
         folder->text(confirming_.empty() ? directory_.string() : confirming_ + " is there - accept again to replace it");
     }
+}
+
+/**
+ **/
+bool FileChooser::passes(const boost::filesystem::path& file) const {
+    const std::string extension = file.extension().string();
+    return extensions_.empty() || std::find(extensions_.begin(), extensions_.end(), extension) != extensions_.end();
 }
 
 /**

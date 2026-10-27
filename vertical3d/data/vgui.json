@@ -521,28 +521,10 @@
                   "type": "submenu",
                   "items": [
                     {
-                      "label": "lwo",
+                      "label": "glTF",
                       "type": "action",
                       "context": "project",
-                      "command": "import::lwo"
-                    },
-                    {
-                      "label": "dxf",
-                      "type": "action",
-                      "context": "project",
-                      "command": "import::dxf"
-                    },
-                    {
-                      "label": "3ds",
-                      "type": "action",
-                      "context": "project",
-                      "command": "import::3ds"
-                    },
-                    {
-                      "label": "milkshape",
-                      "type": "action",
-                      "context": "project",
-                      "command": "import::milkshape"
+                      "command": "import::gltf"
                     }
                   ]
                 },

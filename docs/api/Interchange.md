@@ -30,8 +30,9 @@ Up is +y.
     (`yfov`), in radians, and its aspect when the file states one.
   - An orthographic camera gives half the width and half the height it sees (`magnification`).
   - Both give their near and far clipping distances. `far` is zero when there is no far plane.
-- **Lights.** A point, distant or spot light, with a colour and an intensity in the file's own
-  units. A distant or spot light shines along its node's -z axis. A spot light gives two half
+- **Lights.** A point, distant or spot light, with a colour and an intensity. The intensity is
+  in watts per steradian for a point or spot light and watts per square metre for a distant
+  one. A distant or spot light shines along its node's -z axis. A spot light gives two half
   angles: `outerCone`, where its light ends, and `innerCone`, where it starts to fade toward
   that edge.
 - **Channels.** The keyed values of one part of one node's placement: its translation, its
@@ -63,7 +64,8 @@ What it reads:
   into triangles, and a primitive with no indices takes its points in order. A mesh that two
   nodes use is read once, and both nodes name it.
 - **Cameras and lights.** Lights come from `KHR_lights_punctual`. A directional light is a
-  distant one.
+  distant one. glTF gives a light in candela or lux, which the reader divides by 683 lumens per
+  watt.
 - **Animation.** Every channel of every animation that moves, turns or scales a read node. A
   file whose animations each move one node, as Blender writes one, plays as one scene.
 

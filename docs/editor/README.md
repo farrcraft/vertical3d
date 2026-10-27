@@ -15,7 +15,7 @@ projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
 | [Animation.md](Animation.md) | Key item properties, and play them back with the Timeline menu |
 | [Rendering.md](Rendering.md) | Render the scene with moya, in the render window or as a batch of frames |
-| [Files.md](Files.md) | Change the project layout, the scene document format, or the RIB export |
+| [Files.md](Files.md) | Change the project layout, the scene document format, importing, or the RIB export |
 
 ## Running it
 
@@ -45,6 +45,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Z, Y | `edit::undo`, `edit::redo` | Step the history |
 | O, S | `project::load`, `project::save` | Open a project; save the current one |
+| Project > Import menu | `project::import::gltf` | Import a glTF file's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 
 The bindings cannot express a key chord such as Ctrl+Z, so undo and redo use bare keys. Left
@@ -58,7 +59,7 @@ a higher one is in the wrong place.
 
 | Path | Holds | Includes |
 |---|---|---|
-| `src/scene/` | The model: the scene and its kinds of item, their evaluation, animation and render settings, and which parts of each mesh are selected | nothing of the editor's |
+| `src/scene/` | The model: the scene and its kinds of item, their evaluation, animation and render settings, which parts of each mesh are selected, and the items an imported scene becomes | nothing of the editor's |
 | `src/selection/` | What a select mask takes | `scene/` |
 | `src/store/` | The project directory and the scene document it saves, with a codec for each kind of item | `scene/` |
 | `src/render/` | Rendering the scene with moya: the RIB export, a shot, the render window, live render and batches | `scene/` |
@@ -96,5 +97,6 @@ pass on a headless device, and is skipped where there is none. Run both with
 
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
-- Six menu items have no handler, and log themselves as unregistered: the four importers and
-  the curve and handle select masks.
+- Two menu items have no handler, and log themselves as unregistered: the curve and handle
+  select masks.
+- Import reads glTF, and not yet USD.

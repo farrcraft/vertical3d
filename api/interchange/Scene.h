@@ -76,8 +76,8 @@ struct Light {
     Type type = Type::Point;
     glm::vec3 colour{ 1.0F };
     /**
-     * The intensity in the file's own units: candela for a point or spot light in glTF, lux for
-     * a distant one, and USD's unitless intensity scaled by its exposure.
+     * The power, in watts per steradian for a point or spot light and watts per square metre
+     * for a distant one. A reader of a photometric format divides by 683 lumens per watt.
      **/
     float intensity = 1.0F;
     /**

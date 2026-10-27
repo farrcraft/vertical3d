@@ -532,6 +532,7 @@ void Controller::registerCommands() {
     press("project::chooser::accept", [this]() { chooser_->accept(); });
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
+    press("project::import::gltf", [this]() { importScene(); });
     // the prompt's buttons, in the order its answers are given
     press("project::prompt::answer0", [this]() { prompt_->answer(0); });
     press("project::prompt::answer1", [this]() { prompt_->answer(1); });
@@ -559,10 +560,17 @@ void Controller::exportProject() {
 
 /**
  **/
+void Controller::importScene() {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), { ".gltf", ".glb" },
+        [this](const boost::filesystem::path& chosen) { report(document_->importScene(chosen)); });
+}
+
+/**
+ **/
 void Controller::openProject() {
     askBeforeDiscarding([this]() {
         // a project is opened by its manifest
-        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), ".json",
+        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), { ".json" },
             [this](const boost::filesystem::path& chosen) {
                 // a gesture under way is holding the mesh it started on, which the read is
                 // about to take out of the scene
@@ -616,7 +624,7 @@ bool Controller::quitRequested() {
  **/
 void Controller::saveProjectAs() {
     // the name typed is the new project's directory, so no extension is added to it
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, document_->project()->directory().parent_path(), "",
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, document_->project()->directory().parent_path(), {},
         [this](const boost::filesystem::path& chosen) { document_->saveAs(chosen); });
 }
 
