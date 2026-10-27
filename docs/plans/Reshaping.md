@@ -562,12 +562,26 @@ where component selection lives.
 
 ### Step 18 — odyssey on the shell
 
-**Open.**
+**Closed.**
 
-- odyssey gets the game menu and the overlay, and its empty stubs go.
-- Its layout and target name match the other demos.
-- voxel's camera becomes a controller over `type::camera::Camera`.
-- imagetool's sheet merge moves into the api and gets a suite.
+- odyssey holds a `shell::Shell` with the game menu and a statistics command, and its renderer
+  draws the world into the shell's screen before them. Escape opens the menu, which offers
+  Resume and Quit, and the menu pauses the game: no command moves the player, and a walk stands
+  still until it closes. **Found on the way:** the empty `Sprite` was a member of `Player`, and
+  went with the stubs.
+- odyssey's sources are under `src/`, and its target is `odyssey`.
+- voxel's player sees through a `type::camera::Camera`. `CameraController` holds the heading,
+  the pitch and the velocity, and writes the eye and the orientation into the camera. Its
+  profile uses the hand `glm::lookAt` builds, so clip space and the terrain's winding are
+  unchanged, and the terrain draws as it did. **Different from the plan:** the controller is
+  voxel's, not the api's, since nothing else drives a first person camera. The old camera's
+  flight behaviour went with it, since free rotation is the api camera's own turn.
+- `SpriteSheet::packed()` builds a sheet from what `image::pack()` packed, `placements()` gives
+  the rectangles `image::unpack()` cuts, and `SpriteSheets::read()` reads a document file.
+  imagetool calls them.
+- Nine new cases: one for odyssey's menu, two for voxel's camera, and six in a new sprite sheet
+  packing suite. Each fails to build without the change. The other voxel camera cases were
+  rewritten against the controller, and the flight camera's roll case went with it.
 
 ### Step 19 — A lit demo
 

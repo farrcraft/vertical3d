@@ -23,7 +23,7 @@ namespace {
 /** Degrees below or above the horizon the view stops at: straight down or straight up. **/
 constexpr float PITCH_LIMIT = 90.0F;
 
-const glm::vec3 WORLD_UP(0.0F, 1.0F, 0.0F);
+constexpr glm::vec3 WORLD_UP(0.0F, 1.0F, 0.0F);
 
 /** One axis's velocity, which way it is driven, how fast it changes, its limit, and the time. **/
 struct Axis {
@@ -80,6 +80,7 @@ void CameraController::perspective(const Lens& lens) {
     camera_->createProjection();
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - across, then down, as a mouse moves
 void CameraController::look(float headingDegrees, float pitchDegrees) {
     heading_ += headingDegrees;
     pitch_ = std::clamp(pitch_ + pitchDegrees, -PITCH_LIMIT, PITCH_LIMIT);
