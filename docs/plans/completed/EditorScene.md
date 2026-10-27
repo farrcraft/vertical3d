@@ -1,12 +1,12 @@
 # Editor Scene — Cameras, Lights, Groups, Shading, Import, Render and Playback
 
 Drafted 2026-10-24 against `ab4bdea1`. This plan takes the six editor groups in
-[TODO.md](../TODO.md#editor). When it closes, every one of the menu's 85 commands has a handler.
+[TODO.md](../../TODO.md#editor). When it closes, every one of the menu's 85 commands has a handler.
 The scene holds cameras, lights and groups as well as meshes. The views draw shaded as well as
 in wireframe, a project imports glTF, the Render menu renders the scene with moya, and the
 timeline keys and plays back transforms.
 
-The editor is described in [editor/](../editor/README.md). It edits half-edge meshes
+The editor is described in [editor/](../../editor/README.md). It edits half-edge meshes
 (`brep::BRep`) in a `Scene`, records each completed change as a `Command` on a `CommandStack`,
 and draws lines only.
 
@@ -119,7 +119,7 @@ them.
 | Interchange: where the readers live. Decided in ADR-0123: a neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in `v3dlib_interchange_usd`. | 7 |
 | Editor: what a curve is, and whether it is a kind of item. Decided in ADR-0124: an item holding curves from an api library, each with its own type. | 13 |
 | Offline: whether moya renders curves. Decided in ADR-0125: as ribbons under both hiders. | 13 |
-| Editor: what a handle is. | 14 |
+| Editor: what a handle is. Decided in ADR-0126, which amends ADR-0121: a Bezier curve's handle, a part of a curve item. | 14 |
 | Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
 
 ## What blocks what
@@ -137,8 +137,8 @@ them.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.** Step 9
   is closed.
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
-- **Step 13 needs step 1**, and is closed. **Step 14 needs its ADR**, which decides what else it
-  waits on.
+- **Step 13 needs step 1**, and is closed. **Step 14 needs its ADR**, which decided it needs
+  step 13's curves. Step 14 is closed.
 - **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
   step 11.
 
@@ -445,15 +445,55 @@ weighing polygons made by the export, curves that never render, and round tubes.
 
 ### Step 14 — Handles
 
-**Open.** ADR first, on what a handle is. Nothing in the editor defines one: a manipulator's
-handles are drawn by the renderer, are not items, and cannot be selected. There are three
-candidates. A group's selection handle needs step 9's groups, a Bezier curve's handle needs
-step 13's curves, and an IK handle needs a skeleton in the scene. The
-menu's `select::mask::handle` waits on it.
+**Closed.** ADR-0126 decided it, after looking at how Maya, Blender and Houdini use the word. It
+weighed a selection handle on each item, an IK handle, and handles picked under the Vertex mask
+with no Handle mask, against a Bezier curve's handles as parts of a curve item. It amends
+ADR-0121, because a curve item's parts are now selected as a mesh item's are.
 
-- Whatever the ADR decides is built as an item kind or a part of one, with the handle mask
-  picking it.
+- A curve item's parts are its control points and its Bezier handles. `CurveParts.h` numbers them
+  across every curve the item holds, and `Components` holds them by that number, with a fourth
+  kind of part, `Component::Handle`.
+- `SelectMask::Handle` selects Bezier handles alone. The Vertex mask also selects control points
+  of every curve type, and the picker finds both by screen distance, by click and by band, on a
+  selected curve.
+- A manipulator moves a curve's parts. A point carries its handles, and a handle is retyped as
+  `curve::moveHandle()` says. One `VertexCommand` records meshes and curves together, and holds
+  each touched curve whole.
+- Under Vertex and Handle a selected curve draws its control points and its NURBS hulls, and its
+  Bezier handles while the view shows handles.
+- Tests: the numbering across poly, Bezier and NURBS curves. A pick and a band under each mask.
+  A point moved and turned with its handles, an aligned handle that turns its partner, and an
+  automatic one retyped. A drag of a handle through the tool, undone to the curve as it was. The
+  wireframe's control points and handles.
+- What landed differs in one way. `view::show::handle` was already the manipulator's toggle, and
+  it now shows a curve's handles as well, rather than a second toggle being added.
 
 ## Outcome
 
-Written when the plan closes.
+Closed 2026-10-27. Every one of the menu's 85 commands has a handler.
+
+**Delivered.** The scene holds items of five kinds, meshes, cameras, lights, groups and curves,
+in a hierarchy the scene evaluates. A project is a directory, and a scene is a SQLite document
+that saves incrementally and autosaves to a recovery database. Cameras and lights are drawn,
+created, picked and moved, and the RIB export renders from them. The Camera Manipulators latch a
+move. Each view shades its meshes in its own fill, cull and shading. glTF and USD import as
+scenes of items. Render View renders the scene with moya as it changes, and Batch renders the
+timeline through `moya.exe`. The timeline keys every numeric property and plays it back. Curves
+of four types are drawn, saved, imported from USD and rendered by moya as ribbons, and their
+control points and Bezier handles are edited through the manipulators.
+
+**What differed from the plan.** Each step records its own differences. The largest were these:
+
+- Step 2 grew from a file format into a project directory and a database, decided in four ADRs.
+- Step 6 cut faces by ear clipping, and drew the surfaces in each view's scene pass.
+- Step 7 replaced the four legacy importers with glTF and USD, and put the readers in an api
+  library rather than in the editor.
+- Step 8 gained a renderer interface that renders again as the scene changes.
+- Step 13 made moya render curves, which the plan did not ask for.
+
+**Left open.** These are in [TODO.md](../../TODO.md):
+
+- Two mesh items that share a `BRep` read back from a document as two copies.
+- Rotation is keyed in one fixed Euler order.
+- moya's pictures arrive only when a frame finishes.
+- The editor has no NURBS surfaces.

@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
 
 ## Completed plans
 
@@ -30,6 +29,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [EditorScene](completed/EditorScene.md) | Editor, brep, curve, interchange, moya | 2026-10-27 | Cameras, lights, groups and curves in the scene, a SQLite project store with autosave, shaded views, glTF and USD import, rendering with moya, keyed playback, and curve points and handles edited through the manipulators |
 | [Reshaping](completed/Reshaping.md) | All of the tree, documents | 2026-10-27 | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the demos in `demos/` with a lit one, and each reference fact in one place |
 | [ScaleAndReach](completed/ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | 2026-10-25 | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice and placed events, sprite sheet packing, and ray hits shaded in batches |
 | [SettingsAndPortability](completed/SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | 2026-10-25 | Settings widgets and a text field in `Immediate`, a canvas segment, key bindings an app can read, reset and save, FMOD bus volume and pause, a requested present mode, wheel zoom and edge pan, a portability driver, and the platform-free libraries built with Clang on Linux |
