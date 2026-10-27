@@ -76,6 +76,7 @@ content went. Numbers are never reused.
 | [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted |
 | [0113](0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted |
 | [0114](0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted |
+| [0125](0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted |
 
 ## User interface
 
@@ -159,6 +160,7 @@ content went. Numbers are never reused.
 | [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
 | [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | accepted |
 | [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
+| [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
 
 ## Build, testing and code
 

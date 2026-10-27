@@ -117,7 +117,8 @@ them.
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. Decided in ADR-0106: a renderer interface for interactive renders, with moya linked behind it, and `moya.exe` for batches. | 8 |
 | Editor: which import formats the menu offers, and what an import makes. Decided in ADR-0122: glTF and USD, each read as a scene of items. | 7 |
 | Interchange: where the readers live. Decided in ADR-0123: a neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in `v3dlib_interchange_usd`. | 7 |
-| Editor: what a curve is, whether it is a kind of item, and whether moya renders one. | 13 |
+| Editor: what a curve is, and whether it is a kind of item. Decided in ADR-0124: an item holding curves from an api library, each with its own type. | 13 |
+| Offline: whether moya renders curves. Decided in ADR-0125: as ribbons under both hiders. | 13 |
 | Editor: what a handle is. | 14 |
 | Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
 
@@ -137,6 +138,7 @@ them.
   is closed.
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
 - **Step 13 needs step 1**, and **step 14 needs its ADR**, which decides what else it waits on.
+  A Bezier handle would wait on step 13.
 - **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
   step 11.
 
@@ -402,29 +404,41 @@ the recovery database.
 
 ### Step 13 — Curves
 
-**Open.** ADR first, on what a curve is: its form (polyline, Bezier, B-spline or NURBS),
-whether it is a kind of item of its own, and whether moya renders one. moya's `RiCurves` has an
-empty body, so a curve that is only exported shows in neither Render View nor a batch. The
-menu's `select::mask::curve` waits on it.
+**Open.** ADR-0124 decided what a curve is, after looking at how Blender, Maya, Houdini, USD
+and RenderMan hold curves. It weighed basis curves as the stored form, NURBS as the one stored
+form, one type per item, and curves inside `BRep`. ADR-0125 decided that moya renders them,
+weighing polygons made by the export, curves that never render, and round tubes. The menu's
+`select::mask::curve` waits on this step.
 
-- A curve kind of item. `SceneVisitor` gains a `visit` for it, which every visitor implements,
-  and the wireframe draws it in lines from its evaluated placement. A new Create item makes one
-  through an operation on `Document`.
+- `api/curve` is a new library, `v3dlib_curve`, with no rendering dependency. Its geometry holds
+  any number of curves, each poly, Bezier with a type on every handle, Catmull-Rom, or NURBS
+  with an order, weights and knots, and each open or closed. It evaluates each curve into a
+  cached list of points, and converts it to basis curves, exactly for every type but a NURBS
+  curve with weights.
+- A curve kind of item holds shared curve geometry. `SceneVisitor` gains a `visit` for it, which
+  every visitor implements, and the wireframe draws its evaluated points in lines. A new Create
+  item makes one through an operation on `Document`. A curve carries a width and whether it
+  renders, which is off by default.
 - The store saves a curve through a new `Codec` in `store/`.
-- The export sends a curve as RI `Curves` through `rib::Handler`, which gains a `curves`
-  request. `rib::Writer` writes it and `rib::Recorder` replays it. If the ADR has moya render
-  curves, moya's handler draws them as well.
-- `SelectMask::Curve` picks a curve by screen distance, as a glyph is picked.
-- Tests: a curve draws, picks, saves and exports, and the writer writes a `Curves` request that
-  reads back the same.
+- The export sends a curve that renders as RI `Curves` through `rib::Handler`, which gains a
+  `curves` request. `rib::Writer` writes it and `rib::Recorder` replays it.
+- moya draws `Curves` as ribbons under both hiders: reyes splits and dices them, and the ray
+  hider intersects them in its bounding volume hierarchy.
+- `interchange::readUsd()` reads `BasisCurves` and `NurbsCurves`, and the import makes curve
+  items from them.
+- `SelectMask::Curve` picks a curve by screen distance to its evaluated points.
+- Tests: each type evaluates through its control points as its maths says, and converts to
+  basis curves that evaluate to the same points. A curve draws, picks, saves, exports and
+  undoes. The writer writes a `Curves` request that reads back the same. moya renders a ribbon
+  of the given width under each hider. A USD file's curves import.
 
 ### Step 14 — Handles
 
 **Open.** ADR first, on what a handle is. Nothing in the editor defines one: a manipulator's
 handles are drawn by the renderer, are not items, and cannot be selected. The candidates are a
-group's selection handle, which step 9's groups make possible, and an IK handle, which needs a
-skeleton in the scene. The menu's
-`select::mask::handle` waits on it.
+group's selection handle, which step 9's groups make possible, a Bezier curve's handle, which
+step 13's curves make possible, and an IK handle, which needs a skeleton in the scene. The
+menu's `select::mask::handle` waits on it.
 
 - Whatever the ADR decides is built as an item kind or a part of one, with the handle mask
   picking it.
