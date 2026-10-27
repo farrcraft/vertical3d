@@ -431,12 +431,26 @@ decides `config`.
 
 ### Step 12 — Immediate and Loader split
 
-**Open.** Needs step 11.
+**Closed.**
 
-- `Immediate` keeps its public surface in its header. Its internals move out, and its source
-  splits into windows and scrolling, the text field, popups, and tabs and tables.
-- `Loader.cpp` splits into a theme reader and a component reader, with one error policy.
-- Their suites split to match.
+- `Immediate.h` declares only what an app calls. The state, the per-frame structs and the
+  steps every widget shares are `immediate::Context`, which an `Immediate` holds through a
+  unique pointer, so it moves and is not copied. The source is `Immediate.cpp` and five files
+  in `immediate/`: the context, windows and scrolling, the text field, the combo's list, and
+  tabs and tables.
+- `Loader` is a facade over `loader::ThemeReader` and `loader::ComponentReader`. Both read
+  through `loader/Members.h`, which states the one rule. A bad required member, or a bad entry
+  of an array, refuses the document. A bad optional member warns and keeps its default.
+- **Different from the plan:** the rule is the one `DocumentsAndLayout.md` already stated, and
+  the code is brought to it. A malformed colour no longer reads as white, and an unknown menu
+  item type is refused. A wrong-typed `theme`, `styles`, property array, `children`, flag,
+  position or size is now ignored, as is an unknown `edge`, `state`, `direction` or `anchor`.
+  Some of those refused the document before, and some were ignored silently.
+- The Immediate suites are six files over `tests/Layer.h`, and `ThemeTest` is three over
+  `tests/Documents.h`. Every moved case keeps its Boost.Test suite, so none is new, and none
+  changed, except that one renamed local and one document that the rule now loads.
+- Five new cases, one for each kind of member whose handling changed. Each fails without the
+  change.
 
 ### Step 13 — The editor's document layer
 

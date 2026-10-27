@@ -36,6 +36,7 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Type.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <optional>
@@ -96,13 +97,10 @@ bool ComponentReader::read(const boost::json::object& doc) {
     if (containers == nullptr) {
         return false;
     }
-    for (const boost::json::value& item : *containers) {
+    return std::ranges::all_of(*containers, [this](const boost::json::value& item) {
         const boost::json::object* container = requiredObject(*logger_, item, "The containers");
-        if (container == nullptr || !readContainer(*container)) {
-            return false;
-        }
-    }
-    return true;
+        return container != nullptr && readContainer(*container);
+    });
 }
 
 std::vector<boost::shared_ptr<Container>>& ComponentReader::containers() noexcept {
@@ -126,18 +124,15 @@ bool ComponentReader::readContainer(const boost::json::object& entry) {
     const boost::shared_ptr<Container> container = boost::make_shared<Container>(*named, *visible);
     containers_.push_back(container);
 
-    for (const boost::json::value& item : *components) {
+    return std::ranges::all_of(*components, [this, &container](const boost::json::value& item) {
         const boost::json::object* object = requiredObject(*logger_, item, "A container's components");
-        if (object == nullptr) {
-            return false;
-        }
-        const boost::shared_ptr<Component> component = readComponent(*object);
+        const boost::shared_ptr<Component> component = object == nullptr ? nullptr : readComponent(*object);
         if (!component) {
             return false;
         }
         container->add(component);
-    }
-    return true;
+        return true;
+    });
 }
 
 boost::shared_ptr<Component> ComponentReader::buildComponent(const std::string& componentType,
@@ -242,18 +237,15 @@ bool ComponentReader::readChildren(const boost::json::object& entry, const boost
     if (children == nullptr) {
         return true;
     }
-    for (const boost::json::value& item : *children) {
+    return std::ranges::all_of(*children, [this, &component](const boost::json::value& item) {
         const boost::json::object* object = requiredObject(*logger_, item, "A component's children");
-        if (object == nullptr) {
-            return false;
-        }
-        const boost::shared_ptr<Component> child = readComponent(*object);
+        const boost::shared_ptr<Component> child = object == nullptr ? nullptr : readComponent(*object);
         if (!child) {
             return false;
         }
         component->add(child);
-    }
-    return true;
+        return true;
+    });
 }
 
 void ComponentReader::readAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component) {
