@@ -230,7 +230,36 @@ BOOST_AUTO_TEST_CASE(a_gltf_file_imports_as_one_change) {
 }
 
 /**
- * A file that is not glTF, or cannot be read, is refused and changes nothing.
+ * A USD stage comes in the same way. Blender writes each object as a prim with its data
+ * beneath it, so the box is a group holding a mesh of six quads, and the stage's z up is turned
+ * to y up at its top.
+ **/
+BOOST_AUTO_TEST_CASE(a_usd_stage_imports_as_one_change) {
+    const Scratch scratch("usd");
+    v3d::editor::Document edited = document(scratch.path());
+
+    const v3d::editor::Outcome imported = edited.importScene(boost::filesystem::path(V3D_INTERCHANGE_DATA) / "scene.usda");
+    BOOST_REQUIRE_MESSAGE(imported.done, imported.message);
+    BOOST_CHECK_EQUAL(imported.message, "imported 8 items from scene.usda");
+
+    const boost::shared_ptr<v3d::editor::Scene>& scene = edited.scene();
+    boost::shared_ptr<v3d::editor::Mesh> box;
+    for (const boost::shared_ptr<v3d::editor::Item>& item : scene->items()) {
+        if (item->kind() == v3d::editor::Item::Kind::Mesh) {
+            box = v3d::editor::as<v3d::editor::Mesh>(item);
+        }
+    }
+    BOOST_REQUIRE(box);
+    BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
+    const boost::shared_ptr<v3d::editor::Item> holder = scene->parent(box->id());
+    BOOST_REQUIRE(holder);
+    BOOST_CHECK_EQUAL(scene->curves(holder->id()).count("translation.x"), 1U);
+    BOOST_CHECK(edited.undo().done);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
+}
+
+/**
+ * A file that is neither glTF nor USD, or cannot be read, is refused and changes nothing.
  **/
 BOOST_AUTO_TEST_CASE(an_import_that_cannot_be_read_changes_nothing) {
     const Scratch scratch("refused");
@@ -240,7 +269,7 @@ BOOST_AUTO_TEST_CASE(an_import_that_cannot_be_read_changes_nothing) {
     const v3d::editor::Outcome missing = edited.importScene(boost::filesystem::path(V3D_INTERCHANGE_DATA) / "missing.glb");
 
     BOOST_CHECK(!wrong.done);
-    BOOST_CHECK_NE(wrong.message.find("not a .gltf or .glb file"), std::string::npos);
+    BOOST_CHECK_NE(wrong.message.find("neither glTF nor USD"), std::string::npos);
     BOOST_CHECK(!missing.done);
     BOOST_CHECK_NE(missing.message.find("missing.glb"), std::string::npos);
     BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);

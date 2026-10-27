@@ -178,9 +178,9 @@ class Controller final : public v3d::engine::Engine {
     void saveProjectAs();
 
     /**
-     * Choose a glTF file to import into the document.
+     * Choose a file to import into the document, of the extensions one format is read from.
      **/
-    void importScene();
+    void importScene(const std::vector<std::string>& extensions);
 
     /**
      * Run something that replaces the document, asking first when it has unsaved changes.

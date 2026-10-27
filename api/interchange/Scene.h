@@ -59,11 +59,10 @@ struct Camera {
      **/
     glm::vec2 magnification{ 0.0F };
     /**
-     * The clipping distances along the view direction. far is zero when the camera has no far
-     * plane.
+     * The near and far clipping distances along the view direction, in that order. The far one
+     * is zero when the camera has no far plane.
      **/
-    float near = 0.0F;
-    float far = 0.0F;
+    glm::vec2 clipping{ 0.0F };
 };
 
 /**

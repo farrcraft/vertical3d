@@ -73,10 +73,10 @@ Camera::Lens lensOf(const interchange::Camera& camera) {
         }
         lens.fov = glm::degrees(fov);
     }
-    lens.clipping.x = camera.near;
+    lens.clipping.x = camera.clipping.x;
     // a camera with no far plane is given the far plane of a new one
-    if (camera.far > 0.0F) {
-        lens.clipping.y = camera.far;
+    if (camera.clipping.y > 0.0F) {
+        lens.clipping.y = camera.clipping.y;
     }
     return lens;
 }

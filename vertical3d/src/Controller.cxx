@@ -532,7 +532,8 @@ void Controller::registerCommands() {
     press("project::chooser::accept", [this]() { chooser_->accept(); });
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
-    press("project::import::gltf", [this]() { importScene(); });
+    press("project::import::gltf", [this]() { importScene({ ".gltf", ".glb" }); });
+    press("project::import::usd", [this]() { importScene({ ".usd", ".usda", ".usdc", ".usdz" }); });
     // the prompt's buttons, in the order its answers are given
     press("project::prompt::answer0", [this]() { prompt_->answer(0); });
     press("project::prompt::answer1", [this]() { prompt_->answer(1); });
@@ -560,8 +561,8 @@ void Controller::exportProject() {
 
 /**
  **/
-void Controller::importScene() {
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), { ".gltf", ".glb" },
+void Controller::importScene(const std::vector<std::string>& extensions) {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), extensions,
         [this](const boost::filesystem::path& chosen) { report(document_->importScene(chosen)); });
 }
 

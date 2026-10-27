@@ -1,5 +1,6 @@
-"""Generate scene.glb: a small scene built and exported by Blender's own glTF exporter, so the
-interchange reader is asserted against what a real exporter writes.
+"""Generate scene.glb and scene.usda: one small scene built by Blender and written by its own
+glTF and USD exporters, so the interchange readers are asserted against what real exporters
+write, and against each other.
 
   Rig    an empty at (2, 0, 0), which groups the box
   Box    a unit cube one unit above the rig, its child. Its location is keyed from x 0 at frame
@@ -9,8 +10,9 @@ interchange reader is asserted against what a real exporter writes.
   Lamp   a spot light at (0, 0, 5) shining straight down, 60 degrees across, with a soft
          edge a quarter of its half angle wide, coloured (1, 0.5, 0.25)
 
-Blender is z up and glTF y up; the exporter converts, so the box sits at (0, 1, 0) in the rig's
-space and the lamp shines along -y.
+Blender is z up and glTF y up; the glTF exporter converts, so the box sits at (0, 1, 0) in the
+rig's space and the lamp shines along -y. The USD exporter writes the stage z up, as Blender
+holds it, and the reader turns it.
 
 Run with Blender 5.2 from the root of the tree:
   blender --background --factory-startup --python api/interchange/tests/data/make_scene_fixture.py
@@ -21,7 +23,9 @@ import pathlib
 
 import bpy
 
-OUT = pathlib.Path(__file__).resolve().parent / "scene.glb"
+HERE = pathlib.Path(__file__).resolve().parent
+GLB = HERE / "scene.glb"
+USDA = HERE / "scene.usda"
 
 
 def clear():
@@ -85,7 +89,7 @@ def build():
 
 def export():
     bpy.ops.export_scene.gltf(
-        filepath=str(OUT),
+        filepath=str(GLB),
         export_format="GLB",
         export_yup=True,
         export_cameras=True,
@@ -93,9 +97,20 @@ def export():
         export_animations=True,
         export_apply=False,
     )
+    bpy.ops.wm.usd_export(
+        filepath=str(USDA),
+        export_animation=True,
+        export_lights=True,
+        export_cameras=True,
+        export_materials=False,
+        export_uvmaps=False,
+        export_normals=False,
+        convert_world_material=False,
+        author_blender_name=False,
+    )
 
 
 clear()
 build()
 export()
-print("wrote", OUT)
+print("wrote", GLB, "and", USDA)

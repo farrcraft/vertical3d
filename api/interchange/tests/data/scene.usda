@@ -1,0 +1,120 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    doc = "Blender v5.2.0 LTS"
+    endTimeCode = 25
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+)
+
+def Xform "root" (
+    prepend apiSchemas = ["ColorSpaceAPI"]
+    customData = {
+        dictionary Blender = {
+            bool generated = 1
+        }
+    }
+)
+{
+    uniform token colorSpace:name = "lin_rec709_scene"
+
+    def Xform "Rig"
+    {
+        float3 xformOp:rotateXYZ = (0, -0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Xform "Box"
+        {
+            float3 xformOp:rotateXYZ.timeSamples = {
+                1: (0, -0, 0),
+            }
+            float3 xformOp:scale.timeSamples = {
+                1: (1, 1, 1),
+            }
+            double3 xformOp:translate.timeSamples = {
+                1: (0, 0, 1),
+                2: (0.16666674613952637, 0, 1),
+                3: (0.33333325386047363, 0, 1),
+                4: (0.5, 0, 1),
+                5: (0.6666667461395264, 0, 1),
+                6: (0.8333332538604736, 0, 1),
+                7: (1, 0, 1),
+                8: (1.1666665077209473, 0, 1),
+                9: (1.3333334922790527, 0, 1),
+                10: (1.5, 0, 1),
+                11: (1.6666665077209473, 0, 1),
+                12: (1.8333334922790527, 0, 1),
+                13: (2, 0, 1),
+                14: (2.1666669845581055, 0, 1),
+                15: (2.3333330154418945, 0, 1),
+                16: (2.5, 0, 1),
+                17: (2.6666669845581055, 0, 1),
+                18: (2.8333330154418945, 0, 1),
+                19: (3, 0, 1),
+                20: (3.1666669845581055, 0, 1),
+                21: (3.3333330154418945, 0, 1),
+                22: (3.5, 0, 1),
+                23: (3.6666669845581055, 0, 1),
+                24: (3.8333330154418945, 0, 1),
+                25: (4, 0, 1),
+            }
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Mesh "BoxMesh" (
+                active = true
+            )
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 7, 6, 6, 7, 5, 4, 4, 5, 1, 0, 2, 6, 4, 0, 7, 3, 1, 5]
+                point3f[] points = [(-0.5, -0.5, -0.5), (-0.5, -0.5, 0.5), (-0.5, 0.5, -0.5), (-0.5, 0.5, 0.5), (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (0.5, 0.5, -0.5), (0.5, 0.5, 0.5)]
+                uniform token subdivisionScheme = "none"
+            }
+        }
+    }
+
+    def Xform "Lamp"
+    {
+        float3 xformOp:rotateXYZ = (0, -0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def SphereLight "LampBeam" (
+            prepend apiSchemas = ["ShapingAPI", "ColorSpaceAPI"]
+        )
+        {
+            uniform token colorSpace:name = "lin_rec709_scene"
+            float3[] extent = [(-0, -0, -0), (0, 0, 0)]
+            color3f inputs:color = (1, 0.5, 0.25)
+            float inputs:intensity = 318.30988
+            bool inputs:normalize = 1
+            float inputs:radius = 0
+            float inputs:shaping:cone:angle = 30.000002
+            float inputs:shaping:cone:softness = 0.25
+            bool treatAsPoint = 1
+        }
+    }
+
+    def Xform "Shot"
+    {
+        float3 xformOp:rotateXYZ = (80, -0, 0)
+        float3 xformOp:scale = (1, 0.99999994, 0.99999994)
+        double3 xformOp:translate = (0, -10, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Camera "ShotLens"
+        {
+            float2 clippingRange = (0.5, 200)
+            float focalLength = 0.3296973
+            float horizontalAperture = 0.42666668
+            token projection = "perspective"
+            float verticalAperture = 0.24
+        }
+    }
+}
+

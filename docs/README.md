@@ -33,7 +33,7 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 | [api/Images.md](api/Images.md) | Images, the texture atlas, and packing a sprite sheet |
 | [api/Fonts.md](api/Fonts.md) | Typefaces, glyph atlases and text layout |
 | [api/Database.md](api/Database.md) | SQLite connections, statements and transactions |
-| [api/Interchange.md](api/Interchange.md) | Reading a glTF file as a scene of nodes, meshes, cameras, lights and keys |
+| [api/Interchange.md](api/Interchange.md) | Reading a glTF file or a USD stage as a scene of nodes, meshes, cameras, lights and keys |
 | [../examples/README.md](../examples/README.md) | The example projects |
 
 ## Changing the libraries themselves

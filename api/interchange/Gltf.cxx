@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "Placement.h"
 #include "Scene.h"
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
@@ -28,9 +29,7 @@
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -75,28 +74,13 @@ std::string nameOf(const char* name) {
 }
 
 /**
- * A node's placement. A matrix is taken apart: its last column is the translation, the length
- * of each of the other three is a scale, and what is left when those are divided out is the
- * rotation. A matrix that mirrors gives up the mirror to its x scale.
+ * A node's placement, from its matrix when it has one.
  **/
 v3d::type::Transform placementOf(const cgltf_node& node) {
-    v3d::type::Transform placement;
     if (node.has_matrix != 0) {
-        const glm::mat4 matrix = glm::make_mat4(node.matrix);
-        placement.position = glm::vec3(matrix[3]);
-        glm::mat3 basis(matrix);
-        placement.scale = glm::vec3(glm::length(basis[0]), glm::length(basis[1]), glm::length(basis[2]));
-        if (glm::determinant(basis) < 0.0F) {
-            placement.scale.x = -placement.scale.x;
-        }
-        for (glm::length_t axis = 0; axis < 3; axis++) {
-            if (placement.scale[axis] != 0.0F) {
-                basis[axis] /= placement.scale[axis];
-            }
-        }
-        placement.rotation = glm::normalize(glm::quat_cast(basis));
-        return placement;
+        return v3d::interchange::placementOf(glm::make_mat4(node.matrix));
     }
+    v3d::type::Transform placement;
     if (node.has_translation != 0) {
         placement.position = glm::make_vec3(node.translation);
     }
@@ -293,14 +277,12 @@ class Reader final {
             const cgltf_camera_orthographic& lens = source.data.orthographic;
             camera.projection = Camera::Projection::Orthographic;
             camera.magnification = glm::vec2(lens.xmag, lens.ymag);
-            camera.near = lens.znear;
-            camera.far = lens.zfar;
+            camera.clipping = glm::vec2(lens.znear, lens.zfar);
         } else {
             const cgltf_camera_perspective& lens = source.data.perspective;
             camera.yfov = lens.yfov;
             camera.aspect = lens.has_aspect_ratio != 0 ? lens.aspect_ratio : 0.0F;
-            camera.near = lens.znear;
-            camera.far = lens.has_zfar != 0 ? lens.zfar : 0.0F;
+            camera.clipping = glm::vec2(lens.znear, lens.has_zfar != 0 ? lens.zfar : 0.0F);
         }
         const std::size_t index = scene_.cameras.size();
         cameras_.emplace(&source, index);

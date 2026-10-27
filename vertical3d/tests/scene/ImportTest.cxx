@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
     scene.meshes.push_back(square());
     scene.cameras.emplace_back();
     scene.cameras.back().yfov = glm::radians(40.0F);
-    scene.cameras.back().near = 0.1F;
+    scene.cameras.back().clipping.x = 0.1F;
     scene.lights.emplace_back();
     scene.nodes.push_back(node("rig", std::nullopt));
     scene.nodes.push_back(node("box", 0));
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(a_camera_is_turned_to_look_where_the_file_says) {
     Scene scene;
     scene.cameras.emplace_back();
     scene.cameras.back().yfov = glm::radians(40.0F);
-    scene.cameras.back().near = 0.1F;
+    scene.cameras.back().clipping.x = 0.1F;
     scene.nodes.push_back(node("shot", std::nullopt));
     scene.nodes.back().camera = 0;
     scene.nodes.push_back(node("marker", 0));
@@ -239,12 +239,12 @@ BOOST_AUTO_TEST_CASE(a_lens_and_an_emission_are_the_editors) {
     scene.cameras.emplace_back();
     scene.cameras.back().yfov = glm::radians(90.0F);
     scene.cameras.back().aspect = 0.5F;
-    scene.cameras.back().near = 0.5F;
+    scene.cameras.back().clipping.x = 0.5F;
     scene.cameras.emplace_back();
     scene.cameras.back().projection = v3d::interchange::Camera::Projection::Orthographic;
     scene.cameras.back().magnification = glm::vec2(4.0F, 3.0F);
-    scene.cameras.back().near = 0.5F;
-    scene.cameras.back().far = 20.0F;
+    scene.cameras.back().clipping.x = 0.5F;
+    scene.cameras.back().clipping.y = 20.0F;
     scene.lights.emplace_back();
     scene.lights.back().type = v3d::interchange::Light::Type::Spot;
     scene.lights.back().outerCone = 0.5F;

@@ -525,6 +525,12 @@
                       "type": "action",
                       "context": "project",
                       "command": "import::gltf"
+                    },
+                    {
+                      "label": "USD",
+                      "type": "action",
+                      "context": "project",
+                      "command": "import::usd"
                     }
                   ]
                 },

@@ -8,6 +8,7 @@
 #include <api/brep/Primitives.h>
 #include <api/interchange/Gltf.h>
 #include <api/interchange/Scene.h>
+#include <api/interchange/usd/Usd.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
@@ -143,10 +144,14 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     std::string extension = file.extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(),
         [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
-    if (extension != ".gltf" && extension != ".glb") {
-        return { .done = false, .message = "import: " + name + " is not a .gltf or .glb file" };
+    v3d::interchange::Imported read;
+    if (extension == ".gltf" || extension == ".glb") {
+        read = v3d::interchange::readGltf(file.string());
+    } else if (extension == ".usd" || extension == ".usda" || extension == ".usdc" || extension == ".usdz") {
+        read = v3d::interchange::readUsd(file.string());
+    } else {
+        return { .done = false, .message = "import: " + name + " is neither glTF nor USD" };
     }
-    const v3d::interchange::Imported read = v3d::interchange::readGltf(file.string());
     if (!read.scene) {
         return { .done = false, .message = "import: " + read.problem };
     }

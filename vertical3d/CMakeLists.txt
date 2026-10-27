@@ -95,8 +95,9 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_window)
 
 # PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
-# store writes through the database, and moya renders the render window
-target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_moya)
+# store writes through the database, the document imports USD, and moya renders the render
+# window
+target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_interchange_usd v3dlib_moya)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")
@@ -107,6 +108,9 @@ target_link_libraries(vertical3d PRIVATE v3dlib_editor v3dlib_engine)
 
 # a batch render runs moya.exe, which the editor finds beside itself
 v3d_copy_program(vertical3d moya)
+
+# importing a USD stage reads OpenUSD's plugins from beside the editor
+v3d_copy_usd_plugins(vertical3d)
 
 v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)

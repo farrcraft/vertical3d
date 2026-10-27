@@ -96,7 +96,8 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 
 ### Building off MSVC
 
-The api libraries whose closure names neither SDL3 nor Vulkan build and test with Clang on Linux:
+The api libraries whose closure names neither SDL3, Vulkan nor OpenUSD build and test with Clang
+on Linux:
 asset, asset_media, brep, database, ecs, event, font, grid, image, interchange, log,
 render_offline and type. CI checks that on every pull request, in
 [.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them

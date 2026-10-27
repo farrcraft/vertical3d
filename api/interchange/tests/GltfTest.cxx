@@ -100,8 +100,8 @@ BOOST_AUTO_TEST_CASE(gltf_reads_a_perspective_camera_test) {
     BOOST_CHECK(camera.projection == Camera::Projection::Perspective);
     BOOST_CHECK_CLOSE(camera.yfov, glm::radians(40.0F), 0.01F);
     BOOST_CHECK_CLOSE(camera.aspect, 16.0F / 9.0F, 0.01F);
-    BOOST_CHECK_CLOSE(camera.near, 0.5F, 0.01F);
-    BOOST_CHECK_CLOSE(camera.far, 200.0F, 0.01F);
+    BOOST_CHECK_CLOSE(camera.clipping.x, 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE(camera.clipping.y, 200.0F, 0.01F);
     // the camera looks along its node's -z, which Blender turned 80 degrees up from straight down
     const glm::vec3 view = shot.placement.rotation * glm::vec3(0.0F, 0.0F, -1.0F);
     checkVector(view, glm::vec3(0.0F, -std::cos(glm::radians(80.0F)), -std::sin(glm::radians(80.0F))));
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(gltf_reads_an_orthographic_camera_and_a_distant_light_test)
     BOOST_CHECK(camera.projection == Camera::Projection::Orthographic);
     BOOST_CHECK_CLOSE(camera.magnification.x, 4.0F, 0.01F);
     BOOST_CHECK_CLOSE(camera.magnification.y, 3.0F, 0.01F);
-    BOOST_CHECK_CLOSE(camera.far, 50.0F, 0.01F);
+    BOOST_CHECK_CLOSE(camera.clipping.y, 50.0F, 0.01F);
     BOOST_REQUIRE(sun.light);
     const Light& light = scene.lights[*sun.light];
     BOOST_CHECK(light.type == Light::Type::Distant);

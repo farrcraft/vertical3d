@@ -129,7 +129,8 @@ them.
 - **Step 11 needs step 2**, and gives step 6 the revision it re-uploads by. **Step 12 needs
   step 11**, so that an autosave writes only what changed.
 - **Step 3 comes before step 4's show toggles**, so that a toggle changes what is drawn.
-- **Step 7 needs the builder in step 7's first half** before any importer can make a mesh.
+- **Step 7 needs the builder in step 7's first half** before any importer can make a mesh. Step 7
+  is closed.
 - **Step 8 works on today's export.** It renders better after step 4, which gives the export
   lights and a scene camera to render from.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.** Step 9
@@ -263,41 +264,38 @@ pass per view draws the triangles before the lines and shares the depth buffer.
 
 ### Step 7 — Import
 
-**Open.** ADR-0122 decided it: glTF and USD, each read as a scene of items.
-LightWave, DXF, 3DS and MilkShape leave the Import menu, and `project::import::gltf` and
-`project::import::usd` replace them.
+**Closed.** ADR-0122 decided the formats: glTF and USD, each read as a scene of items, after
+looking at what Blender, Godot, Assimp and studio pipelines read. It weighed the four legacy
+formats, glTF alone, glTF with OBJ, and Assimp. ADR-0123 decided where the readers live: a
+neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in
+`v3dlib_interchange_usd`, the one library that links OpenUSD. LightWave, DXF, 3DS and MilkShape
+left the Import menu, and `project::import::gltf` and `project::import::usd` replaced them.
 
-- `api/brep` gains a builder from polygons over an indexed point list, beside its primitives
-  and its triangulation. It welds positions through a hash and pairs edges through a map, so it
-  is linear in the size of the input. For triangles it can join coplanar neighbours back into
-  faces, which a glTF import asks for. Each face's loop is reversed to the editor's clockwise
-  winding.
-- A glTF import walks the file's nodes itself, through cgltf, rather than the game loader's
-  merged `model::Model`. Each node becomes a group, a mesh, a camera or a light
-  (`KHR_lights_punctual`), parented and placed as the file places it. Its animation becomes
-  keys on the items' properties.
-- A USD import walks the stage's prims the same way. `Xform` becomes a group, `Mesh` a mesh with
-  its polygons kept, `Camera` a camera, and `SphereLight`, `DistantLight` and a shaped
-  `SphereLight` a point, distant or spot light. Time samples become keys. OpenUSD enters the
-  vcpkg manifest without its imaging feature, and the build places its plugin files beside the
-  editor.
-- An import is one operation on `Document`, so it undoes in one step. The command table supplies
-  the file, as it supplies every other operation's arguments. A file that cannot be read, or a
-  node that cannot be made into an item, is reported in the operation's outcome.
-- Tests: a cube in triangles builds six quads. A non-manifold input is refused with a reason. A
-  large mesh builds in time linear in its size. A glTF fixture and a USD fixture are each
-  written by Blender with a parented mesh, a camera, a light and a keyed move. Each imports as
-  those items, parents, placements and keys, and undoes in one step.
-- The builder has landed, as `brep::build()`. It differs in one way. It joins pairs of
-  triangles into quads, across an edge that is the longest of both, rather than every coplanar
-  neighbour. Joining a whole flat region would turn a grid of squares into one face.
-- `v3dlib_interchange` has landed, with the neutral scene and `interchange::readGltf()`. It owns
-  cgltf's implementation, which `asset_media` links it for.
-- glTF import has landed: `project::import::gltf`, `Document::importScene()`, `ImportCommand`
-  and `editor::importScene()`, which maps the neutral scene onto items. It differs in two ways.
-  The file chooser takes a list of extensions, so one item lists both `.gltf` and `.glb`. The
-  glTF reader gives a light's power in watts, dividing glTF's candela and lux by 683 lumens per
-  watt, so a light from Blender has the power it had there.
+- `brep::build()` makes a mesh from polygons over a list of points. It welds positions and
+  pairs edges through hash tables, so a large mesh builds in time proportional to its corners.
+- `interchange::readGltf()` and `interchange::readUsd()` fill one `interchange::Scene`: nodes
+  parents first, counter-clockwise polygon meshes, cameras and lights along -z, and keyed
+  channels in seconds. Each notes what it leaves out.
+- `editor::importScene()` makes items from that scene, and `Document::importScene()` puts them
+  into the document through one `ImportCommand`, which undoes in one step.
+- Tests: a cube in triangles builds six quads, input that three faces meet along is refused,
+  and a mesh of 80,000 triangles builds in under two seconds. Both readers read one
+  Blender-written scene, as `scene.glb` and `scene.usda`, and agree on its placements, its
+  camera, its light and its keys. The document imports both, and undo takes each out.
+- What landed differs in five ways.
+  - The builder joins pairs of triangles into quads, across an edge that is the longest of
+    both, rather than every coplanar neighbour. Joining a whole flat region would turn a grid of
+    squares into one face.
+  - cgltf's implementation moved into `v3dlib_interchange`, so it is compiled once for every
+    program, and `asset_media` links interchange for it.
+  - Both readers give a light's power in watts. glTF's candela and lux are divided by 683
+    lumens per watt, and USD's sphere light is read as Blender writes it, so a light from
+    Blender has the power it had there.
+  - The file chooser takes a list of extensions, so one item lists every extension of a format.
+  - OpenUSD is the manifest's `usd` feature, which the Linux build leaves out. Each executable
+    that reads USD is given OpenUSD's plugins beside it by `v3d_copy_usd_plugins()`, because
+    vcpkg copies the libraries but not the plugins, and OpenUSD stops at a breakpoint without
+    them.
 
 ### Step 8 — The Render menu
 

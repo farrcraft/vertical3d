@@ -227,21 +227,23 @@ they do beside the file chooser.
 
 ## Importing
 
-Project > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file and puts its
-scene into the document as one change, which one undo takes out again. The items at the top of
-the import become the selection. `Document::importScene()` does the work, so anything that calls
-it gets the same import.
+Project > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file, and Project >
+Import > USD (`project::import::usd`) a `.usd`, `.usda`, `.usdc` or `.usdz` stage. Either puts
+the file's scene into the document as one change, which one undo takes out again. The items at
+the top of the import become the selection. `Document::importScene()` does the work, so anything
+that calls it gets the same import.
 
-The file is read by `interchange::readGltf()`, described in
+The file is read by `interchange::readGltf()` or `interchange::readUsd()`, described in
 [api/Interchange.md](../api/Interchange.md), and `editor::importScene()` in
-`src/scene/Import.h` makes the items:
+`src/scene/Import.h` makes the items from either:
 
 - **Kinds.** Each node becomes one item: a mesh, a camera or a light when it carries one, in that
   order, and a group when it carries none. A node that carries more than one becomes the first,
   with the others as its children. Items have no names, so a node's name is not kept.
-- **Meshes.** A mesh is built with `brep::build()`, with each pair of triangles that was a quad
-  joined back into it. Nodes that share a mesh give items that share one geometry. A mesh that
-  cannot be built, such as one with three faces on an edge, leaves its node a group.
+- **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
+  that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
+  give items that share one geometry. A mesh that cannot be built, such as one with three faces
+  on an edge, leaves its node a group.
 - **Cameras and lights.** A file's camera or light points along -z and the editor's along +z, so
   each is turned half a turn about its own y. Its children and its keys are turned back, so they
   stay where the file put them. A perspective angle is taken across the picture's shorter side.

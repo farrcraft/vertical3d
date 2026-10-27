@@ -32,6 +32,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
 | [`interchange`](../../api/interchange/) | Scenes read from glTF in no format's terms: nodes, polygon meshes, cameras, lights and keys. See [Interchange.md](Interchange.md). |
+| [`interchange_usd`](../../api/interchange/usd/) | The USD reader, which fills the same scene. It is the one library that links OpenUSD. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
@@ -64,6 +65,7 @@ Boost.
 | `font` | log, image | FreeType, glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
 | `interchange` | asset, type | cgltf, glm |
+| `interchange_usd` | interchange, type | **OpenUSD**, glm |
 | `asset_media` | log, animation, asset, image, interchange, model | glm |
 | `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
@@ -79,6 +81,7 @@ The same picture as layers, lowest first. A library uses only libraries in the r
 log   type   animation   grid   database   no device, no window
 image  asset  ecs  brep  model
 interchange
+interchange_usd                            OpenUSD
 font   asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
 input  window                              SDL3
@@ -115,7 +118,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Use geometry queries, random numbers, flags or transforms | [Types.md](Types.md) |
 | Use a camera | [Cameras.md](Cameras.md) |
 | Use models, or load glTF | [Models.md](Models.md) |
-| Read a glTF file as a scene of nodes, meshes, cameras and lights | [Interchange.md](Interchange.md) |
+| Read a glTF file or a USD stage as a scene of nodes, meshes, cameras and lights | [Interchange.md](Interchange.md) |
 | Use animation or particle effects | [Animation.md](Animation.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
 | Load files and JSON documents, or write them | [Assets.md](Assets.md) |

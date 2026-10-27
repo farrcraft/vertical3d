@@ -45,7 +45,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Z, Y | `edit::undo`, `edit::redo` | Step the history |
 | O, S | `project::load`, `project::save` | Open a project; save the current one |
-| Project > Import menu | `project::import::gltf` | Import a glTF file's scene (see [Importing](Files.md#importing)) |
+| Project > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 
 The bindings cannot express a key chord such as Ctrl+Z, so undo and redo use bare keys. Left
@@ -99,4 +99,3 @@ pass on a headless device, and is skipped where there is none. Run both with
 
 - Two menu items have no handler, and log themselves as unregistered: the curve and handle
   select masks.
-- Import reads glTF, and not yet USD.

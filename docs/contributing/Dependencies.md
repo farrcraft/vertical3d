@@ -23,6 +23,10 @@ which is a default feature, so a configure installs them unless it is given
 window nor a device leaves it out, as the Linux CI job does. A new port that only the window,
 the device or the audio needs goes in that feature.
 
+OpenUSD is in the manifest's `usd` feature, also a default one, for the same reason: only
+`v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
+builds TBB and OpenUSD from source, which takes a long time.
+
 | Port | Notes |
 |---|---|
 | boost-filesystem, boost-foreach, boost-headers, boost-json, boost-lexical-cast, boost-optional, boost-program-options, boost-smart-ptr, boost-system, boost-test, boost-unordered | One port per boost library the tree uses. The manifest does not use the `boost` metapackage. See [Adding a boost library](#adding-a-boost-library) |
@@ -36,6 +40,7 @@ the device or the audio needs goes in that feature.
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
 

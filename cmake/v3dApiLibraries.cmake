@@ -12,7 +12,7 @@
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
 	animation asset asset_media audio brep database ecs engine event font grid image input
-	interchange log model render render_offline shell type ui window)
+	interchange interchange_usd log model render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -82,6 +82,12 @@ set(V3D_API_interchange_PATH "interchange")
 set(V3D_API_interchange_REQUIRES asset type)
 set(V3D_API_interchange_PACKAGES cgltf glm)
 
+# Under api/interchange but a separate library: the USD reader, the one library that links
+# OpenUSD. The package comes from the manifest's usd feature.
+set(V3D_API_interchange_usd_PATH "interchange/usd")
+set(V3D_API_interchange_usd_REQUIRES interchange type)
+set(V3D_API_interchange_usd_PACKAGES glm pxr)
+
 set(V3D_API_log_PATH "log")
 set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
@@ -134,7 +140,10 @@ set(V3D_PACKAGE_TARGETS
 	"glm::glm=glm"
 	"EnTT::EnTT=EnTT"
 	"spdlog::spdlog=spdlog"
-	"unofficial::sqlite3::sqlite3=unofficial-sqlite3")
+	"unofficial::sqlite3::sqlite3=unofficial-sqlite3"
+	"usd=pxr"
+	"usdGeom=pxr"
+	"usdLux=pxr")
 
 # A package that provides only an include directory has no target to appear in a link line.
 # The verification below cannot confirm the library still uses it, and accepts the manifest

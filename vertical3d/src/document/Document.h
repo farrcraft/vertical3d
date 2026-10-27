@@ -82,9 +82,10 @@ class Document final {
     Outcome group(const Items& items);
 
     /**
-     * Read a glTF file, .gltf or .glb, and put its scene into the document as one change. Its
-     * nodes become items, with their hierarchy and their keys, and the items at the top become
-     * the selection. What the file holds that the scene cannot is logged as a warning.
+     * Read a glTF file (.gltf, .glb) or a USD stage (.usd, .usda, .usdc, .usdz), and put its
+     * scene into the document as one change. Its nodes become items, with their hierarchy and
+     * their keys, and the items at the top become the selection. What the file holds that the
+     * scene cannot is logged as a warning.
      **/
     Outcome importScene(const boost::filesystem::path& file);
 

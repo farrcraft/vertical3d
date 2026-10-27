@@ -1,9 +1,11 @@
 # Interchange
 
 `api/interchange` (`v3dlib_interchange`, namespace `v3d::interchange`) reads a scene from a file
-another tool wrote, and holds it in terms of no format. The editor imports through it. A game
-that only draws a model loads glTF through [asset_media](Models.md#loading-gltf) instead, which
-merges a file into one `model::Model`.
+another tool wrote, and holds it in terms of no format. It reads glTF.
+`v3dlib_interchange_usd`, in `api/interchange/usd`, reads USD into the same scene, and is the one
+library that links OpenUSD. The editor imports through both. A game that only draws a model
+loads glTF through [asset_media](Models.md#loading-gltf) instead, which merges a file into one
+`model::Model`.
 
 The library also owns cgltf's implementation, which is compiled once for every program.
 `asset_media` links it for that.
@@ -29,7 +31,8 @@ Up is +y.
   - A perspective camera gives its full angle of view from the bottom of the picture to the top
     (`yfov`), in radians, and its aspect when the file states one.
   - An orthographic camera gives half the width and half the height it sees (`magnification`).
-  - Both give their near and far clipping distances. `far` is zero when there is no far plane.
+  - Both give their near and far clipping distances, in that order, as `clipping`. The far one is
+    zero when there is no far plane.
 - **Lights.** A point, distant or spot light, with a colour and an intensity. The intensity is
   in watts per steradian for a point or spot light and watts per square metre for a distant
   one. A distant or spot light shines along its node's -z axis. A spot light gives two half
@@ -85,3 +88,37 @@ for (const std::string& note : imported.notes) {
     logger_->get()->warn("{}", note);
 }
 ```
+
+## Reading USD
+
+`interchange::readUsd(path)` ([api/interchange/usd/Usd.h](../../api/interchange/usd/Usd.h)) opens
+a `.usd`, `.usda`, `.usdc` or `.usdz` stage, and returns an `Imported` as `readGltf()` does.
+
+What it reads:
+
+- **Which prims.** Every prim that can be placed, and every `Scope`, which groups without
+  placing. Instanced prims are read as copies. A prim that cannot be placed, such as a material
+  or a shader, is left out with everything beneath it.
+- **Up and units.** The scene is y up and in metres. A z up stage, or one in another unit, is
+  turned and scaled at its top. A still prim at the top takes the turn into its own placement. A
+  keyed one goes beneath a group named `stage` that holds the turn, so its keys keep their
+  meaning.
+- **Placement.** A prim's local transform at the stage's start time, taken apart as a matrix
+  is. A keyed placement is sampled at every time the stage keys it, as linear keys of its
+  translation, its rotation and its scale. A part that keeps one value is not keyed. Times are
+  in seconds, by the stage's time codes per second.
+- **Meshes.** Polygons as the file gives them, so `triangulated` is false. A left handed mesh
+  has each face turned round.
+- **Cameras.** The lens at the start time. Apertures are in tenths of the stage's unit.
+- **Lights.** A `SphereLight` is a point light, or a spot light when it is shaped to a cone
+  narrower than a quarter turn. Its outer angle is the cone's angle, and its inner angle is that
+  less the cone's softness. A `DistantLight` is a distant light. The power is worked out as
+  Blender writes and reads it. A sphere light gives intensity times two to its exposure times pi
+  watts when it is normalized or has no radius, and that times its surface area otherwise,
+  spread over a sphere of directions. A distant light's intensity is watts per square metre.
+
+Left out, each with a note:
+
+- a light of any other kind, whose prim becomes a node that only groups
+- a mesh's keyed points, which are read at rest
+- a prim's choice to discard its parent's placement, which is placed beneath its parent anyway
