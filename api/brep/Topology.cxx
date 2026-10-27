@@ -159,6 +159,10 @@ glm::vec3 newellNormal(const BRep & mesh, Index face) {
             points.push_back(vertex->point());
         }
     }
+    return newellNormal(points);
+}
+
+glm::vec3 newellNormal(const std::vector<glm::vec3> & points) {
     glm::vec3 normal(0.0F);
     if (points.size() < 3) {
         return normal;

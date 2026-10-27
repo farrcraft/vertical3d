@@ -83,6 +83,11 @@ std::vector<Index> facesAround(const BRep & mesh, Index vertex);
 glm::vec3 newellNormal(const BRep & mesh, Index face);
 
 /**
+ * The same normal, for a face given as its points in loop order.
+ **/
+glm::vec3 newellNormal(const std::vector<glm::vec3> & points);
+
+/**
  * The mid point of a face: the average of the vertices its loop ends at.
  **/
 glm::vec3 center(const BRep & mesh, Index face);

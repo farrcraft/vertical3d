@@ -35,6 +35,25 @@ search. Because of that search, rebuilding a mesh through `addFace` can number i
 differently. The lower-level `addVertex`, `addEdge` and `addFace` overloads that take a
 `Vertex`, `HalfEdge` or `Face` append exactly what they are given.
 
+**Building from a file's faces.** `brep::build()` in `api/brep/Builder.h` makes a whole mesh
+from `Polygons`: a list of points, and each face as a run of indices into it. Use it for
+anything larger than a primitive, because `addFace` searches the mesh for each vertex and pair,
+and `build()` finds them through hash tables.
+
+- Points at exactly the same position become one vertex, and -0 counts as 0.
+- `BuildOptions::winding` says which way the input's faces run seen from outside. A
+  counter-clockwise face is reversed.
+- `BuildOptions::joinTriangles` joins pairs of triangles back into quads. A pair is joined
+  across the edge they share when that edge is the longest of each, the quad is convex, and the
+  normals differ by no more than `joinAngle`. Where a triangle could join either of two
+  neighbours, the flatter pair is joined first. A flat grid of triangulated squares gives back
+  its squares, never one large face.
+- A face with fewer than three distinct corners is left out and counted in `Built::skipped`.
+- The input is refused, with `Built::problem` saying why, when an index or a count is out of
+  range, a point is not finite, a face visits one vertex twice, or two faces run along one edge
+  in the same direction. The last happens where three or more faces meet at an edge, or where
+  neighbouring faces disagree about which side is outside.
+
 **Validation.** `BRep::validate(&problem)` checks that every reference points at a part the
 mesh holds: a half edge's vertex always, its face, pair and next unless they are `INVALID_ID`,
 and a face's edge always. A `next` chain that does not close is allowed, because an unfinished

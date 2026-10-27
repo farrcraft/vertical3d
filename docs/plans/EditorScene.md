@@ -287,6 +287,9 @@ LightWave, DXF, 3DS and MilkShape leave the Import menu, and `project::import::g
   large mesh builds in time linear in its size. A glTF fixture and a USD fixture, each written
   by Blender with a parented mesh, a camera, a light and a keyed move, import as those items,
   parents, placements and keys, and undo in one step.
+- The builder has landed, as `brep::build()`. It differs in one way. It joins pairs of
+  triangles into quads, across an edge that is the longest of both, rather than every coplanar
+  neighbour. Joining a whole flat region would turn a grid of squares into one face.
 
 ### Step 8 — The Render menu
 
