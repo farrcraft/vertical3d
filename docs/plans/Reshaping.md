@@ -499,15 +499,28 @@ decides it.
 
 ### Step 15 — The editor's directories
 
-**Open.** Needs step 13.
+**Closed.** [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md) decides
+where component selection lives.
 
-- `scene/` holds the model. Storage and RIB export move to a directory of their own, and
-  drawing moves to `view/`.
-- Manipulators take a camera and a region, not a `ViewPort`. The cycles go.
-- Component selection moves out of `api/brep` into the editor, keyed by item and index.
-- `CreatePoly` and `Triangulation` move into `api/brep`. The RIB export triangulates n-gons.
-- `Binder` and `Columns` move into `api/database`.
-- `SceneStore` gets one codec per item kind.
+- `scene/` holds the model and includes nothing else of the editor's. The wireframe and the
+  glyphs moved to `view/`, the modelling operations to `command/`, `SceneStore` and `Project` to
+  `store/`, and `SelectMask` to `selection/`. **Different from the plan:** the RIB export
+  joined `render/`, beside the shots that use it, rather than a directory of its own.
+- Manipulators take a `Screen`, a camera and a region, and the renderer draws the handles, so
+  the view does not include the manipulator. The editor's directories have no cycle.
+- The scene holds which parts of each mesh item are selected, as a `Components` keyed by the
+  item's id, and `api/brep` holds no selection. Two items that share a mesh select its parts
+  apart. A change to a mesh's numbering clears the selection of every item that shows it, and
+  the operation selects what it leaves selected. **Different from the plan:** `Components` is in
+  `scene/`, beside each item's own flag, because the scene holds it and `selection/` includes
+  the scene.
+- The primitives and the triangulation are in `api/brep`. The RIB export sends every face as
+  its triangles, so a concave face is no longer drawn across its notch.
+- `database::Binder` and `database::Columns` bind and read a row in order.
+- Each kind of item is a `Codec` in `store/`, and `SceneStore.cxx` went from 1197 lines to 834.
+- Ten new cases: two for the binder, one for the concave export, four for component
+  selection, and three for the codecs, plus the primitive and triangulation suites, which moved
+  into the brep suite unchanged. Each fails to build without the change.
 
 ### Step 16 — Live render through the handler
 
