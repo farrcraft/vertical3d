@@ -9,8 +9,6 @@
 #include <api/type/Checked.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/manipulator/Manipulator.h>
-#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include "ConstructionPlane.h"
@@ -120,15 +118,11 @@ ConstructionPlane& ViewPort::grid() noexcept {
 
 /**
  **/
-void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
-    v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles) {
+void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas) {
     if (canvas == nullptr) {
         return;
     }
     canvas->clear();
-    if (handles != nullptr) {
-        handles->clear();
-    }
 
     // the matrices are rebuilt once a frame rather than on every camera move, so a
     // frame sees one consistent view however many moves went into it
@@ -144,10 +138,6 @@ void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Ta
     if (shown.meshes || shown.cameras || shown.lights) {
         WireframeVisitor wireframe(canvas, shown);
         scene.accept(&wireframe);
-    }
-
-    if (shows(SHOW_HANDLE) && manipulator != nullptr && handles != nullptr) {
-        manipulator->draw(target, *this, handles);
     }
 }
 

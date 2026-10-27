@@ -21,6 +21,7 @@
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
@@ -210,7 +211,14 @@ void Renderer::draw() {
             continue;
         }
 
-        view->draw(scene, manipulator.get(), target, &canvases_[index], &overlays_[index]);
+        view->draw(scene, &canvases_[index]);
+        // the handles go to a canvas of their own because they are an overlay, drawn in a
+        // second pass that does not depth test. On the scene's canvas a handle would be in
+        // the depth tested pass, where the grid's axis lines lie in the same plane and hide it
+        overlays_[index].clear();
+        if (manipulator && view->shows(ViewPort::SHOW_HANDLE)) {
+            manipulator->draw(target, Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
+        }
 
         const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());

@@ -14,6 +14,7 @@
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/RotateManipulator.h>
 #include <vertical3d/src/manipulator/ScaleManipulator.h>
+#include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
 #include <vertical3d/src/scene/Item.h>
@@ -183,6 +184,12 @@ void TransformTool::mask(SelectMask mask) {
 
 /**
  **/
+Screen TransformTool::screen() const {
+    return Screen{ .camera = view_->camera(), .region = view_->region() };
+}
+
+/**
+ **/
 Target TransformTool::target() const {
     if (dragging_) {
         return dragged_;
@@ -208,7 +215,7 @@ bool TransformTool::takes(const glm::vec2& position) const {
     }
     const Target target = this->target();
     Manipulator::Axis axis = Manipulator::Axis::None;
-    return !target.empty() && current->grab(target, *view_, position, &axis);
+    return !target.empty() && current->grab(target, screen(), position, &axis);
 }
 
 /**
@@ -287,7 +294,7 @@ void TransformTool::hover(const glm::vec2& position) {
 
     const Target target = this->target();
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (target.empty() || !current->grab(target, *view_, position, &axis)) {
+    if (target.empty() || !current->grab(target, screen(), position, &axis)) {
         current->active(false);
         return;
     }
@@ -303,7 +310,7 @@ void TransformTool::motion(const glm::vec2& position) {
     // now, so that a selection changing mid gesture cannot leave the record naming one
     // set and the movement landing on another
     if (dragging_ && current && !dragged_.empty() && view_) {
-        current->apply(&dragged_, *view_, last_, position);
+        current->apply(&dragged_, screen(), last_, position);
     } else {
         hover(position);
     }
@@ -340,7 +347,7 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     }
 
     Manipulator::Axis axis = Manipulator::Axis::None;
-    if (!current->grab(target, *view_, position, &axis)) {
+    if (!current->grab(target, screen(), position, &axis)) {
         // no handle under the cursor, so the press is not this tool's
         current->active(false);
         return;

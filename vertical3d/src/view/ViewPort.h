@@ -20,8 +20,6 @@
 
 namespace v3d::editor {
 
-class Manipulator;
-class Target;
 
 /**
  * One view of the scene: a camera, the region of the window it draws into, and what it
@@ -148,21 +146,13 @@ class ViewPort final {
      * camera and the camera moves.
      *
      * Every view that shows meshes draws the scene into its own canvas, through its own
-     * camera.
-     *
-     * The handles go to a canvas of their own because they are an overlay, drawn in a
-     * second pass that does not depth test. On the scene's canvas a handle would be in
-     * the depth tested pass, where the grid's axis lines lie in the same plane and hide it.
+     * camera. The camera's matrices are rebuilt first, so whatever else draws through the
+     * camera this frame, such as the handles, sees the same view.
      *
      * @param scene what to draw, which the controller owns
-     * @param manipulator the handles the selection carries, or null. Every view that shows
-     *        handles draws them through its own camera
-     * @param target what the handles move, which decides where they sit
      * @param canvas where the view's geometry goes
-     * @param handles where the manipulator's geometry goes, or null
      **/
-    void draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
-        v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles);
+    void draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas);
 
  private:
     std::string name_;

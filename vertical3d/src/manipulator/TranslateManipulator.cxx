@@ -6,10 +6,10 @@
 #include "TranslateManipulator.h"
 
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/view/ViewPort.h>
 
 #include <cmath>
 
+#include "Screen.h"
 #include "Target.h"
 
 #include <boost/shared_ptr.hpp>
@@ -48,12 +48,12 @@ TranslateManipulator::TranslateManipulator() {
 
 /**
  **/
-void TranslateManipulator::draw(const Target& target, const ViewPort& view,
+void TranslateManipulator::draw(const Target& target, const Screen& screen,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(target, view);
+    const Placement seat = placement(target, screen);
     if (!seat.valid) {
         return;
     }
@@ -87,21 +87,21 @@ void TranslateManipulator::draw(const Target& target, const ViewPort& view,
 
 /**
  **/
-bool TranslateManipulator::measure(const Placement& seat, const ViewPort& view, const glm::vec2& from,
+bool TranslateManipulator::measure(const Placement& seat, const Screen& screen, const glm::vec2& from,
     const glm::vec2& to, Motion* motion) const {
     glm::vec3 offset(0.0F, 0.0F, 0.0F);
     if (axis() == Axis::None) {
         // the centre handle: both components of the gesture move the object, in the
         // plane of the screen. Screen y points down, so a downward drag runs against
         // the camera's up
-        const Basis axes = basis(view);
+        const Basis axes = basis(screen);
         const glm::vec3& right = axes.right;
         const glm::vec3& up = axes.up;
-        const float scale = unitsPerPixel(view, seat.origin);
+        const float scale = unitsPerPixel(screen, seat.origin);
         const glm::vec2 delta = to - from;
         offset = right * (delta.x * scale) - up * (delta.y * scale);
     } else {
-        offset = direction(seat, axis()) * along(view, seat, axis(), from, to);
+        offset = direction(seat, axis()) * along(screen, seat, axis(), from, to);
     }
 
     // by an offset, not to a position: a drag measures how far the gesture went

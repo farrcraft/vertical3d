@@ -10,6 +10,7 @@
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -127,6 +128,11 @@ class TransformTool final : public Tool {
     void cancel();
 
  private:
+    /**
+     * @return the view's camera and region, which the handles are seen through
+     **/
+    Screen screen() const;
+
     /**
      * Record the gesture that has just ended, if it moved anything. Every path out of a
      * drag, a release or a mode change, comes through here. A change that reached the mesh

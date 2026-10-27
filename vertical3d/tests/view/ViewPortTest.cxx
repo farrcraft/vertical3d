@@ -6,7 +6,6 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -63,7 +62,7 @@ BOOST_AUTO_TEST_CASE(viewport_shows_cameras_and_lights_test) {
     view.show(v3d::editor::ViewPort::SHOW_GRID, false);
     const auto drawn = [&]() {
         v3d::render::realtime::canvas::Line canvas;
-        view.draw(scene, nullptr, v3d::editor::Target(), &canvas, nullptr);
+        view.draw(scene, &canvas);
         return canvas.vertices().size() / 2;
     };
 

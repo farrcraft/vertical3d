@@ -265,10 +265,13 @@ two views beside it trade weight, so every other view stays as it was. Each keep
 taken. The shares last as long as the editor runs, and are not written back to
 `data/layout.json`.
 
-**Drawing.** Each frame, every `ViewPort` fills two line canvases:
+**Drawing.** Each frame, the renderer fills two line canvases for every view:
 
-- the scene canvas: the construction grid and every mesh as a wireframe
-- the handle canvas: the manipulator, if one is active and something is selected
+- the scene canvas, which `ViewPort::draw()` fills with the construction grid and every mesh
+  as a wireframe
+- the handle canvas, which the active manipulator fills when something is selected and the view
+  shows handles. The renderer hands the manipulator a `Screen`, the view's camera and region,
+  so neither the view nor the manipulator includes the other
 
 The renderer turns each view into two passes, then adds one more pass for the ui:
 

@@ -6,11 +6,11 @@
 #include "ScaleManipulator.h"
 
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 
 #include "Manipulator.h"
+#include "Screen.h"
 #include "Target.h"
 
 #include <boost/shared_ptr.hpp>
@@ -51,12 +51,12 @@ Manipulator::Space ScaleManipulator::effective() const noexcept {
 
 /**
  **/
-void ScaleManipulator::draw(const Target& target, const ViewPort& view,
+void ScaleManipulator::draw(const Target& target, const Screen& screen,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(target, view);
+    const Placement seat = placement(target, screen);
     if (!seat.valid) {
         return;
     }
@@ -74,7 +74,7 @@ void ScaleManipulator::draw(const Target& target, const ViewPort& view,
 
 /**
  **/
-bool ScaleManipulator::measure(const Placement& seat, const ViewPort& view, const glm::vec2& from,
+bool ScaleManipulator::measure(const Placement& seat, const Screen& screen, const glm::vec2& from,
     const glm::vec2& to, Motion* motion) const {
     if (seat.size <= 0.0F) {
         return false;
@@ -84,7 +84,7 @@ bool ScaleManipulator::measure(const Placement& seat, const ViewPort& view, cons
     // the object, as dragging a corner handle outward would
     const glm::vec2 delta = to - from;
     const float factor = axis() == Axis::None ? 1.0F + ((delta.x - delta.y) / handlePixels) :
-        1.0F + (along(view, seat, axis(), from, to) / seat.size);
+        1.0F + (along(screen, seat, axis(), from, to) / seat.size);
     glm::vec3 stretch(factor, factor, factor);
     switch (axis()) {
     case Axis::X:

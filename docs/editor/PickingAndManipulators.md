@@ -152,10 +152,10 @@ recorded.
 
 **Where the handles are.** Handles are drawn at the pivot: the mean of the selected objects'
 origins, or of the moved vertices in world space. For one object that is its own origin, where
-its transform pivots. Their length is a
-fixed number of pixels (90), converted to world units through the view. A handle therefore keeps
-its on-screen size at any distance. Handles are drawn in the handle pass, which has no depth
-test.
+its transform pivots. Their length is a fixed number of pixels (90), converted to world units
+through the `Screen` a manipulator is given: a view's camera and its region of the window. A
+handle therefore keeps its on-screen size at any distance. Handles are drawn in the handle
+pass, which has no depth test.
 
 **Moving a set.** Everything the target holds moves in one gesture, about the one pivot. A
 manipulator measures a `Motion` (an offset, a turn and a stretch) and the target applies it:
