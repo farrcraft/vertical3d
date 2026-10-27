@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-09-01
 **Amended by**: [ADR-0052](0052-camera-selectable-handedness.md)
-**Documented in**: [api/Types.md](../api/Types.md)
+**Documented in**: [api/Cameras.md](../api/Cameras.md)
 
 ## Context
 

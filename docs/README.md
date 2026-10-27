@@ -30,9 +30,14 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 | [api/rendering/](api/rendering/README.md) | Drawing: frames and passes, 2D and world primitives, meshes, lighting, capture |
 | [api/ui/](api/ui/README.md) | Building a UI from documents or in immediate mode, themes, focus and input |
 | [api/ECS.md](api/ECS.md) | The entity registry, shared components, interpolation, animation and particles |
-| [api/Types.md](api/Types.md) | Geometry, cameras, transforms, random numbers, animation and effect data |
+| [api/Types.md](api/Types.md) | Geometry queries, random numbers, checked conversions, flags and transforms |
+| [api/Cameras.md](api/Cameras.md) | The camera profile, its matrices and handedness, and the isometric orbit |
+| [api/Models.md](api/Models.md) | `model::Model`, skeletons, and loading glTF |
+| [api/Animation.md](api/Animation.md) | Clips, poses, curves, tracks and particle effects |
 | [api/Grid.md](api/Grid.md) | Tile grids: movement, line of sight, terrain maps |
-| [api/Assets.md](api/Assets.md) | The asset manager and loaders, images, fonts, models and JSON documents |
+| [api/Assets.md](api/Assets.md) | The asset manager and loaders, loading on a worker, JSON documents, and writing files |
+| [api/Images.md](api/Images.md) | Images, the texture atlas, and packing a sprite sheet |
+| [api/Fonts.md](api/Fonts.md) | Typefaces, glyph atlases and text layout |
 | [api/Database.md](api/Database.md) | SQLite connections, statements and transactions |
 | [../examples/README.md](../examples/README.md) | The example projects |
 
@@ -43,7 +48,7 @@ For anyone working inside a library rather than using it.
 | Document | Covers |
 |---|---|
 | [internals/realtime/](internals/realtime/README.md) | How `api/render/realtime` works: frames in flight, recording, memory, descriptor sets |
-| [internals/UserInterface.md](internals/UserInterface.md) | How `api/ui` works: layout, drawing, hit testing and input routing |
+| [internals/ui/](internals/ui/README.md) | How `api/ui` works: layout, drawing, hit testing, input routing and the immediate layer |
 | [offline/](offline/README.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
 
 ## The applications

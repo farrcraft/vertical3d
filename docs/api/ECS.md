@@ -141,8 +141,9 @@ Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-
 
 `Emitter` ([api/ecs/component/Emitter.h](../../api/ecs/component/Emitter.h)) holds a
 `ecs::effect::Emitter` description and an `ecs::effect::State` with the particles. Construct it
-with a seed to make its particles reproducible. [Types.md](Types.md#particle-effects) describes
-the description fields and the simulation.
+with a seed to make its particles reproducible.
+[Animation.md](Animation.md#particle-effects) describes the description fields and the
+simulation.
 
 - **`emit(registry, step)`** steps every emitter from its entity's `Transform`: the position is
   the emitter's origin and the rotation turns its spawn shape and direction. An emitter on an

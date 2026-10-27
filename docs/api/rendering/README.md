@@ -63,7 +63,7 @@ pays nothing for it. `quads()` and `textures()` are null before `initialize()`.
 A pass draws through the view and projection given to `Pass::camera(view, projection)`. Lines,
 world quads and lit meshes use it; canvas quads do not. Build both matrices with
 `v3d::type::camera::Camera`, which produces Vulkan clip space (y down, depth from 0 to 1).
-The camera's conventions, including its handedness, are in [Types.md](../Types.md).
+The camera's conventions, including its handedness, are in [Cameras.md](../Cameras.md).
 
 To draw billboards, the entity functions in [Entities.md](Entities.md) need the camera's right
 and up vectors and a depth axis.

@@ -109,11 +109,16 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Draw: frames, passes, canvases, sprites, meshes, lighting | [rendering/](rendering/README.md) |
 | Build menus and HUDs | [ui/](ui/README.md) |
 | Keep game state in entities | [ECS.md](ECS.md) |
-| Use cameras, geometry queries, models, animation or particle effects | [Types.md](Types.md) |
+| Use geometry queries, random numbers, flags or transforms | [Types.md](Types.md) |
+| Use a camera | [Cameras.md](Cameras.md) |
+| Use models, or load glTF | [Models.md](Models.md) |
+| Use animation or particle effects | [Animation.md](Animation.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
-| Load images, fonts, models and JSON documents | [Assets.md](Assets.md) |
+| Load files and JSON documents, or write them | [Assets.md](Assets.md) |
+| Read, write or pack images | [Images.md](Images.md) |
+| Lay out text with a font | [Fonts.md](Fonts.md) |
 | Change the realtime renderer itself | [../internals/realtime/](../internals/realtime/README.md) |
-| Change the ui library itself | [../internals/UserInterface.md](../internals/UserInterface.md) |
+| Change the ui library itself | [../internals/ui/](../internals/ui/README.md) |
 | Work on moya or `render_offline` | [../offline/](../offline/README.md) |
 | See a complete small app | [examples/starter](../../examples/starter/) |
 
@@ -195,9 +200,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Migration** — one step that upgrades a JSON document by one version. See
   [Assets.md](Assets.md#reading-old-documents-forward).
 - **Texture atlas** — `image::TextureAtlas`, one image that many smaller images are packed into.
-  See [Assets.md](Assets.md#texture-atlas).
+  See [Images.md](Images.md#texture-atlas).
 - **Gutter** — the one-texel border the atlas leaves around every region it packs. See
-  [Assets.md](Assets.md#texture-atlas).
+  [Images.md](Images.md#texture-atlas).
 - **Sprite sheet** — an image plus a table of named pixel rectangles in it, read by
   `asset::media::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
 - **Manifest and closure** — the manifest is the table in `cmake/v3dApiLibraries.cmake` of
@@ -223,20 +228,20 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 
 - **Mesh** — four different things: a `brep::BRep` the editor models with, the
   `editor::Mesh` scene item that places one, a `model::Model` a file loads into, and a
-  device-side mesh in the renderer. See [Types.md](Types.md#models).
+  device-side mesh in the renderer. See [Models.md](Models.md).
 - **Model** — `model::Model`: one vertex array, one index list, materials and parts. See
-  [Types.md](Types.md#models).
+  [Models.md](Models.md).
 - **Part** — a range of a model's indices drawn with one material. See
-  [Types.md](Types.md#models).
+  [Models.md](Models.md).
 - **Skeleton, clip, pose, palette** — a model's joints; a named animation; every joint's local
   transform at one time; the matrices a skinned vertex is moved by. See
-  [Types.md](Types.md#animation).
+  [Animation.md](Animation.md#animation).
 - **Emitter** — the description of what a particle effect spawns and how the particles move.
-  See [Types.md](Types.md#particle-effects) and [ECS.md](ECS.md#emitter).
+  See [Animation.md](Animation.md#particle-effects) and [ECS.md](ECS.md#emitter).
 - **Hand (handedness)** — which way a camera crosses its basis vectors, and so which world
-  direction is on the right of the screen. See [Types.md](Types.md#handedness).
+  direction is on the right of the screen. See [Cameras.md](Cameras.md#handedness).
 - **Profile** — `type::camera::Profile`, a camera's settings: eye, orientation, clipping, field
-  of view and projection kind. See [Types.md](Types.md#cameras).
+  of view and projection kind. See [Cameras.md](Cameras.md).
 
 ### Drawing
 

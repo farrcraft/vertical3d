@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-09-12
 **Amends**: [ADR-0012](0012-camera-projection-targets-vulkan-clip-space.md)
-**Documented in**: [api/Types.md](../api/Types.md)
+**Documented in**: [api/Cameras.md](../api/Cameras.md)
 
 ## Context
 

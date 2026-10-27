@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-10-03
 **Supersedes**: [ADR-0030](0030-models-one-interleaved-array.md)
-**Documented in**: [api/Assets.md](../api/Assets.md)
+**Documented in**: [api/Models.md](../api/Models.md)
 
 ## Context
 

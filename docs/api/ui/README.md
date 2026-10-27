@@ -1,7 +1,7 @@
 # The user interface
 
 These pages are for someone building a ui for an app with `api/ui` (`v3dlib_ui`). How the
-library works inside is in [internals/UserInterface.md](../../internals/UserInterface.md).
+library works inside is in [internals/ui/](../../internals/ui/README.md).
 
 | Page | Read it to |
 |---|---|
@@ -112,6 +112,6 @@ as the press lands, not on release.
 stand-ins, and the shared font is copied beside the suite. A test builds components, draws them
 onto a canvas, and checks the boxes the draw left or the primitives it added. Layout alone can
 be checked with no canvas at all; see
-[internals/UserInterface.md](../../internals/UserInterface.md). `TextRenderer` is tested there
+[internals/ui/](../../internals/ui/README.md). `TextRenderer` is tested there
 with a stand-in upload, which leaves only the upload itself uncovered.
 [Testing.md](../../contributing/Testing.md) has the rest.

@@ -75,7 +75,7 @@ reads named `type::camera::Profile`s. Each entry needs a `name`. The other field
 the load. A profile is described by where the camera is and
 what it looks at, because `Profile::lookat()` is the one call that sets the basis and the
 rotation together. The editor's `data/cameras.json` is the example in the tree. Cameras are
-covered in [Types.md](../Types.md#cameras).
+covered in [Cameras.md](../Cameras.md).
 
 ### Sprite sheets
 
@@ -106,7 +106,7 @@ named rectangles in an image. It is in `v3d::asset_media`, so a tool reads it wi
   false. A missing sprite draws nothing and logs nothing, so check `has()` if it matters.
 - **This is the one config document the api also writes.** A sprite sheet is usually made by a
   packing tool. Build a sheet with `SpriteSheet::packed(name, image, packing)` from what
-  [`image::pack()`](../Assets.md#packing-a-sprite-sheet) packed, or with
+  [`image::pack()`](../Images.md#packing-a-sprite-sheet) packed, or with
   `SpriteSheet(name, image, width, height)` and `place()`. Add it with `SpriteSheets::add()`,
   and write `document()` with [`asset::writeDocument()`](Files.md#writing-files).
 - **`add()` replaces a sheet of the same name, and there is no merge.** To keep the sheets you

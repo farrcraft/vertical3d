@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-03
-**Documented in**: [api/ECS.md](../api/ECS.md), [api/Types.md](../api/Types.md)
+**Documented in**: [api/ECS.md](../api/ECS.md), [api/Animation.md](../api/Animation.md)
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-06
-**Documented in**: [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md), [internals/UserInterface.md](../internals/UserInterface.md)
+**Documented in**: [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md), [internals/ui/Immediate.md](../internals/ui/Immediate.md)
 
 ## Context
 

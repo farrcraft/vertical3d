@@ -30,13 +30,13 @@ is SDL3.
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
 | `api/engine`, `event`, `input`, `audio`, `log`, `window`, `shell` | [docs/api/engine/](docs/api/engine/README.md) |
-| `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
-| `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
+| `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Cameras.md](docs/api/Cameras.md), [Models.md](docs/api/Models.md), [Animation.md](docs/api/Animation.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
+| `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md), [Images.md](docs/api/Images.md), [Fonts.md](docs/api/Fonts.md) |
 | `api/database` | [docs/api/Database.md](docs/api/Database.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
-| Changing `api/ui` | [docs/internals/UserInterface.md](docs/internals/UserInterface.md) |
+| Changing `api/ui` | [docs/internals/ui/](docs/internals/ui/README.md) |
 | `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
 | `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
 | `demos/` (pong, tetris, voxel, odyssey, diorama) | [docs/Demos.md](docs/Demos.md) |
