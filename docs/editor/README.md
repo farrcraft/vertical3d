@@ -52,22 +52,31 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 
 ## Source layout
 
+The editor's directories are in layers. A directory includes only the directories below it in
+this table, so they have no cycle between them. A change that needs a lower directory to include
+a higher one is in the wrong place.
+
+| Path | Holds | Includes |
+|---|---|---|
+| `src/scene/` | The model: the scene and its kinds of item, their evaluation, animation and render settings, and which parts of each mesh are selected | nothing of the editor's |
+| `src/selection/` | What a select mask takes | `scene/` |
+| `src/store/` | The project directory and the scene document it saves, with a codec for each kind of item | `scene/` |
+| `src/render/` | Rendering the scene with moya: the RIB export, a shot, the render window, live render and batches | `scene/` |
+| `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass | `scene/` |
+| `src/manipulator/` | The translate, rotate and scale handles, and what they move | `scene/`, `selection/` |
+| `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
+| `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
+| `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
+| `src/control/` | The controllers for playback, the Render menu, and the routing of the mouse | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced | any |
+| `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |
+| `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` | `Controller.h` |
+
+Beside the sources:
+
 | Path | Holds |
 |---|---|
-| `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` |
-| `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced |
-| `src/document/` | The document: the scene, its history and its project, and every operation on them |
-| `src/control/` | The controllers for playback, the Render menu, and the routing of the mouse |
-| `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
-| `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass |
 | `shaders/` | The shaded pass's vertex and fragment stages, compiled into the editor at build time |
-| `src/scene/` | The model: the scene and its kinds of item, their evaluation, animation and render settings. It includes nothing else of the editor's |
-| `src/selection/` | What a select mask takes |
-| `src/store/` | The project directory and the scene document it saves |
-| `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them |
-| `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking |
-| `src/manipulator/` | The translate, rotate and scale handles, and what they move |
-| `src/render/` | Rendering the scene with moya: the RIB export, a shot, the render window, live render and batches |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
 | `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory, and the `vertical3d_device` suite |
 
