@@ -82,6 +82,13 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | `light` | `type` (`point`, `distant` or `spot`), `colour` as three numbers, `intensity`, `cone` and `delta` in radians | None |
 | `group` | `{}` | None |
 
+**Each kind has a codec.** `Codec` in `src/store/Codec.h` writes and reads what a kind adds: its
+name, its version, its payload and its blobs. `MeshCodec`, `CameraCodec`, `LightCodec` and
+`GroupCodec` are the four, `codecOf(kind)` finds one by kind and `codecNamed(name)` by the name a
+row carries. `SceneStore` writes and reads what every item shares, and hands the rest to the
+codec. A new kind of item is a new codec, returned from `codecOf()` and listed in `codecs()`.
+`codecOf()` switches on every kind, so a kind with no codec does not compile.
+
 **Each mesh item stores its own geometry.** Two items that share a `BRep` are written with a copy
 each, and read back as two meshes.
 

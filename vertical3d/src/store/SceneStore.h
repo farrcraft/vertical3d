@@ -26,12 +26,11 @@ namespace v3d::editor {
  *
  * Every item is a row of typed columns for what all items share, with a JSON payload for what
  * its kind adds. What all items share includes the item's parent, as a reference to the
- * parent's row, which is empty for an item with no parent. A mesh's topology is three blobs of
- * little-endian arrays in a table of its own. A payload holds every field its kind's version
- * defines and nothing else, so a change to what a kind stores is a new version of that kind.
+ * parent's row, which is empty for an item with no parent. A kind's Codec writes and reads its
+ * payload, and any blobs it adds in a table of its own, as a mesh's topology is.
  *
  * The database's header carries APPLICATION_ID, so a database another program wrote is
- * refused, and SCHEMA_VERSION, the version of its tables. Each kind of item has a version of
+ * refused, and SCHEMA_VERSION, the version of its tables. Each kind's codec has a version of
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
  *
  * Each curve is a row of its own, which names its owner's row and the property it drives, with
@@ -59,14 +58,6 @@ class SceneStore final {
      * have no curves table, so nothing they hold is animated.
      **/
     static constexpr std::int32_t SCHEMA_VERSION = 3;
-
-    /**
-     * The version of each kind's payload and blobs, which a row stores beside them.
-     **/
-    static constexpr std::int64_t MESH_VERSION = 1;
-    static constexpr std::int64_t CAMERA_VERSION = 1;
-    static constexpr std::int64_t LIGHT_VERSION = 1;
-    static constexpr std::int64_t GROUP_VERSION = 1;
 
     /**
      * The version of a curve's keys, which a curve's row stores beside them.

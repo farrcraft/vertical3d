@@ -18,6 +18,7 @@ v3d_add_test(vertical3d
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"
 	"store/ProjectTest.cxx"
+	"store/CodecTest.cxx"
 	"store/SceneStoreTest.cxx"
 	"command/ModellingTest.cxx"
 

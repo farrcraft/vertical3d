@@ -5,11 +5,6 @@
 
 #include "SceneStore.h"
 
-#include <api/brep/BRep.h>
-#include <api/brep/Face.h>
-#include <api/brep/HalfEdge.h>
-#include <api/brep/Index.h>
-#include <api/brep/Vertex.h>
 #include <api/database/Binder.h>
 #include <api/database/Columns.h>
 #include <api/database/Database.h>
@@ -17,11 +12,7 @@
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -44,6 +35,9 @@
 #include <utility>
 #include <vector>
 
+#include "Bytes.h"
+#include "Codec.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
@@ -58,8 +52,6 @@ namespace v3d::editor {
 namespace {
 
 // blobs are written as the machine holds them, which is the order the format defines
-static_assert(std::endian::native == std::endian::little, "scene blobs are little-endian");
-
 /**
  * The tables of a scene document at SCHEMA_VERSION.
  *
@@ -121,59 +113,6 @@ const char* const MIGRATE_FROM_2 =
  **/
 constexpr std::size_t KEY_SIZE = (4 * sizeof(float)) + 4;
 
-/**
- * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
- * its vertex, face, pair and next. A face is its normal and its first half edge.
- **/
-constexpr std::size_t VERTEX_SIZE = 3 * sizeof(float);
-constexpr std::size_t EDGE_SIZE = 4 * sizeof(std::uint32_t);
-constexpr std::size_t FACE_SIZE = (3 * sizeof(float)) + sizeof(std::uint32_t);
-
-/**
- * Append a number to a blob.
- **/
-template <typename T>
-void put(std::vector<std::byte>* bytes, T value) {
-    const std::array<std::byte, sizeof(T)> raw = std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
-    bytes->insert(bytes->end(), raw.begin(), raw.end());
-}
-
-void put(std::vector<std::byte>* bytes, const glm::vec3& value) {
-    put(bytes, value.x);
-    put(bytes, value.y);
-    put(bytes, value.z);
-}
-
-/**
- * Reads a blob's numbers in the order they were written. The caller has checked that the blob
- * holds every number it reads.
- **/
-class Cursor final {
- public:
-    explicit Cursor(std::span<const std::byte> bytes) :
-        bytes_(bytes) {
-    }
-
-    template <typename T>
-    T next() {
-        std::array<std::byte, sizeof(T)> raw{};
-        std::memcpy(raw.data(), bytes_.subspan(offset_, sizeof(T)).data(), sizeof(T));
-        offset_ += sizeof(T);
-        return std::bit_cast<T>(raw);
-    }
-
-    glm::vec3 vector() {
-        const float x = next<float>();
-        const float y = next<float>();
-        const float z = next<float>();
-        return glm::vec3(x, y, z);
-    }
-
- private:
-    std::span<const std::byte> bytes_;
-    std::size_t offset_ = 0;
-};
-
 using v3d::database::Binder;
 using v3d::database::Columns;
 
@@ -192,251 +131,6 @@ glm::vec3 vector(Columns* row) {
  **/
 std::optional<std::int64_t> reference(std::int64_t id) {
     return id == 0 ? std::nullopt : std::optional<std::int64_t>(id);
-}
-
-/**
- * A mesh's three blobs, by role.
- **/
-struct Topology {
-    std::vector<std::byte> vertices;
-    std::vector<std::byte> edges;
-    std::vector<std::byte> faces;
-};
-
-Topology encode(const v3d::brep::BRep& mesh) {
-    Topology topology;
-    for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
-        put(&topology.vertices, mesh.vertex(id)->point());
-    }
-    for (v3d::brep::Index id = 0; id < mesh.edgeCount(); id++) {
-        const v3d::brep::HalfEdge* edge = mesh.edge(id);
-        put(&topology.edges, edge->vertex());
-        put(&topology.edges, edge->face());
-        put(&topology.edges, edge->pair());
-        put(&topology.edges, edge->next());
-    }
-    for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
-        const v3d::brep::Face* face = mesh.face(id);
-        put(&topology.faces, face->normal());
-        put(&topology.faces, face->edge());
-    }
-    return topology;
-}
-
-/**
- * One blob as it was read: how many entries its row says it holds, and its bytes.
- **/
-struct Blob {
-    std::int64_t count = 0;
-    std::vector<std::byte> data;
-};
-
-/**
- * @return whether a blob holds exactly count entries of a size, and no more than an index can
- *         number
- **/
-bool sized(const Blob& blob, std::size_t size, const char* role, std::string* problem) {
-    if (blob.count < 0 || blob.count >= static_cast<std::int64_t>(v3d::brep::INVALID_ID) ||
-        static_cast<std::size_t>(blob.count) * size != blob.data.size()) {
-        *problem = std::string("its ") + role + " do not fill their blob exactly";
-        return false;
-    }
-    return true;
-}
-
-bool finite(const glm::vec3& value) {
-    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
-}
-
-/**
- * Build a mesh from its three blobs, index for index.
- **/
-bool decode(const std::map<std::string, Blob>& blobs, v3d::brep::BRep* mesh, std::string* problem) {
-    if (blobs.size() != 3 || !blobs.contains("vertices") || !blobs.contains("edges") || !blobs.contains("faces")) {
-        *problem = "it does not have exactly its vertices, edges and faces";
-        return false;
-    }
-    const Blob& vertices = blobs.at("vertices");
-    const Blob& edges = blobs.at("edges");
-    const Blob& faces = blobs.at("faces");
-    if (!sized(vertices, VERTEX_SIZE, "vertices", problem) || !sized(edges, EDGE_SIZE, "edges", problem) ||
-        !sized(faces, FACE_SIZE, "faces", problem)) {
-        return false;
-    }
-
-    Cursor points(vertices.data);
-    for (std::int64_t entry = 0; entry < vertices.count; entry++) {
-        const glm::vec3 point = points.vector();
-        if (!finite(point)) {
-            *problem = "a vertex is not a finite point";
-            return false;
-        }
-        mesh->addVertex(v3d::brep::Vertex(point));
-    }
-    Cursor halves(edges.data);
-    for (std::int64_t entry = 0; entry < edges.count; entry++) {
-        v3d::brep::HalfEdge edge;
-        edge.vertex(halves.next<std::uint32_t>());
-        edge.face(halves.next<std::uint32_t>());
-        edge.pair(halves.next<std::uint32_t>());
-        edge.next(halves.next<std::uint32_t>());
-        mesh->addEdge(edge);
-    }
-    Cursor loops(faces.data);
-    for (std::int64_t entry = 0; entry < faces.count; entry++) {
-        const glm::vec3 normal = loops.vector();
-        const std::uint32_t first = loops.next<std::uint32_t>();
-        if (!finite(normal)) {
-            *problem = "a face's normal is not finite";
-            return false;
-        }
-        mesh->addFace(v3d::brep::Face(normal, first));
-    }
-
-    // a reference out of range would make the wireframe and the picker index past the end of
-    // the mesh, so it is refused here rather than found by whatever reads it first
-    return mesh->validate(problem);
-}
-
-/**
- * @return whether a payload has exactly these keys
- **/
-bool exactly(const boost::json::object& payload, std::initializer_list<const char*> keys, std::string* problem) {
-    for (const char* key : keys) {
-        if (!payload.contains(key)) {
-            *problem = std::string("its payload has no ") + key;
-            return false;
-        }
-    }
-    if (payload.size() != keys.size()) {
-        *problem = "its payload has a field its version does not define";
-        return false;
-    }
-    return true;
-}
-
-/**
- * Read a finite number, or count of them, from a payload whose keys have been checked.
- **/
-bool numbers(const boost::json::value& value, std::size_t count, float* out) {
-    if (count == 1) {
-        if (!value.is_number()) {
-            return false;
-        }
-        out[0] = static_cast<float>(value.to_number<double>());
-        return std::isfinite(out[0]);
-    }
-    if (!value.is_array() || value.as_array().size() != count) {
-        return false;
-    }
-    for (std::size_t index = 0; index < count; index++) {
-        if (!numbers(value.as_array()[index], 1, &out[index])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * @return a payload's string, or nothing when the value is not one
- **/
-std::string_view word(const boost::json::value& value) {
-    return value.is_string() ? std::string_view(value.as_string()) : std::string_view();
-}
-
-boost::json::array vector(const glm::vec3& value) {
-    return boost::json::array{ value.x, value.y, value.z };
-}
-
-boost::json::object cameraPayload(const Camera& camera) {
-    const Camera::Lens& lens = camera.lens();
-    boost::json::object payload;
-    payload["projection"] = lens.projection == Camera::Projection::Orthographic ? "orthographic" : "perspective";
-    payload["fov"] = lens.fov;
-    payload["extent"] = lens.extent;
-    payload["clipping"] = boost::json::array{ lens.clipping.x, lens.clipping.y };
-    return payload;
-}
-
-bool readCamera(const boost::json::object& payload, Camera* camera, std::string* problem) {
-    if (!exactly(payload, { "projection", "fov", "extent", "clipping" }, problem)) {
-        return false;
-    }
-    Camera::Lens lens;
-    const std::string_view projection = word(payload.at("projection"));
-    if (projection == "perspective") {
-        lens.projection = Camera::Projection::Perspective;
-    } else if (projection == "orthographic") {
-        lens.projection = Camera::Projection::Orthographic;
-    } else {
-        *problem = "its projection is neither perspective nor orthographic";
-        return false;
-    }
-    float clipping[2] = { 0.0F, 0.0F };
-    if (!numbers(payload.at("fov"), 1, &lens.fov) || !numbers(payload.at("extent"), 1, &lens.extent) ||
-        !numbers(payload.at("clipping"), 2, clipping)) {
-        *problem = "a field of its lens is not a finite number";
-        return false;
-    }
-    lens.clipping = glm::vec2(clipping[0], clipping[1]);
-    if (!lens.valid()) {
-        *problem = "its lens is out of range";
-        return false;
-    }
-    camera->lens(lens);
-    return true;
-}
-
-boost::json::object lightPayload(const Light& light) {
-    const Light::Emission& emission = light.emission();
-    boost::json::object payload;
-    switch (emission.type) {
-        case Light::Type::Point:
-            payload["type"] = "point";
-            break;
-        case Light::Type::Distant:
-            payload["type"] = "distant";
-            break;
-        case Light::Type::Spot:
-            payload["type"] = "spot";
-            break;
-    }
-    payload["colour"] = vector(emission.colour);
-    payload["intensity"] = emission.intensity;
-    payload["cone"] = emission.cone;
-    payload["delta"] = emission.delta;
-    return payload;
-}
-
-bool readLight(const boost::json::object& payload, Light* light, std::string* problem) {
-    if (!exactly(payload, { "type", "colour", "intensity", "cone", "delta" }, problem)) {
-        return false;
-    }
-    Light::Emission emission;
-    const std::string_view type = word(payload.at("type"));
-    if (type == "point") {
-        emission.type = Light::Type::Point;
-    } else if (type == "distant") {
-        emission.type = Light::Type::Distant;
-    } else if (type == "spot") {
-        emission.type = Light::Type::Spot;
-    } else {
-        *problem = "its type is not point, distant or spot";
-        return false;
-    }
-    float colour[3] = { 0.0F, 0.0F, 0.0F };
-    if (!numbers(payload.at("colour"), 3, colour) || !numbers(payload.at("intensity"), 1, &emission.intensity) ||
-        !numbers(payload.at("cone"), 1, &emission.cone) || !numbers(payload.at("delta"), 1, &emission.delta)) {
-        *problem = "a field of its emission is not a finite number";
-        return false;
-    }
-    emission.colour = glm::vec3(colour[0], colour[1], colour[2]);
-    if (!emission.valid()) {
-        *problem = "its emission is out of range";
-        return false;
-    }
-    light->emission(emission);
-    return true;
 }
 
 /**
@@ -504,59 +198,33 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
 }
 
 /**
- * The geometry of one mesh item, from its blobs.
- **/
-boost::shared_ptr<Item> readMesh(std::int64_t id, const boost::json::object& payload, v3d::database::Statement* buffers,
-    std::string* problem) {
-    if (!exactly(payload, {}, problem)) {
-        return nullptr;
-    }
-    if (!buffers->reset() || !buffers->bindInteger(1, id)) {
-        *problem = buffers->error();
-        return nullptr;
-    }
-    std::map<std::string, Blob> blobs;
-    while (buffers->step() == v3d::database::Statement::Step::Row) {
-        Columns row(*buffers);
-        const std::string role = row.text();
-        const std::int64_t count = row.integer();
-        const std::span<const std::byte> data = row.blob();
-        blobs[role] = Blob{ .count = count, .data = std::vector<std::byte>(data.begin(), data.end()) };
-    }
-    const boost::shared_ptr<v3d::brep::BRep> geometry = boost::make_shared<v3d::brep::BRep>();
-    if (!decode(blobs, geometry.get(), problem)) {
-        return nullptr;
-    }
-    return boost::make_shared<Mesh>(geometry);
-}
-
-/**
  * The item one row of the items table describes, without its id or its placement.
  **/
 boost::shared_ptr<Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
     const boost::json::object& payload, v3d::database::Statement* buffers, std::string* problem) {
-    if (kind == "mesh") {
-        return current(kind, version, SceneStore::MESH_VERSION, problem) ? readMesh(id, payload, buffers, problem) : nullptr;
+    const Codec* codec = codecNamed(kind);
+    if (codec == nullptr) {
+        *problem = "its kind, " + kind + ", is not one this build reads";
+        return nullptr;
     }
-    if (kind == "camera") {
-        const boost::shared_ptr<Camera> camera = boost::make_shared<Camera>();
-        const bool read = current(kind, version, SceneStore::CAMERA_VERSION, problem) && readCamera(payload, camera.get(), problem);
-        return read ? camera : nullptr;
+    if (!current(kind, version, codec->version(), problem)) {
+        return nullptr;
     }
-    if (kind == "light") {
-        const boost::shared_ptr<Light> light = boost::make_shared<Light>();
-        const bool read = current(kind, version, SceneStore::LIGHT_VERSION, problem) && readLight(payload, light.get(), problem);
-        return read ? light : nullptr;
+    Blobs blobs;
+    if (codec->buffered()) {
+        if (!buffers->reset() || !buffers->bindInteger(1, id)) {
+            *problem = buffers->error();
+            return nullptr;
+        }
+        while (buffers->step() == v3d::database::Statement::Step::Row) {
+            Columns row(*buffers);
+            const std::string role = row.text();
+            const std::int64_t count = row.integer();
+            const std::span<const std::byte> data = row.blob();
+            blobs[role] = Blob{ .count = count, .data = std::vector<std::byte>(data.begin(), data.end()) };
+        }
     }
-    if (kind == "group") {
-        const bool read = current(kind, version, SceneStore::GROUP_VERSION, problem) && exactly(payload, {}, problem);
-        return read ? boost::make_shared<Group>() : nullptr;
-    }
-    std::string unknown = "its kind, ";
-    unknown += kind;
-    unknown += ", is not one this build reads";
-    *problem = unknown;
-    return nullptr;
+    return codec->read(payload, blobs, problem);
 }
 
 /**
@@ -872,52 +540,21 @@ struct Inserts {
  * Write one item's row, and a mesh's blobs.
  **/
 bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64_t position, std::int64_t parent) {
-    std::string kind;
-    std::int64_t version = 0;
-    std::string payload = "{}";
-    switch (item->kind()) {
-        case Item::Kind::Mesh:
-            kind = "mesh";
-            version = SceneStore::MESH_VERSION;
-            break;
-        case Item::Kind::Camera:
-            kind = "camera";
-            version = SceneStore::CAMERA_VERSION;
-            payload = boost::json::serialize(cameraPayload(*boost::static_pointer_cast<Camera>(item)));
-            break;
-        case Item::Kind::Light:
-            kind = "light";
-            version = SceneStore::LIGHT_VERSION;
-            payload = boost::json::serialize(lightPayload(*boost::static_pointer_cast<Light>(item)));
-            break;
-        case Item::Kind::Group:
-            kind = "group";
-            version = SceneStore::GROUP_VERSION;
-            break;
-    }
-
+    const Codec& codec = codecOf(item->kind());
+    const std::string payload = boost::json::serialize(codec.payload(*item));
     const glm::vec3 translation = item->translation();
     const glm::quat rotation = item->rotation();
     const glm::vec3 scale = item->scale();
-    if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(kind).integer(version)
+    if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(std::string(codec.name()))
+        .integer(codec.version())
         .reals({ translation.x, translation.y, translation.z, rotation.x, rotation.y, rotation.z, rotation.w })
         .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).run()) {
         return false;
     }
-
-    const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
-    if (!mesh) {
-        return true;
-    }
-    const v3d::brep::BRep& geometry = *mesh->geometry();
-    const Topology topology = encode(geometry);
-    const auto blob = [&](const char* role, std::size_t count, const std::vector<std::byte>& data) {
-        return Binder(&inserts->buffer).integer(item->documentId()).text(role).integer(static_cast<std::int64_t>(count))
-            .blob(data).run();
-    };
-    return blob("vertices", geometry.vertexCount(), topology.vertices) &&
-        blob("edges", geometry.edgeCount(), topology.edges) &&
-        blob("faces", geometry.faceCount(), topology.faces);
+    return std::ranges::all_of(codec.buffers(*item), [&](const Buffer& buffer) {
+        return Binder(&inserts->buffer).integer(item->documentId()).text(buffer.role)
+            .integer(static_cast<std::int64_t>(buffer.count)).blob(buffer.data).run();
+    });
 }
 
 /**
