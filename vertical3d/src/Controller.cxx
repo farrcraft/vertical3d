@@ -44,7 +44,7 @@
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>
-#include <vertical3d/src/view/Triangulation.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 

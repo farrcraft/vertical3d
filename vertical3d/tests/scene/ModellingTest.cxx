@@ -7,13 +7,13 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -120,7 +120,7 @@ void undoRedo(v3d::editor::TopologyCommand* command, const boost::shared_ptr<v3d
 
 BOOST_AUTO_TEST_CASE(modelling_split_edges_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
 
@@ -146,8 +146,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_edges_test) {
 BOOST_AUTO_TEST_CASE(modelling_split_boundary_edges_test) {
     // the plane's edges are all on its boundary, and two meshes split in one command
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     plane->selected(true);
     cube->selected(true);
     scene.add(plane);
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(modelling_split_boundary_edges_test) {
 
 BOOST_AUTO_TEST_CASE(modelling_split_face_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     // two opposite corners of the front face
@@ -195,8 +195,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_face_test) {
 
 BOOST_AUTO_TEST_CASE(modelling_split_face_refused_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    const boost::shared_ptr<v3d::editor::Mesh> other = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Mesh> other = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     other->selected(true);
     scene.add(cube);
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     // a vertex move recorded before a split still undoes correctly after the split is undone,
     // because the split's undo puts every index back where the move's record expects it
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     const v3d::brep::BRep::Snapshot original = cube->geometry()->snapshot();
@@ -274,7 +274,7 @@ v3d::brep::Index facing(const v3d::brep::BRep& mesh, const glm::vec3& normal) {
 
 BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
 
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
 BOOST_AUTO_TEST_CASE(modelling_extrude_region_test) {
     // the top and the right share an edge, so they extrude as one region with a ring of six
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     const v3d::brep::Index top = facing(*cube->geometry(), glm::vec3(0.0F, 1.0F, 0.0F));
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_region_test) {
 BOOST_AUTO_TEST_CASE(modelling_extrude_open_boundary_test) {
     // a wall of the cylinder has its top and bottom on the open rims
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cylinder = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cylinder());
+    const boost::shared_ptr<v3d::editor::Mesh> cylinder = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cylinder());
     cylinder->selected(true);
     scene.add(cylinder);
     cylinder->geometry()->face(0)->selected(true);
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_open_boundary_test) {
 BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
     // two faces that share an edge are each inset on their own
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     BOOST_CHECK(!v3d::editor::insetFaces(scene));
@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
 BOOST_AUTO_TEST_CASE(modelling_merge_vertices_test) {
     // the two ends of one of the cube's edges become one at its middle
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     cube->geometry()->vertex(at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)))->selected(true);
@@ -412,8 +412,8 @@ BOOST_AUTO_TEST_CASE(modelling_merge_vertices_test) {
 
 BOOST_AUTO_TEST_CASE(modelling_merge_vertices_refused_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    const boost::shared_ptr<v3d::editor::Mesh> other = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Mesh> other = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     other->selected(true);
     scene.add(cube);
@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
     // a merge removes a vertex and renumbers those after it. A move of the last vertex, recorded
     // before the merge, still undoes correctly once the merge is undone
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene.add(cube);
     const v3d::brep::BRep::Snapshot original = cube->geometry()->snapshot();

@@ -18,7 +18,7 @@
 #include <map>
 #include <utility>
 
-#include "Triangulation.h"
+#include "Shading.h"
 #include "ViewPort.h"
 
 #include <boost/shared_ptr.hpp>

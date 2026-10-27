@@ -236,9 +236,9 @@ share one `BRep`.
 
 Background: [ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
 
-The four primitives in `src/scene/CreatePoly.h` are each one unit across and centred on the
-origin. Each is geometry, and the mesh item that holds it places it. The cylinder and the cone
-are open: they have no cap faces.
+The four primitives in `api/brep/Primitives.h`, `brep::cube()`, `plane()`, `cylinder()` and
+`cone()`, are each one unit across and centred on the origin. Each is geometry, and the mesh
+item that holds it places it. The cylinder and the cone are open: they have no cap faces.
 
 ## Viewports
 
@@ -331,14 +331,16 @@ A view that shows meshes draws their surfaces in its scene pass, before its wire
 `ShadedPass` in `src/view/ShadedPass.h` does it, with the editor's own pipelines and shaders in
 `vertical3d/shaders/`.
 
-**Triangles.** `triangulate()` in `src/view/Triangulation.h` cuts each face into triangles by ear
-clipping in the face's plane, so a concave face is cut inside its outline. A face ear clipping
-cannot cut, one whose points lie on a line, is fanned from its first corner. Each triangle winds
-counter-clockwise seen from outside, the reverse of the face's loop.
+**Triangles.** `brep::triangulate()` in `api/brep/Triangulation.h` cuts each face into
+triangles by ear clipping in the face's plane, so a concave face is cut inside its outline.
+`brep::triangulateFace()` cuts one face. A face ear clipping cannot cut, one whose points lie on
+a line, is fanned from its first corner. Each triangle winds counter-clockwise seen from
+outside, the reverse of the face's loop.
 
-- **Flat shading** gives each face its own copies of its corners, lit by the face's normal.
-- **Smooth shading** gives each vertex one copy, lit by the average of the normals of the faces
-  around it.
+- **Flat shading** asks for `brep::Normals::Face`, which gives each face its own copies of its
+  corners, lit by the face's normal.
+- **Smooth shading** asks for `brep::Normals::Vertex`, which gives each vertex one copy, lit by
+  the average of the normals of the faces around it.
 - A face whose stored normal is zero, as an extrude's ring is until it is moved, takes its
   normal from its points, and +z when those have no area.
 

@@ -13,7 +13,7 @@
 #include <string>
 
 #include "ConstructionPlane.h"
-#include "Triangulation.h"
+#include "Shading.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>

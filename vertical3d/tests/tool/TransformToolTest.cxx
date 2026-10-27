@@ -7,6 +7,7 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <api/log/Logger.h>
@@ -16,7 +17,6 @@
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectMask.h>
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_drag_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_miss_test) {
  **/
 BOOST_AUTO_TEST_CASE(transform_tool_takes_a_press_on_a_handle_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_takes_a_press_on_a_handle_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_mode_change_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
 
@@ -261,8 +261,8 @@ BOOST_AUTO_TEST_CASE(transform_tool_abandoned_gesture_test) {
 struct TwoCubes {
     TwoCubes() :
         scene(boost::make_shared<v3d::editor::Scene>()),
-        left(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
-        right(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
         history(boost::make_shared<v3d::editor::CommandStack>()),
         transformTool(tool(scene)) {
         left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
@@ -386,7 +386,7 @@ struct Snapshot {
 struct Components {
     explicit Components(v3d::editor::SelectMask mask) :
         scene(boost::make_shared<v3d::editor::Scene>()),
-        cube(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())),
+        cube(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
         history(boost::make_shared<v3d::editor::CommandStack>()),
         transformTool(tool(scene)) {
         cube->selected(true);

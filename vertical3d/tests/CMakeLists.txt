@@ -6,7 +6,6 @@ v3d_add_test(vertical3d
 
 	"view/ViewLayoutTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
-	"view/TriangulationTest.cxx"
 	"view/ViewPortTest.cxx"
 
 	"scene/ItemTest.cxx"
@@ -14,7 +13,6 @@ v3d_add_test(vertical3d
 	"scene/EvaluationTest.cxx"
 	"scene/PropertiesTest.cxx"
 	"scene/CreateItemTest.cxx"
-	"scene/CreatePolyTest.cxx"
 	"scene/GlyphsTest.cxx"
 	"scene/WireframeVisitorTest.cxx"
 	"scene/RIBExportVisitorTest.cxx"

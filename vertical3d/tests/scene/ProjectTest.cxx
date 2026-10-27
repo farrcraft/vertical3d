@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Project.h>
@@ -59,7 +59,7 @@ class Scratch final {
  **/
 boost::shared_ptr<v3d::editor::Scene> sample() {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
     scene->add(boost::make_shared<v3d::editor::Light>());
     return scene;
 }

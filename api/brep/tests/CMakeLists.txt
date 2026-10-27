@@ -2,6 +2,8 @@ v3d_add_test(brep
 	"TestMain.cxx"
 	"BRepTest.cxx"
 	"OperationsTest.cxx"
+	"PrimitivesTest.cxx"
+	"TriangulationTest.cxx"
 	"FaceTest.cxx"
 	"HalfEdgeTest.cxx"
 	"VertexTest.cxx")

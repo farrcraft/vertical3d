@@ -4,12 +4,12 @@
  **/
 
 #include <api/animation/Curve.h>
+#include <api/brep/Primitives.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/Delegate.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -32,7 +32,7 @@ namespace {
  **/
 struct Cube {
     Cube() :
-        mesh(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())) {
+        mesh(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
         scene.add(mesh);
         settings.size = glm::uvec2(64, 48);
         settings.samples = 1;

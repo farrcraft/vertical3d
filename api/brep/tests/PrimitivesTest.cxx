@@ -8,7 +8,7 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
-#include <vertical3d/src/scene/CreatePoly.h>
+#include <api/brep/Primitives.h>
 
 #include <string>
 
@@ -42,7 +42,7 @@ void checkUnitCentred(const boost::shared_ptr<v3d::brep::BRep>& mesh, bool flat)
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cube_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::brep::cube();
 
     BOOST_CHECK_EQUAL(cube->faceCount(), 6U);
     BOOST_CHECK_EQUAL(cube->vertexCount(), 8U);
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(create_poly_cube_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_plane_test) {
-    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
+    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::brep::plane();
 
     BOOST_CHECK_EQUAL(plane->faceCount(), 1U);
     BOOST_CHECK_EQUAL(plane->vertexCount(), 4U);
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(create_poly_plane_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cylinder_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::editor::create_poly_cylinder();
+    const boost::shared_ptr<v3d::brep::BRep> cylinder = v3d::brep::cylinder();
 
     // eight walls and no caps
     BOOST_CHECK_EQUAL(cylinder->faceCount(), 8U);
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(create_poly_cylinder_test) {
 }
 
 BOOST_AUTO_TEST_CASE(create_poly_cone_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cone = v3d::editor::create_poly_cone();
+    const boost::shared_ptr<v3d::brep::BRep> cone = v3d::brep::cone();
 
     BOOST_CHECK_EQUAL(cone->faceCount(), 8U);
     // eight around the base and the apex
@@ -82,8 +82,8 @@ BOOST_AUTO_TEST_CASE(create_poly_strict_test) {
     // every primitive is sound enough for a topology change to be checked against. The plane,
     // the cylinder and the cone are open, so their boundary edges have no pair
     const boost::shared_ptr<v3d::brep::BRep> primitives[4] = {
-        v3d::editor::create_poly_cube(), v3d::editor::create_poly_plane(),
-        v3d::editor::create_poly_cylinder(), v3d::editor::create_poly_cone() };
+        v3d::brep::cube(), v3d::brep::plane(),
+        v3d::brep::cylinder(), v3d::brep::cone() };
     for (const boost::shared_ptr<v3d::brep::BRep>& primitive : primitives) {
         std::string problem;
         BOOST_CHECK_MESSAGE(primitive->validateStrict(&problem), problem);
@@ -94,8 +94,8 @@ BOOST_AUTO_TEST_CASE(create_poly_winding_test) {
     // every face is wound clockwise seen from outside, so the normal its points give is the
     // one it was made with, and points away from the middle of the primitive
     const boost::shared_ptr<v3d::brep::BRep> primitives[4] = {
-        v3d::editor::create_poly_cube(), v3d::editor::create_poly_plane(),
-        v3d::editor::create_poly_cylinder(), v3d::editor::create_poly_cone() };
+        v3d::brep::cube(), v3d::brep::plane(),
+        v3d::brep::cylinder(), v3d::brep::cone() };
     for (const boost::shared_ptr<v3d::brep::BRep>& primitive : primitives) {
         for (v3d::brep::Index face = 0; face < primitive->faceCount(); face++) {
             const glm::vec3 stored = primitive->face(face)->normal();

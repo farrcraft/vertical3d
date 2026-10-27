@@ -3,12 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -63,7 +63,7 @@ class Scratch final {
  **/
 struct Shots {
     Shots() :
-        mesh(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube())) {
+        mesh(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
         scene.add(mesh);
         scene.timeline({ .start = 1, .end = 2, .frame = 1 });
         settings.size = glm::uvec2(32, 24);
@@ -168,7 +168,7 @@ BOOST_FIXTURE_TEST_CASE(batch_cancel_test, Shots) {
 BOOST_AUTO_TEST_CASE(batch_missing_program_test) {
     const Scratch scratch("missing");
     v3d::editor::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
+    scene.add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
     scene.timeline({ .start = 1, .end = 1, .frame = 1 });
     v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), scratch.path() / "no-such-program.exe");
 

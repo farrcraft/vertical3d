@@ -5,12 +5,6 @@
 
 #include "Triangulation.h"
 
-#include <api/brep/BRep.h>
-#include <api/brep/Face.h>
-#include <api/brep/HalfEdge.h>
-#include <api/brep/Index.h>
-#include <api/brep/Topology.h>
-#include <api/brep/Vertex.h>
 
 #include <algorithm>
 #include <array>
@@ -21,11 +15,18 @@
 #include <utility>
 #include <vector>
 
+#include "BRep.h"
+#include "Face.h"
+#include "HalfEdge.h"
+#include "Index.h"
+#include "Topology.h"
+#include "Vertex.h"
+
 #include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::brep {
 
 namespace {
 
@@ -54,12 +55,12 @@ bool inside(const glm::vec2& point, const std::array<glm::vec2, 3>& triangle) {
  * The normal a face is lit by: its stored one, or one from its points when that is zero, or +z
  * when neither has a direction.
  **/
-glm::vec3 faceNormal(const v3d::brep::BRep& mesh, v3d::brep::Index face) {
+glm::vec3 faceNormal(const BRep& mesh, Index face) {
     const glm::vec3 stored = mesh.face(face)->normal();
     if (glm::length(stored) > SHORTEST) {
         return glm::normalize(stored);
     }
-    const glm::vec3 found = v3d::brep::newellNormal(mesh, face);
+    const glm::vec3 found = newellNormal(mesh, face);
     if (glm::length(found) > SHORTEST) {
         return found;
     }
@@ -71,15 +72,15 @@ glm::vec3 faceNormal(const v3d::brep::BRep& mesh, v3d::brep::Index face) {
  * plane.
  **/
 struct Outline {
-    std::vector<v3d::brep::Index> corners;
+    std::vector<Index> corners;
     std::vector<glm::vec2> flat;
 };
 
-Outline outline(const v3d::brep::BRep& mesh, v3d::brep::Index face) {
+Outline outline(const BRep& mesh, Index face) {
     Outline result;
     // a half edge ends at a vertex, so the loop's ends are its corners in loop order. The loop
     // runs clockwise seen from outside, so the reverse is counter-clockwise
-    for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, face)) {
+    for (const Index edge : faceLoop(mesh, face)) {
         result.corners.insert(result.corners.begin(), mesh.edge(edge)->vertex());
     }
 
@@ -88,7 +89,7 @@ Outline outline(const v3d::brep::BRep& mesh, v3d::brep::Index face) {
     const glm::vec3 helper = std::abs(normal.x) < 0.9F ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F, 1.0F, 0.0F);
     const glm::vec3 u = glm::normalize(glm::cross(helper, normal));
     const glm::vec3 v = glm::cross(normal, u);
-    for (const v3d::brep::Index corner : result.corners) {
+    for (const Index corner : result.corners) {
         const glm::vec3 point = mesh.vertex(corner)->point();
         result.flat.emplace_back(glm::dot(point, u), glm::dot(point, v));
     }
@@ -121,28 +122,28 @@ std::optional<std::size_t> ear(const Outline& shape, const std::vector<std::size
 /**
  * Every face as triangles sharing one copy of each vertex, lit by the faces around it.
  **/
-Triangles smooth(const v3d::brep::BRep& mesh) {
+Triangles smooth(const BRep& mesh) {
     Triangles result;
     std::vector<glm::vec3> sums(mesh.vertexCount(), glm::vec3(0.0F));
     std::vector<std::optional<glm::vec3>> firsts(mesh.vertexCount());
-    for (v3d::brep::Index face = 0; face < mesh.faceCount(); face++) {
+    for (Index face = 0; face < mesh.faceCount(); face++) {
         const glm::vec3 normal = faceNormal(mesh, face);
-        for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, face)) {
-            const v3d::brep::Index corner = mesh.edge(edge)->vertex();
+        for (const Index edge : faceLoop(mesh, face)) {
+            const Index corner = mesh.edge(edge)->vertex();
             sums[corner] += normal;
             if (!firsts[corner]) {
                 firsts[corner] = normal;
             }
         }
     }
-    for (v3d::brep::Index vertex = 0; vertex < mesh.vertexCount(); vertex++) {
+    for (Index vertex = 0; vertex < mesh.vertexCount(); vertex++) {
         result.positions.push_back(mesh.vertex(vertex)->point());
         // faces that face opposite ways cancel, and the first of them lights the vertex
         const glm::vec3 first = firsts[vertex].value_or(glm::vec3(0.0F, 0.0F, 1.0F));
         result.normals.push_back(glm::length(sums[vertex]) > SHORTEST ? glm::normalize(sums[vertex]) : first);
     }
-    for (v3d::brep::Index face = 0; face < mesh.faceCount(); face++) {
-        for (const std::array<v3d::brep::Index, 3>& triangle : triangulateFace(mesh, face)) {
+    for (Index face = 0; face < mesh.faceCount(); face++) {
+        for (const std::array<Index, 3>& triangle : triangulateFace(mesh, face)) {
             result.indices.insert(result.indices.end(), triangle.begin(), triangle.end());
         }
     }
@@ -153,15 +154,15 @@ Triangles smooth(const v3d::brep::BRep& mesh) {
  * Every face as triangles with copies of its own corners, lit by that face alone. The face's
  * triangles share its copies.
  **/
-Triangles flat(const v3d::brep::BRep& mesh) {
+Triangles flat(const BRep& mesh) {
     Triangles result;
-    for (v3d::brep::Index face = 0; face < mesh.faceCount(); face++) {
+    for (Index face = 0; face < mesh.faceCount(); face++) {
         const glm::vec3 normal = faceNormal(mesh, face);
-        std::vector<std::pair<v3d::brep::Index, std::uint32_t>> copies;
-        for (const std::array<v3d::brep::Index, 3>& triangle : triangulateFace(mesh, face)) {
-            for (const v3d::brep::Index corner : triangle) {
+        std::vector<std::pair<Index, std::uint32_t>> copies;
+        for (const std::array<Index, 3>& triangle : triangulateFace(mesh, face)) {
+            for (const Index corner : triangle) {
                 const auto copy = std::find_if(copies.begin(), copies.end(),
-                    [corner](const std::pair<v3d::brep::Index, std::uint32_t>& made) { return made.first == corner; });
+                    [corner](const std::pair<Index, std::uint32_t>& made) { return made.first == corner; });
                 if (copy != copies.end()) {
                     result.indices.push_back(copy->second);
                     continue;
@@ -181,8 +182,8 @@ Triangles flat(const v3d::brep::BRep& mesh) {
 
 /**
  **/
-std::vector<std::array<v3d::brep::Index, 3>> triangulateFace(const v3d::brep::BRep& mesh, v3d::brep::Index face) {
-    std::vector<std::array<v3d::brep::Index, 3>> triangles;
+std::vector<std::array<Index, 3>> triangulateFace(const BRep& mesh, Index face) {
+    std::vector<std::array<Index, 3>> triangles;
     const Outline shape = outline(mesh, face);
     if (shape.corners.size() < 3) {
         return triangles;
@@ -213,8 +214,8 @@ std::vector<std::array<v3d::brep::Index, 3>> triangulateFace(const v3d::brep::BR
 
 /**
  **/
-Triangles triangulate(const v3d::brep::BRep& mesh, Shading shading) {
-    return shading == Shading::Smooth ? smooth(mesh) : flat(mesh);
+Triangles triangulate(const BRep& mesh, Normals normals) {
+    return normals == Normals::Vertex ? smooth(mesh) : flat(mesh);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::brep

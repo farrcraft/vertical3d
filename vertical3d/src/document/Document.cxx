@@ -5,6 +5,7 @@
 
 #include "Document.h"
 
+#include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
@@ -17,7 +18,6 @@
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -95,13 +95,13 @@ Outcome Document::create(const boost::shared_ptr<Item>& item, const std::string&
 Outcome Document::createPrimitive(Primitive primitive) {
     switch (primitive) {
         case Primitive::Cube:
-            return create(boost::make_shared<Mesh>(create_poly_cube()), "cube");
+            return create(boost::make_shared<Mesh>(v3d::brep::cube()), "cube");
         case Primitive::Plane:
-            return create(boost::make_shared<Mesh>(create_poly_plane()), "plane");
+            return create(boost::make_shared<Mesh>(v3d::brep::plane()), "plane");
         case Primitive::Cylinder:
-            return create(boost::make_shared<Mesh>(create_poly_cylinder()), "cylinder");
+            return create(boost::make_shared<Mesh>(v3d::brep::cylinder()), "cylinder");
         case Primitive::Cone:
-            return create(boost::make_shared<Mesh>(create_poly_cone()), "cone");
+            return create(boost::make_shared<Mesh>(v3d::brep::cone()), "cone");
     }
     return {};
 }

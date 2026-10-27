@@ -7,13 +7,15 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
-#include <api/brep/Topology.h>
+#include <api/brep/Triangulation.h>
+#include <api/brep/Vertex.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -147,32 +149,20 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
     open();
     const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
 
+    // RI draws a Polygon only when it is convex and flat, which a face with more than three
+    // corners need not be, so every face is sent as the triangles it is cut into. Those wind
+    // the other way from the face's loop, and are turned back to wind as the loop does
     for (v3d::brep::Index face = 0; face < mesh->faceCount(); face++) {
-        const std::vector<v3d::brep::Index> loop = v3d::brep::faceLoop(*mesh, face);
-        if (loop.size() < 3) {
-            continue;
-        }
-        // a half edge names the vertex it ends at, so each segment starts where the one
-        // before it ended. Taking each segment's start visits every vertex of the face once
-        std::vector<float> points;
-        for (std::size_t index = 0; index < loop.size(); index++) {
-            const std::optional<v3d::brep::Segment> segment = v3d::brep::loopSegment(*mesh, loop, index);
-            if (!segment) {
-                points.clear();
-                break;
+        for (const std::array<v3d::brep::Index, 3>& triangle : v3d::brep::triangulateFace(*mesh, face)) {
+            std::vector<float> points;
+            for (const v3d::brep::Index corner : { triangle[0], triangle[2], triangle[1] }) {
+                const glm::vec3 point = mesh->vertex(corner)->point();
+                points.insert(points.end(), { point.x, point.y, point.z });
             }
-            points.push_back(segment->from.x);
-            points.push_back(segment->from.y);
-            points.push_back(segment->from.z);
+            ParameterList list;
+            list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
+            body_.polygon(3, list);
         }
-        const unsigned int corners = static_cast<unsigned int>(points.size() / 3);
-        if (corners < 3) {
-            continue;
-        }
-
-        ParameterList list;
-        list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
-        body_.polygon(corners, list);
     }
 }
 

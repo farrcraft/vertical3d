@@ -10,7 +10,7 @@
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/view/Triangulation.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <boost/make_shared.hpp>

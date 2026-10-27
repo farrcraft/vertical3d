@@ -7,12 +7,12 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/animation/Curve.h>
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -93,8 +93,8 @@ v3d::brep::Index edgeBetween(const v3d::brep::BRep& mesh, v3d::brep::Index from,
 }
 
 BOOST_AUTO_TEST_CASE(target_objects_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(target_objects_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
     // nothing selected is nothing to move
     BOOST_CHECK(v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube})).empty());
@@ -144,8 +144,8 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
-    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     first->geometry()->vertex(corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
     second->geometry()->vertex(corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_move_components_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     // the object is stretched along x, so a world offset is half as far in its own space
     cube->scale(glm::vec3(2.0F, 1.0F, 1.0F));
     const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(target_move_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_turn_components_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const v3d::brep::Index face = frontFace(*cube->geometry());
     cube->geometry()->face(face)->selected(true);
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(target_turn_components_test) {
 
 BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
     v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
     light->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     cube->selected(true);
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_move_counts_a_change_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     cube->geometry()->vertex(0)->selected(true);
     v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, unparented<v3d::editor::Mesh>({cube}));
 
@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(target_starts_where_shown_test) {
 BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
     v3d::editor::Scene scene;
     const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     scene.add(group);
     scene.add(cube);
     scene.parent(cube->id(), group->id());

@@ -6,6 +6,7 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Face.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <api/image/Image.h>
@@ -19,11 +20,10 @@
 #include <api/render/tests/device/Headless.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ShadedPass.h>
-#include <vertical3d/src/view/Triangulation.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
@@ -67,7 +67,7 @@ v3d::type::camera::Camera camera() {
  * camera, and its back faces away.
  **/
 boost::shared_ptr<v3d::brep::BRep> facing() {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::brep::cube();
     for (v3d::brep::Index face = 0; face < cube->faceCount(); face++) {
         if (cube->face(face)->normal().z < -0.5F) {
             std::vector<glm::vec3> points;

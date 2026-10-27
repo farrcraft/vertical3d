@@ -6,13 +6,13 @@
 #include <api/brep/BRep.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/brep/Vertex.h>
 #include <api/database/Database.h>
 #include <api/database/Statement.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -76,7 +76,7 @@ boost::shared_ptr<v3d::editor::Mesh> item(const boost::shared_ptr<v3d::brep::BRe
 boost::shared_ptr<v3d::editor::Scene> everyKind() {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
 
-    const boost::shared_ptr<v3d::editor::Mesh> cube = item(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = item(v3d::brep::cube());
     cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
     cube->rotation(glm::angleAxis(0.7F, glm::normalize(glm::vec3(1.0F, 2.0F, 3.0F))));
     cube->scale(glm::vec3(2.0F, 0.5F, 3.0F));
@@ -94,7 +94,7 @@ boost::shared_ptr<v3d::editor::Scene> everyKind() {
         .intensity = 40.0F, .cone = 0.4F, .delta = 0.1F });
     scene->add(light);
 
-    scene->add(item(v3d::editor::create_poly_cone()));
+    scene->add(item(v3d::brep::cone()));
     return scene;
 }
 
@@ -231,10 +231,10 @@ BOOST_AUTO_TEST_CASE(store_written_form_test) {
     BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM buffers"), 6);
     BOOST_CHECK_EQUAL(query(scratch,
         "SELECT count FROM buffers JOIN items ON items.id = buffers.item WHERE position = 0 AND role = 'edges'"),
-        static_cast<std::int64_t>(v3d::editor::create_poly_cube()->edgeCount()));
+        static_cast<std::int64_t>(v3d::brep::cube()->edgeCount()));
     BOOST_CHECK_EQUAL(query(scratch,
         "SELECT length(data) FROM buffers JOIN items ON items.id = buffers.item WHERE position = 0 AND role = 'vertices'"),
-        static_cast<std::int64_t>(v3d::editor::create_poly_cube()->vertexCount() * 12));
+        static_cast<std::int64_t>(v3d::brep::cube()->vertexCount() * 12));
 
     // a payload is JSON that SQLite can read inside
     BOOST_CHECK_EQUAL(query(scratch,
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(store_failed_write_keeps_the_last_save_test) {
     const Scratch scratch("failed_write");
     v3d::editor::SceneStore store(logger());
     v3d::editor::Scene first;
-    first.add(item(v3d::editor::create_poly_plane()));
+    first.add(item(v3d::brep::plane()));
     BOOST_REQUIRE(store.write(scratch.path(), first));
 
     // a write that fails part way, after it has already replaced the meshes, leaves nothing of
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
 
             // the read fails whole, and the scene in memory is left as it was
             v3d::editor::Scene scene;
-            const boost::shared_ptr<v3d::editor::Mesh> kept = item(v3d::editor::create_poly_plane());
+            const boost::shared_ptr<v3d::editor::Mesh> kept = item(v3d::brep::plane());
             scene.add(kept);
             BOOST_CHECK(!store.read(scratch.path(), &scene));
             BOOST_REQUIRE_EQUAL(scene.count(), 1U);
@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
 
 BOOST_AUTO_TEST_CASE(store_refuses_a_dangling_reference_test) {
     const Scratch scratch("dangling");
-    const boost::shared_ptr<v3d::brep::BRep> broken = v3d::editor::create_poly_plane();
+    const boost::shared_ptr<v3d::brep::BRep> broken = v3d::brep::plane();
     v3d::brep::HalfEdge edge;
     edge.vertex(99);
     edge.face(0);
@@ -516,7 +516,7 @@ BOOST_AUTO_TEST_CASE(store_writes_another_document_whole_test) {
     // and one another store wrote is written whole, rather than merged into
     v3d::editor::SceneStore other(logger());
     v3d::editor::Scene small;
-    small.add(item(v3d::editor::create_poly_plane()));
+    small.add(item(v3d::brep::plane()));
     BOOST_REQUIRE(other.write(first.path(), small));
     BOOST_REQUIRE(store.write(second.path(), *scene));
     BOOST_REQUIRE(other.write(first.path(), small));

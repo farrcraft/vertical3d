@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/BRep.h>
+#include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -12,7 +14,6 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
@@ -21,6 +22,7 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <array>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -29,6 +31,9 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/filesystem/operations.hpp>
+
+#include <glm/geometric.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -102,6 +107,9 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
         faces_++;
         corners_ += vertices;
         points_ = parameters.points("P");
+        if (points_.size() == 3) {
+            triangles_.push_back({ points_[0], points_[1], points_[2] });
+        }
     }
 
     std::vector<std::string> lights_;
@@ -115,6 +123,7 @@ class ImportHandler final : public v3d::render::offline::rib::Handler {
     std::vector<glm::mat4x4> placements_;
     std::vector<std::string> names_;
     std::vector<glm::vec3> points_;
+    std::vector<std::array<glm::vec3, 3>> triangles_;
     glm::mat4x4 camera_ = glm::mat4x4(1.0F);
     std::string projection_;
     glm::uvec2 samples_ = glm::uvec2(0U);
@@ -183,7 +192,7 @@ bool reimport(const std::string & source, ImportHandler * handler) {
  **/
 BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
 
     const std::string exported = exportScene(scene, false);
 
@@ -201,10 +210,41 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
     BOOST_CHECK_EQUAL(handler.height_, 240U);
     BOOST_CHECK_EQUAL(handler.worlds_, 2U);
     BOOST_CHECK_EQUAL(handler.blocks_, 1U);
-    BOOST_CHECK_EQUAL(handler.faces_, 6U);
-    BOOST_CHECK_EQUAL(handler.corners_, 24U);
+    // each of the cube's six faces is two triangles
+    BOOST_CHECK_EQUAL(handler.faces_, 12U);
+    BOOST_CHECK_EQUAL(handler.corners_, 36U);
     BOOST_REQUIRE_EQUAL(handler.names_.size(), 1U);
     BOOST_CHECK_EQUAL(handler.names_[0], "mesh1");
+}
+
+/**
+ * A face that is not convex is sent as triangles that stay inside it, each winding as the face
+ * does.
+ **/
+BOOST_AUTO_TEST_CASE(ribexport_concave_face_test) {
+    // an L of six corners, which a Polygon of six would draw across its notch. A face is built
+    // clockwise seen from where it faces, which is +z here
+    const boost::shared_ptr<v3d::brep::BRep> shape = boost::make_shared<v3d::brep::BRep>();
+    shape->addFace({ glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 2.0F, 0.0F), glm::vec3(1.0F, 2.0F, 0.0F),
+        glm::vec3(1.0F, 1.0F, 0.0F), glm::vec3(2.0F, 1.0F, 0.0F), glm::vec3(2.0F, 0.0F, 0.0F) }, glm::vec3(0.0F, 0.0F, 1.0F));
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    scene->add(boost::make_shared<v3d::editor::Mesh>(shape));
+
+    ImportHandler handler;
+    BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
+    BOOST_CHECK_EQUAL(handler.faces_, 4U);
+    BOOST_CHECK_EQUAL(handler.corners_, 12U);
+    BOOST_REQUIRE_EQUAL(handler.triangles_.size(), 4U);
+    float area = 0.0F;
+    for (const std::array<glm::vec3, 3>& triangle : handler.triangles_) {
+        // clockwise seen from +z, as the face is, and none in the notch above x 1, y 1
+        const float signed_ = glm::cross(triangle[1] - triangle[0], triangle[2] - triangle[0]).z / 2.0F;
+        BOOST_CHECK_LT(signed_, 0.0F);
+        area -= signed_;
+        const glm::vec3 middle = (triangle[0] + triangle[1] + triangle[2]) / 3.0F;
+        BOOST_CHECK(middle.x <= 1.0F || middle.y <= 1.0F);
+    }
+    BOOST_CHECK_CLOSE(area, 3.0F, 0.001F);
 }
 
 /**
@@ -212,10 +252,10 @@ BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
  **/
 BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(3.0F, 4.0F, 5.0F));
     scene->add(first);
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
@@ -274,7 +314,7 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
 
 BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
 
     const boost::shared_ptr<v3d::editor::Light> point = boost::make_shared<v3d::editor::Light>();
     point->translation(glm::vec3(1.0F, 2.0F, 3.0F));
@@ -298,12 +338,12 @@ BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
 
     // every light is RI's standard shader for its type, written before every mesh, though
-    // the plane comes first in the scene
+    // the plane comes first in the scene. The plane is two triangles
     BOOST_REQUIRE_EQUAL(handler.lights_.size(), 3U);
     BOOST_CHECK_EQUAL(handler.lights_[0], "pointlight");
     BOOST_CHECK_EQUAL(handler.lights_[1], "spotlight");
     BOOST_CHECK_EQUAL(handler.lights_[2], "distantlight");
-    BOOST_CHECK_EQUAL(handler.order_, "LLLP");
+    BOOST_CHECK_EQUAL(handler.order_, "LLLPP");
 
     // in world space: from where the light is, to one unit along its +z axis
     BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(1.0F, 2.0F, 3.0F)), 0.0001F);
@@ -315,7 +355,7 @@ BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
 
 BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
     v3d::editor::RIBExportVisitor::Output output;
     output.settings.size = glm::uvec2(200, 100);
     output.settings.samples = 3;
@@ -345,14 +385,14 @@ BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
 
 BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane()));
+    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
 
     // a scene with no light is lit from the camera, the way it looks, before every mesh
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
     BOOST_REQUIRE_EQUAL(handler.lights_.size(), 1U);
     BOOST_CHECK_EQUAL(handler.lights_[0], "distantlight");
-    BOOST_CHECK_EQUAL(handler.order_, "LP");
+    BOOST_CHECK_EQUAL(handler.order_, "LPP");
     BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(0.0F, 0.0F, -8.0F)), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[0], glm::vec3(0.0F, 0.0F, -7.0F)), 0.0001F);
 
@@ -367,8 +407,8 @@ BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
 BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::editor::Group> outer = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> held = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
-    const boost::shared_ptr<v3d::editor::Mesh> inner = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
+    const boost::shared_ptr<v3d::editor::Mesh> held = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::Mesh> inner = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
     const boost::shared_ptr<v3d::editor::Group> empty = boost::make_shared<v3d::editor::Group>();
     const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
     outer->translation(glm::vec3(0.0F, 10.0F, 0.0F));
@@ -403,7 +443,7 @@ BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
     // the light is written at world level, where the group puts it
     BOOST_REQUIRE_EQUAL(handler.froms_.size(), 1U);
     BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(0.0F, 10.0F, 3.0F)), 0.0001F);
-    BOOST_CHECK_EQUAL(handler.order_, "LPP");
+    BOOST_CHECK_EQUAL(handler.order_, "LPPPP");
 }
 
 };  // namespace

@@ -5,9 +5,9 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Glyphs.h>
 #include <vertical3d/src/scene/Group.h>
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(wireframe_pairs_drawn_once_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     wireframe.visit(cube, at(cube));
 
     // 24 half edges paired into the cube's 12 edges. A half edge and its pair are one
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
     v3d::render::realtime::canvas::Line canvas;
     v3d::editor::WireframeVisitor wireframe(&canvas);
 
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     wireframe.visit(cube, at(cube));
     const glm::vec4 unselected = canvas.vertices()[0].colour;
 

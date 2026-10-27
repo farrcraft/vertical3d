@@ -247,9 +247,12 @@ the offline renderer reads RIB.
   eye, shining the way the camera looks, so that what it sees is lit
 - then the hierarchy, as nested `AttributeBegin` blocks. Each item's block has an identifier
   name, such as `group1` or `mesh2`, and a `ConcatTransform` of its local matrix. A mesh's block
-  then has one `Polygon` per face, and the blocks of the items beneath it follow inside it. A
-  block is written only when a mesh is inside it, so a camera, a light, or a group with no mesh
-  beneath it writes none
+  then has a three-cornered `Polygon` for each triangle of each face, and the blocks of the items
+  beneath it follow inside it. A block is written only when a mesh is inside it, so a camera, a
+  light, or a group with no mesh beneath it writes none
+- every face is cut into triangles as `brep::triangulateFace()` cuts it, because RI draws a
+  `Polygon` only when it is convex and flat, and a face of more than three corners need be
+  neither. Each triangle winds as its face's loop does
 
 RI lights only what is declared after a light, so the lights come before every mesh whatever
 the scene's order. RI also turns a light off when the block it was declared in ends, so a light

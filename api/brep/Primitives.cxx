@@ -3,17 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "CreatePoly.h"
-
-#include <api/brep/BRep.h>
+#include "Primitives.h"
 
 #include <cmath>
 #include <vector>
 
+#include "BRep.h"
+
 #include <boost/make_shared.hpp>
 #include <glm/gtc/constants.hpp>
 
-namespace v3d::editor {
+namespace v3d::brep {
 
 namespace {
 
@@ -39,9 +39,9 @@ std::vector<glm::vec3> ring(float radius, float height) {
 
 /**
  **/
-boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
+boost::shared_ptr<BRep> cube() {
     const float half = 0.5F;
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    boost::shared_ptr<BRep> mesh = boost::make_shared<BRep>();
 
     std::vector<glm::vec3> points;
 
@@ -97,9 +97,9 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cube() {
 
 /**
  **/
-boost::shared_ptr<v3d::brep::BRep> create_poly_plane() {
+boost::shared_ptr<BRep> plane() {
     const float half = 0.5F;
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    boost::shared_ptr<BRep> mesh = boost::make_shared<BRep>();
 
     std::vector<glm::vec3> vertices;
     vertices.push_back(glm::vec3(-half, 0.0F, -half));
@@ -113,10 +113,10 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_plane() {
 
 /**
  **/
-boost::shared_ptr<v3d::brep::BRep> create_poly_cone() {
+boost::shared_ptr<BRep> cone() {
     const float radius = 0.5F;
     const float half = 0.5F;
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    boost::shared_ptr<BRep> mesh = boost::make_shared<BRep>();
 
     const std::vector<glm::vec3> base = ring(radius, -half);
     const glm::vec3 apex(0.0F, half, 0.0F);
@@ -140,10 +140,10 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cone() {
 
 /**
  **/
-boost::shared_ptr<v3d::brep::BRep> create_poly_cylinder() {
+boost::shared_ptr<BRep> cylinder() {
     const float radius = 0.5F;
     const float half = 0.5F;
-    boost::shared_ptr<v3d::brep::BRep> mesh = boost::make_shared<v3d::brep::BRep>();
+    boost::shared_ptr<BRep> mesh = boost::make_shared<BRep>();
 
     const std::vector<glm::vec3> bottom = ring(radius, -half);
     const std::vector<glm::vec3> top = ring(radius, half);
@@ -164,4 +164,4 @@ boost::shared_ptr<v3d::brep::BRep> create_poly_cylinder() {
     return mesh;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::brep

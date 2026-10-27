@@ -5,26 +5,25 @@
 
 #pragma once
 
-#include <api/brep/BRep.h>
-#include <api/brep/Index.h>
-
 #include <array>
 #include <cstdint>
 #include <vector>
 
+#include "BRep.h"
+#include "Index.h"
+
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::brep {
 
 /**
- * How a shaded view lights a mesh's surface: with each face's own normal, so the faces show,
- * or with a normal averaged at each vertex, so the surface looks curved.
+ * Which normals a mesh's triangles carry: each face's own, so the faces show when lit, or one
+ * averaged at each vertex, so the surface looks curved.
  **/
-enum class Shading : std::uint8_t { Flat, Smooth };
+enum class Normals : std::uint8_t { Face, Vertex };
 
 /**
- * A mesh as triangles a shaded pass draws: a position and a normal per vertex, and three
- * indices per triangle.
+ * A mesh as triangles: a position and a normal per vertex, and three indices per triangle.
  *
  * A triangle winds counter-clockwise seen from outside, the reverse of a face's loop, because
  * that is the front face a pipeline culls by.
@@ -44,16 +43,16 @@ struct Triangles {
  * cut, such as one whose points all lie on a line, is fanned from its first corner instead,
  * which covers no area either way. A face of fewer than three corners gives nothing.
  **/
-std::vector<std::array<v3d::brep::Index, 3>> triangulateFace(const v3d::brep::BRep& mesh, v3d::brep::Index face);
+std::vector<std::array<Index, 3>> triangulateFace(const BRep& mesh, Index face);
 
 /**
  * Every face of a mesh as triangles.
  *
- * Flat shading gives each face its own copy of its corners, with the face's normal. Smooth
- * shading gives each vertex of the mesh one copy, with the average of the normals of the faces
+ * Face normals give each face its own copy of its corners, with the face's normal. Vertex
+ * normals give each vertex of the mesh one copy, with the average of the normals of the faces
  * around it. A face whose stored normal is zero, as a ring an extrude makes has until it is
  * moved, takes its normal from its points, and +z when those have no area either.
  **/
-Triangles triangulate(const v3d::brep::BRep& mesh, Shading shading);
+Triangles triangulate(const BRep& mesh, Normals normals);
 
-};  // namespace v3d::editor
+};  // namespace v3d::brep

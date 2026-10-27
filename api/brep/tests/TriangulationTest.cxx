@@ -5,8 +5,8 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
-#include <vertical3d/src/scene/CreatePoly.h>
-#include <vertical3d/src/view/Triangulation.h>
+#include <api/brep/Primitives.h>
+#include <api/brep/Triangulation.h>
 
 #include <algorithm>
 #include <array>
@@ -59,7 +59,7 @@ struct Expected {
 void covers(const v3d::brep::BRep& mesh, const Expected& expected) {
     const std::size_t triangles = expected.triangles;
     const float whole = expected.area;
-    const std::vector<std::array<v3d::brep::Index, 3>> cut = v3d::editor::triangulateFace(mesh, 0);
+    const std::vector<std::array<v3d::brep::Index, 3>> cut = v3d::brep::triangulateFace(mesh, 0);
     BOOST_REQUIRE_EQUAL(cut.size(), triangles);
     float total = 0.0F;
     for (const std::array<v3d::brep::Index, 3>& triangle : cut) {
@@ -100,12 +100,12 @@ BOOST_AUTO_TEST_CASE(triangulate_degenerate_face_test) {
     // a face whose points lie on a line has no ear, and is fanned rather than lost
     const v3d::brep::BRep line = oneFace({ glm::vec3(0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(2.0F, 0.0F, 0.0F),
         glm::vec3(3.0F, 0.0F, 0.0F) });
-    BOOST_CHECK_EQUAL(v3d::editor::triangulateFace(line, 0).size(), 2U);
+    BOOST_CHECK_EQUAL(v3d::brep::triangulateFace(line, 0).size(), 2U);
 }
 
 BOOST_AUTO_TEST_CASE(triangulate_flat_normals_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    const v3d::editor::Triangles flat = v3d::editor::triangulate(*cube, v3d::editor::Shading::Flat);
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::brep::cube();
+    const v3d::brep::Triangles flat = v3d::brep::triangulate(*cube, v3d::brep::Normals::Face);
 
     // six faces of two triangles, each face with its own four corners
     BOOST_CHECK_EQUAL(flat.indices.size(), 36U);
@@ -125,8 +125,8 @@ BOOST_AUTO_TEST_CASE(triangulate_flat_normals_test) {
 }
 
 BOOST_AUTO_TEST_CASE(triangulate_smooth_normals_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
-    const v3d::editor::Triangles smooth = v3d::editor::triangulate(*cube, v3d::editor::Shading::Smooth);
+    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::brep::cube();
+    const v3d::brep::Triangles smooth = v3d::brep::triangulate(*cube, v3d::brep::Normals::Vertex);
 
     // one copy of each corner, lit by the three faces that meet there, which points it
     // straight out from the centre
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(triangulate_zero_normal_test) {
     v3d::brep::BRep mesh;
     mesh.addFace({ glm::vec3(0.0F), glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F) },
         glm::vec3(0.0F));
-    const v3d::editor::Triangles flat = v3d::editor::triangulate(mesh, v3d::editor::Shading::Flat);
+    const v3d::brep::Triangles flat = v3d::brep::triangulate(mesh, v3d::brep::Normals::Face);
     BOOST_REQUIRE(!flat.normals.empty());
     BOOST_CHECK_SMALL(glm::distance(flat.normals[0], glm::vec3(0.0F, 0.0F, 1.0F)), 0.0001F);
 }

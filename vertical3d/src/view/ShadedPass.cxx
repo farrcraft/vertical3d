@@ -6,6 +6,7 @@
 #include "ShadedPass.h"
 
 #include <api/brep/BRep.h>
+#include <api/brep/Triangulation.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Handle.h>
@@ -28,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-#include "Triangulation.h"
+#include "Shading.h"
 #include "ViewPort.h"
 
 #include <boost/make_shared.hpp>
@@ -187,7 +188,8 @@ const ShadedPass::Upload* ShadedPass::upload(const boost::shared_ptr<v3d::brep::
     upload.geometry = geometry;
     upload.changes = geometry->changes();
 
-    const Triangles triangles = triangulate(*geometry, shading);
+    const v3d::brep::Triangles triangles = v3d::brep::triangulate(*geometry,
+        shading == Shading::Smooth ? v3d::brep::Normals::Vertex : v3d::brep::Normals::Face);
     if (triangles.indices.empty()) {
         return nullptr;
     }

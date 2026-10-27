@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Primitives.h>
 #include <api/type/Transform.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
@@ -12,7 +13,6 @@
 #include <vertical3d/src/command/TransformCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/CreatePoly.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const unsigned int id = cube->id();
 
     const boost::shared_ptr<v3d::editor::CreateCommand> command =
@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_plane());
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
     plane->selected(true);
     scene->add(plane);
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
     const v3d::type::Transform before = cube->placement();
 
