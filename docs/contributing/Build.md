@@ -129,6 +129,11 @@ has been added. Two checks run after every library is added, and either one stop
 The checks run at configure time, so a header edited afterwards is checked at the next configure.
 CI configures on every run.
 
+**A library added to the manifest gets a row in the table of libraries** in
+[docs/api/README.md](../api/README.md#the-libraries), in the manifest's order, linking its
+directory. `scripts/librarytable.ts` checks the table against the manifest, and the review gates
+run it.
+
 `cgltf` is the one manifest entry these checks cannot confirm. It adds an include directory rather
 than an imported target, so it never appears in a link line.
 

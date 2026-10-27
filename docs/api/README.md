@@ -34,8 +34,8 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
 | [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
 | [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
-| [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
+| [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
 | [`window`](../../api/window/) | The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses no graphics API. See [engine/Window.md](engine/Window.md). |

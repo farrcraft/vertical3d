@@ -11,7 +11,7 @@ When this plan closes, `RenderContext` is a facade over classes with one job eac
 engine builds without Vulkan. The editor has a document layer that menus, bindings and a console
 can all call. The four games sit in `demos/`, and each reference fact has one home.
 
-The open plan [EditorScene](EditorScene.md) also changes the editor. Steps 13 to 16 here touch
+The open plan [EditorScene](../EditorScene.md) also changes the editor. Steps 13 to 16 here touch
 the same files. Neither plan waits for the other; whichever step lands second is written against
 the tree the first one left.
 
@@ -160,7 +160,7 @@ Line numbers are from `2d33df79`.
 * **imagetool stays a top-level tool.** It does real work, beside moya.
 * **v3dshell is deleted.** The idea it stood for is kept, as a console inside the editor. It
   needs commands that take arguments and name what they act on, which step 13 builds.
-* **Completed plans, roadmaps and audits are frozen records.** [sdlc.md](../sdlc.md) states the
+* **Completed plans, roadmaps and audits are frozen records.** [sdlc.md](../../sdlc.md) states the
   rule. Their dead links are not defects.
 
 These need an ADR when their step starts:
@@ -281,7 +281,7 @@ of which is the documentation of one method per RI request.
 
 ### Step 5 — The engine without Vulkan
 
-**Closed.** [ADR-0116](../adr/0116-platform-the-window-is-a-library-below-the-renderer.md)
+**Closed.** [ADR-0116](../../adr/0116-platform-the-window-is-a-library-below-the-renderer.md)
 decides it.
 
 - **Different from the plan:** the window is a library of its own, `window`, below `engine`,
@@ -296,7 +296,7 @@ decides it.
 
 ### Step 6 — The engine and the shell joined
 
-**Closed.** [ADR-0117](../adr/0117-apps-the-game-shell-is-an-object-an-app-holds.md) decides
+**Closed.** [ADR-0117](../../adr/0117-apps-the-game-shell-is-an-object-an-app-holds.md) decides
 where the shell lives.
 
 - `api/shell` holds `shell::Shell`, an object an app holds above `engine` and `ui`. Its
@@ -368,8 +368,8 @@ where the shell lives.
 
 ### Step 9 — The core library boundaries
 
-**Closed.** [ADR-0118](../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) decides
-the loader's key, and [ADR-0119](../adr/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
+**Closed.** [ADR-0118](../../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) decides
+the loader's key, and [ADR-0119](../../adr/0119-assets-an-apps-document-list-is-an-asset-manifest.md)
 decides `config`.
 
 - A loader is registered for the asset class it produces. A load picks the loader by extension
@@ -475,7 +475,7 @@ decides `config`.
 
 ### Step 14 — Evaluated animation
 
-**Closed.** [ADR-0120](../adr/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
+**Closed.** [ADR-0120](../../adr/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
 decides it.
 
 - An item holds only the values the user gave it. `Scene::evaluate()` evaluates the current
@@ -499,7 +499,7 @@ decides it.
 
 ### Step 15 — The editor's directories
 
-**Closed.** [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md) decides
+**Closed.** [ADR-0121](../../adr/0121-editor-component-selection-belongs-to-the-item.md) decides
 where component selection lives.
 
 - `scene/` holds the model and includes nothing else of the editor's. The wireframe and the
@@ -606,10 +606,50 @@ where component selection lives.
 
 ### Step 20 — The documents
 
-**Open.**
+**Closed.**
 
-- Each duplicated fact gets one home, and the other copies link to it.
-- `Types.md`, `Assets.md` and `internals/UserInterface.md` split by subject.
-- `editor/README.md` describes each directory instead of listing its classes.
-- `contributing/` and `internals/` get an index page.
-- The library table is checked against the manifest, or generated from it.
+- Where the log is written is stated in the engine's Logging section, and seven other pages link
+  to it. The configure command and the vcpkg install directory are in `Build.md`, libnoise's
+  build in `Dependencies.md`, the starter build in `examples/README.md`, and the library table
+  in `api/README.md`. **Different from the plan:** `UsingTheApi.md` keeps its configure command,
+  because it configures another repository, with an absolute toolchain path.
+- `Types.md` keeps `api/type`. `Cameras.md`, `Models.md` and `Animation.md` hold the cameras, the
+  model with its glTF loader, and animation with the particle effects. `Assets.md` keeps the
+  manager, the loaders and the documents, and `Images.md` and `Fonts.md` hold the rest. The ui
+  internals are `internals/ui/`, with input routing and the immediate layer on pages of their
+  own. Every link into a moved section points at its new page.
+- **Different from the plan:** `editor/README.md` already described directories, since step 15.
+  Its table now lists them in the order they include each other, with what each includes.
+- `contributing/` and `internals/` have an index page, which holds the table of its pages.
+  `docs/README.md` links to each index rather than repeating the table.
+- `scripts/librarytable.ts` checks the table of libraries against the manifest: a row for each
+  library, linking its directory, in the manifest's order. The review gates run it, and eight
+  tests cover it. **Found on the way:** `render_offline` was out of the manifest's order.
+
+## Outcome
+
+Closed 2026-10-27. Every step landed. `RenderContext` is a facade over classes with one job each,
+and RI's C interface is an adapter over the RIB handler. The engine builds without Vulkan, and
+the shell around a game is an object the app holds. The realtime renderer has one vocabulary and
+a lit scene that composes its passes. The core libraries' boundaries are redrawn, `font` and
+`image` are modern, and both ui models style with one vocabulary. The editor has a document
+layer, evaluated animation, directories with no cycle, and live render through the handler. The
+five demos are in `demos/`, one of them lit, and each reference fact has one home.
+
+What turned out differently from the plan:
+
+- **The window is a library of its own** (step 5), below `engine`, `ui` and `render`, rather than
+  a part of `engine`.
+- **The lit demo is a new one, the diorama** (step 19), because none of the four games has a 3D
+  scene to light.
+- **Two libraries left `type`, not one** (step 9): `animation` and `model`.
+- **Component selection belongs to the scene's item** (step 15), held in `scene/` rather than
+  `selection/`.
+- **voxel's camera controller is voxel's** (step 18), since nothing else drives a first person
+  camera.
+- Each step's notes above list the smaller differences.
+
+Found on the way and fixed: a mesh retired into the ring kept the device alive past shutdown
+(step 8), and an audio player destroyed after the engine quit SDL faulted (step 19).
+
+Left open: nothing. No item moved to [TODO.md](../../TODO.md).

@@ -232,10 +232,11 @@ Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 
-[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs three of the
-review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), prose
-(`scripts/prose.ts`) and boundary input (`scripts/boundary.ts`). It runs on each pull request
-and on each push to `main`. The link rule checks the whole tree. The prose and boundary gates
+[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs four of the
+review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), the library
+table (`scripts/librarytable.ts`), prose (`scripts/prose.ts`) and boundary input
+(`scripts/boundary.ts`). It runs on each pull request and on each push to `main`. The link rule
+and the library table check the whole tree. The prose and boundary gates
 read only the lines added since a base:
 
 - on a pull request, the base is the branch the pull request merges into;

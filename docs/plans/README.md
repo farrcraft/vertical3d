@@ -23,7 +23,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [EditorScene](EditorScene.md) | Editor, brep, dag | Cameras, lights and groups in the scene, shaded views, glTF import, rendering with moya, and keyed playback |
-| [Reshaping](Reshaping.md) | All of the tree, documents | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the games in `demos/`, and each reference fact in one place |
 
 ## Completed plans
 
@@ -31,6 +30,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [Reshaping](completed/Reshaping.md) | All of the tree, documents | 2026-10-27 | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the demos in `demos/` with a lit one, and each reference fact in one place |
 | [ScaleAndReach](completed/ScaleAndReach.md) | Realtime rendering, offline rendering, grid, audio, imagetool | 2026-10-25 | Cascaded shadows, uploads and texture requests that do not block, routes and sight across regions, a placed voice and placed events, sprite sheet packing, and ray hits shaded in batches |
 | [SettingsAndPortability](completed/SettingsAndPortability.md) | Build, realtime rendering, audio, engine, event, UI | 2026-10-25 | Settings widgets and a text field in `Immediate`, a canvas segment, key bindings an app can read, reset and save, FMOD bus volume and pause, a requested present mode, wheel zoom and edge pan, a portability driver, and the platform-free libraries built with Clang on Linux |
 | [Hardening](completed/Hardening.md) | moya, shading language, image, voxel, apps | 2026-10-24 | RI's C interface and the reyes hider following RI, `output`, `faceforward` and message passing as the shading language defines them, safe image writers, a voxel camera that turns correctly, and the known review findings fixed |
