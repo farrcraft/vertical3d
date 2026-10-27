@@ -6,6 +6,7 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
+#include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -283,6 +284,51 @@ BOOST_AUTO_TEST_CASE(wireframe_curve_test) {
     curve->selected(true);
     wireframe.visit(curve, at(curve));
     BOOST_CHECK((canvas.vertices()[0].colour != unselected));
+}
+
+BOOST_AUTO_TEST_CASE(wireframe_curve_controls_test) {
+    // a Bezier curve of two points: one segment drawn in as many lines as the resolution
+    v3d::curve::Bezier bezier;
+    bezier.points.push_back({ .position = { 0.0F, 0.0F, 0.0F } });
+    bezier.points.push_back({ .position = { 1.0F, 0.0F, 0.0F } });
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    const boost::shared_ptr<v3d::editor::Curve> curve = boost::make_shared<v3d::editor::Curve>(curves);
+    const std::size_t line = std::size_t{ 2 } * v3d::curve::Curves::DEFAULT_RESOLUTION;
+    // a box is drawn in twelve lines
+    constexpr std::size_t box = std::size_t{ 2 } * 12U;
+
+    // the controls of an unselected curve are not drawn, even when they are shown
+    v3d::render::realtime::canvas::Line canvas;
+    v3d::editor::Components components;
+    v3d::editor::WireframeVisitor shown(&canvas, { .controls = true, .handles = true }, &components);
+    shown.visit(curve, at(curve));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), line);
+
+    // a selected curve shows a box at each of its two points, and a line and a box for each of
+    // its four handles
+    curve->selected(true);
+    canvas.clear();
+    shown.visit(curve, at(curve));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), line + (2U * box) + (4U * (2U + box)));
+
+    // without handles only the points are drawn, and a selected point is drawn in its own colour
+    canvas.clear();
+    v3d::editor::WireframeVisitor points(&canvas, { .controls = true }, &components);
+    points.visit(curve, at(curve));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), line + (2U * box));
+    const glm::vec4 plain = canvas.vertices()[line].colour;
+    components.select(curve->id(), v3d::editor::Component::Vertex, 0, true);
+    canvas.clear();
+    points.visit(curve, at(curve));
+    BOOST_CHECK((canvas.vertices()[line].colour != plain));
+    BOOST_CHECK((canvas.vertices()[line + box].colour == plain));
+
+    // and with no controls shown, only the curve
+    canvas.clear();
+    v3d::editor::WireframeVisitor hidden(&canvas, {}, &components);
+    hidden.visit(curve, at(curve));
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), line);
 }
 
 };  // namespace

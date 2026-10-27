@@ -8,6 +8,7 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include <cstdint>
 #include <string>
@@ -151,8 +152,10 @@ class ViewPort final {
      *
      * @param scene what to draw, which the controller owns
      * @param canvas where the view's geometry goes
+     * @param mask the select mask in force. Under Vertex and Handle a selected curve shows its
+     *        control points, and its Bezier handles while the view shows handles
      **/
-    void draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas);
+    void draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask = SelectMask::Object);
 
  private:
     std::string name_;

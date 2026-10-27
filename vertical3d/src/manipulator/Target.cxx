@@ -11,8 +11,12 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -21,7 +25,10 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <map>
+#include <optional>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -104,6 +111,34 @@ std::vector<v3d::brep::Index> facesAround(const v3d::brep::BRep& mesh, const std
     return faces;
 }
 
+/**
+ * The selected control points of a curve item, by part number, rising. A part the geometry does
+ * not hold is left out.
+ **/
+std::vector<v3d::brep::Index> selectedPoints(const Curve& item, const Components& components) {
+    std::vector<v3d::brep::Index> points;
+    for (const v3d::brep::Index point : components.of(item.id(), Component::Vertex)) {
+        if (pointAt(*item.geometry(), point)) {
+            points.push_back(point);
+        }
+    }
+    return points;
+}
+
+/**
+ * The selected Bezier handles of a curve item, by part number, rising. A part that names no
+ * handle the geometry holds is left out.
+ **/
+std::vector<v3d::brep::Index> selectedHandles(const Curve& item, const Components& components) {
+    std::vector<v3d::brep::Index> handles;
+    for (const v3d::brep::Index handle : components.of(item.id(), Component::Handle)) {
+        if (handleAt(*item.geometry(), handle)) {
+            handles.push_back(handle);
+        }
+    }
+    return handles;
+}
+
 };  // namespace
 
 /**
@@ -128,12 +163,17 @@ Target Target::objects(const Items& items, const Evaluation& evaluation) {
 
 /**
  **/
-Target Target::components(const Meshes& meshes, SelectMask kind, const Components& components,
+Target Target::components(const Items& items, SelectMask kind, const Components& components,
     const Evaluation& evaluation) {
     Target target;
     target.components_ = true;
-    for (const boost::shared_ptr<Mesh>& mesh : meshes) {
+    Items curves;
+    for (const boost::shared_ptr<Item>& item : items) {
+        const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
         if (!mesh) {
+            if (as<Curve>(item)) {
+                curves.push_back(item);
+            }
             continue;
         }
         std::vector<v3d::brep::Index> vertices = selectedVertices(*mesh, kind, components);
@@ -144,6 +184,25 @@ Target Target::components(const Meshes& meshes, SelectMask kind, const Component
         target.items_.push_back(mesh);
         target.parts_.push_back({.mesh = mesh, .vertices = std::move(vertices), .faces = std::move(faces),
             .world = evaluation.placed(mesh->id()).world});
+    }
+
+    // only the Vertex and Handle masks name parts of a curve
+    if (kind != SelectMask::Vertex && kind != SelectMask::Handle) {
+        return target;
+    }
+    for (const boost::shared_ptr<Item>& item : curves) {
+        const boost::shared_ptr<Curve> curve = as<Curve>(item);
+        CurvePart part{ .curve = curve, .points = {}, .handles = {}, .world = evaluation.placed(curve->id()).world };
+        if (kind == SelectMask::Vertex) {
+            part.points = selectedPoints(*curve, components);
+        } else {
+            part.handles = selectedHandles(*curve, components);
+        }
+        if (part.points.empty() && part.handles.empty()) {
+            continue;
+        }
+        target.items_.push_back(curve);
+        target.curves_.push_back(std::move(part));
     }
     return target;
 }
@@ -163,7 +222,7 @@ Target Target::selected(const Scene& scene, SelectMask mask) {
         // an item moved with its parent and again by the motion would move twice
         return objects(scene.uppermost(taken), evaluation);
     }
-    return components(scene.selected<Mesh>(), mask, scene.components(), evaluation);
+    return components(scene.selection(), mask, scene.components(), evaluation);
 }
 
 /**
@@ -192,6 +251,12 @@ const std::vector<Target::Part>& Target::parts() const noexcept {
 
 /**
  **/
+const std::vector<Target::CurvePart>& Target::curves() const noexcept {
+    return curves_;
+}
+
+/**
+ **/
 glm::vec3 Target::pivot() const {
     glm::vec3 sum(0.0F, 0.0F, 0.0F);
     std::size_t count = 0;
@@ -204,6 +269,18 @@ glm::vec3 Target::pivot() const {
         for (const Part& part : parts_) {
             for (const v3d::brep::Index vertex : part.vertices) {
                 sum += glm::vec3(part.world * glm::vec4(part.mesh->geometry()->vertex(vertex)->point(), 1.0F));
+                count++;
+            }
+        }
+        for (const CurvePart& part : curves_) {
+            const v3d::curve::Curves& geometry = *part.curve->geometry();
+            for (const v3d::brep::Index point : part.points) {
+                const CurvePoint at = *pointAt(geometry, point);
+                sum += glm::vec3(part.world * glm::vec4(controlPoint(geometry.curve(at.curve), at.point), 1.0F));
+                count++;
+            }
+            for (const v3d::brep::Index handle : part.handles) {
+                sum += glm::vec3(part.world * glm::vec4(handlePosition(geometry, *handleAt(geometry, handle)), 1.0F));
                 count++;
             }
         }
@@ -221,7 +298,7 @@ glm::quat Target::axes() const {
         return glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     }
     if (components_) {
-        return orientation(parts_.front().world);
+        return orientation(parts_.empty() ? curves_.front().world : parts_.front().world);
     }
     return glm::normalize(orientation(parents_.front()) * placements_.front().rotation);
 }
@@ -275,6 +352,36 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
         }
         // the parts were changed in place, which the mesh does not see for itself
         geometry.touch();
+    }
+
+    for (const CurvePart& part : curves_) {
+        v3d::curve::Curves& geometry = *part.curve->geometry();
+        const glm::mat4& matrix = part.world;
+        const glm::mat4 inverse = glm::inverse(matrix);
+        const auto local = [&](const glm::vec3& point) {
+            return glm::vec3(inverse * glm::vec4(place(glm::vec3(matrix * glm::vec4(point, 1.0F))), 1.0F));
+        };
+        // each curve touched is changed as a copy and stored once, and storing it places its
+        // automatic handles again
+        std::map<std::size_t, v3d::curve::Curve> changed;
+        for (const v3d::brep::Index point : part.points) {
+            const CurvePoint at = *pointAt(geometry, point);
+            v3d::curve::Curve& curve = changed.try_emplace(at.curve, geometry.curve(at.curve)).first->second;
+            moveControl(&curve, at.point, local);
+        }
+        for (const v3d::brep::Index handle : part.handles) {
+            const CurveHandle at = *handleAt(geometry, handle);
+            v3d::curve::Curve& curve = changed.try_emplace(at.at.curve, geometry.curve(at.at.curve)).first->second;
+            auto& bezier = std::get<v3d::curve::Bezier>(curve.shape);
+            const v3d::curve::BezierPoint& held = bezier.points[at.at.point];
+            const glm::vec3 position = at.side == v3d::curve::Side::Left ? held.left : held.right;
+            v3d::curve::moveHandle(&bezier, at.at.point, at.side, local(position));
+        }
+        // a curve the move left unusable, such as one with a point gone to infinity, is refused
+        // and keeps its shape
+        for (auto& [index, curve] : changed) {
+            static_cast<void>(geometry.set(index, std::move(curve)));
+        }
     }
 }
 

@@ -3,10 +3,15 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
+#include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -17,6 +22,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -383,7 +389,7 @@ BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // a name that is not a mask leaves the tool alone
-    select->activate("handle");
+    select->activate("spline");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
 }
 
@@ -404,7 +410,8 @@ BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
     // every mask's name reads back as that mask
     for (const v3d::editor::SelectMask mask : { v3d::editor::SelectMask::Object, v3d::editor::SelectMask::Vertex,
         v3d::editor::SelectMask::Edge, v3d::editor::SelectMask::Face, v3d::editor::SelectMask::Mesh,
-        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera, v3d::editor::SelectMask::Curve }) {
+        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera, v3d::editor::SelectMask::Curve,
+        v3d::editor::SelectMask::Handle }) {
         v3d::editor::SelectMask read = v3d::editor::SelectMask::Face;
         BOOST_CHECK(v3d::editor::selectMask(v3d::editor::selectMaskName(mask), &read));
         BOOST_CHECK(read == mask);
@@ -421,7 +428,51 @@ BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
     BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Curve));
     BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Mesh));
     BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Curve));
-    BOOST_CHECK(!v3d::editor::selectMask("handle", nullptr));
+    BOOST_CHECK(!v3d::editor::selectMask("spline", nullptr));
+
+    // the handle mask selects a part of a curve, not a kind of item
+    BOOST_CHECK(!v3d::editor::selectsItems(v3d::editor::SelectMask::Handle));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Handle, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(v3d::editor::componentOf(v3d::editor::SelectMask::Handle) == v3d::editor::Component::Handle);
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_curve_parts_test) {
+    // a Bezier curve from the middle of the view's left half to the middle of its right, whose
+    // handles lie a quarter unit above and below its two points
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    v3d::curve::Bezier bezier;
+    for (const float x : { -0.5F, 0.5F }) {
+        bezier.points.push_back({ .position = { x, 0.0F, 0.0F }, .left = { x, -0.25F, 0.0F }, .right = { x, 0.25F, 0.0F },
+            .leftType = v3d::curve::Handle::Free, .rightType = v3d::curve::Handle::Free });
+    }
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Curve> curve = boost::make_shared<v3d::editor::Curve>(curves);
+    scene->add(curve);
+    curve->selected(true);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    // where a point of the curve is in the tool's view
+    const auto at = [&select](const glm::vec3& point) {
+        const boost::shared_ptr<v3d::type::camera::Camera> camera = select->view()->camera();
+        camera->createProjection();
+        camera->createView();
+        int viewport[4] = { 0, 0, 400, 400 };
+        const glm::vec3 projected = camera->project(point, viewport);
+        return glm::vec2(projected[0], projected[1]);
+    };
+
+    // under the vertex mask a click on the second point selects it, and the curve stays selected
+    select->activate("vertex");
+    select->button(1, true, at(glm::vec3(0.5F, 0.0F, 0.0F)));
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Vertex) == std::vector<v3d::brep::Index>{ 1 });
+    BOOST_CHECK(curve->selected());
+
+    // under the handle mask a click on the first point's right handle selects that handle alone
+    select->activate("handle");
+    BOOST_CHECK(!scene->components().any(curve->id()));
+    select->button(1, true, at(glm::vec3(-0.5F, 0.25F, 0.0F)));
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Handle) == std::vector<v3d::brep::Index>{ 1 });
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Vertex).empty());
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_light_mask_test) {

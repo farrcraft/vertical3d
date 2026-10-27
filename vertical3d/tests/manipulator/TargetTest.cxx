@@ -11,9 +11,12 @@
 #include <api/brep/Topology.h>
 #include <api/animation/Curve.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -25,6 +28,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <variant>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -33,6 +37,7 @@
 #include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 
 namespace {
@@ -91,6 +96,28 @@ v3d::brep::Index edgeBetween(const v3d::brep::BRep& mesh, v3d::brep::Index from,
         }
     }
     return v3d::brep::INVALID_ID;
+}
+
+/**
+ * One item holding one open Bezier curve of three points along x, each with handles a quarter
+ * unit to either side along x as well. The handles have the types given.
+ **/
+boost::shared_ptr<v3d::editor::Curve> bezierItem(v3d::curve::Handle type) {
+    v3d::curve::Bezier bezier;
+    for (const float x : { 0.0F, 1.0F, 2.0F }) {
+        bezier.points.push_back({ .position = { x, 0.0F, 0.0F }, .left = { x - 0.25F, 0.0F, 0.0F },
+            .right = { x + 0.25F, 0.0F, 0.0F }, .leftType = type, .rightType = type });
+    }
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    return boost::make_shared<v3d::editor::Curve>(curves);
+}
+
+/**
+ * The points of the item's first curve, which bezierItem() made.
+ **/
+const std::vector<v3d::curve::BezierPoint>& bezierPoints(const v3d::editor::Curve& item) {
+    return std::get<v3d::curve::Bezier>(item.geometry()->curve(0).shape).points;
 }
 
 BOOST_AUTO_TEST_CASE(target_objects_test) {
@@ -347,6 +374,89 @@ BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
     const v3d::editor::Target meshes = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Mesh);
     BOOST_REQUIRE_EQUAL(meshes.items().size(), 1U);
     BOOST_CHECK(meshes.items()[0] == cube);
+}
+
+BOOST_AUTO_TEST_CASE(target_curve_points_test) {
+    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Free);
+    item->translation(glm::vec3(0.0F, 0.0F, 3.0F));
+    v3d::editor::Components picked;
+    picked.select(item->id(), v3d::editor::Component::Vertex, 1, true);
+
+    // the handle mask does not move a selected point, and the vertex mask does
+    BOOST_CHECK(v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item})).empty());
+    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Curve>({item}));
+    BOOST_REQUIRE_EQUAL(target.curves().size(), 1U);
+    BOOST_CHECK(target.components());
+    BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(1.0F, 0.0F, 3.0F)), 0.0001F);
+
+    // a point carries its handles with it, and the curve's placement is left alone
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(0.0F, 1.0F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    const v3d::curve::BezierPoint& moved = bezierPoints(*item)[1];
+    BOOST_CHECK_SMALL(glm::distance(moved.position, glm::vec3(1.0F, 1.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(moved.left, glm::vec3(0.75F, 1.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(moved.right, glm::vec3(1.25F, 1.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK(bezierPoints(*item)[0].position == glm::vec3(0.0F));
+    BOOST_CHECK(item->translation() == glm::vec3(0.0F, 0.0F, 3.0F));
+
+    // a turn about the point turns its handles round it
+    motion = v3d::editor::Motion();
+    motion.turn = glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK_SMALL(glm::distance(bezierPoints(*item)[1].right, glm::vec3(1.0F, 1.25F, 0.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(target_curve_handles_test) {
+    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Aligned);
+    v3d::editor::Components picked;
+    // the middle point's right handle
+    picked.select(item->id(), v3d::editor::Component::Handle, 3, true);
+    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item}));
+    BOOST_REQUIRE(!target.empty());
+    BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(1.25F, 0.0F, 0.0F)), 0.0001F);
+
+    // the handle moves alone, and the point's other aligned handle turns to stay in line
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(-0.25F, 0.25F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    const v3d::curve::BezierPoint& point = bezierPoints(*item)[1];
+    BOOST_CHECK(point.position == glm::vec3(1.0F, 0.0F, 0.0F));
+    BOOST_CHECK_SMALL(glm::distance(point.right, glm::vec3(1.0F, 0.25F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(point.left, glm::vec3(1.0F, -0.25F, 0.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(target_curve_retypes_a_handle_test) {
+    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Automatic);
+    v3d::editor::Components picked;
+    picked.select(item->id(), v3d::editor::Component::Handle, 3, true);
+    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item}));
+
+    // a moved automatic handle stays where it is put, and so does its partner
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(0.0F, 0.5F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK(bezierPoints(*item)[1].rightType == v3d::curve::Handle::Aligned);
+    BOOST_CHECK(bezierPoints(*item)[1].leftType == v3d::curve::Handle::Aligned);
+    BOOST_CHECK(bezierPoints(*item)[0].rightType == v3d::curve::Handle::Automatic);
+}
+
+BOOST_AUTO_TEST_CASE(target_meshes_and_curves_test) {
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Free);
+    v3d::editor::Components picked;
+    picked.select(cube->id(), v3d::editor::Component::Vertex, 0, true);
+    picked.select(item->id(), v3d::editor::Component::Vertex, 0, true);
+    v3d::editor::Evaluation evaluation;
+    evaluation.place(cube->id(), { .local = cube->matrix(), .world = cube->matrix() });
+    evaluation.place(item->id(), { .local = item->matrix(), .world = item->matrix() });
+
+    // one target moves the parts of both, and lists the mesh first
+    const v3d::editor::Target target = v3d::editor::Target::components({item, cube}, v3d::editor::SelectMask::Vertex, picked, evaluation);
+    BOOST_REQUIRE_EQUAL(target.items().size(), 2U);
+    BOOST_CHECK(target.items()[0] == cube);
+    BOOST_CHECK_EQUAL(target.parts().size(), 1U);
+    BOOST_CHECK_EQUAL(target.curves().size(), 1U);
 }
 
 };  // namespace

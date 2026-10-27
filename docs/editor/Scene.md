@@ -309,7 +309,8 @@ always visible, including where it lies in the same plane as the grid's axis lin
 
 **Display flags.** `ViewPort::SHOW_GRID`, `SHOW_MESH`, `SHOW_CAMERA`, `SHOW_LIGHT` and
 `SHOW_HANDLE` all start on. The show commands (`view::show::grid`, `mesh`, `camera`, `light` and
-`handle`) toggle them on the *active view*, which is the view under the cursor.
+`handle`) toggle them on the *active view*, which is the view under the cursor. `SHOW_HANDLE`
+covers both the manipulator's handles and a selected curve's Bezier handles.
 
 **Glyphs.** A camera or a light is drawn in lines, in its own space, on the scene canvas. A glyph
 is placed by its item's translation and rotation, and not its scale. It is `GLYPH_LENGTH` (one

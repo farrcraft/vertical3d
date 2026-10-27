@@ -9,6 +9,7 @@
 #include <api/brep/Index.h>
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -48,9 +49,15 @@ struct Motion {
  * In object mode the target is the selected objects, which move through their transforms.
  * A motion is measured in world space and written back in each object's parent's space, so
  * an object beneath another moves as the motion says. In a component mode it is the distinct
- * vertices of the selected components, which move in world space and are written back in
- * each object's own space, and the objects' transforms are left alone. A component target may
- * span several objects.
+ * vertices of the selected components, or the selected control points and handles of curves,
+ * which move in world space and are written back in each object's own space, and the objects'
+ * transforms are left alone. A component target may span several objects, meshes and curves
+ * together.
+ *
+ * A curve's control point carries its Bezier handles with it, and the curve then places its
+ * automatic handles again. A handle moves as dragging one does: a moved automatic handle
+ * becomes aligned and a moved vector handle free, and an aligned handle turns the point's
+ * other aligned handle to stay in line.
  *
  * The parents' world matrices, and in a component mode the objects' own, are taken from an
  * evaluation of the scene when the target is made. A drag moves none of them, because no
@@ -58,8 +65,8 @@ struct Motion {
  * placement from the evaluation, which a curve may give it, and a drag moves the object on
  * from there. A move writes the whole placement into the object.
  *
- * The pivot is the mean of the objects' origins, or of the distinct vertices, in world space.
- * For one object it is the object's origin.
+ * The pivot is the mean of the objects' origins, or of the distinct vertices, control points
+ * and handles, in world space. For one object it is the object's origin.
  **/
 class Target final {
  public:
@@ -72,6 +79,18 @@ class Target final {
         std::vector<v3d::brep::Index> vertices;
         std::vector<v3d::brep::Index> faces;
         // where the mesh is in the world
+        glm::mat4 world{ 1.0F };
+    };
+
+    /**
+     * The control points and handles one curve item contributes to a component target, each
+     * by its part number.
+     **/
+    struct CurvePart {
+        boost::shared_ptr<Curve> curve;
+        std::vector<v3d::brep::Index> points;
+        std::vector<v3d::brep::Index> handles;
+        // where the curve is in the world
         glm::mat4 world{ 1.0F };
     };
 
@@ -94,21 +113,23 @@ class Target final {
     static Target objects(const Items& items, const Evaluation& evaluation);
 
     /**
-     * The vertices of the selected components of one kind, in every mesh of the set. An
-     * edge brings its two vertices and a face every vertex of its loop. A vertex shared by
-     * two selected components is in the target once.
+     * The parts the selected components of one kind move, in every mesh and curve of the set.
+     * An edge brings its two vertices and a face every vertex of its loop. A vertex shared by
+     * two selected components is in the target once. The Vertex mask brings a curve's selected
+     * control points, and the Handle mask its selected handles. Items of other kinds bring
+     * nothing.
      *
-     * @param components which parts of each mesh are selected
-     * @param evaluation where the meshes are
+     * @param components which parts of each item are selected
+     * @param evaluation where the items are
      **/
-    static Target components(const Meshes& meshes, SelectMask kind, const Components& components,
+    static Target components(const Items& items, SelectMask kind, const Components& components,
         const Evaluation& evaluation);
 
     /**
      * The target the selection makes under a select mask: the selected items of the kinds the
      * mask takes when it selects whole items, and the selected components of the selected
-     * meshes otherwise. An item beneath another item the mask takes is left out, because it
-     * moves with that item already.
+     * meshes and curves otherwise. An item beneath another item the mask takes is left out,
+     * because it moves with that item already.
      **/
     static Target selected(const Scene& scene, SelectMask mask);
 
@@ -118,12 +139,13 @@ class Target final {
     bool empty() const noexcept;
 
     /**
-     * @return whether the target is vertices rather than whole objects
+     * @return whether the target is parts of objects rather than whole objects
      **/
     bool components() const noexcept;
 
     /**
-     * @return the items the target moves, or the meshes it moves parts of, in scene order
+     * @return the items the target moves, or the meshes and curves it moves parts of, the meshes
+     *         first and each in scene order
      **/
     const Items& items() const noexcept;
 
@@ -131,6 +153,11 @@ class Target final {
      * @return for a component target, each mesh's vertices and the faces around them
      **/
     const std::vector<Part>& parts() const noexcept;
+
+    /**
+     * @return for a component target, each curve's control points and handles
+     **/
+    const std::vector<CurvePart>& curves() const noexcept;
 
     /**
      * @return the pivot in world space. The origin for an empty target
@@ -159,6 +186,7 @@ class Target final {
     // move has left it since
     std::vector<v3d::type::Transform> placements_;
     std::vector<Part> parts_;
+    std::vector<CurvePart> curves_;
     bool components_;
 };
 

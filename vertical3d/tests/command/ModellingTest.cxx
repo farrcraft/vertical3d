@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     history.push(boost::make_shared<v3d::editor::VertexCommand>(std::vector<v3d::editor::VertexCommand::Change>{
         {.part = target.parts()[0], .before = shape, .after = v3d::editor::VertexCommand::Shape::of(target.parts()[0])}},
-        "translate"));
+        std::vector<v3d::editor::VertexCommand::CurveChange>{}, "translate"));
 
     scene->components().clear(cube->id());
     scene->components().select(cube->id(), v3d::editor::Component::Edge, 0, true);
@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     history.push(boost::make_shared<v3d::editor::VertexCommand>(std::vector<v3d::editor::VertexCommand::Change>{
         {.part = target.parts()[0], .before = shape, .after = v3d::editor::VertexCommand::Shape::of(target.parts()[0])}},
-        "translate"));
+        std::vector<v3d::editor::VertexCommand::CurveChange>{}, "translate"));
 
     // the two vertices merged are the ends of the second edge of the first face
     scene->components().clear(cube->id());

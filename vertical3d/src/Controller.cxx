@@ -312,6 +312,7 @@ void Controller::syncUi() {
     mark("select::mask::light", mask == SelectMask::Light);
     mark("select::mask::camera", mask == SelectMask::Camera);
     mark("select::mask::curve", mask == SelectMask::Curve);
+    mark("select::mask::handle", mask == SelectMask::Handle);
 
     const TransformTool::Mode mode = transformTool_->mode();
     mark("transform::select", mode == TransformTool::Mode::None);
@@ -461,7 +462,7 @@ void Controller::registerCommands() {
         masked(SelectMask::Vertex, "merge vertices", [this]() { return document_->mergeVertices(); });
     });
 
-    for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve" }) {
+    for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve", "handle" }) {
         press(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
     }
 

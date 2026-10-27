@@ -160,6 +160,7 @@ class TransformTool final : public Tool {
     Target dragged_;
     std::vector<v3d::type::Transform> before_;
     std::vector<VertexCommand::Shape> shapes_;
+    std::vector<VertexCommand::Outline> outlines_;
 };
 
 /**

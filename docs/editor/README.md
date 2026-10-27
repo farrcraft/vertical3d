@@ -97,5 +97,4 @@ pass on a headless device, and is skipped where there is none. Run both with
 
 [TODO.md](../TODO.md#editor) lists the open work. In short:
 
-- Two menu items have no handler, and log themselves as unregistered: the curve and handle
-  select masks.
+- Every menu command has a handler. What is open is new work, not menu items left unwired.

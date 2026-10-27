@@ -19,6 +19,7 @@ What a click tests depends on the select mask:
 |---|---|---|
 | Object, Mesh, Face, on a mesh | The ray against a triangle fan over each face | Nearest along the ray |
 | Vertex, Edge | Each vertex or edge projected to the screen; within 5 pixels of the cursor counts | Nearest to the camera |
+| Vertex, Handle, on a curve | Each control point, or each Bezier handle, projected to the screen; within 5 pixels counts | Nearest to the camera |
 | Object, Light, Camera, on a light or a camera | Each segment of its glyph projected to the screen; within 5 pixels counts | Nearest to the camera |
 
 Vertices, edges and glyphs are drawn one pixel wide and have no area, so they are found by
@@ -38,22 +39,29 @@ Rules the picker follows:
 - The view's camera matrices are rebuilt before the cast, so a pick does not depend on a frame
   having been drawn since the camera moved.
 
-**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge or
-Face, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the select-mask
-toolbar sets the same four, and the Select Mask menu sets all eight. Changing the mask clears the
-component selection.
+**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge, Face
+or Handle, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the
+select-mask toolbar sets the same four, and the Select Mask menu sets all nine. Changing the mask
+clears the component selection.
 
 - **Object, Mesh, Light, Camera and Curve select whole items.** Object takes every kind, and each
   of the others takes only its own kind. A mask that does not take a kind never hits it, so a light
   behind a mesh can be clicked under the light mask.
-- **Vertex, Edge and Face select the parts of meshes.**
+- **Vertex, Edge and Face select the parts of meshes.** Vertex also selects the control points of
+  curves, of every type. Edge and Face select nothing on a curve.
+- **Handle selects the handles of Bezier curves**, and nothing else. A Bezier point's left and
+  right handles are selected apart from each other and from the point.
 
-The menu's Handle mask has no handler yet. There is no handle kind of item.
+**What a curve shows.** While the mask is Vertex or Handle, a selected curve item draws a small
+box at each control point, and the lines between a NURBS curve's points. While the view also
+shows handles, it draws a line from each Bezier point to each of its handles, with a box at the
+handle's end. `view::show::handle` therefore shows a curve's handles and a manipulator's together.
+A selected point or handle is drawn in the component colour.
 
 **What a click does.** `SelectTool` picks on the press, not the release.
 
 - An object must be selected before any of its parts can be. Component masks test every
-  selected mesh, so a component selection can span several objects.
+  selected mesh and curve, so a component selection can span several objects.
 - Under a mask that selects whole items, a click on an item it takes selects that item and
   nothing else. A click on nothing clears the whole selection.
 - In a component mode, a click on a part selects it and clears every other part of every mesh.
@@ -77,6 +85,7 @@ or edge pick uses:
 | Object, Mesh, on a mesh | Every corner of its bounding box projects inside |
 | Object, Light, Camera, on a light or a camera | Every point of its glyph projects inside |
 | Vertex | It projects inside |
+| Vertex, Handle, on a curve | The control point or the handle projects inside |
 | Edge | Both its ends project inside |
 | Face | Every vertex of its loop projects inside |
 
@@ -132,7 +141,16 @@ Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 
 **An item holds whether it is selected as a whole, and the scene holds which of its parts are.**
 `Scene::components()` is a `Components`: for each mesh item, by its `id()`, the indices of its
-selected vertices, half edges and faces in the item's geometry. `api/brep` holds no selection.
+selected vertices, half edges and faces in the item's geometry, and for each curve item the
+numbers of its selected control points and handles. Neither `api/brep` nor `api/curve` holds a
+selection.
+
+- **A curve's parts are numbered across all of its curves.** Control points are numbered from
+  zero, the first curve's first, so a point's number is the count of points in the curves before
+  it plus its place in its own curve. A point has two handle numbers, twice its own for its left
+  handle and one more for its right, and only those of a Bezier point name a handle.
+  `CurveParts.h` converts between a number and the curve and point it names. Adding or removing
+  a curve renumbers the parts of every curve after it.
 
 - **The selection belongs to the item, not the mesh.** Two items that show one `BRep` select its
   parts apart.
@@ -147,7 +165,8 @@ selected vertices, half edges and faces in the item's geometry. `api/brep` holds
 - Removing an item, and clearing the scene, drop its parts. A document does not save the
   selection.
 
-Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md)
+Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md),
+[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)
 
 ## Manipulators
 
@@ -161,8 +180,10 @@ whole items it is the selected items of the kinds the mask takes, and a manipula
 transforms. A light mask therefore moves the selected lights and leaves a selected mesh where it
 is. A camera or a light ignores its scale. In a component mode it is the
 distinct vertices of the selected components: one for a vertex, two for an edge, and the loop of
-a face. A vertex shared by two selected components moves once. A component target may span
-every selected object, and with no component selected there are no handles.
+a face. A vertex shared by two selected components moves once. On a curve it is the selected
+control points under Vertex, and the selected handles under Handle. A component target may span
+every selected object, meshes and curves together, and with no component selected there are no
+handles.
 
 **Moving components.** Each vertex is moved in world space, through its object's matrix, and
 written back in the object's own space. The object's transform does not change. Every face with a
@@ -170,8 +191,23 @@ moved corner gets its normal recomputed from its points, by Newell's method; a f
 area keeps the normal it had. A mask change ends a drag under way, and the change made so far is
 recorded.
 
+**Moving a curve's parts.** A control point moves in world space as a vertex does. A Bezier
+point carries its two handles with it, through the same motion, so a turn turns them about the
+pivot. The curve then places its automatic and vector handles again from the moved points. A
+moved handle is retyped:
+
+- A moved vector handle becomes free.
+- A moved automatic handle becomes aligned, and so does the point's other handle if it is
+  automatic.
+- When the moved handle and the other are both aligned, the other turns to the far side of the
+  point, in line, and keeps its length.
+
+The undo record holds every curve of each curve item it touched, whole, so undo restores a
+handle's type as well as its place. A move that would leave a curve that cannot be evaluated,
+such as one with a point at infinity, leaves that curve as it was.
+
 **Where the handles are.** Handles are drawn at the pivot: the mean of the selected objects'
-origins, or of the moved vertices in world space. For one object that is its own origin, where
+origins, or of the moved vertices, control points and curve handles in world space. For one object that is its own origin, where
 its transform pivots. Their length is a fixed number of pixels (90), converted to world units
 through the `Screen` a manipulator is given: a view's camera and its region of the window. A
 handle therefore keeps its on-screen size at any distance. Handles are drawn in the handle
@@ -216,4 +252,5 @@ More rules:
 - Changing the mode ends any drag under way, and the change made so far is recorded for undo.
 
 Background: [ADR-0015](../adr/0015-editor-manipulators-edit-the-object-transform.md),
-[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md)
+[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md),
+[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)

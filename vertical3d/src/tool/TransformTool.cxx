@@ -224,6 +224,7 @@ void TransformTool::cancel() {
     dragged_ = Target();
     before_.clear();
     shapes_.clear();
+    outlines_.clear();
     const boost::shared_ptr<Manipulator> current = manipulator();
     if (current) {
         current->active(false);
@@ -240,6 +241,8 @@ void TransformTool::commit() {
     before.swap(before_);
     std::vector<VertexCommand::Shape> shapes;
     shapes.swap(shapes_);
+    std::vector<VertexCommand::Outline> outlines;
+    outlines.swap(outlines_);
     if (!commands_ || target.empty()) {
         return;
     }
@@ -253,8 +256,15 @@ void TransformTool::commit() {
             moved = moved || !after.same(shapes[index]);
             changes.push_back({.part = part, .before = shapes[index], .after = after});
         }
+        std::vector<VertexCommand::CurveChange> curves;
+        for (std::size_t index = 0; index < target.curves().size() && index < outlines.size(); index++) {
+            const Target::CurvePart& part = target.curves()[index];
+            const VertexCommand::Outline after = VertexCommand::Outline::of(part);
+            moved = moved || !after.same(outlines[index]);
+            curves.push_back({.part = part, .before = outlines[index], .after = after});
+        }
         if (moved) {
-            commands_->push(boost::make_shared<VertexCommand>(changes, modeName(mode_)));
+            commands_->push(boost::make_shared<VertexCommand>(changes, curves, modeName(mode_)));
         }
         return;
     }
@@ -358,9 +368,13 @@ void TransformTool::button(unsigned int button, bool pressed, const glm::vec2& p
     dragged_ = target;
     before_.clear();
     shapes_.clear();
+    outlines_.clear();
     if (target.components()) {
         for (const Target::Part& part : target.parts()) {
             shapes_.push_back(VertexCommand::Shape::of(part));
+        }
+        for (const Target::CurvePart& part : target.curves()) {
+            outlines_.push_back(VertexCommand::Outline::of(part));
         }
     } else {
         for (const boost::shared_ptr<Item>& item : target.items()) {

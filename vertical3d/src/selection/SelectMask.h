@@ -19,8 +19,9 @@ namespace v3d::editor {
  *
  * Exactly one is in force at a time. Object, Mesh, Light, Camera and Curve select whole items:
  * Object takes every kind, and each of the others takes only its own. Vertex, Edge and Face
- * select the components of meshes. Whether an item is selected lives on the item, and which
- * of a mesh item's parts are lives in the scene's components. The mask is the only thing
+ * select the components of meshes, Vertex selects the control points of curves as well, and
+ * Handle selects the handles of Bezier curves. Whether an item is selected lives on the item,
+ * and which of its parts are lives in the scene's components. The mask is the only thing
  * stopping two kinds of component being selected at once.
  **/
 enum class SelectMask : std::uint8_t {
@@ -31,11 +32,12 @@ enum class SelectMask : std::uint8_t {
     Mesh,
     Light,
     Camera,
-    Curve
+    Curve,
+    Handle
 };
 
 /**
- * @return whether the mask selects whole items rather than the components of a mesh
+ * @return whether the mask selects whole items rather than their components
  **/
 bool selectsItems(SelectMask mask);
 
@@ -45,7 +47,8 @@ bool selectsItems(SelectMask mask);
 bool takes(SelectMask mask, Item::Kind kind);
 
 /**
- * @param name one of "object", "vertex", "edge", "face", "mesh", "light", "camera" or "curve"
+ * @param name one of "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve" or
+ *        "handle"
  * @param mask set to the mask named, and untouched if the name is not one of them
  * @return whether the name named a mask
  **/

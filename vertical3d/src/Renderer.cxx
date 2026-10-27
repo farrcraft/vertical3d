@@ -24,6 +24,7 @@
 #include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ShadedPass.h>
@@ -211,7 +212,7 @@ void Renderer::draw() {
             continue;
         }
 
-        view->draw(scene, &canvases_[index]);
+        view->draw(scene, &canvases_[index], select_ ? select_->mask() : SelectMask::Object);
         // the handles go to a canvas of their own because they are an overlay, drawn in a
         // second pass that does not depth test. On the scene's canvas a handle would be in
         // the depth tested pass, where the grid's axis lines lie in the same plane and hide it

@@ -10,6 +10,7 @@ v3d_add_test(vertical3d
 
 	"scene/ItemTest.cxx"
 	"scene/ComponentsTest.cxx"
+	"scene/CurvePartsTest.cxx"
 	"scene/SceneTest.cxx"
 	"scene/EvaluationTest.cxx"
 	"scene/PropertiesTest.cxx"

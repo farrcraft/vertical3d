@@ -9,6 +9,7 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -30,9 +31,13 @@ namespace v3d::editor {
  * through its world matrix without the scale, so it keeps its size. A selected item is drawn
  * in the selection's colour.
  *
- * Wireframe is the editor's only display mode, because a shaded mode needs a triangle
- * primitive and this draws lines. For the same reason a selected face is drawn as its
- * boundary, and a selected vertex as a small box.
+ * A selected curve item can also show what shapes it: a small box at each control point, the
+ * lines between a NURBS curve's control points, and a line from each Bezier point to each of its
+ * handles with a box at the handle's end. A selected control point or handle is drawn in the
+ * component colour.
+ *
+ * These are lines, drawn over the shaded pass. A selected face is drawn as its boundary, and a
+ * selected vertex as a small box.
  **/
 class WireframeVisitor final : public SceneVisitor {
  public:
@@ -43,6 +48,15 @@ class WireframeVisitor final : public SceneVisitor {
         bool meshes = true;
         bool cameras = true;
         bool lights = true;
+        /**
+         * Whether a selected curve item shows its control points.
+         **/
+        bool controls = false;
+        /**
+         * Whether a selected curve item that shows its control points shows its Bezier
+         * handles as well.
+         **/
+        bool handles = false;
     };
 
     /**
@@ -55,7 +69,7 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Draw the kinds shown.
      *
-     * @param components which parts of each mesh to draw as selected, or null for none
+     * @param components which parts of each mesh and curve to draw as selected, or null for none
      **/
     WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
         const Components* components = nullptr);
@@ -82,6 +96,11 @@ class WireframeVisitor final : public SceneVisitor {
      * A box at each selected vertex, sized against the mesh.
      **/
     void markers(unsigned int item, const boost::shared_ptr<v3d::brep::BRep>& mesh);
+
+    /**
+     * A selected curve's control points, its NURBS hulls and its Bezier handles, as shown.
+     **/
+    void controls(const Curve& item);
 
     v3d::render::realtime::canvas::Line* canvas_;
     Shown shown_;

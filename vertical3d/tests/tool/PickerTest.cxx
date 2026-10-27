@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -460,6 +461,56 @@ BOOST_AUTO_TEST_CASE(picker_curve_test) {
     BOOST_CHECK(!picker.pick(scene, *view, on, v3d::editor::SelectMask::Mesh).valid);
     const glm::vec2 off = screen(view, glm::vec3(0.25F, 0.5F, 0.0F));
     BOOST_CHECK(!picker.pick(scene, *view, off, v3d::editor::SelectMask::Curve).valid);
+}
+
+BOOST_AUTO_TEST_CASE(picker_curve_parts_test) {
+    // a poly curve, then a Bezier curve whose two points have handles a quarter unit to either
+    // side of them along y
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    BOOST_REQUIRE(curves->add({ .shape = v3d::curve::Poly{ { { -0.5F, 0.5F, 0.0F }, { 0.5F, 0.5F, 0.0F } } } }).empty());
+    v3d::curve::Bezier bezier;
+    for (const float x : { -0.5F, 0.5F }) {
+        bezier.points.push_back({ .position = { x, -0.5F, 0.0F }, .left = { x, -0.75F, 0.0F }, .right = { x, -0.25F, 0.0F },
+            .leftType = v3d::curve::Handle::Free, .rightType = v3d::curve::Handle::Free });
+    }
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Curve> curve = boost::make_shared<v3d::editor::Curve>(curves);
+    const unsigned int id = scene.add(curve);
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+
+    // an unselected curve offers none of its parts
+    const glm::vec2 second = screen(view, glm::vec3(-0.5F, -0.5F, 0.0F));
+    BOOST_CHECK(!picker.pick(scene, *view, second, v3d::editor::SelectMask::Vertex).valid);
+
+    // the vertex mask finds control points, numbered on from the curves before
+    curve->selected(true);
+    const v3d::editor::Picker::Hit point = picker.pick(scene, *view, second, v3d::editor::SelectMask::Vertex);
+    BOOST_CHECK(point.valid);
+    BOOST_CHECK_EQUAL(point.item, id);
+    BOOST_CHECK_EQUAL(point.component, 2U);
+    // a handle is not a control point, and a control point is not a handle
+    const glm::vec2 handle = screen(view, glm::vec3(0.5F, -0.25F, 0.0F));
+    BOOST_CHECK(!picker.pick(scene, *view, handle, v3d::editor::SelectMask::Vertex).valid);
+    BOOST_CHECK(!picker.pick(scene, *view, second, v3d::editor::SelectMask::Handle).valid);
+
+    // the handle mask finds the right handle of the curve's fourth point, twice its number and one
+    const v3d::editor::Picker::Hit right = picker.pick(scene, *view, handle, v3d::editor::SelectMask::Handle);
+    BOOST_CHECK(right.valid);
+    BOOST_CHECK_EQUAL(right.component, 7U);
+    // the poly curve's points have no handles to find
+    BOOST_CHECK(!picker.pick(scene, *view, screen(view, glm::vec3(-0.5F, 0.5F, 0.0F)), v3d::editor::SelectMask::Handle).valid);
+
+    // a band over the lower half holds the Bezier curve's points, and all four of its handles
+    const std::pair<glm::vec2, glm::vec2> band(screen(view, glm::vec3(-0.9F, -0.05F, 0.0F)), screen(view, glm::vec3(0.9F, -0.95F, 0.0F)));
+    const std::vector<v3d::editor::Picker::Hit> points = picker.inside(scene, *view, band.first,
+        band.second, v3d::editor::SelectMask::Vertex);
+    BOOST_REQUIRE_EQUAL(points.size(), 2U);
+    BOOST_CHECK_EQUAL(points[0].component, 2U);
+    BOOST_CHECK_EQUAL(points[1].component, 3U);
+    BOOST_CHECK_EQUAL(picker.inside(scene, *view, band.first, band.second,
+        v3d::editor::SelectMask::Handle).size(), 4U);
 }
 
 };  // namespace

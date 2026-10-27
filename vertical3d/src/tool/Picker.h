@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
+#include <api/brep/Index.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
@@ -19,11 +20,13 @@
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -32,12 +35,14 @@ namespace v3d::editor {
  * on the screen holds.
  *
  * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, a curve,
- * or a camera's, light's or group's glyph is hit when it is drawn within a few pixels of the
- * cursor. Everything is tested where the scene's evaluation puts it.
+ * a curve's control point or handle, or a camera's, light's or group's glyph is hit when it is
+ * drawn within a few pixels of the cursor. Everything is tested where the scene's evaluation
+ * puts it.
  *
  * A mask that selects whole items considers only the kinds it takes. A component mask
- * considers only meshes that are already selected: an object has to be selected before any
- * of its components can be.
+ * considers only meshes and curves that are already selected: an object has to be selected
+ * before any of its components can be. The Vertex mask finds a curve's control points, and the
+ * Handle mask its Bezier handles.
  **/
 class Picker final : public SceneVisitor {
  public:
@@ -58,8 +63,9 @@ class Picker final : public SceneVisitor {
          **/
         SelectMask kind;
         /**
-         * The index of the vertex, half edge or face within that mesh. Zero and
-         * meaningless when the mask selects whole items.
+         * The index of the vertex, half edge or face within that mesh, or the part number of
+         * the curve's control point or handle. Zero and meaningless when the mask selects
+         * whole items.
          **/
         unsigned int component;
 
@@ -124,6 +130,13 @@ class Picker final : public SceneVisitor {
      * the cursor, and inside a rectangle when every point of it is.
      **/
     void lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
+
+    /**
+     * Points of the item being traversed, each named by its part number: hit within tolerance
+     * of the cursor, nearest to the camera winning, and inside a rectangle when it projects
+     * inside.
+     **/
+    void points(const std::vector<std::pair<v3d::brep::Index, glm::vec3>>& parts);
 
     /**
      * Ray against every triangle of the mesh, nearest along the ray winning.

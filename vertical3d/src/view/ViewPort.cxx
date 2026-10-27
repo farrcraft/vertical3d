@@ -10,6 +10,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include "ConstructionPlane.h"
 #include "WireframeVisitor.h"
@@ -118,7 +119,7 @@ ConstructionPlane& ViewPort::grid() noexcept {
 
 /**
  **/
-void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas) {
+void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask) {
     if (canvas == nullptr) {
         return;
     }
@@ -133,8 +134,10 @@ void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* can
         grid_.draw(*camera_, canvas);
     }
 
+    // a curve's control points are shown while they can be picked
+    const bool controls = mask == SelectMask::Vertex || mask == SelectMask::Handle;
     const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
-        .lights = shows(SHOW_LIGHT) };
+        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
     if (shown.meshes || shown.cameras || shown.lights) {
         WireframeVisitor wireframe(canvas, shown, &scene.components());
         scene.accept(&wireframe);

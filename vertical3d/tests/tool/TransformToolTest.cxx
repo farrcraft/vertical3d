@@ -10,6 +10,8 @@
 #include <api/brep/Primitives.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
 #include <api/type/Transform.h>
 #include <api/type/camera/Camera.h>
@@ -18,6 +20,7 @@
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -27,6 +30,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -540,6 +544,48 @@ BOOST_AUTO_TEST_CASE(transform_tool_mask_change_test) {
 
     // and the handles now move the object
     BOOST_CHECK_EQUAL(components.transformTool->target().components(), false);
+}
+
+BOOST_AUTO_TEST_CASE(transform_tool_curve_handle_test) {
+    // one selected Bezier curve of two points with automatic handles, and its first point's
+    // right handle selected
+    v3d::curve::Bezier bezier;
+    bezier.points.push_back({ .position = { -0.5F, 0.0F, 0.0F } });
+    bezier.points.push_back({ .position = { 0.5F, 0.0F, 0.0F } });
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Curve> curve = boost::make_shared<v3d::editor::Curve>(curves);
+    curve->selected(true);
+    scene->add(curve);
+    scene->components().select(curve->id(), v3d::editor::Component::Handle, 1, true);
+    const boost::shared_ptr<v3d::editor::CommandStack> history = boost::make_shared<v3d::editor::CommandStack>();
+    const boost::shared_ptr<v3d::editor::TransformTool> transformTool = tool(scene);
+    transformTool->commands(history);
+    transformTool->mask(v3d::editor::SelectMask::Handle);
+    transformTool->activate("translate");
+    const v3d::curve::Curve before = curves->curve(0);
+    const glm::vec3 grabbed = std::get<v3d::curve::Bezier>(before.shape).points[0].right;
+
+    // the handles sit on the selected handle, and a drag of the x handle moves it half a unit
+    BOOST_CHECK_SMALL(glm::distance(transformTool->target().pivot(), grabbed), 0.0001F);
+    const glm::vec2 handle = screen(*transformTool->view(), grabbed) + glm::vec2(45.0F, 0.0F);
+    transformTool->motion(handle);
+    transformTool->button(1, true, handle);
+    transformTool->motion(handle + glm::vec2(100.0F, 0.0F));
+    transformTool->button(1, false, handle + glm::vec2(100.0F, 0.0F));
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    const v3d::curve::Curve after = curves->curve(0);
+    const v3d::curve::BezierPoint& moved = std::get<v3d::curve::Bezier>(after.shape).points[0];
+    BOOST_CHECK_CLOSE(moved.right.x - grabbed.x + 1.0F, 1.5F, 1.0F);
+    BOOST_CHECK(moved.rightType == v3d::curve::Handle::Aligned);
+    BOOST_CHECK(moved.position == glm::vec3(-0.5F, 0.0F, 0.0F));
+
+    // undo puts back the curve as it was, with the handle's type
+    history->undo();
+    BOOST_CHECK(curves->curve(0) == before);
+    history->redo();
+    BOOST_CHECK(curves->curve(0) == after);
 }
 
 };  // namespace

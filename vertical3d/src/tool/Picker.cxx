@@ -9,11 +9,13 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Curves.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Group.h>
@@ -28,6 +30,7 @@
 #include <array>
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -162,9 +165,9 @@ void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
         return;
     }
 
-    if (selectsItems(mask_) ? !takes(mask_, Item::Kind::Mesh) : !item->selected()) {
+    if (selectsItems(mask_) ? !takes(mask_, Item::Kind::Mesh) : (!item->selected() || mask_ == SelectMask::Handle)) {
         // an object has to be selected before any of its components may be, so a component
-        // click stays inside the mesh the user is working on
+        // click stays inside the mesh the user is working on. A mesh has no handles
         return;
     }
 
@@ -191,6 +194,8 @@ void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
     case SelectMask::Curve:
     case SelectMask::Face:
         surface(mesh);
+        break;
+    case SelectMask::Handle:
         break;
     }
 }
@@ -231,7 +236,20 @@ void Picker::visit(const boost::shared_ptr<Group>& group, const Placed& placed) 
 /**
  **/
 void Picker::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
-    if (!curve || camera_ == nullptr || !takes(mask_, Item::Kind::Curve)) {
+    if (!curve || camera_ == nullptr) {
+        return;
+    }
+    if (mask_ == SelectMask::Vertex || mask_ == SelectMask::Handle) {
+        // as with a mesh, the curve has to be selected before any of its parts may be
+        if (curve->selected()) {
+            model_ = placed.world;
+            current_ = curve->id();
+            const v3d::curve::Curves& geometry = *curve->geometry();
+            points(mask_ == SelectMask::Vertex ? controlPoints(geometry) : handlePoints(geometry));
+        }
+        return;
+    }
+    if (!takes(mask_, Item::Kind::Curve)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
@@ -270,6 +288,29 @@ void Picker::lines(const Item& item, const glm::mat4& model, const v3d::render::
         const float along = closest(start, end, cursor_);
         if (glm::distance(start + (end - start) * along, cursor_) <= tolerance_) {
             offer({.item = current_, .component = 0, .distance = startDepth + ((endDepth - startDepth) * along)});
+        }
+    }
+}
+
+/**
+ **/
+void Picker::points(const std::vector<std::pair<v3d::brep::Index, glm::vec3>>& parts) {
+    Hit hit;
+    hit.valid = true;
+    hit.item = current_;
+    hit.kind = mask_;
+    for (const auto& [part, point] : parts) {
+        if (band_) {
+            if (encloses(point)) {
+                hit.component = part;
+                inside_.push_back(hit);
+            }
+            continue;
+        }
+        glm::vec2 position;
+        float depth = 0.0F;
+        if (screen(point, &position, &depth) && glm::distance(position, cursor_) <= tolerance_) {
+            offer({.item = current_, .component = part, .distance = depth});
         }
     }
 }
@@ -387,6 +428,8 @@ void Picker::enclosed(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     case SelectMask::Edge:
     case SelectMask::Face:
         enclosedLoops(mesh);
+        break;
+    case SelectMask::Handle:
         break;
     }
 }

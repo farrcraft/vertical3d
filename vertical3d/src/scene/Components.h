@@ -17,16 +17,20 @@
 namespace v3d::editor {
 
 /**
- * The kinds of part of a mesh that can be selected.
+ * The kinds of part of an item that can be selected.
+ *
+ * A mesh item has vertices, edges and faces. A curve item has control points, which are its
+ * vertices, and the handles of its Bezier points.
  **/
-enum class Component : std::uint8_t { Vertex, Edge, Face };
+enum class Component : std::uint8_t { Vertex, Edge, Face, Handle };
 
 /**
- * Which parts of which mesh items are selected.
+ * Which parts of which mesh and curve items are selected.
  *
  * A part is named by its item's id() and its index in the item's geometry: a vertex, a half
- * edge or a face. The selection belongs to the item, not to the geometry, so two items that
- * share one mesh select its parts apart. An edge is selected when either of its two halves is.
+ * edge or a face of a mesh, or a control point or a handle of a curve as CurvePoint numbers
+ * them. The selection belongs to the item, not to the geometry, so two items that share one
+ * mesh select its parts apart. An edge is selected when either of its two halves is.
  *
  * An index names whatever part holds it now. An operation that renumbers an item's geometry
  * replaces the item's selection, or a part it named could be another part afterwards.
@@ -70,8 +74,8 @@ class Components final {
     void clear() noexcept;
 
  private:
-    // each item's selected vertices, half edges and faces, in the order of Component
-    std::map<unsigned int, std::array<std::set<v3d::brep::Index>, 3>> parts_;
+    // each item's selected vertices, half edges, faces and handles, in the order of Component
+    std::map<unsigned int, std::array<std::set<v3d::brep::Index>, 4>> parts_;
 };
 
 };  // namespace v3d::editor
