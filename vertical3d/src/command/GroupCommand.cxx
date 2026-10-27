@@ -5,12 +5,14 @@
 
 #include "GroupCommand.h"
 
+#include <api/type/Transform.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -50,19 +52,24 @@ GroupCommand::GroupCommand(const boost::shared_ptr<Scene>& scene, const Items& i
     }
 
     // the centre is in the space of the group's parent. An item already beneath that parent
-    // gives its translation, and any other item, which then has no parent, its world origin
+    // gives its translation, and any other item, which then has no parent, its world origin.
+    // Both are where the item is shown, which a curve may decide, and an undo gives the item
+    // back its own placement
     const Evaluation evaluation = scene_->evaluate();
     glm::vec3 centre(0.0F);
+    std::vector<v3d::type::Transform> shown;
     for (const boost::shared_ptr<Item>& item : gathered) {
         const Member member{ .item = item, .parent = scene_->parent(item->id()), .before = item->placement() };
-        centre += member.parent == parent_ ? member.before.position : glm::vec3(evaluation.placed(item->id()).world[3]);
+        shown.push_back(evaluation.pose(*item).placement);
+        centre += member.parent == parent_ ? shown.back().position : glm::vec3(evaluation.placed(item->id()).world[3]);
         members_.push_back(member);
     }
     centre /= static_cast<float>(members_.size());
     group_->translation(centre);
 
-    for (Member& member : members_) {
-        member.after = member.before;
+    for (std::size_t index = 0; index < members_.size(); index++) {
+        Member& member = members_[index];
+        member.after = shown[index];
         if (member.parent == parent_) {
             // the group only moves the origin, so the rest of the placement carries over exactly
             member.after.position -= centre;

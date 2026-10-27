@@ -631,17 +631,20 @@ BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
     BOOST_CHECK_EQUAL(store.written().curves, 2U);
     BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM curves"), 2);
 
-    // every curve comes back key for key, with the timeline, and the scene posed at its frame
+    // every curve comes back key for key, with the timeline. The items hold the values they
+    // were written with, and an evaluation of the frame shows the curves
     v3d::editor::Scene read;
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_CHECK(read.timeline() == written->timeline());
     BOOST_REQUIRE_EQUAL(read.curves(read.items()[0]->id()).size(), 1U);
     BOOST_CHECK(read.curves(read.items()[0]->id()).at("translation.y") == shaped);
     BOOST_CHECK(read.curves(read.items()[2]->id()).at("emission.intensity") == fade);
-    BOOST_CHECK_EQUAL(read.items()[0]->translation().y, 0.0F);
-    BOOST_CHECK_CLOSE(v3d::editor::as<v3d::editor::Light>(read.items()[2])->emission().intensity, fade.sample(7.0F), 0.001F);
+    BOOST_CHECK(read.items()[0]->translation() == kinds[0]->translation());
+    const v3d::editor::Evaluation evaluation = read.evaluate();
+    BOOST_CHECK_EQUAL(evaluation.pose(*read.items()[0]).placement.position.y, 0.0F);
+    BOOST_CHECK_CLOSE(evaluation.pose(*read.items()[2]).emission.intensity, fade.sample(7.0F), 0.001F);
 
-    // the read is what the store remembers, pose and all, so writing it back writes nothing
+    // the read is what the store remembers, so writing it back writes nothing
     BOOST_REQUIRE(store.write(scratch.path(), read));
     BOOST_CHECK_EQUAL(store.written().rows, 0U);
     BOOST_CHECK_EQUAL(store.written().curves, 0U);

@@ -6,6 +6,7 @@
 #include "KeyCommand.h"
 
 #include <api/animation/Curve.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -26,6 +27,7 @@ KeyCommand::KeyCommand(const boost::shared_ptr<Scene>& scene, const Items& items
     if (!scene_) {
         return;
     }
+    const Evaluation evaluation = scene_->evaluate();
     for (const boost::shared_ptr<Item>& item : items) {
         if (!item || scene_->item(item->id()) != item) {
             continue;
@@ -40,7 +42,7 @@ KeyCommand::KeyCommand(const boost::shared_ptr<Scene>& scene, const Items& items
                 near[axis] = found->second.sample(frame);
             }
         }
-        for (const auto& [path, value] : values(*item, near)) {
+        for (const auto& [path, value] : values(item->kind(), evaluation.pose(*item), near)) {
             const auto found = curves.find(path);
             Change change{ .item = item, .path = path };
             if (found != curves.end()) {
@@ -86,7 +88,6 @@ void KeyCommand::apply(bool after) {
     for (const Change& change : changes_) {
         scene_->curve(change.item->id(), change.path, after ? change.after : change.before);
     }
-    scene_->pose(static_cast<float>(scene_->timeline().frame));
 }
 
 };  // namespace v3d::editor

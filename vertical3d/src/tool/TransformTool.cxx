@@ -264,6 +264,12 @@ void TransformTool::commit() {
     }
     if (moved) {
         commands_->push(boost::make_shared<TransformCommand>(changes, modeName(mode_)));
+        return;
+    }
+    // a drag that measured nothing still wrote each placement, from where the evaluation put
+    // it, so each item is given back the placement it held
+    for (const TransformCommand::Change& change : changes) {
+        change.item->placement(change.before);
     }
 }
 
@@ -297,7 +303,7 @@ void TransformTool::motion(const glm::vec2& position) {
     // now, so that a selection changing mid gesture cannot leave the record naming one
     // set and the movement landing on another
     if (dragging_ && current && !dragged_.empty() && view_) {
-        current->apply(dragged_, *view_, last_, position);
+        current->apply(&dragged_, *view_, last_, position);
     } else {
         hover(position);
     }

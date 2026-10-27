@@ -16,6 +16,7 @@
 #include <api/animation/Curve.h>
 
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -105,6 +106,7 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
     slide.set(1.0F, 0.0F);
     slide.set(2.0F, 0.5F);
     BOOST_REQUIRE(scene.curve(mesh->id(), "translation.x", slide));
+    const std::uint64_t revision = mesh->revision();
     v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
 
     // with no scene camera, every frame is seen through the view, as a RIB file and the
@@ -115,10 +117,11 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
     BOOST_CHECK_EQUAL(jobs[1].picture.filename().string(), "view.0002.png");
     BOOST_CHECK(boost::filesystem::exists(jobs[1].rib));
 
-    // each frame's file is the scene posed at that frame, and the scene is posed back at its
-    // own frame once they are written
+    // each frame's file is the scene as an evaluation of that frame finds it, and writing them
+    // changes nothing in the scene
     BOOST_CHECK_NE(read(jobs[0].rib), read(jobs[1].rib));
     BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
+    BOOST_CHECK_EQUAL(mesh->revision(), revision);
 
     const v3d::editor::Batch::Status status = settle(batch);
     BOOST_CHECK(!status.running);

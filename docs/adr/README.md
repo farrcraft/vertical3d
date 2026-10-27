@@ -155,6 +155,7 @@ content went. Numbers are never reused.
 | [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
 | [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
 | [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
+| [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
 
 ## Build, testing and code
 

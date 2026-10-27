@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
     // a light is drawn as its glyph, through its translation
     const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
     light->translation(glm::vec3(5.0F, 0.0F, 0.0F));
-    wireframe.visit(light, at(light));
+    wireframe.visit(light, at(light), light->emission());
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 6U);
     for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {
         BOOST_CHECK(vertex.position.x >= 4.7F);
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
     // a selected one in the selection's colour, which is the colour of a selected mesh
     canvas.clear();
     light->selected(true);
-    wireframe.visit(light, at(light));
+    wireframe.visit(light, at(light), light->emission());
     const glm::vec4 selected = canvas.vertices()[0].colour;
     BOOST_CHECK((selected != unselected));
     canvas.clear();
@@ -193,7 +193,8 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
 
     // a camera is drawn as its glyph too, and the transform is popped after it
     canvas.clear();
-    wireframe.visit(boost::make_shared<v3d::editor::Camera>(), at(boost::make_shared<v3d::editor::Camera>()));
+    const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
+    wireframe.visit(camera, at(camera), camera->lens());
     BOOST_CHECK_EQUAL(canvas.vertices().size(), 22U);
     BOOST_CHECK_SMALL(canvas.transform()[3][0], 0.0001F);
 }

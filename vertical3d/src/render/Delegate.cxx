@@ -6,13 +6,16 @@
 #include "Delegate.h"
 
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstdint>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -50,9 +53,11 @@ bool Delegate::update(const Scene& scene, const v3d::type::camera::Profile& from
 Delegate::Signature Delegate::Signature::of(const Scene& scene, const v3d::type::camera::Profile& from,
     const RenderSettings& settings) {
     Signature signature;
+    const Evaluation evaluation = scene.evaluate();
     for (const boost::shared_ptr<Item>& item : scene.items()) {
         const boost::shared_ptr<Item> parent = scene.parent(item->id());
         signature.items.emplace_back(item->documentId(), item->revision(), parent ? parent->documentId() : 0);
+        signature.poses.push_back(values(item->kind(), evaluation.pose(*item), glm::vec3(0.0F)));
     }
     signature.eye = from.eye();
     signature.direction = from.direction();

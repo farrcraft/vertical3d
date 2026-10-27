@@ -23,8 +23,8 @@ and says why.
   ui, not of the document, so the handler checks it before a modelling operation runs.
 - **A gesture is not an operation.** A tool changes the document while the cursor moves, and
   records the gesture in `Document::history()` when it ends.
-- **A frame is not a change.** `Document::goTo()` moves the current frame and poses the scene,
-  and records nothing.
+- **A frame is not a change.** `Document::goTo()` moves the current frame, which drops every
+  pending edit to a keyed property, and records nothing.
 
 Opening, saving, the autosave and recovery are on the document too. What asks the user first,
 the file chooser and the save prompt, stays in `Controller`.

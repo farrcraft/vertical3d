@@ -7,11 +7,11 @@
 #include <api/animation/Curve.h>
 #include <vertical3d/src/command/KeyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/Timeline.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -30,10 +30,14 @@ boost::shared_ptr<v3d::editor::Mesh> emptyMesh() {
  * Move the scene to a frame, as the timeline's transport does.
  **/
 void goTo(v3d::editor::Scene* scene, int frame) {
-    v3d::editor::Timeline timeline = scene->timeline();
-    timeline.frame = frame;
-    scene->timeline(timeline);
-    scene->pose(static_cast<float>(frame));
+    scene->frame(frame);
+}
+
+/**
+ * Where an item is shown at the scene's current frame.
+ **/
+glm::vec3 shown(const v3d::editor::Scene& scene, const v3d::editor::Item& item) {
+    return scene.evaluate().pose(item).placement.position;
 }
 
 /**
@@ -93,28 +97,29 @@ BOOST_AUTO_TEST_CASE(key_plays_back_between_test) {
     key(scene, { mesh });
 
     // the frames between the keys ease from one to the other, and an item with no curves
-    // keeps its place
+    // keeps its place. The item keeps the value it was given
     goTo(scene.get(), 11);
-    BOOST_CHECK_SMALL(mesh->translation().x - 5.0F, 0.0001F);
-    BOOST_CHECK(still->translation() == glm::vec3(5.0F, 0.0F, 0.0F));
+    BOOST_CHECK_SMALL(shown(*scene, *mesh).x - 5.0F, 0.0001F);
+    BOOST_CHECK(shown(*scene, *still) == glm::vec3(5.0F, 0.0F, 0.0F));
     goTo(scene.get(), 1);
-    BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
+    BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 0.0F);
+    BOOST_CHECK_EQUAL(mesh->translation().x, 10.0F);
 
-    // an edit holds until the next pose, and a key at the frame keeps it
+    // an edit shows until the frame is set again, and a key at the frame keeps it
     mesh->translation(glm::vec3(3.0F, 0.0F, 0.0F));
-    BOOST_CHECK_EQUAL(mesh->translation().x, 3.0F);
+    BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 3.0F);
     goTo(scene.get(), 1);
-    BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
-    mesh->translation(glm::vec3(3.0F, 0.0F, 0.0F));
+    BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 0.0F);
+    mesh->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     v3d::editor::KeyCommand change(scene, { mesh }, 1.0F);
     change.redo();
     goTo(scene.get(), 21);
     goTo(scene.get(), 1);
-    BOOST_CHECK_EQUAL(mesh->translation().x, 3.0F);
+    BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 4.0F);
 
-    // undoing the key poses the scene again, from the curves as they were
+    // undoing the key shows the curves as they were
     change.undo();
-    BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
+    BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 0.0F);
     BOOST_CHECK_EQUAL(scene->keyedFrames({ mesh }).size(), 2U);
 }
 
@@ -149,7 +154,7 @@ BOOST_AUTO_TEST_CASE(key_lens_test) {
 
     // a lens is keyed as any other property, and zooms between its keys
     goTo(scene.get(), 3);
-    BOOST_CHECK_SMALL(camera->lens().fov - 40.0F, 0.0001F);
+    BOOST_CHECK_SMALL(scene->evaluate().pose(*camera).lens.fov - 40.0F, 0.0001F);
     BOOST_CHECK_EQUAL(scene->curves(camera->id()).at("lens.fov").keys().size(), 2U);
 }
 

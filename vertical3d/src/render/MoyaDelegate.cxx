@@ -68,7 +68,7 @@ boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
  **/
 void MoyaDelegate::start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
     const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
-    shoot(shot.get(), scene, from, RIBExportVisitor::Output{ .settings = settings });
+    shoot(shot.get(), scene, scene.evaluate(), from, RIBExportVisitor::Output{ .settings = settings });
     {
         const std::scoped_lock lock(mutex_);
         status_.state = State::Rendering;

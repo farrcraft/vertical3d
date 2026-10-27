@@ -138,25 +138,25 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) {
+void WireframeVisitor::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) {
     if (canvas_ == nullptr || !camera || !shown_.cameras) {
         return;
     }
     canvas_->push();
     canvas_->transform(glyphPlacement(placed.world));
-    drawCamera(camera->lens(), camera->selected() ? object_ : glyph_, canvas_);
+    drawCamera(lens, camera->selected() ? object_ : glyph_, canvas_);
     canvas_->pop();
 }
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed) {
+void WireframeVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) {
     if (canvas_ == nullptr || !light || !shown_.lights) {
         return;
     }
     canvas_->push();
     canvas_->transform(glyphPlacement(placed.world));
-    drawLight(light->emission(), light->selected() ? object_ : glyph_, canvas_);
+    drawLight(emission, light->selected() ? object_ : glyph_, canvas_);
     canvas_->pop();
 }
 

@@ -129,8 +129,11 @@ Manipulator::Placement Manipulator::placement(const Target& target,
 
 /**
  **/
-void Manipulator::apply(const Target& target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const {
-    const Placement seat = placement(target, view);
+void Manipulator::apply(Target* target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const {
+    if (target == nullptr) {
+        return;
+    }
+    const Placement seat = placement(*target, view);
     if (!seat.valid) {
         return;
     }
@@ -138,7 +141,7 @@ void Manipulator::apply(const Target& target, const ViewPort& view, const glm::v
     if (!measure(seat, view, from, to, &motion)) {
         return;
     }
-    target.move(motion, seat.origin, seat.orientation);
+    target->move(motion, seat.origin, seat.orientation);
 }
 
 /**

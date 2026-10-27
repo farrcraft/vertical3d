@@ -109,8 +109,9 @@ class Document final {
     Outcome redo();
 
     /**
-     * Make a frame the current one, held within the timeline's range, and pose the scene at it.
-     * A frame is not a change to the document, so it is not recorded.
+     * Make a frame the current one, held within the timeline's range. Every pending edit to a
+     * keyed property is dropped. A frame is not a change to the document, so it is not
+     * recorded.
      **/
     void goTo(int frame);
 

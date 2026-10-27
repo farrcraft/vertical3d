@@ -11,6 +11,7 @@
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
+#include <api/type/Transform.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -116,6 +117,7 @@ Target Target::objects(const Items& items, const Evaluation& evaluation) {
         if (item) {
             target.items_.push_back(item);
             target.parents_.push_back(evaluation.placed(item->id()).parent);
+            target.placements_.push_back(evaluation.pose(*item).placement);
         }
     }
     return target;
@@ -191,7 +193,7 @@ glm::vec3 Target::pivot() const {
     std::size_t count = 0;
     if (!components_) {
         for (std::size_t index = 0; index < items_.size(); index++) {
-            sum += glm::vec3(parents_[index] * glm::vec4(items_[index]->translation(), 1.0F));
+            sum += glm::vec3(parents_[index] * glm::vec4(placements_[index].position, 1.0F));
             count++;
         }
     } else {
@@ -217,12 +219,12 @@ glm::quat Target::axes() const {
     if (components_) {
         return orientation(parts_.front().world);
     }
-    return glm::normalize(orientation(parents_.front()) * items_.front()->rotation());
+    return glm::normalize(orientation(parents_.front()) * placements_.front().rotation);
 }
 
 /**
  **/
-void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame) const {
+void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame) {
     // a distance from the pivot is held above the floor too, or a set or a group of
     // vertices could be turned inside out
     const glm::vec3 spread = glm::max(motion.stretch, glm::vec3(minimum));
@@ -237,14 +239,15 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
         // the world, so it is carried into the parent's axes and multiplied on the left. A
         // scale is in the object's own axes
         for (std::size_t index = 0; index < items_.size(); index++) {
-            const boost::shared_ptr<Item>& item = items_[index];
+            v3d::type::Transform& placement = placements_[index];
             const glm::mat4& parent = parents_[index];
             const glm::quat axes = orientation(parent);
             const glm::quat turn = glm::inverse(axes) * motion.turn * axes;
-            item->rotation(glm::normalize(turn * item->rotation()));
-            item->scale(glm::max(item->scale() * motion.stretch, glm::vec3(minimum)));
-            const glm::vec3 world(parent * glm::vec4(item->translation(), 1.0F));
-            item->translation(glm::vec3(glm::inverse(parent) * glm::vec4(place(world), 1.0F)));
+            placement.rotation = glm::normalize(turn * placement.rotation);
+            placement.scale = glm::max(placement.scale * motion.stretch, glm::vec3(minimum));
+            const glm::vec3 world(parent * glm::vec4(placement.position, 1.0F));
+            placement.position = glm::vec3(glm::inverse(parent) * glm::vec4(place(world), 1.0F));
+            items_[index]->placement(placement);
         }
         return;
     }

@@ -178,7 +178,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/, const Placed& placed, const Camera::Lens& /*lens*/) {
     cameras_++;
     enter("camera" + std::to_string(cameras_), placed.local);
 }
@@ -192,13 +192,12 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Group>& /*group*/, const Pl
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) {
     lights_++;
     enter("light" + std::to_string(lights_), placed.local);
     if (!light) {
         return;
     }
-    const Light::Emission& emission = light->emission();
     // a light is not scaled, so its direction is its world rotation alone
     const glm::vec3 from(placed.world[3]);
     const glm::vec3 to = from + (orientation(placed.world) * glm::vec3(0.0F, 0.0F, 1.0F));

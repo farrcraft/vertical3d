@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/RenderSettings.h>
@@ -63,7 +64,7 @@ Batch::~Batch() {
 
 /**
  **/
-std::vector<Batch::Job> Batch::start(Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
+std::vector<Batch::Job> Batch::start(const Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
     const boost::filesystem::path& directory) {
     cancel();
     if (scene == nullptr) {
@@ -86,7 +87,7 @@ std::vector<Batch::Job> Batch::start(Scene* scene, const v3d::type::camera::Prof
     std::vector<Job> jobs;
     bool written = true;
     for (int frame = timeline.start; frame <= timeline.end && written; frame++) {
-        scene->pose(static_cast<float>(frame));
+        const Evaluation evaluation = scene->evaluate(static_cast<float>(frame));
         for (const auto& [name, camera] : sources) {
             const boost::filesystem::path folder = directory / name;
             boost::system::error_code error;
@@ -100,12 +101,11 @@ std::vector<Batch::Job> Batch::start(Scene* scene, const v3d::type::camera::Prof
             }
             // a RIB string is read with backslashes as escapes, so the picture's path is written
             // with forward slashes
-            writeShot(&file, *scene, shotFrom(*scene, camera, view),
+            writeShot(&file, *scene, evaluation, shotFrom(evaluation, camera, view),
                 RIBExportVisitor::Output{ .settings = settings, .file = job.picture.generic_string() });
             jobs.push_back(job);
         }
     }
-    scene->pose(static_cast<float>(timeline.frame));
     if (!written) {
         return {};
     }

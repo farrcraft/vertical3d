@@ -196,23 +196,23 @@ void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) {
+void Picker::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) {
     if (!camera || camera_ == nullptr || !takes(mask_, Item::Kind::Camera)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawCamera(camera->lens(), glm::vec4(1.0F), &drawn);
+    drawCamera(lens, glm::vec4(1.0F), &drawn);
     glyph(*camera, placed.world, drawn);
 }
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Light>& light, const Placed& placed) {
+void Picker::visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) {
     if (!light || camera_ == nullptr || !takes(mask_, Item::Kind::Light)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawLight(light->emission(), glm::vec4(1.0F), &drawn);
+    drawLight(emission, glm::vec4(1.0F), &drawn);
     glyph(*light, placed.world, drawn);
 }
 

@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -58,9 +59,15 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
  * parent. evaluate() composes the world matrices, and every reader takes placement from it.
  *
  * **Animation.** The scene holds the curves that drive its items' properties, each by its
- * item's document id and the property's path, and the document's timeline. pose() sets every
- * keyed property to its curve's value at a frame. It writes into the items, so whatever is
- * edited after it holds until the next pose.
+ * item's document id and the property's path, and the document's timeline. An item holds only
+ * the values the user gave it. An evaluation gives each keyed property its curve's value, and
+ * evaluating changes nothing in the scene.
+ *
+ * **Pending edits.** A keyed property is pending when its value in its item has changed since
+ * the frame was last set, or since the item was added. An evaluation of the current frame shows
+ * a pending property's value from the item instead of from the curve. Setting the frame drops
+ * every pending edit, and a key at the current frame takes one into its curve. A rotation is
+ * pending as a whole.
  **/
 class Scene final {
  public:
@@ -132,10 +139,10 @@ class Scene final {
     std::vector<float> keyedFrames(const Items& items) const;
 
     /**
-     * Set every property that has a curve to the curve's value at a frame. A property with no
-     * curve keeps its value.
+     * Set the current frame, and drop every pending edit, so each keyed property shows its
+     * curve again. The items keep the values they hold.
      **/
-    void pose(float frame);
+    void frame(int frame);
 
     /**
      * The document's frame rate, range and current frame.
@@ -150,10 +157,18 @@ class Scene final {
     void renderSettings(const RenderSettings& settings) noexcept;
 
     /**
-     * Compose where every item is: its parent's world matrix times its own local matrix, each
-     * parent before its children.
+     * Evaluate the current frame, as the views show it: each keyed property takes its curve's
+     * value unless an edit to it is pending, and every other property its item's value. Each
+     * item's world matrix is its parent's world matrix times its own local one, each parent
+     * before its children.
      **/
     Evaluation evaluate() const;
+
+    /**
+     * Evaluate any frame of the animation, which a pending edit is not part of: each keyed
+     * property takes its curve's value there.
+     **/
+    Evaluation evaluate(float frame) const;
 
     /**
      * @return the item of that id, or an empty pointer
@@ -212,11 +227,16 @@ class Scene final {
     const Items& items() const noexcept;
 
     /**
-     * Walk the items depth first, each through the visit() for its kind, with where one
-     * evaluation of the scene puts it. Each parent comes before its children, and siblings
-     * come in insertion order.
+     * Walk the items depth first, each through the visit() for its kind, with what an
+     * evaluation of the current frame found for it. Each parent comes before its children, and
+     * siblings come in insertion order.
      **/
     void accept(SceneVisitor* visitor) const;
+
+    /**
+     * Walk the items as accept(visitor) does, with what a given evaluation of the scene found.
+     **/
+    void accept(SceneVisitor* visitor, const Evaluation& evaluation) const;
 
     /**
      * Clear the selection of every item, and of every component of every mesh.
@@ -236,11 +256,29 @@ class Scene final {
      **/
     boost::shared_ptr<Item> document(std::int64_t id) const;
 
+    /**
+     * Evaluate a frame, with the pending edits or without them.
+     **/
+    Evaluation evaluated(float frame, bool pending) const;
+
+    /**
+     * @return the paths of an item's properties whose values have changed since it was last
+     *         settled. A changed rotation names all three of its angles
+     **/
+    std::set<std::string> edited(const Item& item) const;
+
+    /**
+     * Remember an item's values as they stand, which no edit is pending against.
+     **/
+    void settle(const Item& item);
+
     Items items_;
     // each child's parent, both named by document id
     std::unordered_map<std::int64_t, std::int64_t> parents_;
     // each animated item's curves, by its document id
     std::map<std::int64_t, Curves> curves_;
+    // each item's values when the frame was last set or the item was added, by document id
+    std::unordered_map<std::int64_t, std::map<std::string, float>> settled_;
     Timeline timeline_;
     RenderSettings renderSettings_;
     std::int64_t nextDocumentId_ = 1;

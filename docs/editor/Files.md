@@ -163,8 +163,9 @@ and nothing in either is animated. The first write to it adds what it lacks and 
 to 3, in the same transaction as the rest of the write. Every kind and the curves are at version
 1.
 
-**Reading poses the scene.** Once a document is read, the scene is posed at its timeline's frame,
-which [Animation.md](Animation.md#posing) describes.
+**Reading sets the frame.** Once a document is read, its timeline's frame is the current one,
+and no edit is pending. A read changes no item's values, which
+[Animation.md](Animation.md#evaluating-a-frame) describes.
 
 Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.md),
 [ADR-0102](../adr/0102-editor-scene-records-are-rows-with-json-payloads.md),

@@ -205,15 +205,18 @@ share one `BRep`.
   refuses an item that is not in the scene, an item as its own parent, and a parent that is
   beneath the child. `Scene::parent(id)`, `children(id)` and `ancestors(id)` read the links.
   `children(0)` gives the items with no parent. Siblings come in the scene's order.
-- **The evaluation.** `Scene::evaluate()` composes where every item is. An item's world matrix
-  is its parent's world matrix times its own local matrix, and an item with no parent has the
-  identity as its parent's. The result is an `Evaluation`, which gives each item's `Placed`:
-  the parent's world matrix, the local matrix and the world matrix. It is a copy, so an edit made
-  after it shows only in a later evaluation.
+- **The evaluation.** `Scene::evaluate()` composes where every item is. An item's local matrix
+  is its placement, after any curve on it, which [Animation.md](Animation.md#evaluating-a-frame)
+  describes. Its world matrix is its parent's world matrix times its local matrix, and an item
+  with no parent has the identity as its parent's. The result is an `Evaluation`, which gives
+  each item's `Placed`: the parent's world matrix, the local matrix and the world matrix. It
+  also gives each item's `Pose`: its placement, and a camera's lens or a light's emission. It is
+  a copy, so an edit made after it shows only in a later evaluation.
 - **Every reader takes placement from an evaluation.** The wireframe, the shaded pass, the
   picker, the manipulators, the RIB export and `profile_of()` all do. None of them reads an
-  item's own matrix as where it is. A glyph is drawn through its world matrix without the scale,
-  through `glyphPlacement()`, so it keeps its size.
+  item's own matrix as where it is, or a camera's or a light's own lens or emission. A visitor
+  is handed the lens and the emission with the placement. A glyph is drawn through its world
+  matrix without the scale, through `glyphPlacement()`, so it keeps its size.
 - **Composition is the whole matrix.** A child takes its parent's scale as well as its rotation,
   as glTF, USD and RI do. Under a parent that is rotated and scaled unevenly, a child can be
   sheared. `orientation()` takes the rotation out of such a matrix, keeping the x axis.

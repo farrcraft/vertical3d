@@ -11,6 +11,8 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstdint>
+#include <map>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -84,11 +86,13 @@ class Delegate {
 
  private:
     /**
-     * Everything a picture shows: each item's document id, revision and parent, the camera
-     * and the settings. Two equal signatures render the same picture.
+     * Everything a picture shows: each item's document id, revision and parent, the values an
+     * evaluation of the current frame gives each one, the camera and the settings. Two equal
+     * signatures render the same picture.
      **/
     struct Signature {
         std::vector<std::tuple<std::int64_t, std::uint64_t, std::int64_t>> items;
+        std::vector<std::map<std::string, float>> poses;
         glm::vec3 eye{ 0.0F };
         glm::vec3 direction{ 0.0F };
         glm::vec3 up{ 0.0F };

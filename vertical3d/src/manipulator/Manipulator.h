@@ -149,7 +149,7 @@ class Manipulator {
      * @param from where the cursor was
      * @param to where it is
      **/
-    void apply(const Target& target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const;
+    void apply(Target* target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const;
 
  protected:
     /**

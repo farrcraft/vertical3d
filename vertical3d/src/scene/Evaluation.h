@@ -7,6 +7,9 @@
 
 #include <unordered_map>
 
+#include "Item.h"
+#include "Properties.h"
+
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/mat4x4.hpp>
 
@@ -26,7 +29,8 @@ struct Placed {
 };
 
 /**
- * Where every item of a scene is, at the moment the scene was evaluated.
+ * Where every item of a scene is, and the value of every property a curve can drive, at the
+ * time the scene was evaluated for.
  *
  * It is a copy, keyed by each item's id(). An edit made after the evaluation does not
  * show in it, so a reader that has to see an edit evaluates the scene again after it.
@@ -44,8 +48,20 @@ class Evaluation final {
      **/
     void place(unsigned int id, const Placed& placed);
 
+    /**
+     * @return the item's placement, lens and emission as the evaluation found them, or as the
+     *         item holds them when the evaluation did not see it
+     **/
+    Pose pose(const Item& item) const;
+
+    /**
+     * Record an item's pose. The scene's evaluation calls this once for each item.
+     **/
+    void pose(unsigned int id, const Pose& pose);
+
  private:
     std::unordered_map<unsigned int, Placed> placed_;
+    std::unordered_map<unsigned int, Pose> poses_;
 };
 
 /**

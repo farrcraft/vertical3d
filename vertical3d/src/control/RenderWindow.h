@@ -70,7 +70,7 @@ class RenderWindow final {
      * Render every frame of the timeline from each scene camera into a directory, or from a
      * view when the scene has no camera.
      **/
-    Outcome batch(Scene* scene, const v3d::type::camera::Profile& view, const boost::filesystem::path& into);
+    Outcome batch(const Scene* scene, const v3d::type::camera::Profile& view, const boost::filesystem::path& into);
 
     /**
      * @return how the batch is getting on

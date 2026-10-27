@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -30,6 +31,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -51,10 +53,10 @@ void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Eval
             visitor->visit(boost::static_pointer_cast<Mesh>(item), placed);
             break;
         case Item::Kind::Camera:
-            visitor->visit(boost::static_pointer_cast<Camera>(item), placed);
+            visitor->visit(boost::static_pointer_cast<Camera>(item), placed, evaluation.pose(*item).lens);
             break;
         case Item::Kind::Light:
-            visitor->visit(boost::static_pointer_cast<Light>(item), placed);
+            visitor->visit(boost::static_pointer_cast<Light>(item), placed, evaluation.pose(*item).emission);
             break;
         case Item::Kind::Group:
             visitor->visit(boost::static_pointer_cast<Group>(item), placed);
@@ -81,6 +83,7 @@ unsigned int Scene::add(const boost::shared_ptr<Item>& item) {
         item->documentId(nextDocumentId_++);
     }
     items_.push_back(item);
+    settle(*item);
     return item->id();
 }
 
@@ -107,6 +110,7 @@ bool Scene::remove(unsigned int id) {
     std::erase_if(items_, [&gone](const boost::shared_ptr<Item>& each) { return gone.contains(each->documentId()); });
     std::erase_if(parents_, [&gone](const auto& link) { return gone.contains(link.first); });
     std::erase_if(curves_, [&gone](const auto& owned) { return gone.contains(owned.first); });
+    std::erase_if(settled_, [&gone](const auto& held) { return gone.contains(held.first); });
     return true;
 }
 
@@ -254,17 +258,10 @@ std::vector<float> Scene::keyedFrames(const Items& items) const {
 
 /**
  **/
-void Scene::pose(float frame) {
+void Scene::frame(int frame) {
+    timeline_.frame = frame;
     for (const boost::shared_ptr<Item>& each : items_) {
-        const auto owned = curves_.find(each->documentId());
-        if (owned == curves_.end()) {
-            continue;
-        }
-        std::map<std::string, float> values;
-        for (const auto& [path, curve] : owned->second) {
-            values[path] = curve.sample(frame);
-        }
-        editor::pose(each.get(), values);
+        settle(*each);
     }
 }
 
@@ -295,16 +292,41 @@ void Scene::renderSettings(const RenderSettings& settings) noexcept {
 /**
  **/
 Evaluation Scene::evaluate() const {
+    return evaluated(static_cast<float>(timeline_.frame), true);
+}
+
+/**
+ **/
+Evaluation Scene::evaluate(float frame) const {
+    return evaluated(frame, false);
+}
+
+/**
+ **/
+Evaluation Scene::evaluated(float frame, bool pending) const {
+    Evaluation evaluation;
     std::unordered_map<std::int64_t, const Item*> documents;
     for (const boost::shared_ptr<Item>& each : items_) {
         documents[each->documentId()] = each.get();
+        Pose pose = editor::pose(*each);
+        const auto owned = curves_.find(each->documentId());
+        if (owned != curves_.end()) {
+            const std::set<std::string> kept = pending ? edited(*each) : std::set<std::string>();
+            std::map<std::string, float> values;
+            for (const auto& [path, curve] : owned->second) {
+                if (!kept.contains(path)) {
+                    values[path] = curve.sample(frame);
+                }
+            }
+            pose = posed(each->kind(), pose, values);
+        }
+        evaluation.pose(each->id(), pose);
     }
     const auto above = [this, &documents](const Item& below) -> const Item* {
         const auto link = parents_.find(below.documentId());
         return link == parents_.end() ? nullptr : documents.at(link->second);
     };
 
-    Evaluation evaluation;
     std::unordered_set<unsigned int> placed;
     std::vector<const Item*> chain;
     for (const boost::shared_ptr<Item>& each : items_) {
@@ -318,7 +340,7 @@ Evaluation Scene::evaluate() const {
             const Item* parent = above(**it);
             Placed where;
             where.parent = parent == nullptr ? glm::mat4(1.0F) : evaluation.placed(parent->id()).world;
-            where.local = (*it)->matrix();
+            where.local = evaluation.pose(**it).placement.matrix();
             where.world = where.parent * where.local;
             evaluation.place((*it)->id(), where);
             placed.insert((*it)->id());
@@ -365,6 +387,7 @@ void Scene::clear() noexcept {
     items_.clear();
     parents_.clear();
     curves_.clear();
+    settled_.clear();
     timeline_ = Timeline();
     renderSettings_ = RenderSettings();
     nextDocumentId_ = 1;
@@ -391,6 +414,12 @@ const Items& Scene::items() const noexcept {
 /**
  **/
 void Scene::accept(SceneVisitor* visitor) const {
+    accept(visitor, evaluate());
+}
+
+/**
+ **/
+void Scene::accept(SceneVisitor* visitor, const Evaluation& evaluation) const {
     if (visitor == nullptr) {
         return;
     }
@@ -403,7 +432,6 @@ void Scene::accept(SceneVisitor* visitor) const {
     if (roots == tree.end()) {
         return;
     }
-    const Evaluation evaluation = evaluate();
     for (const boost::shared_ptr<Item>& each : roots->second) {
         walk(visitor, each, evaluation, tree);
     }
@@ -418,6 +446,35 @@ boost::shared_ptr<Item> Scene::document(std::int64_t id) const {
         return boost::shared_ptr<Item>();
     }
     return *it;
+}
+
+/**
+ **/
+std::set<std::string> Scene::edited(const Item& item) const {
+    std::set<std::string> found;
+    const auto settled = settled_.find(item.documentId());
+    if (settled == settled_.end()) {
+        return found;
+    }
+    bool turned = false;
+    for (const auto& [path, value] : values(item, glm::vec3(0.0F))) {
+        const auto was = settled->second.find(path);
+        if (was == settled->second.end() || was->second != value) {
+            found.insert(path);
+            turned = turned || path.starts_with("rotation.");
+        }
+    }
+    // the angles are read from one quaternion, so a turn about one axis can change all three
+    if (turned) {
+        found.insert({ "rotation.x", "rotation.y", "rotation.z" });
+    }
+    return found;
+}
+
+/**
+ **/
+void Scene::settle(const Item& item) {
+    settled_[item.documentId()] = values(item, glm::vec3(0.0F));
 }
 
 /**

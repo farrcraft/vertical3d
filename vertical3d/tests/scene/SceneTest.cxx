@@ -11,16 +11,23 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
 #include <vertical3d/src/scene/Timeline.h>
 
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
+
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/vec3.hpp>
 
 namespace {
 
@@ -34,12 +41,14 @@ class CountingVisitor final : public v3d::editor::SceneVisitor {
         kinds += "m";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Camera>& camera, const v3d::editor::Placed& /*placed*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::Camera>& camera, const v3d::editor::Placed& /*placed*/,
+        const v3d::editor::Camera::Lens& /*lens*/) override {
         visited.push_back(camera->id());
         kinds += "c";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Light>& light, const v3d::editor::Placed& /*placed*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::Light>& light, const v3d::editor::Placed& /*placed*/,
+        const v3d::editor::Light::Emission& /*emission*/) override {
         visited.push_back(light->id());
         kinds += "l";
     }
@@ -392,23 +401,90 @@ BOOST_AUTO_TEST_CASE(scene_curves_test) {
     BOOST_CHECK(scene.curves(light->id()).empty());
 }
 
-BOOST_AUTO_TEST_CASE(scene_pose_test) {
+/**
+ * Where an evaluation puts an item, in its parent's space.
+ **/
+glm::vec3 position(const v3d::editor::Evaluation& evaluation, const v3d::editor::Item& item) {
+    return evaluation.pose(item).placement.position;
+}
+
+BOOST_AUTO_TEST_CASE(scene_evaluate_frame_test) {
     v3d::editor::Scene scene;
     const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
     const boost::shared_ptr<v3d::editor::Mesh> still = emptyMesh();
-    mesh->translation(glm::vec3(0.0F, 7.0F, 0.0F));
+    mesh->translation(glm::vec3(3.0F, 7.0F, 0.0F));
     still->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     scene.add(mesh);
     scene.add(still);
     scene.curve(mesh->id(), "translation.x", between(0.0F, 10.0F));
 
-    // a pose sets what a curve drives, and leaves the rest of the item and every other item
+    // an evaluation gives what a curve drives its value at the frame, and the rest of the item
+    // and every other item what they hold
+    const std::uint64_t moving = mesh->revision();
     const std::uint64_t untouched = still->revision();
-    scene.pose(11.0F);
-    BOOST_CHECK(mesh->translation() == glm::vec3(10.0F, 7.0F, 0.0F));
+    const v3d::editor::Evaluation late = scene.evaluate(11.0F);
+    BOOST_CHECK(position(late, *mesh) == glm::vec3(10.0F, 7.0F, 0.0F));
+    BOOST_CHECK(position(late, *still) == glm::vec3(4.0F, 0.0F, 0.0F));
+    BOOST_CHECK(glm::vec3(late.placed(mesh->id()).world[3]) == glm::vec3(10.0F, 7.0F, 0.0F));
+    BOOST_CHECK_EQUAL(position(scene.evaluate(1.0F), *mesh).x, 0.0F);
+
+    // and changes nothing in the scene
+    BOOST_CHECK(mesh->translation() == glm::vec3(3.0F, 7.0F, 0.0F));
+    BOOST_CHECK_EQUAL(mesh->revision(), moving);
     BOOST_CHECK_EQUAL(still->revision(), untouched);
-    scene.pose(1.0F);
-    BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
+
+    // the current frame is the timeline's
+    scene.frame(11);
+    BOOST_CHECK_EQUAL(scene.timeline().frame, 11);
+    BOOST_CHECK_EQUAL(position(scene.evaluate(), *mesh).x, 10.0F);
+}
+
+BOOST_AUTO_TEST_CASE(scene_pending_edit_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    scene.add(light);
+    scene.curve(light->id(), "translation.x", between(0.0F, 10.0F));
+    scene.curve(light->id(), "emission.intensity", between(1.0F, 3.0F));
+    scene.frame(1);
+
+    // an edit to a keyed property shows at the current frame, over the curve, and an edit to
+    // another property of the same item does not make the keyed ones pending
+    light->translation(glm::vec3(5.0F, 2.0F, 0.0F));
+    BOOST_CHECK(position(scene.evaluate(), *light) == glm::vec3(5.0F, 2.0F, 0.0F));
+    BOOST_CHECK_EQUAL(scene.evaluate().pose(*light).emission.intensity, 1.0F);
+
+    // it is not part of the animation, so an evaluation of a frame does not see it
+    BOOST_CHECK_EQUAL(position(scene.evaluate(1.0F), *light).x, 0.0F);
+
+    // setting the frame drops it, the same frame included, and the item keeps its value
+    scene.frame(1);
+    BOOST_CHECK(position(scene.evaluate(), *light) == glm::vec3(0.0F, 2.0F, 0.0F));
+    BOOST_CHECK_EQUAL(light->translation().x, 5.0F);
+
+    // an item added after the frame was set has its edits pending from when it was added
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    scene.add(mesh);
+    scene.curve(mesh->id(), "scale.y", between(1.0F, 2.0F));
+    BOOST_CHECK_EQUAL(scene.evaluate().pose(*mesh).placement.scale.y, 1.0F);
+    mesh->scale(glm::vec3(4.0F));
+    BOOST_CHECK_EQUAL(scene.evaluate().pose(*mesh).placement.scale.y, 4.0F);
+}
+
+BOOST_AUTO_TEST_CASE(scene_pending_rotation_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    scene.add(mesh);
+    scene.curve(mesh->id(), "rotation.z", between(0.0F, 90.0F));
+    scene.frame(11);
+
+    // a turn about x changes the angles the rotation reads as, so the whole rotation is
+    // pending, the keyed angle about z with it
+    const glm::quat turned = v3d::editor::fromEuler(glm::vec3(30.0F, 0.0F, 0.0F));
+    mesh->rotation(turned);
+    BOOST_CHECK(scene.evaluate().pose(*mesh).placement.rotation == turned);
+    scene.frame(11);
+    const glm::quat keyed = scene.evaluate().pose(*mesh).placement.rotation;
+    BOOST_CHECK_SMALL(std::abs(glm::dot(keyed, v3d::editor::fromEuler(glm::vec3(30.0F, 0.0F, 90.0F)))) - 1.0F, 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(scene_timeline_test) {

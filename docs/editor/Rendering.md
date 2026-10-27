@@ -17,8 +17,8 @@ what the editor drives:
 - `render(scene, camera, settings)` starts a render, cancelling one already running.
 - `update(scene, camera, settings)` starts again when anything the picture shows has changed,
   and does nothing otherwise. What the picture shows is each item's document id, revision and
-  parent, the camera's placement and lens, and the settings. A pose moves revisions, so a change
-  of frame renders again too.
+  parent, the values an evaluation of the current frame gives each item, the camera's placement
+  and lens, and the settings. A change of frame or a pending edit renders again too.
 - `cancel()` stops a running render, and keeps the last finished picture.
 - `status()` gives the render's state, how much of it is done, and a count that moves with each
   new picture. `picture()` gives the latest one.
@@ -78,8 +78,8 @@ stops the render too.
 **A batch** names each camera by its document id, as `camera3`. A scene with no camera is
 rendered from the active view, as `view`. Each camera has a directory under `renders/`, holding
 `camera3.0001.rib` and the `camera3.0001.png` moya.exe writes from it, for every frame. The RIB
-files are all written when the batch starts, by posing the scene at each frame and then at its
-own frame again, which discards an edit held since the last pose. The caption shows which frame
+files are all written when the batch starts, each from an evaluation of its frame. Writing them
+changes nothing in the scene, and a pending edit is not in them. The caption shows which frame
 is rendering. A stop ends the frame being rendered and renders no more.
 
 **moya.exe is found beside the editor.** The build copies it there, with the libraries it loads,

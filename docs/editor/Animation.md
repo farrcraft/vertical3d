@@ -1,7 +1,7 @@
 # Animation and the timeline
 
 The editor keys the properties of scene items on frames and plays them back. This page covers
-what can be keyed, how a curve behaves, how the scene is posed at a frame, and the Timeline
+what can be keyed, how a curve behaves, how the scene is evaluated at a frame, and the Timeline
 menu. [Files.md](Files.md#scene-documents) covers how curves are saved.
 
 ## What is keyed
@@ -40,20 +40,43 @@ as a parent is, so a key does not move its item's revision.
 - `Scene::keyedFrames(items)` gives every frame any of the items has a key on, rising.
 - Removing an item removes its curves.
 
-## Posing
+## Evaluating a frame
 
-`Scene::pose(frame)` sets every property that has a curve to the curve's value at that frame.
-A property with no curve keeps its value. A pose writes into the items, so the viewports, the
-picker, the manipulators and the export all see the posed scene through the same placement
-they always read.
+**An item holds only the values the user gave it.** A curve never writes into an item. What a
+frame shows is an `Evaluation` the scene makes, and making one changes nothing in the scene. The
+evaluation gives each item its `Pose`, the placement, lens and emission a curve can drive, and
+its `Placed` matrices. Every reader takes those from an evaluation: the views, the picker, the
+manipulators, Set Key, the RIB export, the render window and the batch. A save writes the items'
+own values, and playback moves no revision.
 
-**An edit holds until the next pose.** A drag on a keyed item moves it, and it stays there until
-the frame changes. Set Key at that frame keeps the edit. Changing the frame without a key puts
-each keyed property back on its curve, and an edit to a property with no curve stays. A pose is
-not a command, so undo does not step back through frames. An undo after the frame has changed
-puts back the values the change started from, and they hold until the next pose.
+- `Scene::evaluate()` evaluates the current frame, as the views show it.
+- `Scene::evaluate(frame)` evaluates any frame of the animation. The batch writes each frame
+  from one, so it never changes the frame the user is on.
+- A keyed property takes its curve's value at the frame. Every other property takes its item's
+  value.
 
-Reading a document poses the scene at the document's frame.
+**An edit to a keyed property is pending until the frame is set.** A keyed property whose value
+in its item has changed since the frame was last set, or since the item was added, shows that
+value in an evaluation of the current frame, over its curve. Changing an unkeyed property of the
+same item does not make its keyed ones pending.
+
+- Set Key keys the values the current frame shows, so it takes a pending edit into the curves.
+- Setting the frame drops every pending edit, the current frame included, and each keyed
+  property shows its curve again. The item keeps the value it was given, which shows again if
+  the curve is removed.
+- A rotation is pending as a whole. Its angles are read from one quaternion, so a turn about one
+  axis can change all three.
+- A pending edit is not part of the animation. `Scene::evaluate(frame)` does not show it, so the
+  batch does not render it.
+- An edit is noticed by its value. Giving a property back the value it held when the frame was
+  set is not an edit.
+- A frame is not a command, so undo does not step back through frames. Undo puts back an item's
+  own values. Before the frame changes, that puts each keyed property back on its curve. After
+  it, the values put back are an edit, and are pending until the frame is set again.
+- **A drag starts where the item is shown.** The manipulator's target takes each object's
+  placement from the evaluation, and writes the whole placement into the object as it moves.
+
+Background: [ADR-0120](../adr/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
 
 ## The timeline
 
@@ -74,6 +97,6 @@ The Timeline menu:
 | First Keyed Frame, Last Keyed Frame | `timeline::playback::first_key`, `last_key` | Go to the earliest or the latest keyed frame |
 
 The keyed frames are those of the selection, or of every item when nothing is selected. Each
-move to a frame poses the scene there.
+move to a frame sets the frame, which drops every pending edit.
 
 Background: [ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)

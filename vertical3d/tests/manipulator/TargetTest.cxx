@@ -8,6 +8,7 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/animation/Curve.h>
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
@@ -175,7 +176,7 @@ BOOST_AUTO_TEST_CASE(target_move_components_test) {
     cube->geometry()->edge(edgeBetween(*cube->geometry(), low, right))->selected(true);
     cube->geometry()->edge(edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))))->selected(true);
 
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, unparented<v3d::editor::Mesh>({cube}));
     v3d::editor::Motion motion;
     motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
@@ -199,7 +200,7 @@ BOOST_AUTO_TEST_CASE(target_turn_components_test) {
     cube->geometry()->face(face)->selected(true);
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
     const v3d::brep::Index back = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, 0.5F));
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube}));
 
     // a quarter turn about z turns the face about its own middle, so it stays in its plane
     // and each corner moves round to the next
@@ -239,7 +240,7 @@ BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
 BOOST_AUTO_TEST_CASE(target_move_counts_a_change_test) {
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::editor::create_poly_cube());
     cube->geometry()->vertex(0)->selected(true);
-    const v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, unparented<v3d::editor::Mesh>({cube}));
 
     // a component move changes the mesh's parts in place, and counts it, so a save sees it
     const std::uint64_t before = cube->revision();
@@ -268,7 +269,7 @@ BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
     light->selected(true);
 
     // the pivot and the handles' axes are where the light is in the world
-    const v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(0.0F, 4.0F, 0.0F)), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(target.axes() * glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)), 0.0001F);
 
@@ -284,11 +285,35 @@ BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
     // a turn about world z turns the light about world z too
     motion = v3d::editor::Motion();
     motion.turn = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F));
-    const v3d::editor::Target again = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    v3d::editor::Target again = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
     again.move(motion, again.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     const glm::mat4 world = scene.evaluate().placed(light->id()).world;
     BOOST_CHECK_SMALL(glm::distance(glm::vec3(world[3]), glm::vec3(1.0F, 4.0F, 0.0F)), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(glm::normalize(glm::vec3(world[0])), glm::vec3(-1.0F, 0.0F, 0.0F)), 0.0001F);
+}
+
+BOOST_AUTO_TEST_CASE(target_starts_where_shown_test) {
+    v3d::editor::Scene scene;
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    scene.add(light);
+    v3d::animation::Curve curve;
+    curve.set(1.0F, 4.0F);
+    scene.curve(light->id(), "translation.x", curve);
+    scene.frame(1);
+    light->selected(true);
+
+    // a curve puts the light at x 4, though it holds 0, and the handles are where it is shown
+    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(4.0F, 0.0F, 0.0F)), 0.0001F);
+
+    // a drag moves it on from there, and the edit shows over the curve until the frame is set
+    v3d::editor::Motion motion;
+    motion.offset = glm::vec3(0.0F, 1.0F, 0.0F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(4.0F, 1.0F, 0.0F)), 0.0001F);
+    target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
+    BOOST_CHECK_SMALL(glm::distance(light->translation(), glm::vec3(4.0F, 2.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::distance(glm::vec3(scene.evaluate().placed(light->id()).world[3]), glm::vec3(4.0F, 2.0F, 0.0F)), 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
@@ -302,7 +327,7 @@ BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
     cube->selected(true);
 
     // an item selected with its parent moves with the parent, and not again by itself
-    const v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object);
+    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object);
     BOOST_REQUIRE_EQUAL(target.items().size(), 1U);
     BOOST_CHECK(target.items()[0] == group);
     v3d::editor::Motion motion;

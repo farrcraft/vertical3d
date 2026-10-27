@@ -27,10 +27,10 @@ namespace v3d::editor {
  *
  * Each frame of each camera is two files: a RIB file and the picture moya.exe writes from it.
  * A scene with no camera is rendered from the view instead. The RIB files are written when the
- * batch starts, on the caller's thread, by posing the scene at each frame and then at its own
- * frame again. A thread then runs moya.exe on each file in turn, and a stop ends the one that is
- * running and runs no more. The files stay where they are, so a farm or another RenderMan
- * renderer can render them instead.
+ * batch starts, on the caller's thread, each from an evaluation of its frame, so a pending edit
+ * is not rendered and the scene is not changed. A thread then runs moya.exe on each file in
+ * turn, and a stop ends the one that is running and runs no more. The files stay where they
+ * are, so a farm or another RenderMan renderer can render them instead.
  **/
 class Batch final {
  public:
@@ -70,7 +70,7 @@ class Batch final {
      *        a scene camera takes
      * @return the jobs, or none when a file could not be written, in which case nothing runs
      **/
-    std::vector<Job> start(Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
+    std::vector<Job> start(const Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
         const boost::filesystem::path& directory);
 
     /**

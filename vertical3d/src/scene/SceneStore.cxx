@@ -1185,10 +1185,9 @@ bool SceneStore::read(const std::string& path, Scene* scene) {
         curves_[std::make_pair(animated.owner, animated.path)] = animated.curve;
     }
     scene->nextDocumentId(loaded.next);
-    // posed before the store remembers the items, so that the pose is what it counts as read
     scene->timeline(loaded.timeline);
     scene->renderSettings(loaded.render);
-    scene->pose(static_cast<float>(loaded.timeline.frame));
+    scene->frame(loaded.timeline.frame);
 
     // the document holds what was just read, so the next write to it starts from here
     path_ = path;

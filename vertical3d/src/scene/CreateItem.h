@@ -33,16 +33,16 @@ glm::quat facing(const v3d::type::camera::Profile& view);
 boost::shared_ptr<Camera> create_camera(const v3d::type::camera::Profile& view, Camera::Projection projection);
 
 /**
- * The camera profile a scene camera is seen through: where it is in the world, its projection
- * and its lens. It is the inverse of create_camera(), so a camera made from a view gives back
- * that view's eye, axes and lens.
+ * The camera profile a scene camera is seen through: where it is in the world, and its lens,
+ * which holds its projection. It is the inverse of create_camera(), so a camera made from a
+ * view gives back that view's eye, axes and lens.
  *
  * @param world the camera's world matrix, from an evaluation of its scene. Its scale is
  *        ignored
  * @param picture a profile whose size and pixel aspect the picture takes, since a scene camera
  *        holds neither
  **/
-v3d::type::camera::Profile profile_of(const Camera& camera, const glm::mat4& world,
+v3d::type::camera::Profile profile_of(const Camera::Lens& lens, const glm::mat4& world,
     const v3d::type::camera::Profile& picture);
 
 /**

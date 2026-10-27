@@ -475,10 +475,27 @@ decides `config`.
 
 ### Step 14 — Evaluated animation
 
-**Open.** Needs step 13. An ADR decides it.
+**Closed.** [ADR-0120](../adr/0120-editor-a-frame-is-evaluated-not-posed-into-items.md)
+decides it.
 
-- Posing a frame produces placements without changing the items.
-- `Batch` and the render delegate render an evaluation, not a changed scene.
+- An item holds only the values the user gave it. `Scene::evaluate()` evaluates the current
+  frame and `Scene::evaluate(frame)` any frame, and neither changes the scene. An `Evaluation`
+  gives each item's `Pose`, its placement, lens and emission, as well as its matrices.
+  `Scene::pose()` is gone, and `Scene::frame()` sets the frame.
+- An edit to a keyed property is pending: it shows over the curve at the current frame until the
+  frame is set again or a key takes it. The scene notices one by comparing the item's values with
+  those it held when the frame was last set. A rotation is pending as a whole.
+- Every reader takes the pose from an evaluation. A visitor is handed a camera's lens and a
+  light's emission. `Batch` writes each frame from an evaluation of it, and the render delegate's
+  signature holds what the current frame shows, so a frame change renders again without moving
+  a revision. Set Key keys what the frame shows.
+- **Different from the plan:** the manipulator's target takes each object's placement from the
+  evaluation and moves that, so `Target::move()` and `Manipulator::apply()` change the target. A
+  drag that measures nothing gives each item back the placement it held. Grouping takes the
+  shown placements too.
+- Five new cases, for a frame's evaluation, a pending edit, a pending rotation, a drag from where
+  a curve puts an item, and a delegate rendering again on a frame change. Each fails to build
+  without the change.
 
 ### Step 15 — The editor's directories
 

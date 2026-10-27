@@ -195,10 +195,8 @@ Outcome Document::redo() {
 }
 
 void Document::goTo(int frame) {
-    Timeline timeline = scene_->timeline();
-    timeline.frame = std::clamp(frame, timeline.start, timeline.end);
-    scene_->timeline(timeline);
-    scene_->pose(static_cast<float>(timeline.frame));
+    const Timeline& timeline = scene_->timeline();
+    scene_->frame(std::clamp(frame, timeline.start, timeline.end));
 }
 
 bool Document::open(const boost::filesystem::path& manifest) {
@@ -269,7 +267,7 @@ Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type
     if (!stream.is_open()) {
         return { .done = false, .message = "could not write " + file.string() };
     }
-    writeShot(&stream, *scene_, from, RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
+    writeShot(&stream, *scene_, scene_->evaluate(), from, RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
     return { .done = true, .message = "exported " + std::to_string(scene_->count()) + " item(s) to " + file.string() };
 }
 

@@ -113,8 +113,8 @@ class Picker final : public SceneVisitor {
      * SceneVisitor. Only the scene calls them.
      **/
     void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
 
  private:

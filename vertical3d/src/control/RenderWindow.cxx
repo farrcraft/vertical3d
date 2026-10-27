@@ -68,7 +68,7 @@ Outcome RenderWindow::applySettings(Document* document) {
     return document->settings(*settings);
 }
 
-Outcome RenderWindow::batch(Scene* scene, const v3d::type::camera::Profile& view, const boost::filesystem::path& into) {
+Outcome RenderWindow::batch(const Scene* scene, const v3d::type::camera::Profile& view, const boost::filesystem::path& into) {
     const std::vector<Batch::Job> jobs = batch_->start(scene, view, scene->renderSettings(), into);
     return { .done = !jobs.empty(), .message = "rendering " + std::to_string(jobs.size()) + " frame(s) into " + into.string() };
 }

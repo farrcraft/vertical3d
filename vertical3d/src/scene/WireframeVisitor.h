@@ -65,8 +65,8 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * Append one camera's, light's or group's glyph.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
 
  private:

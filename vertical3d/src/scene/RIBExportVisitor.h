@@ -96,8 +96,8 @@ class RIBExportVisitor final : public SceneVisitor {
      * where it is and, for a distant or spot light, "to" one unit along its +z axis. A group
      * has only its block.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
     void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
 
     /**

@@ -21,13 +21,13 @@ namespace v3d::editor {
 /**
  * A key on every property of each of a set of items, at one frame.
  *
- * Each value is the item's as it stands, so an edit made since the scene was last posed is what
- * the key records. A rotation's Euler angles are the ones closest to its curves' values at that
+ * Each value is the one an evaluation of the current frame shows, so a pending edit is what the
+ * key records. A rotation's Euler angles are the ones closest to its curves' values at that
  * frame, so a curve does not jump by a turn.
  *
  * Everything is worked out when the command is made, from the scene as it stands then. Undo and
- * redo put each curve back as it was or as the key left it, and pose the scene at its current
- * frame again.
+ * redo put each curve back as it was or as the key left it. A pending edit stays pending, so an
+ * undone key shows the edit again until the frame changes.
  **/
 class KeyCommand final : public Command {
  public:
@@ -55,7 +55,7 @@ class KeyCommand final : public Command {
     };
 
     /**
-     * Give every changed property the curve one end of the change has, and pose the scene.
+     * Give every changed property the curve one end of the change has.
      **/
     void apply(bool after);
 

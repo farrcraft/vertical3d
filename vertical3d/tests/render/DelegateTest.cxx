@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/animation/Curve.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
@@ -15,6 +16,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <thread>
 
 #include <boost/make_shared.hpp>
@@ -108,6 +110,24 @@ BOOST_FIXTURE_TEST_CASE(delegate_update_test, Cube) {
     BOOST_CHECK(delegate.update(scene, view, settings));
     BOOST_CHECK(settle(delegate).state == v3d::editor::Delegate::State::Finished);
     BOOST_CHECK_EQUAL(delegate.status().pictures, 4U);
+}
+
+BOOST_FIXTURE_TEST_CASE(delegate_update_frame_test, Cube) {
+    v3d::editor::MoyaDelegate delegate(boost::make_shared<v3d::log::Logger>());
+    v3d::animation::Curve curve;
+    curve.set(1.0F, 0.0F);
+    curve.set(2.0F, 0.25F);
+    scene.curve(mesh->id(), "translation.x", curve);
+    delegate.render(scene, view, settings);
+    settle(delegate);
+
+    // a frame where a curve moves an item renders again, though no item has changed
+    const std::uint64_t revision = mesh->revision();
+    scene.frame(2);
+    BOOST_CHECK_EQUAL(mesh->revision(), revision);
+    BOOST_CHECK(delegate.update(scene, view, settings));
+    settle(delegate);
+    BOOST_CHECK(!delegate.update(scene, view, settings));
 }
 
 BOOST_FIXTURE_TEST_CASE(delegate_cancel_test, Cube) {

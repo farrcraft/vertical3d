@@ -7,6 +7,7 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
+#include <api/type/Transform.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -52,7 +53,9 @@ struct Motion {
  *
  * The parents' world matrices, and in a component mode the objects' own, are taken from an
  * evaluation of the scene when the target is made. A drag moves none of them, because no
- * object of an object target is beneath another.
+ * object of an object target is beneath another. An object target also takes each object's
+ * placement from the evaluation, which a curve may give it, and a drag moves the object on
+ * from there. A move writes the whole placement into the object.
  *
  * The pivot is the mean of the objects' origins, or of the distinct vertices, in world space.
  * For one object it is the object's origin.
@@ -85,7 +88,7 @@ class Target final {
     /**
      * Whole objects, of any kind, none of which may be beneath another.
      *
-     * @param evaluation where the objects' parents are
+     * @param evaluation where the objects and their parents are
      **/
     static Target objects(const Items& items, const Evaluation& evaluation);
 
@@ -143,12 +146,15 @@ class Target final {
      * @param pivot what the motion turns and stretches about, in world space
      * @param frame the axes the stretch is measured along
      **/
-    void move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame) const;
+    void move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame);
 
  private:
     Items items_;
     // for an object target, the world matrix of each object's parent, in the order of items_
     std::vector<glm::mat4> parents_;
+    // for an object target, each object's placement, as the evaluation found it and as each
+    // move has left it since
+    std::vector<v3d::type::Transform> placements_;
     std::vector<Part> parts_;
     bool components_;
 };

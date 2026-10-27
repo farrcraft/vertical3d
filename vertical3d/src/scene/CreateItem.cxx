@@ -52,7 +52,7 @@ boost::shared_ptr<Camera> create_camera(const v3d::type::camera::Profile& view, 
 
 /**
  **/
-v3d::type::camera::Profile profile_of(const Camera& camera, const glm::mat4& world,
+v3d::type::camera::Profile profile_of(const Camera::Lens& lens, const glm::mat4& world,
     const v3d::type::camera::Profile& picture) {
     v3d::type::camera::Profile profile(picture);
     profile.name("scene camera");
@@ -63,7 +63,6 @@ v3d::type::camera::Profile profile_of(const Camera& camera, const glm::mat4& wor
     profile.direction(rotation * glm::vec3(0.0F, 0.0F, 1.0F));
     profile.rotation(rotation);
 
-    const Camera::Lens& lens = camera.lens();
     profile.orthographic(lens.projection == Camera::Projection::Orthographic);
     profile.fov(lens.fov);
     profile.orthoZoom(lens.extent);

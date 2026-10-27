@@ -71,19 +71,23 @@ BOOST_AUTO_TEST_CASE(properties_pose_test) {
     light.rotation(turned);
     light.emission({ .intensity = 5.0F });
     const std::uint64_t before = light.revision();
+    const v3d::editor::Pose held = v3d::editor::pose(light);
+    BOOST_CHECK_EQUAL(held.emission.intensity, 5.0F);
 
-    // only the parts a value names are set, and each keeps whatever the values leave out
-    v3d::editor::pose(&light, { { "translation.x", 7.0F }, { "emission.intensity", 2.0F }, { "lens.fov", 3.0F } });
-    BOOST_CHECK(light.translation() == glm::vec3(7.0F, 2.0F, 3.0F));
-    BOOST_CHECK(light.rotation() == turned);
-    BOOST_CHECK_EQUAL(light.emission().intensity, 2.0F);
-    BOOST_CHECK_GT(light.revision(), before);
+    // only the parts a value names are set, and each keeps whatever the values leave out. A
+    // path the kind does not declare does nothing, and the item is not changed
+    const v3d::editor::Pose posed = v3d::editor::posed(v3d::editor::Item::Kind::Light, held,
+        { { "translation.x", 7.0F }, { "emission.intensity", 2.0F }, { "lens.fov", 3.0F } });
+    BOOST_CHECK(posed.placement.position == glm::vec3(7.0F, 2.0F, 3.0F));
+    BOOST_CHECK(posed.placement.rotation == turned);
+    BOOST_CHECK_EQUAL(posed.emission.intensity, 2.0F);
+    BOOST_CHECK_EQUAL(posed.lens.fov, held.lens.fov);
+    BOOST_CHECK_EQUAL(light.revision(), before);
+    BOOST_CHECK_EQUAL(light.emission().intensity, 5.0F);
 
     // a rotation is set whole, from the angles named and those closest to zero for the rest
-    v3d::editor::pose(&light, { { "rotation.z", 90.0F } });
-    BOOST_CHECK(sameTurn(light.rotation(), v3d::editor::fromEuler(glm::vec3(10.0F, 20.0F, 90.0F))));
-
-    v3d::editor::pose(nullptr, { { "translation.x", 1.0F } });
+    const v3d::editor::Pose turning = v3d::editor::posed(v3d::editor::Item::Kind::Light, held, { { "rotation.z", 90.0F } });
+    BOOST_CHECK(sameTurn(turning.placement.rotation, v3d::editor::fromEuler(glm::vec3(10.0F, 20.0F, 90.0F))));
 }
 
 BOOST_AUTO_TEST_CASE(properties_euler_test) {

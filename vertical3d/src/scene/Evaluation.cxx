@@ -5,6 +5,9 @@
 
 #include "Evaluation.h"
 
+#include "Item.h"
+#include "Properties.h"
+
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/geometric.hpp>
@@ -26,6 +29,19 @@ Placed Evaluation::placed(unsigned int id) const {
  **/
 void Evaluation::place(unsigned int id, const Placed& placed) {
     placed_[id] = placed;
+}
+
+/**
+ **/
+Pose Evaluation::pose(const Item& item) const {
+    const auto found = poses_.find(item.id());
+    return found == poses_.end() ? editor::pose(item) : found->second;
+}
+
+/**
+ **/
+void Evaluation::pose(unsigned int id, const Pose& pose) {
+    poses_[id] = pose;
 }
 
 /**

@@ -5,6 +5,8 @@
 
 #include "Properties.h"
 
+#include <api/type/Transform.h>
+
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -103,82 +105,80 @@ bool declares(Item::Kind kind, const std::string& path) {
 
 /**
  **/
-std::map<std::string, float> values(const Item& item, const glm::vec3& near) {
-    std::map<std::string, float> found;
-    const glm::vec3 translation = item.translation();
-    const glm::vec3 rotation = eulerNear(item.rotation(), near);
-    const glm::vec3 scale = item.scale();
-    for (int axis = 0; axis < 3; axis++) {
-        found[std::string("translation.") + AXES[axis]] = translation[axis];
-        found[std::string("rotation.") + AXES[axis]] = rotation[axis];
-        found[std::string("scale.") + AXES[axis]] = scale[axis];
-    }
+Pose pose(const Item& item) {
+    Pose found{ .placement = item.placement() };
     if (item.kind() == Item::Kind::Camera) {
-        const Camera::Lens& lens = static_cast<const Camera&>(item).lens();
-        found["lens.fov"] = lens.fov;
-        found["lens.extent"] = lens.extent;
-        found["lens.near"] = lens.clipping.x;
-        found["lens.far"] = lens.clipping.y;
+        found.lens = static_cast<const Camera&>(item).lens();
     } else if (item.kind() == Item::Kind::Light) {
-        const Light::Emission& emission = static_cast<const Light&>(item).emission();
-        found["emission.intensity"] = emission.intensity;
-        found["emission.red"] = emission.colour.r;
-        found["emission.green"] = emission.colour.g;
-        found["emission.blue"] = emission.colour.b;
-        found["emission.cone"] = emission.cone;
-        found["emission.delta"] = emission.delta;
+        found.emission = static_cast<const Light&>(item).emission();
     }
     return found;
 }
 
 /**
  **/
-void pose(Item* item, const std::map<std::string, float>& values) {
-    if (item == nullptr) {
-        return;
+std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm::vec3& near) {
+    std::map<std::string, float> found;
+    const glm::vec3 rotation = eulerNear(pose.placement.rotation, near);
+    for (int axis = 0; axis < 3; axis++) {
+        found[std::string("translation.") + AXES[axis]] = pose.placement.position[axis];
+        found[std::string("rotation.") + AXES[axis]] = rotation[axis];
+        found[std::string("scale.") + AXES[axis]] = pose.placement.scale[axis];
     }
-    // each part is set only when a value names it, so a part no curve drives is not touched
-    if (any(values, "translation.")) {
-        glm::vec3 translation = item->translation();
-        for (int axis = 0; axis < 3; axis++) {
-            translation[axis] = either(values, std::string("translation.") + AXES[axis], translation[axis]);
-        }
-        item->translation(translation);
+    if (kind == Item::Kind::Camera) {
+        found["lens.fov"] = pose.lens.fov;
+        found["lens.extent"] = pose.lens.extent;
+        found["lens.near"] = pose.lens.clipping.x;
+        found["lens.far"] = pose.lens.clipping.y;
+    } else if (kind == Item::Kind::Light) {
+        found["emission.intensity"] = pose.emission.intensity;
+        found["emission.red"] = pose.emission.colour.r;
+        found["emission.green"] = pose.emission.colour.g;
+        found["emission.blue"] = pose.emission.colour.b;
+        found["emission.cone"] = pose.emission.cone;
+        found["emission.delta"] = pose.emission.delta;
+    }
+    return found;
+}
+
+/**
+ **/
+std::map<std::string, float> values(const Item& item, const glm::vec3& near) {
+    return values(item.kind(), pose(item), near);
+}
+
+/**
+ **/
+Pose posed(Item::Kind kind, Pose pose, const std::map<std::string, float>& values) {
+    // each part is set only when a value names it, so a part no value names is not touched
+    v3d::type::Transform& placement = pose.placement;
+    for (int axis = 0; axis < 3; axis++) {
+        placement.position[axis] = either(values, std::string("translation.") + AXES[axis], placement.position[axis]);
+        placement.scale[axis] = either(values, std::string("scale.") + AXES[axis], placement.scale[axis]);
     }
     if (any(values, "rotation.")) {
-        glm::vec3 rotation = eulerNear(item->rotation(), glm::vec3(0.0F));
+        glm::vec3 rotation = eulerNear(placement.rotation, glm::vec3(0.0F));
         for (int axis = 0; axis < 3; axis++) {
             rotation[axis] = either(values, std::string("rotation.") + AXES[axis], rotation[axis]);
         }
-        item->rotation(fromEuler(rotation));
+        placement.rotation = fromEuler(rotation);
     }
-    if (any(values, "scale.")) {
-        glm::vec3 scale = item->scale();
-        for (int axis = 0; axis < 3; axis++) {
-            scale[axis] = either(values, std::string("scale.") + AXES[axis], scale[axis]);
-        }
-        item->scale(scale);
-    }
-    if (item->kind() == Item::Kind::Camera && any(values, "lens.")) {
-        Camera* camera = static_cast<Camera*>(item);
-        Camera::Lens lens = camera->lens();
+    if (kind == Item::Kind::Camera) {
+        Camera::Lens& lens = pose.lens;
         lens.fov = either(values, "lens.fov", lens.fov);
         lens.extent = either(values, "lens.extent", lens.extent);
         lens.clipping.x = either(values, "lens.near", lens.clipping.x);
         lens.clipping.y = either(values, "lens.far", lens.clipping.y);
-        camera->lens(lens);
-    }
-    if (item->kind() == Item::Kind::Light && any(values, "emission.")) {
-        Light* light = static_cast<Light*>(item);
-        Light::Emission emission = light->emission();
+    } else if (kind == Item::Kind::Light) {
+        Light::Emission& emission = pose.emission;
         emission.intensity = either(values, "emission.intensity", emission.intensity);
         emission.colour.r = either(values, "emission.red", emission.colour.r);
         emission.colour.g = either(values, "emission.green", emission.colour.g);
         emission.colour.b = either(values, "emission.blue", emission.colour.b);
         emission.cone = either(values, "emission.cone", emission.cone);
         emission.delta = either(values, "emission.delta", emission.delta);
-        light->emission(emission);
     }
+    return pose;
 }
 
 /**
