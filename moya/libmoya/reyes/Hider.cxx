@@ -11,11 +11,13 @@
 #include <api/render/offline/sl/Types.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
+#include <moya/libmoya/Curve.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -32,6 +34,7 @@
 #include <glm/vec4.hpp>
 
 #include "Buckets.h"
+#include "Primitive.h"
 #include "Samples.h"
 
 namespace v3d::moya::reyes {
@@ -130,22 +133,66 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
         }
         return;
     }
-    const v3d::render::offline::Camera & camera = context->camera();
-
     fillVertices(poly.get());
+    v3d::type::geometry::AABBox bound;
+    if (!measure(*poly, poly->bound(), context, &bound)) {
+        return;
+    }
+    const glm::mat4x4 toEye = poly->placement();
 
-    v3d::type::geometry::AABBox bound = poly->bound();
+    // dicing is done in eye space, so a polygon that will be diced has its vertices moved
+    // there now
+    if (poly->diceable()) {
+        // a normal transforms by the inverse transpose of the matrix that moves the points.
+        // The two agree under a rotation and a uniform scale. Under a scale on one axis the
+        // point matrix would tilt a normal off its surface
+        const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
+        for (unsigned int i = 0; i < poly->vertexCount(); i++) {
+            Vertex pv = poly->vertex(i);
+            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0F)));
+            pv.normal(glm::normalize(toEyeNormal * pv.normal()));
+            pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
+            (*poly)[i] = pv;
+        }
+    }
+
+    // the polygon goes in the bucket that holds the upper left corner of its raster bound
+    buckets_->add(poly, bound);
+}
+
+void Hider::add(const boost::shared_ptr<Curve> & curve, RenderContext* context) {
+    if (!buckets_) {
+        begin(context);
+    }
+    // a split shortens a segment and never narrows it, so the segment is measured for dicing
+    // by its centre line, and its width only grows the bound it is culled and bucketed by
+    v3d::type::geometry::AABBox bound;
+    const float reach = 0.5F * std::max(curve->widths().x, curve->widths().y) * widthScale(curve->placement());
+    if (!measure(*curve, curve->hull(), context, &bound, reach)) {
+        return;
+    }
+    // dicing is done in eye space, so a segment that will be diced is moved there now
+    if (curve->diceable()) {
+        curve->toEye();
+    }
+    buckets_->add(curve, bound);
+}
+
+bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, RenderContext* context,
+    v3d::type::geometry::AABBox* raster, float reach) {
+    const v3d::render::offline::Camera & camera = context->camera();
+    v3d::type::geometry::AABBox bound = objectBound;
 
     glm::vec3 bound_max = bound.max();
     glm::vec3 bound_min = bound.min();
 
     /*
         The bound is in object space. The placement takes it to eye space, where every
-        later calculation on the polygon happens. The placement is the camera's view times
+        later calculation on the primitive happens. The placement is the camera's view times
         the object to world transformation. It applies as it stands, with no transpose or
         inverse.
     */
-    const glm::mat4x4 toEye = poly->placement();
+    const glm::mat4x4 toEye = primitive.placement();
     const Bound object{.min = bound_min, .max = bound_max};
     const Bound eye = transformBound(toEye, object);
     bound_min = eye.min;
@@ -155,14 +202,14 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
     // where it is stored. The size test below reads where it is stored, because a split
     // shrinks a primitive and never the distance it travels
     Bound swept = eye;
-    sweep(poly->motion(), object, &swept);
+    sweep(primitive.motion(), object, &swept);
 
     // a displacement shader may move the surface as far as its bound, so the bound grows by it
     // before the primitive is culled and bucketed. A displacement that goes past the bound is
     // clipped. With no bound the primitive does not grow. The size test reads the surface
     // before it is grown, because the grid it is diced into covers the surface and not the
     // bound. A bound wider than a grid would otherwise be split without end
-    const float grown = poly->shading().displacementBound;
+    const float grown = primitive.shading().displacementBound + reach;
     const glm::vec3 surface_min = bound_min;
     const glm::vec3 surface_max = bound_max;
     bound_min -= glm::vec3(grown);
@@ -175,28 +222,28 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
     // hither-yon cull
     if ((swept_max[2] > camera.yon && swept_min[2] > camera.yon)  // the bound is wholly beyond the far plane
         || (swept_max[2] < camera.hither && swept_min[2] < camera.hither)) {  // the bound is wholly nearer than the near plane
-        return;
+        return false;
     }
 
-    poly->diceable(true);
+    primitive.diceable(true);
 
     // eye plane test. A bound that spans the near plane passes the cull above. If it also
     // reaches behind the eye plane, z = 0, it cannot be projected, and is marked undiceable
     // so that it is split
     if (bound_max[2] > camera.hither && bound_min[2] < camera.hither) {
         if (bound_min[2] < 0.0) {
-            poly->diceable(false);
+            primitive.diceable(false);
         }
     }
 
     // viewing frustum cull. The frustum is built from the "screen" coordinate system, which
     // takes eye space to screen space, so it is tested against the eye space bound swept
-    // over the shutter. Only the bound is transformed. The vertices stay in object space
+    // over the shutter. Only the bound is transformed. The primitive stays in object space
     const v3d::type::geometry::Frustum frustum(camera.screen, v3d::type::geometry::Frustum::Depth::MinusOneToOne);
     v3d::type::geometry::AABBox eyeBound;
     eyeBound.extents(swept_min, swept_max);
     if (frustum.intersect(eyeBound) == v3d::type::geometry::Frustum::OUTSIDE) {
-        return;
+        return false;
     }
 
     // raster applies after screen, so it is on the left: a matrix applies to what is on its
@@ -214,7 +261,7 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
         if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
-            poly->diceable(false);
+            primitive.diceable(false);
             continue;
         }
         const glm::vec3 point = project(screen, corner);
@@ -237,35 +284,18 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
     bound.extents(bound_min, bound_max);
 
     // a primitive already marked for splitting needs no size test
-    if (poly->diceable()) {
+    if (primitive.diceable()) {
         // a raster bound wider or taller than one grid's side is split. A grid has context->gridSize()
         // micropolygons, and RI states the shading rate as the area of one in pixels, so a
         // side is sqrt(context->gridSize() * context->shadingRate()) pixels
         const float size = std::sqrt(static_cast<float>(context->gridSize()) * context->shadingRate());
         const glm::vec3 bound_size = measured_max - measured_min;
         if ((bound_size[0] > size) || (bound_size[1] > size)) {
-            poly->diceable(false);
+            primitive.diceable(false);
         }
     }
-
-    // dicing is done in eye space, so a polygon that will be diced has its vertices moved
-    // there now
-    if (poly->diceable()) {
-        // a normal transforms by the inverse transpose of the matrix that moves the points.
-        // The two agree under a rotation and a uniform scale. Under a scale on one axis the
-        // point matrix would tilt a normal off its surface
-        const glm::mat3x3 toEyeNormal = glm::transpose(glm::inverse(glm::mat3x3(toEye)));
-        for (unsigned int i = 0; i < poly->vertexCount(); i++) {
-            Vertex pv = poly->vertex(i);
-            pv.point(glm::vec3(toEye * glm::vec4(pv.point(), 1.0F)));
-            pv.normal(glm::normalize(toEyeNormal * pv.normal()));
-            pv.geometricNormal(glm::normalize(toEyeNormal * pv.geometricNormal()));
-            (*poly)[i] = pv;
-        }
-    }
-
-    // the polygon goes in the bucket that holds the upper left corner of its raster bound
-    buckets_->add(poly, bound);
+    *raster = bound;
+    return true;
 }
 
 std::size_t Hider::bucketed() const {

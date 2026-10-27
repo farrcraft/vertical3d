@@ -32,7 +32,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
   moya implements it as `moya::RIBHandler`.
 - **Graphics state**: the current transformation, colour, opacity, surface shader and lights,
   plus the frame's options. `moya::RenderContext` holds it, as the classes below.
-- **Primitive**: one piece of geometry, a polygon or a sphere.
+- **Primitive**: one piece of geometry: a polygon, a sphere, or one segment of a curve.
 - **Hider**: the stage that decides what is visible at each sample. moya has two, selected by
   the `Hider` request: `"hidden"` (the reyes hider, and RI's default) and `"raytrace"`.
 - **Bucket**: a rectangle of pixels, 16 by 16 by default. The reyes hider sorts primitives into
@@ -89,8 +89,11 @@ most take varargs and a `va_list` cannot be built at run time.
 - `moya::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
   pops it. The active handler receives every call, and `RiGetContext`'s handle is the handler.
 - `RIBHandler` ignores a request whose shader, light or space name is empty.
-- Every C entry point has a definition, but many are empty: every quadric but the sphere,
-  `RiBasis` and `RiMakeTexture` among them.
+- Every C entry point has a definition, but many are empty: every quadric but the sphere, and
+  `RiMakeTexture`, among them.
+- `RiCurves` reads only `"P"` and `"constantwidth"`. A varying value's count depends on the
+  basis's step, and a C array carries no length, so any other parameter is skipped and logged
+  rather than read past.
 - A varargs form collects its parameters and calls its `V` form. `RiSphere` is the exception.
   RI ends its named arguments on a float, which a `va_list` cannot be started from, so it passes
   no parameter. moya reads none of a sphere's.
@@ -129,6 +132,7 @@ the shading language and the ray tracer. They differ in these ways:
 |---|---|---|
 | Default | Yes | No |
 | Spheres | Not drawn. The first in a scene is logged | Intersected exactly |
+| Curves | Split, then diced into ribbons facing the eye | Intersected as ribbons facing each ray |
 | A shader's `Oi` | Ignored: every sample is opaque | Composited front to back |
 | A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
 | `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
@@ -147,7 +151,9 @@ Also not built, with no open item:
 
 - Volume shaders, the `shadow()` built-in and shadow maps.
 - Deforming primitives inside a motion block.
-- Any geometry beyond `Polygon`, `PointsPolygons` and `Sphere`, and spheres under the reyes
-  hider.
+- Any geometry beyond `Polygon`, `PointsPolygons`, `Sphere` and `Curves`, and spheres under
+  the reyes hider.
+- A curve's `"N"`, which would turn its ribbon to face a given way, its varying `"Cs"`, round
+  curves, a displaced traced curve, and a curve joining an area light.
 - `Orientation`, any `Attribute` but `"light"` and `"displacementbound"`, binary and gzipped
   RIB, and `Display` modes other than RGB.

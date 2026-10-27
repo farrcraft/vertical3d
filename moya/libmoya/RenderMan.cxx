@@ -773,7 +773,23 @@ RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtI
 RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
+// RI's own order is row by row, and a Basis holds a matrix the same way. A step outside 1 to 4 is
+// not one a basis has, and the request is dropped
 RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
+    if (ustep < 1 || ustep > 4 || vstep < 1 || vstep > 4) {
+        handler().context().logger()->get()->warn("RiBasis steps by {} and {}, and a basis steps by 1 to 4", ustep, vstep);
+        return;
+    }
+    v3d::render::offline::rib::Basis request;
+    for (std::size_t row = 0; row < 4; row++) {
+        for (std::size_t column = 0; column < 4; column++) {
+            request.u[(row * 4) + column] = ubasis[row][column];
+            request.v[(row * 4) + column] = vbasis[row][column];
+        }
+    }
+    request.ustep = static_cast<unsigned int>(ustep);
+    request.vstep = static_cast<unsigned int>(vstep);
+    handler().basis(request);
 }
 
 RtVoid RiPatch(RtToken type, ...) {
@@ -870,9 +886,46 @@ RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt
 }
 
 RtVoid RiCurves(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, ...) {
+    va_list arguments;
+    va_start(arguments, wrap);
+    std::vector<RtToken> tokens;
+    std::vector<RtPointer> parms;
+    collect(arguments, &tokens, &parms);
+    va_end(arguments);
+    RiCurvesV(type, nvcurves, nvertices, wrap, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
+// Only "P" and "constantwidth" are read. How many values a varying parameter holds depends on
+// the basis's step, and the arrays here carry no length, so any other parameter is skipped
+// rather than read past
 RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[], RtPointer parms[]) {
+    const std::string kind = text(type);
+    const std::string wrapping = text(wrap);
+    if ((kind != "linear" && kind != "cubic") || (wrapping != "periodic" && wrapping != "nonperiodic")) {
+        handler().context().logger()->get()->warn("RiCurves takes linear or cubic and periodic or nonperiodic, not {} and {}", kind, wrapping);
+        return;
+    }
+    v3d::render::offline::rib::Curves request{ .cubic = kind == "cubic", .periodic = wrapping == "periodic" };
+    unsigned int total = 0;
+    for (RtInt each = 0; each < nvcurves; each++) {
+        if (nvertices[each] < 0) {
+            return;
+        }
+        request.vertices.push_back(static_cast<unsigned int>(nvertices[each]));
+        total += static_cast<unsigned int>(nvertices[each]);
+    }
+    std::vector<RtToken> kept;
+    std::vector<RtPointer> values;
+    for (RtInt each = 0; each < n; each++) {
+        const std::string name = text(tokens[each]);
+        if (name == "P" || name == "constantwidth") {
+            kept.push_back(tokens[each]);
+            values.push_back(parms[each]);
+        } else {
+            handler().context().logger()->get()->warn("RiCurves reads \"P\" and \"constantwidth\", and skips '{}'", name);
+        }
+    }
+    handler().curves(request, parameters(static_cast<RtInt>(kept.size()), kept.data(), values.data(), total));
 }
 
 RtVoid RiPoints(RtInt nverts, ...) {

@@ -1,5 +1,6 @@
 add_library("v3dlib_moya" 
 	"Attributes.h" "Attributes.cxx"
+	"Curve.h" "Curve.cxx"
 	"reyes/Bucket.h" "reyes/Bucket.cxx"
 	"reyes/Buckets.h" "reyes/Buckets.cxx"
 	"reyes/Footprint.h" "reyes/Footprint.cxx"

@@ -12,6 +12,7 @@
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
@@ -260,6 +261,8 @@ class RenderContext {
          * line pinned is left as it is, and nothing is reported.
          **/
         void shadingRate(float size);
+        /** maps to RiBasis(), which a later cubic curve is evaluated through **/
+        void basis(const v3d::render::offline::rib::Basis & request);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
         /**
@@ -374,6 +377,18 @@ class RenderContext {
          * @return false when the hider cannot draw spheres
          **/
         bool addSphere(const v3d::render::offline::rib::Sphere & shape);
+        /**
+         * maps to RiCurves()
+         * Each curve is cut into segments by the current basis. Each is drawn as a ribbon of
+         * the width at its two ends, which is a varying "width" at each end of each segment, or
+         * else the "constantwidth", or else 1. A curve with too few points for a segment is
+         * skipped, and a request whose counts reach past "P" draws nothing past them, and is
+         * logged.
+         *
+         * Each segment is added to the traced scene. Under the reyes hider it is also placed
+         * with the current state and handed to the hider, as a polygon is.
+         **/
+        void addCurves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters);
 
         /**
          * The matrix of a named coordinate system. "camera" is world to camera, and "screen",

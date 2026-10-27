@@ -361,6 +361,17 @@ void RIBHandler::shadingRate(float size) {
     context().shadingRate(size);
 }
 
+void RIBHandler::basis(const v3d::render::offline::rib::Basis & request) {
+    context().basis(request);
+}
+
+void RIBHandler::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
+    context().addCurves(request, parameters);
+}
+
 void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
     if (deforms()) {
         return;

@@ -90,6 +90,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void color(const glm::vec3 & value) override;
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
+    void basis(const v3d::render::offline::rib::Basis & request) override;
 
     void surface(const std::string & name,
         const v3d::render::offline::rib::ParameterList & parameters) override;
@@ -108,8 +109,10 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override;
     void pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;
+    void curves(const v3d::render::offline::rib::Curves & request,
+        const v3d::render::offline::rib::ParameterList & parameters) override;
     /**
-     * Drawn by the ray hider only, because the reyes hider dices polygons only. The first
+     * Drawn by the ray hider only, because the reyes hider does not dice spheres. The first
      * sphere a scene names under the reyes hider is reported.
      **/
     void sphere(const v3d::render::offline::rib::Sphere & request,

@@ -12,9 +12,15 @@ The ray hider casts every primary ray into it. Under either hider, a shader's `t
 ### The traced scene
 
 - **`trace::Scene` holds primitives in world space, as one list.** A primitive is anything that
-  derives from `trace::Primitive` and implements `intersect` and `describe`. `trace::Triangle`
-  and `trace::Sphere` are the two kinds. A new kind is a new class, and the scene does not
-  change.
+  derives from `trace::Primitive` and implements `intersect` and `describe`. `trace::Triangle`,
+  `trace::Sphere` and `trace::Curve` are the three kinds. A new kind is a new class, and the
+  scene does not change.
+- **A curve segment is a ribbon that faces whatever ray meets it.** `trace::Curve` is one cubic
+  Bezier segment with a width at each end. A ray is tested in a frame where it runs along +z.
+  The segment is halved until each piece bows from straight by less than a twentieth of the
+  width, at most ten times. A piece is met where the ray passes within half the width of it,
+  between its ends. The normal points back along the ray, turned square to the curve, so a
+  curve looks the same width from every side, and flat close up.
 - **A ray is tested against the primitives near it, through a bounding volume hierarchy.**
   `Scene::nearest` builds a `trace::Hierarchy` on its first call after a primitive was added,
   with a binned surface area heuristic, and walks it nearest box first. A primitive gives its

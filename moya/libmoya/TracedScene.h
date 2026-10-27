@@ -14,6 +14,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+#include "Curve.h"
 #include "Polygon.h"
 #include "Shading.h"
 
@@ -57,6 +58,11 @@ class TracedScene final {
     void add(const Polygon & poly, const Shading & state, const Submission & with);
     /** Add a sphere, which a ray meets exactly. **/
     void add(const v3d::render::offline::rib::Sphere & shape, const Shading & state, const Submission & with);
+    /**
+     * Add a curve segment, which a ray meets as a ribbon facing it. A displacement shader does
+     * not move it, and it does not join the area light.
+     **/
+    void add(const Curve & segment, const Shading & state, const Submission & with);
 
  private:
     /** The micropolygons a side a displaced polygon is diced into. **/

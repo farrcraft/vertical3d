@@ -37,7 +37,26 @@ the shading state. It then hands the polygon to `reyes::Hider::add`, which does 
 9. Files it in the bucket that holds the upper left corner of its raster bound. A corner off
    the image is clamped to the nearest bucket.
 
-Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
+`Polygon`, `PointsPolygons` and the segments of `Curves` reach this pass. Spheres are not
+diced.
+
+A curve segment, `moya::Curve`, is one cubic Bezier segment, whatever the curve's basis.
+`rib::segments()` cuts a curve into them by the current `Basis`, and `rib::toBezier()` turns
+each into the Bezier segment that is the same cubic. A segment differs from a polygon in this
+pass in two ways:
+
+- **It is measured by its centre line.** A split halves a segment's length and never its width,
+  so the size test reads the box of its control points. Its width only grows the bound it is
+  culled and bucketed by, as a displacement bound does. A ribbon wider than a grid is diced into
+  wider micropolygons rather than split without end.
+- **Moving it into eye space moves its control points** and scales its widths by the cube root
+  of how much the placement scales a volume.
+
+A segment is split by halving it at its middle, and a segment halved sixteen times without
+becoming diceable, as one crossing the eye plane does, is dropped. It is diced into one grid
+that runs along it in its first index and across the ribbon in its second. Each point's
+ribbon spreads square both to the curve and to the line from the eye, and its normal faces the
+eye. Its s runs across the ribbon and its t along the segment, as RI gives a curve's u and v.
 
 ### Second pass: split, dice, shade and hide
 

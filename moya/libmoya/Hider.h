@@ -14,6 +14,7 @@
 
 namespace v3d::moya {
 
+class Curve;
 class Polygon;
 class RenderContext;
 
@@ -43,6 +44,13 @@ class Hider {
      **/
     virtual void add(const boost::shared_ptr<Polygon> & poly, RenderContext* context) {
         (void)poly;
+        (void)context;
+    }
+    /**
+     * A placed curve segment for a hider that buckets what it draws, as a polygon is given.
+     **/
+    virtual void add(const boost::shared_ptr<Curve> & curve, RenderContext* context) {
+        (void)curve;
         (void)context;
     }
     /** How many primitives the hider has bucketed and not yet rendered. **/

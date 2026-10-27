@@ -8,6 +8,7 @@
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/trace/Curve.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
@@ -18,6 +19,7 @@
 #include <array>
 #include <cstddef>
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
@@ -27,6 +29,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include "Curve.h"
 #include "Polygon.h"
 #include "Shading.h"
 #include "Vertex.h"
@@ -151,6 +154,19 @@ void TracedScene::shade(v3d::render::offline::trace::Primitive* primitive, const
     primitive->object(glm::inverse(with.view) * state.object);
     primitive->opacity(state.opacity);
     primitive->lights(with.lights);
+}
+
+void TracedScene::add(const Curve & segment, const Shading & state, const Submission & with) {
+    // placed by the reference end of its motion, as a polygon's points are
+    const glm::mat4x4 & toWorld = with.transform->reference();
+    v3d::render::offline::trace::Curve::Controls controls{};
+    for (std::size_t each = 0; each < controls.size(); each++) {
+        controls[each] = glm::vec3(toWorld * glm::vec4(segment.controls()[each], 1.0F));
+    }
+    const boost::shared_ptr<v3d::render::offline::trace::Curve> curve = boost::make_shared<v3d::render::offline::trace::Curve>(
+        controls, segment.widths() * widthScale(toWorld), with.colour);
+    shade(curve.get(), state, with);
+    scene_.add(curve, *with.transform);
 }
 
 void TracedScene::add(const v3d::render::offline::rib::Sphere & shape, const Shading & state, const Submission & with) {

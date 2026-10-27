@@ -137,8 +137,8 @@ them.
 - **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.** Step 9
   is closed.
 - **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
-- **Step 13 needs step 1**, and **step 14 needs its ADR**, which decides what else it waits on.
-  A Bezier handle would wait on step 13.
+- **Step 13 needs step 1**, and is closed. **Step 14 needs its ADR**, which decides what else it
+  waits on.
 - **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
   step 11.
 
@@ -404,11 +404,10 @@ the recovery database.
 
 ### Step 13 — Curves
 
-**Open.** ADR-0124 decided what a curve is, after looking at how Blender, Maya, Houdini, USD
+**Closed.** ADR-0124 decided what a curve is, after looking at how Blender, Maya, Houdini, USD
 and RenderMan hold curves. It weighed basis curves as the stored form, NURBS as the one stored
 form, one type per item, and curves inside `BRep`. ADR-0125 decided that moya renders them,
-weighing polygons made by the export, curves that never render, and round tubes. The menu's
-`select::mask::curve` waits on this step.
+weighing polygons made by the export, curves that never render, and round tubes.
 
 - `api/curve` is a new library, `v3dlib_curve`, with no rendering dependency. Its geometry holds
   any number of curves, each poly, Bezier with a type on every handle, Catmull-Rom, or NURBS
@@ -431,6 +430,18 @@ weighing polygons made by the export, curves that never render, and round tubes.
   basis curves that evaluate to the same points. A curve draws, picks, saves, exports and
   undoes. The writer writes a `Curves` request that reads back the same. moya renders a ribbon
   of the given width under each hider. A USD file's curves import.
+- What landed differs in five ways.
+  - The RIB library gained `Basis` as well as `Curves`, and reads and writes a basis by the
+    name RI gives it. moya draws every segment of every basis as the Bezier segment it is.
+  - The reyes hider measures a curve segment by its centre line. A split halves a segment's
+    length and never its width, so a ribbon wider than a grid is diced into wider
+    micropolygons rather than split without end.
+  - The ray hider's ribbon faces each ray rather than the camera, so a curve has its width in a
+    reflection and in a shadow as well.
+  - The C interface's `RiCurves` reads only `"P"` and `"constantwidth"`, because a C array
+    carries no length and a varying count depends on the basis.
+  - A curve item imported from a file renders, at the file's width. One made in the editor does
+    not until its style says so.
 
 ### Step 14 — Handles
 

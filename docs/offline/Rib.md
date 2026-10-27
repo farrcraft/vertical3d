@@ -26,8 +26,8 @@ The reader recognises these requests:
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
 | Geometry | `Polygon`, `PointsPolygons`, `Sphere`, `Curves` |
 
-moya acts on all of them except `version`, `FrameBegin`, `FrameEnd`, `MakeTexture`, `Basis` and
-`Curves`, which it accepts and ignores.
+moya acts on all of them except `version`, `FrameBegin`, `FrameEnd` and `MakeTexture`, which it
+accepts and ignores.
 `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`, `texture`)
 and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
 `"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
@@ -98,6 +98,10 @@ name.
 - **A `Curves` request is `"linear"` or `"cubic"`, and `"periodic"` or `"nonperiodic"`.** Any
   other type or wrap is an error. How many values a varying parameter holds depends on the
   basis's step, which the reader does not track, so its length is not checked.
+- **moya draws a curve as a ribbon** of its width, a varying `"width"` at each end of each
+  segment, or else its `"constantwidth"`, or else 1. A cubic curve is evaluated through the
+  `Basis` current when it is declared. Counts that reach past `"P"` draw nothing past it, and are
+  logged.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

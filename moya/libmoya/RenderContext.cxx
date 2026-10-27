@@ -12,6 +12,7 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
+#include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/Imager.h>
@@ -39,6 +40,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
+#include "Curve.h"
 #include "Display.h"
 #include "Planes.h"
 #include "Hider.h"
@@ -275,6 +277,10 @@ glm::vec3 RenderContext::opacity() const {
 
 void RenderContext::shadingRate(float size) {
     attributes_.shadingRate = size;
+}
+
+void RenderContext::basis(const v3d::render::offline::rib::Basis & request) {
+    attributes_.basis = request;
 }
 
 void RenderContext::bucketSize(unsigned int width, unsigned int height) {
@@ -556,6 +562,47 @@ void RenderContext::addPolygon(const boost::shared_ptr<Polygon>& poly) {
         poly->motion(transforms_.current().before(coordinateSystem("camera")));
     }
     hider_->add(poly, this);
+}
+
+void RenderContext::addCurves(const v3d::render::offline::rib::Curves & request,
+    const v3d::render::offline::rib::ParameterList & parameters) {
+    if (beforeWorld() || flatMotion()) {
+        return;
+    }
+    const std::vector<glm::vec3> points = parameters.points("P");
+    const std::vector<float> & varying = parameters.floats("width");
+    const std::vector<float> & constant = parameters.floats("constantwidth");
+    const float everywhere = constant.empty() ? 1.0F : constant.front();
+    const v3d::render::offline::rib::Basis & basis = attributes_.basis;
+    const Shading state = shading();
+    const TracedScene::Submission with = submission(state);
+    std::size_t first = 0;
+    std::size_t widths = 0;
+    for (const unsigned int count : request.vertices) {
+        if (first + count > points.size()) {
+            logger_->get()->warn("a curve's points reach past its \"P\", and it and the curves after it are not drawn");
+            return;
+        }
+        const std::vector<glm::vec3> run(points.begin() + static_cast<std::ptrdiff_t>(first),
+            points.begin() + static_cast<std::ptrdiff_t>(first + count));
+        first += count;
+        const std::vector<v3d::render::offline::rib::Segment> pieces =
+            v3d::render::offline::rib::segments(run, request.cubic, request.periodic, basis.v, basis.vstep);
+        const std::size_t ends = v3d::render::offline::rib::varyingCount(count, request.cubic, request.periodic, basis.vstep);
+        const bool given = widths + ends <= varying.size();
+        for (std::size_t piece = 0; piece < pieces.size(); piece++) {
+            // a periodic curve's last segment ends where its first starts
+            const glm::vec2 width = given ? glm::vec2(varying[widths + piece], varying[widths + ((piece + 1) % ends)]) : glm::vec2(everywhere);
+            const boost::shared_ptr<Curve> segment = boost::make_shared<Curve>(pieces[piece], width);
+            traced_.add(*segment, state, with);
+            if (!hider_->traces()) {
+                segment->place(coordinateSystem("camera") * transforms_.current().reference(), attributes_.color, glm::vec3(0.0F), state);
+                segment->motion(transforms_.current().before(coordinateSystem("camera")));
+                hider_->add(segment, this);
+            }
+        }
+        widths += ends;
+    }
 }
 
 void RenderContext::display(const v3d::render::offline::rib::Display & display) {

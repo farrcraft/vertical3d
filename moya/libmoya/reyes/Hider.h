@@ -6,6 +6,8 @@
 #pragma once
 
 #include <api/render/offline/FrameBuffer.h>
+#include <api/type/geometry/AABBox.h>
+#include <moya/libmoya/Curve.h>
 #include <moya/libmoya/Hider.h>
 #include <moya/libmoya/Polygon.h>
 
@@ -14,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Buckets.h"
+#include "Primitive.h"
 #include "Samples.h"
 
 namespace v3d::moya {
@@ -46,6 +49,11 @@ class Hider final : public moya::Hider {
      * that is not culled goes in the bucket that holds the upper left corner of its bound.
      **/
     void add(const boost::shared_ptr<Polygon> & poly, RenderContext* context) override;
+    /**
+     * Bound a curve segment in raster space and bucket it, or cull it, as a polygon is. One
+     * that will be diced is moved into eye space.
+     **/
+    void add(const boost::shared_ptr<Curve> & curve, RenderContext* context) override;
     std::size_t bucketed() const override;
     /**
      * Render the buckets: every bucket's grids are hidden into a new set of samples, made from
@@ -59,6 +67,23 @@ class Hider final : public moya::Hider {
     const boost::shared_ptr<Buckets> & buckets() const;
 
  private:
+    /**
+     * Measure a placed primitive by its bound in object space: cull it, mark whether it can be
+     * diced, and give its bound in raster space.
+     *
+     * A primitive beyond the clipping planes or outside the frustum is culled. One that crosses
+     * the eye plane, or whose raster bound is wider or taller than one grid, is marked for
+     * splitting.
+     *
+     * @param reach how far, in eye space, the primitive reaches past its bound. It grows the
+     *        bound the primitive is culled and bucketed by, as a displacement bound does, and
+     *        not the one it is measured for splitting by
+     *
+     * @return false for a primitive that is culled
+     **/
+    static bool measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, RenderContext* context,
+        v3d::type::geometry::AABBox* raster, float reach = 0.0F);
+
     boost::shared_ptr<Buckets> buckets_;
     boost::shared_ptr<Samples> samples_;
 };

@@ -17,6 +17,7 @@ v3d_add_test(moya
 	"RenderContextTest.cxx"
 	"RIBCameraTest.cxx"
 	"RIBGeometryTest.cxx"
+	"RIBCurvesTest.cxx"
 	"RIBHandlerTest.cxx"
 	"RIBOutputTest.cxx"
 	"RIBStateTest.cxx"
