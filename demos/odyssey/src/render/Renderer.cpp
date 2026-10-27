@@ -12,15 +12,16 @@
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
+#include <api/shell/Shell.h>
+#include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
-#include <demos/odyssey/engine/Player.h>
-#include <demos/odyssey/engine/Unit.h>
-#include <demos/odyssey/tile/Map.h>
-#include <demos/odyssey/tile/Tile.h>
-#include <demos/odyssey/tile/World.h>
+#include <demos/odyssey/src/engine/Player.h>
+#include <demos/odyssey/src/engine/Unit.h>
+#include <demos/odyssey/src/tile/Map.h>
+#include <demos/odyssey/src/tile/Tile.h>
+#include <demos/odyssey/src/tile/World.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <string>
 
 #include <glm/vec2.hpp>
@@ -77,12 +78,17 @@ constexpr float tileGap = 1.0F;
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry, v3d::shell::Shell* shell) :
     logger_(logger),
     registry_(registry),
+    shell_(shell),
     engine_(logger) {
     engine_.initialize(window);
     engine_.clearColour(clearColour);
+
+    // after the engine is initialized, because the screen's atlas is uploaded through it
+    shell_->present(&engine_, v3d::ui::shell::Screen::Options());
+    screen_ = shell_->screen();
 
     const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
         assetManager->load<v3d::asset::media::kind::Image>(spriteName);
@@ -117,22 +123,19 @@ void Renderer::shutdown() {
 /**
  **/
 void Renderer::draw() {
-    glm::ivec2 size;
-    if (!engine_.beginFrame(&size)) {
+    if (!screen_->begin(shell_->ui().get())) {
         return;
     }
-    if (canvas_.width() != static_cast<uint32_t>(size.x) || canvas_.height() != static_cast<uint32_t>(size.y)) {
-        canvas_.resize(glm::uvec2(static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)));
-    }
 
-    canvas_.clear();
     const v3d::grid::TileCoord topLeft = view();
     drawWorld(topLeft);
     drawPlayer(topLeft);
 
+    shell_->draw();
+
     const boost::shared_ptr<v3d::render::realtime::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
-    engine_.quads()->submit(canvas_, pass.get());
+    engine_.quads()->submit(screen_->canvas(), pass.get());
 
     engine_.renderFrame();
 }
@@ -200,7 +203,7 @@ void Renderer::drawTile(int column, int row, const glm::vec4& colour) {
     const glm::vec2 max = min + glm::vec2(
         static_cast<float>(odyssey::engine::unit::tile_width) - (2.0F * tileGap),
         static_cast<float>(odyssey::engine::unit::tile_height) - (2.0F * tileGap));
-    canvas_.rect(min, max, colour);
+    screen_->canvas().rect(min, max, colour);
 }
 
 /**
@@ -224,7 +227,7 @@ void Renderer::drawPlayer(v3d::grid::TileCoord view) {
         static_cast<float>(odyssey::engine::unit::tile_width),
         static_cast<float>(odyssey::engine::unit::tile_height));
 
-    canvas_.rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, sprite_);
+    screen_->canvas().rect(min, max, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, sprite_);
 }
 
 };  // namespace odyssey::render

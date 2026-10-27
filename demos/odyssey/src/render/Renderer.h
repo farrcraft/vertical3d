@@ -8,10 +8,11 @@
 #include <api/asset/Manager.h>
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/WindowRenderer.h>
-#include <demos/odyssey/engine/Player.h>
-#include <demos/odyssey/tile/World.h>
+#include <api/shell/Shell.h>
+#include <api/ui/shell/Screen.h>
+#include <demos/odyssey/src/engine/Player.h>
+#include <demos/odyssey/src/tile/World.h>
 
 #include <string>
 
@@ -21,7 +22,8 @@
 
 namespace odyssey::render {
 /**
- * Everything odyssey draws, built as one canvas of quads and handed to the window renderer.
+ * Everything odyssey draws, built as one canvas of quads and handed to the window renderer. The
+ * canvas is the shell's screen, so the menu and the statistics overlay are drawn over the world.
  *
  * Tiles and sprites both go through the batched quad pipeline, so a screen of them reaches
  * the device as one batch per texture. There is one pass, drawn in submission order, and no
@@ -31,10 +33,12 @@ namespace odyssey::render {
 class Renderer final {
  public:
     /**
+     * @param shell the app's shell, which builds its screen over this renderer's engine. It
+     *        outlives the renderer
      * @throw std::runtime_error if the device or the swapchain cannot be built
      **/
     Renderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager, entt::registry* registry, v3d::shell::Shell* shell);
 
     Renderer(const Renderer&) = delete;
     Renderer& operator=(const Renderer&) = delete;
@@ -90,11 +94,14 @@ class Renderer final {
     boost::shared_ptr<odyssey::engine::Player> player_;
     boost::shared_ptr<odyssey::tile::World> world_;
     entt::registry* registry_;
+    v3d::shell::Shell* shell_;
 
-    v3d::render::realtime::canvas::Canvas canvas_;
     v3d::render::realtime::WindowRenderer engine_;
 
     v3d::render::realtime::TextureHandle sprite_;
+
+    // the shell's screen, built over engine_
+    v3d::ui::shell::Screen* screen_ = nullptr;
 };
 
 };  // namespace odyssey::render

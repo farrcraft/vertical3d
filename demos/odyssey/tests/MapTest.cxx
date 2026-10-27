@@ -8,8 +8,8 @@
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
-#include <demos/odyssey/tile/Map.h>
-#include <demos/odyssey/tile/Tile.h>
+#include <demos/odyssey/src/tile/Map.h>
+#include <demos/odyssey/src/tile/Tile.h>
 
 #include <string>
 #include <vector>

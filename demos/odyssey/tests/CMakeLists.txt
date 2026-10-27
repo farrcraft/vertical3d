@@ -2,19 +2,18 @@
 # what a tile kind means for passability and cover, what the file formats admit, how far sight
 # reaches, and when a region is loaded and released. None holds a window or a device, so
 # all are covered here. The engine is built so its commands can be checked against the
-# bindings odyssey ships, and is never started. The renderer is not covered.
+# bindings and the menu odyssey ships, and is never started. The renderer is not covered.
 v3d_add_test(odyssey
 	"TestMain.cxx"
 	"BindingsTest.cxx"
 	"MapTest.cxx"
 	"WorldTest.cxx"
-	"../engine/Engine.cpp"
-	"../engine/Player.cpp"
-	"../render/Renderer.cpp"
-	"../system/Movement.cpp"
-	"../tile/Map.cpp"
-	"../tile/World.cpp"
-	"../ui/Screen.cpp")
+	"../src/engine/Engine.cpp"
+	"../src/engine/Player.cpp"
+	"../src/render/Renderer.cpp"
+	"../src/system/Movement.cpp"
+	"../src/tile/Map.cpp"
+	"../src/tile/World.cpp")
 
 target_link_libraries(v3dtest_odyssey PRIVATE
 	v3dlib_asset
@@ -26,7 +25,9 @@ target_link_libraries(v3dtest_odyssey PRIVATE
 	v3dlib_input
 	v3dlib_log
 	v3dlib_render
+	v3dlib_shell
 	v3dlib_type
+	v3dlib_ui
 	v3dlib_window)
 
 v3d_copy_data(v3dtest_odyssey app "${CMAKE_CURRENT_SOURCE_DIR}/../data")

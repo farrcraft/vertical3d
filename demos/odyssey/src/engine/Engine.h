@@ -13,9 +13,10 @@
 #include <api/grid/TileCoord.h>
 #include <api/input/Devices.h>
 #include <api/log/Logger.h>
-#include <demos/odyssey/render/Renderer.h>
-#include <demos/odyssey/system/Movement.h>
-#include <demos/odyssey/tile/World.h>
+#include <api/shell/Shell.h>
+#include <demos/odyssey/src/render/Renderer.h>
+#include <demos/odyssey/src/system/Movement.h>
+#include <demos/odyssey/src/tile/World.h>
 
 #include <string>
 
@@ -28,6 +29,9 @@ namespace odyssey::engine {
 /**
  * The odyssey application. It registers the game's commands, loads the world, and moves the
  * player each simulation step. The api's game loop calls it.
+ *
+ * The menu pauses the game. While it is up, no command moves the player and a walk in
+ * progress stands still, then carries on when the menu closes.
  **/
 class Engine final : public v3d::engine::Engine {
  public:
@@ -105,6 +109,9 @@ class Engine final : public v3d::engine::Engine {
     boost::shared_ptr<odyssey::system::Movement> movementSystem_;
     // disconnects this object's delegate from the dispatcher when this object is destroyed
     entt::scoped_connection motion_;
+    // the ui, the menu, the screen and the statistics overlay
+    v3d::shell::Shell shell_;
+    bool paused_ = false;
 };
 
 };  // namespace odyssey::engine

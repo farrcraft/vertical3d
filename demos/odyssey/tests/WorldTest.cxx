@@ -12,7 +12,7 @@
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
-#include <demos/odyssey/tile/World.h>
+#include <demos/odyssey/src/tile/World.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>

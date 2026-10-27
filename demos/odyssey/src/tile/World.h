@@ -12,7 +12,7 @@
 #include <api/grid/Sight.h>
 #include <api/grid/TileCoord.h>
 #include <api/log/Logger.h>
-#include <demos/odyssey/tile/Map.h>
+#include <demos/odyssey/src/tile/Map.h>
 
 #include <cstddef>
 #include <optional>

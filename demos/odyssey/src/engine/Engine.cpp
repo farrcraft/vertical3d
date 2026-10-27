@@ -12,9 +12,10 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/grid/Pathfinding.h>
 #include <api/grid/TileCoord.h>
-#include <demos/odyssey/render/Renderer.h>
-#include <demos/odyssey/system/Movement.h>
-#include <demos/odyssey/tile/World.h>
+#include <api/ui/shell/GameMenu.h>
+#include <demos/odyssey/src/render/Renderer.h>
+#include <demos/odyssey/src/system/Movement.h>
+#include <demos/odyssey/src/tile/World.h>
 
 #include "Path.h"
 #include "Player.h"
@@ -34,13 +35,15 @@ namespace odyssey::engine {
 /**
  **/
 Engine::Engine(const std::string& appPath) :
-    v3d::engine::Engine(appPath) {
+    v3d::engine::Engine(appPath),
+    shell_(this, { .menu = true, .statistics = "odyssey::toggleStatistics" }) {
     // the bindings name no state, so a command receives both the press and the release of its
     // key. Only the press moves the player, or every key would take two steps. A held key's
-    // repeats are not releases, so each repeat takes a step and holding a key walks
+    // repeats are not releases, so each repeat takes a step and holding a key walks. Nothing
+    // moves the player while the menu is up
     auto press = [this](const std::string& name, const std::function<void()>& action) {
-        commands().add(name, [action](const v3d::event::Event& event) {
-            if (event.state() != v3d::event::State::Released) {
+        commands().add(name, [this, action](const v3d::event::Event& event) {
+            if (!paused_ && event.state() != v3d::event::State::Released) {
                 action();
             }
         });
@@ -56,6 +59,11 @@ Engine::Engine(const std::string& appPath) :
  **/
 bool Engine::start() {
     window()->caption("Odyssey");
+
+    const v3d::ui::shell::GameMenu::Suspend pause = [this](bool suspended) { paused_ = suspended; };
+    if (!shell_.start(pause)) {
+        return false;
+    }
 
     worker_ = boost::make_shared<v3d::asset::Worker>();
     world_ = boost::make_shared<odyssey::tile::World>(logger(), assets(), worker_);
@@ -73,7 +81,7 @@ bool Engine::start() {
 
     movementSystem_ = boost::make_shared<odyssey::system::Movement>(&registry());
 
-    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger(), assets(), &registry());
+    renderer_ = boost::make_shared<odyssey::render::Renderer>(window(), logger(), assets(), &registry(), &shell_);
     renderer_->player(player_);
     renderer_->world(world_);
 
@@ -137,6 +145,8 @@ void Engine::step(int dx, int dy) {
 /**
  **/
 bool Engine::release() {
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
@@ -170,6 +180,9 @@ bool Engine::tick(unsigned int delta) {
 bool Engine::simulate(float step) {
     if (!v3d::engine::Engine::simulate(step)) {
         return false;
+    }
+    if (paused_) {
+        return true;
     }
     if (!movementSystem_->simulate(step)) {
         return false;

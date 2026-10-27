@@ -10,7 +10,7 @@ to play the demo, what its data files are, and which api features it is the best
 | [Pong](#pong) | The shell's menu and statistics overlay, commands read while their key is held, rebinding a key, a canvas coordinate space, drawing between steps, and sound |
 | [Tetris](#tetris) | The smallest complete game: an app command on the menu, a text asset, and textures loaded by name |
 | [Voxel](#voxel) | `tick()` beside `simulate()`, mouse look, an app's own pipeline and shaders, timing a frame, and the immediate-mode ui |
-| [Odyssey](#odyssey) | `api/grid`, regions loaded on a worker thread, an app's own document kind, and an `ecs::System` |
+| [Odyssey](#odyssey) | `api/grid`, regions loaded on a worker thread, an app's own document kind, an `ecs::System`, and the shell over an app that pauses itself |
 
 The editor in `vertical3d/` has its own document, [editor/](editor/README.md). The offline renderer
 `moya` is covered in [offline/](offline/README.md), and the image tool in
@@ -41,7 +41,7 @@ Every demo follows the same pattern:
 | Pong | `pong` | 800 × 600 | `binding`, `ui`, `window`, `sound` | `pong` suite: ball, paddle, game state, scene, bindings |
 | Tetris | `tetris` | 800 × 600 | `binding`, `ui`, `window` | `tetris` suite: board, tetrad, bindings |
 | Voxel | `voxel` | 800 × 600 | `binding`, `ui`, `window` | `voxel` suite: chunks, culling, mesh cache, Morton codes, camera, player, bindings |
-| Odyssey | `Odyssey` | 1280 × 768 | `binding`, `window`, and the demo's own `world` | `odyssey` suite: map, world, bindings |
+| Odyssey | `odyssey` | 1280 × 768 | `binding`, `ui`, `window`, and the demo's own `world` | `odyssey` suite: map, world, bindings |
 
 No suite needs a window or a GPU. The renderers are not covered.
 
@@ -196,7 +196,7 @@ says how to build it.
 
 A tile-based game: a player in a world of walls and crates, with line of sight. The world is made
 of regions, each a board of its own, loaded as the player approaches them. The game itself is not
-written yet. Sources are in `demos/odyssey/`.
+written yet. Sources are in `demos/odyssey/src/`.
 
 **Controls:**
 
@@ -204,9 +204,13 @@ written yet. Sources are in `demos/odyssey/`.
 |---|---|---|
 | W, A, S, D | `odyssey::moveForward`, `moveLeft`, `moveBackward`, `moveRight` | Step one tile; also stops a walk in progress |
 | Left click | `odyssey::use` | Walk to the clicked tile along the shortest path, across every loaded region |
-| Escape | `ui::quit` | Quit |
+| Escape | `ui::showGameMenu` | Show or hide the menu (Resume, Quit), which pauses the game |
+| Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
+| F3 | `odyssey::toggleStatistics` | Show or hide the frame statistics |
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
 
-A walk moves one tile every 0.15 seconds.
+A walk moves one tile every 0.15 seconds. While the menu is up, no command moves the player, and
+a walk in progress stands still until the menu closes.
 
 **The world.** `data/world.json` lists the regions and names the one the player starts in:
 
@@ -251,8 +255,8 @@ tile is 64 × 64 pixels, so one 20 × 12 region fills the 1280 × 768 window.
 
 | File | Holds |
 |---|---|
-| `config.json` | Lists `mappings.json`, `window.json` and `world.json`, the last under the game's own type `world` |
-| `mappings.json`, `window.json` | Bindings and window size |
+| `config.json` | Lists `mappings.json`, `vgui.json`, `window.json` and `world.json`, the last under the game's own type `world` |
+| `mappings.json`, `vgui.json`, `window.json` | Bindings, menu and window size |
 | `world.json` | The regions, and where the player starts |
 | `map.json`, `east.json` | The two regions' boards, joined by a doorway on row 5 |
 | `sample.png` | The player sprite |
@@ -277,3 +281,7 @@ remembered ones that are out of sight.
 - **`ecs::System`.** `system::Movement` derives from `v3d::ecs::System` and advances each
   entity's `Path` component in `simulate()`. The player's tile is a `grid::TileCoord` component.
   See [api/ECS.md](api/ECS.md).
+- **The shell over a game that pauses itself.** odyssey holds a `shell::Shell` with the menu
+  and a statistics command, and its renderer draws the world into the shell's screen before the
+  menu and the overlay. The menu's suspend callback sets the engine's own pause flag, which the
+  commands and `simulate()` read. See [api/engine/Shell.md](api/engine/Shell.md).

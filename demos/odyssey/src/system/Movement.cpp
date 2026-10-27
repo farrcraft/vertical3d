@@ -6,7 +6,7 @@
 #include "Movement.h"
 
 #include <api/grid/TileCoord.h>
-#include <demos/odyssey/engine/Path.h>
+#include <demos/odyssey/src/engine/Path.h>
 
 namespace odyssey::system {
 

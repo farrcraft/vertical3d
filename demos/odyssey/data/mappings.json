@@ -59,7 +59,62 @@
       },
       "destination": {
         "context": "ui",
-        "name": "quit"
+        "name": "showGameMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "return",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "selectMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuPrevious"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuNext"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f1",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "fullscreen"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "odyssey",
+        "name": "toggleStatistics"
       }
     }
   ]

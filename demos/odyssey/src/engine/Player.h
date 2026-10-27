@@ -5,19 +5,18 @@
 
 #pragma once
 
-#include "Sprite.h"
-
 #include <entt/entt.hpp>
 
 namespace odyssey::engine {
 /**
- * 
+ * The player, as an entity in the game's registry with a world tile.
  **/
 class Player final {
  public:
     /**
+     * Create the player's entity, on the tile at the world's origin.
      **/
-    Player(entt::registry *registry);
+    explicit Player(entt::registry *registry);
 
     /**
      * The entity that holds the player's components.
@@ -26,6 +25,5 @@ class Player final {
 
  private:
     entt::entity id_;
-    Sprite sprite_;
 };
 };  // namespace odyssey::engine
