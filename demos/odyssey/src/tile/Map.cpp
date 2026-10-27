@@ -113,7 +113,7 @@ bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const 
             logger_->get()->error("a map row is not a string");
             return false;
         }
-        lines.push_back(boost::json::value_to<std::string>(row));
+        lines.emplace_back(row.as_string());
     }
 
     v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend(), TILE_SIZE, corner);

@@ -166,9 +166,9 @@ BOOST_AUTO_TEST_CASE(sprite_sheets_read_then_add_keeps_the_other_sheets_test) {
 }
 
 /**
- * A file that is there and is not a document read whole is refused, so writing back what was
- * read would not lose part of it: one that is not JSON, one that is not an object, and one
- * holding a sheet with no image.
+ * A file that is there and cannot be read whole is refused, so writing it back cannot lose part
+ * of it. The three are a file that is not JSON, one that is not an object, and one holding a
+ * sheet with no image.
  **/
 BOOST_AUTO_TEST_CASE(sprite_sheets_read_refuses_a_file_it_cannot_keep_test) {
     const Sandbox sandbox("refuse");
