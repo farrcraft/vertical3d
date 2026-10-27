@@ -8,6 +8,7 @@
 #include <api/brep/Primitives.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -110,8 +111,10 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
 
     canvas.clear();
     mesh->selected(false);
-    mesh->geometry()->edge(0)->selected(true);
-    wireframe.visit(mesh, at(mesh));
+    v3d::editor::Components picked;
+    picked.select(mesh->id(), v3d::editor::Component::Edge, 0, true);
+    v3d::editor::WireframeVisitor selecting(&canvas, v3d::editor::WireframeVisitor::Shown{}, &picked);
+    selecting.visit(mesh, at(mesh));
 
     // one edge selected out of four, and the other three keep the unselected colour
     unsigned int highlighted = 0;
@@ -129,7 +132,8 @@ BOOST_AUTO_TEST_CASE(wireframe_selection_colour_test) {
  **/
 BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
     v3d::render::realtime::canvas::Line canvas;
-    v3d::editor::WireframeVisitor wireframe(&canvas);
+    v3d::editor::Components picked;
+    v3d::editor::WireframeVisitor wireframe(&canvas, v3d::editor::WireframeVisitor::Shown{}, &picked);
 
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     wireframe.visit(cube, at(cube));
@@ -137,9 +141,9 @@ BOOST_AUTO_TEST_CASE(wireframe_selected_face_is_outlined_test) {
 
     for (v3d::brep::Index face = 0; face < cube->geometry()->faceCount(); face++) {
         canvas.clear();
-        cube->geometry()->face(face)->selected(true);
+        picked.select(cube->id(), v3d::editor::Component::Face, face, true);
         wireframe.visit(cube, at(cube));
-        cube->geometry()->face(face)->selected(false);
+        picked.select(cube->id(), v3d::editor::Component::Face, face, false);
 
         unsigned int highlighted = 0;
         for (const v3d::render::realtime::canvas::Line::Vertex& vertex : canvas.vertices()) {

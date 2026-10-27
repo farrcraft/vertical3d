@@ -5,8 +5,10 @@
 
 #include "SelectMask.h"
 
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Item.h>
 
+#include <optional>
 #include <string>
 
 namespace v3d::editor {
@@ -95,6 +97,25 @@ bool takes(SelectMask mask, Item::Kind kind) {
         break;
     }
     return false;
+}
+
+/**
+ **/
+std::optional<Component> componentOf(SelectMask mask) {
+    switch (mask) {
+        case SelectMask::Vertex:
+            return Component::Vertex;
+        case SelectMask::Edge:
+            return Component::Edge;
+        case SelectMask::Face:
+            return Component::Face;
+        case SelectMask::Object:
+        case SelectMask::Mesh:
+        case SelectMask::Camera:
+        case SelectMask::Light:
+            break;
+    }
+    return std::nullopt;
 }
 
 };  // namespace v3d::editor

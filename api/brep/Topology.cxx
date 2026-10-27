@@ -70,18 +70,6 @@ bool ownsEdge(const BRep & mesh, Index edge) {
     return other == INVALID_ID || other >= edge;
 }
 
-bool edgeSelected(const BRep & mesh, Index edge) {
-    const HalfEdge* half = mesh.edge(edge);
-    if (half == nullptr) {
-        return false;
-    }
-    if (half->selected()) {
-        return true;
-    }
-    const HalfEdge* other = half->pair() == INVALID_ID ? nullptr : mesh.edge(half->pair());
-    return other != nullptr && other->selected();
-}
-
 glm::vec3 center(const BRep & mesh, Index face) {
     const std::vector<Index> loop = faceLoop(mesh, face);
     glm::vec3 sum(0.0F);

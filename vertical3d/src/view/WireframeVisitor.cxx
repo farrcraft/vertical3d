@@ -6,7 +6,6 @@
 #include "WireframeVisitor.h"
 
 #include <api/brep/BRep.h>
-#include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
@@ -14,6 +13,7 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/geometry/AABBox.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -70,9 +70,11 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) 
 
 /**
  **/
-WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown) :
+WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
+    const Components* components) :
     canvas_(canvas),
     shown_(shown),
+    components_(components),
     wire_(wire),
     glyph_(glyph),
     object_(object),
@@ -96,13 +98,10 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
     // a selected face is drawn as its boundary, there being no filled primitive to shade it
     // with. An edge is drawn once, by one of its two halves, so it is highlighted when the face
     // on either side of it is selected
-    const auto faceSelected = [&mesh](v3d::brep::Index edge) {
+    const unsigned int id = item->id();
+    const auto faceSelected = [this, &mesh, id](v3d::brep::Index edge) {
         const v3d::brep::HalfEdge* half = mesh->edge(edge);
-        if (half == nullptr) {
-            return false;
-        }
-        const v3d::brep::Face* face = mesh->face(half->face());
-        return face != nullptr && face->selected();
+        return half != nullptr && components_ != nullptr && components_->selected(id, Component::Face, half->face());
     };
 
     for (v3d::brep::Index number = 0; number < faces; number++) {
@@ -126,12 +125,12 @@ void WireframeVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
 
             const v3d::brep::Index pair = mesh->edge(current)->pair();
             const bool selected = faceSelected(current) || (pair != v3d::brep::INVALID_ID && faceSelected(pair)) ||
-                v3d::brep::edgeSelected(*mesh, current);
+                (components_ != nullptr && components_->edge(id, *mesh, current));
             canvas_->line(from, to, selected ? component_ : base);
         }
     }
 
-    markers(mesh);
+    markers(id, mesh);
 
     canvas_->pop();
 }
@@ -174,9 +173,9 @@ void WireframeVisitor::visit(const boost::shared_ptr<Group>& group, const Placed
 
 /**
  **/
-void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+void WireframeVisitor::markers(unsigned int item, const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     const std::size_t count = mesh->vertexCount();
-    if (count == 0) {
+    if (count == 0 || components_ == nullptr || !components_->any(item)) {
         return;
     }
 
@@ -190,9 +189,9 @@ void WireframeVisitor::markers(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     }
 
     const glm::vec3 corner(size, size, size);
-    for (v3d::brep::Index index = 0; index < count; index++) {
+    for (const v3d::brep::Index index : components_->of(item, Component::Vertex)) {
         const v3d::brep::Vertex* vertex = mesh->vertex(index);
-        if (vertex == nullptr || !vertex->selected()) {
+        if (vertex == nullptr) {
             continue;
         }
         const glm::vec3 point = vertex->point();

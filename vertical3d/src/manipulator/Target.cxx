@@ -12,6 +12,7 @@
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <api/type/Transform.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -51,19 +52,21 @@ bool startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Inde
 }
 
 /**
- * The vertices the selected components of one kind bring, each once, in index order.
+ * The vertices the selected components of one kind of a mesh item bring, each once, in index
+ * order. A part the geometry does not hold brings nothing.
  **/
-std::vector<v3d::brep::Index> selectedVertices(const v3d::brep::BRep& mesh, SelectMask kind) {
+std::vector<v3d::brep::Index> selectedVertices(const Mesh& item, SelectMask kind, const Components& components) {
+    const v3d::brep::BRep& mesh = *item.geometry();
     std::vector<v3d::brep::Index> vertices;
     if (kind == SelectMask::Vertex) {
-        for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
-            if (mesh.vertex(id)->selected()) {
+        for (const v3d::brep::Index id : components.of(item.id(), Component::Vertex)) {
+            if (id < mesh.vertexCount()) {
                 vertices.push_back(id);
             }
         }
     } else if (kind == SelectMask::Edge) {
-        for (v3d::brep::Index id = 0; id < mesh.edgeCount(); id++) {
-            if (!mesh.edge(id)->selected()) {
+        for (const v3d::brep::Index id : components.of(item.id(), Component::Edge)) {
+            if (id >= mesh.edgeCount()) {
                 continue;
             }
             vertices.push_back(mesh.edge(id)->vertex());
@@ -73,8 +76,8 @@ std::vector<v3d::brep::Index> selectedVertices(const v3d::brep::BRep& mesh, Sele
             }
         }
     } else if (kind == SelectMask::Face) {
-        for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
-            if (!mesh.face(id)->selected()) {
+        for (const v3d::brep::Index id : components.of(item.id(), Component::Face)) {
+            if (id >= mesh.faceCount()) {
                 continue;
             }
             for (const v3d::brep::Index edge : v3d::brep::faceLoop(mesh, id)) {
@@ -125,14 +128,15 @@ Target Target::objects(const Items& items, const Evaluation& evaluation) {
 
 /**
  **/
-Target Target::components(const Meshes& meshes, SelectMask kind, const Evaluation& evaluation) {
+Target Target::components(const Meshes& meshes, SelectMask kind, const Components& components,
+    const Evaluation& evaluation) {
     Target target;
     target.components_ = true;
     for (const boost::shared_ptr<Mesh>& mesh : meshes) {
         if (!mesh) {
             continue;
         }
-        std::vector<v3d::brep::Index> vertices = selectedVertices(*mesh->geometry(), kind);
+        std::vector<v3d::brep::Index> vertices = selectedVertices(*mesh, kind, components);
         if (vertices.empty()) {
             continue;
         }
@@ -159,7 +163,7 @@ Target Target::selected(const Scene& scene, SelectMask mask) {
         // an item moved with its parent and again by the motion would move twice
         return objects(scene.uppermost(taken), evaluation);
     }
-    return components(scene.selected<Mesh>(), mask, evaluation);
+    return components(scene.selected<Mesh>(), mask, scene.components(), evaluation);
 }
 
 /**

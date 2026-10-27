@@ -307,18 +307,6 @@ void BRep::touch(void) noexcept {
     changes_++;
 }
 
-void BRep::deselectComponents(void) noexcept {
-    for (Vertex& vert : vertices_) {
-        vert.selected(false);
-    }
-    for (HalfEdge& halfEdge : edges_) {
-        halfEdge.selected(false);
-    }
-    for (Face& polygon : faces_) {
-        polygon.selected(false);
-    }
-}
-
 BRep::Snapshot BRep::snapshot(void) const {
     Snapshot snapshot;
     snapshot.vertices = vertices_;

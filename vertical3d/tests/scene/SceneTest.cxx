@@ -6,6 +6,7 @@
 #include <api/brep/BRep.h>
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -200,7 +201,7 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     quad.push_back(glm::vec3(0.0F, 1.0F, 0.0F));
     mesh->geometry()->addFace(quad, glm::vec3(0.0F, 0.0F, 1.0F));
     mesh->selected(true);
-    mesh->geometry()->edge(0)->selected(true);
+    scene.components().select(mesh->id(), v3d::editor::Component::Edge, 0, true);
     scene.add(mesh);
     const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
     light->selected(true);
@@ -209,16 +210,16 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     scene.deselectComponents();
 
     // a component deselect leaves the objects selected
-    BOOST_CHECK_EQUAL(mesh->geometry()->edge(0)->selected(), false);
+    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::Component::Edge, 0), false);
     BOOST_CHECK_EQUAL(mesh->selected(), true);
 
-    mesh->geometry()->edge(0)->selected(true);
+    scene.components().select(mesh->id(), v3d::editor::Component::Edge, 0, true);
     scene.deselect();
 
     // a scene wide deselect clears the items of every kind, and the components too
     BOOST_CHECK_EQUAL(mesh->selected(), false);
     BOOST_CHECK_EQUAL(light->selected(), false);
-    BOOST_CHECK_EQUAL(mesh->geometry()->edge(0)->selected(), false);
+    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::Component::Edge, 0), false);
 }
 
 BOOST_AUTO_TEST_CASE(scene_selection_test) {

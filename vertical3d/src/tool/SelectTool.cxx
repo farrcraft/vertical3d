@@ -6,10 +6,9 @@
 #include "SelectTool.h"
 
 #include <api/brep/BRep.h>
-#include <api/brep/Face.h>
-#include <api/brep/HalfEdge.h>
-#include <api/brep/Vertex.h>
+#include <api/brep/Index.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -30,43 +29,35 @@ namespace v3d::editor {
 namespace {
 
 /**
- * Whether the component a hit names is selected. A component that is not there is not.
+ * Whether the mesh holds the component a hit names.
  **/
-bool componentSelected(const v3d::brep::BRep& mesh, const Picker::Hit& hit) {
-    if (hit.kind == SelectMask::Vertex) {
-        const v3d::brep::Vertex* vertex = mesh.vertex(hit.component);
-        return vertex != nullptr && vertex->selected();
-    }
-    if (hit.kind == SelectMask::Edge) {
-        const v3d::brep::HalfEdge* edge = mesh.edge(hit.component);
-        return edge != nullptr && edge->selected();
-    }
-    if (hit.kind == SelectMask::Face) {
-        const v3d::brep::Face* face = mesh.face(hit.component);
-        return face != nullptr && face->selected();
+bool holds(const v3d::brep::BRep& mesh, Component kind, v3d::brep::Index index) {
+    switch (kind) {
+        case Component::Vertex:
+            return index < mesh.vertexCount();
+        case Component::Edge:
+            return index < mesh.edgeCount();
+        case Component::Face:
+            return index < mesh.faceCount();
     }
     return false;
 }
 
 /**
- * Set the flag of the component a hit names, if it is there.
+ * Whether the component a hit names is selected. A component that is not there is not.
  **/
-void markComponent(v3d::brep::BRep* mesh, const Picker::Hit& hit, bool wanted) {
-    if (hit.kind == SelectMask::Vertex) {
-        v3d::brep::Vertex* vertex = mesh->vertex(hit.component);
-        if (vertex != nullptr) {
-            vertex->selected(wanted);
-        }
-    } else if (hit.kind == SelectMask::Edge) {
-        v3d::brep::HalfEdge* edge = mesh->edge(hit.component);
-        if (edge != nullptr) {
-            edge->selected(wanted);
-        }
-    } else if (hit.kind == SelectMask::Face) {
-        v3d::brep::Face* face = mesh->face(hit.component);
-        if (face != nullptr) {
-            face->selected(wanted);
-        }
+bool componentSelected(const Components& components, const Mesh& mesh, const Picker::Hit& hit) {
+    const std::optional<Component> kind = componentOf(hit.kind);
+    return kind && holds(*mesh.geometry(), *kind, hit.component) && components.selected(mesh.id(), *kind, hit.component);
+}
+
+/**
+ * Select or deselect the component a hit names, if it is there.
+ **/
+void markComponent(Components* components, const Mesh& mesh, const Picker::Hit& hit, bool wanted) {
+    const std::optional<Component> kind = componentOf(hit.kind);
+    if (kind && holds(*mesh.geometry(), *kind, hit.component)) {
+        components->select(mesh.id(), *kind, hit.component, wanted);
     }
 }
 
@@ -267,13 +258,13 @@ void SelectTool::selectComponent(const Picker::Hit& hit) {
     }
 
     // read before clearing: clicking the same component twice deselects it
-    const bool wanted = !componentSelected(*mesh->geometry(), hit);
+    const bool wanted = !componentSelected(scene_->components(), *mesh, hit);
 
     if (!adding_) {
         scene_->deselectComponents();
     }
 
-    markComponent(mesh->geometry().get(), hit, wanted);
+    markComponent(&scene_->components(), *mesh, hit, wanted);
 
     if (logger_) {
         logger_->get()->info("{} {} {} of mesh {}", wanted ? "selected" : "deselected",
@@ -298,7 +289,7 @@ void SelectTool::selectInside() {
         }
         const boost::shared_ptr<Mesh> mesh = scene_->mesh(hit.item);
         if (mesh) {
-            markComponent(mesh->geometry().get(), hit, true);
+            markComponent(&scene_->components(), *mesh, hit, true);
         }
     }
     if (logger_) {

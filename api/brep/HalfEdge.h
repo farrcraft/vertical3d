@@ -21,13 +21,6 @@ class HalfEdge {
     bool operator == (const HalfEdge & other) const;
     HalfEdge & operator = (const HalfEdge & other);
 
-    /**
-     * Whether this component is selected. Selection is per component, not per mesh, so
-     * a vertex, an edge and a face each carry their own.
-     **/
-    bool selected(void) const noexcept;
-    void selected(bool sel) noexcept;
-
     Index vertex(void) const;
     Index face(void) const;
     Index pair(void) const;
@@ -43,7 +36,6 @@ class HalfEdge {
     Index face_;  // face to left of edge
     Index pair_;  // the opposite half edge of the same edge
     Index next_;  // next CCW half edge
-    bool selected_;
 };
 
 };  // namespace v3d::brep

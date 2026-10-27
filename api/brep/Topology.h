@@ -59,12 +59,6 @@ std::optional<Segment> loopSegment(const BRep & mesh, const std::vector<Index> &
 bool ownsEdge(const BRep & mesh, Index edge);
 
 /**
- * Whether the edge a half edge belongs to is selected: the two halves are one edge to a
- * selection, so either being selected is enough.
- **/
-bool edgeSelected(const BRep & mesh, Index edge);
-
-/**
  * The half edges that leave a vertex, in index order.
  *
  * A half edge names the vertex it ends at, so the half edge after it in its loop is one that

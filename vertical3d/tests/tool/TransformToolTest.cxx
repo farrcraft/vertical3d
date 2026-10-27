@@ -17,6 +17,7 @@
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/Placement.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -460,7 +461,7 @@ struct Components {
 BOOST_AUTO_TEST_CASE(transform_tool_vertex_test) {
     const Components components(v3d::editor::SelectMask::Vertex);
     const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
-    components.cube->geometry()->vertex(vertex)->selected(true);
+    components.scene->components().select(components.cube->id(), v3d::editor::Component::Vertex, vertex, true);
     components.check({vertex});
 }
 
@@ -473,7 +474,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_edge_test) {
     for (v3d::brep::Index id = 0; id < components.cube->geometry()->edgeCount() && !found; id++) {
         const v3d::brep::HalfEdge* edge = components.cube->geometry()->edge(id);
         if (edge->vertex() == from && components.cube->geometry()->edge(edge->next())->vertex() == to) {
-            components.cube->geometry()->edge(edge->next())->selected(true);
+            components.scene->components().select(components.cube->id(), v3d::editor::Component::Edge, edge->next(), true);
             found = true;
         }
     }
@@ -493,7 +494,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_face_test) {
             }
         }
         if (corners.size() == 4) {
-            components.cube->geometry()->face(face)->selected(true);
+            components.scene->components().select(components.cube->id(), v3d::editor::Component::Face, face, true);
             front = corners;
         }
     }
@@ -503,7 +504,7 @@ BOOST_AUTO_TEST_CASE(transform_tool_face_test) {
 
 BOOST_AUTO_TEST_CASE(transform_tool_component_no_gesture_test) {
     const Components components(v3d::editor::SelectMask::Vertex);
-    components.cube->geometry()->vertex(components.corner(glm::vec3(0.5F, 0.5F, -0.5F)))->selected(true);
+    components.scene->components().select(components.cube->id(), v3d::editor::Component::Vertex, components.corner(glm::vec3(0.5F, 0.5F, -0.5F)), true);
 
     // a handle grabbed and let go without moving changed nothing
     const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +
@@ -514,14 +515,14 @@ BOOST_AUTO_TEST_CASE(transform_tool_component_no_gesture_test) {
     BOOST_CHECK_EQUAL(components.history->undoDepth(), 0U);
 
     // with no component selected there are no handles to grab
-    components.cube->geometry()->deselectComponents();
+    components.scene->components().clear(components.cube->id());
     BOOST_CHECK(components.transformTool->target().empty());
 }
 
 BOOST_AUTO_TEST_CASE(transform_tool_mask_change_test) {
     const Components components(v3d::editor::SelectMask::Vertex);
     const v3d::brep::Index vertex = components.corner(glm::vec3(0.5F, 0.5F, -0.5F));
-    components.cube->geometry()->vertex(vertex)->selected(true);
+    components.scene->components().select(components.cube->id(), v3d::editor::Component::Vertex, vertex, true);
     const glm::vec3 start = components.cube->geometry()->vertex(vertex)->point();
 
     const glm::vec2 handle = screen(*components.transformTool->view(), components.transformTool->target().pivot()) +

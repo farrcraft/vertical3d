@@ -22,13 +22,6 @@ class Vertex final {
     bool operator == (const Vertex & v) const;
     bool operator == (const glm::vec3& v) const;
 
-    /**
-     * Whether this component is selected. Selection is per component, not per mesh, so
-     * a vertex, an edge and a face each carry their own.
-     **/
-    bool selected(void) const noexcept;
-    void selected(bool sel) noexcept;
-
     Index edge(void) const;
     void edge(Index edgeIndex);
     glm::vec3 point(void) const;
@@ -37,7 +30,6 @@ class Vertex final {
  private:
     glm::vec3 point_;
     Index edge_;
-    bool selected_;
 };
 
 };  // namespace v3d::brep

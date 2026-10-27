@@ -8,6 +8,7 @@
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -53,8 +54,11 @@ class WireframeVisitor final : public SceneVisitor {
 
     /**
      * Draw the kinds shown.
+     *
+     * @param components which parts of each mesh to draw as selected, or null for none
      **/
-    WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown);
+    WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
+        const Components* components = nullptr);
 
     /**
      * Append one mesh's wireframe.
@@ -72,10 +76,11 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * A box at each selected vertex, sized against the mesh.
      **/
-    void markers(const boost::shared_ptr<v3d::brep::BRep>& mesh);
+    void markers(unsigned int item, const boost::shared_ptr<v3d::brep::BRep>& mesh);
 
     v3d::render::realtime::canvas::Line* canvas_;
     Shown shown_;
+    const Components* components_;
     glm::vec4 wire_;
     glm::vec4 glyph_;
     glm::vec4 object_;

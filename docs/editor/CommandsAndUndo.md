@@ -57,7 +57,9 @@ The rules:
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
 - **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
-  clears the selection flags of the item it removes, and leaves any other selected item selected.
+  clears the selection of the item it removes, its components with it, and leaves any other
+  selected item selected. A topology command's undo and redo clear the component selection of
+  every item that shows the mesh they restore.
   `CreateCommand::redo` selects the new item and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
   An item held by a dropped command is freed then.

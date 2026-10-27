@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/animation/Curve.h>
+#include <api/brep/BRep.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -15,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Components.h"
 #include "Evaluation.h"
 #include "Item.h"
 #include "Mesh.h"
@@ -48,7 +50,8 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
  * theirs, and engine::CameraProfiles owns the table they are built from.
  *
  * Items are found by their id() rather than by position, so a selection outlives an insertion
- * or a removal.
+ * or a removal. An item holds whether it is selected as a whole, and the scene holds which
+ * parts of each mesh item are selected, in components().
  *
  * The scene also gives each item its document id. Ids are never reused within a document, so
  * the scene keeps the next one to give, and a saved document keeps it too.
@@ -187,8 +190,7 @@ class Scene final {
     Items selection() const;
 
     /**
-     * @return every selected item of one kind, in insertion order. A mesh's component
-     *         selection lives inside it, and may span several meshes.
+     * @return every selected item of one kind, in insertion order
      **/
     template <typename T>
     std::vector<boost::shared_ptr<T>> selected() const {
@@ -239,6 +241,13 @@ class Scene final {
     void accept(SceneVisitor* visitor, const Evaluation& evaluation) const;
 
     /**
+     * Which parts of each mesh item are selected. Removing an item, or clearing the scene,
+     * drops its parts too.
+     **/
+    Components& components() noexcept;
+    const Components& components() const noexcept;
+
+    /**
      * Clear the selection of every item, and of every component of every mesh.
      **/
     void deselect() noexcept;
@@ -249,6 +258,12 @@ class Scene final {
      * working on another.
      **/
     void deselectComponents() noexcept;
+
+    /**
+     * Clear the component selection of every mesh item that shows a geometry. A change to the
+     * geometry's numbering does this, since an index could name another part afterwards.
+     **/
+    void deselectComponents(const v3d::brep::BRep* geometry) noexcept;
 
  private:
     /**
@@ -282,6 +297,7 @@ class Scene final {
     Timeline timeline_;
     RenderSettings renderSettings_;
     std::int64_t nextDocumentId_ = 1;
+    Components components_;
 };
 
 };  // namespace v3d::editor

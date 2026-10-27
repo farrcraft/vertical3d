@@ -13,6 +13,7 @@
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
@@ -109,21 +110,22 @@ BOOST_AUTO_TEST_CASE(target_objects_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_test) {
+    v3d::editor::Components picked;
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
     // nothing selected is nothing to move
-    BOOST_CHECK(v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube})).empty());
+    BOOST_CHECK(v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube})).empty());
 
     // a face brings its four corners, and every face but the opposite one touches them
     const v3d::brep::Index face = frontFace(*cube->geometry());
     BOOST_REQUIRE(face != v3d::brep::INVALID_ID);
-    cube->geometry()->face(face)->selected(true);
-    const v3d::editor::Target faces = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube}));
+    picked.select(cube->id(), v3d::editor::Component::Face, face, true);
+    const v3d::editor::Target faces = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube}));
     BOOST_REQUIRE_EQUAL(faces.parts().size(), 1U);
     BOOST_CHECK_EQUAL(faces.parts()[0].vertices.size(), 4U);
     BOOST_CHECK_EQUAL(faces.parts()[0].faces.size(), 5U);
     BOOST_CHECK_SMALL(glm::distance(faces.pivot(), glm::vec3(0.0F, 0.0F, -0.5F)), 0.0001F);
-    cube->geometry()->deselectComponents();
+    picked.clear();
 
     // two edges that share a corner bring three vertices, the shared one once
     const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
@@ -133,9 +135,9 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
     const v3d::brep::Index across = edgeBetween(*cube->geometry(), up, low);
     BOOST_REQUIRE(along != v3d::brep::INVALID_ID);
     BOOST_REQUIRE(across != v3d::brep::INVALID_ID);
-    cube->geometry()->edge(along)->selected(true);
-    cube->geometry()->edge(across)->selected(true);
-    const v3d::editor::Target edges = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, unparented<v3d::editor::Mesh>({cube}));
+    picked.select(cube->id(), v3d::editor::Component::Edge, along, true);
+    picked.select(cube->id(), v3d::editor::Component::Edge, across, true);
+    const v3d::editor::Target edges = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, picked, unparented<v3d::editor::Mesh>({cube}));
     const std::vector<v3d::brep::Index> expected = {low, right, up};
     std::vector<v3d::brep::Index> sorted = expected;
     std::sort(sorted.begin(), sorted.end());
@@ -144,14 +146,15 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
+    v3d::editor::Components picked;
     const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    first->geometry()->vertex(corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
-    second->geometry()->vertex(corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)))->selected(true);
+    picked.select(first->id(), v3d::editor::Component::Vertex, corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
+    picked.select(second->id(), v3d::editor::Component::Vertex, corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
 
     // the pivot is the mean of the vertices in world space, across both objects
-    const v3d::editor::Target target = v3d::editor::Target::components({first, second}, v3d::editor::SelectMask::Vertex, unparented<v3d::editor::Mesh>({first, second}));
+    const v3d::editor::Target target = v3d::editor::Target::components({first, second}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Mesh>({first, second}));
     BOOST_CHECK_EQUAL(target.parts().size(), 2U);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(2.5F, 0.5F, 0.5F)), 0.0001F);
 
@@ -161,22 +164,24 @@ BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
     second->selected(true);
     scene.add(first);
     scene.add(second);
+    scene.components() = picked;
     BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Vertex).components(), true);
     BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Vertex).parts().size(), 2U);
     BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object).components(), false);
 }
 
 BOOST_AUTO_TEST_CASE(target_move_components_test) {
+    v3d::editor::Components picked;
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     // the object is stretched along x, so a world offset is half as far in its own space
     cube->scale(glm::vec3(2.0F, 1.0F, 1.0F));
     const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
     const v3d::brep::Index far = corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, 0.5F));
-    cube->geometry()->edge(edgeBetween(*cube->geometry(), low, right))->selected(true);
-    cube->geometry()->edge(edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))))->selected(true);
+    picked.select(cube->id(), v3d::editor::Component::Edge, edgeBetween(*cube->geometry(), low, right), true);
+    picked.select(cube->id(), v3d::editor::Component::Edge, edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))), true);
 
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, picked, unparented<v3d::editor::Mesh>({cube}));
     v3d::editor::Motion motion;
     motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
@@ -195,12 +200,13 @@ BOOST_AUTO_TEST_CASE(target_move_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_turn_components_test) {
+    v3d::editor::Components picked;
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const v3d::brep::Index face = frontFace(*cube->geometry());
-    cube->geometry()->face(face)->selected(true);
+    picked.select(cube->id(), v3d::editor::Component::Face, face, true);
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
     const v3d::brep::Index back = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, 0.5F));
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube}));
 
     // a quarter turn about z turns the face about its own middle, so it stays in its plane
     // and each corner moves round to the next
@@ -238,9 +244,10 @@ BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_move_counts_a_change_test) {
+    v3d::editor::Components picked;
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    cube->geometry()->vertex(0)->selected(true);
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, unparented<v3d::editor::Mesh>({cube}));
+    picked.select(cube->id(), v3d::editor::Component::Vertex, 0, true);
+    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Mesh>({cube}));
 
     // a component move changes the mesh's parts in place, and counts it, so a save sees it
     const std::uint64_t before = cube->revision();

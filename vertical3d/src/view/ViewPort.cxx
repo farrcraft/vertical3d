@@ -136,7 +136,7 @@ void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* can
     const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
         .lights = shows(SHOW_LIGHT) };
     if (shown.meshes || shown.cameras || shown.lights) {
-        WireframeVisitor wireframe(canvas, shown);
+        WireframeVisitor wireframe(canvas, shown, &scene.components());
         scene.accept(&wireframe);
     }
 }

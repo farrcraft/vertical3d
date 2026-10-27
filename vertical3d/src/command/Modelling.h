@@ -23,7 +23,7 @@ namespace v3d::editor {
  *
  * @return the change, already made, or an empty pointer when no edge is selected
  **/
-boost::shared_ptr<TopologyCommand> splitEdges(const Scene& scene);
+boost::shared_ptr<TopologyCommand> splitEdges(const boost::shared_ptr<Scene>& scene);
 
 /**
  * Split a face in two with a new edge between the two selected vertices.
@@ -34,7 +34,7 @@ boost::shared_ptr<TopologyCommand> splitEdges(const Scene& scene);
  * @param problem why nothing was split, when nothing was
  * @return the change, already made, or an empty pointer when nothing was split
  **/
-boost::shared_ptr<TopologyCommand> splitFace(const Scene& scene, std::string* problem);
+boost::shared_ptr<TopologyCommand> splitFace(const boost::shared_ptr<Scene>& scene, std::string* problem);
 
 /**
  * Extrude the selected faces of every selected mesh. Faces that share an edge extrude as one
@@ -44,7 +44,7 @@ boost::shared_ptr<TopologyCommand> splitFace(const Scene& scene, std::string* pr
  *
  * @return the change, already made, or an empty pointer when no face is selected
  **/
-boost::shared_ptr<TopologyCommand> extrudeFaces(const Scene& scene);
+boost::shared_ptr<TopologyCommand> extrudeFaces(const boost::shared_ptr<Scene>& scene);
 
 /**
  * How far an inset moves each corner of a face toward the face's centre.
@@ -59,7 +59,7 @@ constexpr float insetFraction = 0.25F;
  *
  * @return the change, already made, or an empty pointer when no face is selected
  **/
-boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene);
+boost::shared_ptr<TopologyCommand> insetFaces(const boost::shared_ptr<Scene>& scene);
 
 /**
  * Merge the selected vertices into one at their centre.
@@ -71,6 +71,6 @@ boost::shared_ptr<TopologyCommand> insetFaces(const Scene& scene);
  * @param problem why nothing was merged, when nothing was
  * @return the change, already made, or an empty pointer when nothing was merged
  **/
-boost::shared_ptr<TopologyCommand> mergeVertices(const Scene& scene, std::string* problem);
+boost::shared_ptr<TopologyCommand> mergeVertices(const boost::shared_ptr<Scene>& scene, std::string* problem);
 
 };  // namespace v3d::editor

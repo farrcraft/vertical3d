@@ -8,6 +8,7 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Index.h>
 #include <api/type/Transform.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -97,9 +98,11 @@ class Target final {
      * edge brings its two vertices and a face every vertex of its loop. A vertex shared by
      * two selected components is in the target once.
      *
+     * @param components which parts of each mesh are selected
      * @param evaluation where the meshes are
      **/
-    static Target components(const Meshes& meshes, SelectMask kind, const Evaluation& evaluation);
+    static Target components(const Meshes& meshes, SelectMask kind, const Components& components,
+        const Evaluation& evaluation);
 
     /**
      * The target the selection makes under a select mask: the selected items of the kinds the

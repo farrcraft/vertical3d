@@ -13,6 +13,7 @@
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -204,7 +205,7 @@ BOOST_AUTO_TEST_CASE(store_selection_not_saved_test) {
     for (const boost::shared_ptr<v3d::editor::Item>& each : written->items()) {
         each->selected(true);
     }
-    v3d::editor::as<v3d::editor::Mesh>(written->items()[0])->geometry()->face(0)->selected(true);
+    written->components().select(written->items()[0]->id(), v3d::editor::Component::Face, 0, true);
     v3d::editor::SceneStore store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));
 
@@ -212,7 +213,7 @@ BOOST_AUTO_TEST_CASE(store_selection_not_saved_test) {
     v3d::editor::Scene read;
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_CHECK(read.selection().empty());
-    BOOST_CHECK(!v3d::editor::as<v3d::editor::Mesh>(read.items()[0])->geometry()->face(0)->selected());
+    BOOST_CHECK(!read.components().any(read.items()[0]->id()));
 }
 
 BOOST_AUTO_TEST_CASE(store_written_form_test) {

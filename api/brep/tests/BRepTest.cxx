@@ -133,29 +133,12 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
 BOOST_AUTO_TEST_CASE(brep_copy_test) {
     v3d::brep::BRep original;
     original.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-    original.face(0)->selected(true);
 
-    // a mesh is geometry alone, so a copy is a separate mesh with the same parts and flags
+    // a mesh is geometry alone, so a copy is a separate mesh with the same parts
     v3d::brep::BRep copy = original;
     BOOST_CHECK_EQUAL(copy.vertexCount(), original.vertexCount());
-    BOOST_CHECK_EQUAL(copy.face(0)->selected(), true);
     copy.vertex(0)->point(glm::vec3(9.0F, 0.0F, 0.0F));
     BOOST_CHECK(original.vertex(0)->point() != glm::vec3(9.0F, 0.0F, 0.0F));
-}
-
-BOOST_AUTO_TEST_CASE(brep_selection_test) {
-    v3d::brep::BRep mesh;
-    mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-
-    mesh.vertex(0)->selected(true);
-    mesh.edge(0)->selected(true);
-    mesh.face(0)->selected(true);
-
-    mesh.deselectComponents();
-
-    BOOST_CHECK_EQUAL(mesh.vertex(0)->selected(), false);
-    BOOST_CHECK_EQUAL(mesh.edge(0)->selected(), false);
-    BOOST_CHECK_EQUAL(mesh.face(0)->selected(), false);
 }
 
 /**
@@ -436,11 +419,6 @@ BOOST_AUTO_TEST_CASE(brep_changes_test) {
     mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
     const std::uint64_t built = mesh.changes();
     BOOST_CHECK_GT(built, 0U);
-
-    // a selection is not a change of the geometry
-    mesh.face(0)->selected(true);
-    mesh.deselectComponents();
-    BOOST_CHECK_EQUAL(mesh.changes(), built);
 
     // a part changed in place is counted by touch(), and a restore counts
     const v3d::brep::BRep::Snapshot before = mesh.snapshot();

@@ -152,29 +152,29 @@ Outcome Document::settings(const RenderSettings& settings) {
 }
 
 Outcome Document::splitEdges() {
-    return record(history_.get(), editor::splitEdges(*scene_),
+    return record(history_.get(), editor::splitEdges(scene_),
         {.done = "split the selected edges", .refused = "split edge: no edge is selected"});
 }
 
 Outcome Document::splitFace() {
     std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = editor::splitFace(*scene_, &problem);
+    const boost::shared_ptr<TopologyCommand> command = editor::splitFace(scene_, &problem);
     return record(history_.get(), command, {.done = "split a face between the selected vertices", .refused = "split face: " + problem});
 }
 
 Outcome Document::mergeVertices() {
     std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = editor::mergeVertices(*scene_, &problem);
+    const boost::shared_ptr<TopologyCommand> command = editor::mergeVertices(scene_, &problem);
     return record(history_.get(), command, {.done = "merged the selected vertices", .refused = "merge vertices: " + problem});
 }
 
 Outcome Document::extrudeFaces() {
-    return record(history_.get(), editor::extrudeFaces(*scene_),
+    return record(history_.get(), editor::extrudeFaces(scene_),
         {.done = "extruded the selected faces", .refused = "extrude face: no face is selected"});
 }
 
 Outcome Document::insetFaces() {
-    return record(history_.get(), editor::insetFaces(*scene_),
+    return record(history_.get(), editor::insetFaces(scene_),
         {.done = "inset the selected faces", .refused = "inset face: no face is selected"});
 }
 

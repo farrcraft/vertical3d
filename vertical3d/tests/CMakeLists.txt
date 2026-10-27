@@ -9,6 +9,7 @@ v3d_add_test(vertical3d
 	"view/ViewPortTest.cxx"
 
 	"scene/ItemTest.cxx"
+	"scene/ComponentsTest.cxx"
 	"scene/SceneTest.cxx"
 	"scene/EvaluationTest.cxx"
 	"scene/PropertiesTest.cxx"

@@ -23,13 +23,13 @@ namespace v3d::brep {
  * A boundary representation mesh.
  *
  * It is geometry alone: it has no id and no placement, and is described about its own origin.
- * Whatever holds it gives it both. Each vertex, half edge and face carries its own selection
- * flag. A copy is a separate mesh with the same parts and the same flags.
+ * Whatever holds it gives it both, and whatever selects its parts keeps the selection. A copy
+ * is a separate mesh with the same parts.
  *
  * It counts its changes. Adding a part and restoring a snapshot each add one to changes(), and
  * so does every function in Operations.h, which work through them. A part changed in place,
  * through the pointer vertex(), edge() or face() returns, is not counted, so the code changing
- * it calls touch(). A change of selection is not a change of the geometry, and is not counted.
+ * it calls touch().
  **/
 class BRep {
  public:
@@ -86,15 +86,9 @@ class BRep {
         Snapshot snapshot(void) const;
 
         /**
-         * Replace all three arrays with a snapshot's. The selection flags come back as the
-         * snapshot holds them, so a caller that does not want them clears them after.
+         * Replace all three arrays with a snapshot's.
          **/
         void restore(const Snapshot & snapshot);
-
-        /**
-         * Clear the selection flag of every vertex, edge and face.
-         **/
-        void deselectComponents(void) noexcept;
 
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
 

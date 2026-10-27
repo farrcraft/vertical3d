@@ -18,6 +18,7 @@ add_library("v3dlib_editor"
 
 	"src/scene/Item.h" "src/scene/Item.cxx"
 	"src/scene/Mesh.h" "src/scene/Mesh.cxx"
+	"src/scene/Components.h" "src/scene/Components.cxx"
 	"src/scene/Camera.h" "src/scene/Camera.cxx"
 	"src/scene/Light.h" "src/scene/Light.cxx"
 	"src/scene/Group.h" "src/scene/Group.cxx"

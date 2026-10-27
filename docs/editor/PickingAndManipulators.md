@@ -129,6 +129,27 @@ leave them showing something else.
 
 Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 
+## Component selection
+
+**An item holds whether it is selected as a whole, and the scene holds which of its parts are.**
+`Scene::components()` is a `Components`: for each mesh item, by its `id()`, the indices of its
+selected vertices, half edges and faces in the item's geometry. `api/brep` holds no selection.
+
+- **The selection belongs to the item, not the mesh.** Two items that show one `BRep` select its
+  parts apart.
+- **An edge is selected when either of its halves is.** `Components::edge()` says so. A click
+  selects the half edge it hit.
+- **An index names whatever part holds it now.** A change to a mesh's numbering clears the
+  component selection of every item that shows the mesh, through
+  `Scene::deselectComponents(geometry)`, and an operation then selects what it means to leave
+  selected. A topology command's undo and redo clear it the same way.
+- **An operation on a mesh two items show runs once**, with the selection of the first selected
+  of them in scene order. The other items lose their component selection.
+- Removing an item, and clearing the scene, drop its parts. A document does not save the
+  selection.
+
+Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md)
+
 ## Manipulators
 
 A manipulator is the set of handles that moves, turns or resizes the selected meshes.

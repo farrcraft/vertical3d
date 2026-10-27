@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
 #include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -50,19 +50,13 @@ boost::shared_ptr<v3d::editor::SelectTool> tool(const boost::shared_ptr<v3d::edi
 }
 
 /**
- * How many components of a mesh are selected, across all three kinds.
+ * How many components of a mesh item are selected, across all three kinds.
  **/
-std::size_t selectedComponents(const boost::shared_ptr<v3d::editor::Mesh>& item) {
-    const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
+std::size_t selectedComponents(const v3d::editor::Scene& scene, const boost::shared_ptr<v3d::editor::Mesh>& item) {
     std::size_t count = 0;
-    for (std::size_t index = 0; index < mesh->vertexCount(); index++) {
-        count += mesh->vertex(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-    }
-    for (std::size_t index = 0; index < mesh->edgeCount(); index++) {
-        count += mesh->edge(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-    }
-    for (std::size_t index = 0; index < mesh->faceCount(); index++) {
-        count += mesh->face(static_cast<unsigned int>(index))->selected() ? 1 : 0;
+    for (const v3d::editor::Component kind : { v3d::editor::Component::Vertex, v3d::editor::Component::Edge,
+        v3d::editor::Component::Face }) {
+        count += scene.components().of(item->id(), kind).size();
     }
     return count;
 }
@@ -187,32 +181,32 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
     select->button(1, true, cubes.rightCube);
 
     // the component selection spans both objects
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a miss while adding keeps the components
     select->button(1, true, cubes.nowhere);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a second click while adding takes the face away and leaves the other
     select->button(1, true, cubes.leftCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a plain click replaces the components in every object
     select->adding(false);
     select->button(1, true, cubes.leftCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
 
     // a mask change clears the components in every object, and keeps both objects
     select->adding(true);
     select->button(1, true, cubes.rightCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
     select->activate("vertex");
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.scene->selection().size(), 2U);
 }
 
@@ -286,15 +280,15 @@ BOOST_AUTO_TEST_CASE(select_tool_band_component_test) {
 
     // only the selected object's faces are found, and every one of them is inside
     drag(select.get(), glm::vec2(10.0F, 10.0F), glm::vec2(390.0F, 390.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 6U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 6U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.right->selected(), false);
 
     // a band in a component mode replaces the components and keeps the objects
     cubes.right->selected(true);
     drag(select.get(), glm::vec2(390.0F, 10.0F), glm::vec2(210.0F, 390.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 6U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 6U);
     BOOST_CHECK_EQUAL(cubes.left->selected(), true);
 }
 
@@ -347,7 +341,7 @@ BOOST_AUTO_TEST_CASE(select_tool_component_test) {
 
     // nothing is selected, so there is no object to pick a component of
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
 
     select->activate("object");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
@@ -355,18 +349,18 @@ BOOST_AUTO_TEST_CASE(select_tool_component_test) {
 
     select->activate("face");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 1U);
     // the object stays selected while its components are being worked on
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // clicking the same face again deselects it
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
 
     // a miss clears the components without losing the object
     select->button(1, true, glm::vec2(200.0F, 200.0F));
     select->button(1, true, glm::vec2(10.0F, 10.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
     BOOST_CHECK_EQUAL(cube->selected(), true);
 }
 
@@ -379,13 +373,13 @@ BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
     select->button(1, true, glm::vec2(200.0F, 200.0F));
     select->activate("face");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 1U);
 
     // changing the mask clears the components: a face selection means nothing to an
     // operation working on edges, and leaving it set would let two kinds be selected at once
     select->activate("edge");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // a name that is not a mask leaves the tool alone

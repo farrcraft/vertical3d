@@ -60,7 +60,6 @@ yourself:
 | `faceLoop(mesh, face)` | The half edges of a face in order, each at most once. A chain that never returns to the face's first edge yields the edges walked before it repeats one or ends, which is an open path rather than a ring |
 | `loopSegment(mesh, loop, entry)` | The two endpoints of one entry of a loop, or nothing when either cannot be resolved |
 | `ownsEdge(mesh, edge)` | Whether this half edge represents its edge. The lower-numbered half of a pair owns it; an unpaired half edge owns itself |
-| `edgeSelected(mesh, edge)` | Whether either half of the edge is selected |
 | `center(mesh, face)` | The average of a face's vertices |
 | `faceUV(mesh, face, &u, &v)` | Two perpendicular unit vectors in the plane of a face. `u` runs along the first edge with a length, and the first edge after it that is not parallel sets the plane. A face of fewer than two edges, or whose vertices all lie on a line, leaves `u` and `v` unchanged |
 | `edgesFrom(mesh, vertex)` | The half edges leaving a vertex, in index order |
@@ -71,15 +70,14 @@ yourself:
 current. Each costs time in proportion to the whole mesh.
 
 **Snapshots.** `BRep::snapshot()` copies the three arrays as they stand, and `BRep::restore()`
-puts a snapshot back whole, selection flags included. A topology command keeps one from before an
-operation and one from after it.
+puts a snapshot back whole. A topology command keeps one from before an operation and one from
+after it.
 
 **Counting changes.** `BRep::changes()` counts the mesh's changes, and never goes down. Adding a
 part and `restore()` each count one, so every function in `Operations.h` counts, because they work
 through them. A part changed in place, through the pointer `vertex()`, `edge()` or `face()`
 returns, is not seen by the mesh, so the code that changes it calls `BRep::touch()`. The editor's
-component move (`Target::move`) and a vertex command's undo and redo do. A change of selection is
-not a change of the geometry, and is not counted.
+component move (`Target::move`) and a vertex command's undo and redo do.
 
 **Changing topology.** The functions in `api/brep/Operations.h` change which parts a mesh holds.
 Each leaves a mesh that passes `validateStrict()`. Each appends its new parts, so no existing
@@ -96,11 +94,9 @@ one is renumbered.
 
 **Geometry only.** A `BRep` has no id and no placement. It is described about its own origin,
 and the scene item that holds it places it. `v3dlib_brep` depends on `v3dlib_type` alone. A
-`BRep` can be copied, and the copy is a separate mesh with the same parts and the same flags.
-
-**Selection flags.** Each `Vertex`, `HalfEdge` and `Face` carries its own flag for component
-selection. `BRep::deselectComponents()` clears them all. The object selection is on the scene
-item, not on the mesh.
+`BRep` can be copied, and the copy is a separate mesh with the same parts. A `BRep` holds no
+selection; [PickingAndManipulators.md](PickingAndManipulators.md#component-selection) describes
+where it lives.
 
 ## Modelling operations
 

@@ -6,7 +6,6 @@
 #include "CreateCommand.h"
 
 #include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -43,13 +42,9 @@ void CreateCommand::undo() {
     if (!scene_ || !item_) {
         return;
     }
-    // the flags live on the item rather than in the scene, so they are cleared as the item
-    // leaves. Any other selected item stays selected
+    // the item's own flag is cleared as it leaves, and removing it drops its components. Any
+    // other selected item stays selected
     item_->selected(false);
-    const boost::shared_ptr<Mesh> mesh = as<Mesh>(item_);
-    if (mesh) {
-        mesh->geometry()->deselectComponents();
-    }
     scene_->remove(item_->id());
 }
 

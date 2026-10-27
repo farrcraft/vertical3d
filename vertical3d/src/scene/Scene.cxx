@@ -6,8 +6,10 @@
 #include "Scene.h"
 
 #include <api/animation/Curve.h>
+#include <api/brep/BRep.h>
 
 #include "Camera.h"
+#include "Components.h"
 #include "Evaluation.h"
 #include "Group.h"
 #include "Item.h"
@@ -105,6 +107,11 @@ bool Scene::remove(unsigned int id) {
             if (parent == above && gone.insert(child).second) {
                 open.push_back(child);
             }
+        }
+    }
+    for (const boost::shared_ptr<Item>& each : items_) {
+        if (gone.contains(each->documentId())) {
+            components_.clear(each->id());
         }
     }
     std::erase_if(items_, [&gone](const boost::shared_ptr<Item>& each) { return gone.contains(each->documentId()); });
@@ -388,6 +395,7 @@ void Scene::clear() noexcept {
     parents_.clear();
     curves_.clear();
     settled_.clear();
+    components_.clear();
     timeline_ = Timeline();
     renderSettings_ = RenderSettings();
     nextDocumentId_ = 1;
@@ -489,12 +497,30 @@ void Scene::deselect() noexcept {
 /**
  **/
 void Scene::deselectComponents() noexcept {
+    components_.clear();
+}
+
+/**
+ **/
+void Scene::deselectComponents(const v3d::brep::BRep* geometry) noexcept {
     for (const boost::shared_ptr<Item>& item : items_) {
         const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
-        if (mesh) {
-            mesh->geometry()->deselectComponents();
+        if (mesh && mesh->geometry().get() == geometry) {
+            components_.clear(mesh->id());
         }
     }
+}
+
+/**
+ **/
+Components& Scene::components() noexcept {
+    return components_;
+}
+
+/**
+ **/
+const Components& Scene::components() const noexcept {
+    return components_;
 }
 
 };  // namespace v3d::editor
