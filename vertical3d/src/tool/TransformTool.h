@@ -11,8 +11,8 @@
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstdint>

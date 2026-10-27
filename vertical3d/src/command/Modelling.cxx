@@ -11,7 +11,8 @@
 #include <api/brep/Operations.h>
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
-#include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
 #include <functional>
@@ -20,8 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "Mesh.h"
-#include "Scene.h"
+#include "TopologyCommand.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>

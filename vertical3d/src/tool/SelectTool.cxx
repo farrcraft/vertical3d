@@ -13,10 +13,10 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include "Picker.h"
-#include "SelectMask.h"
 
 #include <cmath>
 #include <optional>

@@ -36,11 +36,11 @@
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/store/Project.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>

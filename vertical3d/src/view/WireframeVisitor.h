@@ -7,13 +7,12 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
-
-#include "Camera.h"
-#include "Evaluation.h"
-#include "Group.h"
-#include "Light.h"
-#include "Mesh.h"
-#include "SceneVisitor.h"
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/SceneVisitor.h>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>

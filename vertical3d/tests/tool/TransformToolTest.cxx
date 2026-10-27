@@ -19,7 +19,7 @@
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 

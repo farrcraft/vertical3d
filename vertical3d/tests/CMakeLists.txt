@@ -13,12 +13,12 @@ v3d_add_test(vertical3d
 	"scene/EvaluationTest.cxx"
 	"scene/PropertiesTest.cxx"
 	"scene/CreateItemTest.cxx"
-	"scene/GlyphsTest.cxx"
-	"scene/WireframeVisitorTest.cxx"
-	"scene/RIBExportVisitorTest.cxx"
-	"scene/ProjectTest.cxx"
-	"scene/SceneStoreTest.cxx"
-	"scene/ModellingTest.cxx"
+	"view/GlyphsTest.cxx"
+	"view/WireframeVisitorTest.cxx"
+	"render/RIBExportVisitorTest.cxx"
+	"store/ProjectTest.cxx"
+	"store/SceneStoreTest.cxx"
+	"command/ModellingTest.cxx"
 
 	"document/DocumentTest.cxx"
 

@@ -11,13 +11,13 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Glyphs.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/Picker.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/view/Glyphs.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>

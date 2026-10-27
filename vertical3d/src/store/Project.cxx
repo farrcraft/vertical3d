@@ -10,13 +10,13 @@
 #include <api/asset/Migration.h>
 #include <api/asset/Writer.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "Scene.h"
 #include "SceneStore.h"
 
 #include <boost/filesystem.hpp>

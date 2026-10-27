@@ -7,13 +7,13 @@
 
 #include <api/log/Logger.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <optional>
 #include <string>
 
 #include "Picker.h"
-#include "SelectMask.h"
 #include "Tool.h"
 
 #include <boost/shared_ptr.hpp>

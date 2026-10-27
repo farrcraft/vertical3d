@@ -6,11 +6,11 @@
 #pragma once
 
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Scene.h>
 
 #include <string>
 #include <vector>
 
-#include "Scene.h"
 #include "SceneStore.h"
 
 #include <boost/filesystem/path.hpp>

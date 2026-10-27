@@ -20,8 +20,8 @@
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>

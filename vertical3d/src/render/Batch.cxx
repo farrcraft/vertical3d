@@ -10,7 +10,6 @@
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -27,6 +26,7 @@
 #include <vector>
 
 #include "Process.h"
+#include "RIBExportVisitor.h"
 #include "Shot.h"
 
 #include <boost/filesystem/operations.hpp>

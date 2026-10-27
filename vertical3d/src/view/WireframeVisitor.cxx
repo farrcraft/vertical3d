@@ -13,18 +13,18 @@
 #include <api/brep/Vertex.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/geometry/AABBox.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <vector>
 
-#include "Camera.h"
-#include "Evaluation.h"
 #include "Glyphs.h"
-#include "Group.h"
-#include "Light.h"
-#include "Mesh.h"
 
 #include <boost/shared_ptr.hpp>
 

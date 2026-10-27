@@ -5,9 +5,10 @@
 
 #pragma once
 
-#include <vertical3d/src/tool/Tool.h>
 
 #include <vector>
+
+#include "Tool.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>

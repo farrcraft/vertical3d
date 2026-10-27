@@ -5,10 +5,10 @@
 
 #include "ToolRouter.h"
 
-#include <vertical3d/src/tool/Tool.h>
-
 #include <algorithm>
 #include <vector>
+
+#include "Tool.h"
 
 #include <glm/vec2.hpp>
 

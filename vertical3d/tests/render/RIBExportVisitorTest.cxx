@@ -13,12 +13,12 @@
 #include <api/render/offline/rib/Writer.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 

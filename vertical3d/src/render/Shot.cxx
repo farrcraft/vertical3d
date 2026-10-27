@@ -12,11 +12,12 @@
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <ostream>
 #include <vector>
+
+#include "RIBExportVisitor.h"
 
 #include <boost/shared_ptr.hpp>
 

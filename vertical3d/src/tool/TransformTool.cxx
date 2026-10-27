@@ -18,7 +18,7 @@
 #include <vertical3d/src/manipulator/TranslateManipulator.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>

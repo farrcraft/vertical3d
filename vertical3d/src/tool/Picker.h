@@ -16,9 +16,8 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
-
-#include "SelectMask.h"
 
 #include <vector>
 

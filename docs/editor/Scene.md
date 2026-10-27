@@ -126,7 +126,7 @@ does nothing, with a log line, on a selection it cannot use.
   stays selected. A merge that would leave an edge shared by more than two faces, or a face that
   meets itself, is refused. Merging the two corners across a face is refused for both reasons.
 
-The functions that do the work are in `src/scene/Modelling.h`, apart from the controller, so they
+The functions that do the work are in `src/command/Modelling.h`, apart from the controller, so they
 can be tested without it.
 
 ## The scene
@@ -289,7 +289,7 @@ always visible, including where it lies in the same plane as the grid's axis lin
 is placed by its item's translation and rotation, and not its scale. It is `GLYPH_LENGTH` (one
 unit) long along the item's +z axis, so it has a size in the scene rather than on the screen. An
 unselected glyph is drawn in its own colour, and a selected one in the selection's. The shapes
-are in `src/scene/Glyphs.h`:
+are in `src/view/Glyphs.h`:
 
 | Item | Glyph |
 |---|---|

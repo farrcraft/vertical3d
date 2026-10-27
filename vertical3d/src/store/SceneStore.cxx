@@ -17,6 +17,15 @@
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/Properties.h>
+#include <vertical3d/src/scene/RenderSettings.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
 
 #include <algorithm>
 #include <array>
@@ -34,16 +43,6 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-
-#include "Camera.h"
-#include "Group.h"
-#include "Properties.h"
-#include "RenderSettings.h"
-#include "Timeline.h"
-#include "Item.h"
-#include "Light.h"
-#include "Mesh.h"
-#include "Scene.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>

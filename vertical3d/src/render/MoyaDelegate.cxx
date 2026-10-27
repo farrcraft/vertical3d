@@ -12,7 +12,6 @@
 #include <api/type/camera/Profile.h>
 #include <moya/libmoya/Planes.h>
 #include <moya/libmoya/RIBHandler.h>
-#include <vertical3d/src/scene/RIBExportVisitor.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -22,6 +21,7 @@
 #include <thread>
 
 #include "Delegate.h"
+#include "RIBExportVisitor.h"
 #include "Shot.h"
 
 #include <boost/make_shared.hpp>

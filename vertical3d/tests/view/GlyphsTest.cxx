@@ -5,8 +5,8 @@
 
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Glyphs.h>
 #include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/view/Glyphs.h>
 
 #include <algorithm>
 #include <cmath>

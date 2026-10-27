@@ -6,9 +6,8 @@
 #pragma once
 
 #include <api/render/realtime/canvas/Line.h>
-
-#include "Camera.h"
-#include "Light.h"
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Light.h>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>

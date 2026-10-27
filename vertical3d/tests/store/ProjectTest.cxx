@@ -7,8 +7,8 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/store/Project.h>
 
 #include <fstream>
 #include <ios>

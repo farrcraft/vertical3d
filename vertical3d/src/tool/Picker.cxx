@@ -14,15 +14,14 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Glyphs.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/view/Glyphs.h>
 #include <vertical3d/src/view/ViewPort.h>
-
-#include "SelectMask.h"
 
 #include <algorithm>
 #include <array>

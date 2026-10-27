@@ -20,8 +20,8 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/RenderSettings.h>
-#include <vertical3d/src/scene/SceneStore.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/store/SceneStore.h>
 
 #include <cstddef>
 #include <cstdint>

@@ -11,13 +11,13 @@
 #include <api/brep/Topology.h>
 #include <api/brep/Vertex.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/Modelling.h>
 #include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/scene/Modelling.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include <cmath>
 #include <cstddef>

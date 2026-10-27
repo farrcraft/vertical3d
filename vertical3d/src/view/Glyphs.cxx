@@ -6,13 +6,12 @@
 #include "Glyphs.h"
 
 #include <api/render/realtime/canvas/Line.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Light.h>
 
 #include <cmath>
 #include <vector>
-
-#include "Camera.h"
-#include "Evaluation.h"
-#include "Light.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>

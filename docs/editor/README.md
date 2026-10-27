@@ -58,13 +58,15 @@ Ctrl is also the truck modifier. Save As and RIB export are on the Project menu 
 | `src/document/` | The document: the scene, its history and its project, and every operation on them |
 | `src/control/` | The controllers for playback, the Render menu, and the routing of the mouse |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui |
-| `src/view/` | The viewports and their layout, the construction plane, and the shaded pass |
+| `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass |
 | `shaders/` | The shaded pass's vertex and fragment stages, compiled into the editor at build time |
-| `src/scene/` | The scene and its kinds of item, animation and render settings, the primitives and modelling operations, wireframe drawing, RIB export, and the project files |
-| `src/command/` | The undo records and the stack that holds them |
+| `src/scene/` | The model: the scene and its kinds of item, their evaluation, animation and render settings. It includes nothing else of the editor's |
+| `src/selection/` | What a select mask takes |
+| `src/store/` | The project directory and the scene document it saves |
+| `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking |
 | `src/manipulator/` | The translate, rotate and scale handles, and what they move |
-| `src/render/` | Rendering the scene with moya: a shot, the render window, live render and batches |
+| `src/render/` | Rendering the scene with moya: the RIB export, a shot, the render window, live render and batches |
 | `data/` | Config documents: bindings, ui, window, camera profiles, layout |
 | `tests/` | The `vertical3d` Boost.Test suite, with one directory for each `src/` subdirectory, and the `vertical3d_device` suite |
 

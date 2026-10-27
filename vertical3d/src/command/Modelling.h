@@ -5,11 +5,12 @@
 
 #pragma once
 
-#include <vertical3d/src/command/TopologyCommand.h>
+
+#include <vertical3d/src/scene/Scene.h>
 
 #include <string>
 
-#include "Scene.h"
+#include "TopologyCommand.h"
 
 #include <boost/shared_ptr.hpp>
 

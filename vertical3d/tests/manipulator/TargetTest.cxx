@@ -19,7 +19,7 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include <algorithm>
 #include <cstddef>

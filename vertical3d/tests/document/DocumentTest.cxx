@@ -7,10 +7,10 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/store/Project.h>
 
 #include <string>
 

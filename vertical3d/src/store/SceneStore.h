@@ -7,15 +7,14 @@
 
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <map>
 #include <string>
 #include <utility>
-
-#include "Item.h"
-#include "Scene.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>

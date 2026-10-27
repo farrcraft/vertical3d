@@ -9,12 +9,12 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Glyphs.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/WireframeVisitor.h>
+#include <vertical3d/src/view/Glyphs.h>
+#include <vertical3d/src/view/WireframeVisitor.h>
 
 #include <cmath>
 #include <cstddef>

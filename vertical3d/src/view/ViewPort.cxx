@@ -12,9 +12,9 @@
 #include <vertical3d/src/manipulator/Manipulator.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/WireframeVisitor.h>
 
 #include "ConstructionPlane.h"
+#include "WireframeVisitor.h"
 
 #include <cstdint>
 #include <limits>

@@ -8,18 +8,17 @@
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Camera.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/RenderSettings.h>
+#include <vertical3d/src/scene/SceneVisitor.h>
 
 #include <string>
 #include <vector>
-
-#include "Camera.h"
-#include "Evaluation.h"
-#include "Group.h"
-#include "Item.h"
-#include "Light.h"
-#include "Mesh.h"
-#include "RenderSettings.h"
-#include "SceneVisitor.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>

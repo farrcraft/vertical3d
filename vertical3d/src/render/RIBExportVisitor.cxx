@@ -14,6 +14,13 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/RenderSettings.h>
 
 #include <array>
 #include <cstddef>
@@ -21,18 +28,9 @@
 #include <string>
 #include <vector>
 
-#include "Camera.h"
-#include "Evaluation.h"
-#include "Group.h"
-#include "Item.h"
-#include "Light.h"
-#include "Mesh.h"
-#include "RenderSettings.h"
-
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-
 
 namespace v3d::editor {
 
