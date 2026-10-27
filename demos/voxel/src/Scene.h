@@ -14,7 +14,6 @@
 class Chunk;
 class GameState;
 class Player;
-class Camera;
 
 class Scene {
  public:
@@ -28,7 +27,6 @@ class Scene {
 
     boost::shared_ptr<Player> player();
     boost::shared_ptr<GameState> state();
-    boost::shared_ptr<Camera> camera();
 
     boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & chunks();
 

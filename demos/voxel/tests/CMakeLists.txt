@@ -17,7 +17,7 @@ v3d_add_test(voxel
 	"../src/Controller.cxx"
 	"../src/Renderer.cxx"
 	"../src/Scene.cxx"
-	"../src/engine/Camera.cxx"
+	"../src/engine/CameraController.cxx"
 	"../src/engine/ChunkMeshBuilder.cxx"
 	"../src/engine/MortonCode.cxx"
 	"../src/engine/Nanoseconds.cxx"

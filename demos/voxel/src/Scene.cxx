@@ -5,7 +5,6 @@
 
 #include "Scene.h"
 
-#include <demos/voxel/src/engine/Camera.h>
 #include <demos/voxel/src/engine/MortonCode.h>
 #include <demos/voxel/src/game/GameState.h>
 #include <demos/voxel/src/game/Player.h>
@@ -72,10 +71,6 @@ boost::shared_ptr<Player> Scene::player() {
 
 boost::shared_ptr<GameState> Scene::state() {
     return state_;
-}
-
-boost::shared_ptr<Camera> Scene::camera() {
-    return player_->camera();
 }
 
 void Scene::tick(float step) {

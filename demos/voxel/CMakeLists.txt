@@ -1,6 +1,5 @@
 add_executable(voxel
-	"src/engine/Aligned.h"
-	"src/engine/Camera.h" "src/engine/Camera.cxx"
+	"src/engine/CameraController.h" "src/engine/CameraController.cxx"
 	"src/engine/ChunkMeshBuilder.h" "src/engine/ChunkMeshBuilder.cxx"
 	"src/engine/ChunkVertex.h"
 	"src/engine/MaterialInfo.h"

@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <api/type/camera/Camera.h>
+#include <demos/voxel/src/engine/CameraController.h>
+
 #include <cstdint>
 #include <vector>
 #include <utility>
@@ -16,11 +19,17 @@
 
 #include "Item.h"
 
-class Camera;
-
+/**
+ * The player: a first person camera, moved by the directions held and turned by mouselook.
+ *
+ * The controller holds the camera's address, so a player is not copied or moved.
+ **/
 class Player {
  public:
     explicit Player(const glm::vec3 & pos);
+
+    Player(const Player&) = delete;
+    Player& operator=(const Player&) = delete;
 
     typedef enum Movement : std::uint8_t {
         MOVE_UP = 2,
@@ -44,7 +53,16 @@ class Player {
      */
     void tick(float step);
 
-    boost::shared_ptr<Camera> camera();
+    /**
+     * @return the camera the player sees through, whose view and projection are current
+     **/
+    const v3d::type::camera::Camera& camera() const noexcept;
+
+    /**
+     * @return what moves and turns the camera, and gives it its lens
+     **/
+    CameraController& controller() noexcept;
+    const CameraController& controller() const noexcept;
 
     glm::vec3 position() const;
     void position(const glm::vec3 & pos);
@@ -60,7 +78,8 @@ class Player {
 
  private:
     glm::vec3 position_;
-    boost::shared_ptr<Camera> camera_;
+    v3d::type::camera::Camera camera_;
+    CameraController controller_;
     std::vector<Item> inventory_;
     unsigned int movement_;
 };

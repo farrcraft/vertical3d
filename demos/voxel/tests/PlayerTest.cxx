@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <demos/voxel/src/engine/Camera.h>
+#include <demos/voxel/src/engine/CameraController.h>
 #include <demos/voxel/src/game/Player.h>
 
 #include <cmath>
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(player_reaches_its_speed_limit_test) {
     for (int step = 0; step < 30; step++) {
         player.tick(0.1F);
     }
-    BOOST_CHECK_CLOSE(std::abs(player.camera()->currentVelocity().z), 12.0F, 0.01F);
+    BOOST_CHECK_CLOSE(std::abs(player.controller().velocity().z), 12.0F, 0.01F);
 }
 
 /**
@@ -66,10 +66,10 @@ BOOST_AUTO_TEST_CASE(player_reaches_its_speed_limit_test) {
 BOOST_AUTO_TEST_CASE(player_look_turns_by_degrees_per_pixel_test) {
     Player player(glm::vec3(0.0F));
     player.look(100.0F, 0.0F);
-    const glm::vec3 direction = player.camera()->direction();
+    const glm::vec3 direction = player.camera().profile().direction();
     const float angle = std::atan2(direction.x, -direction.z);
     BOOST_CHECK_CLOSE(angle, glm::radians(10.0F), 0.1F);
-    BOOST_CHECK_SMALL(glm::length(player.camera()->yAxis() - glm::vec3(0.0F, 1.0F, 0.0F)), 0.0001F);
+    BOOST_CHECK_SMALL(glm::length(player.camera().profile().up() - glm::vec3(0.0F, 1.0F, 0.0F)), 0.0001F);
 }
 
 };  // namespace

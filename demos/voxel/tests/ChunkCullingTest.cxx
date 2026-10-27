@@ -3,9 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
-#include <demos/voxel/src/engine/Camera.h>
+#include <demos/voxel/src/engine/CameraController.h>
 #include <demos/voxel/src/voxel/ChunkCulling.h>
 
 #include <boost/test/unit_test.hpp>
@@ -23,8 +24,9 @@ const float chunkSize = 16.0F;
  * lens is the one Renderer::resize gives it, at an aspect of one.
  **/
 Frustum view() {
-    Camera camera;
-    camera.perspective({.fovx = 90.0F, .aspect = 1.0F, .znear = 0.1F, .zfar = 1000.0F});
+    v3d::type::camera::Camera camera;
+    CameraController controller(&camera, CameraController::Motion());
+    controller.perspective({.fovx = 90.0F, .aspect = 1.0F, .znear = 0.1F, .zfar = 1000.0F});
     return Frustum(camera.projection() * camera.view());
 }
 

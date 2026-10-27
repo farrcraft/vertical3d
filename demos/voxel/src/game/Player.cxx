@@ -5,7 +5,8 @@
 
 #include "Player.h"
 
-#include <demos/voxel/src/engine/Camera.h>
+#include <api/type/camera/Camera.h>
+#include <demos/voxel/src/engine/CameraController.h>
 
 #include <iterator>
 
@@ -31,8 +32,7 @@ Moves possibleMoves[] = {
  * per second. A held direction accelerates the player to the limit, and a released one slows
  * it to rest at the same rate.
  **/
-constexpr glm::vec3 PLAYER_ACCELERATION(8.0F, 8.0F, 8.0F);
-constexpr glm::vec3 PLAYER_VELOCITY(12.0F, 12.0F, 12.0F);
+constexpr CameraController::Motion PLAYER_MOTION{.acceleration = glm::vec3(8.0F, 8.0F, 8.0F), .limit = glm::vec3(12.0F, 12.0F, 12.0F)};
 
 /** How far mouselook turns the view for each pixel the mouse moves, in degrees. **/
 constexpr float LOOK_DEGREES_PER_PIXEL = 0.1F;
@@ -41,20 +41,25 @@ constexpr float LOOK_DEGREES_PER_PIXEL = 0.1F;
 
 Player::Player(const glm::vec3 & pos) :
     position_(pos),
+    controller_(&camera_, PLAYER_MOTION),
     movement_(0) {
-    camera_.reset(new Camera());
-    camera_->behavior(Camera::CAMERA_BEHAVIOR_FIRST_PERSON);
-    camera_->position(position_);
-    camera_->acceleration(PLAYER_ACCELERATION);
-    camera_->velocity(PLAYER_VELOCITY);
+    controller_.place(position_);
 }
 
 glm::vec3 Player::position() const {
     return position_;
 }
 
-boost::shared_ptr<Camera> Player::camera() {
+const v3d::type::camera::Camera& Player::camera() const noexcept {
     return camera_;
+}
+
+CameraController& Player::controller() noexcept {
+    return controller_;
+}
+
+const CameraController& Player::controller() const noexcept {
+    return controller_;
 }
 
 void Player::position(const glm::vec3 & pos) {
@@ -71,7 +76,7 @@ void Player::move(Movement direction, bool held) {
 }
 
 void Player::look(float heading, float pitch) {
-    camera_->rotate(heading * LOOK_DEGREES_PER_PIXEL, pitch * LOOK_DEGREES_PER_PIXEL, 0.0F);
+    controller_.look(heading * LOOK_DEGREES_PER_PIXEL, pitch * LOOK_DEGREES_PER_PIXEL);
 }
 
 void Player::tick(float step) {
@@ -82,13 +87,12 @@ void Player::tick(float step) {
             dir[static_cast<glm::length_t>(possibleMoves[i].axis_)] = possibleMoves[i].magnitude_;
         }
     }
-    const glm::vec3 displacement = camera_->calculateDisplacement(dir, step);
-    const glm::vec3 position = camera_->calculateMovement(displacement);
+    const glm::vec3 position = controller_.moved(controller_.displacement(dir, step));
     if (!checkWorldCollision(position)) {
-        camera_->position(position);
+        controller_.place(position);
         position_ = position;
     }
-    camera_->updateVelocity(dir, step);
+    controller_.accelerate(dir, step);
 }
 
 bool Player::checkWorldCollision(const glm::vec3 & /* position */) {

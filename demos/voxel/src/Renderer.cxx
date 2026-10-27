@@ -17,13 +17,14 @@
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
 #include <api/render/realtime/Material.h>
 #include <api/render/realtime/Resources.h>
+#include <api/type/camera/Camera.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/shell/Shell.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <api/window/Window.h>
-#include <demos/voxel/src/engine/Camera.h>
+#include <demos/voxel/src/engine/CameraController.h>
 #include <demos/voxel/src/engine/ChunkMeshBuilder.h>
 #include <demos/voxel/src/engine/ChunkVertex.h>
 #include <demos/voxel/src/engine/Nanoseconds.h>
@@ -274,8 +275,9 @@ void Renderer::createPipeline() {
 /**
  **/
 void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
-    const glm::vec3 eye = scene_->camera()->position();
-    const v3d::type::geometry::Frustum frustum(scene_->camera()->projection() * scene_->camera()->view());
+    const v3d::type::camera::Camera& camera = scene_->player()->camera();
+    const glm::vec3 eye = camera.profile().eye();
+    const v3d::type::geometry::Frustum frustum(camera.projection() * camera.view());
     const ChunkMeshPool::EntryMap& entries = meshes_->entries();
 
     drawnChunks_ = 0;
@@ -353,9 +355,8 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
     // one item per chunk through one pipeline and one material, so what the sort does here
     // is order them front to back for the depth test
     terrain->sort(true);
-    terrain->camera(scene_->camera()->view(), scene_->camera()->projection());
+    terrain->camera(scene_->player()->camera().view(), scene_->player()->camera().projection());
     drawTerrain(terrain.get());
-    scene_->camera()->dirty(false);
 
     if (debug_) {
         drawDebug(statistics, tools);
@@ -393,7 +394,7 @@ void Renderer::resize(const glm::ivec2& size) {
     const float floatWidth = static_cast<float>(width);
     const float floatHeight = static_cast<float>(height);
 
-    scene_->camera()->perspective({.fovx = Camera::DEFAULT_FOVX, .aspect = floatWidth / floatHeight, .znear = Camera::DEFAULT_ZNEAR, .zfar = Camera::DEFAULT_ZFAR});
+    scene_->player()->controller().perspective({.aspect = floatWidth / floatHeight});
 }
 
 /**

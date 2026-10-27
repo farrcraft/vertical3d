@@ -179,6 +179,11 @@ says how to build it.
   turns it down. The pitch stops at straight up and straight down, and the heading turns about
   the world's up axis, so the view never rolls. When the menu opens, the game leaves relative
   mode so the pointer shows; it returns to relative mode when the menu closes.
+- **A controller over the api's camera.** The player sees through a `type::camera::Camera`.
+  voxel's `CameraController` holds the heading, the pitch and the velocity, and writes the eye
+  and the orientation into the camera after every change. The camera's profile uses the hand
+  `glm::lookAt` builds, which the terrain is wound for. The lens keeps a 90 degree horizontal
+  field of view at any aspect.
 - **Movement from held keys.** `Controller::simulate` asks `held()` for each movement command
   every step and passes the answer to `Player::move`, which starts or stops that direction. A
   held direction accelerates at 8 units a second squared to 12 units a second, and a released
