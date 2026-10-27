@@ -5,7 +5,6 @@
 
 #include "Document.h"
 
-#include <api/brep/BRep.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
@@ -37,6 +36,30 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::editor {
+
+namespace {
+
+/**
+ * What a modelling operation says when it changed the mesh, and when there was nothing to change.
+ **/
+struct Said final {
+    std::string done;
+    std::string refused;
+};
+
+/**
+ * Record a modelling operation's change, or say why there was none. A modelling operation has
+ * changed the mesh by the time it hands its record back.
+ **/
+Outcome record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said) {
+    if (!command) {
+        return { .done = false, .message = said.refused };
+    }
+    history->push(command);
+    return { .done = true, .message = said.done };
+}
+
+};  // namespace
 
 Document::Document(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& project) :
     scene_(boost::make_shared<Scene>()),
@@ -128,38 +151,31 @@ Outcome Document::settings(const RenderSettings& settings) {
     return { .done = true, .message = "changed the render settings" };
 }
 
-Outcome Document::topology(const boost::shared_ptr<TopologyCommand>& command, const std::string& done,
-    const std::string& problem) {
-    if (!command) {
-        return { .done = false, .message = problem };
-    }
-    // a modelling operation has changed the mesh by the time it hands its record back
-    history_->push(command);
-    return { .done = true, .message = done };
-}
-
 Outcome Document::splitEdges() {
-    return topology(editor::splitEdges(*scene_), "split the selected edges", "split edge: no edge is selected");
+    return record(history_.get(), editor::splitEdges(*scene_),
+        {.done = "split the selected edges", .refused = "split edge: no edge is selected"});
 }
 
 Outcome Document::splitFace() {
     std::string problem;
     const boost::shared_ptr<TopologyCommand> command = editor::splitFace(*scene_, &problem);
-    return topology(command, "split a face between the selected vertices", "split face: " + problem);
+    return record(history_.get(), command, {.done = "split a face between the selected vertices", .refused = "split face: " + problem});
 }
 
 Outcome Document::mergeVertices() {
     std::string problem;
     const boost::shared_ptr<TopologyCommand> command = editor::mergeVertices(*scene_, &problem);
-    return topology(command, "merged the selected vertices", "merge vertices: " + problem);
+    return record(history_.get(), command, {.done = "merged the selected vertices", .refused = "merge vertices: " + problem});
 }
 
 Outcome Document::extrudeFaces() {
-    return topology(editor::extrudeFaces(*scene_), "extruded the selected faces", "extrude face: no face is selected");
+    return record(history_.get(), editor::extrudeFaces(*scene_),
+        {.done = "extruded the selected faces", .refused = "extrude face: no face is selected"});
 }
 
 Outcome Document::insetFaces() {
-    return topology(editor::insetFaces(*scene_), "inset the selected faces", "inset face: no face is selected");
+    return record(history_.get(), editor::insetFaces(*scene_),
+        {.done = "inset the selected faces", .refused = "inset face: no face is selected"});
 }
 
 Outcome Document::undo() {

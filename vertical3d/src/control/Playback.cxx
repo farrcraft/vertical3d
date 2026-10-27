@@ -6,7 +6,6 @@
 #include "Playback.h"
 
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 

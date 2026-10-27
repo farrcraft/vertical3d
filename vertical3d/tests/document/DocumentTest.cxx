@@ -7,7 +7,6 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Project.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>

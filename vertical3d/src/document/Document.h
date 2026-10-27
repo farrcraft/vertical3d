@@ -8,7 +8,6 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
@@ -169,12 +168,6 @@ class Document final {
         const std::string& picture);
 
  private:
-    /**
-     * Record a modelling operation's change, or say why there was none.
-     **/
-    Outcome topology(const boost::shared_ptr<TopologyCommand>& command, const std::string& done,
-        const std::string& problem);
-
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<CommandStack> history_;
     boost::shared_ptr<Project> project_;

@@ -184,14 +184,14 @@ bool Controller::start() {
  **/
 bool Controller::buildViews() {
     views_.clear();
-    for (const ViewLayout::View& view : layout_->views()) {
+    return std::ranges::all_of(layout_->views(), [this](const ViewLayout::View& view) {
         if (!profiles_->has(view.camera)) {
             logger()->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
             return false;
         }
         views_.push_back(boost::make_shared<ViewPort>(view.name, profiles_->get(view.camera)));
-    }
-    return true;
+        return true;
+    });
 }
 
 /**

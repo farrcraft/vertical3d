@@ -21,7 +21,7 @@ namespace {
  **/
 class Recording final : public v3d::editor::Tool {
  public:
-    explicit Recording(bool takes) : takes_(takes) {
+    explicit Recording(bool takes) : taking(takes) {
     }
 
     void activate(const std::string& /* name */) override {
@@ -32,24 +32,22 @@ class Recording final : public v3d::editor::Tool {
         heard.emplace_back("view");
     }
     bool takes(const glm::vec2& /* position */) const override {
-        return takes_;
+        return taking;
     }
     bool dragging() const noexcept override {
-        return held_;
+        return held;
     }
     void motion(const glm::vec2& /* position */) override {
         heard.emplace_back("motion");
     }
     void button(unsigned int /* button */, bool pressed, const glm::vec2& /* position */) override {
-        held_ = pressed;
+        held = pressed;
         heard.emplace_back(pressed ? "press" : "release");
     }
 
     std::vector<std::string> heard;
-
- private:
-    bool takes_;
-    bool held_ = false;
+    bool taking;
+    bool held = false;
 };
 
 BOOST_AUTO_TEST_SUITE(tool_router_test)

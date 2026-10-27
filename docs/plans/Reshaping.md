@@ -454,14 +454,24 @@ decides `config`.
 
 ### Step 13 — The editor's document layer
 
-**Open.**
+**Closed.**
 
-- A `Document` holds the scene, history, project, saved position, autosave and recovery.
-- Each operation is a typed function on the document that applies and records itself. Menus and
-  bindings call operations.
-- Playback, the render window and input routing each get a small controller of their own.
-- `Tool` becomes an active-tool router, so new tools have a slot.
-- The editor's sources build into an internal library that the executable and the suite link.
+- `Document` holds the scene, its history and its project, with the saved position, the
+  autosave and the recovery. Every operation on it applies itself, records itself, and returns
+  an `Outcome`: whether it ran, and what to say. What it acts on is an argument or its name, so
+  none reads the select tool, the active view or the pane under the cursor. The command table
+  supplies the arguments, and checks the select mask before a modelling operation.
+- `Playback`, `RenderWindow` and `Pointer` in `src/control/` play the timeline, run the Render
+  menu, and route the mouse. `Controller` keeps startup, the command table, and the dialogs that
+  ask before a project is replaced.
+- `Tool` gains `view()`, `takes()` and `dragging()`. `ToolRouter` gives each press to the first
+  tool that takes it, and the release to that tool alone. **Different from before:** a modifier
+  pressed during a handle drag or a rubber band no longer starts a camera move part way through.
+- Every source but `main.cxx` builds into `v3dlib_editor`, which the executable and both suites
+  link. The library links PRIVATE the three libraries only its sources use.
+- Fifteen new cases, each of which fails to build without the change: six for the document,
+  three for playback, two for the pointer, three for the router, and one for the transform
+  tool's `takes()`.
 
 ### Step 14 — Evaluated animation
 
