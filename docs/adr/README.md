@@ -157,6 +157,7 @@ content went. Numbers are never reused.
 | [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
 | [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
 | [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | accepted |
+| [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
 
 ## Build, testing and code
 

@@ -16,7 +16,9 @@ deleted there. A step with a testable CPU half brings test cases with it.
 ## What the survey found
 
 The tree was read at `ab4bdea1`. Line numbers are from that commit, under `vertical3d/` unless
-another directory is named.
+another directory is named. The Reshaping plan has since moved the editor's sources into
+directories by layer, folded `api/dag` into `Item`, and moved animation out of `api/type`, so
+the paths below are where things were. The open steps name where things are now.
 
 **The scene:**
 
@@ -95,7 +97,7 @@ another directory is named.
 | Scene cameras and groups | `create::ortho::camera`, `create::perspective::camera` (step 4), `create::group` (step 9) | 4, 9 |
 | Camera Manipulators | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | 5 |
 | Shading | `view::shade::flat`, `smooth`; `view::cull::none`, `front`, `back`, `both`; `view::rendermode::front::*`, `back::*` (points, lines, fill) | 6 |
-| Import | `project::import::lwo`, `dxf`, `3ds`, `milkshape` | 7 |
+| Import | `project::import::lwo`, `dxf`, `3ds`, `milkshape`, replaced by `gltf` and `usd` | 7 |
 | Render | `render::settings`, `render::view`, `render::batch` | 8 |
 | Timeline | `timeline::set`, `timeline::playback::*` (ten) | 10 |
 
@@ -113,7 +115,9 @@ them.
 | Editor: how a saved record refers to an item. Decided in ADR-0103: a persistent document id. | 2 |
 | Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. Decided in ADR-0106: a renderer interface for interactive renders, with moya linked behind it, and `moya.exe` for batches. | 8 |
-| Editor: which import formats the menu offers. glTF has a reader. The four legacy formats each need one written. | 7 |
+| Editor: which import formats the menu offers, and what an import makes. Decided in ADR-0122: glTF and USD, each read as a scene of items. | 7 |
+| Editor: what a curve is, whether it is a kind of item, and whether moya renders one. | 13 |
+| Editor: what a handle is. | 14 |
 | Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
 
 ## What blocks what
@@ -258,15 +262,31 @@ pass per view draws the triangles before the lines and shares the depth buffer.
 
 ### Step 7 — Import
 
-**Open.** ADR first, on the formats.
+**Open.** ADR-0122 decided it: glTF and USD, each read as a scene of items.
+LightWave, DXF, 3DS and MilkShape leave the Import menu, and `project::import::gltf` and
+`project::import::usd` replace them.
 
-- `brep` gains a builder from an indexed triangle list. It welds positions through a hash, pairs
-  edges through a map, and joins coplanar triangles that share an edge back into faces. The
-  builder is linear in the triangle count.
-- An importer reads through `api/asset`, builds meshes, and adds them through one command, so an
-  import undoes in one step.
+- `api/brep` gains a builder from polygons over an indexed point list, beside its primitives
+  and its triangulation. It welds positions through a hash and pairs edges through a map, so it
+  is linear in the size of the input. For triangles it can join coplanar neighbours back into
+  faces, which a glTF import asks for. Each face's loop is reversed to the editor's clockwise
+  winding.
+- A glTF import walks the file's nodes itself, through cgltf, rather than the game loader's
+  merged `model::Model`. Each node becomes a group, a mesh, a camera or a light
+  (`KHR_lights_punctual`), parented and placed as the file places it. Its animation becomes
+  keys on the items' properties.
+- A USD import walks the stage's prims the same way. `Xform` becomes a group, `Mesh` a mesh with
+  its polygons kept, `Camera` a camera, and `SphereLight`, `DistantLight` and a shaped
+  `SphereLight` a point, distant or spot light. Time samples become keys. OpenUSD enters the
+  vcpkg manifest without its imaging feature, and the build places its plugin files beside the
+  editor.
+- An import is one operation on `Document`, so it undoes in one step. The command table supplies
+  the file, as it supplies every other operation's arguments. A file that cannot be read, or a
+  node that cannot be made into an item, is reported in the operation's outcome.
 - Tests: a cube in triangles builds six quads. A non-manifold input is refused with a reason. A
-  large mesh builds in time linear in its size.
+  large mesh builds in time linear in its size. A glTF fixture and a USD fixture, each written
+  by Blender with a parented mesh, a camera, a light and a keyed move, import as those items,
+  parents, placements and keys, and undo in one step.
 
 ### Step 8 — The Render menu
 
@@ -353,9 +373,6 @@ were added or were removed.
   item is written again. A document read and then saved writes only its change. Another document
   is written whole, and so is the first write after a failed one.
 
-- Tests: a save after one move writes one row. An undone creation deletes its row. A save that
-  changes nothing writes nothing.
-
 ### Step 12 — Autosave
 
 **Closed.** On a timer, the editor writes the changes since the last autosave into a recovery
@@ -376,19 +393,28 @@ the recovery database.
 
 ### Step 13 — Curves
 
-**Open.** ADR first, on what a curve is: its form (polyline, Bezier, B-spline or NURBS), and
-whether it is a kind of item of its own. The menu's `select::mask::curve` waits on it.
+**Open.** ADR first, on what a curve is: its form (polyline, Bezier, B-spline or NURBS),
+whether it is a kind of item of its own, and whether moya renders one. moya's `RiCurves` has an
+empty body, so a curve that is only exported shows in neither Render View nor a batch. The
+menu's `select::mask::curve` waits on it.
 
-- A curve kind of item, drawn in lines through the wireframe, created from a new Create item,
-  saved as a new kind in the scene document, and exported as RI `Curves`.
+- A curve kind of item. `SceneVisitor` gains a `visit` for it, which every visitor implements,
+  and the wireframe draws it in lines from its evaluated placement. A new Create item makes one
+  through an operation on `Document`.
+- The store saves a curve through a new `Codec` in `store/`.
+- The export sends a curve as RI `Curves` through `rib::Handler`, which gains a `curves`
+  request. `rib::Writer` writes it and `rib::Recorder` replays it. If the ADR has moya render
+  curves, moya's handler draws them as well.
 - `SelectMask::Curve` picks a curve by screen distance, as a glyph is picked.
-- Tests: a curve draws, picks, saves and exports.
+- Tests: a curve draws, picks, saves and exports, and the writer writes a `Curves` request that
+  reads back the same.
 
 ### Step 14 — Handles
 
 **Open.** ADR first, on what a handle is. Nothing in the editor defines one: a manipulator's
-handles are not items, and cannot be selected. The candidates are a group's selection handle,
-which needs step 9, and an IK handle, which needs a skeleton in the scene. The menu's
+handles are drawn by the renderer, are not items, and cannot be selected. The candidates are a
+group's selection handle, which step 9's groups make possible, and an IK handle, which needs a
+skeleton in the scene. The menu's
 `select::mask::handle` waits on it.
 
 - Whatever the ADR decides is built as an item kind or a part of one, with the handle mask
