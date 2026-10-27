@@ -13,6 +13,7 @@
 #include <string_view>
 #include <vector>
 
+#include <boost/filesystem/path.hpp>
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -58,6 +59,16 @@ class SpriteSheets final {
     bool load(const boost::json::object& doc);
 
     /**
+     * Read every sheet in a sprites document file, as load() reads them. A file that does not
+     * exist holds no sheets, so a tool writing the first sheet of a document reads nothing.
+     *
+     * @return false when the file exists and is not a document load() understands whole,
+     *         because it cannot be read, is not a JSON object, or holds a sheet load() skips.
+     *         Writing the document back from what is then held would lose part of it
+     **/
+    bool read(const boost::filesystem::path& document);
+
+    /**
      * @param name the sheet name
      * @return the sheet, or an empty one when there is no such sheet
      **/
@@ -77,7 +88,7 @@ class SpriteSheets final {
      * Put a sheet in, replacing any sheet of the same name.
      *
      * There is no merge. A tool that packs one sheet of several and keeps the others
-     * load()s the document first, and writes back everything it then holds.
+     * read()s the document first, and writes back everything it then holds.
      *
      * @return whether the sheet is one a document can hold - it needs a name, an image and
      *         a size, as load() requires of one it reads

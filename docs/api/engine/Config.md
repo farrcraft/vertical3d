@@ -105,11 +105,18 @@ named rectangles in an image. It is in `v3d::asset_media`, so a tool reads it wi
 - `get()` returns an empty sheet or region for a name it does not hold, and `uv()` returns
   false. A missing sprite draws nothing and logs nothing, so check `has()` if it matters.
 - **This is the one config document the api also writes.** A sprite sheet is usually made by a
-  packing tool. Build sheets with `SpriteSheet(name, image, width, height)` and `place()`, add
-  them with `SpriteSheets::add()`, and write `document()` with
-  [`asset::writeDocument()`](Files.md#writing-files). `add()` replaces a sheet of the same
-  name. To keep the sheets you did not repack, `load()` the existing document first. Sheets and
-  sprites are written in the order they were added, so a repack produces a readable diff.
-  `imagetool --pack` does this, through [`image::pack()`](../Assets.md#packing-a-sprite-sheet).
+  packing tool. Build a sheet with `SpriteSheet::packed(name, image, packing)` from what
+  [`image::pack()`](../Assets.md#packing-a-sprite-sheet) packed, or with
+  `SpriteSheet(name, image, width, height)` and `place()`. Add it with `SpriteSheets::add()`,
+  and write `document()` with [`asset::writeDocument()`](Files.md#writing-files).
+- **`add()` replaces a sheet of the same name, and there is no merge.** To keep the sheets you
+  did not repack, `read()` the existing document file first. A file that does not exist holds no
+  sheets. `read()` returns false for a file that is there and cannot be read whole: it cannot be
+  opened, is not a JSON object, or holds a sheet `load()` rejects. Writing that document back
+  would lose part of it, so refuse instead. Sheets and sprites are written in the order they
+  were added, so a repack produces a readable diff. `imagetool --pack` does all of this.
+- `SpriteSheet::placements()` gives each sprite's rectangle as the `image::Placement` that
+  `image::unpack()` cuts, in the order of `sprites()`. `imagetool --unpack` cuts a sheet this
+  way.
 
 A ui image can name one region of a sheet. [ui/](../ui/README.md) covers that.

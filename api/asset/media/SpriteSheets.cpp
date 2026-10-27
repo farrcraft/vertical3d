@@ -5,6 +5,7 @@
 
 #include "SpriteSheets.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Json.h>
 #include <api/log/Logger.h>
 
@@ -12,10 +13,12 @@
 #include "SpriteSheet.h"
 
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
+#include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 
 namespace v3d::asset::media {
@@ -126,6 +129,26 @@ bool SpriteSheets::load(const boost::json::object& doc) {
         }
     }
     return understood;
+}
+
+/**
+ **/
+bool SpriteSheets::read(const boost::filesystem::path& document) {
+    if (!boost::filesystem::exists(document)) {
+        return true;
+    }
+    const std::optional<std::string> text = v3d::asset::readFile(document.string());
+    if (!text) {
+        logger_->get()->error("unable to read the sprites document {}", document.string());
+        return false;
+    }
+    boost::system::error_code error;
+    const boost::json::value parsed = boost::json::parse(*text, error);
+    if (error || !parsed.is_object()) {
+        logger_->get()->error("the sprites document {} is not a JSON object", document.string());
+        return false;
+    }
+    return load(parsed.as_object());
 }
 
 /**

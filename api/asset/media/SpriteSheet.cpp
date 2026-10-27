@@ -5,11 +5,15 @@
 
 #include "SpriteSheet.h"
 
+#include <api/image/Pack.h>
+
 #include "SpriteRegion.h"
 
 #include <map>
 #include <string>
 #include <vector>
+
+#include <glm/vec4.hpp>
 
 namespace v3d::asset::media {
 
@@ -27,6 +31,26 @@ name_(spec.name),
 image_(spec.image),
 width_(spec.width),
 height_(spec.height) {
+}
+
+/**
+ **/
+SpriteSheet SpriteSheet::packed(const std::string& name, const std::string& image, const v3d::image::Packing& packing) {
+    if (!packing.sheet) {
+        return SpriteSheet();
+    }
+    SpriteSheet sheet({.name = name, .image = image,
+        .width = static_cast<int>(packing.sheet->width()), .height = static_cast<int>(packing.sheet->height())});
+    for (const v3d::image::Placement& placement : packing.placements) {
+        SpriteRegion region;
+        region.x = static_cast<int>(placement.area.x);
+        region.y = static_cast<int>(placement.area.y);
+        region.width = static_cast<int>(placement.area.z);
+        region.height = static_cast<int>(placement.area.w);
+        // pack() places every sprite inside the sheet it returns, so place() takes each one
+        sheet.place(placement.name, region);
+    }
+    return sheet;
 }
 
 /**
@@ -106,6 +130,20 @@ bool SpriteSheet::place(const std::string& sprite, const SpriteRegion& region) {
         sprites_.push_back(sprite);
     }
     return true;
+}
+
+/**
+ **/
+std::vector<v3d::image::Placement> SpriteSheet::placements() const {
+    std::vector<v3d::image::Placement> placements;
+    placements.reserve(sprites_.size());
+    for (const std::string& sprite : sprites_) {
+        // place() admits no negative corner or size, so every value converts unchanged
+        const SpriteRegion& region = regions_.at(sprite);
+        placements.push_back({.name = sprite, .area = glm::uvec4(static_cast<unsigned int>(region.x),
+            static_cast<unsigned int>(region.y), static_cast<unsigned int>(region.width), static_cast<unsigned int>(region.height))});
+    }
+    return placements;
 }
 
 };  // namespace v3d::asset::media

@@ -5,6 +5,7 @@ v3d_add_test(asset_media
 	"GltfTest.cpp"
 	"MediaTest.cpp"
 	"ThreadTest.cpp"
+	"SheetPackingTest.cpp"
 	"SpriteSheetsTest.cpp")
 
 target_link_libraries(v3dtest_asset_media PRIVATE

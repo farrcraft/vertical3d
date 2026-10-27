@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/image/Pack.h>
+
 #include "SpriteRegion.h"
 
 #include <map>
@@ -43,6 +45,16 @@ class SpriteSheet final {
     };
 
     explicit SpriteSheet(const Spec& spec);
+
+    /**
+     * The sheet for what image::pack() packed: the packed image's size, and each placement as a
+     * sprite under its name, in the order pack() was given the sprites.
+     *
+     * @param name the sheet's name
+     * @param image the file the packed image is written to, which the sheet names
+     * @return an empty sheet, with no name, when the packing refused its sprites
+     **/
+    static SpriteSheet packed(const std::string& name, const std::string& image, const v3d::image::Packing& packing);
 
     /**
      * @return the sheet's name
@@ -95,6 +107,12 @@ class SpriteSheet final {
      *         kept as it was and is not an error
      **/
     bool place(const std::string& sprite, const SpriteRegion& region);
+
+    /**
+     * @return each sprite's region as a placement image::unpack() cuts, in the order of
+     *         sprites()
+     **/
+    std::vector<v3d::image::Placement> placements() const;
 
  private:
     friend class SpriteSheets;

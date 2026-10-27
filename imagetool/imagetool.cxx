@@ -3,9 +3,7 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/File.h>
 #include <api/asset/Writer.h>
-#include <api/asset/media/SpriteRegion.h>
 #include <api/asset/media/SpriteSheet.h>
 #include <api/asset/media/SpriteSheets.h>
 #include <api/image/Factory.h>
@@ -27,10 +25,8 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-#include <boost/json.hpp>
 #include <boost/program_options.hpp>
 #include <boost/make_shared.hpp>
-#include <glm/vec4.hpp>
 
 namespace {
 
@@ -76,26 +72,6 @@ bool plainName(const std::string & name) {
     return !name.empty() && name != "." && name != ".." && name.find_first_of("/\\:") == std::string::npos;
 }
 
-/**
- * The sheets already in a sprites document, so packing one sheet keeps the others. A missing
- * document holds none.
- *
- * @return false when the document exists and is not one SpriteSheets reads whole, so that
- *         rewriting it would lose what it held
- **/
-bool readSheets(const boost::filesystem::path & document, v3d::asset::media::SpriteSheets* sheets) {
-    if (!boost::filesystem::exists(document)) {
-        return true;
-    }
-    const std::optional<std::string> text = v3d::asset::readFile(document.string());
-    if (!text) {
-        return false;
-    }
-    boost::system::error_code error;
-    const boost::json::value parsed = boost::json::parse(*text, error);
-    return !error && parsed.is_object() && sheets->load(parsed.as_object());
-}
-
 /** What a --pack or --unpack run was asked to do. **/
 class SheetRequest final {
  public:
@@ -137,22 +113,13 @@ int packSheet(const SheetRequest & request, const boost::shared_ptr<v3d::log::Lo
 
     const boost::filesystem::path image(request.outfile.empty() ? request.sheet + ".png" : request.outfile);
     const boost::filesystem::path document = image.parent_path() / SPRITES_DOCUMENT;
+    // the document's other sheets are kept, and only the one of this name is replaced
     v3d::asset::media::SpriteSheets sheets(logger);
-    if (!readSheets(document, &sheets)) {
+    if (!sheets.read(document)) {
         std::cout << "error: " << document.string() << " holds something that is not a sprite sheet, so it is not rewritten\n";
         return EXIT_FAILURE;
     }
-    v3d::asset::media::SpriteSheet sheet({.name = request.sheet, .image = image.filename().string(),
-        .width = static_cast<int>(packing.sheet->width()), .height = static_cast<int>(packing.sheet->height())});
-    for (const v3d::image::Placement & placement : packing.placements) {
-        v3d::asset::media::SpriteRegion region;
-        region.x = static_cast<int>(placement.area.x);
-        region.y = static_cast<int>(placement.area.y);
-        region.width = static_cast<int>(placement.area.z);
-        region.height = static_cast<int>(placement.area.w);
-        sheet.place(placement.name, region);
-    }
-    if (!sheets.add(sheet)) {
+    if (!sheets.add(v3d::asset::media::SpriteSheet::packed(request.sheet, image.filename().string(), packing))) {
         std::cout << "error: a sheet needs a name\n";
         return EXIT_FAILURE;
     }
@@ -202,17 +169,13 @@ int unpackSheet(const boost::filesystem::path & document, const v3d::asset::medi
         return EXIT_FAILURE;
     }
 
-    std::vector<v3d::image::Placement> placements;
     for (const std::string & sprite : sheet.sprites()) {
         if (!plainName(sprite)) {
             std::cout << "error: the sprite name \"" << sprite << "\" cannot name a file\n";
             return EXIT_FAILURE;
         }
-        const v3d::asset::media::SpriteRegion region = sheet.get(sprite);
-        placements.push_back({.name = sprite, .area = glm::uvec4(static_cast<unsigned int>(region.x),
-            static_cast<unsigned int>(region.y), static_cast<unsigned int>(region.width), static_cast<unsigned int>(region.height))});
     }
-    const v3d::image::Unpacking unpacking = v3d::image::unpack(*image, placements);
+    const v3d::image::Unpacking unpacking = v3d::image::unpack(*image, sheet.placements());
     if (!unpacking.refusal.empty()) {
         std::cout << "error: " << unpacking.refusal << "\n";
         return EXIT_FAILURE;
@@ -245,7 +208,7 @@ int unpackSheets(const SheetRequest & request, const boost::shared_ptr<v3d::log:
         return EXIT_FAILURE;
     }
     v3d::asset::media::SpriteSheets sheets(logger);
-    if (!readSheets(document, &sheets)) {
+    if (!sheets.read(document)) {
         std::cout << "error: " << document.string() << " is not a sprites document\n";
         return EXIT_FAILURE;
     }
