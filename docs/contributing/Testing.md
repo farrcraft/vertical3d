@@ -50,7 +50,7 @@ suites there too. [Build.md](Build.md#building-off-msvc) lists them.
 - **One more for the frame loop on a real window**, `render_window`, from
   `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
 - **One suite per app that has logic worth testing**, in the app's `tests/` directory: moya,
-  vertical3d, and the four demos under `demos/`.
+  vertical3d, and the five demos under `demos/`.
 - **One more for the editor on a real device**, `vertical3d_device`, from
   `vertical3d/tests/device/`. It draws the editor's shaded pass through the render device
   suite's headless device, whose `Headless.cpp` it compiles. It skips where there is no device,
@@ -124,8 +124,9 @@ Some suites take data through the build rule an app uses instead, which copies a
 on the next build whether or not the suite relinks:
 
 - `font` and `ui` take the shared font through `v3d_add_shared_data`.
-- `pong`, `tetris`, `voxel`, `odyssey` and `vertical3d` take their app's `data/` through
-  `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds document.
+- `pong`, `tetris`, `voxel`, `odyssey`, `diorama` and `vertical3d` take their app's `data/`
+  through `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds
+  document, and diorama's decodes every model it places.
 
 See [Traps](#traps) for what the copy means when you add a fixture.
 

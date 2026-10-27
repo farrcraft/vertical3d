@@ -42,7 +42,7 @@ The libraries are in [api/](api/), one CMake target per directory. Each target i
 ## The applications
 
 Each application builds with the libraries. vertical3d, moya and imagetool are top-level
-directories. The four demos, voxel, pong, tetris and odyssey, are under [demos/](demos/).
+directories. The five demos, voxel, pong, tetris, odyssey and diorama, are under [demos/](demos/).
 
 | Application | What it is |
 |---|---|
@@ -51,6 +51,7 @@ directories. The four demos, voxel, pong, tetris and odyssey, are under [demos/]
 | **pong** | Pong, with sound and a computer opponent |
 | **tetris** | Tetris |
 | **odyssey** | A tile-based roguelike in early development: a world of regions loaded as the player moves, routes and line of sight across them, and a player sprite |
+| **diorama** | A lit village of glTF models with shadows under a moving sun, an isometric camera, and a looping sound placed at its well |
 | **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
 | **imagetool** | A command-line tool for images. It prints an image's size, crops it and converts it, and it packs images into a sprite sheet and unpacks one |
 

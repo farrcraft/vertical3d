@@ -1,9 +1,10 @@
 # The demos
 
-This document is for someone working on the four demos in `demos/` (pong, tetris, voxel and
-odyssey) or learning the api from them. Each is a small game, and each is an app like any other
-in the tree: it builds, is tested, and passes the analysers with the rest. Each section says how
-to play the demo, what its data files are, and which api features it is the best example of.
+This document is for someone working on the five demos in `demos/` (pong, tetris, voxel,
+odyssey and diorama) or learning the api from them. Each is a small game or scene, and each is an
+app like any other in the tree: it builds, is tested, and passes the analysers with the rest.
+Each section says how to play the demo, what its data files are, and which api features it is
+the best example of.
 
 | Demo | What it shows |
 |---|---|
@@ -11,6 +12,7 @@ to play the demo, what its data files are, and which api features it is the best
 | [Tetris](#tetris) | The smallest complete game: an app command on the menu, a text asset, and textures loaded by name |
 | [Voxel](#voxel) | `tick()` beside `simulate()`, mouse look, an app's own pipeline and shaders, timing a frame, and the immediate-mode ui |
 | [Odyssey](#odyssey) | `api/grid`, regions loaded on a worker thread, an app's own document kind, an `ecs::System`, and the shell over an app that pauses itself |
+| [Diorama](#diorama) | A lit scene of glTF models with a shadow map, the isometric camera controller, and a voice placed in the world |
 
 The editor in `vertical3d/` has its own document, [editor/](editor/README.md). The offline renderer
 `moya` is covered in [offline/](offline/README.md), and the image tool in
@@ -42,6 +44,7 @@ Every demo follows the same pattern:
 | Tetris | `tetris` | 800 × 600 | `binding`, `ui`, `window` | `tetris` suite: board, tetrad, bindings |
 | Voxel | `voxel` | 800 × 600 | `binding`, `ui`, `window` | `voxel` suite: chunks, culling, mesh cache, Morton codes, camera, player, bindings |
 | Odyssey | `odyssey` | 1280 × 768 | `binding`, `ui`, `window`, and the demo's own `world` | `odyssey` suite: map, world, bindings |
+| Diorama | `diorama` | 1280 × 720 | `binding`, `sound`, `ui`, `window` | `diorama` suite: layout, models, sun, bindings |
 
 No suite needs a window or a GPU. The renderers are not covered.
 
@@ -290,3 +293,65 @@ remembered ones that are out of sight.
   and a statistics command, and its renderer draws the world into the shell's screen before the
   menu and the overlay. The menu's suspend callback sets the engine's own pause flag, which the
   commands and `simulate()` read. See [api/engine/Shell.md](api/engine/Shell.md).
+
+## Diorama
+
+A small village seen from above: two houses, a ring of trees and a well on a square of grass,
+under a sun that goes around the sky once every two minutes. There is no game. Sources are in
+`demos/diorama/src/`.
+
+**Controls:**
+
+| Input | Command | Effect |
+|---|---|---|
+| W, A, S, D | `camera::pan_up`, `pan_left`, `pan_down`, `pan_right` | Pan the view while held |
+| Q, E | `camera::rotate_left`, `camera::rotate_right` | Turn the view a quarter turn |
+| R, F | `camera::zoom_in`, `camera::zoom_out` | Zoom while held |
+| Mouse wheel | (no binding) | Zoom a step a notch |
+| Escape | `ui::showGameMenu` | Show or hide the menu (Resume, Quit), which pauses the sun and the pan and zoom |
+| Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
+| F3 | `diorama::toggleStatistics` | Show or hide the frame statistics |
+| F1 | `ui::fullscreen` | Switch between full screen and a window |
+
+Q and E still turn the view while the menu is up, because the camera controller answers every
+rotate command that reaches the dispatcher.
+
+**Data files** (`demos/diorama/data/`):
+
+| File | Holds |
+|---|---|
+| `config.json`, `mappings.json`, `vgui.json`, `window.json` | Config, bindings, menu, window size |
+| `sounds.json` | The well's clip, under the id `well` |
+| `models/ground.glb`, `house.glb`, `tree.glb`, `well.glb` | The four models, each one mesh with a material per colour and its origin at the centre of its base |
+| `well.wav` | Four seconds of running water, which loops without a seam |
+
+The models and the sound are generated, and `demos/diorama/assets/` holds what generates them.
+Run either from the root of the tree, and commit what it writes:
+
+```
+"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --factory-startup --python demos/diorama/assets/make_models.py
+node demos/diorama/assets/make_sounds.ts
+```
+
+**What the diorama is the reference for:**
+
+- **A lit scene.** `Renderer` builds a `LitScene` at the first frame, once the window's size is
+  known, and resizes it when the window changes. Each frame it draws the scene into the window's
+  colour pass first, because the grade covers the whole pass, and the menu and the statistics
+  after it. See [api/rendering/Lighting.md](api/rendering/Lighting.md#a-lit-scene).
+- **glTF models as entities.** `Layout.cxx` lists what stands where. Each placement's model is
+  loaded once with `MeshRegistry::load()`, and each placement is an entity with an
+  `ecs::component::Transform` and a `component::Mesh`. The nine trees draw one model, so they
+  are drawn together. See [api/rendering/TexturesAndMeshes.md](api/rendering/TexturesAndMeshes.md).
+- **A shadow map that is fitted once.** Nothing moves, so `lighting::fitShadow()` fits the map
+  around the casters when the village is stood up. The ground casts nothing and stays out of the
+  fit. Each frame builds the light's matrix from where the sun is with `lighting::shadowLight()`,
+  so the shadows turn with it.
+- **The isometric camera controller.** `engine::IsometricController` drives a
+  `type::camera::Isometric` from the camera commands and the wheel. The camera commands have no
+  handler of their own, so each is registered with `addHeld()`, which the bindings check needs.
+  See [api/engine/Input.md](api/engine/Input.md#driving-an-isometric-camera).
+- **A voice placed in the world.** The well's clip loops at the water, through `audio::Play`'s
+  `position`. `tick()` sets the listener from the camera's profile, so the well moves between the
+  ears as the view turns. `release()` calls `audio::Player::shutdown()`. See
+  [api/engine/Audio.md](api/engine/Audio.md).

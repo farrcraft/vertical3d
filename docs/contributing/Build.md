@@ -182,8 +182,8 @@ The two data helpers add a build rule whose inputs are the files in the source d
   order it calls them. The two should not share a file name: after an edit, only the edited
   directory is copied again, so which copy is left depends on which was edited last.
 
-These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, moya and vertical3d. All of
-them but moya also call `v3d_add_shared_data`.
+These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
+vertical3d. All of them but moya also call `v3d_add_shared_data`.
 
 ## Shaders
 

@@ -85,6 +85,13 @@ class Player final {
      *         clip still loads and is stored, and play() returns Voice::None
      **/
     bool initialize();
+
+    /**
+     * Stop every sound, let the clips go and close the device. An app calls this from its
+     * release(), because the engine quits SDL once release() returns, and a player destroyed
+     * after that while it holds a sound faults. The destructor calls it too, and it does nothing
+     * a second time.
+     **/
     void shutdown();
 
     /**

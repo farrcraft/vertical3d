@@ -73,6 +73,10 @@ The sound document lists clips by id:
 - **A bus level is stored.** It can be set before `initialize()`, before anything plays and
   with no device, so a volume read from settings can be applied at any point in `start()`.
   `busGain(bus)` reads it back. A bus never set is at 1, and so is no bus.
+- **Call `shutdown()` in the app's `release()`.** The engine quits SDL as soon as `release()`
+  returns, before the app's members are destroyed, and a player that still holds a sound then
+  faults as it is destroyed. `shutdown()` stops every sound and closes the device, and the
+  destructor does nothing after it.
 - **A device that does not open leaves the app silent, not broken.** `initialize()` returns
   false and logs, clips still load, and playing returns false.
 

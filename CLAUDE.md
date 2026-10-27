@@ -8,8 +8,8 @@ before working on it.
 
 A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named
 `v3dlib_*`, one per subdirectory) plus the apps that consume them. vertical3d, moya and
-imagetool are at the top level, and the four demo games (pong, tetris, voxel, odyssey) are under
-`demos/`. Every one of those directories builds with the tree. [examples/](examples/) is the
+imagetool are at the top level, and the five demos (pong, tetris, voxel, odyssey, diorama) are
+under `demos/`. Every one of those directories builds with the tree. [examples/](examples/) is the
 exception: it consumes the repository rather than being part of it.
 
 Much of this code traces back to the early 2000s and is being modernised incrementally: C++17
@@ -39,7 +39,7 @@ is SDL3.
 | Changing `api/ui` | [docs/internals/UserInterface.md](docs/internals/UserInterface.md) |
 | `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
 | `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
-| `demos/` (pong, tetris, voxel, odyssey) | [docs/Demos.md](docs/Demos.md) |
+| `demos/` (pong, tetris, voxel, odyssey, diorama) | [docs/Demos.md](docs/Demos.md) |
 | imagetool | [docs/Imagetool.md](docs/Imagetool.md) |
 | `examples/` | [examples/README.md](examples/README.md) |
 | Why something is shaped as it is | [docs/adr/README.md](docs/adr/README.md), grouped by area |

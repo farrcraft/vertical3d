@@ -585,9 +585,24 @@ where component selection lives.
 
 ### Step 19 — A lit demo
 
-**Open.**
+**Closed.**
 
-- A demo draws a lit scene with shadows from a glTF model, and plays a placed voice.
+- `demos/diorama` is a fifth demo: a village of glTF models drawn through a `LitScene`, with a
+  shadow map fitted once around the casters and a sun that goes around the sky. The camera is a
+  `type::camera::Isometric` driven by `engine::IsometricController`, so a demo now shows the
+  controller too. The well loops a voice placed at its water, heard from the camera. The menu
+  and the statistics are the shell's.
+- **Different from the plan:** none of the four games has a 3D scene to light, so the lit demo
+  is a new one rather than a change to one of them.
+- The models are made by a Blender script and the sound by a node script, both in
+  `demos/diorama/assets/`, and what they write is committed under `data/`.
+- **Found on the way:** the engine quits SDL as soon as an app's `release()` returns, so an
+  `audio::Player` destroyed after that while it holds a sound faults. pong already shut its
+  player down in `release()`. `Audio.md` and `Player::shutdown()` now state the rule.
+- Five new cases, in the new `diorama` suite: the bindings, the menu, every placed model
+  decoding, the ground casting nothing, and the sun staying up. Each fails to build without the
+  change. The renderer is not covered; the scene draws with the validation layer silent and the
+  app exits cleanly.
 
 ### Step 20 — The documents
 
