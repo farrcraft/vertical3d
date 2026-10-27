@@ -134,6 +134,7 @@ class Handler {
         (void)name;
         (void)parameters;
     }
+    virtual void basis(const Basis & request) { (void)request; }
     virtual void surface(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
@@ -201,6 +202,10 @@ class Handler {
         (void)parameters;
     }
     virtual void sphere(const Sphere & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void curves(const Curves & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }

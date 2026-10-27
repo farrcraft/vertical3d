@@ -5,6 +5,8 @@
 
 #include <api/brep/BRep.h>
 #include <api/brep/Primitives.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
@@ -15,6 +17,8 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
@@ -444,6 +448,37 @@ BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
     BOOST_REQUIRE_EQUAL(handler.froms_.size(), 1U);
     BOOST_CHECK_SMALL(glm::distance(handler.froms_[0], glm::vec3(0.0F, 10.0F, 3.0F)), 0.0001F);
     BOOST_CHECK_EQUAL(handler.order_, "LPPPP");
+}
+
+/**
+ * A curve item writes Curves only when its style says it renders: a run of curves with one
+ * basis and wrap is one request, after a Basis when they are cubic, at the style's width.
+ **/
+BOOST_AUTO_TEST_CASE(ribexport_curves_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Curve> guide = v3d::editor::create_curve(v3d::editor::CurveType::Bezier);
+    scene->add(guide);
+    BOOST_CHECK(exportScene(scene, false).find("Curves") == std::string::npos);
+
+    // two Catmull-Rom curves make one run, and a poly curve after them another
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    const std::vector<glm::vec3> points{ { 0, 0, 0 }, { 1, 1, 0 }, { 2, 0, 0 } };
+    BOOST_REQUIRE(curves->add({ .shape = v3d::curve::CatmullRom{ points } }).empty());
+    BOOST_REQUIRE(curves->add({ .shape = v3d::curve::CatmullRom{ points } }).empty());
+    BOOST_REQUIRE(curves->add({ .shape = v3d::curve::Poly{ points }, .closed = true }).empty());
+    const boost::shared_ptr<v3d::editor::Curve> hair = boost::make_shared<v3d::editor::Curve>(curves);
+    hair->style({ .renders = true, .width = 0.25F });
+    scene->add(hair);
+
+    const std::string written = exportScene(scene, false);
+    BOOST_CHECK(written.find("Basis \"bezier\" 3 \"catmull-rom\" 1") != std::string::npos);
+    BOOST_CHECK(written.find("Curves \"cubic\" [ 5 5 ] \"nonperiodic\"") != std::string::npos);
+    BOOST_CHECK(written.find("Curves \"linear\" [ 3 ] \"periodic\"") != std::string::npos);
+    BOOST_CHECK(written.find("\"constantwidth\" [ 0.25 ]") != std::string::npos);
+
+    // and it reads back as RIB
+    ImportHandler handler;
+    BOOST_CHECK(reimport(written, &handler));
 }
 
 };  // namespace

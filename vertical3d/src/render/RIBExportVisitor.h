@@ -43,10 +43,16 @@ namespace v3d::editor {
  * leaves it in the renderer.
  *
  * **The hierarchy is kept.** Each item is an AttributeBegin block holding its local matrix,
- * and the blocks of the items beneath it nest inside. A block is written only when a mesh is
- * inside it, so a group with no mesh beneath it, a camera and a light write none. A light's
+ * and the blocks of the items beneath it nest inside. A block is written only when a mesh or a
+ * curve that renders is inside it, so a group with neither beneath it, a camera and a light
+ * write none. A light's
  * own LightSource is written at world level from its world matrix, because RI turns off a
  * light declared in a block when that block ends.
+ *
+ * **A curve item renders only when its style says so.** Its curves are converted to basis
+ * curves, and each run of curves with the same basis and wrap is one Curves request of that
+ * many curves, after a Basis request when they are cubic. Each has the style's width as its
+ * "constantwidth".
  *
  * Each face is written as it stands, as one Polygon. RI requires a polygon to be planar and
  * convex, and does no checking. moya dices a polygon's first four vertices and drops the

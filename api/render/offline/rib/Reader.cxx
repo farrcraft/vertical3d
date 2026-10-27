@@ -9,12 +9,15 @@
 #include <api/render/offline/Sampling.h>
 #include <api/type/Checked.h>
 
+#include "Bases.h"
 #include "Declaration.h"
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
+#include "Requests.h"
 #include "Token.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -99,6 +102,33 @@ bool Reader::matrix(Lexer * lexer, glm::mat4x4 * out) {
     }
     // read in RIB's order with no transpose, as ParameterList::matrix explains
     *out = glm::make_mat4(values.data());
+    return true;
+}
+
+bool Reader::basis(Lexer * lexer, Basis::Matrix * matrix, unsigned int * step) {
+    const Token token = lexer->peek();
+    if (token.kind() == Kind::STRING) {
+        lexer->next();
+        if (!namedBasis(token.text(), matrix)) {
+            return fail("expected a basis RI names, or sixteen numbers", token);
+        }
+    } else {
+        std::vector<float> values;
+        if (!numbers(lexer, 16, &values)) {
+            return false;
+        }
+        std::copy(values.begin(), values.end(), matrix->begin());
+    }
+    const Token stepped = lexer->peek();
+    float value = 0.0F;
+    if (!number(lexer, &value)) {
+        return false;
+    }
+    const std::optional<uint32_t> count = v3d::type::toCount(value, 4);
+    if (!count || *count == 0) {
+        return fail("expected a step from 1 to 4", stepped);
+    }
+    *step = *count;
     return true;
 }
 
@@ -601,6 +631,14 @@ Reader::Result Reader::attributeRequest(const std::string & name, Lexer * lexer,
         handler->shadingRate(arg1);
         return Result::Handled;
     }
+    if (name == "Basis") {
+        Basis request;
+        if (!basis(lexer, &request.u, &request.ustep) || !basis(lexer, &request.v, &request.vstep)) {
+            return Result::Failed;
+        }
+        handler->basis(request);
+        return Result::Handled;
+    }
     return Result::Unhandled;
 }
 
@@ -666,6 +704,31 @@ bool Reader::handle(Lexer * lexer, std::string * value) {
 }
 
 /**
+ * Reads a Curves request: its type, its counts, its wrap and its parameters.
+ **/
+Reader::Result Reader::curvesRequest(Lexer * lexer, Handler * handler) {
+    ParameterList list;
+    std::string type;
+    std::vector<unsigned int> vertices;
+    std::string wrap;
+    const Token at = lexer->peek();
+    if (!text(lexer, &type) || !counts(lexer, &vertices) || !text(lexer, &wrap)) {
+        return Result::Failed;
+    }
+    if ((type != "linear" && type != "cubic") || (wrap != "periodic" && wrap != "nonperiodic")) {
+        fail("a curve is linear or cubic, and periodic or nonperiodic", at);
+        return Result::Failed;
+    }
+    // the length of a varying parameter depends on the basis's step, which the reader does
+    // not track, so no length is checked
+    if (!parameters(lexer, 0, &list)) {
+        return Result::Failed;
+    }
+    handler->curves({.cubic = type == "cubic", .vertices = std::move(vertices), .periodic = wrap == "periodic"}, list);
+    return Result::Handled;
+}
+
+/**
  * Reads the geometry.
  **/
 Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler) {
@@ -698,6 +761,9 @@ Reader::Result Reader::primitiveRequest(const std::string & name, Lexer * lexer,
         }
         handler->pointsPolygons({.counts = std::move(perPolygon), .indices = std::move(indices)}, list);
         return Result::Handled;
+    }
+    if (name == "Curves") {
+        return curvesRequest(lexer, handler);
     }
     if (name == "Sphere") {
         if (!number(lexer, &arg1) || !number(lexer, &arg2) || !number(lexer, &arg3) || !number(lexer, &arg4)) {

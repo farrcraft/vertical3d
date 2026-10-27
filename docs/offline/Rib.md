@@ -22,12 +22,12 @@ The reader recognises these requests:
 | Sampling and lens | `PixelSamples`, `PixelFilter`, `PixelVariance`, `DepthOfField`, `Shutter` |
 | Blocks | `FrameBegin`, `FrameEnd`, `WorldBegin`, `WorldEnd`, `AttributeBegin`, `AttributeEnd`, `TransformBegin`, `TransformEnd`, `MotionBegin`, `MotionEnd` |
 | Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale`, `CoordinateSystem`, `CoordSysTransform` |
-| Attributes | `Color`, `Opacity`, `ShadingRate`, `Attribute` |
+| Attributes | `Color`, `Opacity`, `ShadingRate`, `Basis`, `Attribute` |
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
-| Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
+| Geometry | `Polygon`, `PointsPolygons`, `Sphere`, `Curves` |
 
-moya acts on all of them except `version`, `FrameBegin`, `FrameEnd` and `MakeTexture`, which it
-accepts and ignores.
+moya acts on all of them except `version`, `FrameBegin`, `FrameEnd`, `MakeTexture`, `Basis` and
+`Curves`, which it accepts and ignores.
 `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`, `texture`)
 and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
 `"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
@@ -90,6 +90,14 @@ name.
 - **A `Sphere`'s varying parameters hold four values**, one at each corner of its parameter
   space, as RI defines them for a quadric. A uniform one holds one. moya reads no sphere
   parameter.
+- **A `Basis` is a name RI defines or sixteen numbers, in each direction.** The names are
+  `"bezier"`, `"b-spline"`, `"catmull-rom"`, `"hermite"` and `"power"`, and each is followed by
+  its step, from 1 to 4. Any other name or step is an error. `rib::namedBasis()` gives a name's
+  matrix, in RI's row order, and `rib::basisName()` a matrix's name, which the writer uses to
+  write a standard basis by name.
+- **A `Curves` request is `"linear"` or `"cubic"`, and `"periodic"` or `"nonperiodic"`.** Any
+  other type or wrap is an error. How many values a varying parameter holds depends on the
+  basis's step, which the reader does not track, so its length is not checked.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.

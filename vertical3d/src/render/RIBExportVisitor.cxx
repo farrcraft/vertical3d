@@ -9,9 +9,13 @@
 #include <api/brep/Index.h>
 #include <api/brep/Triangulation.h>
 #include <api/brep/Vertex.h>
+#include <api/curve/Basis.h>
+#include <api/curve/Curves.h>
+#include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/rib/Requests.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -27,6 +31,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <glm/gtc/quaternion.hpp>
@@ -45,6 +50,12 @@ const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type
 
 /** The version of RIB the export is written in. **/
 const float RIB_VERSION = 3.03F;
+
+/**
+ * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
+ * approximated by. Four keep a circle within 0.05% of its radius.
+ **/
+constexpr unsigned int APPROXIMATION_PIECES = 4;
 
 std::vector<float> floats(const glm::vec3& value) {
     return { value.x, value.y, value.z };
@@ -181,9 +192,51 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Group>& /*group*/, const Pl
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Curve>& /*curve*/, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
     curves_++;
     enter("curve" + std::to_string(curves_), placed.local);
+    if (!curve || !curve->style().renders || curve->geometry()->empty()) {
+        return;
+    }
+    open();
+
+    // RI evaluates every curve of one Curves request through one basis and one wrap, so the
+    // curves are sent in runs that share both
+    const v3d::curve::Curves& geometry = *curve->geometry();
+    std::vector<v3d::curve::BasisCurve> run;
+    const auto send = [this, &run, &curve]() {
+        if (run.empty()) {
+            return;
+        }
+        const v3d::curve::BasisCurve& first = run.front();
+        if (first.basis != v3d::curve::Basis::Linear) {
+            v3d::render::offline::rib::Basis basis;
+            v3d::render::offline::rib::namedBasis(first.basis == v3d::curve::Basis::Bezier ? "bezier" : "catmull-rom", &basis.v);
+            basis.vstep = first.basis == v3d::curve::Basis::Bezier ? v3d::render::offline::rib::Basis::BEZIER_STEP : 1;
+            body_.basis(basis);
+        }
+        v3d::render::offline::rib::Curves request{ .cubic = first.basis != v3d::curve::Basis::Linear, .periodic = first.periodic };
+        std::vector<float> points;
+        for (const v3d::curve::BasisCurve& each : run) {
+            request.vertices.push_back(static_cast<unsigned int>(each.points.size()));
+            for (const glm::vec3& point : each.points) {
+                points.insert(points.end(), { point.x, point.y, point.z });
+            }
+        }
+        ParameterList list;
+        list.add("P", Declaration(Declaration::Storage::VERTEX, Declaration::Type::POINT, 1), points, {});
+        list.add("constantwidth", Declaration(Declaration::Storage::CONSTANT, Declaration::Type::FLOAT, 1), { curve->style().width }, {});
+        body_.curves(request, list);
+        run.clear();
+    };
+    for (std::size_t index = 0; index < geometry.size(); index++) {
+        v3d::curve::BasisCurve converted = v3d::curve::toBasis(geometry.curve(index), APPROXIMATION_PIECES);
+        if (!run.empty() && (run.front().basis != converted.basis || run.front().periodic != converted.periodic)) {
+            send();
+        }
+        run.push_back(std::move(converted));
+    }
+    send();
 }
 
 /**

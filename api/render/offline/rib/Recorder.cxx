@@ -166,6 +166,10 @@ void Recorder::motionEnd() {
     requests_.emplace_back([](Handler & to) { to.motionEnd(); });
 }
 
+void Recorder::basis(const Basis & request) {
+    requests_.emplace_back([request](Handler & to) { to.basis(request); });
+}
+
 void Recorder::color(const glm::vec3 & value) {
     requests_.emplace_back([value](Handler & to) { to.color(value); });
 }
@@ -226,6 +230,10 @@ void Recorder::sphere(const Sphere & request, const ParameterList & parameters) 
     requests_.emplace_back([request, parameters](Handler & to) { to.sphere(request, parameters); });
 }
 
+void Recorder::curves(const Curves & request, const ParameterList & parameters) {
+    requests_.emplace_back([request, parameters](Handler & to) { to.curves(request, parameters); });
+}
+
 Recorder::Deforming::Deforming(Recorder * recording) : recording_(recording) {
 }
 
@@ -249,6 +257,10 @@ void Recorder::Deforming::pointsPolygons(const PointsPolygons & request, const P
 
 void Recorder::Deforming::sphere(const Sphere & request, const ParameterList & parameters) {
     keep([request, parameters](Handler & to) { to.sphere(request, parameters); });
+}
+
+void Recorder::Deforming::curves(const Curves & request, const ParameterList & parameters) {
+    keep([request, parameters](Handler & to) { to.curves(request, parameters); });
 }
 
 };  // namespace v3d::render::offline::rib

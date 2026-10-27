@@ -70,6 +70,9 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->color(glm::vec3(0.9F, 0.2F, 0.1F));
     to->opacity(glm::vec3(0.5F));
     to->shadingRate(0.25F);
+    // a standard basis by name, and one of no name by its numbers
+    to->basis({.u = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }, .ustep = 4,
+        .v = { 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2 }, .vstep = 2});
     to->surface("plastic", one("squish", UNIFORM_FLOAT, { 5 }));
     to->displacement("lift", one("amount", UNIFORM_FLOAT, { 0.1F }));
     to->lightSource({.shader = "pointlight", .handle = "1"}, one("intensity", UNIFORM_FLOAT, { 2 }));
@@ -93,6 +96,8 @@ void everything(v3d::render::offline::rib::Handler * to) {
     to->motionEnd();
     to->pointsPolygons({.counts = { 3, 3 }, .indices = { 0, 1, 2, 0, 2, 3 }}, one("P", VERTEX_POINT, quad));
     to->sphere({.radius = 0.5F, .zmin = -0.5F, .zmax = 0.5F, .thetamax = 270}, none);
+    to->curves({.cubic = true, .vertices = { 4 }, .periodic = false}, one("P", VERTEX_POINT, quad));
+    to->curves({.cubic = false, .vertices = { 2, 2 }, .periodic = true}, one("P", VERTEX_POINT, quad));
     to->attributeEnd();
     to->worldEnd();
     to->frameEnd();

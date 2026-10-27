@@ -5,6 +5,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
@@ -12,6 +13,7 @@
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <cmath>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -222,7 +224,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     int frame_ = 0;
 };
 
-bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::rib::Reader * reader) {
+bool read(const std::string & source, v3d::render::offline::rib::Handler * handler, v3d::render::offline::rib::Reader * reader) {
     std::istringstream stream(source);
     return reader->read(stream, handler);
 }
@@ -526,6 +528,89 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
     BOOST_CHECK_EQUAL(handler.translate_.z, 3.0F);
     BOOST_CHECK_EQUAL(handler.identifier_, "myball");
     BOOST_CHECK_EQUAL(handler.radius_, 0.5F);
+}
+
+/**
+ * Takes the curves and the bases a reader hands it.
+ **/
+class CurveHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void basis(const v3d::render::offline::rib::Basis & request) override {
+        bases_.push_back(request);
+    }
+    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        curves_.push_back(request);
+        points_.push_back(parameters.floats("P").size() / 3);
+        widths_.push_back(parameters.floats("constantwidth"));
+    }
+    std::vector<v3d::render::offline::rib::Basis> bases_;
+    std::vector<v3d::render::offline::rib::Curves> curves_;
+    std::vector<std::size_t> points_;
+    std::vector<std::vector<float>> widths_;
+};
+
+/**
+ * A basis is a name RI defines or sixteen numbers, each followed by its step, and a curve is
+ * its type, its counts, its wrap and its parameters.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_basis_and_curves_test) {
+    CurveHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(
+        "Basis \"catmull-rom\" 1 [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1] 4\n"
+        "Curves \"cubic\" [4 5] \"nonperiodic\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0  0 1 0 1 1 0 2 1 0 3 1 0 4 1 0]"
+        " \"constantwidth\" 0.1\n"
+        "Curves \"linear\" [3] \"periodic\" \"P\" [0 0 0 1 0 0 0 1 0]\n", &handler, &reader));
+
+    BOOST_REQUIRE_EQUAL(handler.bases_.size(), 1U);
+    v3d::render::offline::rib::Basis::Matrix catmullRom{};
+    BOOST_REQUIRE(v3d::render::offline::rib::namedBasis("catmull-rom", &catmullRom));
+    BOOST_CHECK((handler.bases_[0].u == catmullRom));
+    BOOST_CHECK_EQUAL(handler.bases_[0].ustep, 1U);
+    BOOST_CHECK_EQUAL(v3d::render::offline::rib::basisName(handler.bases_[0].v), "power");
+    BOOST_CHECK_EQUAL(handler.bases_[0].vstep, 4U);
+
+    BOOST_REQUIRE_EQUAL(handler.curves_.size(), 2U);
+    BOOST_CHECK(handler.curves_[0].cubic);
+    BOOST_CHECK(!handler.curves_[0].periodic);
+    BOOST_CHECK((handler.curves_[0].vertices == std::vector<unsigned int>{ 4, 5 }));
+    BOOST_CHECK_EQUAL(handler.points_[0], 9U);
+    BOOST_REQUIRE_EQUAL(handler.widths_[0].size(), 1U);
+    BOOST_CHECK_CLOSE(handler.widths_[0][0], 0.1F, 0.001F);
+    BOOST_CHECK(!handler.curves_[1].cubic);
+    BOOST_CHECK(handler.curves_[1].periodic);
+}
+
+/**
+ * A basis RI does not name, a step outside 1 to 4, and a curve type or wrap RI does not define
+ * are errors in the scene.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_bad_basis_and_curves_test) {
+    for (const char* source : { "Basis \"wobbly\" 1 \"bezier\" 3\n", "Basis \"bezier\" 3 \"bezier\" 5\n",
+        "Curves \"quintic\" [4] \"nonperiodic\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0]\n",
+        "Curves \"cubic\" [4] \"wrapped\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0]\n" }) {
+        CurveHandler handler;
+        v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+        BOOST_CHECK_MESSAGE(!read(source, &handler, &reader), source);
+        BOOST_CHECK(handler.curves_.empty());
+        BOOST_CHECK(handler.bases_.empty());
+    }
+}
+
+/**
+ * The name of each basis RI defines gives back its matrix, and the matrix its name.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_basis_names_test) {
+    for (const char* name : { "bezier", "b-spline", "catmull-rom", "hermite", "power" }) {
+        v3d::render::offline::rib::Basis::Matrix matrix{};
+        BOOST_REQUIRE(v3d::render::offline::rib::namedBasis(name, &matrix));
+        BOOST_CHECK_EQUAL(v3d::render::offline::rib::basisName(matrix), name);
+    }
+    v3d::render::offline::rib::Basis::Matrix matrix{};
+    BOOST_CHECK(v3d::render::offline::rib::namedBasis("bezier", &matrix));
+    BOOST_CHECK((matrix == v3d::render::offline::rib::Basis::BEZIER));
+    matrix[0] = 7;
+    BOOST_CHECK(v3d::render::offline::rib::basisName(matrix).empty());
 }
 
 /**

@@ -85,6 +85,7 @@ class Writer final : public Handler {
     void motionEnd() override;
 
     void color(const glm::vec3 & value) override;
+    void basis(const Basis & request) override;
     void opacity(const glm::vec3 & value) override;
     void shadingRate(float size) override;
     void attribute(const std::string & name, const ParameterList & parameters) override;
@@ -100,6 +101,7 @@ class Writer final : public Handler {
     void polygon(unsigned int vertices, const ParameterList & parameters) override;
     void pointsPolygons(const PointsPolygons & request, const ParameterList & parameters) override;
     void sphere(const Sphere & request, const ParameterList & parameters) override;
+    void curves(const Curves & request, const ParameterList & parameters) override;
 
  private:
     /** A request's name, which starts its line. **/

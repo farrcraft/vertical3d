@@ -15,8 +15,10 @@
 #include <system_error>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "Bases.h"
 #include "Declaration.h"
 #include "Declarations.h"
 #include "Handler.h"
@@ -267,6 +269,21 @@ void Writer::motionEnd() {
     start("MotionEnd").end();
 }
 
+// a standard basis is written by its name, and any other as its sixteen numbers
+void Writer::basis(const Basis & request) {
+    start("Basis");
+    for (const auto& [matrix, step] : { std::pair(request.u, request.ustep), std::pair(request.v, request.vstep) }) {
+        const std::string name = basisName(matrix);
+        if (name.empty()) {
+            array(std::vector<float>(matrix.begin(), matrix.end()));
+        } else {
+            text(name);
+        }
+        number(static_cast<float>(step));
+    }
+    end();
+}
+
 void Writer::color(const glm::vec3 & value) {
     start("Color").array({ value.x, value.y, value.z }).end();
 }
@@ -331,6 +348,11 @@ void Writer::pointsPolygons(const PointsPolygons & request, const ParameterList 
 void Writer::sphere(const Sphere & request, const ParameterList & parameters) {
     start("Sphere").number(request.radius).number(request.zmin).number(request.zmax).number(request.thetamax)
         .parameters(parameters).end();
+}
+
+void Writer::curves(const Curves & request, const ParameterList & parameters) {
+    start("Curves").text(request.cubic ? "cubic" : "linear").counts(request.vertices)
+        .text(request.periodic ? "periodic" : "nonperiodic").parameters(parameters).end();
 }
 
 };  // namespace v3d::render::offline::rib
