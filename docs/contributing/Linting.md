@@ -110,7 +110,7 @@ Two third-party files are excluded from both analysers:
 
 - `demos/voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
   compile the same file.
-- `api/asset/media/loader/CgltfImpl.cpp`.
+- `api/interchange/CgltfImpl.cxx`.
 
 `/analyze-` removes a file from MSVC's analysis, and `SKIP_LINTING TRUE` removes it from
 clang-tidy. Do not fix findings in these files, because a fix would be lost when the package is

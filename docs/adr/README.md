@@ -119,6 +119,7 @@ content went. Numbers are never reused.
 | [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |
 | [0118](0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) | Assets: a loader is keyed by the kind it produces | accepted |
 | [0119](0119-assets-an-apps-document-list-is-an-asset-manifest.md) | Assets: an app's document list is an asset manifest | accepted |
+| [0123](0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene | accepted |
 | [0112](0112-audio-a-voice-is-placed-in-world-coordinates.md) | Audio: a voice is placed in world coordinates | accepted |
 
 ## Grid and ECS

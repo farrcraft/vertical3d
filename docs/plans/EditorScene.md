@@ -116,6 +116,7 @@ them.
 | Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
 | Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. Decided in ADR-0106: a renderer interface for interactive renders, with moya linked behind it, and `moya.exe` for batches. | 8 |
 | Editor: which import formats the menu offers, and what an import makes. Decided in ADR-0122: glTF and USD, each read as a scene of items. | 7 |
+| Interchange: where the readers live. Decided in ADR-0123: a neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in `v3dlib_interchange_usd`. | 7 |
 | Editor: what a curve is, whether it is a kind of item, and whether moya renders one. | 13 |
 | Editor: what a handle is. | 14 |
 | Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
@@ -284,12 +285,14 @@ LightWave, DXF, 3DS and MilkShape leave the Import menu, and `project::import::g
   the file, as it supplies every other operation's arguments. A file that cannot be read, or a
   node that cannot be made into an item, is reported in the operation's outcome.
 - Tests: a cube in triangles builds six quads. A non-manifold input is refused with a reason. A
-  large mesh builds in time linear in its size. A glTF fixture and a USD fixture, each written
-  by Blender with a parented mesh, a camera, a light and a keyed move, import as those items,
-  parents, placements and keys, and undo in one step.
+  large mesh builds in time linear in its size. A glTF fixture and a USD fixture are each
+  written by Blender with a parented mesh, a camera, a light and a keyed move. Each imports as
+  those items, parents, placements and keys, and undoes in one step.
 - The builder has landed, as `brep::build()`. It differs in one way. It joins pairs of
   triangles into quads, across an edge that is the longest of both, rather than every coplanar
   neighbour. Joining a whole flat region would turn a grid of squares into one face.
+- `v3dlib_interchange` has landed, with the neutral scene and `interchange::readGltf()`. It owns
+  cgltf's implementation, which `asset_media` links it for.
 
 ### Step 8 — The Render menu
 

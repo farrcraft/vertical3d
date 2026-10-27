@@ -97,8 +97,8 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
 ### Building off MSVC
 
 The api libraries whose closure names neither SDL3 nor Vulkan build and test with Clang on Linux:
-asset, asset_media, brep, database, ecs, event, font, grid, image, log, render_offline and
-type. CI checks that on every pull request, in
+asset, asset_media, brep, database, ecs, event, font, grid, image, interchange, log,
+render_offline and type. CI checks that on every pull request, in
 [.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them
 can therefore pass every gate on Windows and fail there.
 
@@ -311,9 +311,10 @@ it locally against the packages your main build already installed.
   a boost port can rebuild boost. Changing the `sdl3` feature list rebuilds SDL only, which takes
   about five minutes.
 - **cgltf has no CMake config.** It is a single header. `cmake/v3dDependencies.cmake` finds it with
-  `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_asset_media` adds that directory to its own
-  include path. Its implementation is compiled once, in
-  [api/asset/media/loader/CgltfImpl.cpp](../../api/asset/media/loader/CgltfImpl.cpp). That file is
+  `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_interchange` and `v3dlib_asset_media` each
+  add that directory to their own include path. Its implementation is compiled once for every
+  program, in
+  [api/interchange/CgltfImpl.cxx](../../api/interchange/CgltfImpl.cxx). That file is
   excluded from both static analysers, as `demos/voxel/src/noise/noiseutils.cpp` is.
 - **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
   points at nothing. vcpkg still works, because the build uses the toolchain file.

@@ -30,7 +30,7 @@
 #include <vector>
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
-// the third party ones. Its implementation half is compiled once, in CgltfImpl.cpp.
+// the third party ones. Its implementation half is compiled once, in v3dlib_interchange.
 #include <cgltf.h>  // NOLINT(build/include_order)
 
 #include <boost/make_shared.hpp>

@@ -11,8 +11,8 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	animation asset asset_media audio brep database ecs engine event font grid image input log
-	model render render_offline shell type ui window)
+	animation asset asset_media audio brep database ecs engine event font grid image input
+	interchange log model render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -33,7 +33,7 @@ set(V3D_API_asset_PACKAGES)
 # Under api/asset but a separate library: the loaders for formats that have to be decoded
 # rather than read. A selection that only reads documents does not pull in their packages.
 set(V3D_API_asset_media_PATH "asset/media")
-set(V3D_API_asset_media_REQUIRES log animation asset image model)
+set(V3D_API_asset_media_REQUIRES log animation asset image interchange model)
 set(V3D_API_asset_media_PACKAGES cgltf glm)
 
 set(V3D_API_audio_PATH "audio")
@@ -76,6 +76,11 @@ set(V3D_API_image_PACKAGES PNG JPEG glm)
 set(V3D_API_input_PATH "input")
 set(V3D_API_input_REQUIRES event type)
 set(V3D_API_input_PACKAGES SDL3 glm EnTT)
+
+# Scenes read from interchange formats, in no format's terms. It owns cgltf's implementation.
+set(V3D_API_interchange_PATH "interchange")
+set(V3D_API_interchange_REQUIRES asset type)
+set(V3D_API_interchange_PACKAGES cgltf glm)
 
 set(V3D_API_log_PATH "log")
 set(V3D_API_log_REQUIRES)

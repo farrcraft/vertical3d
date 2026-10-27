@@ -60,7 +60,9 @@ of joints a skinned model is bent by.
 
 The glTF loader ([api/asset/media/loader/Gltf.h](../../api/asset/media/loader/Gltf.h)) reads
 `.gltf` and `.glb` files into an `asset::media::kind::Model`. Its `model()` is a `model::Model`,
-described [above](#modelmodel).
+described [above](#modelmodel). It merges the whole file into one model for drawing. To read a
+file as a scene that keeps its nodes, cameras and lights apart, use
+[interchange](Interchange.md) instead.
 
 ### What the loader builds
 

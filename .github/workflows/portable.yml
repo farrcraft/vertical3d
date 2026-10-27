@@ -24,7 +24,7 @@ jobs:
     env:
       BUILD_DIR: out/build/linux
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/out/build/vcpkg-cache
-      PORTABLE_LIBRARIES: "asset;asset_media;brep;database;ecs;event;font;grid;image;log;render_offline;type"
+      PORTABLE_LIBRARIES: "asset;asset_media;brep;database;ecs;event;font;grid;image;interchange;log;render_offline;type"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

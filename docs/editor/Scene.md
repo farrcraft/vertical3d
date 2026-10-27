@@ -49,10 +49,10 @@ and `build()` finds them through hash tables.
   neighbours, the flatter pair is joined first. A flat grid of triangulated squares gives back
   its squares, never one large face.
 - A face with fewer than three distinct corners is left out and counted in `Built::skipped`.
-- The input is refused, with `Built::problem` saying why, when an index or a count is out of
-  range, a point is not finite, a face visits one vertex twice, or two faces run along one edge
-  in the same direction. The last happens where three or more faces meet at an edge, or where
-  neighbouring faces disagree about which side is outside.
+- The input is refused, and `Built::problem` says why, in four cases. An index or a count is
+  out of range, a point is not finite, a face visits one vertex twice, or two faces run along
+  one edge in the same direction. The last happens where three or more faces meet at an edge, or
+  where neighbouring faces disagree about which side is outside.
 
 **Validation.** `BRep::validate(&problem)` checks that every reference points at a part the
 mesh holds: a half edge's vertex always, its face, pair and next unless they are `INVALID_ID`,
