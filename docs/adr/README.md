@@ -156,7 +156,7 @@ content went. Numbers are never reused.
 | [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
 | [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
 | [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
-| [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | proposed |
+| [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | accepted |
 
 ## Build, testing and code
 
