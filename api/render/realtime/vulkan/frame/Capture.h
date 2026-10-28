@@ -11,6 +11,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
 #include <string_view>
 #include <vector>
 
@@ -22,6 +23,7 @@ class Image;
 
 namespace v3d::render::realtime::vulkan::frame {
 
+class Ring;
 class Swapchain;
 
 /**
@@ -35,7 +37,9 @@ class Swapchain;
  * detected: the copy runs and is discarded.
  *
  * The readback allocation is made by the first record() and reused by every later one, so a
- * renderer that holds a Capture and never asks for one pays nothing for it.
+ * renderer that holds a Capture and never asks for one pays nothing for it. A record() of a
+ * larger image replaces it, and retires the old one through the ring, because a copy recorded
+ * earlier may still be writing into it.
  **/
 class Capture final {
  public:
@@ -56,13 +60,18 @@ class Capture final {
          * It is also the depth format the renderer prefers.
          **/
         bool depth;
+        /** which layer of a layered image, such as one cascade of a shadow map **/
+        uint32_t layer;
     };
 
     /**
      * @param device the device to allocate the readback buffer on
+     * @param ring what paces the frames a copy is recorded into, which an outgrown readback
+     *        buffer is retired through
      * @param logger where a written file is reported
      **/
-    Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<log::Logger>& logger);
+    Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+        const boost::shared_ptr<log::Logger>& logger);
 
     ~Capture() = default;
 
@@ -127,6 +136,7 @@ class Capture final {
 
  private:
     boost::shared_ptr<device::Device> device_;
+    boost::shared_ptr<Ring> ring_;
     boost::shared_ptr<log::Logger> logger_;
     boost::shared_ptr<memory::Buffer> readback_;
     uint32_t width_;

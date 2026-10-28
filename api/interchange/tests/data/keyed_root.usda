@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    doc = "Written by hand. A z up stage measured in centimetres, with a keyed prim at its top"
+    endTimeCode = 24
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Z"
+)
+
+def Xform "Mover"
+{
+    double3 xformOp:translate.timeSamples = {
+        0: (0, 0, 0),
+        24: (100, 0, 0),
+    }
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "Fin"
+{
+    int[] faceVertexCounts = [3]
+    int[] faceVertexIndices = [0, 1, 2]
+    uniform token orientation = "leftHanded"
+    point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0)]
+}
+
+def RectLight "Panel"
+{
+}
+
+def Scope "Looks"
+{
+    def Material "Paint"
+    {
+    }
+}
+
+def Camera "Flat"
+{
+    float2 clippingRange = (1, 1000)
+    float horizontalAperture = 40
+    token projection = "orthographic"
+    float verticalAperture = 30
+}

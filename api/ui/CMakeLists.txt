@@ -3,7 +3,7 @@ v3d_add_api_library(ui
 	"Component.h" "Component.cpp"
 	"Container.h" "Container.cpp"
 	"DrawOrder.h"
-	"Engine.h" "Engine.cpp"
+	"Interface.h" "Interface.cpp"
 	"Image.h" "Image.cpp"
 	"Immediate.h" "Immediate.cpp"
 	"Layout.h" "Layout.cpp"
@@ -31,13 +31,21 @@ v3d_add_api_library(ui
 	"component/menu/Bar.h" "component/menu/Bar.cpp"
 	"component/menu/Item.h" "component/menu/Item.cpp"
 	"component/menu/Type.h"
+	"immediate/Context.h" "immediate/Context.cpp"
+	"immediate/Popups.cpp"
+	"immediate/Tables.cpp"
+	"immediate/TextField.cpp"
+	"immediate/Windows.cpp"
 	"input/Command.h" "input/Command.cpp"
 	"input/Cursor.h" "input/Cursor.cpp"
 	"input/Keys.h" "input/Keys.cpp"
+	"input/LineEdit.h" "input/LineEdit.cpp"
+	"loader/ComponentReader.h" "loader/ComponentReader.cpp"
+	"loader/Members.h" "loader/Members.cpp"
+	"loader/ThemeReader.h" "loader/ThemeReader.cpp"
 	"paint/ComponentRenderer.h" "paint/ComponentRenderer.cpp"
 	"paint/Dressing.h" "paint/Dressing.cpp"
 	"paint/Painter.h" "paint/Painter.cpp"
-	"paint/Palette.h"
 	"paint/Text.h" "paint/Text.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
 	"shell/FileChooser.h" "shell/FileChooser.cpp"
@@ -53,7 +61,6 @@ v3d_add_api_library(ui
 	"style/Style.h" "style/Style.cpp"
 	"style/Theme.h" "style/Theme.cpp"
 	"style/property/Color.h" "style/property/Color.cpp"
-	"style/property/Font.h" "style/property/Font.cpp"
 	"style/property/Image.h" "style/property/Image.cpp"
 	"style/property/Number.h" "style/property/Number.cpp")
 
@@ -64,7 +71,7 @@ v3d_add_api_library(ui
 # a renderer.
 # v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
 # v3dlib_image: TextRenderer.h holds the image::Image its atlas is uploaded from.
-# Boost::json: Engine.h names a boost::json::object for the theme it is handed.
+# Boost::json: Interface.h names a boost::json::object for the theme it is handed.
 # Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_log
@@ -83,12 +90,9 @@ target_link_libraries(v3dlib_ui PUBLIC
 # the name a binding is written against and the name a text box receives come from one table. The
 # header names neither the device nor SDL_Event beyond a forward declaration.
 # SDL3::SDL3: shell/Keyboard.cpp reads SDL events and the clipboard through SDL.
-target_link_libraries(v3dlib_ui PRIVATE v3dlib_input SDL3::SDL3)
-
-target_compile_options(v3dlib_ui PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
+# v3dlib_window: shell/Keyboard.cpp turns text input on and off on the window. Keyboard.h
+# declares the window rather than including it.
+target_link_libraries(v3dlib_ui PRIVATE v3dlib_input v3dlib_window SDL3::SDL3)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

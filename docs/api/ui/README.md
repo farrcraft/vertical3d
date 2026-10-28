@@ -1,7 +1,7 @@
 # The user interface
 
 These pages are for someone building a ui for an app with `api/ui` (`v3dlib_ui`). How the
-library works inside is in [internals/UserInterface.md](../../internals/UserInterface.md).
+library works inside is in [internals/ui/](../../internals/ui/README.md).
 
 | Page | Read it to |
 |---|---|
@@ -20,7 +20,7 @@ library works inside is in [internals/UserInterface.md](../../internals/UserInte
 `api/ui` offers two models. Both draw onto the same `realtime::canvas::Canvas`, use the same box
 drawing and the same text callbacks, so they look like one ui on screen.
 
-**Retained mode** is a tree of components. `v3d::ui::Engine` builds the tree once from a JSON
+**Retained mode** is a tree of components. `v3d::ui::Interface` builds the tree once from a JSON
 document. The app looks components up by name and changes them when the game's state changes.
 `v3d::ui::paint::ComponentRenderer` draws the tree. Use it for an authored ui: a menu bar, a
 settings screen, a HUD, a game's pause menu.
@@ -46,7 +46,7 @@ immediate mode. See [Themes and styles](Themes.md#themes-and-styles).
 
 The ui owns no device, pass or draw call. Panels, highlights and text are all quads appended
 to a canvas the app is already filling. The app submits that canvas itself, through
-`Engine3D::quads()`, so a ui adds no pass and no draw of its own. [rendering/](../rendering/README.md)
+`WindowRenderer::quads()`, so a ui adds no pass and no draw of its own. [rendering/](../rendering/README.md)
 covers the canvas and the quad pipeline.
 
 ```
@@ -72,11 +72,12 @@ must stay valid for the length of the call.
 signed distance field glyphs. `measure(size)` and `write(canvas, size)` return callbacks for
 one drawn size. Two sizes from one `TextRenderer` share the same atlas.
 
-The glyphs a `TextRenderer` can draw are the charcodes given to its constructor, which default
-to printable ascii. They are packed and uploaded once, and the atlas is not added to afterwards.
-Text is UTF-8 and is decoded to code points. A code point outside the packed set measures as
-zero width and draws nothing. An app that shows other characters passes them as `charcodes`, and
-may need a larger atlas to hold them.
+The glyphs a `TextRenderer` can draw are the characters of the UTF-8 charset given to its
+constructor, which defaults to printable ascii. They are packed and uploaded once, and the
+atlas is not added to afterwards.
+Text is UTF-8, and `v3d::font` decodes it and lays it out. A code point outside the packed set
+measures as zero width and draws nothing. An app that shows other characters passes them in the
+charset, and may need a larger atlas to hold them.
 
 `TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
 `api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
@@ -86,7 +87,7 @@ can supply its own `Upload`.
 
 A control sends a command when it is activated. In the document, a command is the pair
 `command` and `context`. Both must be present, or the component carries no command. The
-`context` is resolved through the event engine, and the command is sent on the ui's
+`context` is resolved through the event router, and the command is sent on the ui's
 dispatcher as a `v3d::event::Event`. An app answers it like any other command.
 
 What activates each control:
@@ -111,6 +112,6 @@ as the press lands, not on release.
 stand-ins, and the shared font is copied beside the suite. A test builds components, draws them
 onto a canvas, and checks the boxes the draw left or the primitives it added. Layout alone can
 be checked with no canvas at all; see
-[internals/UserInterface.md](../../internals/UserInterface.md). `TextRenderer` is tested there
+[internals/ui/](../../internals/ui/README.md). `TextRenderer` is tested there
 with a stand-in upload, which leaves only the upload itself uncovered.
 [Testing.md](../../contributing/Testing.md) has the rest.

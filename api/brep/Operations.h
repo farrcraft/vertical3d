@@ -74,8 +74,8 @@ std::optional<std::vector<Index>> insetFaces(BRep & mesh, const std::vector<Inde
  * corners goes, and so do the vertices nothing uses after. Edges that now run between the same
  * two vertices are paired, so a merge can join two open boundaries.
  *
- * The arrays are compacted, so the parts after a removed one are renumbered. The merged vertex
- * keeps its selection, and every other part keeps its own.
+ * The arrays are compacted, so the parts after a removed one are renumbered, and an index
+ * taken before the merge may name another part after it.
  *
  * A merge is refused, and changes nothing, when it would leave an edge shared by more than two
  * faces, a face that meets itself, or nothing at the merged point.

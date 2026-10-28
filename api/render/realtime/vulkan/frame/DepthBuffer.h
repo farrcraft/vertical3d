@@ -23,8 +23,9 @@ namespace v3d::render::realtime::vulkan::frame {
  *
  * DeviceContext keeps one for all the passes that draw into the swapchain image, not one per
  * pass. Those passes need depth at the same size, and a pass that shares the buffer with the
- * pass before it can keep the depth that pass wrote. It is sized by the swapchain and
- * recreated with it. A render target with depth holds its own, at the target's size.
+ * pass before it can keep the depth that pass wrote. It is sized by the swapchain, and replaced
+ * by a new one when the swapchain changes size. A render target with depth holds its own, at
+ * the target's size.
  *
  * A window with no area has no depth buffer, as it has no swapchain. valid() then returns
  * false, and nothing is drawn.
@@ -43,11 +44,15 @@ class DepthBuffer final {
      * @param width in pixels, matching what the passes draw into
      * @param height in pixels, matching what the passes draw into
      * @param sampled whether a later pass will read this, which costs a sampler, a usage
-     *        bit and a narrower choice of format
-     * @throw std::runtime_error if the device offers no depth format, or allocation fails
+     *        bit and a narrower choice of format. A sampled buffer is read as an array of its
+     *        layers, through a sampler2DArray, however many layers it has
+     * @param layers how many layers the image has, each drawn into on its own. More than one
+     *        needs sampled, since only a reader can tell the layers apart
+     * @throw std::runtime_error if the device offers no depth format, allocation fails, or
+     *        there is more than one layer and the buffer is not sampled
      **/
     DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-        bool sampled = false);
+        bool sampled = false, uint32_t layers = 1);
 
     /**
      **/
@@ -55,12 +60,6 @@ class DepthBuffer final {
 
     DepthBuffer(const DepthBuffer&) = delete;
     DepthBuffer& operator=(const DepthBuffer&) = delete;
-
-    /**
-     * Replace the image with one at the new size. The format never changes, so no pipeline
-     * built against it has to be rebuilt.
-     **/
-    void recreate(uint32_t width, uint32_t height);
 
     /**
      * @return whether there is an image to draw into
@@ -73,9 +72,15 @@ class DepthBuffer final {
     VkImage image() const noexcept;
 
     /**
-     * @return the view attached as the depth attachment
+     * @return the view a pass attaches to draw into one layer, or null for a layer the buffer
+     *         does not have
      **/
-    VkImageView view() const noexcept;
+    VkImageView view(uint32_t layer = 0) const noexcept;
+
+    /**
+     * @return how many layers the image has
+     **/
+    uint32_t layers() const noexcept;
 
     /**
      * @return the format the image was created with, which a pipeline is built against
@@ -109,7 +114,7 @@ class DepthBuffer final {
     VkSampler sampler() const noexcept;
 
     /**
-     * The image described as something pipeline::Resources can hold, sharing it rather than
+     * The image described as a texture a registry can hold, sharing it rather than
      * copying it, so that a draw item can sample what a pass tested against.
      *
      * @return the image and its sampler, or an empty texture when this was not built sampled
@@ -147,6 +152,7 @@ class DepthBuffer final {
     boost::shared_ptr<pipeline::Sampler> sampler_;
     VkExtent2D extent_;
     bool sampled_;
+    uint32_t layers_;
 };
 
 };  // namespace v3d::render::realtime::vulkan::frame

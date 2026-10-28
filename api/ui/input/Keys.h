@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/event/Event.h>
+#include <api/ui/input/LineEdit.h>
 
-#include <functional>
 #include <string>
 #include <string_view>
 
@@ -18,7 +18,7 @@
 namespace v3d::ui {
 
 class Component;
-class Engine;
+class Interface;
 
 namespace component {
 class Scrollbar;
@@ -36,7 +36,7 @@ namespace v3d::ui::input {
  * Turns a key into an edit on whatever has the focus.
  *
  * The keyboard counterpart of input::Cursor, with the same shape. It receives what the
- * app's input engine saw and returns whether the ui took it. It chooses the operation, and
+ * app's input devices saw and returns whether the ui took it. It chooses the operation, and
  * the component carries it out. Nothing here searches the tree for a component. The engine
  * holds the focus, so a key goes to one component or to none.
  *
@@ -56,23 +56,14 @@ namespace v3d::ui::input {
  * selection. The app supplies the clipboard, as it supplies text measuring.
  *
  * A ui with nothing focused takes neither kind of input, so a game's movement keys keep
- * working until something is clicked into or Engine::focusFirst() is called.
+ * working until something is clicked into or Interface::focusFirst() is called.
  **/
 class Keys final {
  public:
     /**
-     * The platform's clipboard, as a pair of callbacks. This library cannot reach the
-     * clipboard without depending on SDL, so the app supplies it, as it supplies text
-     * measuring.
-     *
-     * Keys given neither callback still handles every other edit. A cut with no write
-     * callback leaves the text in place, so the text is never lost. A paste with no read
-     * callback inserts nothing.
+     * The platform's clipboard, which a text box's cut, copy and paste read and write.
      **/
-    struct Clipboard final {
-        std::function<std::string()> read;
-        std::function<void(std::string_view)> write;
-    };
+    typedef input::Clipboard Clipboard;
 
     /**
      * @param ui where the focus lives
@@ -80,7 +71,7 @@ class Keys final {
      * @param clipboard where a cut and a copy hand the selected run, and where a paste
      *        reads one from
      **/
-    Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+    Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const Clipboard& clipboard = Clipboard());
 
     /**
@@ -130,21 +121,6 @@ class Keys final {
         bool shifted, bool controlled);
 
     /**
-     * Hand the selected run to the clipboard, and take it out of the box for a cut.
-     *
-     * Neither does anything without a selection, so an empty copy never replaces what the
-     * clipboard holds.
-     **/
-    void copySelection(const boost::shared_ptr<component::TextBox>& box) const;
-    void cutSelection(const boost::shared_ptr<component::TextBox>& box) const;
-
-    /**
-     * Insert what the clipboard holds over the selection, through TextBox::insert(), the
-     * same way composed characters are inserted.
-     **/
-    void paste(const boost::shared_ptr<component::TextBox>& box) const;
-
-    /**
      * A key that reached a select list. The arrows, home and end step through the rows and
      * send the command, as clicking a row does. Return and space send it without moving.
      **/
@@ -189,7 +165,7 @@ class Keys final {
      **/
     void send(const v3d::event::Event& event) const;
 
-    boost::shared_ptr<Engine> ui_;
+    boost::shared_ptr<Interface> ui_;
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     Clipboard clipboard_;
 };

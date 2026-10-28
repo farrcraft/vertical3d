@@ -88,19 +88,31 @@ bool Pass::depth() const noexcept {
 
 /**
  **/
-void Pass::target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) noexcept {
+void Pass::target(const boost::shared_ptr<RenderTarget>& target) noexcept {
     target_ = target;
 }
 
 /**
  **/
-const boost::shared_ptr<vulkan::frame::RenderTarget>& Pass::target() const noexcept {
+const boost::shared_ptr<RenderTarget>& Pass::target() const noexcept {
     return target_;
 }
 
 /**
  **/
-void Pass::reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) {
+void Pass::layer(uint32_t layer) noexcept {
+    layer_ = layer;
+}
+
+/**
+ **/
+uint32_t Pass::layer() const noexcept {
+    return layer_;
+}
+
+/**
+ **/
+void Pass::reads(const boost::shared_ptr<RenderTarget>& target) {
     if (target && std::find(reads_.begin(), reads_.end(), target) == reads_.end()) {
         reads_.push_back(target);
     }
@@ -108,7 +120,7 @@ void Pass::reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) {
 
 /**
  **/
-const std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>>& Pass::reads() const noexcept {
+const std::vector<boost::shared_ptr<RenderTarget>>& Pass::reads() const noexcept {
     return reads_;
 }
 

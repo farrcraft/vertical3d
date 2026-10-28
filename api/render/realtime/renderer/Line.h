@@ -1,0 +1,118 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/Line.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/Resources.h>
+
+#include <vulkan/vulkan.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
+namespace v3d::render::realtime::renderer {
+
+/**
+ * The device side of the world space line primitive.
+ *
+ * An app fills a canvas::Line on the CPU during a tick, and submit() uploads it into a buffer
+ * of the frame about to be recorded. There is no texture, no material and no index buffer, so
+ * an unclipped canvas becomes one draw, and a clipped one becomes a draw per clip rectangle.
+ * The buffers are per frame in flight, because the device may still be reading the previous
+ * frame's buffers.
+ *
+ * A frame may submit any number of canvases, and each submission claims a buffer of its own
+ * from the StreamRing. They cannot share one: growing a buffer replaces the allocation, which
+ * invalidates the handle every draw item already queued holds.
+ *
+ * Lines are one pixel wide. Wider ones need the wideLines device feature, which the
+ * device does not enable.
+ **/
+class Line final {
+ public:
+    /**
+     * What the line pipelines are built against.
+     **/
+    struct Spec final {
+        /**
+         * The format of the image the pass draws into, which dynamic rendering needs at
+         * pipeline creation because there is no render pass to take it from.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        VkFormat depth = VK_FORMAT_UNDEFINED;  /**< the depth format, for the second of the two pipelines **/
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring and frame uniforms the lines
+     *        are built on and drawn through. Both pipelines read set 0. A line canvas is in
+     *        world space, so the pass's camera is its only transform
+     * @throw std::runtime_error if the pipelines cannot be created
+     **/
+    Line(const DeviceContext& context, const Spec& spec);
+
+    /**
+     **/
+    ~Line();
+
+    Line(const Line&) = delete;
+    Line& operator=(const Line&) = delete;
+
+    /**
+     * Upload a canvas and add one draw item to the pass per batch of it.
+     *
+     * An empty canvas costs neither an upload nor a draw.
+     *
+     * @param canvas the geometry to draw, which is copied and not kept
+     * @param pass where the draw item is submitted. Its camera is what the lines are
+     *        drawn through, so a pass that never had one set draws them in clip space
+     * @param layer the layer the item's sort key carries, which only has an effect in a pass
+     *        that sorts
+     **/
+    void submit(const canvas::Line& canvas, Pass* pass, uint16_t layer = 0);
+
+ private:
+    /**
+     * Compile the line pipeline twice: once for a pass with a depth attachment and once for
+     * a pass without, because dynamic rendering matches a pipeline to the attachments of the
+     * pass it draws into.
+     *
+     * The two differ in behaviour as well as in format. The one built for a pass with depth
+     * tests it, and writes it unless the pass sets depthWrite(), so a wireframe is occluded
+     * by the geometry in front of it. Lines drawn over a scene, not into it, belong in a pass
+     * with no depth.
+     **/
+    void createPipelines(const vulkan::pipeline::Formats & formats);
+
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
+
+    PipelineHandle pipeline_;       /**< for a pass with no depth attachment **/
+    PipelineHandle depthPipeline_;  /**< for a pass with one, and it tests against it **/
+
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+};
+
+};  // namespace v3d::render::realtime::renderer

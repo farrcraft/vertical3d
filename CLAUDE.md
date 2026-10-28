@@ -7,14 +7,15 @@ before working on it.
 ## What this is
 
 A monorepo for the Vertical3D ecosystem: reusable C++ libraries under `api/` (targets named
-`v3dlib_*`, one per subdirectory) plus the apps that consume them at the top level — pong,
-tetris, voxel, odyssey, vertical3d, moya, imagetool, v3dshell. Every one of those
-directories builds with the tree. [examples/](examples/) is the exception: it consumes the
-repository rather than being part of it.
+`v3dlib_*`, one per subdirectory) plus the apps that consume them. vertical3d, moya and
+imagetool are at the top level, and the five demos (pong, tetris, voxel, odyssey, diorama) are
+under `demos/`. Every one of those directories builds with the tree. [examples/](examples/) is the
+exception: it consumes the repository rather than being part of it.
 
 Much of this code traces back to the early 2000s and is being modernised incrementally: C++17
 and newer, granular namespaces, CMake replacing autotools and VS solutions. How modern a given
-file is varies widely. MSVC and Windows only in practice; rendering is Vulkan 1.3 and windowing
+file is varies widely. MSVC and Windows only in practice, except that the api libraries needing
+neither Vulkan nor SDL also build with Clang on Linux in CI; rendering is Vulkan 1.3 and windowing
 is SDL3.
 
 ## Where things are written down
@@ -28,19 +29,26 @@ is SDL3.
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
-| `api/engine`, `config`, `event`, `input`, `audio`, `log` | [docs/api/engine/](docs/api/engine/README.md) |
-| `api/type`, `api/grid`, `api/ecs` | [docs/api/Types.md](docs/api/Types.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md) |
-| `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md) |
+| `api/engine`, `event`, `input`, `audio`, `log`, `window`, `shell` | [docs/api/engine/](docs/api/engine/README.md) |
+| `api/type`, `api/animation`, `api/model`, `api/grid`, `api/ecs`, `api/curve` | [docs/api/Types.md](docs/api/Types.md), [Cameras.md](docs/api/Cameras.md), [Models.md](docs/api/Models.md), [Animation.md](docs/api/Animation.md), [Grid.md](docs/api/Grid.md), [ECS.md](docs/api/ECS.md), [Curves.md](docs/api/Curves.md) |
+| `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md), [Images.md](docs/api/Images.md), [Fonts.md](docs/api/Fonts.md) |
+| `api/interchange` | [docs/api/Interchange.md](docs/api/Interchange.md) |
+| `api/database` | [docs/api/Database.md](docs/api/Database.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
-| Changing `api/ui` | [docs/internals/UserInterface.md](docs/internals/UserInterface.md) |
+| Changing `api/ui` | [docs/internals/ui/](docs/internals/ui/README.md) |
 | `moya`, `api/render/offline`, RIB | [docs/offline/](docs/offline/README.md) |
 | `vertical3d/`, `api/brep` | [docs/editor/](docs/editor/README.md) |
-| pong, tetris, voxel, odyssey, imagetool | [docs/Games.md](docs/Games.md) |
+| `demos/` (pong, tetris, voxel, odyssey, diorama) | [docs/Demos.md](docs/Demos.md) |
+| imagetool | [docs/Imagetool.md](docs/Imagetool.md) |
 | `examples/` | [examples/README.md](examples/README.md) |
 | Why something is shaped as it is | [docs/adr/README.md](docs/adr/README.md), grouped by area |
 | What is planned, and what is loose | [docs/plans/](docs/plans/README.md), [docs/TODO.md](docs/TODO.md) |
+
+Everything under a `completed/` directory in `docs/plans`, `docs/roadmap` or `docs/audits` is a
+frozen record. Never edit one or fix its links, and never take a fact about the current tree
+from one. When searching for where a subject is documented, leave them out.
 
 [docs/README.md](docs/README.md) is the full index. [docs/sdlc.md](docs/sdlc.md) describes how
 work moves through the repo: where plans live, when a decision earns an ADR, and what
@@ -57,7 +65,7 @@ covered.
 ninja -C out/build/x64-Debug                       # build; one target by name
 ctest --test-dir out/build/x64-Debug --output-on-failure
 cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=voxel/src/noise --recursive .
+  --exclude=demos/voxel/src/noise --recursive .
 ```
 
 Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer

@@ -1,0 +1,138 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/WindowRenderer.h>
+#include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/shell/Shell.h>
+#include <api/ui/Immediate.h>
+#include <api/ui/shell/Screen.h>
+#include <api/ui/shell/StatisticsOverlay.h>
+
+#include <vulkan/vulkan.h>
+
+#include <cstddef>
+#include <string>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+
+class Scene;
+class ChunkMeshPool;
+class MeshBuilder;
+
+/**
+ * The terrain, and the text drawn over it.
+ *
+ * Two passes, because the two need opposite settings. The terrain is a depth tested, sorted
+ * scene of one draw item per chunk through a pipeline of its own. The overlay and the ui
+ * are painter ordered quads, drawn on top of it through the batched quad pipeline. Each pass
+ * carries its own settings, so neither depends on the other.
+ */
+class Renderer {
+ public:
+    /**
+     * @param shell the app's shell, which builds its screen over this renderer's engine. It
+     *        outlives the renderer
+     * @throw std::runtime_error if the pipeline or its uniforms cannot be built
+     **/
+    Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_ptr<v3d::window::Window>& window,
+        const boost::shared_ptr<v3d::log::Logger> & logger, v3d::shell::Shell* shell);
+
+    /**
+     **/
+    ~Renderer();
+
+    Renderer(const Renderer&) = delete;
+    Renderer& operator=(const Renderer&) = delete;
+
+    /**
+     * @return how long the device spent on each pass, by its name
+     **/
+    const std::vector<v3d::render::realtime::vulkan::frame::Timings::Timing>& timings() const;
+
+    /**
+     * Draw the frame.
+     * @param statistics what the loop measured about its own pacing and the device's pass
+     *        times, which the debug window reads
+     * @param tools what the cursor did, for the immediate layer - Controller::tools()
+     **/
+    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+        const v3d::ui::Immediate::Input& tools);
+    /**
+     * Give the camera's projection the aspect of a frame this size.
+     */
+    void resize(const glm::ivec2& size);
+
+    void tick(unsigned int delta);
+
+    void debug(bool status);
+
+    /**
+     * Wait for everything in flight, before the window the device draws to goes away.
+     **/
+    void shutdown();
+
+ private:
+    /**
+     * Create the descriptor pool and layout for set 1: the light and the block palette, which
+     * every chunk draws with.
+     **/
+    void createLayout();
+
+    /**
+     * Fill the palette and upload it, once. Nothing in the world changes a material.
+     **/
+    void createUniforms();
+
+    /**
+     * Compile the terrain pipeline against the pass it draws into: a colour attachment and
+     * a depth one. Dynamic rendering needs both named at compile time.
+     **/
+    void createPipeline();
+
+    /**
+     * One draw item per meshed chunk in the camera's view, submitted to the terrain pass.
+     **/
+    void drawTerrain(v3d::render::realtime::Pass* pass);
+
+    /**
+     * The debug readout, toggled by voxel::debug: the build, what the loop measured, where the
+     * player is standing, and how many of the meshed chunks were drawn.
+     **/
+    void drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
+        const v3d::ui::Immediate::Input& tools);
+
+    boost::shared_ptr<Scene> scene_;
+    boost::shared_ptr<v3d::log::Logger> logger_;
+
+    // first, so that everything holding a device handle below is destroyed before the
+    // context that owns the device is
+    v3d::render::realtime::WindowRenderer engine_;
+
+    boost::shared_ptr<v3d::render::realtime::DeviceContext> context_;
+    boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::DescriptorPool> scenePool_;
+    boost::shared_ptr<v3d::render::realtime::vulkan::memory::DeviceBuffer> uniforms_;
+    v3d::render::realtime::PipelineHandle pipeline_;
+    v3d::render::realtime::MaterialHandle material_;
+
+    boost::shared_ptr<ChunkMeshPool> meshes_;
+    boost::shared_ptr<MeshBuilder> builder_;
+    std::size_t drawnChunks_;   /**< how many chunks the last frame drew **/
+    std::size_t meshedChunks_;  /**< how many it could have, being meshed **/
+
+    bool debug_;
+
+    v3d::shell::Shell* shell_;
+    // the shell's screen, built over engine_
+    v3d::ui::shell::Screen* screen_ = nullptr;
+};

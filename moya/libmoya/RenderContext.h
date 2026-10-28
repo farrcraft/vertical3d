@@ -7,23 +7,30 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/Area.h>
+#include <api/render/offline/Camera.h>
+#include <api/render/offline/CameraOptions.h>
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/Textures.h>
-#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
-#include <moya/libmoya/reyes/Samples.h>
 
+#include "Attributes.h"
+#include "Display.h"
+#include "Planes.h"
+#include "Lights.h"
 #include "Polygon.h"
-#include "FrameBuffer.h"
+#include "Progress.h"
+#include "Shaders.h"
 #include "Shading.h"
+#include "TracedScene.h"
+#include "Transforms.h"
 
 #include <cstddef>
 #include <vector>
-#include <map>
 #include <string>
 
 namespace v3d::moya {
@@ -35,8 +42,8 @@ class GridShader;
 class Hider;
 
 /**
- * The current graphics state. Several contexts may exist at once, and only the last one
- * created is active.
+ * The current graphics state. Several contexts may exist at once. The one most recently begun
+ * or made active with RiContext is active.
  **/
 class RenderContext {
  public:
@@ -60,20 +67,43 @@ class RenderContext {
          * Runs the hider into the framebuffer's planes, then the imager if there is one. A
          * display of type "file" then has its colour channels written. Lights, the traced
          * scene and the framebuffer are kept. Does nothing before prepareWorld().
+         *
+         * Under the reyes hider, when no shader the scene bound calls trace or transmission,
+         * the traced scene's primitives are dropped before the hider runs, since no ray will
+         * meet them. An area light keeps its own copy of its geometry.
+         *
+         * A render the progress callback stops leaves the planes as far as the hider got, runs
+         * no imager and writes no file.
          **/
         void render();
+
+        /**
+         * Set what is told the render's progress. An empty callback is told nothing, and the
+         * render runs to its end. The callback outlives every world, as an option does not.
+         **/
+        void progress(const Progress::Callback& callback);
+
+        /**
+         * Tell the progress callback how far the hider has got.
+         *
+         * @return false once the callback has asked to stop, and from then until the next
+         *         render begins
+         **/
+        bool report(float done);
+
+        /**
+         * @return whether the last render was stopped before its end
+         **/
+        bool stopped() const noexcept;
 
         unsigned int imageWidth() const;
         unsigned int imageHeight() const;
         float pixelAspect() const;
 
-        /** The picture's size when no Format names one. **/
-        static constexpr unsigned int defaultWidth = 320;
-        static constexpr unsigned int defaultHeight = 240;
-        /** RI's default frame aspect ratio, the aspect of defaultWidth by defaultHeight. **/
-        static constexpr float defaultFrameAspectRatio = 4.0F / 3.0F;
-        /** RI's default "fov" for a "perspective" projection, in degrees. **/
-        static constexpr float defaultFov = 90.0F;
+        /** The camera options' defaults, which CameraOptions states. **/
+        static constexpr unsigned int defaultWidth = v3d::render::offline::CameraOptions::defaultWidth;
+        static constexpr unsigned int defaultHeight = v3d::render::offline::CameraOptions::defaultHeight;
+        static constexpr float defaultFov = v3d::render::offline::CameraOptions::defaultFov;
 
         /**
          * maps to RiFormat(xres, yres, aspect)
@@ -106,9 +136,12 @@ class RenderContext {
         /**
          * maps to RiProjection()
          * The projection and screen transformations together take camera space to screen
-         * space. An empty name is "orthographic". "perspective" reads fov, the full angle
-         * in degrees across screen x from -1 to 1. Any other name is kept, and projects
-         * through the identity. The current transformation is reset to the identity.
+         * space. An empty name is RI_NULL, which applies no projection, so camera space is
+         * screen space. "perspective" reads fov, the full angle in degrees across screen x
+         * from -1 to 1. "orthographic" maps the screen window and the clipping range onto
+         * the canonical volume. The current transformation is reset to the identity.
+         *
+         * Any other name is logged and refused, and the projection in force stays.
          **/
         void projection(std::string name, float fov = defaultFov);
         /**
@@ -119,11 +152,6 @@ class RenderContext {
          **/
         void hider(const std::string & name);
         bool raytracing() const;
-        /**
-         * Renders the buckets, for the reyes hider. Every bucket's grids are hidden into a new
-         * set of samples, and the samples are then resolved into the planes.
-         **/
-        void bucket(v3d::render::offline::FrameBuffer* planes);
         /** The near clipping plane, RiClipping's hither. **/
         float hither() const;
         /**
@@ -137,6 +165,11 @@ class RenderContext {
          * depth of field.
          **/
         bool perspective() const;
+        /**
+         * The camera as WorldBegin fixed it. Before WorldBegin its screen matrix is the one
+         * the last RiProjection gave, and every other matrix is the identity.
+         **/
+        const v3d::render::offline::Camera & camera() const;
 
         /**
          * maps to RiDisplay()
@@ -145,6 +178,25 @@ class RenderContext {
          * empty name or any other type writes nothing. The mode is stored and not read.
          **/
         void display(const v3d::render::offline::rib::Display & display);
+        /**
+         * The same, with the request's parameter list. No display parameter is read, so each
+         * one is logged as not used.
+         **/
+        void display(const v3d::render::offline::rib::Display & display,
+            const v3d::render::offline::rib::ParameterList & parameters);
+        /**
+         * maps to RiCropWindow()
+         * The part of the image to render, as fractions of its width and height. The window
+         * is held to [0, 1] on each axis. A window with no area is logged and refused.
+         **/
+        void cropWindow(const v3d::render::offline::rib::CropWindow & window);
+        /**
+         * The pixels inside the crop window: columns x to y and rows z to w, each range
+         * including its start and excluding its end. RI renders the columns from
+         * ceil(width * xmin) to ceil(width * xmax) - 1, and the rows likewise. render() leaves
+         * every pixel outside them empty.
+         **/
+        glm::uvec4 cropped() const;
         const std::string & displayName() const;
 
         /**
@@ -156,23 +208,22 @@ class RenderContext {
         void popTransform();
         /**
          * maps to RiAttributeBegin() and RiAttributeEnd()
-         * Saves and restores the current transformation, colour, opacity, shading rate,
-         * surface shader and the set of lights that are on. An end with nothing saved does
-         * nothing.
+         * Saves and restores the current transformation and the Attributes. An end with
+         * nothing saved does nothing.
          **/
         void attributeBegin();
         void attributeEnd();
         /**
          * maps to RiCoordinateSystem()
-         * Saves the current transformation as a named coordinate system.
-         * The predefined names are object, world, camera, screen, raster and NDC.
+         * Saves the current transformation as a named coordinate system. The predefined
+         * names are object, world, camera, screen, raster and NDC. The camera sets them, and
+         * a predefined name given here is logged and not saved.
          **/
         void saveCoordinateSystem(const std::string & name);
         /**
          * maps to RiCoordSysTransform()
-         * Replaces the current transformation with the named coordinate system. The name
-         * is not checked: one that is neither predefined nor saved is added as a matrix of
-         * zeros, which becomes the current transformation.
+         * Replaces the current transformation with the named coordinate system. A name that
+         * is neither predefined nor saved is logged, and the transformation is left as it was.
          **/
         void setCoordinateSystem(const std::string & name);
         void setIdentityTransform();
@@ -210,6 +261,8 @@ class RenderContext {
          * line pinned is left as it is, and nothing is reported.
          **/
         void shadingRate(float size);
+        /** maps to RiBasis(), which a later cubic curve is evaluated through **/
+        void basis(const v3d::render::offline::rib::Basis & request);
         void bucketSize(unsigned int width, unsigned int height);
         void gridSize(unsigned int size);
         /**
@@ -311,13 +364,9 @@ class RenderContext {
 
         /**
          * maps to RiPolygon()
-         * Under the ray hider the polygon is only added to the traced scene. Under the
-         * reyes hider it is also added to the traced scene, then bounded and bucketed, and
-         * prepareWorld() must come first. A polygon outside the clipping planes or the
-         * frustum is culled. One that is too large or crosses the eye plane is marked for
-         * splitting. A polygon that is not culled goes in the bucket that holds the upper
-         * left corner of its raster bound. The pieces of a split come back through here,
-         * and are bucketed again but not traced again.
+         * The polygon is added to the traced scene. Under the reyes hider it is also placed
+         * with the current state and handed to the hider, which bounds and buckets it.
+         * prepareWorld() must come first.
          **/
         void addPolygon(const boost::shared_ptr<Polygon>& poly);
         /**
@@ -328,25 +377,29 @@ class RenderContext {
          * @return false when the hider cannot draw spheres
          **/
         bool addSphere(const v3d::render::offline::rib::Sphere & shape);
+        /**
+         * maps to RiCurves()
+         * Each curve is cut into segments by the current basis. Each is drawn as a ribbon of
+         * the width at its two ends, which is a varying "width" at each end of each segment, or
+         * else the "constantwidth", or else 1. A curve with too few points for a segment is
+         * skipped, and a request whose counts reach past "P" draws nothing past them, and is
+         * logged.
+         *
+         * Each segment is added to the traced scene. Under the reyes hider it is also placed
+         * with the current state and handed to the hider, as a polygon is.
+         **/
+        void addCurves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters);
 
         /**
-         * The matrix of a named coordinate system. A name that is neither predefined nor
-         * saved is added as a matrix of zeros.
+         * The matrix of a named coordinate system. "camera" is world to camera, and "screen",
+         * "raster" and "NDC" are each from camera space, as the camera holds them. "object"
+         * and "world" are the identity. A space the scene saved is its transformation into
+         * world space. A name that is neither predefined nor saved is logged, and gives the
+         * identity.
          **/
         glm::mat4x4 coordinateSystem(const std::string & name);
-
-        /**
-         * The matrices from camera space into "screen", "raster" and "NDC", as the camera
-         * options stand. prepareWorld() gives them to the traced scene.
-         **/
-        v3d::render::offline::trace::Scene::Projection projected();
-
-        /**
-         * maps to RiDeclare()
-         * The parameter types the C entry points read. The RIB reader keeps its own
-         * declarations for the file it reads, separate from these.
-         **/
-        v3d::render::offline::rib::Declarations & declarations();
+        /** Whether a coordinate system is predefined or saved by the scene. **/
+        bool known(const std::string & name) const;
 
         /**
          * Where this context logs a request it cannot carry out. The RIB reader has a
@@ -355,14 +408,12 @@ class RenderContext {
         const boost::shared_ptr<v3d::log::Logger> & logger() const;
 
         /**
-         * The buckets the world was prepared into. Null until prepareWorld().
+         * The planes the frame is drawn into, indexed by Planes::Plane. Null until
+         * prepareWorld().
          **/
-        boost::shared_ptr<FrameBuffer> framebuffer() const;
-        /**
-         * The frame's samples, which the reyes hider writes into. bucket() creates them
-         * from sampling() as it stands then, so they do not exist under the ray hider.
-         **/
-        reyes::Samples & samples();
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> picture() const;
+        /** How many primitives the hider has bucketed and not yet rendered. **/
+        std::size_t bucketed() const;
 
         unsigned int bucketWidth() const;
         unsigned int bucketHeight() const;
@@ -385,91 +436,30 @@ class RenderContext {
         void initialize();
 
  private:
-        /** Save as "screen" the projection after the transformation in force at RiProjection. **/
-        void screenTransform();
-        /** The matrix the projection name, field of view, screen window and clipping give. **/
-        glm::mat4x4 projectionMatrix() const;
-        /**
-         * Add a polygon to the traced scene as a fan of triangles, placed by the current
-         * transformation and shaded by the given state.
-         **/
-        void trace(const Polygon & poly, const Shading & state);
-        /**
-         * Add a polygon with a displacement shader to the traced scene as the surface the
-         * shader moves it to. It is diced in camera space into a grid of tracedAcross
-         * micropolygons a side, displaced, and added as two triangles for each micropolygon.
-         **/
-        void traceDisplaced(const Polygon & poly, const Shading & state);
-        /** The micropolygons a side a displaced polygon is diced into for the traced scene. **/
-        static constexpr unsigned int tracedAcross = 64;
-        /** Give a traced primitive the state's surface, opacity and lights, in world space. **/
-        void shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state);
-        /**
-         * The state's lights placed in world space, as one shared set. The set is built
-         * again only when the lights that are on, or the number of lights, change.
-         **/
-        const v3d::render::offline::trace::Lights & tracedLights(const Shading & state);
+        /** What a primitive submitted now goes into the traced scene under. **/
+        TracedScene::Submission submission(const Shading & state);
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
-         * constructors set every one of them. riEpsilon and riInfinity hold the values of
-         * RI_EPSILON and RI_INFINITY, because RenderMan.h is the C interface and is not
-         * included here.
+         * constructors set every one of them.
          */
-        static constexpr float riEpsilon = 1.0e-10F;
-        static constexpr float riInfinity = 1.0e38F;
-        /**
-         * What RiAttributeBegin saves and RiAttributeEnd puts back.
-         **/
-        class Attributes {
+        /** What RiAttributeBegin saves and RiAttributeEnd puts back. **/
+        class Saved final {
          public:
             v3d::render::offline::MovingTransform transform;
-            glm::vec3 color = glm::vec3(1.0F);
-            glm::vec3 opacity = glm::vec3(1.0F);
-            float shadingRate = 1.0F;
-            v3d::render::offline::sl::InstancePtr surface;
-            glm::mat4x4 surfacePlacement = glm::mat4x4(1.0F);
-            /**
-             * Which lights are switched on, by handle. The lights themselves last for the
-             * frame, and AttributeEnd restores only this set.
-             **/
-            std::vector<std::string> lit;
-            boost::shared_ptr<v3d::render::offline::Area> areaLight;
-            unsigned int lightSamples = 16;
-            v3d::render::offline::sl::Placed displacement;
-            float displacementBound = 0.0F;
+            Attributes attributes;
         };
 
-        /**
-         * A light the scene created, kept for the frame under the handle a later
-         * Illuminate names it by.
-         **/
-        class LightSource {
-         public:
-            std::string handle;
-            v3d::render::offline::sl::InstancePtr shader;
-            glm::mat4x4 placement = glm::mat4x4(1.0F);
-            /** The geometry an area light shines from, or null for any other light. **/
-            boost::shared_ptr<v3d::render::offline::Area> area;
-        };
-
-        /** The area light the geometry being declared joins, until its attribute block ends. **/
-        boost::shared_ptr<v3d::render::offline::Area> areaLight_;
-        /** `Attribute "light" "nsamples"`, which an area light takes when it is made. **/
-        unsigned int lightSamples_ = 16;
-        /** The displacement shader in force, and its bound in camera space. **/
-        v3d::render::offline::sl::Placed displacement_;
-        float displacementBound_ = 0.0F;
+        Transforms transforms_;
+        Attributes attributes_;
+        std::vector<Saved> saved_;
         /** The attributes already reported as not used, so each is reported once. **/
         std::vector<std::string> unusedAttributes_;
 
         std::string name_;
-        std::vector<v3d::render::offline::MovingTransform> transforms_;
-        std::vector<Attributes> attributes_;
-        std::map<std::string, glm::mat4x4> coordinateSystems_;
-        v3d::render::offline::rib::Declarations declarations_;
         boost::shared_ptr<v3d::log::Logger> logger_;
         bool flatMotionReported_ = false;
+        bool beforeWorldReported_ = false;
 
         /**
          * Whether the current transformation moves and has no inverse at both ends. A
@@ -477,58 +467,30 @@ class RenderContext {
          * primitive is logged.
          **/
         bool flatMotion();
-        boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> shaders_;
-        boost::shared_ptr<v3d::render::offline::Textures> textures_;
+        /**
+         * Whether WorldBegin has not yet been reached. The camera is fixed there, so a polygon
+         * sent before it cannot be placed, and is left out. The first such polygon is logged.
+         **/
+        bool beforeWorld();
+        boost::shared_ptr<Shaders> shaders_;
         boost::shared_ptr<reyes::GridShader> shader_;
-        std::vector<LightSource> lights_;
-        v3d::render::offline::sl::InstancePtr surface_;
-        glm::mat4x4 surfacePlacement_ = glm::mat4x4(1.0F);
-        std::vector<std::string> lit_;
-        v3d::render::offline::trace::Scene traced_;
-        /** The lights that are on, in world space, and the handles and count they came from. **/
-        v3d::render::offline::trace::Lights tracedLights_;
-        std::vector<std::string> tracedFor_;
-        std::size_t tracedLightsFor_ = 0;
-        v3d::render::offline::sl::InstancePtr imager_;
-        boost::shared_ptr<FrameBuffer> frameBuffer_;
-        boost::shared_ptr<reyes::Samples> samples_;
-        // camera options
-        unsigned int xres_ = defaultWidth;
-        unsigned int yres_ = defaultHeight;
-        float pixelAspect_ = 1.0F;
-        float crop_[4] = { 0.0F, 1.0F, 0.0F, 1.0F };  // RiCropWindow's default; nothing sets or reads it
-        float frameAspect_ = defaultFrameAspectRatio;
-        float screen_[4] = { -defaultFrameAspectRatio, defaultFrameAspectRatio, -1.0F, 1.0F };  // the screen window: left, right, bottom, top
-        // RiFormat sets the frame aspect, and the frame aspect sets the screen window. Once a
-        // scene names the frame aspect or the screen window, that value stops following. With
-        // a named projection, prepareWorld() only rebuilds the screen transform
-        bool frameAspectNamed_ = false;
-        bool screenNamed_ = false;
-        bool projectionNamed_ = false;
-        glm::vec3 color_ = glm::vec3(1.0F);
-        glm::vec3 opacity_ = glm::vec3(1.0F);
-        std::string projection_ = "orthographic";
-        float fov_ = defaultFov;
+        Lights lights_;
+        TracedScene traced_;
+        boost::shared_ptr<v3d::render::offline::FrameBuffer> planes_;
+        Progress progress_;
+        v3d::render::offline::CameraOptions options_;
+        v3d::render::offline::Camera camera_;
+        Display display_;
         boost::shared_ptr<Hider> hider_;
-        // an empty display name writes no file. RI's default display is a framebuffer,
-        // which moya does not have
-        std::string displayName_;
-        std::string displayType_;
-        std::string displayMode_;
-        // the current transformation, which moves inside a motion block
-        v3d::render::offline::MovingTransform transform_;
-        // the transformation in force at RiProjection; the projection applies after it
-        v3d::render::offline::MovingTransform projectionBase_;
-        float near_ = riEpsilon;  // near clipping plane
-        float far_ = riInfinity;  // far clipping plane
         v3d::render::offline::Sampling sampling_;
 
         /*
          * The framebuffer is tiled into buckets of bucketWidth_ by bucketHeight_ pixels.
          * gridSize_ is the number of micropolygons in a grid, so a grid is sqrt(gridSize_)
-         * micropolygons a side. A primitive whose raster bound is wider or taller than
-         * sqrt(gridSize_) * shadingRate_ pixels is split before it is diced. A smaller
-         * shading rate gives smaller micropolygons.
+         * micropolygons a side. The shading rate, an attribute, is the area of one
+         * micropolygon in pixels, so a primitive whose raster bound is wider or taller than
+         * sqrt(gridSize_ * shading rate) pixels is split before it is diced. A smaller shading
+         * rate gives smaller micropolygons.
          */
         unsigned int bucketWidth_ = 16;
         unsigned int bucketHeight_ = 16;
@@ -538,7 +500,6 @@ class RenderContext {
         bool gridPinned_ = false;
         static constexpr unsigned int defaultMotionCacheLog2 = 20;
         std::size_t motionCache_ = std::size_t(1) << defaultMotionCacheLog2;
-        float shadingRate_ = 1.0F;
 };
 
 /**
@@ -546,7 +507,7 @@ class RenderContext {
  *
  * An orthographic projection leaves w at one, so the divide changes nothing. A perspective
  * one writes the eye depth into w, and the divide takes the point to screen or raster units.
- * A point whose w is at or behind the eye is returned undivided. addPolygon() tests w
+ * A point whose w is at or behind the eye is returned undivided. The reyes hider tests w
  * itself first, and splits a primitive with such a corner.
  **/
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);

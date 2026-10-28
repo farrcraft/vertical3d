@@ -1,8 +1,9 @@
 # ADR-0018: Editor: projects saved as JSON with exact topology
 
-**Status**: amended
+**Status**: superseded
 **Date**: 2026-09-02
 **Amended by**: [ADR-0041](0041-files-write-documents-atomically.md)
+**Superseded by**: [ADR-0101](0101-editor-a-scene-document-is-a-sqlite-database.md)
 **Documented in**: [editor/](../editor/README.md)
 
 ## Context

@@ -4,14 +4,14 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Slider.h>
 #include <api/ui/input/Cursor.h>
@@ -33,7 +33,7 @@
 namespace {
 
 /**
- * A ui engine holding one container, the renderer that places what it holds, and both
+ * A ui::Interface holding one container, the renderer that places what it holds, and both
  * routers over it, so a slider can be pressed, dragged and keyed.
  **/
 struct Fixture final {
@@ -45,8 +45,8 @@ struct Fixture final {
             [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
         container = ui->container("hud");
@@ -86,7 +86,7 @@ struct Fixture final {
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<std::string> sent;
     v3d::ui::paint::ComponentRenderer renderer;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Cursor> cursor;
     boost::shared_ptr<v3d::ui::input::Keys> keys;

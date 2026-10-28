@@ -12,7 +12,7 @@ moya is three CMake targets, and it is built on one api library:
 | `moya/libmoya/reyes` | `v3dlib_moya` | The reyes hider's pipeline: buckets, dicing, grid shading and the samples. Namespace `v3d::moya::reyes` |
 | `moya/moya` | `moya` | The command-line driver |
 | `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
-| `api/render/offline` | `v3dlib_render_offline` | The RIB reader, the shading language, sampling and the film, textures and the ray tracer. Namespace `v3d::render::offline` |
+| `api/render/offline` | `v3dlib_render_offline` | The RIB reader and writer, the shading language, sampling and the film, textures and the ray tracer. Namespace `v3d::render::offline` |
 
 Run the driver from its own build directory:
 
@@ -41,6 +41,8 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
   `Display "name.png" "file" "rgb"`. A `Display` of any other type writes nothing.
 - **The output format comes from the file extension**: bmp, jpeg, png or tga, written through
   `image::Factory`. The image is always three colour channels, whatever mode `Display` names.
+  A picture that cannot be written, such as one with an extension no writer takes, is logged
+  as an error.
 - **The picture is written when `WorldEnd` is read**, as the RI standard specifies.
 - **`--grid` and `--bucket` win over the scene's `Option "limits"`.** The driver pins them before
   the scene is read, and the context leaves a pinned size as it is, so the command line wins while
@@ -50,8 +52,27 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
   failure code. Any exception is printed to stderr.
 - A Debug build is slow. A 256 by 192 ray traced scene takes about a minute.
 
-moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/Renderer.h` explains
-why: a second API beside the RI C API breaks the standard's "one true API" clause.
+moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/RIBHandler.h` explains
+why: a second API beside the RI C API breaks the standard's "one true API" clause. The first
+handler a process makes prints Pixar's copyright notice, as a program that is not compliant
+must.
+
+### Inside another program
+
+A program that links `v3dlib_moya` renders a RIB stream with a `RIBHandler` of its own, as the
+driver does. Nothing a handler holds is shared, so two renders on two threads do not meet. The
+editor renders this way, as [editor/Rendering.md](../editor/Rendering.md) says.
+
+- **A `Display` of type `framebuffer`** writes no file, and the picture stays in
+  `context().picture()`.
+- **`RenderContext::progress(callback)`** is told how much of the frame is done, from 0 to 1. The
+  reyes hider tells it after each bucket and the ray-trace hider after each row. Progress
+  reaches 1 at the end of the first pass over the buckets, and holds there through a pass
+  repeated because a primitive split. The callback runs on the rendering thread.
+- **A callback that returns false stops the render** there. The buckets or rows not yet rendered
+  stay empty, no imager runs, no file is written, and `stopped()` says so until the next render.
+- The reyes hider gathers every sample of the frame before it renders its first bucket, so a
+  stop cannot come sooner than that.
 
 ## Building and testing
 

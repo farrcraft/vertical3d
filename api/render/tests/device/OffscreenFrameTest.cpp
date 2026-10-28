@@ -11,8 +11,8 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <cstddef>
@@ -30,8 +30,8 @@ using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 
 namespace {
 
@@ -40,7 +40,7 @@ const uint32_t width = 64;
 const uint32_t height = 32;
 
 /**
- * Describe a target to the recorder, the way Engine3D describes a swapchain image.
+ * Describe a target to the recorder, the way WindowRenderer describes a swapchain image.
  **/
 Recorder::Target describe(const boost::shared_ptr<RenderTarget>& target) {
     Recorder::Target described;
@@ -90,7 +90,8 @@ std::vector<unsigned char> rgba(unsigned char red, unsigned char green, unsigned
  **/
 std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     v3d::test::Headless headless(format, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, format);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = format});
 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
@@ -104,7 +105,7 @@ std::vector<unsigned char> greyQuad(VkFormat format, const std::string& path) {
     pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
     Capture::Source source;
@@ -140,13 +141,14 @@ BOOST_AUTO_TEST_SUITE(offscreen_frame_test)
 BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -193,7 +195,8 @@ BOOST_AUTO_TEST_CASE(a_cleared_pass_is_silent_and_is_the_colour_it_cleared_to) {
 BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     Canvas canvas;
     canvas.resize(glm::uvec2(width, height));
@@ -208,7 +211,7 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -248,7 +251,8 @@ BOOST_AUTO_TEST_CASE(a_drawn_quad_is_silent_and_is_the_committed_picture) {
 BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
     v3d::test::Headless headless(colourFormat, width, height);
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     // 32 by 16, which is the size the quad below covers in pixels
     const uint32_t textureWidth = 32;
@@ -282,7 +286,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -303,27 +307,31 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
 }
 
 /**
- * The same clear, on a device whose memory comes from a suballocator rather than from one
- * device allocation per resource. No app selects that allocator, because direct allocation is
- * the default, so only the tests run the suballocated path.
+ * The same clear, on a device that makes one device allocation per resource rather than
+ * suballocating. No app selects that allocator, because suballocation is the default, so only
+ * the tests run the direct path.
  *
  * It asserts the picture as well as the silence, because an allocation bound at the wrong
  * offset gives a wrong picture, not a reported error. A suballocated region starts part way
  * into its block, and the direct path's offset is always zero.
+ *
+ * Passes before the change: direct allocation was the default then, and drew the same way. It
+ * guards the path no app takes any more.
  **/
-BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
+BOOST_AUTO_TEST_CASE(a_directly_allocated_device_clears_the_same_way) {
     v3d::test::Headless headless(colourFormat, width, height,
-        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Direct);
     BOOST_REQUIRE(headless.device->allocator().kind() ==
-        v3d::render::realtime::vulkan::memory::Allocator::Kind::Suballocated);
+        v3d::render::realtime::vulkan::memory::Allocator::Kind::Direct);
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
 
     VkCommandBuffer commands = headless.context->ring()->begin();
     const Recorder::Target described = describe(target);
@@ -361,7 +369,8 @@ BOOST_AUTO_TEST_CASE(a_suballocated_device_clears_the_same_way) {
  **/
 BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     // the region is the middle of the target: 32 by 16 at 16, 8
     const uint32_t regionX = 16;
@@ -386,7 +395,7 @@ BOOST_AUTO_TEST_CASE(a_clip_is_cut_to_the_pass_viewport) {
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     VkCommandBuffer commands = headless.context->ring()->begin();
     Recorder::record(commands, frame, describe(target), *headless.context->resources(), headless.context->frameUniforms().get());
     Capture::Source source;

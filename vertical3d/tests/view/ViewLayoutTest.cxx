@@ -3,7 +3,6 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 #include <vertical3d/src/view/ViewLayout.h>
@@ -24,7 +23,7 @@ namespace {
  **/
 boost::shared_ptr<v3d::asset::kind::Json> config(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("layout", v3d::asset::Type::JsonDocument, parsed.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>("layout", parsed.as_object());
 }
 
 boost::shared_ptr<v3d::log::Logger> logger() {

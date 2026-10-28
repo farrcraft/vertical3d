@@ -143,4 +143,17 @@ BOOST_AUTO_TEST_CASE(cameraprofile_basis_test) {
     BOOST_CHECK_SMALL(profile.up()[1], 0.001F);
 }
 
+/**
+ * A profile built from a default frame has the basis of a profile made by name: it looks along
+ * +z, and its right is up x direction, as its hand says.
+ **/
+BOOST_AUTO_TEST_CASE(cameraprofile_a_default_frame_agrees_with_its_hand_test) {
+    const v3d::type::camera::Profile framed("framed", v3d::type::camera::Profile::Frame{});
+    const v3d::type::camera::Profile named("named");
+
+    BOOST_CHECK(framed.hand() == v3d::type::camera::Profile::Hand::UpCrossDirection);
+    BOOST_CHECK_SMALL(glm::length(framed.right() - glm::cross(framed.up(), framed.direction())), 0.0001F);
+    BOOST_CHECK_SMALL(glm::length(framed.direction() - named.direction()), 0.0001F);
+}
+
 };  // namespace

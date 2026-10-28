@@ -13,12 +13,11 @@
 #include <api/image/Channels.h>
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
-#include <ios>
+#include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -30,9 +29,9 @@ namespace v3d::image::writer {
 Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
 }
 
-bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) {
+std::optional<std::string> Bmp::encode(const boost::shared_ptr<Image>& img) {
     if (!img) {
-        return false;
+        return std::nullopt;
     }
 
     // an 8 bit bmp is palettised, and its pixels are indices into the palette. A grey one
@@ -40,13 +39,6 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
     // the same number, and the pixel data goes out unchanged.
     const bool grey = img->format() == v3d::image::Image::Format::Grey;
     const uint32_t shades = grey ? 256U : 0U;
-
-    std::fstream file;
-    file.open(static_cast<std::string>(filename).c_str(), std::fstream::out | std::fstream::binary);
-
-    if (file.fail()) {
-        return false;
-    }
 
     format::bmp_file_header fheader;
     memset(&fheader, 0, sizeof(format::bmp_file_header));
@@ -87,16 +79,17 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
 
     fheader.size_ = static_cast<uint32_t>(fheader.offset_ + size);
 
-    // write the headers
-    file.write(reinterpret_cast<char*>(&fheader), sizeof(format::bmp_file_header));
-    file.write(reinterpret_cast<char*>(&iheader), sizeof(format::bmp_info_header));
+    std::string encoded;
+    encoded.reserve(fheader.size_);
+    encoded.append(reinterpret_cast<const char*>(&fheader), sizeof(format::bmp_file_header));
+    encoded.append(reinterpret_cast<const char*>(&iheader), sizeof(format::bmp_info_header));
 
     // the whole ramp, as many entries as the header says the file uses
     for (uint32_t shade = 0; shade < shades; ++shade) {
         format::bmp_rgb_quad entry;
         entry.blue_ = entry.green_ = entry.red_ = static_cast<unsigned char>(shade);
         entry.reserved_ = 0;
-        file.write(reinterpret_cast<char*>(&entry), sizeof(format::bmp_rgb_quad));
+        encoded.append(reinterpret_cast<const char*>(&entry), sizeof(format::bmp_rgb_quad));
     }
 
     std::vector<unsigned char> scratch(size);
@@ -119,12 +112,8 @@ bool Bmp::write(std::string_view filename, const boost::shared_ptr<Image>& img) 
         swapRedBlue(src, dest, {.pixels = img->width(), .channels = channels});
     }
 
-    // write image data
-    file.write(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size));
-
-    file.close();
-
-    return true;
+    encoded.append(reinterpret_cast<const char*>(data), static_cast<std::size_t>(size));
+    return encoded;
 }
 
 };  // namespace v3d::image::writer

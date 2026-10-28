@@ -5,14 +5,13 @@
 
 #pragma once
 
-#include <api/event/Engine.h>
-#include <api/event/Event.h>
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
+#include <api/ui/loader/ComponentReader.h>
+#include <api/ui/loader/ThemeReader.h>
 
 #include <string>
 #include <vector>
-
-#include "Layout.h"
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
@@ -20,61 +19,37 @@
 
 namespace v3d::ui {
 
-class Component;
 class Container;
 
 namespace style {
-class Property;
-class Style;
 class Theme;
 };  // namespace style
 
-namespace component {
-class Bar;
-class Box;
-class Button;
-class CheckBox;
-class Icon;
-class Label;
-class Panel;
-class Scrollbar;
-class Slider;
-class RadioButton;
-class SelectList;
-class TabPage;
-class TextBox;
-class Toolbar;
-};  // namespace component
-
-namespace component::menu {
-class Bar;
-class Menu;
-};  // namespace component::menu
-
 /**
- * Builds containers and themes out of a ui config document.
+ * Builds containers and themes out of a ui document.
  *
- * Separate from Engine, which holds the built ui. A loader runs once, and a ui is queried
- * for as long as the app lives. Keeping them apart keeps the parsing methods out of
- * Engine.h, which every app that draws a ui compiles.
+ * Separate from Interface, which holds the built ui. A loader runs once, and a ui is queried
+ * for as long as the app lives. Keeping them apart keeps the parsing out of Interface.h,
+ * which every app that draws a ui compiles.
  *
- * Nothing here is kept. load() fills the two collections, and Engine takes them.
+ * The themes are read by loader::ThemeReader and the containers by loader::ComponentReader.
+ * Both hold a document to the one rule loader/Members.h states. Nothing here is kept: load()
+ * fills the two collections, and Interface takes them.
  **/
 class Loader final {
  public:
     /**
-     * @param eventEngine where a command's context is looked up
+     * @param router where a command's context is looked up
      * @param dispatcher what a built menu or toolbar sends its events to
-     * @param logger where a document that does not parse is reported
+     * @param logger where a document that does not read is reported
      **/
-    Loader(const boost::shared_ptr<v3d::event::Engine>& eventEngine,
+    Loader(const boost::shared_ptr<v3d::event::Router>& router,
         const boost::shared_ptr<entt::dispatcher>& dispatcher,
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
     /**
      * Read the themes and the containers a document names.
-     * @return false when the document is not a valid ui document, leaving what was read
-     *      incomplete
+     * @return false when the document is refused, leaving what was read incomplete
      **/
     bool load(const boost::json::object& doc);
 
@@ -90,135 +65,13 @@ class Loader final {
 
     /**
      * @return the name of the theme the document makes active, or empty when it names
-     *      none. Engine then makes the first theme loaded active
+     *      none. Interface then makes the first theme loaded active
      **/
     const std::string& active() const noexcept;
 
  private:
-    /**
-     * Read the themes array, and the name of the one that starts active.
-     **/
-    bool loadThemes(const boost::json::object& doc);
-
-    /**
-     * Read one theme and the styles in it. A theme holding no styles is legal and draws in
-     * the defaults.
-     **/
-    bool loadTheme(const boost::json::object& entry);
-
-    /**
-     * Read one container and the components in it.
-     **/
-    bool loadContainer(const boost::json::object& entry);
-
-    /**
-     * Build one component from the type it names, read what it holds, and hand it back for
-     * whatever is holding it.
-     *
-     * @return the component, or null when the entry names a type there is no loader for
-     **/
-    boost::shared_ptr<Component> loadComponent(const boost::json::object& entry);
-
-    /**
-     * Read a component's "children" array, if it has one, into the component.
-     **/
-    bool loadChildren(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
-
-    /**
-     * Build the component one config entry names, before anything every component has -
-     * its name, its box, what it holds - has been read onto it.
-     *
-     * @return the component, or null for a type the loader does not know
-     **/
-    boost::shared_ptr<Component> buildComponent(const std::string& componentType,
-        const boost::json::object& entry);
-
-    boost::shared_ptr<component::menu::Menu> loadMenu(const boost::json::object& entry);
-    boost::shared_ptr<component::menu::Bar> loadMenuBar(const boost::json::object& entry);
-    boost::shared_ptr<component::Toolbar> loadToolbar(const boost::json::object& entry);
-    boost::shared_ptr<component::Button> loadButton(const boost::json::object& entry);
-    boost::shared_ptr<component::Label> loadLabel(const boost::json::object& entry);
-    boost::shared_ptr<component::Icon> loadIcon(const boost::json::object& entry);
-    static boost::shared_ptr<component::Panel> loadPanel(const boost::json::object& entry);
-    boost::shared_ptr<component::Bar> loadBar(const boost::json::object& entry);
-    boost::shared_ptr<component::Scrollbar> loadScrollbar(const boost::json::object& entry);
-    boost::shared_ptr<component::Slider> loadSlider(const boost::json::object& entry);
-    boost::shared_ptr<component::SelectList> loadSelectList(const boost::json::object& entry);
-    boost::shared_ptr<component::TextBox> loadTextBox(const boost::json::object& entry);
-    boost::shared_ptr<component::TabPage> loadTabPage(const boost::json::object& entry);
-    boost::shared_ptr<component::RadioButton> loadRadioButton(const boost::json::object& entry);
-
-    /**
-     * Read a flow box, whose direction is the only thing the two kinds differ by.
-     **/
-    boost::shared_ptr<component::Box> loadFlowBox(const std::string& componentType,
-        const boost::json::object& entry);
-
-    /**
-     * Read a check box, or a radio button, which is a check box with a group. The caller
-     * builds the right one, because the type tells them apart.
-     **/
-    void loadCheckBox(const boost::json::object& entry, const boost::shared_ptr<component::CheckBox>& box);
-
-    /**
-     * Read what a flow box carries beyond an ordinary component: the gap between its
-     * children, whether they are widened to it, and whether they wrap.
-     **/
-    void loadBox(const boost::json::object& entry, const boost::shared_ptr<component::Box>& box);
-
-    /**
-     * Read one style and everything in it into a theme.
-     * @return false when the style names a class it cannot be built as
-     **/
-    bool loadStyle(const boost::json::object& entry, const boost::shared_ptr<style::Theme>& theme);
-
-    /**
-     * Read the four kinds of property a style may hold - colours, numbers, fonts and images
-     * - each from its own array.
-     **/
-    bool loadProperties(const boost::json::object& entry, const boost::shared_ptr<style::Style>& target);
-
-    /**
-     * Build one style property as the class of the array it was written in.
-     *
-     * @param section which of the four arrays the property came out of
-     * @param propertyClass what the built property is filed under, which is the singular of
-     *        the section
-     * @return the property, or null when it does not carry what its class needs
-     **/
-    boost::shared_ptr<style::Property> loadProperty(const std::string& section,
-        const boost::json::object& property, const std::string& name, std::string* propertyClass);
-
-    /**
-     * Read what any component may carry, whatever its type: its style, whether it is
-     * visible, enabled, pickable, focusable or clipped, and its depth. Its position and size
-     * are read by loadLayout(), which is not called for a menu or a menu bar.
-     **/
-    void loadAttributes(const boost::json::object& entry, const boost::shared_ptr<Component>& component);
-
-    /**
-     * Read a component's box - "position" and "size" as two lengths each, and the corner of
-     * the parent they are measured from.
-     *
-     * A number is pixels and a string ending in % is a fraction of the parent, so
-     * "position": [10, "50%"] is ten pixels in and half way down. A component naming neither
-     * is left Auto, which is its natural size where it has one.
-     **/
-    void loadLayout(const boost::json::object& entry, Layout* layout);
-
-    /**
-     * Read the "context" and "command" pair that a component carrying a command names, and
-     * resolve the context.
-     * @return the event, or one with no context when the config omits either of the two
-     **/
-    v3d::event::Event loadCommand(const boost::json::object& entry);
-
-    boost::shared_ptr<v3d::log::Logger> logger_;
-    boost::shared_ptr<v3d::event::Engine> eventEngine_;
-    boost::shared_ptr<entt::dispatcher> dispatcher_;
-    std::vector<boost::shared_ptr<Container>> containers_;
-    std::vector<boost::shared_ptr<style::Theme>> themes_;
-    std::string active_;
+    loader::ThemeReader themes_;
+    loader::ComponentReader components_;
 };
 
 };  // namespace v3d::ui

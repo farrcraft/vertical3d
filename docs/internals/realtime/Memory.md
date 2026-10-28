@@ -7,11 +7,12 @@ resource is released while frames that use it may still be in flight.
 
 `vulkan::frame::DepthBuffer` is a depth image, its view, and (when sampled) a sampler.
 
-**The window's depth buffer.** `DeviceContext` owns one, sized by the context's extent and
-rebuilt with it. It is allocated the first frame a pass on the swapchain asks for depth, and
-never otherwise, so a 2D app pays nothing. `DeviceContext::depthFormat()` is known from the
-device before the image exists, so pipelines can be built first. Every pass on the swapchain that
-tests depth shares this one image.
+**The window's depth buffer.** `DeviceContext` owns one, sized by the context's extent. It is
+allocated the first frame a pass on the swapchain asks for depth, and never otherwise, so a 2D
+app pays nothing. When `describe()` gives the context a new extent, the depth buffer is replaced
+by one of that size and the old one is retired through the ring.
+`DeviceContext::depthFormat()` is known from the device before the image exists, so pipelines
+can be built first. Every pass on the swapchain that tests depth shares this one image.
 
 **Format choice.** `DepthBuffer::chooseFormat(physical, sampled)` returns the first of
 `D32_SFLOAT`, `D32_SFLOAT_S8_UINT`, `D24_UNORM_S8_UINT` whose optimal-tiling features include
@@ -34,7 +35,16 @@ change the format. A sampled buffer:
 - filters with `NEAREST`, so each read is one stored depth. The cel shader averages a 3x3 set
   of comparisons itself, and a device need not support linear filtering of a depth format,
 - is left in `DEPTH_READ_ONLY_OPTIMAL` by the recorder after its last writer. That layout allows
-  the depth aspect to be sampled and depth-tested at the same time.
+  the depth aspect to be sampled and depth-tested at the same time,
+- is arrayed: its view is a 2D array view over every layer, read as a `sampler2DArray`, with one
+  layer or several. Each layer also has a 2D view of its own, which a pass attaches to draw into
+  that layer alone (`DepthBuffer::view(layer)`).
+
+**Layers.** `memory::Image::Spec` takes a layer count and whether the image is arrayed. An image
+of more than one layer is always arrayed. An arrayed image's `view()` is the array view, and
+`layerView(n)` the 2D view of layer n. A depth buffer of more than one layer must be sampled,
+since only a reader can tell its layers apart. Every barrier names all the layers of an image,
+so a layered target changes layout in one barrier.
 
 `pipeline::Texture::descriptor()` names `DEPTH_READ_ONLY_OPTIMAL` for a depth image wherever one
 is sampled, a canvas included. The swapchain's depth buffer is never sampled.
@@ -43,10 +53,11 @@ A pass that samples a target's depth and draws into it in the same frame breaks 
 promise. The recorder cannot detect it; the validation layer reports it.
 
 **Render targets** own a depth buffer per image slot, sized with the target. `RenderTarget`
-throws when it has no colour and no sampled depth. Its images, on resize or destruction, are
+throws when it has no colour and no sampled depth, and when it has more than one layer and a
+colour image or no sampled depth. Its images, on resize or destruction, are
 retired through the ring rather than destroyed at once. A target of more than one image clears
 every slot at construction and leaves it readable (`ready()`), so `previous()` is defined on the
-first frame.
+first frame. `clear()` does the same for any target, every layer included.
 
 ## Memory
 
@@ -55,11 +66,20 @@ built once the logical device exists.
 
 | `Allocator::Kind` | Behaviour |
 |---|---|
-| `Direct` (default) | One `vkAllocateMemory` per resource. Every app in the tree uses it. |
-| `Suballocated` | Regions of larger blocks through the Vulkan Memory Allocator (VMA). For an app with per-frame resources, because `maxMemoryAllocationCount` is a real device limit. |
+| `Suballocated` (default) | Regions of larger blocks through the Vulkan Memory Allocator (VMA). Every app in the tree uses it. |
+| `Direct` | One `vkAllocateMemory` per resource. Only the tests use it. |
 
-A consumer chooses the kind in the `Device` constructor. `Engine3D` and `Context3D` take it too,
-and pass it to the device they build.
+A consumer chooses the kind in the `Device` constructor. `WindowRenderer` and `WindowContext`
+take it too, and pass it to the device they build.
+
+**Suballocation is the default because making device memory is slow, and limited.** A world
+that streams makes buffers and images during play, and with one allocation each, making the
+memory costs more than the upload. A device also caps live allocations at
+`maxMemoryAllocationCount`, often 4096. A poll that fills the allocator's last block of a memory
+type pays for a new one, which is the slowest poll a stream has.
+
+Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md),
+[ADR-0110](../../adr/0110-memory-suballocate-by-default.md)
 
 - A resource holds a `memory::Allocation` (block, offset, size, VMA handle), not a
   `VkDeviceMemory`. A suballocated region starts part way into a shared block, so mapping and
@@ -88,21 +108,33 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 |---|---|---|
 | `memory::Buffer` | Host visible, coherent, mapped for its whole life | Geometry rewritten every frame; readback |
 | `memory::DeviceBuffer` | Device local, filled by staging copy | Geometry built once and drawn many times |
-| `memory::Mesh` | Two `DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
+| `Mesh` | Two `memory::DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
 
-- `Buffer::grow(bytes)` doubles until large enough and **replaces the allocation**, invalidating
-  `handle()`. It waits for the device first. `Buffer::read()` is slow (coherent, not cached), so
-  use it for one-off readback only.
-- `DeviceBuffer::upload()` waits for the copy and not for frames in flight, so no frame may be
-  reading the buffer. The constructors are its only callers, and fill a buffer nothing has read.
-- `memory::Uploader::oneShot(record)` records, submits on the graphics queue, and waits on a fence
-  for that submission alone. Because it waits, a staging allocation never outlives the function
-  that made it. Frames in flight go on running, so an upload during play does not stall them,
-  and an upload does not mean any frame has finished. An object a frame may still read is
-  retired through the ring. It reuses one command buffer and one fence.
+- **A `Buffer` never changes size.** Whatever outgrows one makes a new one and retires the old
+  one through the ring, as `StreamRing` and `Capture` do. `Buffer::read()` is slow (coherent,
+  not cached), so use it for one-off readback only.
+- `DeviceBuffer::upload()` submits its copy and returns, so no frame may be reading the buffer.
+  The constructors are its only callers, and fill a buffer nothing has read.
+- **`memory::Uploader::submit(record, keep)` does not wait.** It records a command buffer of its
+  own, submits it on the graphics queue and returns. `keep`, the staging buffer, is retired
+  through the ring with the command buffer, so both are freed once the frame being recorded has
+  finished. That frame's fence covers every submission made before it.
+- **An upload ends in a barrier.** The queue orders the copy before every later submission, but
+  only a barrier makes its writes visible to them. A buffer's barrier reaches every stage, and a
+  texture's leaves it in `SHADER_READ_ONLY_OPTIMAL` for the fragment shader.
+- An upload does not mean any frame has finished. An object a frame may still read is retired
+  through the ring.
+- Nothing an upload holds is freed until frames are begun, so code that uploads and never draws,
+  such as a test, holds every staging buffer until the context is destroyed.
+- Command buffers are reused once their frame has finished, from a pool the retirements share,
+  so an `Uploader` may be destroyed while its uploads are in flight. `RenderTarget` makes one of
+  its own for its layout transitions this way. Uploads are made from the thread that begins
+  frames.
 - `Mesh` is filled once. Changing geometry means building a new mesh, because a refill would have
   to wait for every frame still drawing the old one. `Mesh::describe(&item)` fills an item's
   buffers, index type and counts.
+
+Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
 
 **`vulkan::frame::StreamRing`** is how the renderers stream per-frame geometry. It keeps a list of
 `Buffer` pairs per frame in flight.
@@ -114,7 +146,7 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
   again, skipped or advanced (it compares `Ring::turns()` and `Ring::frame()`). A slot begun
   again after an abandoned attempt reuses that attempt's claims. The cursor never passes the end
   of the slot's list, so a claim takes a held pair or appends one. Nothing has to be told a frame
-  ended, so a renderer an app builds itself reuses its buffers the same way. `Engine3D` calls
+  ended, so a renderer an app builds itself reuses its buffers the same way. `WindowRenderer` calls
   `Ring::skip()` for a frame it does not draw, out of date or with no swapchain, so the claims
   of a run of skipped frames reuse one frame's buffers rather than piling up.
 - **Each submission gets its own pair.** Appending several canvases into one buffer would break,
@@ -131,7 +163,7 @@ Background: [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md
 
 ## Resources and deferred destruction
 
-`vulkan::pipeline::Resources` owns everything a draw item names by handle: pipelines (with their
+`Resources` owns everything a draw item names by handle: pipelines (with their
 layouts), materials and textures. It is built on `Registry<Tag, T>`
 ([`Registry.h`](../../../api/render/realtime/Registry.h)).
 
@@ -147,8 +179,17 @@ that may name the released object, `Ring::recording()`. While a frame is begun a
 submitted, that is the frame being recorded. Between a submit and the next begin, it is the frame
 about to be begun. `Ring::begin()` runs every callback whose frames have finished: a frame has
 finished once `framesInFlight` more frames have begun, because beginning a frame waits on the
-fence of the slot's previous use. The ring's destructor waits for the device and runs everything
-left.
+fence of the slot's previous use. `Ring::drain()` waits for the device and runs everything left,
+and the context calls it as it is destroyed. The ring's own destructor does the same, for a ring
+that no retired object holds.
+
+**Every release goes through the ring, except the swapchain's.** A material, a texture, a set, a
+descriptor pool, an outgrown stream or readback buffer, a target's images and the window's depth
+buffer are all retired, so nothing waits for the device to release them.
+`Swapchain::recreate()` is the one exception, and waits for the device before it destroys the old
+chain. The presentation engine may still hold an image after every fence the ring waits on has
+signalled, and Vulkan 1.3 gives no fence for a present. The other device waits release nothing:
+a capture's readback, the ring's destructor, and shutdown.
 
 **A release and the items already queued.** A draw item names its material by handle, and the
 recorder resolves it when the frame is recorded. A release therefore cannot take effect at
@@ -186,9 +227,9 @@ image through a shared pointer, so whichever of the target and the registration 
 frees them. After `RenderTarget::recreate()` the old registration still names the old
 images, so it must be released and the target registered again.
 
-**Meshes are outside `Resources`.** An app's `memory::Mesh` belongs to whatever built it.
+**Meshes are outside `Resources`.** An app's `Mesh` belongs to whatever built it.
 `MeshRegistry` is a separate registry with the same slot-and-generation handles: an entry holds
-a `memory::Mesh`, its parts and an optional skin. Releasing an entry retires its mesh through the
+a `Mesh`, its parts and an optional skin. Releasing an entry retires its mesh through the
 ring and drops each albedo's user count, releasing the albedo with its last user. The registry's
 destructor destroys remaining meshes at once, so it must run after the device is idle.
 
@@ -201,10 +242,33 @@ Background: [ADR-0061](../../adr/0061-resources-explicit-release-generational-ha
 headless one, or one only loading meshes) can still register textures. It owns:
 
 - the `memory::TextureFactory`, which copies through the context's one `Uploader`;
-- set 1's `DescriptorPool` and layout, which every textured pipeline declares;
+- the `pipeline::TextureArray`, set 1's one set and its layout, which every textured pipeline
+  declares, and the one material that binds it;
 - the 1×1 white texture, alive as long as the context;
-- the map from texture to material, keyed by the whole handle so a reused slot never finds an old
-  set.
+- the map from texture to slot, keyed by the whole handle so a handle reused after a release
+  never finds an old slot.
+
+A slot is taken when a texture is registered and given back when it is released. The array
+frees a released slot through the ring, so a frame queued before the release still reads the
+texture there, and hands out the lowest free slot first. A slot nothing holds names whatever it
+named last, which no draw reads.
+
+**A requested texture fills behind its handle.** `request(path)` registers a handle that names
+the white texture's image and has no slot of its own, so `slot()` gives the white texture's.
+The image is decoded on the worker. `poll()` uploads it, takes a slot for it, and puts it
+behind the handle with `Resources::replace()`, which retires the white entry it replaced
+through the ring. Items queued before the poll were given the white slot and draw white, and
+every one submitted after reads the texture's. A texture made and then refused a slot is
+retired through the ring rather than destroyed, because its upload may still be running.
+
+**Both stores stream through one `UploadQueue`.** `Textures` and `MeshRegistry` each post a
+request's decoding to the worker through it, and their `poll()` is its `poll()`. It holds what
+has arrived, in the order it was posted. It skips a handle the store no longer waits for, uploads
+at least one value, and stops once the bytes reach the budget. A completion holds it weakly, so a
+result that arrives after its store is gone is dropped. A failure is a job that threw or an
+upload that threw, and it reaches the store once. The store logs it, keeps the handle's stand-in
+until it is released, and frees the path so that a later request reads the file again. The
+stand-in is the white texture for a texture, and nothing for a mesh.
 
 `Quad`, `World`, `Lit`, `Grade` and `MeshRegistry` all take `Textures`, so one uploaded atlas
 serves every primitive from one pool.
@@ -222,7 +286,7 @@ serves every primitive from one pool.
 
 `Textures::depthTexture(target)` and `texture(target)` return the white texture for a target with
 nothing of that kind to sample. A descriptor written against an image without sampled usage is
-undefined, and a white shadow map reads as unshadowed. `release()` never releases the white
-texture, so such a handle can be released like any other.
+undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never releases
+the white texture, so such a handle can be released like any other.
 
 Background: [ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md)

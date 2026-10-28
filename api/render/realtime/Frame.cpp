@@ -43,7 +43,7 @@ std::vector<boost::shared_ptr<Pass>> Frame::ordered() const {
     std::vector<Node> nodes(passes_.size());
     for (std::size_t index = 0; index < passes_.size(); ++index) {
         nodes[index].writes = passes_[index]->target().get();
-        for (const boost::shared_ptr<vulkan::frame::RenderTarget>& read : passes_[index]->reads()) {
+        for (const boost::shared_ptr<RenderTarget>& read : passes_[index]->reads()) {
             nodes[index].reads.push_back(read.get());
         }
     }

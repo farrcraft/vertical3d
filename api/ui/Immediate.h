@@ -6,18 +6,20 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/input/LineEdit.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
-#include <api/ui/style/Style.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
+#include <functional>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::canvas {
 class Canvas;
@@ -28,6 +30,10 @@ namespace v3d::ui {
 namespace style {
 class Theme;
 };  // namespace style
+
+namespace immediate {
+class Context;
+};  // namespace immediate
 
 /**
  * A ui written as calls rather than as a tree.
@@ -48,6 +54,10 @@ class Theme;
  * A window clips what it holds to its own edges, through the canvas's clip rectangle, and
  * scrolls it. The content height is measured as it is drawn, so a window decides whether
  * it needs a scrollbar from what the frame before it held.
+ *
+ * Keys reach a text field as they arrive, through press() and typed(), between one frame
+ * and the next. The field that holds the keyboard edits a line the layer keeps, and writes
+ * it to the caller's string when it is next drawn.
  **/
 class Immediate {
  public:
@@ -58,7 +68,7 @@ class Immediate {
     typedef std::uint64_t Id;
 
     /**
-     * What the cursor did since the last frame. An app fills this from its input engine.
+     * What the cursor did since the last frame. An app fills this from its input devices.
      * pressed and released are the edges of down, and each is true for one frame.
      **/
     struct Input final {
@@ -72,41 +82,17 @@ class Immediate {
     };
 
     /**
-     * The colours and metrics the immediate ui draws with. A value that a theme's "tools"
-     * style does not set keeps its default, so an empty theme changes nothing.
-     *
-     * A Style is the set of properties a theme holds. This struct is what one resolves to.
-     **/
-    struct Dressing final {
-        Dressing() noexcept;
-
-        float lineHeight;      /**< the height of one row of text **/
-        float padding;         /**< the gap between a widget's edge and the text in it **/
-        float spacing;         /**< the gap between one widget and the next **/
-        float barHeight;       /**< how tall a title bar, a tab or a button is **/
-        float borderWidth;     /**< how thick a window's outline is **/
-        float radius;          /**< how far a window's corners are rounded **/
-        float indent;          /**< how far a bullet pushes its text in **/
-        float scrollbarWidth;  /**< how wide the bar down a window that scrolls is **/
-        glm::vec4 panel;       /**< a window's background **/
-        glm::vec4 border;      /**< a window's outline **/
-        glm::vec4 titleBar;    /**< the band across the top of a window, and a table's header **/
-        glm::vec4 text;        /**< ordinary text **/
-        glm::vec4 activeText;  /**< text on a hovered or selected widget **/
-        glm::vec4 dimText;     /**< text that is disabled or secondary **/
-        glm::vec4 widget;      /**< a button, a track, a tab that is not selected **/
-        glm::vec4 highlight;   /**< a selected row, a selected tab **/
-        glm::vec4 hover;       /**< what is drawn behind the widget the cursor is on **/
-        glm::vec4 fill;        /**< the filled part of a progress bar **/
-        glm::vec4 rule;        /**< a separator, and the line under a tab strip **/
-    };
-
-    /**
      * @param measure how wide a string is when the app draws it
      * @param write how the app draws a string
      **/
     Immediate(const paint::Measure& measure, const paint::Write& write);
     ~Immediate();
+
+    // what the layer holds is its own, so it moves and is not copied
+    Immediate(Immediate&&) noexcept;
+    Immediate& operator=(Immediate&&) noexcept;
+    Immediate(const Immediate&) = delete;
+    Immediate& operator=(const Immediate&) = delete;
 
     /**
      * Replace how strings are measured and drawn, as when the text is rescaled. Everything
@@ -116,12 +102,13 @@ class Immediate {
     void text(const paint::Measure& measure, const paint::Write& write);
 
     /**
-     * @return the colours and metrics, to be changed in place
+     * @return the colours and metrics, to be changed in place. They start from
+     *      paint::Dressing::tools()
      **/
-    Dressing& dressing() noexcept;
+    paint::Dressing& dressing() noexcept;
 
     /**
-     * Read a theme's "tools" style into dressing().
+     * Read a theme's "tools" style into dressing(). The theme is not kept.
      *
      * A separate class from the "ui" class the retained components read, because a tool
      * panel uses the same keys at smaller sizes than a hud. A theme styles both, in two
@@ -189,7 +176,7 @@ class Immediate {
     void text(const std::string& line);
 
     /**
-     * A line of text in the dim colour, for secondary text.
+     * A line of text in the disabled-text colour, for secondary text.
      **/
     void textDisabled(const std::string& line);
 
@@ -276,6 +263,105 @@ class Immediate {
      * @param max the bottom right corner
      **/
     void block(const glm::vec2& min, const glm::vec2& max);
+
+    /**
+     * A single line of text the user edits, drawn the width of the row.
+     *
+     * A press on it gives it the keyboard and puts the caret where the press landed. A
+     * return, a tab, an escape or a press anywhere else gives the keyboard up, keeping what
+     * was typed. A field that is not drawn for a frame gives it up too, and what was typed
+     * since it was last drawn is lost.
+     *
+     * The label is the field's id, and is drawn in it in the placeholder colour while it is
+     * empty and does not have the keyboard.
+     *
+     * @param value read and written. A change the caller makes while the field holds the
+     *        keyboard replaces what is being edited
+     * @param limit how many bytes the value may hold, or zero for no limit. Typing past it
+     *        is refused
+     * @return whether the value changed this frame
+     **/
+    bool textField(const std::string& label, std::string* value, std::size_t limit = 0);
+
+    /**
+     * A box that is ticked or not, with its label beside it.
+     *
+     * @param value read and written; flipped by a click
+     * @return whether it was clicked this frame
+     **/
+    bool checkbox(const std::string& label, bool* value);
+
+    /**
+     * A number between two ends, set by pressing on the track or dragging along it.
+     *
+     * @param value read and written; left alone when nothing is held on it
+     * @return whether the value changed this frame
+     **/
+    bool sliderFloat(const std::string& label, float* value, float low, float high);
+
+    /**
+     * The chosen one of several items, which a click opens as a list under it.
+     *
+     * The list is drawn at end(), over everything else, and is not clipped to the window
+     * the combo is in. A click on an item takes effect on the next frame's call, as a click
+     * on a tab does at endTabBar(). A press anywhere outside the list closes it, and so does
+     * a frame that does not draw the combo.
+     *
+     * @param selected read and written - the index of the chosen item
+     * @return whether the choice changed this frame
+     **/
+    bool combo(const std::string& label, int* selected, const std::vector<std::string>& items);
+
+    /**
+     * Whether the cursor is on the item just drawn, text and progress bars included, and
+     * nothing drawn over it took the cursor. For a tooltip.
+     *
+     * Answers by the same one-frame-late rule every hover follows. A disabled widget
+     * answers as text does, so a tooltip can say why it is disabled.
+     **/
+    bool itemHovered() const noexcept;
+
+    /**
+     * A key went down. A text field that holds the keyboard edits its line with it.
+     *
+     * Keys arrive between frames, as the app's event loop sees them, so the edit lands on
+     * the line the layer keeps and reaches the caller's string when the field is next drawn.
+     *
+     * @param key the name api/input gives it
+     * @param shifted whether a shift key is held, which selects as the caret moves
+     * @param controlled whether a control key is held, for cut, copy, paste and select all
+     * @return whether a field took it, in which case it does not reach the app's bindings.
+     *      A field takes every key that composes text, so a letter typed into it does not
+     *      also fire a command
+     **/
+    bool press(std::string_view key, bool shifted = false, bool controlled = false);
+
+    /**
+     * Characters the platform composed, put in at the caret of the field that holds the
+     * keyboard.
+     *
+     * @return whether a field took them. Characters past the field's limit are taken and
+     *      dropped
+     **/
+    bool typed(std::string_view utf8);
+
+    /**
+     * Whether a text field holds the keyboard. While it does, the platform's text input
+     * should be on, and keys go to press() and typed() before they reach any binding.
+     **/
+    bool typing() const noexcept;
+
+    /**
+     * Be told when typing() changes, with what it changed to. shell::Keyboard listens here
+     * to turn the platform's text input on and off.
+     **/
+    void onTyping(const std::function<void(bool)>& changed);
+
+    /**
+     * The clipboard a text field's cut, copy and paste read and write. Without one, a copy
+     * and a paste do nothing and a cut leaves the text in place.
+     **/
+    void clipboard(const input::Clipboard& clipboard);
 
     /**
      * Put the next widget beside the last one rather than under it.
@@ -365,242 +451,8 @@ class Immediate {
     void nextColumn();
     void endTable();
 
- protected:
-    /**
-     * What a widget's box did with the cursor this frame.
-     **/
-    struct Reaction final {
-        Reaction() noexcept;
-
-        bool hovered;  /**< the cursor is on it, and was on nothing over it last frame **/
-        bool held;     /**< a press went down on it and has not come up **/
-        bool clicked;  /**< a press and a release both landed on it **/
-    };
-
-    /**
-     * The few bits a widget cannot work out again from the state it reads.
-     **/
-    struct Retained final {
-        Retained() noexcept;
-
-        std::uint64_t frame;  /**< the last frame that asked for it, which it is aged out from **/
-        unsigned int tab;  /**< which tab of a strip is selected **/
-        float scroll;      /**< how far the content is scrolled up, in pixels **/
-        float content;     /**< how tall what it held came to last frame **/
-        glm::vec2 offset;  /**< how far a window has been dragged from where the caller put it **/
-        bool collapsed;    /**< whether a window is folded to its title bar **/
-        bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
-    };
-
-
-    /**
-     * What a widget is holding, marked as still wanted so that end() does not age it out.
-     **/
-    Retained& retain(Id id);
-
-    /**
-     * Where the next widget goes, and what the row being written has come to.
-     **/
-    struct Row final {
-        Row() noexcept;
-
-        float margin;     /**< where a new row starts **/
-        float right;      /**< where the room a widget may take ends **/
-        float penY;       /**< where the next row starts **/
-        float top;        /**< the top of the row being written **/
-        float height;     /**< the tallest thing on it so far **/
-        float lastRight;  /**< just past the last widget, which sameLine() starts from **/
-        bool sameLine;
-    };
-
-    /**
-     * The window being written, and the row state it interrupted.
-     **/
-    struct Window final {
-        Window() noexcept;
-
-        bool open;           /**< whether a window is being written at all **/
-        float margin;        /**< the row margin to go back to at endWindow() **/
-        float right;         /**< and the right edge **/
-        Id id;               /**< the id that holds the window's scroll and content **/
-        Id scroll;           /**< the id its scrollbar is hit tested under **/
-        glm::vec2 bodyMin;   /**< the part of it below the title bar, which is clipped to **/
-        glm::vec2 bodyMax;
-        float contentTop;    /**< where its content would start if it were not scrolled **/
-        bool scrolls;
-        bool clipped;
-    };
-
-    /**
-     * The tab strip being written.
-     **/
-    struct TabStrip final {
-        TabStrip() noexcept;
-
-        Id id;
-        bool open;
-        float pen;              /**< how far along the strip the next tab goes **/
-        float top;
-        unsigned int index;     /**< which tab of the strip this one is **/
-        unsigned int wanted;    /**< the tab a click asked for, taken at endTabBar() **/
-        bool changed;
-        bool taken;             /**< whether the selected tab was drawn at all **/
-    };
-
-    /**
-     * The table being written.
-     **/
-    struct Table final {
-        Table() noexcept;
-
-        bool open;
-        std::vector<std::string> headers;
-        std::vector<float> widths;
-        float left;             /**< where the row starts, which columns are measured from **/
-        unsigned int column;    /**< which column the pen is in **/
-        Id id;                  /**< the id that holds the table's scroll and content **/
-        Id scroll;              /**< the id its scrollbar is hit tested under **/
-        float right;            /**< the row right to go back to, and the region's right edge **/
-        float height;           /**< how tall it is, or zero for a table that does not scroll **/
-        float top;              /**< where it starts, which its height is measured from **/
-        float contentTop;       /**< where its rows start, below the header **/
-        bool clipped;
-    };
-
-    /**
-     * Hash a label with the top of the id stack.
-     **/
-    Id identify(const std::string& label) const;
-
-    /**
-     * Work out where a widget of this size goes, and advance the pen past it.
-     *
-     * @return the widget's top left corner
-     **/
-    glm::vec2 place(const glm::vec2& size);
-
-    /**
-     * How wide the widget being written may be, and forget what asked for it.
-     *
-     * The rest of the row, unless nextItemWidth() set a width.
-     **/
-    float itemWidth();
-
-    /**
-     * Offer a box to the cursor.
-     *
-     * Two things have to agree for a widget to be hovered: the cursor is in its box now,
-     * and nothing drawn over it took the cursor last frame. The first stops a widget
-     * reacting to a release that landed somewhere else; the second lets a window drawn
-     * later take the cursor from one under it.
-     *
-     * A disabled widget is offered nothing, which stops it lighting up as well as
-     * answering.
-     **/
-    Reaction interact(Id id, const glm::vec2& min, const glm::vec2& max);
-
-    /**
-     * Draw a line of text with its box already worked out, vertically centred in it.
-     **/
-    void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
-
-    /**
-     * Whether a scrolled region puts up its scrollbar: a window decides at its start, from
-     * what it drew last frame, and a table whenever there is more than it shows.
-     **/
-    enum class Bar : std::uint8_t { Never, Always, WhenNeeded };
-
-    /**
-     * A scrolled region. id holds its scroll and content, and scroll is the id its
-     * scrollbar is hit tested under. contentTop is where its content would start if it were
-     * not scrolled. bodyMax is the bottom right corner of its body, which the scrollbar runs
-     * down to.
-     **/
-    struct Scrolled {
-        Id id = 0;
-        Id scroll = 0;
-        float contentTop = 0.0F;
-        glm::vec2 bodyMax{0.0F};
-    };
-
-    /**
-     * Close a scrolled region, a window's body or a table: measure what was drawn into it,
-     * draw its scrollbar down the right of the body, and turn the wheel over it into scroll.
-     **/
-    void closeScroll(const Scrolled& region, Bar bar);
-
-    /**
-     * Draw the bar down the right of a region that has more content than it shows, and
-     * scroll it where the cursor drags the thumb to.
-     *
-     * A window and a table each have one, so the caller passes the rectangle. The bar is
-     * drawn inside it.
-     *
-     * @param id the id the thumb is hit tested under
-     * @param min the top left of the region the bar runs down
-     * @param max its bottom right, which the bar is drawn against
-     * @param view how much of the content the region shows, in pixels
-     * @param span how much of it it does not, which is the furthest it can be scrolled
-     * @param scroll read and written - where the region is scrolled to
-     **/
-    void scrollbar(Id id, const glm::vec2& min, const glm::vec2& max, float view, float span,
-        float* scroll);
-
-    /**
-     * Open a scrolling table's region, at the pen, the first time a row asks for one.
-     *
-     * Called from nextRow(), not from table(), because the region starts where the rows do:
-     * below the header row when there is one, and at the top of the table when there is not.
-     **/
-    void tableBody();
-
-    /**
-     * @return how far along the row a column starts
-     **/
-    float columnStart(unsigned int index) const;
-
-    /**
-     * @return the colour to draw text in, given what the caller asked for and whether
-     *      anything has disabled it
-     **/
-    glm::vec4 ink(const glm::vec4& colour) const;
-
-    /**
-     * @return what to fill a widget's box with
-     * @param lit whether it is held down or chosen, which read the same way
-     * @param hovered whether the cursor is on it
-     **/
-    glm::vec4 face(bool lit, bool hovered) const;
-
  private:
-    paint::Measure measure_;
-    paint::Write write_;
-    Dressing dressing_;
-    // what the current theme wrote over dressing_
-    style::Overlay<Dressing> overlay_;
-    boost::shared_ptr<style::Theme> theme_;
-
-    v3d::render::realtime::canvas::Canvas* canvas_;
-    Input input_;
-    glm::vec2 previousCursor_;
-    glm::vec2 drag_;
-
-    Id hovered_;   /**< what the cursor was on last frame, which this frame uses **/
-    Id hovering_;  /**< what it is on this frame, which the next one will use **/
-    Id active_;    /**< what a press went down on **/
-    glm::vec2 pressAt_;  /**< and where it went down, which a travel is measured from **/
-    float nextWidth_;  /**< what the next widget was told to be, or nothing **/
-
-    std::vector<Id> ids_;
-    std::map<Id, Retained> state_;
-    std::uint64_t frame_;
-
-    Row row_;
-    Window window_;
-    TabStrip tabs_;
-    Table table_;
-    unsigned int disabled_;
-    Id wheeled_;  /**< the topmost window the cursor is over, which the wheel turns **/
+    std::unique_ptr<immediate::Context> context_;
 };
 
 };  // namespace v3d::ui

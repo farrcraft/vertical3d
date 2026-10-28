@@ -53,4 +53,8 @@ const Texture* Renderer::texture(const std::string & /* name */) {
     return nullptr;
 }
 
+bool Renderer::message(const std::string & /* shader */, const std::string & /* name */, Value* /* value */) {
+    return false;
+}
+
 };  // namespace v3d::render::offline::sl::runtime

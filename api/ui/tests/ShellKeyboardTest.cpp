@@ -4,11 +4,13 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
+#include <api/ui/Immediate.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
@@ -17,6 +19,7 @@
 #include <SDL3/SDL.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -36,14 +39,13 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        seam = boost::make_shared<v3d::ui::shell::Keyboard>(ui, dispatcher,
-            boost::shared_ptr<v3d::render::realtime::Window>());
+        seam = boost::make_shared<v3d::ui::shell::Keyboard>(ui, dispatcher, nullptr);
     }
 
     void receive(const v3d::event::Event& event) {
@@ -53,7 +55,7 @@ struct Fixture final {
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
     std::vector<std::string> sent;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::shell::Keyboard> seam;
 };
@@ -275,6 +277,47 @@ BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
     BOOST_REQUIRE_EQUAL(landed.size(), 1U);
     BOOST_CHECK(!landed.front());
     BOOST_CHECK(!fixture.ui->focused());
+}
+
+/**
+ * A game that draws only through an immediate layer builds the adapter with no retained ui. A
+ * key and a character then reach the layer's field while it holds the keyboard, and are kept
+ * from the bindings, and reach the bindings once it has given the keyboard up.
+ **/
+BOOST_AUTO_TEST_CASE(keys_reach_an_immediate_field_with_no_retained_ui) {
+    // the layer is made first so that it outlives the adapter holding it
+    v3d::ui::Immediate layer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Interface>(), dispatcher, nullptr);
+    seam.immediate(&layer);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    std::string name;
+    const auto draw = [&](bool pressed) {
+        v3d::ui::Immediate::Input input;
+        input.cursor = glm::vec2(100.0F, 10.0F);
+        input.down = pressed;
+        input.pressed = pressed;
+        layer.begin(&canvas, input);
+        layer.textField("Name", &name);
+        layer.end();
+    };
+
+    BOOST_CHECK(!seam.event(keyDown({.key = SDLK_E})));
+
+    draw(false);
+    draw(true);
+    BOOST_REQUIRE(layer.typing());
+    BOOST_CHECK(seam.event(keyDown({.key = SDLK_E})));
+    BOOST_CHECK(seam.event(composed("e")));
+    BOOST_CHECK(seam.event(keyDown({.key = SDLK_RETURN})));
+    draw(false);
+
+    BOOST_CHECK_EQUAL(name, "e");
+    BOOST_CHECK(!layer.typing());
+    BOOST_CHECK(!seam.event(keyDown({.key = SDLK_E})));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -4,7 +4,8 @@
  **/
 
 #include <api/ecs/System.h>
-#include <api/ecs/component/Position1D.h>
+
+#include "Positions.h"
 
 #include <memory>
 
@@ -24,8 +25,8 @@ class CountingSystem final : public v3d::ecs::System {
 
     bool simulate(float /* step */) override {
         ticks_++;
-        registry()->view<v3d::ecs::component::Position1D>().each(
-            [](v3d::ecs::component::Position1D& position) {
+        registry()->view<positions::Position1D>().each(
+            [](positions::Position1D& position) {
                 position.value = position.value + 1.0F;
             });
         return true;
@@ -55,7 +56,7 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
     entt::registry registry;
     const entt::entity moving = registry.create();
     const entt::entity still = registry.create();
-    registry.emplace<v3d::ecs::component::Position1D>(moving, 0.0F);
+    registry.emplace<positions::Position1D>(moving, 0.0F);
 
     CountingSystem system(&registry);
     BOOST_TEST(system.ticks() == 0);
@@ -64,8 +65,8 @@ BOOST_AUTO_TEST_CASE(system_simulate_test) {
     BOOST_TEST(system.simulate(1.0F / 60.0F));
 
     BOOST_TEST(system.ticks() == 2);
-    BOOST_TEST(registry.get<v3d::ecs::component::Position1D>(moving).value == 2.0F);
-    BOOST_TEST(!registry.try_get<v3d::ecs::component::Position1D>(still));
+    BOOST_TEST(registry.get<positions::Position1D>(moving).value == 2.0F);
+    BOOST_TEST(!registry.try_get<positions::Position1D>(still));
 }
 
 /**

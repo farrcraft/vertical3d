@@ -6,18 +6,27 @@
 #pragma once
 
 #include <api/brep/BRep.h>
+#include <api/brep/Index.h>
+#include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Ray.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/Evaluation.h>
+#include <vertical3d/src/scene/Group.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
-#include "SelectMask.h"
-
+#include <utility>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::editor {
 
@@ -25,11 +34,15 @@ namespace v3d::editor {
  * What a click at a screen point hit, found by a ray cast on the CPU, and what a rectangle
  * on the screen holds.
  *
- * An object or a face is hit when the ray meets a triangle of the mesh. A vertex or an edge
- * is hit when it is drawn within a few pixels of the cursor.
+ * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, a curve,
+ * a curve's control point or handle, or a camera's, light's or group's glyph is hit when it is
+ * drawn within a few pixels of the cursor. Everything is tested where the scene's evaluation
+ * puts it.
  *
- * A component mask considers only meshes that are already selected: an object has to be
- * selected before any of its components can be.
+ * A mask that selects whole items considers only the kinds it takes. A component mask
+ * considers only meshes and curves that are already selected: an object has to be selected
+ * before any of its components can be. The Vertex mask finds a curve's control points, and the
+ * Handle mask its Bezier handles.
  **/
 class Picker final : public SceneVisitor {
  public:
@@ -42,16 +55,17 @@ class Picker final : public SceneVisitor {
          **/
         bool valid;
         /**
-         * The dag::Node id of the mesh. A selection names a mesh by this id.
+         * The id() of the item. A selection names an item by this id.
          **/
-        unsigned int mesh;
+        unsigned int item;
         /**
          * Which kind of thing was hit. It is the mask the pick was made under.
          **/
         SelectMask kind;
         /**
-         * The index of the vertex, half edge or face within that mesh. Zero and
-         * meaningless when the kind is Object.
+         * The index of the vertex, half edge or face within that mesh, or the part number of
+         * the curve's control point or handle. Zero and meaningless when the mask selects
+         * whole items.
          **/
         unsigned int component;
 
@@ -100,12 +114,30 @@ class Picker final : public SceneVisitor {
         const glm::vec2& opposite, SelectMask mask);
 
     /**
-     * One mesh of the scene, during a pick. Public because the scene calls it through
-     * SceneVisitor. Only the scene calls it.
+     * One item of the scene, during a pick. Public because the scene calls them through
+     * SceneVisitor. Only the scene calls them.
      **/
-    void visit(const boost::shared_ptr<v3d::brep::BRep>& mesh) override;
+    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
 
  private:
+    /**
+     * An item drawn in lines in its own space and placed by a model matrix: a curve, or a
+     * camera's, a light's or a group's glyph. It is hit when a segment is within tolerance of
+     * the cursor, and inside a rectangle when every point of it is.
+     **/
+    void lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
+
+    /**
+     * Points of the item being traversed, each named by its part number: hit within tolerance
+     * of the cursor, nearest to the camera winning, and inside a rectangle when it projects
+     * inside.
+     **/
+    void points(const std::vector<std::pair<v3d::brep::Index, glm::vec3>>& parts);
+
     /**
      * Ray against every triangle of the mesh, nearest along the ray winning.
      **/
@@ -164,7 +196,7 @@ class Picker final : public SceneVisitor {
      * depth for a screen space pick.
      **/
     struct Candidate {
-        unsigned int mesh = 0;
+        unsigned int item = 0;
         unsigned int component = 0;
         float distance = 0.0F;
     };
@@ -183,6 +215,8 @@ class Picker final : public SceneVisitor {
     int viewport_[4];
     glm::vec2 cursor_;
     glm::mat4 model_;
+    // the id of the mesh item being traversed, which every hit on its geometry names
+    unsigned int current_;
     float nearest_;
     Hit hit_;
 

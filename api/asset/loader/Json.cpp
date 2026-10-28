@@ -8,7 +8,6 @@
 #include <api/asset/Asset.h>
 #include <api/asset/File.h>
 #include <api/asset/Loader.h>
-#include <api/asset/Type.h>
 #include <api/asset/kind/Json.h>
 #include <api/log/Logger.h>
 
@@ -22,7 +21,7 @@
 namespace v3d::asset {
 /**
  **/
-loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(Type::JsonDocument, logger) {
+loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(typeid(v3d::asset::kind::Json), logger) {
 }
 
 /**
@@ -40,7 +39,7 @@ boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
         logger()->get()->error("{} is not a json object: {}", name, error ? error.message() : "it is some other value");
         return boost::shared_ptr<Asset>();
     }
-    return boost::make_shared<v3d::asset::kind::Json>(std::string(name), Type::JsonDocument, document.as_object());
+    return boost::make_shared<v3d::asset::kind::Json>(std::string(name), document.as_object());
 }
 
 };  // namespace v3d::asset

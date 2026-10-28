@@ -30,9 +30,10 @@ class Buffer;
 /**
  * Turns pixels into a sampled image the shaders can read.
  *
- * Every texture is uploaded through a staging buffer and an Uploader one-shot command
- * buffer, which the factory waits on before returning. The wait is for the upload alone, so a
- * texture can be made while frames are in flight. The image is new, so no frame is reading it.
+ * Every texture is uploaded through a staging buffer and the Uploader, which submits the copy
+ * and returns without waiting. The copy ends in a barrier that leaves the image ready for a
+ * fragment shader to sample in any later submission. The image is new, so no frame is reading
+ * it.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
  * ones into rgb. A coverage mask then samples as white with its coverage in alpha. A glyph
@@ -110,7 +111,7 @@ class TextureFactory final {
     /**
      * Copy what is staged into the whole of an image, leaving it ready to sample.
      **/
-    void upload(const Buffer& staging, const Image& image, const VkExtent3D& extent) const;
+    void upload(const boost::shared_ptr<Buffer>& staging, const Image& image, const VkExtent3D& extent) const;
 
     /**
      * @return the sampler made for a spec, made now if no texture has named that spec before

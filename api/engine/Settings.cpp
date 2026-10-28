@@ -216,6 +216,18 @@ void Settings::set(const std::string& key, bool value) {
 
 /**
  **/
+const boost::json::value* Settings::value(const std::string& key) const {
+    return find(key);
+}
+
+/**
+ **/
+void Settings::set(const std::string& key, const boost::json::value& value) {
+    entries_[key] = value;
+}
+
+/**
+ **/
 void Settings::clear(const std::string& key) {
     entries_.erase(key);
 }

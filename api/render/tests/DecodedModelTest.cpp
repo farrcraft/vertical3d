@@ -4,6 +4,7 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/asset/Writer.h>
 #include <api/asset/media/Loaders.h>
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
@@ -11,6 +12,7 @@
 #include <api/render/realtime/DecodedModel.h>
 
 #include <stdexcept>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,7 +42,9 @@ boost::shared_ptr<v3d::asset::Manager> root(const std::string& name, bool withAl
     if (withAlbedo) {
         const boost::shared_ptr<v3d::image::Image> pixel = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
         v3d::image::Factory factory(logger);
-        BOOST_REQUIRE(factory.write((directory / "models" / "albedo.png").string(), pixel));
+        const std::optional<std::string> encoded = factory.encode(pixel, "png");
+        BOOST_REQUIRE(encoded);
+        BOOST_REQUIRE(v3d::asset::writeFile(directory / "models" / "albedo.png", *encoded));
     }
 
     boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(directory.string(), logger);

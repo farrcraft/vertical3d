@@ -61,7 +61,7 @@ this for mouse motion and resize.
 `event::publish()` sends a source event in two stages:
 
 1. Every listener on `sink<event::Source>` hears it.
-2. Unless one of them called `consume()` on it, the event engine sends the commands it is bound
+2. Unless one of them called `consume()` on it, the event router sends the commands it is bound
    to on `sink<event::Event>`.
 
 Every listener therefore hears the key before any listener hears its command, whatever order
@@ -113,9 +113,33 @@ The binding document is the config document of type `binding`, conventionally
   gives any of them another type, is logged, and startup fails.
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
-rebinding screen. The command keeps the context and the edge the document gave it. A rebinding
-lasts only as long as the process. To keep it, store it in [Settings](Files.md#settings-and-the-players-files)
-and apply it again at startup, as pong's `applyStoredBindings()` does.
+rebinding screen. The command keeps the context and the edge the document gave it. The engine
+saves the rebinding, and the next run starts with it.
+
+`Engine::bindings()` returns the `event::Bindings` the keys go through, or null without a binding
+config. A controls screen reads and changes them there:
+
+| Call | Does |
+|---|---|
+| `sources(command)` | the sources a command is bound to now, with the rebindings applied |
+| `bound(key)` | the commands a key fires now, in name order. Ask it before a rebind to find a conflict |
+| `rebind(command, key)` | binds every source of the command to the key, so a command bound to two keys is bound to one |
+| `rebind(command, source, key)` | binds one source, named as the document names it, and leaves the command's others |
+| `reset(command)`, `reset()` | puts one command, or every command, back as the document binds it |
+| `overrides()` | every rebinding, as `{command, source, name}`, in the order they apply. A `source` that is empty means every source |
+| `restore(overrides)` | replaces every rebinding with a saved list, and rebuilds once |
+
+- A source keeps the edge the document gave it, whichever key it is rebound to.
+- Rebindings apply in the order they were made, so a later one wins where two name the same
+  source. A rebind of every source replaces the command's earlier rebindings.
+- A rebind leaves one mapping where it would leave two that a press matches both of, so the
+  command fires once. A mapping on either edge covers one on a single edge, and is the one kept.
+- `restore()` drops a rebinding that names a command or a source the document no longer binds.
+  A list saved by an older build therefore cannot keep a dead entry.
+- **The engine saves every rebinding** for an app with an identity. It restores the saved
+  `overrides()` from [Settings](Files.md#settings-and-the-players-files) after the binding config
+  loads. It saves them after each rebind, reset or restore, made through `Engine::rebind()` or
+  through these bindings. `changed(callback)` is how it hears of one.
 
 ### Commands
 
@@ -144,16 +168,17 @@ bindings it ships with `Engine::unhandled(document)`. Every game's suite does th
 - The engine registers `ui::quit`, which ends the loop once the app agrees (see
   [Lifecycle.md](Lifecycle.md#rules)), and `ui::fullscreen`, which switches
   the window between full screen and a window. An app binds them and writes no handler.
-- `ui::shell::GameMenu::declare(commands(), menu_)` registers the pause menu's commands, before
-  the menu exists. See [ShellComponents.md](../ui/ShellComponents.md#gamemenu).
+- An app's `shell::Shell` registers the pause menu's commands and the statistics command as it
+  is built, in the app's constructor. See [Shell.md](Shell.md).
 
 ```cpp
-AppEngine::AppEngine(const std::string& path) : v3d::engine::Engine(path) {
+AppEngine::AppEngine(const std::string& path) :
+    v3d::engine::Engine(path),
+    shell_(this, { .menu = true, .statistics = "app::toggleStatistics" }) {
     commands().addHeld("app::moveLeft");                  // read with held() in simulate()
-    commands().addPress("app::toggleStatistics", [this]() {
-        renderer_->statistics()->toggle();                // built in start()
+    commands().addPress("app::jump", [this]() {
+        scene_->jump();                                   // built in start()
     });
-    v3d::ui::shell::GameMenu::declare(commands(), menu_);
 }
 ```
 
@@ -197,6 +222,10 @@ counting command edges, so it works for a binding that fires on press only, and 
 // in start()
 controller_ = std::make_unique<v3d::engine::IsometricController>(&orbit_, *this);
 
+// in tick(), from what the mouse did this frame
+controller_->wheel(mouse()->wheel());
+controller_->cursor(mouse()->position(), viewport, ui->capturing());
+
 // in simulate(step)
 controller_->simulate(step);
 
@@ -220,6 +249,16 @@ controller_.reset();
   instead drops commands in its own handlers, because its ui has focus or because of the state
   it is in, cannot use the controller. It calls `rotate()`, `pan()` and `zoomBy()` from those
   handlers.
+- **The wheel zooms a step a notch.** `wheel(notches)` zooms by `Speeds::notch` of half height a
+  notch, inside the orbit's clamps. A notch away from the player zooms in. A negative
+  `Speeds::notch` turns the wheel round, for a player who prefers it the other way. A notch is not
+  held, so it zooms when `wheel()` is called rather than over a step. Pass what the mouse turned
+  since the last call. `MouseState::wheel()` gives that amount.
+- **Edge pan is off until `edgePan(margin)` turns it on.** With a margin in pixels, a cursor within
+  it of an edge pans the view toward that edge at `Speeds::pan`, from `simulate()`. The top edge is
+  forward. `cursor(at, viewport, overUi)` tells the controller where the cursor is. A cursor outside
+  the window, or over the ui, pans nothing. A key held toward the same edge pans at one speed, not
+  two. `edgePan(0)` turns it off again, for a player who has turned it off.
 - Destroying the controller disconnects it from the dispatcher.
 
 ### Mouse look

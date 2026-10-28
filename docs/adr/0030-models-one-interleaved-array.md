@@ -3,7 +3,7 @@
 **Status**: superseded
 **Date**: 2026-09-06
 **Superseded by**: [ADR-0069](0069-models-material-parts-over-one-vertex-buffer.md)
-**Documented in**: [api/Assets.md](../api/Assets.md)
+**Documented in**: [api/Models.md](../api/Models.md)
 
 ## Context
 

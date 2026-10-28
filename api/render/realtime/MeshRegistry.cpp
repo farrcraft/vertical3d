@@ -10,18 +10,18 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include "DecodedModel.h"
 #include "Handle.h"
 #include "Textures.h"
+#include "UploadQueue.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
-#include <expected>
 #include <map>
 #include <optional>
 #include <set>
@@ -32,23 +32,25 @@
 #include <vector>
 
 #include <boost/make_shared.hpp>
-#include <boost/weak_ptr.hpp>
+#include <glm/common.hpp>
+#include <glm/geometric.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime {
 
 // the layout a pipeline drawing an entry declares, which nothing at runtime checks: each
 // member follows the one before it with no padding
-static_assert(sizeof(type::Model::Vertex) == 32, "a model vertex is a position, a normal and a uv");
-static_assert(offsetof(type::Model::Vertex, position) == 0, "the position is at location 0");
-static_assert(offsetof(type::Model::Vertex, normal) == sizeof(glm::vec3), "the normal is at location 1");
-static_assert(offsetof(type::Model::Vertex, uv) == 2 * sizeof(glm::vec3), "the uv is at location 2");
+static_assert(sizeof(model::Model::Vertex) == 32, "a model vertex is a position, a normal and a uv");
+static_assert(offsetof(model::Model::Vertex, position) == 0, "the position is at location 0");
+static_assert(offsetof(model::Model::Vertex, normal) == sizeof(glm::vec3), "the normal is at location 1");
+static_assert(offsetof(model::Model::Vertex, uv) == 2 * sizeof(glm::vec3), "the uv is at location 2");
 // and a skinned one's, which renderer::Lit's skinned pipelines declare
-static_assert(sizeof(MeshRegistry::SkinnedVertex) == sizeof(type::Model::Vertex) + sizeof(type::Model::Influence),
+static_assert(sizeof(MeshRegistry::SkinnedVertex) == sizeof(model::Model::Vertex) + sizeof(model::Model::Influence),
     "a skinned vertex is a model vertex and its influence");
 static_assert(offsetof(MeshRegistry::SkinnedVertex, influence) == 32, "the influence follows the vertex");
-static_assert(offsetof(type::Model::Influence, joints) == 0, "the joints are at location 3");
-static_assert(offsetof(type::Model::Influence, weights) == 8, "the weights are at location 4");
+static_assert(offsetof(model::Model::Influence, joints) == 0, "the joints are at location 3");
+static_assert(offsetof(model::Model::Influence, weights) == 8, "the weights are at location 4");
 
 namespace {
 
@@ -56,9 +58,9 @@ namespace {
  * The mesh on the device: the model's vertices as they are, or interleaved with their
  * influences for a model with a skeleton.
  **/
-boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceContext>& context, const type::Model& model) {
+boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const model::Model& model) {
     if (model.skeleton().empty()) {
-        return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+        return boost::make_shared<Mesh>(context->device(), context->uploader(),
             std::as_bytes(std::span(model.vertices())), static_cast<uint32_t>(model.vertices().size()),
             std::span<const uint32_t>(model.indices()));
     }
@@ -67,21 +69,8 @@ boost::shared_ptr<vulkan::memory::Mesh> device(const boost::shared_ptr<DeviceCon
         vertices[index].vertex = model.vertices()[index];
         vertices[index].influence = model.influences()[index];
     }
-    return boost::make_shared<vulkan::memory::Mesh>(context->device(), context->uploader(),
+    return boost::make_shared<Mesh>(context->device(), context->uploader(),
         std::as_bytes(std::span(vertices)), static_cast<uint32_t>(vertices.size()), std::span<const uint32_t>(model.indices()));
-}
-
-/**
- * What an exception says, for the line a failed request is reported on.
- **/
-std::string describe(const std::exception_ptr& error) {
-    try {
-        std::rethrow_exception(error);
-    } catch (const std::exception& exception) {
-        return exception.what();
-    } catch (...) {
-        return "an error that is not a std::exception";
-    }
 }
 
 /**
@@ -99,6 +88,29 @@ std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
     return total;
 }
 
+/**
+ * A sphere around a model's vertices: the middle of the box that holds them, and the farthest
+ * of them from it. A model with no vertices is a point at the origin.
+ **/
+glm::vec4 bound(const model::Model& model) {
+    const std::vector<model::Model::Vertex>& vertices = model.vertices();
+    if (vertices.empty()) {
+        return glm::vec4(0.0F);
+    }
+    glm::vec3 lowest = vertices.front().position;
+    glm::vec3 highest = lowest;
+    for (const model::Model::Vertex& vertex : vertices) {
+        lowest = glm::min(lowest, vertex.position);
+        highest = glm::max(highest, vertex.position);
+    }
+    const glm::vec3 centre = (lowest + highest) * 0.5F;
+    float radius = 0.0F;
+    for (const model::Model::Vertex& vertex : vertices) {
+        radius = std::max(radius, glm::length(vertex.position - centre));
+    }
+    return glm::vec4(centre, radius);
+}
+
 };  // namespace
 
 /**
@@ -108,8 +120,7 @@ MeshRegistry::MeshRegistry(const boost::shared_ptr<log::Logger>& logger, const b
     logger_(logger),
     context_(context),
     assets_(assets),
-    worker_(worker),
-    inbox_(boost::make_shared<Inbox>()) {
+    worker_(worker) {
 }
 
 /**
@@ -142,13 +153,7 @@ MeshHandle MeshRegistry::request(const std::string& path) {
     keys_[path] = handle;
     pending_++;
     try {
-        worker_->post([assets = assets_, path]() { return decodeModel(*assets, path); },
-            [inbox = boost::weak_ptr<Inbox>(inbox_), handle](std::expected<DecodedModel, std::exception_ptr> result) {
-                const boost::shared_ptr<Inbox> held = inbox.lock();
-                if (held) {
-                    held->push_back(Arrival{ handle, std::move(result) });
-                }
-            });
+        uploads_.post(worker_.get(), handle, [assets = assets_, path]() { return decodeModel(*assets, path); });
     } catch (...) {
         abandon(handle);
         throw;
@@ -159,43 +164,31 @@ MeshHandle MeshRegistry::request(const std::string& path) {
 /**
  **/
 std::size_t MeshRegistry::poll(std::size_t budget) {
-    std::size_t count = 0;
-    std::size_t spent = 0;
-    while (!inbox_->empty() && (count == 0 || spent < budget)) {
-        Arrival arrival = std::move(inbox_->front());
-        inbox_->pop_front();
-
-        // a request released, or loaded at once, before its decoding finished has no slot to fill
-        const Slot* slot = meshes_.resolve(arrival.handle);
-        if (slot == nullptr || !slot->pending) {
-            continue;
-        }
-        const std::string key = slot->key;
-        if (!arrival.result) {
-            logger_->get()->error("The model {} could not be loaded: {}", key, describe(arrival.result.error()));
-            abandon(arrival.handle);
-            continue;
-        }
-
-        const DecodedModel& decoded = *arrival.result;
-        // counted before the upload, which makes every albedo it names an uploaded one
-        const std::size_t cost = bytes(decoded, [this](const std::string& albedo) { return uploaded(albedo); });
-        try {
-            upload(key, *decoded.model, decoded.albedos, arrival.handle);
-        } catch (const std::exception& error) {
-            logger_->get()->error("The model {} could not be uploaded: {}", key, error.what());
-            abandon(arrival.handle);
-            continue;
-        }
-        count++;
-        spent += cost;
-    }
-    return count;
+    return uploads_.poll(budget,
+        [this](const MeshHandle& handle) {
+            // a request released, or loaded at once, before its decoding finished has no slot to
+            // fill
+            const Slot* slot = meshes_.resolve(handle);
+            return slot != nullptr && slot->pending;
+        },
+        [this](const MeshHandle& handle, const DecodedModel& decoded) {
+            // counted before the upload, which makes every albedo it names an uploaded one
+            const std::size_t cost = bytes(decoded, [this](const std::string& albedo) { return uploaded(albedo); });
+            const std::string key = meshes_.resolve(handle)->key;
+            upload(key, *decoded.model, decoded.albedos, handle);
+            return cost;
+        },
+        [this](const MeshHandle& handle, const std::string& reason) {
+            logger_->get()->error("The model {} could not be loaded: {}", meshes_.resolve(handle)->key, reason);
+            // the handle resolves to nothing from now on, and the path is free for a request that
+            // reads the file again
+            abandon(handle);
+        });
 }
 
 /**
  **/
-MeshHandle MeshRegistry::add(const std::string& name, const type::Model& model,
+MeshHandle MeshRegistry::add(const std::string& name, const model::Model& model,
     const std::vector<boost::shared_ptr<image::Image>>& albedos) {
     const std::optional<std::pair<MeshHandle, bool>> known = registered(name);
     if (known && !known->second) {
@@ -229,7 +222,7 @@ MeshHandle MeshRegistry::add(const DecodedModel& decoded) {
 
 /**
  **/
-MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+MeshHandle MeshRegistry::upload(const std::string& key, const model::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
     const MeshHandle& pending) {
     if (model.empty() || model.indices().empty()) {
         throw std::runtime_error("The model " + key + " holds no geometry to upload");
@@ -244,7 +237,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
         throw std::runtime_error("The model " + key + " does not have one albedo per material");
     }
     // checked before anything is acquired, so that a bad part acquires nothing
-    for (const type::Model::Part& part : model.parts()) {
+    for (const model::Model::Part& part : model.parts()) {
         if (part.material >= model.materials().size() ||
             static_cast<std::size_t>(part.firstIndex) + part.indexCount > model.indices().size()) {
             throw std::runtime_error("The model " + key + " has a part outside its indices or its materials");
@@ -257,9 +250,10 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
     if (!model.skeleton().empty()) {
         slot.entry.skin = boost::make_shared<const Skin>(Skin{ model.skeleton(), model.clips() });
     }
+    slot.entry.bound = bound(model);
     MeshHandle handle = pending;
     try {
-        for (const type::Model::Part& source : model.parts()) {
+        for (const model::Model::Part& source : model.parts()) {
             Part part;
             part.firstIndex = source.firstIndex;
             part.indexCount = source.indexCount;
@@ -298,7 +292,7 @@ MeshHandle MeshRegistry::upload(const std::string& key, const type::Model& model
 std::string MeshRegistry::acquire(const DecodedModel::Albedo& source, Part* part) {
     const boost::shared_ptr<Textures> textures = context_->textures();
     part->texture = textures->white();
-    part->material = textures->material(part->texture);
+    part->material = textures->material();
     const std::string& key = source.key;
     if (key.empty()) {
         return std::string();
@@ -315,20 +309,12 @@ std::string MeshRegistry::acquire(const DecodedModel::Albedo& source, Part* part
         Albedo albedo;
         // a lit albedo is decoded to linear before it is lit
         albedo.texture = textures->texture(image, vulkan::memory::TextureFactory::Encoding::Srgb);
-        try {
-            albedo.material = textures->material(albedo.texture);
-        } catch (...) {
-            // the texture is not counted yet, so nothing else would release it
-            textures->release(albedo.texture);
-            throw;
-        }
         albedo.users = 0;
         found = albedos_.emplace(key, albedo).first;
     }
 
     found->second.users++;
     part->texture = found->second.texture;
-    part->material = found->second.material;
     return key;
 }
 
@@ -368,7 +354,7 @@ void MeshRegistry::drop(const std::string& key) {
     }
     found->second.users--;
     if (found->second.users == 0) {
-        // the texture and its material go together, each once no frame can still read it
+        // the texture and its slot go together, once no frame can still read them
         context_->textures()->release(found->second.texture);
         albedos_.erase(found);
     }

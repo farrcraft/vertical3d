@@ -78,11 +78,40 @@ project nests this repository with `add_subdirectory`, `CMAKE_SOURCE_DIR` is tha
   add `/std:c++latest` as a flag. glm and EnTT require `cxx_std_17` through their targets, so
   CMake adds `/std:c++17`, and MSVC reports warning D9025 when a command line names two
   standards.
-- `/permissive-`, `/W4` and `/w14062` apply to every target. [Linting.md](Linting.md#the-compiler)
-  explains `/w14062` and `/WX`.
-- `/EHsc` and `/utf-8` are set per target. `v3d_add_api_library` puts both in each library's
-  interface, so anything linking an api library gets them.
-- **`/utf-8` is required.** spdlog's bundled fmt has a `static_assert` that fails without it.
+- **Every flag is spelled for the compiler that reads it.** MSVC's spelling of a flag is a file
+  name to Clang and GCC, so a flag given to every compiler stops every compiler but MSVC. Put an
+  MSVC flag under `if(MSVC)`, which clang-cl also sets, with what means the same to Clang and GCC
+  under `else()`, or a comment saying they need nothing.
+- Under MSVC, `/permissive-`, `/W4` and `/w14062` apply to every target, and `/WX` when
+  `V3D_WARNINGS_AS_ERRORS` is on. [Linting.md](Linting.md#the-compiler) explains `/w14062` and
+  `/WX`. Under Clang and GCC they are `-Wall -Wextra`, which carries `-Wswitch`, and `-Werror`.
+  Clang and GCC conform to the standard without being asked.
+- Under MSVC, `v3d_add_api_library` gives each library `/EHsc` and `/utf-8` PUBLIC, so the
+  library and anything linking it get both. An app takes them from the libraries it links, and
+  sets neither itself. Clang and GCC enable exceptions, and read and write UTF-8, by default.
+- **`/utf-8` is required under MSVC.** spdlog's bundled fmt has a `static_assert` that fails
+  without it.
+- `V3D_ANALYZE` is MSVC's `/analyze`, and the configure stops if another compiler is asked for
+  it. `V3D_CLANG_TIDY` works with any compiler.
+
+### Building off MSVC
+
+The api libraries whose closure names neither SDL3, Vulkan nor OpenUSD build and test with Clang
+on Linux:
+asset, asset_media, brep, database, ecs, event, font, grid, image, interchange, log,
+render_offline and type. CI checks that on every pull request, in
+[.github/workflows/portable.yml](../../.github/workflows/portable.yml). A change to one of them
+can therefore pass every gate on Windows and fail there.
+
+- Those libraries do not use an MSVC extension or a Windows header.
+- The job configures with `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the
+  manifest's `platform` feature, and with `V3D_LIBRARIES` naming the list above.
+- To reproduce it on Windows, run the workflow's configure, build and test steps in an
+  `ubuntu:24.04` container with the tree mounted. Clang's GNU driver on Windows rejects MSVC's
+  flag spellings too, but it compiles against MSVC's standard library and the Windows headers,
+  so it misses what only Linux shows.
+
+Background: [ADR-0107](../adr/0107-build-the-api-libraries-build-with-clang-off-windows.md)
 
 ### The manifest is checked on every configure
 
@@ -100,6 +129,11 @@ has been added. Two checks run after every library is added, and either one stop
 
 The checks run at configure time, so a header edited afterwards is checked at the next configure.
 CI configures on every run.
+
+**A library added to the manifest gets a row in the table of libraries** in
+[docs/api/README.md](../api/README.md#the-libraries), in the manifest's order, linking its
+directory. `scripts/librarytable.ts` checks the table against the manifest, and the review gates
+run it.
 
 `cgltf` is the one manifest entry these checks cannot confirm. It adds an include directory rather
 than an imported target, so it never appears in a link line.
@@ -119,10 +153,10 @@ than an imported target, so it never appears in a link line.
 "Top level" means the value of `PROJECT_IS_TOP_LEVEL`. It is on for every build of this
 repository and off when another project nests it.
 
-`V3D_LIBRARIES` must be `all` whenever `V3D_BUILD_APPS` or `V3D_BUILD_TESTS` is on, and the
-configure stops if it is not. The apps link every api library between them, and each test
-directory belongs to one library. In practice a build of this repository always builds the whole
-api.
+`V3D_LIBRARIES` must be `all` whenever `V3D_BUILD_APPS` is on, and the configure stops if it is
+not, because the apps link every api library between them. `V3D_BUILD_TESTS` with a narrowed
+`V3D_LIBRARIES` builds the suites of the libraries selected: each library's suite links only that
+library's closure, and must keep doing so.
 
 Each `tests/` subdirectory is added under its own `if(V3D_BUILD_TESTS)`, not inside
 `v3d_add_test`. A `tests/CMakeLists.txt` names its test target again after creating it, so the
@@ -132,7 +166,7 @@ guard has to cover the whole file.
 
 | Function | What it does |
 |---|---|
-| `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, puts `/EHsc` and `/utf-8` in the interface, and links `Boost::headers` PUBLIC |
+| `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
 | `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory beside the executable |
 | `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
@@ -154,8 +188,8 @@ The two data helpers add a build rule whose inputs are the files in the source d
   order it calls them. The two should not share a file name: after an edit, only the edited
   directory is copied again, so which copy is left depends on which was edited last.
 
-These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, moya and vertical3d. All of
-them but moya also call `v3d_add_shared_data`.
+These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
+vertical3d. All of them but moya also call `v3d_add_shared_data`.
 
 ## Shaders
 
@@ -258,17 +292,8 @@ library that depends on something only this repository's root provides, such as 
 an app that happens to link every library. It sets `V3D_LIBRARIES` to `engine log render`, so it
 also checks that the manifest's dependency lists are complete.
 
-To build it locally against the packages your main build already installed:
-
-```
-cmake -S examples/starter -B out/build/starter -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows \
-  -DVCPKG_INSTALLED_DIR=out/build/x64-Debug/vcpkg_installed \
-  -DVCPKG_MANIFEST_INSTALL=OFF
-ninja -C out/build/starter
-```
+[examples/README.md](../../examples/README.md#building-an-example) gives the commands that build
+it locally against the packages your main build already installed.
 
 ## Traps
 
@@ -287,10 +312,11 @@ ninja -C out/build/starter
   a boost port can rebuild boost. Changing the `sdl3` feature list rebuilds SDL only, which takes
   about five minutes.
 - **cgltf has no CMake config.** It is a single header. `cmake/v3dDependencies.cmake` finds it with
-  `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_asset_media` adds that directory to its own
-  include path. Its implementation is compiled once, in
-  [api/asset/media/loader/CgltfImpl.cpp](../../api/asset/media/loader/CgltfImpl.cpp). That file is
-  excluded from both static analysers, as `voxel/src/noise/noiseutils.cpp` is.
+  `find_path(V3D_CGLTF_INCLUDE_DIR ...)`, and `v3dlib_interchange` and `v3dlib_asset_media` each
+  add that directory to their own include path. Its implementation is compiled once for every
+  program, in
+  [api/interchange/CgltfImpl.cxx](../../api/interchange/CgltfImpl.cxx). That file is
+  excluded from both static analysers, as `demos/voxel/src/noise/noiseutils.cpp` is.
 - **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
   points at nothing. vcpkg still works, because the build uses the toolchain file.
 - **voxel will not link until libnoise is built.** `vendor/libnoise` is a git submodule and is

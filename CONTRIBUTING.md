@@ -29,7 +29,7 @@ Make the change, then build and test it here, where the apps and the suites are 
 
 ```
 scripts\build.cmd
-ctest --test-dir out\build\x64-Debug --output-on-failure
+scripts\test.cmd
 ```
 
 [docs/contributing/Linting.md](docs/contributing/Linting.md) lists the four checks the tree is

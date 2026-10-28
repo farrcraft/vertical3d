@@ -24,8 +24,8 @@ class Parameter final {
  public:
     Storage storage = Storage::UNSPECIFIED;
     /**
-     * Whether the declaration says `output`. The parser accepts it on a function's formal
-     * as well, and the compiler ignores it there.
+     * Whether the declaration says `output`. A function's output formal is passed by
+     * reference: what the function writes to it is copied back to the caller's variable.
      **/
     bool output = false;
     Type type = Type::FLOAT;

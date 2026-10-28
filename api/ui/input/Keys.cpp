@@ -7,13 +7,14 @@
 
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/component/Slider.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/input/LineEdit.h>
 
 #include <algorithm>
 #include <string_view>
@@ -73,7 +74,7 @@ bool activates(std::string_view key) noexcept {
 
 };  // namespace
 
-Keys::Keys(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+Keys::Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const Clipboard& clipboard) :
     ui_(ui),
     dispatcher_(dispatcher),
@@ -203,55 +204,14 @@ bool Keys::edit(const boost::shared_ptr<component::TextBox>& box, std::string_vi
         return false;
     }
 
-    if (controlled) {
-        // copy, cut, paste and select all, and no other chord. Any other chord goes on to
-        // the app, so a ctrl-s still saves while the box has the focus
-        if (key == "c") {
-            copySelection(box);
-        } else if (key == "x") {
-            cutSelection(box);
-        } else if (key == "v") {
-            paste(box);
-        } else if (key == "a") {
-            box->selectAll();
-        } else {
-            return false;
-        }
-        // taken whether or not it changed anything, so the chord never also reaches a
-        // binding
-        return true;
-    }
-
-    if (key == "backspace") {
-        box->backspace();
-    } else if (key == "delete") {
-        box->erase();
-    } else if (key == "arrow_left") {
-        // shift keeps the anchor where it is, so the run travelled ends up selected
-        box->left(shifted);
-    } else if (key == "arrow_right") {
-        box->right(shifted);
-    } else if (key == "home") {
-        box->home(shifted);
-    } else if (key == "end") {
-        box->end(shifted);
-    } else if (key == "return") {
+    if (!controlled && key == "return") {
         // a return sends the box's command, and whatever handles it reads text(). The event
         // is read from the box directly. input::command() returns none for a text box, so
         // that a click into one does not submit it
         send(box->event());
-    } else if (key.size() == 1 || key == "space") {
-        // a key that will arrive again as a character is taken here as well, so it does not
-        // also reach the app's bindings. Typing "w" into a box must not walk the player
-        // forward. api/input gives a key that composes text a one-character name, and any
-        // other key a word, so the length of the name is the test
         return true;
-    } else {
-        // a function key, a modifier or a page down does nothing in the box, so the app still
-        // receives it while the box has the focus
-        return false;
     }
-    return true;
+    return input::edit(box->line(), key, shifted, controlled, clipboard_);
 }
 
 bool Keys::choose(const boost::shared_ptr<component::SelectList>& list, std::string_view key) {
@@ -349,30 +309,6 @@ bool Keys::slide(const boost::shared_ptr<component::Slider>& slider, std::string
     }
     send(command(slider));
     return true;
-}
-
-void Keys::copySelection(const boost::shared_ptr<component::TextBox>& box) const {
-    if (clipboard_.write && box->selected()) {
-        clipboard_.write(box->selection());
-    }
-}
-
-void Keys::cutSelection(const boost::shared_ptr<component::TextBox>& box) const {
-    // the text is written to the clipboard before it is removed, and is not removed at all
-    // when there is no write callback, so a cut never loses text
-    if (!clipboard_.write || !box->selected()) {
-        return;
-    }
-    clipboard_.write(box->selection());
-    box->removeSelection();
-}
-
-void Keys::paste(const boost::shared_ptr<component::TextBox>& box) const {
-    if (clipboard_.read) {
-        // insert() replaces the selection, so a paste and a typed character land the same
-        // way
-        box->insert(clipboard_.read());
-    }
 }
 
 void Keys::send(const boost::shared_ptr<Component>& component) const {

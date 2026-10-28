@@ -28,7 +28,6 @@ class TextureAtlas {
     unsigned int id() const;
 
     boost::shared_ptr<Image> image();
-    void write(const std::string & filename);
 
     /**
      * Reserve room for an image of this size, with a gutter around it.

@@ -8,10 +8,15 @@
 #include <api/log/Logger.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
+#include "Listener.h"
+
 #include <boost/shared_ptr.hpp>
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -38,11 +43,11 @@ enum class Stop : uint8_t {
  * their mix reads.
  *
  * It works beside the clip engine and does not replace it. Clips, buses and fades stay on
- * audio::Engine. An app that plays events gets one of these from events(). In a build with no
+ * audio::Player. An app that plays events gets one of these from events(). In a build with no
  * event backend, events() returns the null backend, so the app builds and runs either way.
  *
- * Every call returns whether it succeeded. The null backend does nothing and returns false,
- * and a game treats that as silence, not as an error.
+ * Every call returns whether it succeeded. The null backend does nothing and returns false or
+ * nothing, and a game treats that as silence, not as an error.
  **/
 class Events {
  public:
@@ -75,6 +80,46 @@ class Events {
     virtual Instance start(std::string_view event) = 0;
 
     /**
+     * Start an event as a one shot at a point in the world. An event authored as 2D ignores
+     * the position.
+     *
+     * @param position where the event plays, in the coordinates listener() is given
+     * @return whether it started
+     **/
+    virtual bool play(std::string_view event, const glm::vec3& position) = 0;
+
+    /**
+     * Start an event at a point in the world and keep hold of it, so that it can be moved with
+     * position() and stopped. The position is set before the event starts, so it is never heard
+     * from anywhere else.
+     *
+     * @return the instance, or Instance::None as start() returns it
+     **/
+    virtual Instance start(std::string_view event, const glm::vec3& position) = 0;
+
+    /**
+     * Move an event that start() started.
+     *
+     * @return false for an instance that is not playing
+     **/
+    virtual bool position(Instance instance, const glm::vec3& position) = 0;
+
+    /**
+     * @return where an event is, as the backend holds it, or nothing for an instance that is
+     *         not playing. An event started with no position is at the origin
+     **/
+    virtual std::optional<glm::vec3> position(Instance instance) const = 0;
+
+    /**
+     * Set where events are heard from. audio::Player::listener() calls this for an event
+     * backend it was given, so a game sets one listener for clips and events.
+     *
+     * @param listener a listener orthonormal() returned
+     * @return whether the backend took it, which the null backend never does
+     **/
+    virtual bool listener(const Listener& listener) = 0;
+
+    /**
      * Stop an event that start() started. A fade out keeps it playing until the fade ends.
      * The instance is released by update() once it has stopped.
      *
@@ -94,6 +139,38 @@ class Events {
      * @return whether the parameter exists and took the value
      **/
     virtual bool parameter(std::string_view name, float value) = 0;
+
+    /**
+     * Set how loud a bus or a VCA plays. A player's volume slider sets this. The path says
+     * which it is: "bus:/" is the master bus, "bus:/Music" a bus under it, and
+     * "vca:/SFX" a VCA. A VCA scales the buses assigned to it without changing their routing.
+     *
+     * A path is found through the strings bank, so the bank that holds the names has to be
+     * loaded first. A level set before then is refused, and the app sets it again afterwards.
+     *
+     * @param level 1 as authored and 0 silent. A level below 0 is taken as 0
+     * @return whether the path exists and took the level
+     **/
+    virtual bool volume(std::string_view path, float level) = 0;
+
+    /**
+     * @return the level a bus or a VCA was set to, or nothing for a path no loaded bank holds
+     **/
+    virtual std::optional<float> volume(std::string_view path) const = 0;
+
+    /**
+     * Pause or resume a bus and everything routed through it. Pausing "bus:/" pauses
+     * everything. Pausing the game's buses and not the menu's is a pause menu. A VCA has no
+     * pause, so a "vca:/" path is refused.
+     *
+     * @return whether the bus exists and took the change
+     **/
+    virtual bool paused(std::string_view bus, bool paused) = 0;
+
+    /**
+     * @return whether a bus is paused, or nothing for a path no loaded bank holds
+     **/
+    virtual std::optional<bool> paused(std::string_view bus) const = 0;
 
     /**
      * Let the backend do a frame's work, and release every started event that has stopped.

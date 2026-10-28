@@ -4,8 +4,8 @@ v3d_add_api_library(asset
 	"Json.h" "Json.cpp"
 	"Loader.h" "Loader.cpp"
 	"Manager.h" "Manager.cpp"
+	"Manifest.h" "Manifest.cpp"
 	"Migration.h" "Migration.cpp"
-	"Type.h"
 	"Worker.h" "Worker.cpp"
 	"Writer.h" "Writer.cpp"
 	"kind/Json.h" "kind/Json.cpp"
@@ -20,11 +20,6 @@ target_link_libraries(v3dlib_asset PUBLIC v3dlib_log)
 
 # PUBLIC: Manager.h names a boost::filesystem::path, and Json.h a boost::json type.
 target_link_libraries(v3dlib_asset PUBLIC Boost::filesystem Boost::json)
-
-target_compile_options(v3dlib_asset PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

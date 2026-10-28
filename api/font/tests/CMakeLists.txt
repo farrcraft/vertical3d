@@ -1,7 +1,8 @@
 v3d_add_test(font
 	"TestMain.cxx"
 	"TextureFontCacheTest.cxx"
-	"TextureTextBufferTest.cxx")
+	"TextureTextBufferTest.cxx"
+	"Utf8Test.cxx")
 
 target_link_libraries(v3dtest_font PRIVATE v3dlib_font v3dlib_image v3dlib_log ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG Freetype::Freetype)
 

@@ -3,8 +3,11 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/offline/Area.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Parameters.h>
+#include <api/render/offline/trace/Scene.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
@@ -18,6 +21,7 @@
 #include <boost/make_shared.hpp>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace {
 
@@ -65,7 +69,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
 }
 
 /**
- * Each reserved coordinate system is identity until something saves over it.
+ * Each predefined coordinate system is the identity until the camera is set up.
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
     v3d::moya::RenderContext rc;
@@ -78,24 +82,64 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
 }
 
 /**
+ * "NDC" is the camera's: raster space divided by the picture's size. Its corners are the
+ * picture's, (0, 0) at the upper left and (1, 1) at the lower right.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_ndc_is_raster_over_the_resolution_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({64, 48}, 1.0F);
+    rc.projection("orthographic");
+    rc.prepareWorld();
+
+    // the default screen window is [-4/3, 4/3] by [-1, 1]
+    const glm::mat4x4 ndc = rc.coordinateSystem("NDC");
+    const glm::vec4 upperLeft = ndc * glm::vec4(-4.0F / 3.0F, 1.0F, 1.0F, 1.0F);
+    const glm::vec4 lowerRight = ndc * glm::vec4(4.0F / 3.0F, -1.0F, 1.0F, 1.0F);
+    BOOST_CHECK_SMALL(upperLeft.x, 1.0e-5F);
+    BOOST_CHECK_SMALL(upperLeft.y, 1.0e-5F);
+    BOOST_CHECK_CLOSE(lowerRight.x, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(lowerRight.y, 1.0F, 0.001F);
+    const glm::vec4 pixel = rc.coordinateSystem("raster") * glm::vec4(4.0F / 3.0F, -1.0F, 1.0F, 1.0F);
+    BOOST_CHECK_CLOSE(pixel.x, 64.0F, 0.001F);
+    BOOST_CHECK_CLOSE(pixel.y, 48.0F, 0.001F);
+}
+
+/**
  * saveCoordinateSystem files the current transform under a name, and setCoordinateSystem
- * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform.
+ * restores it. Together they implement RiCoordinateSystem and RiCoordSysTransform. Saving a
+ * name again replaces what it held.
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
     v3d::moya::RenderContext rc;
     const glm::mat4x4 scaled(3.0F);
 
     rc.setTransform(scaled);
-    rc.saveCoordinateSystem("world");
-    BOOST_TEST((rc.coordinateSystem("world") == scaled));
+    rc.saveCoordinateSystem("lamp");
+    BOOST_TEST((rc.coordinateSystem("lamp") == scaled));
 
     rc.setIdentityTransform();
-    rc.saveCoordinateSystem("world");
-    BOOST_TEST((rc.coordinateSystem("world") == glm::mat4x4(1.0F)));
+    rc.setCoordinateSystem("lamp");
+    rc.saveCoordinateSystem("copy");
+    BOOST_TEST((rc.coordinateSystem("copy") == scaled));
 
-    rc.setCoordinateSystem("world");
-    rc.saveCoordinateSystem("object");
-    BOOST_TEST((rc.coordinateSystem("object") == glm::mat4x4(1.0F)));
+    rc.setIdentityTransform();
+    rc.saveCoordinateSystem("lamp");
+    BOOST_TEST((rc.coordinateSystem("lamp") == glm::mat4x4(1.0F)));
+}
+
+/**
+ * A predefined name is refused by saveCoordinateSystem, so a scene cannot replace the spaces
+ * the camera set up.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_a_predefined_space_is_refused_test) {
+    v3d::moya::RenderContext rc;
+    rc.setTransform(glm::mat4x4(3.0F));
+
+    const char* predefined[] = { "object", "world", "camera", "screen", "raster", "NDC" };
+    for (const auto* name : predefined) {
+        rc.saveCoordinateSystem(name);
+        BOOST_TEST((rc.coordinateSystem(name) == glm::mat4x4(1.0F)));
+    }
 }
 
 /**
@@ -108,9 +152,9 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
     rc.setIdentityTransform();
     rc.translate(1.0F, 2.0F, 3.0F);
     rc.translate(1.0F, 2.0F, 3.0F);
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
-    glm::mat4x4 composed = rc.coordinateSystem("object");
+    glm::mat4x4 composed = rc.coordinateSystem("probe");
     BOOST_TEST((glm::vec3(composed[3]) == glm::vec3(2.0F, 4.0F, 6.0F)));
 }
 
@@ -122,10 +166,10 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
 
     rc.setIdentityTransform();
     rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
     // the angle is in degrees, as RiRotate takes it
-    const glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::mat4x4 composed = rc.coordinateSystem("probe");
     glm::vec3 turned = glm::vec3(composed * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
     BOOST_TEST(turned.x == 0.0F, boost::test_tools::tolerance(0.0001F));
     BOOST_TEST(turned.y == 1.0F, boost::test_tools::tolerance(0.0001F));
@@ -136,9 +180,9 @@ BOOST_AUTO_TEST_CASE(render_context_scale_test) {
 
     rc.setIdentityTransform();
     rc.scale(2.0F, 3.0F, 4.0F);
-    rc.saveCoordinateSystem("object");
+    rc.saveCoordinateSystem("probe");
 
-    const glm::mat4x4 composed = rc.coordinateSystem("object");
+    const glm::mat4x4 composed = rc.coordinateSystem("probe");
     const glm::vec3 scaled = glm::vec3(composed * glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
     BOOST_TEST((scaled == glm::vec3(2.0F, 3.0F, 4.0F)));
 }
@@ -158,7 +202,7 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
     polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
     rc.addPolygon(polygon);
 
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 1U);
+    BOOST_TEST(rc.bucketed() == 1U);
 }
 
 /**
@@ -185,7 +229,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
         raster bound is 216 pixels across. A grid covers 16, so four rounds of four way
         splitting bring every piece under one: 4^4 pieces, all diceable and bucketed.
     */
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
+    BOOST_TEST(rc.bucketed() == 256U);
 }
 
 namespace {
@@ -355,7 +399,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
     // ends with every piece bucketed. It would not if a piece were measured with the current
     // state instead of its parent's
     rc.render();
-    BOOST_TEST(rc.framebuffer()->primitiveCount() == 256U);
+    BOOST_TEST(rc.bucketed() == 256U);
 }
 
 /**
@@ -388,14 +432,119 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     rc.addPolygon(polygon);
     rc.render();
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.framebuffer()->planes();
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 24, 16), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 24, 16), 1.0F, 0.01F);
     // and this is outside it, where the imager is the whole of the pixel
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::RED, 55, 40), 0.15F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::BLUE, 55, 40), 0.45F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::FrameBuffer::COVERAGE, 55, 40), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 55, 40), 0.15F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::BLUE, 55, 40), 0.45F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::COVERAGE, 55, 40), 1.0F, 0.01F);
+}
+
+/**
+ * A coordinate system that is neither predefined nor saved is refused. Restoring it leaves the
+ * current transformation as it was, and reading it gives the identity rather than adding a
+ * matrix of zeros.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_unknown_coordinate_system_test) {
+    v3d::moya::RenderContext rc("");
+    rc.scale(2.0F, 2.0F, 2.0F);
+    rc.setCoordinateSystem("nowhere");
+    rc.saveCoordinateSystem("kept");
+
+    BOOST_TEST((rc.coordinateSystem("kept") == glm::scale(glm::mat4x4(1.0F), glm::vec3(2.0F))));
+    BOOST_TEST((rc.coordinateSystem("nowhere") == glm::mat4x4(1.0F)));
+}
+
+/**
+ * An unknown projection is refused, and the projection named before it stays in force.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_unknown_projection_test) {
+    v3d::moya::RenderContext rc("");
+    rc.projection("perspective", 45.0F);
+    const glm::mat4x4 screen = rc.coordinateSystem("screen");
+
+    rc.projection("fisheye");
+    BOOST_TEST(rc.perspective());
+    BOOST_TEST((rc.coordinateSystem("screen") == screen));
+}
+
+/**
+ * ShadingRate is an area in pixels. A grid of 256 micropolygons, each covering a shading rate
+ * of 4 square pixels, spans sqrt(256 * 4) = 32 pixels a side. The polygon's raster bound is 216
+ * pixels across, so three rounds of four way splitting bring every piece under 32: 4^3 pieces.
+ * Read as a side length the rate would give 64 pixels, and two rounds.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
+    v3d::moya::RenderContext rc;
+    rc.shadingRate(4.0F);
+    rc.prepareWorld();
+
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, -0.9F, 5.0F));
+    polygon->addVertex(vertex(0.9F, 0.9F, 5.0F));
+    polygon->addVertex(vertex(-0.9F, 0.9F, 5.0F));
+    rc.addPolygon(polygon);
+    rc.render();
+
+    BOOST_TEST(rc.bucketed() == 64U);
+}
+
+/** A quad in front of the camera, sent to a prepared context. **/
+void addQuad(v3d::moya::RenderContext* rc) {
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
+    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
+    rc->addPolygon(polygon);
+}
+
+/**
+ * Under the reyes hider, a scene whose shaders trace no ray drops its traced triangles when
+ * it renders. matte and ambientlight call neither trace nor transmission. An area light keeps
+ * its own copy of its geometry, so it still has something to shine from.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_drops_the_traced_scene_when_nothing_traces_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({32, 24}, 1.0F);
+    rc.prepareWorld();
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    rc.attributeBegin();
+    rc.areaLightSource({.shader = "ambientlight", .handle = "glow"}, v3d::render::offline::rib::ParameterList());
+    const boost::shared_ptr<v3d::render::offline::Area> area = rc.areaLight();
+    addQuad(&rc);
+    rc.attributeEnd();
+    BOOST_REQUIRE(area);
+    BOOST_REQUIRE_EQUAL(rc.traced().primitives().size(), 2U);
+
+    rc.render();
+
+    BOOST_TEST(rc.traced().primitives().empty());
+    BOOST_TEST(!area->empty());
+    BOOST_TEST(rc.bucketed() > 0U);
+}
+
+/**
+ * A light that casts shadows calls transmission, so the traced scene is kept for it. Each
+ * standard light with a direction does.
+ *
+ * Passes before the change: the scene was never dropped. It guards against dropping one that a
+ * light still needs.
+ **/
+BOOST_AUTO_TEST_CASE(render_context_keeps_the_traced_scene_for_a_shadowing_light_test) {
+    v3d::moya::RenderContext rc;
+    rc.imageResolution({32, 24}, 1.0F);
+    rc.prepareWorld();
+    rc.surface("matte", v3d::render::offline::rib::ParameterList());
+    rc.lightSource({.shader = "distantlight", .handle = "key"}, v3d::render::offline::rib::ParameterList());
+    addQuad(&rc);
+
+    rc.render();
+
+    BOOST_TEST(rc.traced().primitives().size() == 2U);
 }
 
 };  // namespace

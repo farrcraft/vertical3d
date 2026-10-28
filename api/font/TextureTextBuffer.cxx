@@ -7,10 +7,12 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "TextBuffer.h"
 #include "TextureFont.h"
+#include "Utf8.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -24,28 +26,22 @@ constexpr unsigned int QUAD_INDICES = 6;
 };  // namespace
 
 TextureTextBuffer::TextureTextBuffer() :
-    ascender_(0.0F),
-    descender_(0.0F),
     lineStart_(0) {
 }
 
-void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, wchar_t current) {
-    if (current == L'\n') {
+void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, char32_t current) {
+    if (current == U'\n') {
         pen->x = origin_.x;
         // the same ratio as a glyph's metrics, so a markup with no size moves down one line
         // at the font's own size
         const float lineScale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
         pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
-        /*
-        descender_ = 0.0f;
-        ascender_ = 0.0f;
-        */
         lineStart_ = items_.size();
         // newlines don't actually generate any vertex data
         return;
     }
-    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->glyph(current);
-    const boost::shared_ptr<TextureFont::Glyph> black = markup.font_->glyph(static_cast<wchar_t>(-1));
+    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->packed(current);
+    const boost::shared_ptr<TextureFont::Glyph> black = markup.font_->packed(TextureFont::SOLID);
     if (!glyph) {
         return;
     }
@@ -154,7 +150,7 @@ void TextureTextBuffer::addVertex(const glm::vec3& position, const glm::vec2& te
     gamma_.push_back(gamma);
 }
 
-void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, const std::wstring& text) {
+void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, std::string_view utf8) {
     if (vertices().empty()) {
         origin_ = *pen;
     }
@@ -177,8 +173,9 @@ void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, const std:
         descender_ = markup.font_->descender();
     }
     */
-    for (const wchar_t character : text) {
-        addCharacter(pen, markup, character);
+    std::size_t index = 0;
+    while (index < utf8.size()) {
+        addCharacter(pen, markup, next(utf8, &index));
     }
 }
 

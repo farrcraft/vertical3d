@@ -1,0 +1,84 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include <api/image/Image.h>
+#include <api/image/reader/Png.h>
+
+#include <cstddef>
+#include <string>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/test/unit_test.hpp>
+
+#include <glm/vec4.hpp>
+
+#include "Windowed.h"
+
+namespace {
+
+/**
+ * How many texels of an image are not the RGBA given.
+ **/
+std::size_t mismatches(const boost::shared_ptr<v3d::image::Image>& image, unsigned char red, unsigned char green,
+    unsigned char blue, unsigned char alpha) {
+    const unsigned char* pixels = image->data();
+    std::size_t count = 0;
+    const std::size_t texels = static_cast<std::size_t>(image->width()) * image->height();
+    for (std::size_t i = 0; i < texels; ++i) {
+        const unsigned char* texel = pixels + (i * 4);
+        if (texel[0] != red || texel[1] != green || texel[2] != blue || texel[3] != alpha) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+/**
+ * A capture holds the frame it was requested for, not the one before it.
+ *
+ * The first frame is cleared red and the captured one green. A copy taken before the frame is
+ * recorded would read the image as an earlier frame left it, which is red or undefined, never
+ * green.
+ **/
+BOOST_AUTO_TEST_CASE(window_renderer_capture_writes_the_frame_it_presents_test) {
+    const v3d::test::Windowed windowed;
+    const std::string path = "data_out/window_renderer_capture.png";
+    boost::filesystem::remove(path);
+
+    windowed.renderer->clearColour(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    windowed.renderer->renderFrame();
+
+    windowed.renderer->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
+    BOOST_REQUIRE(windowed.renderer->capture(path));
+    windowed.renderer->renderFrame();
+
+    v3d::image::reader::Png png(windowed.logger);
+    const boost::shared_ptr<v3d::image::Image> written = png.read(path);
+    BOOST_REQUIRE_MESSAGE(written != nullptr, "the frame wrote no readable " + path);
+    BOOST_TEST(written->width() > 0U);
+    BOOST_TEST(written->height() > 0U);
+    BOOST_TEST(mismatches(written, 0, 255, 0, 255) == 0U);
+    BOOST_TEST(windowed.silent());
+}
+
+/**
+ * A request is answered by one frame, and the frame after it writes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(window_renderer_capture_is_cleared_by_the_frame_that_writes_it_test) {
+    const v3d::test::Windowed windowed;
+    const std::string path = "data_out/window_renderer_capture_once.png";
+    boost::filesystem::remove(path);
+
+    BOOST_REQUIRE(windowed.renderer->capture(path));
+    windowed.renderer->renderFrame();
+    BOOST_REQUIRE(boost::filesystem::exists(path));
+
+    boost::filesystem::remove(path);
+    windowed.renderer->renderFrame();
+    BOOST_TEST(!boost::filesystem::exists(path));
+    BOOST_TEST(windowed.silent());
+}
+
+};  // namespace

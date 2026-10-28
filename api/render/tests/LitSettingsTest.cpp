@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(pack_puts_each_setting_where_the_shader_reads_it) {
     BOOST_CHECK_CLOSE(packed.thresholds.y, 0.8F, 0.0001F);
     BOOST_CHECK_CLOSE(packed.bands.x, 0.1F, 0.0001F);
     BOOST_CHECK_CLOSE(packed.bands.z, 0.9F, 0.0001F);
-    BOOST_CHECK(packed.lightViewProjection == light);
+    BOOST_CHECK(packed.lightViewProjection[0] == light);
     BOOST_CHECK_CLOSE(packed.shadow.x, 1.0F / 2048.0F, 0.0001F);
     BOOST_CHECK_CLOSE(packed.shadow.y, 0.75F, 0.0001F);
     BOOST_CHECK_CLOSE(packed.shadow.z, 0.03F, 0.0001F);

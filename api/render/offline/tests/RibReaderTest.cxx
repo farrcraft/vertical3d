@@ -5,13 +5,17 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/rib/Requests.h>
+#include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <cmath>
+#include <cstddef>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -115,6 +119,14 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         translate_ = glm::vec3(dx, dy, dz);
         counts_["Translate"]++;
     }
+    void coordinateSystem(const std::string & space) override {
+        spaces_.push_back("save " + space);
+        counts_["CoordinateSystem"]++;
+    }
+    void coordSysTransform(const std::string & space) override {
+        spaces_.push_back("use " + space);
+        counts_["CoordSysTransform"]++;
+    }
     void color(const glm::vec3 & value) override {
         color_ = value;
         counts_["Color"]++;
@@ -160,7 +172,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         counts_["PointsPolygons"]++;
     }
     void sphere(const v3d::render::offline::rib::Sphere & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)parameters;
+        colors_ = parameters.points("Cs");
         radius_ = request.radius;
         counts_["Sphere"]++;
     }
@@ -174,6 +186,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     std::vector<std::string> declared_;
     std::vector<std::string> lights_;
     std::vector<std::string> illuminated_;
+    std::vector<std::string> spaces_;
     std::vector<glm::vec3> background_;
     std::vector<float> bucket_;
     std::string texturePath_;
@@ -211,7 +224,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     int frame_ = 0;
 };
 
-bool read(const std::string & source, CountingHandler * handler, v3d::render::offline::rib::Reader * reader) {
+bool read(const std::string & source, v3d::render::offline::rib::Handler * handler, v3d::render::offline::rib::Reader * reader) {
     std::istringstream stream(source);
     return reader->read(stream, handler);
 }
@@ -480,6 +493,23 @@ BOOST_AUTO_TEST_CASE(ribreader_transform_convention_test) {
     BOOST_CHECK_EQUAL(moved.z, 4.0F);
 }
 
+/**
+ * CoordinateSystem and CoordSysTransform each take the name of a space, and reach the handler
+ * in the order the file gives them.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_coordinate_system_requests_test) {
+    CountingHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+
+    BOOST_REQUIRE(read(
+        "CoordinateSystem \"lamp\"\n"
+        "Translate 1 0 0\n"
+        "CoordSysTransform \"lamp\"\n", &handler, &reader));
+
+    BOOST_TEST(reader.unrecognised().empty());
+    BOOST_TEST(handler.spaces_ == std::vector<std::string>({ "save lamp", "use lamp" }), boost::test_tools::per_element());
+}
+
 BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
     CountingHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
@@ -498,6 +528,89 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
     BOOST_CHECK_EQUAL(handler.translate_.z, 3.0F);
     BOOST_CHECK_EQUAL(handler.identifier_, "myball");
     BOOST_CHECK_EQUAL(handler.radius_, 0.5F);
+}
+
+/**
+ * Takes the curves and the bases a reader hands it.
+ **/
+class CurveHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void basis(const v3d::render::offline::rib::Basis & request) override {
+        bases_.push_back(request);
+    }
+    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        curves_.push_back(request);
+        points_.push_back(parameters.floats("P").size() / 3);
+        widths_.push_back(parameters.floats("constantwidth"));
+    }
+    std::vector<v3d::render::offline::rib::Basis> bases_;
+    std::vector<v3d::render::offline::rib::Curves> curves_;
+    std::vector<std::size_t> points_;
+    std::vector<std::vector<float>> widths_;
+};
+
+/**
+ * A basis is a name RI defines or sixteen numbers, each followed by its step, and a curve is
+ * its type, its counts, its wrap and its parameters.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_basis_and_curves_test) {
+    CurveHandler handler;
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(read(
+        "Basis \"catmull-rom\" 1 [1 0 0 0  0 1 0 0  0 0 1 0  0 0 0 1] 4\n"
+        "Curves \"cubic\" [4 5] \"nonperiodic\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0  0 1 0 1 1 0 2 1 0 3 1 0 4 1 0]"
+        " \"constantwidth\" 0.1\n"
+        "Curves \"linear\" [3] \"periodic\" \"P\" [0 0 0 1 0 0 0 1 0]\n", &handler, &reader));
+
+    BOOST_REQUIRE_EQUAL(handler.bases_.size(), 1U);
+    v3d::render::offline::rib::Basis::Matrix catmullRom{};
+    BOOST_REQUIRE(v3d::render::offline::rib::namedBasis("catmull-rom", &catmullRom));
+    BOOST_CHECK((handler.bases_[0].u == catmullRom));
+    BOOST_CHECK_EQUAL(handler.bases_[0].ustep, 1U);
+    BOOST_CHECK_EQUAL(v3d::render::offline::rib::basisName(handler.bases_[0].v), "power");
+    BOOST_CHECK_EQUAL(handler.bases_[0].vstep, 4U);
+
+    BOOST_REQUIRE_EQUAL(handler.curves_.size(), 2U);
+    BOOST_CHECK(handler.curves_[0].cubic);
+    BOOST_CHECK(!handler.curves_[0].periodic);
+    BOOST_CHECK((handler.curves_[0].vertices == std::vector<unsigned int>{ 4, 5 }));
+    BOOST_CHECK_EQUAL(handler.points_[0], 9U);
+    BOOST_REQUIRE_EQUAL(handler.widths_[0].size(), 1U);
+    BOOST_CHECK_CLOSE(handler.widths_[0][0], 0.1F, 0.001F);
+    BOOST_CHECK(!handler.curves_[1].cubic);
+    BOOST_CHECK(handler.curves_[1].periodic);
+}
+
+/**
+ * A basis RI does not name, a step outside 1 to 4, and a curve type or wrap RI does not define
+ * are errors in the scene.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_bad_basis_and_curves_test) {
+    for (const char* source : { "Basis \"wobbly\" 1 \"bezier\" 3\n", "Basis \"bezier\" 3 \"bezier\" 5\n",
+        "Curves \"quintic\" [4] \"nonperiodic\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0]\n",
+        "Curves \"cubic\" [4] \"wrapped\" \"P\" [0 0 0 1 0 0 2 0 0 3 0 0]\n" }) {
+        CurveHandler handler;
+        v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+        BOOST_CHECK_MESSAGE(!read(source, &handler, &reader), source);
+        BOOST_CHECK(handler.curves_.empty());
+        BOOST_CHECK(handler.bases_.empty());
+    }
+}
+
+/**
+ * The name of each basis RI defines gives back its matrix, and the matrix its name.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_basis_names_test) {
+    for (const char* name : { "bezier", "b-spline", "catmull-rom", "hermite", "power" }) {
+        v3d::render::offline::rib::Basis::Matrix matrix{};
+        BOOST_REQUIRE(v3d::render::offline::rib::namedBasis(name, &matrix));
+        BOOST_CHECK_EQUAL(v3d::render::offline::rib::basisName(matrix), name);
+    }
+    v3d::render::offline::rib::Basis::Matrix matrix{};
+    BOOST_CHECK(v3d::render::offline::rib::namedBasis("bezier", &matrix));
+    BOOST_CHECK((matrix == v3d::render::offline::rib::Basis::BEZIER));
+    matrix[0] = 7;
+    BOOST_CHECK(v3d::render::offline::rib::basisName(matrix).empty());
 }
 
 /**
@@ -818,6 +931,27 @@ BOOST_AUTO_TEST_CASE(ribreader_counts_and_handles_out_of_range_test) {
     v3d::render::offline::rib::Reader second(boost::make_shared<v3d::log::Logger>());
     BOOST_CHECK(!read("Illuminate 1e39 1\n", &handler, &second));
     BOOST_CHECK(second.error().contains("expected a light handle"));
+}
+
+/**
+ * A quadric has four varying values, one at each corner of its parameter space, so a sphere's
+ * varying "Cs" holds four colours, and the reader does not warn that the array is the wrong
+ * length.
+ **/
+BOOST_AUTO_TEST_CASE(ribreader_a_sphere_reads_four_varying_values_test) {
+    CountingHandler handler;
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> heard = std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(16);
+    logger->get()->sinks().push_back(heard);
+    v3d::render::offline::rib::Reader reader(logger);
+    BOOST_REQUIRE(read("Sphere 1 -1 1 360 \"Cs\" [1 0 0  0 1 0  0 0 1  1 1 1]\n", &handler, &reader));
+    logger->get()->sinks().pop_back();
+
+    BOOST_CHECK_EQUAL(handler.count("Sphere"), 1U);
+    BOOST_CHECK_EQUAL(handler.colors_.size(), 4U);
+    for (const std::string & line : heard->last_formatted()) {
+        BOOST_CHECK_MESSAGE(!line.contains("carries"), line);
+    }
 }
 
 };  // namespace

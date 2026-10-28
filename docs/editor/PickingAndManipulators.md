@@ -6,21 +6,25 @@ selection.
 ## Picking
 
 A pick answers "what is under the cursor?" with a CPU ray cast against the meshes. No GPU work
-or readback is involved, so a pick is answered inside the click's event handler.
+or readback is involved, so a pick is answered inside the click's event handler. A camera or a
+light is picked by its glyph, the lines it is drawn with.
 
 `v3d::editor::Picker` builds a `v3d::type::geometry::Ray` with `Camera::ray()`, which
 unprojects the cursor at the near and far depths. It returns a `Picker::Hit`: whether anything
-was hit, the mesh's `Node` id, the kind of thing hit, and the component's index.
+was hit, the item's id, the kind of thing hit, and the component's index.
 
 What a click tests depends on the select mask:
 
 | Mask | Test | Winner |
 |---|---|---|
-| Object, Face | The ray against a triangle fan over each face | Nearest along the ray |
+| Object, Mesh, Face, on a mesh | The ray against a triangle fan over each face | Nearest along the ray |
 | Vertex, Edge | Each vertex or edge projected to the screen; within 5 pixels of the cursor counts | Nearest to the camera |
+| Vertex, Handle, on a curve | Each control point, or each Bezier handle, projected to the screen; within 5 pixels counts | Nearest to the camera |
+| Object, Light, Camera, on a light or a camera | Each segment of its glyph projected to the screen; within 5 pixels counts | Nearest to the camera |
 
-Vertices and edges are drawn one pixel wide and have no area, so they are found by screen
-distance instead of by the ray.
+Vertices, edges and glyphs are drawn one pixel wide and have no area, so they are found by
+screen distance instead of by the ray. A ray distance and a screen depth are compared as they
+are, so under the object mask a mesh and a glyph at one point compete on a rough footing.
 
 Rules the picker follows:
 
@@ -35,16 +39,31 @@ Rules the picker follows:
 - The view's camera matrices are rebuilt before the cast, so a pick does not depend on a frame
   having been drawn since the camera moved.
 
-**Select masks.** `SelectMask` is one of Object, Vertex, Edge or Face, and `SelectTool` holds
-it. Keys 5 to 8, the Select Mask menu and the select-mask toolbar all set it. Changing the mask
+**Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge, Face
+or Handle, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the
+select-mask toolbar sets the same four, and the Select Mask menu sets all nine. Changing the mask
 clears the component selection.
+
+- **Object, Mesh, Light, Camera and Curve select whole items.** Object takes every kind, and each
+  of the others takes only its own kind. A mask that does not take a kind never hits it, so a light
+  behind a mesh can be clicked under the light mask.
+- **Vertex, Edge and Face select the parts of meshes.** Vertex also selects the control points of
+  curves, of every type. Edge and Face select nothing on a curve.
+- **Handle selects the handles of Bezier curves**, and nothing else. A Bezier point's left and
+  right handles are selected apart from each other and from the point.
+
+**What a curve shows.** While the mask is Vertex or Handle, a selected curve item draws a small
+box at each control point, and the lines between a NURBS curve's points. While the view also
+shows handles, it draws a line from each Bezier point to each of its handles, with a box at the
+handle's end. `view::show::handle` therefore shows a curve's handles and a manipulator's together.
+A selected point or handle is drawn in the component colour.
 
 **What a click does.** `SelectTool` picks on the press, not the release.
 
 - An object must be selected before any of its parts can be. Component masks test every
-  selected mesh, so a component selection can span several objects.
-- In Object mode, a click on a mesh selects it and nothing else. A click on nothing clears the
-  whole selection.
+  selected mesh and curve, so a component selection can span several objects.
+- Under a mask that selects whole items, a click on an item it takes selects that item and
+  nothing else. A click on nothing clears the whole selection.
 - In a component mode, a click on a part selects it and clears every other part of every mesh.
   A click on a part that is already selected clears it along with the rest. A click on nothing
   clears the components and keeps the objects selected.
@@ -63,8 +82,10 @@ or edge pick uses:
 
 | Mask | Inside when |
 |---|---|
-| Object | Every corner of its bounding box projects inside |
+| Object, Mesh, on a mesh | Every corner of its bounding box projects inside |
+| Object, Light, Camera, on a light or a camera | Every point of its glyph projects inside |
 | Vertex | It projects inside |
+| Vertex, Handle, on a curve | The control point or the handle projects inside |
 | Edge | Both its ends project inside |
 | Face | Every vertex of its loop projects inside |
 
@@ -72,19 +93,80 @@ A band selects hidden parts, as a click does, because it tests geometry and not 
 behind the camera is never inside. The band is measured in the view where it started, and is
 drawn in the `ui` pass as a one-pixel outline in window pixels.
 
-**One button, three tools.** `Controller::drag()` routes the left button in this order:
+**One button, three tools.** `Pointer` routes the left button in this order:
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
-2. If a camera modifier (Alt or Ctrl) is held, the drag drives the camera. A release
-   with a modifier held still goes to `TransformTool` and `SelectTool` as well, so a handle drag
-   or a rubber band that a modifier pressed mid-way ends.
-3. Otherwise, if the cursor is on a manipulator handle, `TransformTool` takes the press.
-4. Otherwise `SelectTool` picks.
+2. A press on a divider between views moves the divider, and no tool sees it.
+3. Otherwise `ToolRouter` offers the press to the tools in turn, and the first that takes it has
+   the gesture until the release:
+   - `CameraControlTool` takes it while a camera move is in force, held by a modifier (Alt or
+     Ctrl) or latched from the Camera Manipulators menu.
+   - `TransformTool` takes it when the cursor is on a manipulator handle.
+   - `SelectTool` takes any press, and picks.
+
+A press is one tool's gesture from start to end. A modifier pressed in the middle of a handle
+drag or a rubber band does not start a camera move, and the release ends the gesture it began.
 
 The middle button drives the camera alone. Holding it turns the camera with the arcball, and
 letting it go ends the drag, whatever the left button is doing.
 
+### Driving a camera
+
+`CameraControlTool` drives the camera of the view a drag starts in. Its move is chosen two ways:
+
+- **Held.** `view::camera::dolly` (Left Alt), `view::camera::truck` (Left Ctrl) and
+  `view::camera::pan` (the middle button) last while they are held. `view::camera::zoom` is a
+  held command with no binding.
+- **Latched.** The Camera Manipulators menu's `camera::truck`, `dolly`, `zoom`, `pan` and `pitch`
+  latch a move, which lasts until the same item is chosen again or a transform mode is chosen.
+  The menu checks the latched move.
+
+A held move wins while it is held, and the latched one comes back when it is let go. Releasing
+a held move ends that move only.
+
+| Move | Perspective view | Orthographic view |
+|---|---|---|
+| Zoom | A drag right narrows the angle of view, from 1 to 170 degrees | A drag right shows less |
+| Dolly | A drag right moves the eye forward along the view | As zoom: the picture is the same from anywhere along the view |
+| Truck | Moves the eye sideways and up or down | The same, scaled to the view |
+| Pan | Turns the camera with an arcball | Nothing |
+| Pitch | A drag up turns the camera to look up | Nothing |
+
+An orthographic view is not turned, because the fixed views are orthographic and a turn would
+leave them showing something else.
+
 Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
+
+## Component selection
+
+**An item holds whether it is selected as a whole, and the scene holds which of its parts are.**
+`Scene::components()` is a `Components`. For each mesh item, by its `id()`, it holds the
+indices of its selected vertices, half edges and faces in the item's geometry. For each curve
+item it holds the numbers of its selected control points and handles. Neither `api/brep` nor
+`api/curve` holds a selection.
+
+- **A curve's parts are numbered across all of its curves.** Control points are numbered from
+  zero, the first curve's first, so a point's number is the count of points in the curves before
+  it plus its place in its own curve. A point has two handle numbers, twice its own for its left
+  handle and one more for its right, and only those of a Bezier point name a handle.
+  `CurveParts.h` converts between a number and the curve and point it names. Adding or removing
+  a curve renumbers the parts of every curve after it.
+
+- **The selection belongs to the item, not the mesh.** Two items that show one `BRep` select its
+  parts apart.
+- **An edge is selected when either of its halves is.** `Components::edge()` says so. A click
+  selects the half edge it hit.
+- **An index names whatever part holds it now.** A change to a mesh's numbering clears the
+  component selection of every item that shows the mesh, through
+  `Scene::deselectComponents(geometry)`, and an operation then selects what it means to leave
+  selected. A topology command's undo and redo clear it the same way.
+- **An operation on a mesh two items show runs once**, with the selection of the first selected
+  of them in scene order. The other items lose their component selection.
+- Removing an item, and clearing the scene, drop its parts. A document does not save the
+  selection.
+
+Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-item.md),
+[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)
 
 ## Manipulators
 
@@ -93,11 +175,15 @@ A manipulator is the set of handles that moves, turns or resizes the selected me
 `TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.
 
-**What the handles move follows the select mask.** `Target` holds it. In Object mode it is the
-selected objects, and a manipulator writes their transforms. In a component mode it is the
+**What the handles move follows the select mask.** `Target` holds it. Under a mask that selects
+whole items it is the selected items of the kinds the mask takes, and a manipulator writes their
+transforms. A light mask therefore moves the selected lights and leaves a selected mesh where it
+is. A camera or a light ignores its scale. In a component mode it is the
 distinct vertices of the selected components: one for a vertex, two for an edge, and the loop of
-a face. A vertex shared by two selected components moves once. A component target may span
-every selected object, and with no component selected there are no handles.
+a face. A vertex shared by two selected components moves once. On a curve it is the selected
+control points under Vertex, and the selected handles under Handle. A component target may span
+every selected object, meshes and curves together, and with no component selected there are no
+handles.
 
 **Moving components.** Each vertex is moved in world space, through its object's matrix, and
 written back in the object's own space. The object's transform does not change. Every face with a
@@ -105,12 +191,27 @@ moved corner gets its normal recomputed from its points, by Newell's method; a f
 area keeps the normal it had. A mask change ends a drag under way, and the change made so far is
 recorded.
 
+**Moving a curve's parts.** A control point moves in world space as a vertex does. A Bezier
+point carries its two handles with it, through the same motion, so a turn turns them about the
+pivot. The curve then places its automatic and vector handles again from the moved points. A
+moved handle is retyped:
+
+- A moved vector handle becomes free.
+- A moved automatic handle becomes aligned, and so does the point's other handle if it is
+  automatic.
+- When the moved handle and the other are both aligned, the other turns to the far side of the
+  point, in line, and keeps its length.
+
+The undo record holds every curve of each curve item it touched, whole, so undo restores a
+handle's type as well as its place. A move that would leave a curve that cannot be evaluated,
+such as one with a point at infinity, leaves that curve as it was.
+
 **Where the handles are.** Handles are drawn at the pivot: the mean of the selected objects'
-origins, or of the moved vertices in world space. For one object that is its own origin, where
-its transform pivots. Their length is a
-fixed number of pixels (90), converted to world units through the view. A handle therefore keeps
-its on-screen size at any distance. Handles are drawn in the handle pass, which has no depth
-test.
+origins, or of the moved vertices, control points and curve handles in world space. For one
+object that is its own origin, where its transform pivots. Their length is a fixed number of
+pixels (90), converted to world units through the `Screen` a manipulator is given: a view's
+camera and its region of the window. A handle therefore keeps its on-screen size at any
+distance. Handles are drawn in the handle pass, which has no depth test.
 
 **Moving a set.** Everything the target holds moves in one gesture, about the one pivot. A
 manipulator measures a `Motion` (an offset, a turn and a stretch) and the target applies it:
@@ -151,4 +252,5 @@ More rules:
 - Changing the mode ends any drag under way, and the change made so far is recorded for undo.
 
 Background: [ADR-0015](../adr/0015-editor-manipulators-edit-the-object-transform.md),
-[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md)
+[ADR-0096](../adr/0096-editor-handles-pivot-at-the-mean-of-the-selection.md),
+[ADR-0126](../adr/0126-editor-the-handle-mask-selects-bezier-curve-handles.md)

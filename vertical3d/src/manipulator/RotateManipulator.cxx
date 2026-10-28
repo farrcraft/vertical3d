@@ -6,10 +6,10 @@
 #include "RotateManipulator.h"
 
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/view/ViewPort.h>
 
 #include <cmath>
 
+#include "Screen.h"
 #include "Target.h"
 
 #include <boost/shared_ptr.hpp>
@@ -76,7 +76,7 @@ RotateManipulator::RotateManipulator() {
 /**
  **/
 float RotateManipulator::ringDistance(const Placement& placement, const glm::vec3& unit,
-    const ViewPort& view, const glm::vec2& cursor) {
+    const Screen& screen, const glm::vec2& cursor) {
     glm::vec3 first;
     glm::vec3 second;
     perpendiculars(unit, &first, &second);
@@ -91,7 +91,7 @@ float RotateManipulator::ringDistance(const Placement& placement, const glm::vec
             (first * std::cos(angle) + second * std::sin(angle)) * placement.size;
 
         glm::vec2 end;
-        if (!project(view, point, &end)) {
+        if (!project(screen, point, &end)) {
             started = false;
             continue;
         }
@@ -113,15 +113,15 @@ float RotateManipulator::ringDistance(const Placement& placement, const glm::vec
     return nearest;
 }
 
-bool RotateManipulator::grab(const Target& target, const ViewPort& view,
+bool RotateManipulator::grab(const Target& target, const Screen& screen,
     const glm::vec2& cursor, Axis* axis) const {
-    const Placement seat = placement(target, view);
+    const Placement seat = placement(target, screen);
     if (!seat.valid) {
         return false;
     }
 
     glm::vec2 root;
-    if (!project(view, seat.origin, &root)) {
+    if (!project(screen, seat.origin, &root)) {
         return false;
     }
 
@@ -136,7 +136,7 @@ bool RotateManipulator::grab(const Target& target, const ViewPort& view,
 
     // a ring is not one segment, so it is tested as the run of segments it is drawn as,
     // each with the base class's segment test
-    const glm::vec3 forward = basis(view).forward;
+    const glm::vec3 forward = basis(screen).forward;
 
     const Axis axes[3] = { Axis::X, Axis::Y, Axis::Z };
     bool found = false;
@@ -146,7 +146,7 @@ bool RotateManipulator::grab(const Target& target, const ViewPort& view,
         if (std::fabs(glm::dot(unit, forward)) < faceOn) {
             continue;
         }
-        const float distance = ringDistance(seat, unit, view, cursor);
+        const float distance = ringDistance(seat, unit, screen, cursor);
         if (distance < 0.0F) {
             continue;
         }
@@ -164,12 +164,12 @@ bool RotateManipulator::grab(const Target& target, const ViewPort& view,
 
 /**
  **/
-void RotateManipulator::draw(const Target& target, const ViewPort& view,
+void RotateManipulator::draw(const Target& target, const Screen& screen,
     v3d::render::realtime::canvas::Line* canvas) const {
     if (canvas == nullptr) {
         return;
     }
-    const Placement seat = placement(target, view);
+    const Placement seat = placement(target, screen);
     if (!seat.valid) {
         return;
     }
@@ -187,10 +187,10 @@ void RotateManipulator::draw(const Target& target, const ViewPort& view,
 
 /**
  **/
-float RotateManipulator::swept(const ViewPort& view, const Placement& placement, Axis axis,
+float RotateManipulator::swept(const Screen& screen, const Placement& placement, Axis axis,
     const glm::vec2& from, const glm::vec2& to) {
     glm::vec2 root;
-    if (!project(view, placement.origin, &root)) {
+    if (!project(screen, placement.origin, &root)) {
         return 0.0F;
     }
 
@@ -203,17 +203,17 @@ float RotateManipulator::swept(const ViewPort& view, const Placement& placement,
 
     const float angle = wrap(std::atan2(after.y, after.x) - std::atan2(before.y, before.x));
 
-    const glm::vec3 forward = basis(view).forward;
+    const glm::vec3 forward = basis(screen).forward;
     return glm::dot(direction(placement, axis), forward) > 0.0F ? -angle : angle;
 }
 
 /**
  **/
-bool RotateManipulator::measure(const Placement& seat, const ViewPort& view, const glm::vec2& from,
+bool RotateManipulator::measure(const Placement& seat, const Screen& screen, const glm::vec2& from,
     const glm::vec2& to, Motion* motion) const {
     glm::quat turn(1.0F, 0.0F, 0.0F, 0.0F);
     if (axis() == Axis::None) {
-        const Basis axes = basis(view);
+        const Basis axes = basis(screen);
         const glm::vec3& right = axes.right;
         const glm::vec3& up = axes.up;
         // negated, so the face nearest the viewer follows the cursor: a positive turn
@@ -222,7 +222,7 @@ bool RotateManipulator::measure(const Placement& seat, const ViewPort& view, con
         turn = glm::angleAxis(-delta.x * tumbleRate, up) * glm::angleAxis(-delta.y * tumbleRate, right);
     } else {
         const glm::vec3 unit = direction(seat, axis());
-        const float angle = swept(view, seat, axis(), from, to);
+        const float angle = swept(screen, seat, axis(), from, to);
         if (angle == 0.0F) {
             return false;
         }

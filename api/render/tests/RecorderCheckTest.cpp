@@ -4,7 +4,7 @@
  **/
 
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
+#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/vulkan/pipeline/Pipeline.h>
 
 #include <stdexcept>
@@ -12,7 +12,7 @@
 #include <boost/test/unit_test.hpp>
 
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::vulkan::frame::Recorder;
+using v3d::render::realtime::Recorder;
 using v3d::render::realtime::vulkan::pipeline::Pipeline;
 
 namespace {

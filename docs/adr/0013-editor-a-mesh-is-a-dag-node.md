@@ -1,6 +1,7 @@
 # ADR-0013: Editor: a mesh is a dag node
 
-**Status**: accepted
+**Status**: superseded
+**Superseded by**: ADR-0099
 **Date**: 2026-09-02
 **Documented in**: [editor/](../editor/README.md)
 

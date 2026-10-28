@@ -7,6 +7,7 @@
 
 #include "Result.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <sstream>
@@ -63,6 +64,7 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     messenger_(VK_NULL_HANDLE),
     logger_(logger),
     validating_(false),
+    portability_(false),
     errors_(0),
     warnings_(0) {
     requireExtensions(extensions);
@@ -77,15 +79,17 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
 
     // the layer and the extension that carries its messages are both optional. A machine
     // without the SDK installed has neither, and still runs
-    validating_ = hasValidationLayer() && hasExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    const std::vector<std::string> available = offered();
+    validating_ = hasValidationLayer() &&
+        std::find(available.begin(), available.end(), VK_EXT_DEBUG_UTILS_EXTENSION_NAME) != available.end();
 
-    std::vector<const char*> enabled(extensions);
-    if (validating_) {
-        enabled.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
+    const Enabling enabling = enable(extensions, available, validating_);
+    const std::vector<const char*>& enabled = enabling.extensions;
+    portability_ = enabling.portability;
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.flags = enabling.flags;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(enabled.size());
     createInfo.ppEnabledExtensionNames = enabled.empty() ? nullptr : enabled.data();
@@ -97,8 +101,8 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     const VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
     check(result, "Unable to create vulkan instance");
 
-    logger_->get()->info("Created vulkan instance with {} extension(s), validation {}",
-        enabled.size(), validating_ ? "on" : "off");
+    logger_->get()->info("Created vulkan instance with {} extension(s), validation {}, portability enumeration {}",
+        enabled.size(), validating_ ? "on" : "off", portability_ ? "on" : "off");
 
     createMessenger();
 }
@@ -211,23 +215,46 @@ bool Instance::hasValidationLayer() {
 
 /**
  **/
-bool Instance::hasExtension(const char* extension) {
+std::vector<std::string> Instance::offered() {
+    std::vector<std::string> names;
     uint32_t count = 0;
     if (vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr) != VK_SUCCESS || count == 0) {
-        return false;
+        return names;
     }
 
     std::vector<VkExtensionProperties> available(count);
     if (vkEnumerateInstanceExtensionProperties(nullptr, &count, available.data()) != VK_SUCCESS) {
-        return false;
+        return names;
     }
-
     for (const VkExtensionProperties& candidate : available) {
-        if (std::strcmp(candidate.extensionName, extension) == 0) {
-            return true;
-        }
+        names.emplace_back(candidate.extensionName);
     }
-    return false;
+    return names;
+}
+
+/**
+ **/
+Instance::Enabling Instance::enable(const std::vector<const char*>& requested, const std::vector<std::string>& offered,
+    bool validating) {
+    Enabling enabling;
+    enabling.extensions = requested;
+    if (validating) {
+        enabling.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    // asked for only where the loader offers it, because an older loader will not create an
+    // instance with an extension it does not recognise
+    if (std::find(offered.begin(), offered.end(), VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != offered.end()) {
+        enabling.extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        enabling.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        enabling.portability = true;
+    }
+    return enabling;
+}
+
+/**
+ **/
+bool Instance::portability() const noexcept {
+    return portability_;
 }
 
 /**

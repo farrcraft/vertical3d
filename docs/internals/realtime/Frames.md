@@ -43,7 +43,13 @@ the wait, or a frame abandoned because recording threw, leaves nothing waiting o
   a non-linear sRGB colour space; otherwise a 32-bit `UNORM` format (`B8G8R8A8` or `R8G8B8A8`);
   otherwise the first offered. A missed preference logs a warning. The function needs no device
   and has a unit test.
-- The present mode is mailbox where offered, otherwise FIFO.
+- `choosePresentMode(modes, wanted)` takes the request's mode where the surface offers it and
+  falls back as `Present` describes, ending at FIFO, which every implementation offers. It needs no
+  device and has a unit test. `granted()` maps the chosen mode back to the request it answers, and
+  `presenting()` holds that for the last build. The default request, `Uncapped`, is mailbox.
+- `request(present)` changes the mode the next build asks for. `WindowContext::present()` calls
+  it and then `resize()`. `WindowRenderer::present()` holds a change made after `initialize()`
+  until the start of the next `renderFrame()`, which applies it and drops that frame.
 - The images have `COLOR_ATTACHMENT` usage, plus `TRANSFER_SRC` where the surface's
   `supportedUsageFlags` include it. `copyable()` reports which.
 - `recreate()` waits for the device to go idle, then rebuilds with the same requested format.
@@ -54,29 +60,31 @@ the wait, or a frame abandoned because recording threw, leaves nothing waiting o
 the only reliable trigger: a resize event can arrive before or after the driver notices, and on
 some drivers not at all. `VK_SUBOPTIMAL_KHR` counts too: that frame is still drawn and presented,
 and the chain is rebuilt before the next one. `Presenter` never recreates the chain itself; the
-caller (`Context3D::resize()`) rebuilds it and calls `Presenter::reset()`, since a new chain can
+caller (`WindowContext::resize()`) rebuilds it and calls `Presenter::reset()`, since a new chain can
 hold a different number of images.
 
-### What `Engine3D::renderFrame()` does
+### What `WindowRenderer::renderFrame()` does
 
-1. `Presenter::acquire()` waits on the frame's fence, acquires the next image, and begins the
+1. A present mode asked for since the last frame is applied through `WindowContext::present()`, and
+   the frame is dropped.
+2. `Presenter::acquire()` waits on the frame's fence, acquires the next image, and begins the
    command buffer. `OutOfDate` rebuilds the chain and drops the frame. `Skip` rebuilds the chain
    if the window has an area again, and drops the frame.
-2. It fills a `Recorder::Target` with the swapchain image, view, extent and format, plus the
+3. It fills a `Recorder::Target` with the swapchain image, view, extent and format, plus the
    context's depth buffer if any pass on the swapchain tests depth.
-3. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
-4. `Recorder::record()` records every pass.
-5. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
+4. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
+5. `Recorder::record()` records every pass.
+6. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
    `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
    instead, since `Capture` throws for it.
-6. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
-7. With a capture recorded, `Ring::waitIdle()` waits for the submit and `Capture::write()` writes
+7. `Presenter::present()` ends the buffer, submits it with `vkQueueSubmit2`, and presents.
+8. With a capture recorded, `Ring::waitIdle()` waits for the submit and `Capture::write()` writes
    the file, and the request is cleared whether or not the write succeeded. The submit stands
    when presenting reports the chain out of date, so the file is written in that case too.
-8. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
-9. `Frame::reset()` drops every pass's items.
+9. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
+10. `Frame::reset()` drops every pass's items.
 
-A frame dropped at step 1 never reaches step 5, so a capture request waits for a frame that
+A frame dropped at step 1 or 2 never reaches step 6, so a capture request waits for a frame that
 presents.
 
 `beginFrame()` calls `renderFrame()` itself when the window has no area, so a minimized app still
@@ -84,7 +92,7 @@ turns the loop over.
 
 ## Recording a frame
 
-`vulkan::frame::Recorder` is the only code that writes draw commands into a command buffer.
+`Recorder` is the only code that writes draw commands into a command buffer.
 
 `Recorder::record(commands, frame, target, resources, uniforms, timings)`:
 
@@ -182,10 +190,10 @@ pass of the frame that writes the target uses depth, whichever passes are first 
 **GPU timings.** The ring owns a `vulkan::frame::Timings`: a timestamp query pool per slot, with
 room for 64 spans a frame. `Ring::begin()` reads what the slot timed on its last use (its fence has
 signalled, so this never waits) and resets the queries in the new command buffer. The recorder
-writes a timestamp either side of every pass, under the pass name. `Engine3D::timings()` therefore
-reports the frame that is as old as the ring is deep. A caller recording its own commands into the
-ring's buffer may `open()` and `close()` spans of its own; spans do not nest. A graphics family
-with zero `timestampValidBits` leaves timings off, and every call does nothing.
+writes a timestamp either side of every pass, under the pass name. `WindowRenderer::timings()`
+therefore reports the frame that is as old as the ring is deep. A caller recording its own
+commands into the ring's buffer may `open()` and `close()` spans of its own; spans do not nest.
+A graphics family with zero `timestampValidBits` leaves timings off, and every call does nothing.
 
 **CPU statistics.** `engine::Statistics::scope(name)` times a span of the frame on the CPU into
 its own row, and `ui::shell::StatisticsOverlay` draws a line per span it is given.

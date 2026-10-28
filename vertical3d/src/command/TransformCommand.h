@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Item.h>
 
 #include <string>
 #include <vector>
@@ -18,21 +18,21 @@
 namespace v3d::editor {
 
 /**
- * One gesture of a manipulator: where each mesh it moved was when the handle was grabbed,
+ * One gesture of a manipulator: where each item it moved was when the handle was grabbed,
  * and where it was when the handle was let go.
  *
  * The drag is applied one motion event at a time while it happens, so by the time the
  * command is made the change is already done. The command records the placements at both
- * ends of the gesture rather than the offset. A gesture on several meshes is one command,
+ * ends of the gesture rather than the offset. A gesture on several items is one command,
  * so one undo puts them all back.
  **/
 class TransformCommand final : public Command {
  public:
-    /** One mesh, where it was before the change, and where it is after it. **/
+    /** One item, where it was before the change, and where it is after it. **/
     struct Change {
-        boost::shared_ptr<v3d::brep::BRep> mesh;
-        Placement before;
-        Placement after;
+        boost::shared_ptr<Item> item;
+        v3d::type::Transform before;
+        v3d::type::Transform after;
     };
 
     /**

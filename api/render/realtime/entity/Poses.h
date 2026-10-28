@@ -62,7 +62,7 @@ class Poses final {
  *
  * Called once a frame, before Lit::scene(), while the frame is built.
  *
- * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
+ * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
  **/
 Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& meshes);
 

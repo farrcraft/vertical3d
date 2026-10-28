@@ -1,0 +1,115 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/Resources.h>
+
+#include <vulkan/vulkan.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
+namespace v3d::render::realtime::renderer {
+
+/**
+ * A pass over the whole of a target, one fragment per pixel. A triangle covers the target, and
+ * the caller's fragment stage reads images bound at set 1. A colour grade is one, and so is any
+ * other post pass, such as a blur, a tone map or a vignette.
+ *
+ * The images are the source, named as a material, so the item binds them the way any draw
+ * binds a texture. Set 0 is declared, as every pipeline in the engine declares it, and need
+ * not be read. The pass that draws it must name what it samples in Pass::reads(), so the
+ * frame records whatever drew them first.
+ **/
+class FullScreen final {
+ public:
+    /**
+     * What one full-screen pipeline is.
+     **/
+    struct Spec final {
+        std::string name;
+        std::vector<uint32_t> fragment;  /**< SPIR-V. It reads uv at location 0 **/
+        uint32_t sources = 1;            /**< combined image samplers at set 1, bindings 0 upwards **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;  /**< what the pass draws into **/
+        /**
+         * The depth format of the pass it is drawn in, which it neither tests nor writes but is
+         * still built against, or undefined for a pass with no depth.
+         **/
+        VkFormat depth = VK_FORMAT_UNDEFINED;
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring and frame uniforms the
+     *        pipeline is built on
+     * @throw std::runtime_error if the pipeline cannot be built, or names no source
+     **/
+    FullScreen(const DeviceContext& context, const Spec& spec);
+
+    FullScreen(const FullScreen&) = delete;
+    FullScreen& operator=(const FullScreen&) = delete;
+
+    /**
+     * Bind images as a source, each read through the sampler it was registered with. A depth
+     * image is bound in DEPTH_READ_ONLY_OPTIMAL, the layout Recorder leaves a sampled depth
+     * image in.
+     *
+     * A source names its images as they are now. After a target is resized or a texture is
+     * released, make a new source, because the old one is not updated. Release a source before
+     * the FullScreen is destroyed, because its set comes from the FullScreen's pool.
+     *
+     * @param textures one per binding the spec declared, in binding order
+     * @return the material an item names
+     * @throw std::runtime_error if the count is wrong or a handle names nothing
+     **/
+    MaterialHandle source(const std::vector<TextureHandle>& textures);
+
+    /**
+     * Release a source. Its set goes back to the pool through the Ring once no frame can read
+     * it.
+     *
+     * @return whether there was anything to release
+     **/
+    bool release(const MaterialHandle& source);
+
+    /**
+     * @return the one draw that covers the pass, reading the source given
+     **/
+    DrawItem item(const MaterialHandle& source) const;
+
+    /**
+     * Submit item() into a pass.
+     **/
+    void submit(const MaterialHandle& source, Pass* pass) const;
+
+    /**
+     * @return the pipeline
+     **/
+    PipelineHandle pipeline() const noexcept;
+
+ private:
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::pipeline::DescriptorPool> sources_;
+    uint32_t count_;
+    PipelineHandle pipeline_;
+};
+
+};  // namespace v3d::render::realtime::renderer

@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-09-06
-**Documented in**: [api/ui/Mouse.md](../api/ui/Mouse.md), [internals/UserInterface.md](../internals/UserInterface.md)
+**Documented in**: [api/ui/Mouse.md](../api/ui/Mouse.md), [internals/ui/Input.md](../internals/ui/Input.md)
 
 ## Context
 

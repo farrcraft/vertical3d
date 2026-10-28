@@ -79,6 +79,60 @@
                   ]
                 },
                 {
+                  "label": "Light",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Point",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::point"
+                    },
+                    {
+                      "label": "Distant",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::distant"
+                    },
+                    {
+                      "label": "Spot",
+                      "type": "action",
+                      "context": "create",
+                      "command": "light::spot"
+                    }
+                  ]
+                },
+                {
+                  "label": "Curve",
+                  "type": "submenu",
+                  "items": [
+                    {
+                      "label": "Bezier",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::bezier"
+                    },
+                    {
+                      "label": "NURBS",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::nurbs"
+                    },
+                    {
+                      "label": "Catmull-Rom",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::catmull_rom"
+                    },
+                    {
+                      "label": "Poly",
+                      "type": "action",
+                      "context": "create",
+                      "command": "curve::poly"
+                    }
+                  ]
+                },
+                {
                   "label": "Group",
                   "type": "action",
                   "context": "create",
@@ -370,31 +424,31 @@
               "items": [
                 {
                   "label": "Truck",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "truck"
                 },
                 {
                   "label": "Dolly",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "dolly"
                 },
                 {
                   "label": "Zoom",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "zoom"
                 },
                 {
                   "label": "Pan",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "pan"
                 },
                 {
                   "label": "Pitch",
-                  "type": "action",
+                  "type": "check",
                   "context": "camera",
                   "command": "pitch"
                 }
@@ -497,28 +551,16 @@
                   "type": "submenu",
                   "items": [
                     {
-                      "label": "lwo",
+                      "label": "glTF",
                       "type": "action",
                       "context": "project",
-                      "command": "import::lwo"
+                      "command": "import::gltf"
                     },
                     {
-                      "label": "dxf",
+                      "label": "USD",
                       "type": "action",
                       "context": "project",
-                      "command": "import::dxf"
-                    },
-                    {
-                      "label": "3ds",
-                      "type": "action",
-                      "context": "project",
-                      "command": "import::3ds"
-                    },
-                    {
-                      "label": "milkshape",
-                      "type": "action",
-                      "context": "project",
-                      "command": "import::milkshape"
+                      "command": "import::usd"
                     }
                   ]
                 },
@@ -771,6 +813,83 @@
                     { "type": "button", "name": "answer0", "label": "", "context": "project", "command": "prompt::answer0" },
                     { "type": "button", "name": "answer1", "label": "", "context": "project", "command": "prompt::answer1" },
                     { "type": "button", "name": "answer2", "label": "", "context": "project", "command": "prompt::answer2" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "render-view",
+      "visible": false,
+      "components": [
+        {
+          "type": "panel",
+          "name": "renderPanel",
+          "pickable": true,
+          "position": ["52%", "10%"],
+          "size": [520, 470],
+          "children": [
+            {
+              "type": "vbox",
+              "name": "renderColumn",
+              "position": [12, 12],
+              "size": [496, 446],
+              "spacing": 8,
+              "children": [
+                { "type": "label", "name": "renderStatus", "label": "" },
+                { "type": "icon", "name": "renderPicture", "source": "render-picture", "size": [496, 372] },
+                {
+                  "type": "hbox",
+                  "name": "renderButtons",
+                  "spacing": 8,
+                  "children": [
+                    { "type": "button", "name": "renderAgain", "label": "Render", "context": "render", "command": "view" },
+                    { "type": "button", "name": "renderStop", "label": "Stop", "context": "render", "command": "stop" },
+                    { "type": "button", "name": "renderClose", "label": "Close", "context": "render", "command": "close" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "render-settings",
+      "visible": false,
+      "components": [
+        {
+          "type": "panel",
+          "name": "settingsPanel",
+          "pickable": true,
+          "position": ["35%", "20%"],
+          "size": [360, 330],
+          "children": [
+            {
+              "type": "vbox",
+              "name": "settingsColumn",
+              "position": [12, 12],
+              "size": [336, 306],
+              "spacing": 6,
+              "stretch": true,
+              "children": [
+                { "type": "label", "name": "settingsWidthLabel", "label": "Width" },
+                { "type": "textbox", "name": "settingsWidth", "placeholder": "pixels" },
+                { "type": "label", "name": "settingsHeightLabel", "label": "Height" },
+                { "type": "textbox", "name": "settingsHeight", "placeholder": "pixels" },
+                { "type": "label", "name": "settingsSamplesLabel", "label": "Samples along each side of a pixel" },
+                { "type": "textbox", "name": "settingsSamples", "placeholder": "1 to 16" },
+                { "type": "list", "name": "settingsHider", "size": ["100%", 48], "items": ["hidden", "raytrace"] },
+                {
+                  "type": "hbox",
+                  "name": "settingsButtons",
+                  "spacing": 8,
+                  "children": [
+                    { "type": "button", "name": "settingsApply", "label": "Apply", "context": "render", "command": "settings::apply" },
+                    { "type": "button", "name": "settingsCancel", "label": "Cancel", "context": "render", "command": "settings::cancel" }
                   ]
                 }
               ]

@@ -1,0 +1,499 @@
+# Editor Scene — Cameras, Lights, Groups, Shading, Import, Render and Playback
+
+Drafted 2026-10-24 against `ab4bdea1`. This plan takes the six editor groups in
+[TODO.md](../../TODO.md#editor). When it closes, every one of the menu's 85 commands has a handler.
+The scene holds cameras, lights and groups as well as meshes. The views draw shaded as well as
+in wireframe, a project imports glTF, the Render menu renders the scene with moya, and the
+timeline keys and plays back transforms.
+
+The editor is described in [editor/](../../editor/README.md). It edits half-edge meshes
+(`brep::BRep`) in a `Scene`, records each completed change as a `Command` on a `CommandStack`,
+and draws lines only.
+
+Each entry this plan takes stays in TODO.md until the step that does it lands, and is then
+deleted there. A step with a testable CPU half brings test cases with it.
+
+## What the survey found
+
+The tree was read at `ab4bdea1`. Line numbers are from that commit, under `vertical3d/` unless
+another directory is named. The Reshaping plan has since moved the editor's sources into
+directories by layer, folded `api/dag` into `Item`, and moved animation out of `api/type`, so
+the paths below are where things were. The open steps name where things are now.
+
+**The scene:**
+
+* **The scene is a flat list of meshes.** `Scene` holds a `std::vector` of `brep::BRep`
+  (`src/scene/Scene.h:84`), and `SceneVisitor` has one `visit(shared_ptr<BRep>)`
+  (`src/scene/SceneVisitor.h:10-23`).
+* **`api/dag` is two small classes.** `Node` gives an id (`api/dag/Node.h:15-28`) and `Transform`
+  holds a local translation, rotation and scale (`api/dag/Transform.h:51-83`). There are no
+  parent links and no world matrix. ADR-0013 rejected a full scene graph, and names grouping as
+  the point to revisit it.
+* **Everything that reads the scene is typed on `BRep`:** `Picker` (`src/tool/Picker.h:34`),
+  `Target::mesh` (`src/manipulator/Target.h:57`), `CreateCommand`
+  (`src/command/CreateCommand.h:32`), `Scene::selection()` (`src/scene/Scene.h:54`), `Project`,
+  and `RIBExportVisitor::visit` (`src/scene/RIBExportVisitor.h:55`).
+* **`ViewPort` already has `SHOW_CAMERA` and `SHOW_LIGHT`** (`src/view/ViewPort.h:40-44`). They
+  have no command because nothing draws either (`src/Controller.cxx:318-319`).
+* **`SelectMask` has four values**, `Object`, `Vertex`, `Edge` and `Face`
+  (`src/tool/SelectMask.h:20-24`). The menu also offers curve, mesh, light, camera and handle.
+
+**The project file:**
+
+* **`Project::VERSION` is 1** (`src/scene/Project.cxx:271`), read through `asset::readForward`
+  with an empty migration chain (`Project.cxx:311-324`). The file holds meshes only, and no ids
+  (`docs/editor/Files.md:9-26`). A read is all or nothing (`Project.cxx:331-345`).
+
+**Drawing:**
+
+* **A mesh is drawn as lines, every frame, on the CPU.** `WireframeVisitor` appends each edge to
+  a line canvas (`src/view/ViewPort.cxx:131`). No mesh becomes GPU geometry.
+* **`api/render/realtime` has a lit pass that no app uses.** `MeshRegistry` uploads a
+  `type::Model` (`api/render/realtime/MeshRegistry.h:177`) and `renderer::Lit` draws it
+  (`renderer/Lit.h:49`). Lit is cel shading with fixed cull and polygon modes, and needs
+  an sRGB target. `pipeline::Builder` can set both modes (`vulkan/pipeline/Builder.h:92,98`).
+  `WindowRenderer::context()` gives an app the device context to build its own pass.
+* **BRep faces wind clockwise from outside**, and Lit and glTF expect counter-clockwise.
+
+**Import:**
+
+* **The menu's importers are LightWave, DXF, 3DS and MilkShape** (`data/vgui.json:503-521`).
+  Nothing in the tree reads any of them. glTF is the only mesh format the api reads, and the
+  menu has no item for it.
+* **The glTF loader flattens a scene** into one indexed triangle list in world space
+  (`api/asset/media/loader/Gltf.cpp:182-184`).
+* **`BRep::addFace` welds by exact float equality with a linear scan**, and pairs edges with a
+  linear search (`api/brep/BRep.cxx:52-107`). Building a large mesh face by face is quadratic.
+
+**Rendering:**
+
+* **The RIB export writes the active view's camera and the meshes**, and no lights, materials or
+  `Display` (`src/scene/RIBExportVisitor.cxx:39-112`). It writes `export.rib` beside the
+  executable (`src/Controller.cxx:482`).
+* **moya is both a library and an executable.** `v3dlib_moya` (`moya/libmoya/CMakeLists.txt`)
+  and `moya/moya/moya.cxx`, which reads a RIB file and writes the picture at `RiWorldEnd`. It
+  takes `LightSource` and `AreaLightSource`.
+
+**Time:**
+
+* **The editor has no `simulate()` or `tick()`** (`src/Controller.h:58-109`), and nothing in the
+  editor or `api/brep` keeps a time.
+* **`api/type/animation` keys joints for skins**: `Channel`, `Clip`, `Pose`, `Clock` and
+  `Track<T>`. `Track<glm::vec3>` is the nearest fit for keying a whole object.
+
+**Cameras:**
+
+* **The `camera::*` items are a menu, "Camera Manipulators"** (`data/vgui.json:369-399`), not a
+  toolbar. They name truck, dolly, zoom, pan and pitch. The working camera's moves are held
+  commands under `view::camera::*` (`src/Controller.cxx:335-347`), and `CameraControlTool` has
+  zoom, truck and pan only (`src/tool/CameraControlTool.h:31-36`).
+
+## The 45 commands
+
+| Group | Commands | Step |
+|---|---|---|
+| Show | `view::show::light`, `view::show::camera` | 4 |
+| Select masks | `select::mask::mesh`, `light`, `camera` (step 4), `curve` (step 13), `handle` (step 14) | 4, 13, 14 |
+| Scene cameras and groups | `create::ortho::camera`, `create::perspective::camera` (step 4), `create::group` (step 9) | 4, 9 |
+| Camera Manipulators | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | 5 |
+| Shading | `view::shade::flat`, `smooth`; `view::cull::none`, `front`, `back`, `both`; `view::rendermode::front::*`, `back::*` (points, lines, fill) | 6 |
+| Import | `project::import::lwo`, `dxf`, `3ds`, `milkshape`, replaced by `gltf` and `usd` | 7 |
+| Render | `render::settings`, `render::view`, `render::batch` | 8 |
+| Timeline | `timeline::set`, `timeline::playback::*` (ten) | 10 |
+
+The curve and handle masks need kinds of item the editor does not have. Steps 13 and 14 build
+them.
+
+## Decisions
+
+| Decision | Step |
+|---|---|
+| Editor: what a scene item is, and how the scene holds kinds other than meshes. Decided in ADR-0099, which supersedes ADR-0013. | 1 |
+| Editor: how a project is laid out on disk. Decided in ADR-0100: a directory with a manifest. | 2 |
+| Editor: what a scene document is. Decided in ADR-0101, which supersedes ADR-0018: a SQLite database, saved incrementally, with autosave to a separate recovery database. | 2 |
+| Editor: how records are encoded and versioned. Decided in ADR-0102: typed columns for the core, JSON payloads, a schema version and a version per record type. | 2 |
+| Editor: how a saved record refers to an item. Decided in ADR-0103: a persistent document id. | 2 |
+| Editor: where hierarchy lives, in `api/dag` or in the editor, and how a world matrix is composed. Decided in ADR-0104, which amends ADR-0099: the scene holds the links and evaluates every placement. | 9 |
+| Editor: how the editor renders with moya, by linking `v3dlib_moya` or by running `moya.exe`. Decided in ADR-0106: a renderer interface for interactive renders, with moya linked behind it, and `moya.exe` for batches. | 8 |
+| Editor: which import formats the menu offers, and what an import makes. Decided in ADR-0122: glTF and USD, each read as a scene of items. | 7 |
+| Interchange: where the readers live. Decided in ADR-0123: a neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in `v3dlib_interchange_usd`. | 7 |
+| Editor: what a curve is, and whether it is a kind of item. Decided in ADR-0124: an item holding curves from an api library, each with its own type. | 13 |
+| Offline: whether moya renders curves. Decided in ADR-0125: as ribbons under both hiders. | 13 |
+| Editor: what a handle is. Decided in ADR-0126, which amends ADR-0121: a Bezier curve's handle, a part of a curve item. | 14 |
+| Editor: what the editor animates, and how a key is stored. Decided in ADR-0105: a scalar curve per numeric property, keyed on frames. | 10 |
+
+## What blocks what
+
+- **Step 1 blocks steps 2, 3, 4 and 9.** Every kind other than a mesh needs a scene item to be.
+  Step 1 is closed.
+- **Step 2 goes with step 1.** A scene that holds a camera has to save one.
+- **Step 11 needs step 2**, and gives step 6 the revision it re-uploads by. **Step 12 needs
+  step 11**, so that an autosave writes only what changed.
+- **Step 3 comes before step 4's show toggles**, so that a toggle changes what is drawn.
+- **Step 7 needs the builder in step 7's first half** before any importer can make a mesh. Step 7
+  is closed.
+- **Step 8 works on today's export.** It renders better after step 4, which gives the export
+  lights and a scene camera to render from.
+- **Step 9 needs step 1, and touches picking, the manipulators, the export and the file.** Step 9
+  is closed.
+- **Step 10 needs its ADR, and is best last**, so that a group and a camera can be keyed.
+- **Step 13 needs step 1**, and is closed. **Step 14 needs its ADR**, which decided it needs
+  step 13's curves. Step 14 is closed.
+- **Step 5 is independent** of everything else, and can land at any point. Step 6 needs only
+  step 11.
+
+## Steps
+
+### Step 1 — A scene of items
+
+**Closed.** ADR-0099 decided it, and supersedes ADR-0013. It weighed a variant of the kinds, a
+`dag::Node` found by cast, and a list per kind, against an editor base class.
+
+- `editor::Item` is a `dag::Node` and a `dag::Transform` with the object selection flag.
+  `Mesh`, `Camera` and `Light` derive from it, and `as<T>()` casts by the item's kind.
+- `brep::BRep` is geometry alone. It lost its `dag` bases and its object flag, `v3dlib_brep` no
+  longer links `v3dlib_dag`, and a `BRep` can be copied. A `Mesh` holds a shared `BRep`, so two
+  items can share one, and a modelling operation runs once on a shared mesh.
+- `Scene` holds items of every kind in one list. `selection()` returns items, `selected<T>()`
+  the items of one kind, `item()` any kind, and `mesh()` a mesh.
+- `SceneVisitor` has a pure `visit` per kind. `Picker`, `WireframeVisitor`, `RIBExportVisitor`
+  and the project writer do nothing with a camera or a light until steps 2 to 4.
+- `CreateCommand` and `TransformCommand` take any item, and an object `Target` holds items, so
+  step 4's cameras and lights move and undo through the code that moves a mesh.
+- No visible change. The editor suite's cases changed with the types, since a mesh is now an
+  item that holds geometry, and kept what they check. `ItemTest` and `SceneTest` cover the
+  kinds, the casts, shared geometry and the order across kinds.
+
+### Step 2 — The project store
+
+**Closed.** ADR-0100 to ADR-0103 decided it, after weighing JSON, a JSON document with binary
+chunks, LMDB, LevelDB, a file format of our own, glTF and USD, and FlatBuffers and Cap'n Proto
+for the payloads. The JSON project file is gone, and a project written by an earlier build is not
+read.
+
+- A new api library, `v3dlib_database`, wraps SQLite: a connection, statements, transactions and
+  the two pragmas a document carries. No other library or app includes SQLite.
+- A project is a directory: `project.json`, a manifest written atomically, and the `scenes`,
+  `assets`, `cache`, `renders` and `autosave` directories. The manifest names the scenes, and
+  the editor opens the first.
+- A scene document is a database with an application id, a schema version, an `items` table of
+  typed core columns and a JSON payload, and a `buffers` table of blobs. A mesh's topology is
+  three blobs.
+- Every item has a document id, assigned by the scene and never reused within a document.
+- A save writes the whole scene in one transaction. A read is all or nothing, and refuses a
+  newer schema, a newer record type, an unknown kind and a database another program wrote.
+- Open picks a project's manifest, and Save As makes a new project directory.
+- Tests: a scene of every kind round-trips, in order and with its ids. A malformed light, a
+  newer type, a newer schema and a foreign database each fail the whole read and leave the scene
+  alone. A failed save leaves the last save whole. The manifest round-trips.
+- What landed matches the list above. A payload must hold exactly the fields its version
+  defines, so any change to what a kind stores is a new version of the kind. An older build
+  then refuses a newer document rather than dropping what it cannot read. The store writes each mesh
+  item's geometry in full, so two items that share a `BRep` read back with a copy each. Nothing
+  makes such items yet, and TODO.md holds the work.
+
+### Step 3 — Cameras and lights drawn
+
+**Closed.** A camera item draws as a frustum glyph and a light item as a glyph by its type, in
+lines, through the existing line canvas. A light is a point, distant or spot light, matching the
+standard RI lights moya reads.
+
+- `src/scene/Glyphs.h` describes each glyph in its item's own space, one unit long along +z.
+  `WireframeVisitor` draws them through the item's translation and rotation, and takes which
+  kinds to draw from the view's flags.
+- `SHOW_CAMERA` and `SHOW_LIGHT` start on. Their toggles, `view::show::camera` and
+  `view::show::light`, landed here rather than in step 4, because once the glyphs draw a toggle
+  changes what is drawn.
+- Tests: each glyph's shape for every projection and light type, its placement without the
+  item's scale, the colour of a selected item, and each flag leaving its kind out.
+
+### Step 4 — Cameras and lights in the scene
+
+**Closed.** `create::ortho::camera` and `create::perspective::camera` add a camera at the view's
+eye, facing the way it looks, through the command stack. Create > Light gives `light::point`,
+`light::distant` and `light::spot`, which add a light the same way.
+
+- `SelectMask` gained `Mesh`, `Light` and `Camera`. Object takes every kind, and each of the
+  three takes only its own. The picker hits a camera or a light by its glyph, by screen distance,
+  and a band holds one when its whole glyph is inside. A target under one of the three moves only
+  its kind.
+- The Curve and Handle masks stay in the menu with no handler, and steps 13 and 14 build them.
+- The RIB export writes each light as a `LightSource` of RI's standard shader, before every mesh.
+  It renders from the selected camera when exactly one is selected, and from the active view
+  otherwise.
+- `Camera::Lens::valid()` and `Light::Emission::valid()` state the ranges once, for the store and
+  for making a camera from a view.
+- Tests: create, undo and redo for each kind. The mask decides what a pick and a band return, and
+  what a target moves. The export writes every light, before the meshes. A camera made from a view
+  is seen through the same view again, in either hand.
+
+### Step 5 — Camera Manipulators
+
+**Closed.** The `camera::*` items latch a camera move on the left button, so a mouse with no
+modifier can truck, dolly, zoom, pan and pitch. `CameraControlTool` gained dolly and pitch. On a
+perspective view zoom changes the field of view and dolly moves the camera.
+
+- The tool keeps a held move and a latched one. The held move wins while it is held, and the
+  latch lasts until its item is chosen again or a transform mode is chosen. The menu items are
+  checks, and show the latch.
+- Left Alt was bound to `zoom`, which dollied a perspective view. Zoom now changes the angle of
+  view, so Left Alt is bound to the new held `view::camera::dolly`, and does what it did.
+- An orthographic dolly zooms, and an orthographic pitch does nothing, as an orthographic pan
+  does.
+- Tests: the latch and the held move together, zoom and dolly in each projection, and pitch.
+
+### Step 6 — Shaded views
+
+**Closed.** A mesh is triangulated by fanning each face loop, with a flat normal from the face or a
+smooth normal averaged at each vertex, and its winding reversed to counter-clockwise. A shaded
+pass per view draws the triangles before the lines and shares the depth buffer.
+
+- The renderer re-uploads a mesh only when step 11's revision has moved.
+- The pass is the editor's own: a simple lit shader with pipeline variants for the cull and
+  polygon modes. Lit's cel shading and fixed modes do not fit a modeller's views.
+- `view::shade::*`, `view::cull::*` and `view::rendermode::*` set view state, and each view keeps
+  its own.
+- Tests: the triangulation of a quad, a pentagon and a concave face; normals flat and smooth;
+  the revision bumps on each command. A validation log that stays silent in every mode.
+- What landed differs in four ways. Faces are cut by ear clipping, not fanned, because a fan
+  covers area outside a concave face. The surfaces go into each view's scene pass ahead of its
+  lines rather than into a pass of their own, which shares the pass's clear and its depth
+  exactly. The device turns on `fillModeNonSolid` where it is offered, and a view on a device
+  without it draws a points or lines side filled. A new suite, `vertical3d_device`, draws the
+  pass on a headless device. It checks which side is the front under the editor's camera, that
+  every fill and shading draws without a validation message, and that an upload is made again
+  only when the geometry changes. The editor started with validation on and logged nothing.
+
+### Step 7 — Import
+
+**Closed.** ADR-0122 decided the formats: glTF and USD, each read as a scene of items, after
+looking at what Blender, Godot, Assimp and studio pipelines read. It weighed the four legacy
+formats, glTF alone, glTF with OBJ, and Assimp. ADR-0123 decided where the readers live: a
+neutral scene and the glTF reader in `v3dlib_interchange`, and the USD reader in
+`v3dlib_interchange_usd`, the one library that links OpenUSD. LightWave, DXF, 3DS and MilkShape
+left the Import menu, and `project::import::gltf` and `project::import::usd` replaced them.
+
+- `brep::build()` makes a mesh from polygons over a list of points. It welds positions and
+  pairs edges through hash tables, so a large mesh builds in time proportional to its corners.
+- `interchange::readGltf()` and `interchange::readUsd()` fill one `interchange::Scene`: nodes
+  parents first, counter-clockwise polygon meshes, cameras and lights along -z, and keyed
+  channels in seconds. Each notes what it leaves out.
+- `editor::importScene()` makes items from that scene, and `Document::importScene()` puts them
+  into the document through one `ImportCommand`, which undoes in one step.
+- Tests: a cube in triangles builds six quads, input that three faces meet along is refused,
+  and a mesh of 80,000 triangles builds in under two seconds. Both readers read one
+  Blender-written scene, as `scene.glb` and `scene.usda`, and agree on its placements, its
+  camera, its light and its keys. The document imports both, and undo takes each out.
+- What landed differs in five ways.
+  - The builder joins pairs of triangles into quads, across an edge that is the longest of
+    both, rather than every coplanar neighbour. Joining a whole flat region would turn a grid of
+    squares into one face.
+  - cgltf's implementation moved into `v3dlib_interchange`, so it is compiled once for every
+    program, and `asset_media` links interchange for it.
+  - Both readers give a light's power in watts. glTF's candela and lux are divided by 683
+    lumens per watt, and USD's sphere light is read as Blender writes it, so a light from
+    Blender has the power it had there.
+  - The file chooser takes a list of extensions, so one item lists every extension of a format.
+  - OpenUSD is the manifest's `usd` feature, which the Linux build leaves out. Each executable
+    that reads USD is given OpenUSD's plugins beside it by `v3d_copy_usd_plugins()`, because
+    vcpkg copies the libraries but not the plugins, and OpenUSD stops at a breakpoint without
+    them.
+
+### Step 8 — The Render menu
+
+**Closed.** ADR-0106 decided it, after looking at how Blender, Houdini, Katana, Arnold and
+RenderMan join a renderer to an editor. It weighed linking moya for everything and running
+`moya.exe` for everything against an editor-owned renderer interface with a batch path beside it.
+
+- `render::view` renders the active view, or the chosen scene camera, and shows the picture in a
+  window of the editor's ui. The render runs off the main thread, so the editor stays live.
+- `render::settings` sets the picture size, the pixel samples and the hider.
+- `render::batch` renders each scene camera to a file.
+- The export gains a `Display` line and a default light when the scene has none.
+- What landed differs in five ways.
+  - Render View goes through `Delegate`, an interface the editor owns, which also brings a render
+    up to date as the scene changes. While the window is open an edit renders again.
+  - moya gained a progress callback that can stop a render, per bucket and per ray-traced row.
+    Its pictures still arrive only when a frame finishes, which TODO.md records.
+  - `render::batch` renders every frame of the timeline's range, not one frame, from each
+    camera, through `moya.exe`, which the build copies beside the editor with its libraries.
+  - The export writes `Surface "matte"`, because RI's default surface ignores lights, so the
+    lights step 4 exported had no effect on a render.
+  - The render settings are saved in the document, and a change to them goes through the
+    history.
+
+### Step 9 — Groups
+
+**Closed.** ADR-0104 decided it, and amends ADR-0099. It weighed a parent link on each item, the
+hierarchy in `api/dag`, and a general graph with parenting as one kind of connection, against the
+scene holding the links and evaluating every placement. It also weighed a child that does not
+inherit its parent's scale, and an item with several parents.
+
+- An item may have a parent. Its world matrix composes its parents' matrices, and picking, the
+  manipulators and the export use the world matrix.
+- `create::group` groups the selection under a new group item, through the command stack.
+- The RIB export nests `AttributeBegin` blocks.
+- Tests: a group moves its children. Undo restores the parents. A grouped project round-trips.
+- What landed differs in five ways.
+  - Any item can be a parent, and a group is a fourth kind that holds nothing of its own. It
+    is drawn and picked as a small box, since it has no geometry to click.
+  - The scene document stores each parent by document id, in a `parent` column, which is schema
+    version 2. A version 1 document reads with no parents, and its first write migrates it.
+  - The scene holds the links, and `Scene::evaluate()` gives every reader its placement. A
+    visitor is handed each item's evaluated placement, and the walk is depth first.
+  - Removing an item removes everything beneath it.
+  - A light is written at world level rather than inside its parent's block, because RI turns
+    a light off when its block ends.
+
+### Step 10 — Playback
+
+**Closed.** ADR-0105 decided it. It weighed a track of whole values per property, a key that
+snapshots the whole placement, placement alone, and keys in seconds against a scalar curve per
+numeric property, keyed on frames.
+
+- The editor gains `simulate()`, which advances the current time while playing.
+- `timeline::set` keys the selection's transform at the current time, through the command stack.
+- `timeline::playback::*` play, stop and step between frames and keys.
+- The export writes the current frame. `render::batch` can render a frame range.
+- Tests: a key sets and undoes. A track samples between two keys. A keyed project round-trips.
+- What landed differs in five ways.
+  - A key is a `Curve` in `api/type/animation`, not a `Track`, because a track lerps whole
+    values and has no slopes. Set Key keys every property an item declares: its placement, and
+    a camera's lens or a light's emission.
+  - Rotation is keyed as Euler angles in one fixed order. A per-item order is in TODO.md.
+  - The scene is posed by writing the curves' values into the items when the frame changes.
+    An edit holds until the next pose, and the export writes the posed scene.
+  - The scene document is schema version 3, with a `curves` table and the timeline in its meta
+    table. Older documents read with no curves, and their first write migrates them.
+  - `render::batch` is part of step 8, and has nothing to render a range with until then.
+
+### Step 11 — Incremental save
+
+**Closed.** An item carries a revision that every change to it moves. The store remembers the
+revision it last wrote for each item, and a save writes only the rows of items that changed,
+were added or were removed.
+
+- `dag::Transform` and `brep::BRep` count their changes. A mesh counts an added part and a
+  restore, so every operation counts. A part changed in place needs `touch()`, which the
+  component move and the vertex command call. `Item::revision()` sums the counts.
+- The store remembers the items of the one document it last wrote or read. An item that only
+  changed place has its `position` updated. A write to any other document, or the first after a
+  failed write, is written whole.
+- Tests: the counts for a transform, a mesh and each kind. A save that changes nothing writes
+  nothing, and a move writes one row. A removal deletes one row and moves the rest, and a redone
+  item is written again. A document read and then saved writes only its change. Another document
+  is written whole, and so is the first write after a failed one.
+
+### Step 12 — Autosave
+
+**Closed.** On a timer, the editor writes the changes since the last autosave into a recovery
+database in the project's `autosave` directory, never into the document. Opening a project whose
+recovery database is newer than its scene offers to recover it. A save or a clean close removes
+the recovery database.
+
+- The timer runs in `Controller::tick()`, every 60 seconds while the history is dirty. It is wall
+  time rather than simulation, so it is not in `simulate()`.
+- Recovery is also offered at startup for the default project, which the editor starts on
+  without reading. A crash in a project never saved is otherwise lost. Discard at the prompt
+  that asks before discarding removes the recovery database as well, because those changes were
+  thrown away on purpose.
+- A recovered scene leaves the history dirty, through the new `CommandStack::markUnsaved()`.
+- Tests: an autosave leaves the document as it was, and the second writes only its change.
+  Recovery reads back the autosaved scene. A recovery database older than the document is not
+  offered, one with no document is, and a save removes it.
+
+### Step 13 — Curves
+
+**Closed.** ADR-0124 decided what a curve is, after looking at how Blender, Maya, Houdini, USD
+and RenderMan hold curves. It weighed basis curves as the stored form, NURBS as the one stored
+form, one type per item, and curves inside `BRep`. ADR-0125 decided that moya renders them,
+weighing polygons made by the export, curves that never render, and round tubes.
+
+- `api/curve` is a new library, `v3dlib_curve`, with no rendering dependency. Its geometry holds
+  any number of curves, each poly, Bezier with a type on every handle, Catmull-Rom, or NURBS
+  with an order, weights and knots, and each open or closed. It evaluates each curve into a
+  cached list of points, and converts it to basis curves, exactly for every type but a NURBS
+  curve with weights.
+- A curve kind of item holds shared curve geometry. `SceneVisitor` gains a `visit` for it, which
+  every visitor implements, and the wireframe draws its evaluated points in lines. A new Create
+  item makes one through an operation on `Document`. A curve carries a width and whether it
+  renders, which is off by default.
+- The store saves a curve through a new `Codec` in `store/`.
+- The export sends a curve that renders as RI `Curves` through `rib::Handler`, which gains a
+  `curves` request. `rib::Writer` writes it and `rib::Recorder` replays it.
+- moya draws `Curves` as ribbons under both hiders: reyes splits and dices them, and the ray
+  hider intersects them in its bounding volume hierarchy.
+- `interchange::readUsd()` reads `BasisCurves` and `NurbsCurves`, and the import makes curve
+  items from them.
+- `SelectMask::Curve` picks a curve by screen distance to its evaluated points.
+- Tests: each type evaluates through its control points as its maths says, and converts to
+  basis curves that evaluate to the same points. A curve draws, picks, saves, exports and
+  undoes. The writer writes a `Curves` request that reads back the same. moya renders a ribbon
+  of the given width under each hider. A USD file's curves import.
+- What landed differs in five ways.
+  - The RIB library gained `Basis` as well as `Curves`, and reads and writes a basis by the
+    name RI gives it. moya draws every segment of every basis as the Bezier segment it is.
+  - The reyes hider measures a curve segment by its centre line. A split halves a segment's
+    length and never its width, so a ribbon wider than a grid is diced into wider
+    micropolygons rather than split without end.
+  - The ray hider's ribbon faces each ray rather than the camera, so a curve has its width in a
+    reflection and in a shadow as well.
+  - The C interface's `RiCurves` reads only `"P"` and `"constantwidth"`, because a C array
+    carries no length and a varying count depends on the basis.
+  - A curve item imported from a file renders, at the file's width. One made in the editor does
+    not until its style says so.
+
+### Step 14 — Handles
+
+**Closed.** ADR-0126 decided it, after looking at how Maya, Blender and Houdini use the word. It
+weighed a selection handle on each item, an IK handle, and handles picked under the Vertex mask
+with no Handle mask, against a Bezier curve's handles as parts of a curve item. It amends
+ADR-0121, because a curve item's parts are now selected as a mesh item's are.
+
+- A curve item's parts are its control points and its Bezier handles. `CurveParts.h` numbers them
+  across every curve the item holds, and `Components` holds them by that number, with a fourth
+  kind of part, `Component::Handle`.
+- `SelectMask::Handle` selects Bezier handles alone. The Vertex mask also selects control points
+  of every curve type, and the picker finds both by screen distance, by click and by band, on a
+  selected curve.
+- A manipulator moves a curve's parts. A point carries its handles, and a handle is retyped as
+  `curve::moveHandle()` says. One `VertexCommand` records meshes and curves together, and holds
+  each touched curve whole.
+- Under Vertex and Handle a selected curve draws its control points and its NURBS hulls, and its
+  Bezier handles while the view shows handles.
+- Tests: the numbering across poly, Bezier and NURBS curves. A pick and a band under each mask.
+  A point moved and turned with its handles, an aligned handle that turns its partner, and an
+  automatic one retyped. A drag of a handle through the tool, undone to the curve as it was. The
+  wireframe's control points and handles.
+- What landed differs in one way. `view::show::handle` was already the manipulator's toggle, and
+  it now shows a curve's handles as well, rather than a second toggle being added.
+
+## Outcome
+
+Closed 2026-10-27. Every one of the menu's 85 commands has a handler.
+
+**Delivered.** The scene holds items of five kinds, meshes, cameras, lights, groups and curves,
+in a hierarchy the scene evaluates. A project is a directory, and a scene is a SQLite document
+that saves incrementally and autosaves to a recovery database. Cameras and lights are drawn,
+created, picked and moved, and the RIB export renders from them. The Camera Manipulators latch a
+move. Each view shades its meshes in its own fill, cull and shading. glTF and USD import as
+scenes of items. Render View renders the scene with moya as it changes, and Batch renders the
+timeline through `moya.exe`. The timeline keys every numeric property and plays it back. Curves
+of four types are drawn, saved, imported from USD and rendered by moya as ribbons, and their
+control points and Bezier handles are edited through the manipulators.
+
+**What differed from the plan.** Each step records its own differences. The largest were these:
+
+- Step 2 grew from a file format into a project directory and a database, decided in four ADRs.
+- Step 6 cut faces by ear clipping, and drew the surfaces in each view's scene pass.
+- Step 7 replaced the four legacy importers with glTF and USD, and put the readers in an api
+  library rather than in the editor.
+- Step 8 gained a renderer interface that renders again as the scene changes.
+- Step 13 made moya render curves, which the plan did not ask for.
+
+**Left open.** These are in [TODO.md](../../TODO.md):
+
+- Two mesh items that share a `BRep` read back from a document as two copies.
+- Rotation is keyed in one fixed Euler order.
+- moya's pictures arrive only when a frame finishes.
+- The editor has no NURBS surfaces.

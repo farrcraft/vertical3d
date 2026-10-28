@@ -5,10 +5,14 @@
 
 #include "NullEvents.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 
 #include "Events.h"
+#include "Listener.h"
+
+#include <glm/vec3.hpp>
 
 namespace v3d::audio {
 
@@ -32,6 +36,36 @@ Instance NullEvents::start(std::string_view /* event */) {
 
 /**
  **/
+bool NullEvents::play(std::string_view /* event */, const glm::vec3& /* position */) {
+    return false;
+}
+
+/**
+ **/
+Instance NullEvents::start(std::string_view /* event */, const glm::vec3& /* position */) {
+    return Instance::None;
+}
+
+/**
+ **/
+bool NullEvents::position(Instance /* instance */, const glm::vec3& /* position */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<glm::vec3> NullEvents::position(Instance /* instance */) const {
+    return std::nullopt;
+}
+
+/**
+ **/
+bool NullEvents::listener(const Listener& /* listener */) {
+    return false;
+}
+
+/**
+ **/
 bool NullEvents::stop(Instance /* instance */, Stop /* how */) {
     return false;
 }
@@ -46,6 +80,30 @@ bool NullEvents::playing(Instance /* instance */) const {
  **/
 bool NullEvents::parameter(std::string_view /* name */, float /* value */) {
     return false;
+}
+
+/**
+ **/
+bool NullEvents::volume(std::string_view /* path */, float /* level */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<float> NullEvents::volume(std::string_view /* path */) const {
+    return std::nullopt;
+}
+
+/**
+ **/
+bool NullEvents::paused(std::string_view /* bus */, bool /* paused */) {
+    return false;
+}
+
+/**
+ **/
+std::optional<bool> NullEvents::paused(std::string_view /* bus */) const {
+    return std::nullopt;
 }
 
 /**

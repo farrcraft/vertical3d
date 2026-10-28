@@ -293,9 +293,7 @@ std::optional<Merged> compact(const BRep& mesh, const std::map<Index, Kept>& kep
     Merged merged;
     merged.vertex = vertexOf.at(keep);
     for (const Index old : vertices) {
-        Vertex vertex(old == keep ? centre : mesh.vertex(old)->point());
-        vertex.selected(mesh.vertex(old)->selected());
-        merged.arrays.vertices.push_back(vertex);
+        merged.arrays.vertices.emplace_back(old == keep ? centre : mesh.vertex(old)->point());
     }
     for (const auto& [old, part] : kept) {
         if (between.at({part.from, part.to}).size() > 1) {
@@ -306,13 +304,10 @@ std::optional<Merged> compact(const BRep& mesh, const std::map<Index, Kept>& kep
         edge.face(faceOf.at(part.face));
         edge.next(edgeOf.at(part.next));
         edge.pair(back == between.end() ? INVALID_ID : edgeOf.at(back->second.front()));
-        edge.selected(mesh.edge(old)->selected());
         merged.arrays.edges.push_back(edge);
     }
     for (const Index old : faces) {
-        Face face(mesh.face(old)->normal(), edgeOf.at(firstOf.at(old)));
-        face.selected(mesh.face(old)->selected());
-        merged.arrays.faces.push_back(face);
+        merged.arrays.faces.emplace_back(mesh.face(old)->normal(), edgeOf.at(firstOf.at(old)));
     }
     return merged;
 }

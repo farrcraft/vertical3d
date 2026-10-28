@@ -8,19 +8,19 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include <cstdint>
 #include <string>
 
 #include "ConstructionPlane.h"
+#include "Shading.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::editor {
 
-class Manipulator;
-class Target;
 
 /**
  * One view of the scene: a camera, the region of the window it draws into, and what it
@@ -43,6 +43,32 @@ class ViewPort final {
         SHOW_LIGHT = (1 << 3),
         SHOW_MESH = (1 << 4)
     } VisibleFilter;
+
+    /**
+     * Which side of a mesh's triangles the shaded pass leaves out. Front is the side a face's
+     * outward normal points to.
+     **/
+    enum class Cull : std::uint8_t { None, Front, Back, Both };
+
+    /**
+     * How the shaded pass draws one side of the triangles: as points at their corners, as their
+     * edges, or filled.
+     **/
+    enum class Fill : std::uint8_t { Points, Lines, Fill };
+
+    /**
+     * How the view shades the scene's meshes, under its wireframe.
+     *
+     * The front of each triangle is drawn in the front fill and the back in the back fill,
+     * unless the cull leaves that side out. The default draws the front filled and leaves the
+     * back out, because the back of a closed surface is never seen.
+     **/
+    struct Display {
+        Shading shading = Shading::Flat;
+        Cull cull = Cull::Back;
+        Fill front = Fill::Fill;
+        Fill back = Fill::Fill;
+    };
 
     /**
      * @param name what the view is called, which is also its pass name
@@ -103,6 +129,12 @@ class ViewPort final {
     bool shows(VisibleFilter filter) const noexcept;
 
     /**
+     * How the view shades the meshes it shows. Each view has its own.
+     **/
+    const Display& display() const noexcept;
+    Display& display() noexcept;
+
+    /**
      * @return the grid this view measures against
      **/
     ConstructionPlane& grid() noexcept;
@@ -115,21 +147,15 @@ class ViewPort final {
      * camera and the camera moves.
      *
      * Every view that shows meshes draws the scene into its own canvas, through its own
-     * camera.
-     *
-     * The handles go to a canvas of their own because they are an overlay, drawn in a
-     * second pass that does not depth test. On the scene's canvas a handle would be in
-     * the depth tested pass, where the grid's axis lines lie in the same plane and hide it.
+     * camera. The camera's matrices are rebuilt first, so whatever else draws through the
+     * camera this frame, such as the handles, sees the same view.
      *
      * @param scene what to draw, which the controller owns
-     * @param manipulator the handles the selection carries, or null. Every view that shows
-     *        handles draws them through its own camera
-     * @param target what the handles move, which decides where they sit
      * @param canvas where the view's geometry goes
-     * @param handles where the manipulator's geometry goes, or null
+     * @param mask the select mask in force. Under Vertex and Handle a selected curve shows its
+     *        control points, and its Bezier handles while the view shows handles
      **/
-    void draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
-        v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles);
+    void draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask = SelectMask::Object);
 
  private:
     std::string name_;
@@ -137,6 +163,7 @@ class ViewPort final {
     ConstructionPlane grid_;
     glm::vec4 region_;
     unsigned int showFlags_;
+    Display display_;
 };
 
 };  // namespace v3d::editor

@@ -9,6 +9,7 @@
 #include <api/render/realtime/canvas/Line.h>
 
 #include "Manipulator.h"
+#include "Screen.h"
 #include "Target.h"
 
 #include <boost/shared_ptr.hpp>
@@ -27,13 +28,13 @@ class RotateManipulator final : public Manipulator {
     RotateManipulator();
 
     // manipulator overrides
-    bool grab(const Target& target, const ViewPort& view,
+    bool grab(const Target& target, const Screen& screen,
         const glm::vec2& cursor, Axis* axis) const override;
-    void draw(const Target& target, const ViewPort& view,
+    void draw(const Target& target, const Screen& screen,
         v3d::render::realtime::canvas::Line* canvas) const override;
 
  protected:
-    bool measure(const Placement& seat, const ViewPort& view, const glm::vec2& from, const glm::vec2& to,
+    bool measure(const Placement& seat, const Screen& screen, const glm::vec2& from, const glm::vec2& to,
         Motion* motion) const override;
 
  private:
@@ -45,7 +46,7 @@ class RotateManipulator final : public Manipulator {
      * segment projects onto the screen at all.
      **/
     static float ringDistance(const Placement& placement, const glm::vec3& unit,
-        const ViewPort& view, const glm::vec2& cursor);
+        const Screen& screen, const glm::vec2& cursor);
 
     /**
      * How far the cursor swept round the manipulator's origin, in radians about a
@@ -56,7 +57,7 @@ class RotateManipulator final : public Manipulator {
      * the screen sweeps the opposite way round the origin from one about an axis coming
      * out of it, and the sign follows the axis's direction.
      **/
-    static float swept(const ViewPort& view, const Placement& placement, Axis axis,
+    static float swept(const Screen& screen, const Placement& placement, Axis axis,
         const glm::vec2& from, const glm::vec2& to);
 };
 

@@ -26,14 +26,4 @@ BOOST_AUTO_TEST_CASE(face_test) {
     BOOST_CHECK_EQUAL(face2.edge(), 11U);
 }
 
-BOOST_AUTO_TEST_CASE(face_selection_test) {
-    v3d::brep::Face face;
-
-    BOOST_CHECK_EQUAL(face.selected(), false);
-    face.selected(true);
-    BOOST_CHECK_EQUAL(face.selected(), true);
-    face.selected(false);
-    BOOST_CHECK_EQUAL(face.selected(), false);
-}
-
 };  // namespace

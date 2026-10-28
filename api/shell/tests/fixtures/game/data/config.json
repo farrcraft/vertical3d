@@ -1,0 +1,8 @@
+{
+	"configs": [
+		{
+			"type": "ui",
+			"file": "ui.json"
+		}
+	]
+}

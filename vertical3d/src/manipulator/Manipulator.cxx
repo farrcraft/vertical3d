@@ -4,13 +4,14 @@
  **/
 
 #include "Manipulator.h"
-#include "Target.h"
 
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
-#include <vertical3d/src/view/ViewPort.h>
 
 #include <cmath>
+
+#include "Screen.h"
+#include "Target.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/geometric.hpp>
@@ -104,14 +105,14 @@ Manipulator::Space Manipulator::effective() const noexcept {
 /**
  **/
 Manipulator::Placement Manipulator::placement(const Target& target,
-    const ViewPort& view) const {
+    const Screen& screen) const {
     Placement placement;
     if (target.empty()) {
         return placement;
     }
 
-    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
-    const glm::vec4& region = view.region();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = screen.camera;
+    const glm::vec4& region = screen.region;
     if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return placement;
     }
@@ -122,23 +123,26 @@ Manipulator::Placement Manipulator::placement(const Target& target,
 
     placement.origin = target.pivot();
     placement.orientation = effective() == Space::Local ? target.axes() : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
-    placement.size = handlePixels * unitsPerPixel(view, placement.origin);
+    placement.size = handlePixels * unitsPerPixel(screen, placement.origin);
     placement.valid = placement.size > 0.0F;
     return placement;
 }
 
 /**
  **/
-void Manipulator::apply(const Target& target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const {
-    const Placement seat = placement(target, view);
+void Manipulator::apply(Target* target, const Screen& screen, const glm::vec2& from, const glm::vec2& to) const {
+    if (target == nullptr) {
+        return;
+    }
+    const Placement seat = placement(*target, screen);
     if (!seat.valid) {
         return;
     }
     Motion motion;
-    if (!measure(seat, view, from, to, &motion)) {
+    if (!measure(seat, screen, from, to, &motion)) {
         return;
     }
-    target.move(motion, seat.origin, seat.orientation);
+    target->move(motion, seat.origin, seat.orientation);
 }
 
 /**
@@ -183,9 +187,9 @@ glm::vec4 Manipulator::colour(Axis axis) const {
 
 /**
  **/
-bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec2* position) {
-    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
-    const glm::vec4& region = view.region();
+bool Manipulator::project(const Screen& screen, const glm::vec3& point, glm::vec2* position) {
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = screen.camera;
+    const glm::vec4& region = screen.region;
     if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return false;
     }
@@ -211,9 +215,9 @@ bool Manipulator::project(const ViewPort& view, const glm::vec3& point, glm::vec
 
 /**
  **/
-float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
-    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
-    const glm::vec4& region = view.region();
+float Manipulator::unitsPerPixel(const Screen& screen, const glm::vec3& at) {
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = screen.camera;
+    const glm::vec4& region = screen.region;
     if (!camera || region.z <= 0.0F || region.w <= 0.0F) {
         return 0.0F;
     }
@@ -232,8 +236,8 @@ float Manipulator::unitsPerPixel(const ViewPort& view, const glm::vec3& at) {
 
 /**
  **/
-Manipulator::Basis Manipulator::basis(const ViewPort& view) {
-    const boost::shared_ptr<v3d::type::camera::Camera> camera = view.camera();
+Manipulator::Basis Manipulator::basis(const Screen& screen) {
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = screen.camera;
     if (!camera) {
         return Basis();
     }
@@ -285,24 +289,24 @@ float Manipulator::distanceToSegment(const glm::vec2& from, const glm::vec2& to,
 
 /**
  **/
-float Manipulator::along(const ViewPort& view, const Placement& placement, Axis axis,
+float Manipulator::along(const Screen& screen, const Placement& placement, Axis axis,
     const glm::vec2& from, const glm::vec2& to) {
     const glm::vec3 unit = direction(placement, axis);
     glm::vec2 root;
     glm::vec2 tip;
-    if (!project(view, placement.origin, &root) ||
-        !project(view, placement.origin + unit * placement.size, &tip)) {
+    if (!project(screen, placement.origin, &root) ||
+        !project(screen, placement.origin + unit * placement.size, &tip)) {
         return 0.0F;
     }
 
-    const glm::vec2 screen = tip - root;
-    const float length = glm::length(screen);
+    const glm::vec2 drawn = tip - root;
+    const float length = glm::length(drawn);
     // a handle pointing at the viewer projects to a point, which has no direction to
     // measure a drag along
     if (length < 1.0F) {
         return 0.0F;
     }
-    return glm::dot(to - from, screen / length) * (placement.size / length);
+    return glm::dot(to - from, drawn / length) * (placement.size / length);
 }
 
 /**
@@ -318,15 +322,15 @@ void Manipulator::marker(v3d::render::realtime::canvas::Line* canvas, const Plac
 
 /**
  **/
-bool Manipulator::grab(const Target& target, const ViewPort& view,
+bool Manipulator::grab(const Target& target, const Screen& screen,
     const glm::vec2& cursor, Axis* axis) const {
-    const Placement seat = placement(target, view);
+    const Placement seat = placement(target, screen);
     if (!seat.valid) {
         return false;
     }
 
     glm::vec2 root;
-    if (!project(view, seat.origin, &root)) {
+    if (!project(screen, seat.origin, &root)) {
         return false;
     }
 
@@ -344,7 +348,7 @@ bool Manipulator::grab(const Target& target, const ViewPort& view,
     float nearest = 0.0F;
     for (const Axis candidate : axes) {
         glm::vec2 tip;
-        if (!project(view, seat.origin + direction(seat, candidate) * seat.size, &tip)) {
+        if (!project(screen, seat.origin + direction(seat, candidate) * seat.size, &tip)) {
             continue;
         }
         const float distance = distanceToSegment(root, tip, cursor);

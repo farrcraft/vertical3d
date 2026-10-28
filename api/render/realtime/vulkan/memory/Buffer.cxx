@@ -89,27 +89,6 @@ VkDeviceSize Buffer::size() const noexcept {
 
 /**
  **/
-bool Buffer::grow(VkDeviceSize bytes) {
-    if (bytes <= size_) {
-        return false;
-    }
-
-    // size_ is zero after a grow whose create threw, and doubling zero never reaches bytes
-    VkDeviceSize target = size_ > 0 ? size_ : 1;
-    while (target < bytes) {
-        target *= 2;
-    }
-
-    // the allocation the device may still be reading out of is about to go away
-    const VkResult result = vkDeviceWaitIdle(device_->handle());
-    device::check(result, "Unable to wait for the vulkan device before growing a buffer");
-    destroy();
-    create(target);
-    return true;
-}
-
-/**
- **/
 void Buffer::write(const void* data, VkDeviceSize bytes, VkDeviceSize offset) {
     if (bytes == 0) {
         return;

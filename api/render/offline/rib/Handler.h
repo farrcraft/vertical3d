@@ -110,6 +110,15 @@ class Handler {
         (void)sz;
     }
     /**
+     * RiCoordinateSystem: give the current transformation a name that a later request or a
+     * shader can refer to.
+     **/
+    virtual void coordinateSystem(const std::string & space) { (void)space; }
+    /**
+     * RiCoordSysTransform: make a named space the current transformation.
+     **/
+    virtual void coordSysTransform(const std::string & space) { (void)space; }
+    /**
      * Each transform request up to motionEnd() is the transformation at the next of these
      * times. A primitive inside the block reaches the handler once, at the first time. Each
      * later copy of it goes to deformation().
@@ -125,6 +134,7 @@ class Handler {
         (void)name;
         (void)parameters;
     }
+    virtual void basis(const Basis & request) { (void)request; }
     virtual void surface(const std::string & name, const ParameterList & parameters) {
         (void)name;
         (void)parameters;
@@ -192,6 +202,10 @@ class Handler {
         (void)parameters;
     }
     virtual void sphere(const Sphere & request, const ParameterList & parameters) {
+        (void)request;
+        (void)parameters;
+    }
+    virtual void curves(const Curves & request, const ParameterList & parameters) {
         (void)request;
         (void)parameters;
     }

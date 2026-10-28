@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <api/dag/Node.h>
-#include <api/dag/Transform.h>
 #include <api/type/geometry/AABBox.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -23,11 +22,16 @@ namespace v3d::brep {
 /**
  * A boundary representation mesh.
  *
- * It is a dag::Node, so it has an id the selection model keys on. It is a dag::Transform, so
- * its geometry is described about its own origin and placed by matrix(). A manipulator moves
- * the mesh through the transform, not through the vertices.
+ * It is geometry alone: it has no id and no placement, and is described about its own origin.
+ * Whatever holds it gives it both, and whatever selects its parts keeps the selection. A copy
+ * is a separate mesh with the same parts.
+ *
+ * It counts its changes. Adding a part and restoring a snapshot each add one to changes(), and
+ * so does every function in Operations.h, which work through them. A part changed in place,
+ * through the pointer vertex(), edge() or face() returns, is not counted, so the code changing
+ * it calls touch().
  **/
-class BRep : public v3d::dag::Node, public v3d::dag::Transform {
+class BRep {
  public:
         BRep();
         ~BRep();
@@ -82,25 +86,21 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         Snapshot snapshot(void) const;
 
         /**
-         * Replace all three arrays with a snapshot's. The selection flags come back as the
-         * snapshot holds them, so a caller that does not want them clears them after.
+         * Replace all three arrays with a snapshot's.
          **/
         void restore(const Snapshot & snapshot);
 
-        /**
-         * Whether the mesh as a whole is selected, which is object mode selection.
-         * Component selection is the flag each Vertex, HalfEdge and Face carries.
-         **/
-        bool selected(void) const noexcept;
-        void selected(bool sel) noexcept;
-
-        /**
-         * Clear the selection flag of every vertex, edge and face, and leave the mesh's own
-         * flag alone. A select mask change deselects components, not objects.
-         **/
-        void deselectComponents(void) noexcept;
-
         void addFace(const std::vector<glm::vec3> & vertices, const glm::vec3 & normal);
+
+        /**
+         * @return how many times the mesh has been changed. It never goes down
+         **/
+        std::uint64_t changes(void) const noexcept;
+
+        /**
+         * Count a change made to a part in place.
+         **/
+        void touch(void) noexcept;
 
         size_t vertexCount(void) const;
         size_t edgeCount(void) const;
@@ -119,7 +119,7 @@ class BRep : public v3d::dag::Node, public v3d::dag::Transform {
         std::vector<Vertex> vertices_;
         std::vector<Face> faces_;
         std::vector<HalfEdge> edges_;
-        bool selected_;
+        std::uint64_t changes_ = 0;
 };
 
 

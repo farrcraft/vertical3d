@@ -5,42 +5,40 @@
 
 #include "Renderer.h"
 
-#include "RenderContext.h"
+#include "RIBHandler.h"
 
-#include <iostream>
+#include <algorithm>
 #include <string>
+
+#include <boost/make_shared.hpp>
 
 namespace v3d::moya {
 
-
-Renderer::Renderer() {
+void Renderer::begin(const std::string & name) {
+    handlers_.push_back(boost::make_shared<RIBHandler>(name));
 }
 
-Renderer::~Renderer() {
-}
-
-void Renderer::createRenderContext(const std::string & name) {
-    // printed each time the stack goes from empty to one context, so a process that begins
-    // more than one context in turn prints it more than once
-    if (contexts_.empty()) {
-        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
-                     "Copyright 1988, 1989, Pixar" << "\n" <<
-                     "All Rights Reserved" << "\n";
+void Renderer::end() {
+    if (!handlers_.empty()) {
+        handlers_.pop_back();
     }
-
-    const RenderContext context(name);
-    contexts_.push_back(context);
 }
 
-void Renderer::destroyActiveRenderContext(void) {
-    contexts_.pop_back();
-}
-
-RenderContext & Renderer::activeRenderContext(void) {
-    if (contexts_.empty()) {
-        createRenderContext("");
+bool Renderer::activate(const RIBHandler * handler) {
+    const auto found = std::find_if(handlers_.begin(), handlers_.end(),
+        [handler](const boost::shared_ptr<RIBHandler> & held) { return held.get() == handler; });
+    if (found == handlers_.end()) {
+        return false;
     }
-    return contexts_[contexts_.size() - 1];
+    std::rotate(found, found + 1, handlers_.end());
+    return true;
+}
+
+RIBHandler & Renderer::active() {
+    if (handlers_.empty()) {
+        begin("");
+    }
+    return *handlers_.back();
 }
 
 };  // namespace v3d::moya

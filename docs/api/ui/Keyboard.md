@@ -9,7 +9,7 @@ builds one and calls it, so most apps never call it directly.
 
 ### Focus
 
-The **focus** is the one component that receives keys. `ui::Engine` holds it.
+The **focus** is the one component that receives keys. `ui::Interface` holds it.
 
 - A ui with nothing focused takes no keys. A game's movement keys keep working until
   something is clicked into or `focusFirst()` is called.
@@ -22,17 +22,17 @@ The **focus** is the one component that receives keys. `ui::Engine` holds it.
   stops being reachable when it, anything holding it or its container is hidden, or when it is
   removed. A tab page that is not up counts as hidden. The next key or character goes on to the
   app's bindings. That includes `tab` and `escape`. A dialog that closes over a focused text
-  box therefore does not keep taking the game's keys. `Engine::reachable(component)` answers
+  box therefore does not keep taking the game's keys. `Interface::reachable(component)` answers
   whether a component is still in the tab order.
 - A component that is not usable keeps the focus, whether or not it is reachable. It stops
   being usable when it or anything holding it is disabled. `tab` and `escape` still go to the
   ui. Every other key goes through to the app's bindings.
-- `Engine::focused()` returns the focused component. `Engine::onFocus(callback)` reports
+- `Interface::focused()` returns the focused component. `Interface::onFocus(callback)` reports
   every change, in the same frame.
 - A focused component is drawn with a ring around its box, in the `focus` colour at
   `focus-width` thickness of its style class.
 
-**Starting a keyboard-driven screen.** Call `Engine::focusFirst()` as the screen goes up. It
+**Starting a keyboard-driven screen.** Call `Interface::focusFirst()` as the screen goes up. It
 puts the focus on the first focusable component. Nothing else gives out a first focus except
 a press: `tab` does nothing while nothing is focused, so a HUD nobody is looking at never
 takes the keyboard. No app in this tree calls `focusFirst()`; it is covered by
@@ -82,7 +82,7 @@ keyboard state.
 | `TabBar` | `arrow_right`, `arrow_left`, `home`, `end` change the page |
 | `Scrollbar` | arrows along its direction move it by a line; `pageup` and `pagedown` by a page; `home` and `end` to the ends |
 | `Slider` | `arrow_right`, `arrow_left` by one step; `pageup`, `pagedown` by a tenth of the range; `home`, `end` to the ends; sends its command when the value changes |
-| `TextBox` | editing keys, and every key that types a character; see [Editing text](#editing-text-in-a-textbox) |
+| `TextBox` | editing keys, and every key that types a character; see [Editing text](#editing-text) |
 
 **A held `return` or `space` sends its command once.** `Keys::press` takes the key's `repeat`
 flag, which `shell::Keyboard` passes from SDL. A repeat of an activation key is taken, so it
@@ -112,9 +112,11 @@ send. A game can therefore bind its menu to a gamepad or any keys, and rebind th
 the menu. Menu items are not focusable. The two models meet only where a menu item captures a
 key, which the app routes through `GameMenu::capture()`.
 
-## Editing text in a TextBox
+## Editing text
 
-A `TextBox` holds one line of UTF-8 text, a **caret** (where typing goes) and an **anchor**.
+A `TextBox`, and the immediate layer's `textField()`, edit one line of UTF-8 text the same way,
+through `input::LineEdit` and `input::edit()`. The line holds the text, a **caret** (where
+typing goes) and an **anchor**.
 Both are byte offsets. The selection is the run of text between the anchor and the caret.
 Nothing is selected when the two are equal.
 
@@ -127,21 +129,21 @@ selected, or leaves the anchor behind, which selects the run the caret crossed.
 | `backspace`, `delete` | remove the selection, or one character before or after the caret |
 | `arrow_left`, `arrow_right`, `home`, `end` | move the caret; with nothing held, an arrow over a selection lands on its end |
 | `shift` + any of those | move the caret and leave the anchor, extending the selection |
-| `return` | sends the box's command; the app reads `text()` |
+| `return` | a `TextBox` sends its command, and the app reads `text()`. A `textField()` gives the keyboard up |
 | `control` + `a` | selects all |
 | `control` + `c` | copies the selection |
 | `control` + `x` | copies the selection and removes it |
 | `control` + `v` | replaces the selection with the clipboard's text |
 | a press | puts the caret and the anchor at the character under the point |
-| a drag | moves the caret with the cursor, selecting from where the press landed |
+| a drag | moves the caret with the cursor, selecting from where the press landed. A `TextBox` only |
 
 - `limit` caps the text's length in bytes. A character or paste that would pass it is
   refused, but the key is still taken.
 - The line slides left when the caret would pass the far edge, so a full box can still be
   typed into.
 - `placeholder` is shown in the `placeholder` colour while the box is empty.
-- The clipboard is a pair of callbacks, `Keys::Clipboard { read, write }`. `shell::Keyboard`
-  supplies SDL's. Without a `write`, a cut does not remove the text. Without a `read`, a
-  paste inserts nothing.
+- The clipboard is a pair of callbacks, `input::Clipboard { read, write }`. `shell::Keyboard`
+  supplies SDL's, to its `input::Keys` and to an immediate layer it is offered. Without a
+  `write`, a cut does not remove the text. Without a `read`, a paste inserts nothing.
 - A copy or a cut with nothing selected does nothing, so the clipboard keeps what it had.
 - Placing the caret by clicking needs the `Measure` passed to `Cursor`.

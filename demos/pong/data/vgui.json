@@ -1,0 +1,76 @@
+{
+  "themes": [
+    {
+      "name": "default"
+    }
+  ],
+  "containers": [
+    {
+      "name": "game-menu",
+      "visible": false,
+      "components": [
+        {
+          "name":  "main-menu",
+          "type": "menu",
+          "items": [
+            {
+              "label": "Options",
+              "action": "submenu",
+              "type": "submenu",
+              "items": [
+                {
+                  "label": "Rounds: ",
+                  "command": "setMaxScore",
+                  "context": "ui",
+                  "type": "numeric_input"
+                },
+                {
+                  "label": "Player 1 Up: ",
+                  "command": "setLeftPaddleUpKey",
+                  "context": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 1 Down: ",
+                  "command": "setLeftPaddleDownKey",
+                  "context": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 2 Up: ",
+                  "command": "setRightPaddleUpKey",
+                  "context": "ui",
+                  "type": "key_input"
+                },
+                {
+                  "label": "Player 2 Down: ",
+                  "command": "setRightPaddleDownKey",
+                  "context": "ui",
+                  "type": "key_input"
+                }
+              ]
+            },
+            {
+              "label": "Singleplayer",
+              "command": "setSingleplayerMode",
+              "context": "ui",
+              "type": "action"
+            },
+            {
+              "label": "Co-op",
+              "command": "setCoopMode",
+              "context": "ui",
+              "type": "action"
+            },
+            {
+              "label": "Quit",
+              "command": "quit",
+              "context": "ui",
+              "type": "action"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

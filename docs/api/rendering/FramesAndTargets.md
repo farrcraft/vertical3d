@@ -20,7 +20,7 @@ bool AppEngine::render() {
     canvas_.rect(glm::vec2(40.0F, 40.0F), glm::vec2(size.x - 40.0F, size.y - 40.0F),
         glm::vec4(0.9F, 0.4F, 0.2F, 1.0F));
 
-    boost::shared_ptr<Pass> pass = renderer_->frame()->pass(Engine3D::colourPass);
+    boost::shared_ptr<Pass> pass = renderer_->frame()->pass(WindowRenderer::colourPass);
     renderer_->quads()->submit(canvas_, pass.get());
 
     renderer_->renderFrame();
@@ -34,8 +34,8 @@ items are dropped.
 
 ### The colour pass
 
-Every frame has a pass named `Engine3D::colourPass` (`"colour"`). It draws into the window and
-clears to the colour set with `Engine3D::clearColour()`. A 2D app usually needs nothing else.
+Every frame has a pass named `WindowRenderer::colourPass` (`"colour"`). It draws into the window and
+clears to the colour set with `WindowRenderer::clearColour()`. A 2D app usually needs nothing else.
 
 ### Adding passes
 
@@ -92,24 +92,26 @@ Background: [ADR-0068](../../adr/0068-rendering-order-passes-by-what-they-read.m
 
 ## Choosing a target
 
-A pass draws into the window unless it names a `vulkan::frame::RenderTarget`. A render target
+A pass draws into the window unless it names a `RenderTarget`. A render target
 is an offscreen image that a later pass can sample.
 
 ```cpp
-using vulkan::frame::RenderTarget;
+using v3d::render::realtime::RenderTarget;
 auto context = renderer_->context();
 
 // colour and depth, the size of a scene view
-auto scene = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    width, height, VK_FORMAT_R8G8B8A8_SRGB, /* depth */ true);
+auto scene = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
 
 // depth only, sampled later: a shadow map
-auto map = boost::make_shared<RenderTarget>(context->device(), context->ring(),
-    2048, 2048, VK_FORMAT_UNDEFINED, /* depth */ true, /* sampledDepth */ true);
+auto map = boost::make_shared<RenderTarget>(*context,
+    RenderTarget::Spec{.width = 2048, .height = 2048, .colour = VK_FORMAT_UNDEFINED, .depth = true,
+        .sampledDepth = true});
 ```
 
-The constructor is `RenderTarget(device, ring, width, height, colour, depth = false,
-sampledDepth = false, images = 1)`.
+The constructor is `RenderTarget(context, spec)`. A `Spec` names the width and height, the
+colour format, whether there is depth and whether it is sampled, how many images, and how many
+layers. A target needs a size, and a colour format or sampled depth.
 
 - **Size and format are yours.** A target does not follow the window. An app that wants one the
   window's size calls `recreate(width, height)` when `beginFrame()` reports a new size.
@@ -122,6 +124,16 @@ sampledDepth = false, images = 1)`.
   `target->depthFormat()`.
 - **A pass that both samples a target's depth and draws into it is not allowed.** The renderer
   does not detect it; the validation layer reports it.
+- **A depth-only target can have several layers**, as a shadow map with a layer per cascade
+  does. It needs sampled depth and no colour, or the constructor throws. A pass draws into one
+  layer, set with `Pass::layer(n)`, and recording a pass whose layer the target lacks throws.
+  Every pass that draws into the target clears its own layer, and the target is moved into its
+  drawing layout once, before the first of them, and made readable once, after the last.
+- **Sampled depth is read as an array of layers**, a `sampler2DArray`, whether it has one layer
+  or several. Layer n is the third coordinate's n.
+- **`clear()` clears every image and layer** to transparent black and the far plane, and leaves
+  them readable, as though a pass had drawn into them. A target read before any pass draws into
+  it then reads something defined.
 
 ### Sampling a target
 
@@ -157,13 +169,13 @@ frame, for trails or feedback effects.
 
 A pipeline is built for one colour format and one depth format. **A pipeline drawn into a pass
 with different formats throws `std::runtime_error` naming the pass.** The renderers
-`Engine3D` gives you are built for the window's format. To draw into a target of another format,
-build that renderer yourself against the target's formats (see
+`WindowRenderer` gives you are built for the window's format. To draw into a target of another
+format, build that renderer yourself against the target's formats (see
 [The lit pass](Lighting.md#the-lit-pass) for an example with `World`).
 
 ## Reading a frame back
 
-An app on `Engine3D` captures its window with one call:
+An app on `WindowRenderer` captures its window with one call:
 
 ```cpp
 renderer_->capture("frame.png");   // the next frame that presents is written to frame.png
@@ -187,7 +199,7 @@ as a PNG.
 It takes two calls, because a GPU submit has to complete between them:
 
 ```cpp
-vulkan::frame::Capture capture(device, logger);
+vulkan::frame::Capture capture(context->device(), context->ring(), logger);
 vulkan::frame::Capture::Source source;
 source.image = target->image();
 source.extent = target->extent();
@@ -206,7 +218,9 @@ capture.write("frame.png");
 - **A capture recorded and never written costs a copy and is thrown away silently.**
 - A source with `depth` set copies depth instead of colour, and `capture.depth()` returns one
   float per pixel. Only `VK_FORMAT_D32_SFLOAT` can be read this way.
-- The readback buffer is allocated on the first `record()`.
+- The readback buffer is allocated on the first `record()`. A larger source replaces it, and
+  the old one is retired through the ring, because a copy recorded earlier may still be writing
+  into it.
 
 Testing with captures is covered in [contributing/Testing.md](../../contributing/Testing.md).
 
@@ -219,5 +233,25 @@ Testing with captures is covered in [contributing/Testing.md](../../contributing
   area.
 - The swapchain is rebuilt when the GPU reports it out of date. A frame may be dropped when this
   happens; the next one draws at the new size.
-- The renderers `Engine3D` gives you keep working across a resize. Their pipelines do not need
+- The renderers `WindowRenderer` gives you keep working across a resize. Their pipelines do not need
   rebuilding.
+
+## Vsync
+
+`WindowRenderer::present(mode)` sets how the window's images are presented. A settings screen
+calls this vsync. `presenting()` says which mode the driver granted.
+
+| `Present::` | Presents | Falls back to |
+|---|---|---|
+| `Uncapped` | as fast as the device draws, without tearing (mailbox). The default | `Vsync` |
+| `Vsync` | one image a refresh, waiting for the display (FIFO) | nothing: every driver offers it |
+| `AdaptiveVsync` | as `Vsync`, but a late image is shown at once and may tear (FIFO relaxed) | `Vsync` |
+| `Immediate` | as soon as it is drawn, tearing (immediate) | `Uncapped`, then `Vsync` |
+
+- **It is a request.** A driver need not offer every mode. Ask, then read `presenting()`, and show
+  the player what was granted rather than what was asked.
+- Asked before `initialize()`, the swapchain is built with it. Asked after, the next
+  `renderFrame()` rebuilds the swapchain to take it, as a resize does, and draws nothing that
+  frame. `presenting()` reports the new mode from then on.
+- Each build of the swapchain logs the mode it was granted, so the log says which one a run used.
+- The format does not change with the mode, so pipelines built against the swapchain keep working.

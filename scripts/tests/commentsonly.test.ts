@@ -106,7 +106,7 @@ test('commentsonly reads C++, GLSL and CMake files and nothing else', () => {
     assert.equal(syntax('api/ui/Engine.h'), 'slash');
     assert.equal(syntax('api/render/realtime/shaders/mesh.frag'), 'slash');
     assert.equal(syntax('CMakeLists.txt'), 'hash');
-    assert.equal(syntax('pong/CMakeLists.txt'), 'hash');
+    assert.equal(syntax('demos/pong/CMakeLists.txt'), 'hash');
     assert.equal(syntax('cmake/v3dHelpers.cmake'), 'hash');
     assert.equal(syntax('docs/README.md'), null);
     assert.equal(syntax('scripts/prose.ts'), null);

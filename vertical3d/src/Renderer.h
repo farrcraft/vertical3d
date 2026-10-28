@@ -6,18 +6,21 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/WindowRenderer.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Engine3D.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <api/render/realtime/Window.h>
-#include <api/ui/Engine.h>
+#include <api/shell/Shell.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <string>
@@ -38,8 +41,9 @@ namespace v3d::editor {
  * region. The split into views is therefore a property of the frame, not of the window.
  *
  * A scene pass depth tests, so a wireframe is occluded by what is in front of it. All the
- * scene passes share one depth buffer, and each clears it within its own region. The
- * handle pass that follows does not depth test and keeps what the scene pass left,
+ * scene passes share one depth buffer, and each clears it within its own region. A view that
+ * shows meshes draws their shaded surfaces in its scene pass first, and its wireframe over
+ * them. The handle pass that follows does not depth test and keeps what the scene pass left,
  * because the manipulator is an overlay.
  *
  * One more pass follows all of them. It covers the whole window, not one view, and draws
@@ -49,11 +53,13 @@ namespace v3d::editor {
 class Renderer final {
  public:
     /**
+     * @param shell the editor's shell, which builds its screen over this renderer's engine.
+     *        It outlives the renderer
      * @throw std::runtime_error if the device or the line pipelines cannot be built
      **/
-    Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
+    Renderer(const boost::shared_ptr<v3d::window::Window>& window,
         const boost::shared_ptr<v3d::log::Logger>& logger,
-        const boost::shared_ptr<v3d::asset::Manager>& assetManager);
+        const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell);
 
     /**
      **/
@@ -86,7 +92,7 @@ class Renderer final {
     /**
      * The ui drawn over every view, or null to draw none.
      **/
-    void ui(const boost::shared_ptr<v3d::ui::Engine>& ui);
+    void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
 
     /**
      * How wide a run of text is at the size the ui is drawn in.
@@ -105,16 +111,15 @@ class Renderer final {
 
     /**
      * Draw one frame: two passes per view, then the ui pass.
-     *
-     * @param statistics what the loop measured about the frame being drawn, which the
-     *        overlay reads. The app passes it in because api/ui cannot depend on api/engine
      **/
-    void draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void draw();
 
     /**
-     * The frame statistics drawn over the views, for whatever shows and hides them.
+     * Upload a rendered picture as a texture the ui can draw, in place of the last one.
+     *
+     * @return the texture, or an unset handle for no picture
      **/
-    const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& statistics() const;
+    v3d::render::realtime::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -125,8 +130,7 @@ class Renderer final {
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
-    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
-        const v3d::ui::shell::StatisticsOverlay::Sample& statistics);
+    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
@@ -134,7 +138,9 @@ class Renderer final {
 
     // first, so that everything holding a device handle below is destroyed before the
     // context that owns the device is
-    v3d::render::realtime::Engine3D engine_;
+    v3d::render::realtime::WindowRenderer engine_;
+    // the meshes' surfaces, built once the engine has a device
+    boost::shared_ptr<ShadedPass> shaded_;
 
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<TransformTool> transform_;
@@ -146,11 +152,14 @@ class Renderer final {
     // one more canvas per view for the handles, which are drawn in a pass of their own
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
-    boost::shared_ptr<v3d::ui::Engine> ui_;
-    // built after the engine is initialized, because its atlas is uploaded through it
-    boost::shared_ptr<v3d::ui::shell::Screen> screen_;
+    boost::shared_ptr<v3d::ui::Interface> ui_;
+    v3d::shell::Shell* shell_;
+    // the shell's screen, built over engine_
+    v3d::ui::shell::Screen* screen_ = nullptr;
 
     glm::vec4 background_;
+    // the last rendered picture's texture, released when the next one arrives
+    v3d::render::realtime::TextureHandle picture_;
 };
 
 };  // namespace v3d::editor

@@ -34,14 +34,14 @@ BOOST_AUTO_TEST_CASE(window_goes_full_screen_and_back_test) {
     BOOST_REQUIRE(windowed.window->fullscreen(true));
     settle(windowed);
     BOOST_TEST(windowed.window->fullscreen());
-    windowed.engine->renderFrame();
-    windowed.engine->renderFrame();
+    windowed.renderer->renderFrame();
+    windowed.renderer->renderFrame();
 
     BOOST_REQUIRE(windowed.window->fullscreen(false));
     settle(windowed);
     BOOST_TEST(!windowed.window->fullscreen());
-    windowed.engine->renderFrame();
-    windowed.engine->renderFrame();
+    windowed.renderer->renderFrame();
+    windowed.renderer->renderFrame();
 
     BOOST_TEST(windowed.silent());
 }

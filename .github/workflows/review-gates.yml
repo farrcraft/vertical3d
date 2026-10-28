@@ -57,6 +57,11 @@ jobs:
     - name: Actions are pinned to a commit
       if: ${{ !cancelled() }}
       run: node scripts/pinned.ts
+    # the table of libraries in docs/api/README.md has a row for each library the manifest names,
+    # in the manifest's order
+    - name: Library table
+      if: ${{ !cancelled() }}
+      run: node scripts/librarytable.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

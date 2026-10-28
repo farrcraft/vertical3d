@@ -1,0 +1,37 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
+
+
+#pragma once
+
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+
+class Chunk;
+class GameState;
+class Player;
+
+class Scene {
+ public:
+    Scene();
+
+    /**
+     * Advance the world by one simulation step.
+     * @param step seconds of simulated time
+     */
+    void tick(float step);
+
+    boost::shared_ptr<Player> player();
+    boost::shared_ptr<GameState> state();
+
+    boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > & chunks();
+
+ private:
+    boost::shared_ptr<Player> player_;
+    boost::shared_ptr<GameState> state_;
+    boost::unordered_map<unsigned int, boost::shared_ptr<Chunk> > chunks_;
+};

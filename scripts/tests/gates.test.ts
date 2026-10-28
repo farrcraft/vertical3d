@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
 import { supportedNode } from '../entry.ts';
-import { casesIn, inBase, namedCommit } from '../failsfirst.ts';
+import { casesIn, dropCall, inBase, namedCommit, unknownCommands } from '../failsfirst.ts';
 import { includesIn, usesIn } from '../linkrule.ts';
 import { checkLines } from '../prose.ts';
 
@@ -183,6 +183,28 @@ test('failsfirst accepts a covered commit only when the base contains it', () =>
     assert.equal(inBase('48412a1c brought it', '957a7434'), null);
     assert.equal(inBase('deadbeefdeadbeef brought it', '48412a1c'), null);
     assert.equal(inBase('no commit at all', '48412a1c'), null);
+});
+
+test('failsfirst reads an unknown command from a failed configure', () => {
+    const output = [
+        '-- vertical3d api: asset',
+        'CMake Error at vertical3d/tests/CMakeLists.txt:75 (v3d_copy_usd_plugins):',
+        '  Unknown CMake command "v3d_copy_usd_plugins".',
+        '',
+        'CMake Error at api/x/tests/CMakeLists.txt:3 (v3d_add_test):',
+        '  Cannot find source file:',
+        '',
+    ].join('\r\n');
+    assert.deepEqual(unknownCommands(output),
+        [{ file: 'vertical3d/tests/CMakeLists.txt', line: 75, command: 'v3d_copy_usd_plugins' }]);
+});
+
+test('failsfirst drops a call that spans lines and holds parentheses', () => {
+    const text = 'a(x)\nv3d_helper(t\n    "$<A:(b)>" ")"\n    (c))\nb(y)\n';
+    assert.equal(dropCall(text, 2, 'v3d_helper'), 'a(x)\n\nb(y)\n');
+    assert.equal(dropCall(text, 2, 'V3D_HELPER'), 'a(x)\n\nb(y)\n');
+    assert.equal(dropCall(text, 1, 'v3d_helper'), null);
+    assert.equal(dropCall(text, 9, 'v3d_helper'), null);
 });
 
 test('failsfirst skips a case inside a comment', () => {

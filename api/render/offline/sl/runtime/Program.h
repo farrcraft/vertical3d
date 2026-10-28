@@ -38,6 +38,18 @@ class Program final {
      * before a scene's values are written over the defaults.
      **/
     std::size_t prologue = 0;
+    /**
+     * Whether the shader calls `trace` or `transmission`, and so needs the renderer's traced
+     * scene. A shader's own functions are inlined, so a call through one counts.
+     **/
+    bool traces = false;
+    /**
+     * Whether the shader reads a derivative: it calls `Du`, `Dv`, `Deriv`, `area` or
+     * `calculatenormal`, or reads `du` or `dv`. A renderer shades the neighbours a derivative
+     * differences only for a program that does. Its own functions are inlined, so a call
+     * through one counts.
+     **/
+    bool differentiates = false;
 
     /**
      * The register holding a named symbol, or -1. A renderer that did not keep the index

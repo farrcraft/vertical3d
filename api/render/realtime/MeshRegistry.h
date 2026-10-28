@@ -9,14 +9,13 @@
 #include <api/render/realtime/DecodedModel.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Registry.h>
-#include <api/render/realtime/vulkan/memory/Mesh.h>
-#include <api/type/Model.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/UploadQueue.h>
+#include <api/render/realtime/Mesh.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <deque>
-#include <exception>
-#include <expected>
 #include <map>
 #include <optional>
 #include <string>
@@ -45,10 +44,10 @@ class DeviceContext;
  * A model loaded from a path, or added under a name, is uploaded the first time. Every later
  * request for it returns the same handle, so a hundred props drawn from one file are one
  * upload. A model is one vertex buffer drawn a part at a time. Each part's albedo is a
- * texture and a material from the context's Textures, shared by every part naming the same
- * image, and the white texture for a part naming none.
+ * texture from the context's Textures, shared by every part naming the same image, and the
+ * white texture for a part naming none. A draw reads it by the texture's slot.
  *
- * The vertex layout is type::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
+ * The vertex layout is model::Model::Vertex: a position, a normal and a uv, 32 bytes. A pipeline
  * that draws an entry declares that layout. A model with a skeleton is uploaded as a
  * SkinnedVertex instead, and keeps its skeleton and clips on the CPU for whatever poses it.
  *
@@ -70,7 +69,7 @@ class MeshRegistry final {
         uint32_t firstIndex;
         uint32_t indexCount;
         TextureHandle texture;   /**< the albedo, or the white texture **/
-        MaterialHandle material; /**< what binds the albedo at set 1 **/
+        MaterialHandle material; /**< what binds the texture array at set 1, which holds the albedo **/
         glm::vec4 baseColour;    /**< what the albedo is multiplied by **/
     };
 
@@ -79,31 +78,37 @@ class MeshRegistry final {
      * renderer::Lit's skinned pipelines read this layout.
      **/
     struct SkinnedVertex final {
-        type::Model::Vertex vertex;
-        type::Model::Influence influence;
+        model::Model::Vertex vertex;
+        model::Model::Influence influence;
     };
 
     /**
      * What a skinned entry is posed by, shared by every entity drawing it.
      **/
     struct Skin final {
-        type::Skeleton skeleton;
-        std::vector<type::animation::Clip> clips;
+        animation::Skeleton skeleton;
+        std::vector<animation::Clip> clips;
     };
 
     /**
      * What a handle resolves to: everything a draw of the model needs except where it is.
      **/
     struct Entry final {
-        boost::shared_ptr<vulkan::memory::Mesh> mesh;
+        boost::shared_ptr<Mesh> mesh;
         std::vector<Part> parts;  /**< in the model's order, which is the order they are drawn **/
         boost::shared_ptr<const Skin> skin;  /**< null for a static model **/
+        /**
+         * A sphere around the model's vertices in its own space, as they were registered: xyz
+         * the centre, w the radius. A skinned model is posed away from it, so it bounds only
+         * the bind pose
+         **/
+        glm::vec4 bound{0.0F};
     };
 
     /**
      * The most bytes poll() uploads by default before it leaves the rest for the next call.
      **/
-    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{4} * 1024 * 1024;
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = Textures::DEFAULT_UPLOAD_BUDGET;
 
     /**
      * @param logger where a texture that could not be found is reported
@@ -174,7 +179,7 @@ class MeshRegistry final {
      * @throw std::runtime_error if the model holds no geometry, a part outside it, or a skeleton
      *        without an influence for every vertex
      **/
-    MeshHandle add(const std::string& name, const type::Model& model,
+    MeshHandle add(const std::string& name, const model::Model& model,
         const std::vector<boost::shared_ptr<image::Image>>& albedos = {});
 
     /**
@@ -237,25 +242,10 @@ class MeshRegistry final {
     };
 
     /**
-     * A requested model the worker has finished with, waiting for poll().
-     **/
-    struct Arrival final {
-        MeshHandle handle;
-        std::expected<DecodedModel, std::exception_ptr> result;
-    };
-
-    /**
-     * What the worker's completions hand to this registry. A completion holds it weakly, so one
-     * that runs after the registry is gone does nothing.
-     **/
-    using Inbox = std::deque<Arrival>;
-
-    /**
      * An albedo, and how many entries name it.
      **/
     struct Albedo final {
         TextureHandle texture;
-        MaterialHandle material;
         uint32_t users;
     };
 
@@ -268,7 +258,7 @@ class MeshRegistry final {
      * @throw std::runtime_error if the model holds no geometry, no parts, a part outside it, or
      *        not one albedo per material
      **/
-    MeshHandle upload(const std::string& key, const type::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
+    MeshHandle upload(const std::string& key, const model::Model& model, const std::vector<DecodedModel::Albedo>& albedos,
         const MeshHandle& pending = MeshHandle());
 
     /**
@@ -305,7 +295,7 @@ class MeshRegistry final {
     boost::shared_ptr<DeviceContext> context_;
     boost::shared_ptr<asset::Manager> assets_;
     boost::shared_ptr<asset::Worker> worker_;
-    boost::shared_ptr<Inbox> inbox_;
+    UploadQueue<MeshTag, DecodedModel> uploads_;
     Registry<MeshTag, Slot> meshes_;
     std::size_t pending_ = 0;
     std::map<std::string, MeshHandle> keys_;

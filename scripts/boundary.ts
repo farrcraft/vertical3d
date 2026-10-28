@@ -66,7 +66,7 @@ const HELPERS = new Set([
     'api/asset/Json.cpp',
 ]);
 
-const SKIPPED = ['vendor/', 'out/', 'vcpkg_installed/'];
+const SKIPPED = ['vendor/', 'demos/voxel/src/noise/', 'out/', 'vcpkg_installed/'];
 
 /** A test file, which converts values it chose rather than input. */
 const TEST = /(^|\/)tests\//;

@@ -10,8 +10,8 @@
 #include <api/render/realtime/component/Particles.h>
 
 #include <api/ecs/component/Emitter.h>
-#include <api/type/effect/Emitter.h>
-#include <api/type/effect/Particle.h>
+#include <api/ecs/effect/Emitter.h>
+#include <api/ecs/effect/Particle.h>
 
 #include "Billboard.h"
 
@@ -31,14 +31,14 @@ namespace {
 /**
  * The region a particle shows at its age.
  **/
-void region(const component::Particles& look, const type::effect::Particle& particle, glm::vec2* uv0, glm::vec2* uv1) {
+void region(const component::Particles& look, const ecs::effect::Particle& particle, glm::vec2* uv0, glm::vec2* uv1) {
     if (!look.clip) {
         *uv0 = look.uv0;
         *uv1 = look.uv1;
         return;
     }
     const float time = look.overLife ? particle.life() * look.clip->clock().duration() : particle.age;
-    const type::animation::SpriteClip::Frame& frame = look.clip->frame(time);
+    const animation::SpriteClip::Frame& frame = look.clip->frame(time);
     *uv0 = frame.uv0;
     *uv1 = frame.uv1;
 }
@@ -63,9 +63,9 @@ void particles(const entt::registry& registry, float alpha, const Billboard& bil
     const glm::vec3& depthAxis = billboard.depthAxis;
     auto view = registry.view<const ecs::component::Emitter, const component::Particles>();
     for (const entt::entity entity : view) {
-        const type::effect::Emitter& description = view.get<const ecs::component::Emitter>(entity).description;
+        const ecs::effect::Emitter& description = view.get<const ecs::component::Emitter>(entity).description;
         const component::Particles& look = view.get<const component::Particles>(entity);
-        for (const type::effect::Particle& particle : view.get<const ecs::component::Emitter>(entity).state.particles) {
+        for (const ecs::effect::Particle& particle : view.get<const ecs::component::Emitter>(entity).state.particles) {
             glm::vec3 centre = glm::mix(particle.previous, particle.position, alpha);
             if (description.sway != 0.0F) {
                 const float turns = particle.phase + (particle.age * description.swayRate);

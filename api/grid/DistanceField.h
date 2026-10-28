@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "GridSet.h"
 #include "TileCoord.h"
 #include "TileFilter.h"
 #include "TileGrid.h"
@@ -46,9 +47,15 @@ class DistanceField {
     DistanceField(const TileGrid& grid, TileCoord goal, const TileFilter& enterable = {});
 
     /**
+     * Flood a set of grids outward from goal, in world tiles. The field keeps where the grids
+     * lie but reads none of them after it is built, so it may outlive them.
+     **/
+    DistanceField(const GridSet& grids, TileCoord goal, const TileFilter& enterable = {});
+
+    /**
      * What the cheapest route from tile to the goal costs.
      *
-     * @return UNREACHABLE for a tile off the grid and for one no route reaches
+     * @return UNREACHABLE for a tile off the grids and for one no route reaches
      **/
     int cost(TileCoord tile) const;
 
@@ -58,7 +65,8 @@ class DistanceField {
     bool reaches(TileCoord tile) const;
 
  private:
-    int width_{0};
+    /** Where the grids lie, which cost() reads to find a tile's entry. It reads no grid. **/
+    GridSet grids_;
     std::vector<int> costs_;
 };
 

@@ -7,20 +7,21 @@
 
 #include <api/log/Logger.h>
 
-#include "Type.h"
+#include <typeindex>
+#include <typeinfo>
 
 namespace v3d::asset {
 /**
     **/
-Loader::Loader(Type t, const boost::shared_ptr<v3d::log::Logger>& logger) :
+Loader::Loader(const std::type_info& kind, const boost::shared_ptr<v3d::log::Logger>& logger) :
     logger_(logger),
-    type_(t) {
+    kind_(kind) {
 }
 
 /**
     **/
-Type Loader::type() const {
-    return type_;
+std::type_index Loader::kind() const noexcept {
+    return kind_;
 }
 
 const boost::shared_ptr<v3d::log::Logger>& Loader::logger() const noexcept {

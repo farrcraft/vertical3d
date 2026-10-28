@@ -5,8 +5,8 @@
 
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 
 #include <cmath>
@@ -20,8 +20,8 @@
 
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::vulkan::frame::Timings;
 
 namespace {
@@ -45,7 +45,8 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
     }
 
     const boost::shared_ptr<RenderTarget> target =
-        boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+        boost::make_shared<RenderTarget>(*headless.context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
     Recorder::Target described;
     described.image = target->image();
     described.view = target->view();
@@ -88,7 +89,8 @@ BOOST_AUTO_TEST_CASE(each_pass_is_timed_under_its_name) {
 BOOST_AUTO_TEST_CASE(a_frame_recorded_without_timings_times_nothing) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<RenderTarget> target =
-        boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+        boost::make_shared<RenderTarget>(*headless.context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
     Recorder::Target described;
     described.image = target->image();
     described.view = target->view();

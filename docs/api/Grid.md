@@ -1,13 +1,14 @@
 # Tile grids
 
 This page is for someone writing an app against the api. It covers `api/grid`: tile boards,
-coordinates, movement and pathfinding, line of sight, building a board from a picture, and the
-geometry for drawing an overlay. Terms are defined in the [glossary](README.md#glossary).
+coordinates, movement and pathfinding, line of sight and fog of war, building a board from a
+picture, and the geometry for drawing an overlay. Terms are defined in the [glossary](README.md#glossary).
 
 - [What the library is](#what-the-library-is)
 - [The board and its coordinates](#the-board-and-its-coordinates)
 - [Movement](#movement)
 - [Line of sight](#line-of-sight)
+- [Remembered sight](#remembered-sight)
 - [Building a board from a picture](#building-a-board-from-a-picture)
 - [Drawing an overlay](#drawing-an-overlay)
 - [An example: odyssey](#an-example-odyssey)
@@ -76,10 +77,46 @@ a grid read from a picture the same way. A point on the seam belongs to the high
 the first column or row of the grid beyond it. The grid before the seam puts the point just off
 its board.
 
-Pathfinding, line of sight and the overlay each work within one grid. A route or a line that
-crosses regions is the game's to join. Two grids placed so that they overlap are not detected.
+Two grids placed so that they overlap are not detected by the grids themselves. A `GridSet`
+refuses them.
 
-Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md)
+### Searching across regions
+
+`GridSet` ([api/grid/GridSet.h](../../api/grid/GridSet.h)) is the grids a game has loaded, which
+a search treats as one board in world tiles. `findPath`, `reachableTiles`, `DistanceField` and
+`hasLineOfSight` each take one in place of a grid.
+
+```cpp
+v3d::grid::GridSet loaded;
+for (const TileGrid& region : regionsLoadedNow) {
+    loaded.add(region);   // throws std::invalid_argument with refusal()'s reason
+}
+std::vector<TileCoord> route = v3d::grid::findPath(loaded, playerTile, goalTile);
+```
+
+- **World tile (x, y) is the tile whose minimum corner is at world X = x * tileSize,
+  Z = y * tileSize.** `origin(grid)` is the world tile a grid's tile (0, 0) is, and the filter
+  and the blocker are asked about world tiles.
+- **A tile in no grid of the set is impassable and blocks sight.** A region that is not loaded
+  is a wall: a route never plans through it and sight never sees into it. A route found over
+  what is loaded therefore stays valid when another region arrives.
+- **The rules are one grid's.** A diagonal step between two blocked tiles is refused when they
+  lie in different grids, and sight is symmetric across a seam. A route may leave a region and
+  come back into it, which two routes joined at the seam cannot find.
+- **A grid joins only when it fits.** `refusal(grid)` says why one cannot. The reasons are a tile
+  size other than the set's, a corner that is not a whole number of tiles from the world's
+  origin, or a tile a grid already in the set holds.
+- **A set holds references.** Build it from what is loaded when a search is made, and do not keep
+  it past a release. A `DistanceField` keeps where the grids lie and reads none of them after it
+  is built, so it may outlive them.
+- `GridSet::local(grid)` is one grid in its own coordinates. Every search over one grid runs as a
+  search over that set, so the two give the same route, tie for tie.
+- `Sight::look(set, board, from)` looks at one grid of a set from a world tile. Each region keeps
+  its own `Sight`, and each is looked at in turn, so a viewer by a seam sees into the region beside
+  it and remembers what it saw.
+
+Background: [ADR-0087](../adr/0087-grid-a-region-is-a-grid-placed-by-its-corner.md),
+[ADR-0111](../adr/0111-grid-a-search-may-span-a-set-of-placed-grids.md)
 
 ## Movement
 
@@ -143,8 +180,27 @@ the arguments reverses the result exactly. It is empty when either endpoint is o
 **Do not test `sightLine()` tiles to decide whether sight is clear.** Where the line squeezes
 through a corner, the two tiles beside it are not in the list. Call `hasLineOfSight()` instead.
 
-How far a unit can see, and what it remembers seeing, are the game's. The grid answers only
-about two tiles.
+### Remembered sight
+
+`Sight` ([api/grid/Sight.h](../../api/grid/Sight.h)) is fog of war: what a viewer can see now,
+and what it has seen before.
+
+```cpp
+v3d::grid::Sight sight(7);                  // the range, in tiles
+sight.look(grid, player);                   // and a SightBlocker, if the game has one
+if (sight.visible(tile)) { /* draw it */ }
+else if (sight.remembered(tile)) { /* draw it dimmed */ }
+```
+
+- **Each tile is in sight, remembered, or neither.** `look()` replaces what is in sight and adds
+  to what is remembered. `blind()` puts every tile out of sight and forgets nothing, for a board
+  the viewer is not on.
+- **The range is given to the constructor**, in Chebyshev steps, so the tiles within it form a
+  square, as a movement budget does. A range below zero sees nothing.
+- Sight within the range is `hasLineOfSight()`, so it is symmetric and takes the same blocker.
+- Every `look()` traces again, even from the same tile, so a change to the board shows at once.
+- A board of another size is a different board: the first look at it forgets everything.
+- A tile off the board is neither in sight nor remembered, so no bounds test is needed first.
 
 ## Building a board from a picture
 
@@ -217,6 +273,8 @@ odyssey is the app that uses this library:
   `tile::Kind` decides passability and cover.
 - A region is loaded on a worker as the player approaches it and released once the player is
   far away. A step crosses the seam between two loaded regions.
-- A click routes the player with `findPath()`.
-- `tile::Sight` calls `hasLineOfSight()` to find what the player can see.
-- The map format, how far the player sees and what the player remembers are odyssey's own.
+- A click routes the player with `findPath()` over a `GridSet` of the loaded regions, so a route
+  goes through the doorway into the next region. Sight is traced across the same set.
+- Each region keeps a `Sight`, which outlives the region's map, so a region released and loaded
+  again is remembered as it was.
+- The map format and how far the player sees are odyssey's own.

@@ -4,9 +4,8 @@ These pages are for someone writing an app against the api. They cover
 `v3d::engine::Engine` in [api/engine/Engine.h](../../../api/engine/Engine.h), the class every
 app subclasses. Terms are defined in the [glossary](../README.md#glossary).
 
-There are two classes named `Engine`. These pages are about the game engine. The render engine,
-`v3d::render::realtime::Engine` and its subclass `Engine3D`, is a separate object that an app
-creates and holds; [rendering/](../rendering/README.md) covers it. Menus and other ui are in
+The renderer, `v3d::render::realtime::WindowRenderer`, is a separate object that an app creates
+and holds; [rendering/](../rendering/README.md) covers it. Menus and other ui are in
 [ui/](../ui/README.md).
 
 | Page | Read it to |
@@ -18,6 +17,8 @@ creates and holds; [rendering/](../rendering/README.md) covers it. Menus and oth
 | [Config.md](Config.md) | Read the config documents an app ships with |
 | [Files.md](Files.md) | Save the player's settings, and write files safely |
 | [Audio.md](Audio.md) | Load and play sounds |
+| [Window.md](Window.md) | Size the window, go full screen, take text input, and present to it |
+| [Shell.md](Shell.md) | Build the ui, the screen, the game menu and the statistics overlay with one object |
 
 ## What the engine gives an app
 
@@ -28,14 +29,16 @@ asked for.
 |---|---|
 | `logger()` | The process log. See [Logging](#logging). |
 | `assets()` | The asset manager for `<app path>/data/`. See [Assets.md](../Assets.md). |
-| `config()` | The config documents. Needs `Feature::Config`. |
-| `document(type)` | One config document as a `boost::json::object`, or null. Protected. |
+| `manifest()` | The documents `config.json` lists. Needs `Feature::Config`. See [Config.md](Config.md). |
+| `document(kind)` | One config document as a `boost::json::object`, or null. Protected. |
 | `dispatcher()` | The `entt::dispatcher` events are published on. |
-| `events()` | The event engine, which maps source events to commands. |
-| `window()` | The `realtime::Window`. Needs `Feature::Window`. |
+| `events()` | The event router, which maps source events to commands. |
+| `window()` | The `window::Window`. Needs `Feature::Window`. See [Window.md](Window.md). |
 | `keys()`, `mouse()` | Polled input state. Need the input features. |
 | `held(command)` | Whether a key bound to a command is down. |
 | `rebind(command, key)` | Points a command at a different key. Protected. |
+| `bindings()` | The bindings the keys go through, for a controls screen to read, rebind and reset. Protected. |
+| `settings()` | The player's settings, kept under the app's identity. Null without one. Protected. See [Files.md](Files.md#settings). |
 | `alpha()` | How far between two simulation steps the frame is. |
 | `statistics()` | What the loop measured about its pacing. |
 | `measure(name)` | Times a scope into the statistics. Protected. |
@@ -48,14 +51,16 @@ makes it that game. Do not write your own version of these:
 
 - **`main`** — `v3d::engine::run<T>`, described in [Lifecycle.md](Lifecycle.md#the-run-function).
 - **The app path** — `v3d::engine::appPath(argv[0])`.
+- **The shell** — `v3d::shell::Shell` builds the ui, the screen, the pause menu and the statistics
+  overlay below, and declares their commands. An app holds one. See [Shell.md](Shell.md).
 - **Text** — `v3d::ui::paint::TextRenderer` owns the font, the glyph atlas and text drawing.
 - **The pause menu** — `v3d::ui::shell::GameMenu` is the menu the escape key opens over a game.
   It pauses the game through a callback and handles its own navigation commands.
 - **Frame statistics** — `v3d::ui::shell::StatisticsOverlay` draws the loop's measurements. It
   starts hidden.
 - **The screen** — `v3d::ui::shell::Screen` builds the text renderer, the component renderer
-  and the statistics overlay over an `Engine3D`, and owns the canvas they draw into. Its
-  `begin()` starts each frame and returns false while the window is minimised. In that case the
+  and the statistics overlay over an `WindowRenderer`, and owns the canvas they draw into. Its
+  `begin(ui)` starts each frame and returns false while the window is minimised. In that case the
   app draws nothing that frame.
 
 [ui/](../ui/README.md) describes how to use each of these.

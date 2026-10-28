@@ -21,20 +21,20 @@ reaches it directly, so the subclass passes the registry to whatever else needs 
 a system, a reference for the render functions.
 
 An entity's components are added by the class that owns the entity's id, and read back through
-the registry:
+the registry. Here `Position2D` is one of pong's own components:
 
 ```cpp
-registry().emplace<v3d::ecs::component::Position2D>(id_, glm::vec2(0.0F));
+registry().emplace<Position2D>(id_, glm::vec2(0.0F));
 ...
-auto& position = registry().get<v3d::ecs::component::Position2D>(id_);
+auto& position = registry().get<Position2D>(id_);
 position.value += velocity * step;
 ```
 
 Use `try_get` when a component may be missing. odyssey's renderer uses it to draw the player
 only when the player has a position.
 
-`api/ecs` (`v3dlib_ecs`) depends on `api/type`, glm and EnTT, and on no device. Game rules
-written over it can be tested headless.
+`api/ecs` (`v3dlib_ecs`) depends on `api/animation`, `api/type`, glm and EnTT, and on no
+device. Game rules written over it can be tested headless.
 
 ### Holding an entity across frames
 
@@ -81,35 +81,33 @@ can use. All are in `v3d::ecs::component`.
 | Component | What it is |
 |---|---|
 | `Transform` | Where a thing stands in a 3D world: a position, a quaternion and a scale. It is `type::Transform`. |
-| `Position1D` | A position along a line, `float value`. |
-| `Position2D` | A position on a plane, `glm::vec2 value`. |
-| `Color3` | A colour, `glm::vec3 value`. |
 | `Playback` | Which animation clip an entity is playing, how far in, and the clip it is fading out of. |
 | `Emitter` | A particle effect carried by an entity, and the particles it has made. |
 
-Each is a plain value. Write its fields directly; there are no setters. `Transform`,
-`Position1D`, `Position2D` and `Playback` each have an `interpolate()` beside them, so they can
-be drawn between steps.
+Each is a plain value. Write its fields directly; there are no setters. `Transform` and
+`Playback` each have an `interpolate()` beside them, so they can be drawn between steps.
 
 ### Your own components
 
 A component does not need to live in `api/ecs`. Define the rest beside the app's own code. pong
-keeps `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and `Direction` in
-[pong/src/component/](../../pong/src/component). Any type works as a component: odyssey's
-player stands on a `grid::TileCoord`, the type its pathfinding already uses.
+keeps `Position1D`, `Position2D`, `Color3`, `Score`, `Travel`, `Offset`, `PaddleSize`, `Size` and
+`Direction` in [demos/pong/src/component/](../../demos/pong/src/component). Its two positions
+each have an `interpolate()` beside them, so the engine can draw them between steps. Any type
+works as a component: odyssey's player stands on a `grid::TileCoord`, the type its pathfinding
+already uses.
 
 ### Transform
 
 `Transform` ([api/ecs/component/Transform.h](../../api/ecs/component/Transform.h)) is the
 position of a thing's origin (a sprite's feet, a mesh's own origin), its rotation and its
-scale. It is the same type an editor mesh's `dag::Transform` holds.
+scale. It is the same type an editor item's placement is.
 
 - `aboutY(radians)` builds a turn about `+Y`, for a world that turns about one axis. A positive
   angle turns `+Z` towards `+X`.
 - `matrix()` and `interpolate()` are described in [Types.md](Types.md#transform).
 
-The api has two ways to say where a thing is. `Transform` is for things drawn in a 3D world.
-`Position1D` and `Position2D` are for simpler 2D games such as pong.
+`Transform` is for things drawn in a 3D world. A 2D game such as pong defines positions of its
+own.
 
 ### Playback
 
@@ -123,7 +121,7 @@ the same for the clip being faded out of, and the fade's progress.
   nothing, so a game can call it every step from whatever chooses its clip. A fade of zero, or
   nothing playing, cuts.
 - **`advance(registry, step)`** moves every entity's playback on by one step. Call it in
-  `simulate()`, after the snapshot.
+  `simulate()`. The engine has already taken the step's snapshot.
 - **`crossed(previous, current, marker)`** counts how many times a step passed a marker time in
   the clip, such as a footstep. It is zero for a step that changed clip.
 - **`Playback::none`** as the clip draws the skeleton's rest pose. Playing it with a fade fades
@@ -142,9 +140,10 @@ Background: [ADR-0070](../adr/0070-animation-cpu-sampling-playback-on-the-fixed-
 ### Emitter
 
 `Emitter` ([api/ecs/component/Emitter.h](../../api/ecs/component/Emitter.h)) holds a
-`type::effect::Emitter` description and a `type::effect::State` with the particles. Construct it
-with a seed to make its particles reproducible. [Types.md](Types.md#particle-effects) describes
-the description fields and the simulation.
+`ecs::effect::Emitter` description and an `ecs::effect::State` with the particles. Construct it
+with a seed to make its particles reproducible.
+[Animation.md](Animation.md#particle-effects) describes the description fields and the
+simulation.
 
 - **`emit(registry, step)`** steps every emitter from its entity's `Transform`: the position is
   the emitter's origin and the rotation turns its spawn shape and direction. An emitter on an
@@ -156,7 +155,7 @@ the description fields and the simulation.
 - **Do not snapshot `Emitter`.** Each particle keeps its own previous position, and the renderer
   draws it between steps from that.
 - When an effect fires is the game's decision: it sets `description.rate`, or calls
-  `type::effect::burst()`.
+  `ecs::effect::burst()`.
 - A particle's look is one texture and one clip per emitter. Smoke rising from a flame is a
   second emitter, on the same entity or a child.
 
@@ -180,9 +179,11 @@ state from before the last step and blend towards the current state by `Engine::
 
 The rules:
 
-- **Call `snapshot<T>` at the top of `simulate()`, before anything moves**, once for each type
-  you draw between steps. Every entity with a `T` is snapshotted whether or not it is about to
-  move, so a stopped entity is drawn where it stopped.
+- **Register each type you draw between steps with `Engine::interpolate<T>()`**, once, in the
+  app's constructor or `start()`. The engine calls `snapshot<T>` for it before every
+  `simulate()`, before anything moves. Every entity with a `T` is snapshotted whether or not it
+  is about to move, so a stopped entity is drawn where it stopped. Call `snapshot<T>` yourself
+  only for a registry the engine does not step.
 - **Call `settle<T>` after a teleport, once the new value is written.** It copies the value the
   entity has when it is called. An entity put somewhere rather than moved there is otherwise
   drawn sweeping across the screen for one frame, and nothing reports it.
@@ -197,16 +198,19 @@ The rules:
   at its current value.
 
 ```cpp
+MyEngine::MyEngine(const std::string& path) : v3d::engine::Engine(path) {
+    interpolate<v3d::ecs::component::Transform>();
+    interpolate<v3d::ecs::component::Playback>();
+}
+
 bool MyEngine::simulate(float step) {
-    v3d::ecs::snapshot<v3d::ecs::component::Transform>(registry());
-    v3d::ecs::snapshot<v3d::ecs::component::Playback>(registry());
     // ... move things ...
     v3d::ecs::component::advance(registry(), step);
     return true;
 }
 ```
 
-pong snapshots `Position2D` and `Position1D` this way.
+pong registers `Position2D` and `Position1D` this way.
 
 Background: [ADR-0060](../adr/0060-ecs-interpolate-from-a-previous-step-component.md)
 
@@ -224,8 +228,8 @@ components live in `api/render/realtime/component/`, beside the renderer handles
 
 The api provides the functions that find these entities and draw them, in `realtime::entity`:
 `sprites()`, `particles()`, `meshes()` and `casters()`. Each takes the registry and `alpha()`,
-and reads `Transform` through `interpolated<Transform>`. An entity whose game snapshots
-`Transform` is therefore drawn between steps with no further work.
+and reads `Transform` through `interpolated<Transform>`. An entity whose game registers
+`Transform` with `interpolate<T>()` is therefore drawn between steps with no further work.
 
 A sprite ignores its transform's rotation, because a billboard faces the camera. A game shows
 which way a sprite faces by choosing its region. A `Sprite` holds the region's texture
@@ -240,6 +244,7 @@ Background: [ADR-0063](../adr/0063-ecs-draw-from-a-transform-plus-a-component-pe
 - A registry can call a listener when a component is constructed, destroyed or updated. Nothing
   in the tree uses this.
 - The `entt::dispatcher` the engine creates is separate from the registry. The engine builds it
-  in `initialize()` and hands it to the event and input engines. An app that plays sound builds
-  an `audio::Engine` over the same dispatcher, so a sound event published anywhere reaches it.
+  in `initialize()` and hands it to the event router and the input devices. An app that plays
+  sound builds an `audio::Player` over the same dispatcher, so a sound event published anywhere
+  reaches it.
   See [engine/Audio.md](engine/Audio.md#audio).

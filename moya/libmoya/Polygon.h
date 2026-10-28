@@ -18,6 +18,10 @@ class Frustum;
 class Plane;
 };  // namespace v3d::type::geometry
 
+namespace v3d::render::offline::rib {
+class ParameterList;
+};  // namespace v3d::render::offline::rib
+
 namespace v3d::moya {
 class RenderContext;
 
@@ -25,6 +29,33 @@ class Polygon : public reyes::Primitive {
  public:
     Polygon();
     virtual ~Polygon();
+
+    /**
+     * One polygon from the corners that indices names in the position array, with whatever
+     * colour, shading normal and texture coordinates the scene gave each corner. An index past
+     * the position array is skipped. reyes::Hider::add() gives a vertex left without a
+     * colour the current colour, and a vertex left without a normal the plane the polygon lies
+     * in.
+     **/
+    static boost::shared_ptr<Polygon> build(const std::vector<glm::vec3> & points,
+        const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
+        const std::vector<float> & st, const std::vector<unsigned int> & indices);
+    /**
+     * The polygon RiPolygon describes: the first vertices corners of "P", with "Cs", "N" and
+     * "st" read as build() reads them. Both the C interface and the RIB path build a polygon
+     * through this.
+     *
+     * @return null when fewer than three corners have a position
+     **/
+    static boost::shared_ptr<Polygon> from(const v3d::render::offline::rib::ParameterList & parameters,
+        unsigned int vertices);
+
+    /**
+     * The polygon as a fan of quadrilaterals about its first vertex, with a triangle last when
+     * the count is odd. RI requires a polygon to be convex, so each piece is too. A placed
+     * polygon's pieces are placed as it was, with its colour, normal, shading and motion.
+     **/
+    std::vector<boost::shared_ptr<Polygon>> quads() const;
 
     /**
      **/
@@ -68,7 +99,7 @@ class Polygon : public reyes::Primitive {
 
     // reyes::Primitive
     virtual v3d::type::geometry::AABBox bound(void) const;
-    virtual void split(RenderContext & rc);
+    void split(reyes::Hider & hider, RenderContext & rc) override;
     virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid

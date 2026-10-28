@@ -38,8 +38,7 @@ class Buffer final {
  public:
     /**
      * @param device the device to allocate on
-     * @param spec what the buffer is bound as, and the size to start at, which grow() raises
-     *        as the content demands
+     * @param spec what the buffer is bound as, and its size, which never changes
      **/
     Buffer(const boost::shared_ptr<device::Device>& device, const BufferSpec& spec);
 
@@ -51,7 +50,7 @@ class Buffer final {
     Buffer& operator=(const Buffer&) = delete;
 
     /**
-     * @return the underlying buffer handle, which a call to grow() invalidates
+     * @return the underlying buffer handle
      **/
     VkBuffer handle() const noexcept;
 
@@ -59,16 +58,6 @@ class Buffer final {
      * @return how many bytes the buffer holds
      **/
     VkDeviceSize size() const noexcept;
-
-    /**
-     * Make the buffer at least this large, doubling until it is.
-     *
-     * Growing replaces the allocation, so this waits for the device to finish with the
-     * old one. A buffer only grows in the first few frames after a size changes.
-     *
-     * @return whether the buffer was reallocated, which invalidates handle()
-     **/
-    bool grow(VkDeviceSize bytes);
 
     /**
      * Copy into the mapped allocation.

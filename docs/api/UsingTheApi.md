@@ -153,6 +153,9 @@ api library they depend on, and looks only for the third-party packages that set
 - **Boost is always required**, because every api library links `Boost::headers`.
 - **`render_offline` needs no Vulkan and no SDL.** It is a separate library from `render`, so
   you can select it alone.
+- **A selection that needs no Vulkan and no SDL builds with Clang and GCC too**, on any platform.
+  Leave the manifest's `platform` feature out of your own vcpkg install. The rest of the api is
+  built and checked with MSVC on Windows only.
 - **`V3D_LIBRARIES` must be `all` if you turn the apps or the tests back on**, and the configure
   stops otherwise.
 
@@ -166,7 +169,7 @@ Background: [ADR-0033](../adr/0033-build-select-api-libraries-through-a-manifest
 
 Each directory under `api/` provides a `v3d::<library>` target. Link only the ones you use. Each
 library links what it needs, so `v3d::engine` brings `v3d::asset`, `v3d::asset_media`,
-`v3d::config`, `v3d::event`, `v3d::input`, `v3d::render` and others with it.
+`v3d::event`, `v3d::input`, `v3d::window` and others with it.
 
 Sound is the exception. An app that plays sound links `v3d::audio` and calls
 `v3d::audio::registerLoaders()` on its asset manager.
@@ -218,7 +221,7 @@ int main(int /* argc */, char* argv[]) {
 `run()` does the following:
 
 - Works out the executable's directory from `argv[0]`. Every asset path is resolved against it.
-- Opens the log, `v3d.log`, in that directory.
+- Opens the log. [engine/README.md](engine/README.md#logging) says where it is written.
 - Calls the engine's startup and runs the loop, inside a `try` block that logs any exception.
   A windowed app has no console, so the log is the only place an error appears.
 - Shuts the engine down.
@@ -305,9 +308,9 @@ ninja -C out/build/x64-Debug
 
 ### Checking that it works
 
-Run the executable and open `v3d.log` beside it. When the Khronos validation layer from the
-Vulkan SDK is installed, the renderer turns it on and writes its messages to this log. A clean
-start looks like this:
+Run the executable and open its log. [engine/README.md](engine/README.md#logging) says where it
+is. When the Khronos validation layer from the Vulkan SDK is installed, the renderer turns it on
+and writes its messages to this log. A clean start looks like this:
 
 ```
 [info] Creating window 1024 x 768

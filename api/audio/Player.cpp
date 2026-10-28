@@ -1,0 +1,403 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2023 Joshua Farr(josh@farrcraft.com)
+**/
+
+#include "Player.h"
+
+#include <api/asset/Json.h>
+#include <api/asset/Manager.h>
+#include <api/audio/kind/Sound.h>
+#include <api/event/kind/Sound.h>
+#include <api/log/Logger.h>
+
+#include "AudioClip.h"
+#include "Events.h"
+#include "Listener.h"
+#include "Play.h"
+
+#include <SDL3_mixer/SDL_mixer.h>
+
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <boost/foreach.hpp>
+#include <boost/json.hpp>
+#include <boost/make_shared.hpp>
+
+#include <glm/vec3.hpp>
+
+namespace v3d::audio {
+
+Player::Player(const boost::shared_ptr<v3d::log::Logger> & logger, const boost::shared_ptr<entt::dispatcher> &dispatcher) :
+    dispatcher_(dispatcher), logger_(logger) {
+}
+
+Player::~Player() {
+    shutdown();
+}
+
+void Player::shutdown() {
+    // no sound event reaches an engine that has let its device go
+    sound_.release();
+    // the tracks go before the mixer that handed them out, and before the clips they were
+    // playing
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        MIX_DestroyTrack(playing.second.track);
+    }
+    voices_.clear();
+    for (MIX_Track* track : free_) {
+        MIX_DestroyTrack(track);
+    }
+    free_.clear();
+    sounds_.clear();
+    if (mixer_ != nullptr) {
+        MIX_DestroyMixer(mixer_);
+        mixer_ = nullptr;
+        // the references initialize() took
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
+}
+
+bool Player::initialize() {
+    // the mixer opens a device from SDL's audio subsystem. The game engine initializes only
+    // video, so this starts audio. The subsystem is reference counted, and this call pairs
+    // with the SDL_QuitSubSystem in shutdown().
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        logger_->get()->error("could not initialize SDL audio: {}", SDL_GetError());
+        return false;
+    }
+    if (!MIX_Init()) {
+        logger_->get()->error("could not initialize the mixer: {}", SDL_GetError());
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return false;
+    }
+    // the default playback device, in whatever format it prefers
+    mixer_ = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (mixer_ == nullptr) {
+        logger_->get()->error("could not open an audio device: {}", SDL_GetError());
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
+
+    sound_ = dispatcher_->sink<v3d::event::kind::Sound>().connect<&Player::soundEvent>(*this);
+    return mixer_ != nullptr;
+}
+
+void Player::soundEvent(const v3d::event::kind::Sound& sound) {
+    Play how;
+    how.pan = sound.pan();
+    how.position = sound.position();
+    if (play(sound.clip(), how) == Voice::None) {
+        logger_->get()->error("unable to play clip: {}", sound.clip());
+    }
+}
+
+bool Player::load(const boost::json::object& doc, const Resolve& resolve) {
+    // every lookup is guarded, because boost::json::object::at throws for a key it does
+    // not hold and a rejected config has to reach the caller as a false return
+    if (!doc.contains("sounds") || !doc.at("sounds").is_array()) {
+        logger_->get()->error("Missing sounds in audio config");
+        return false;
+    }
+    auto const items = doc.at("sounds").as_array();
+    const auto* it = items.begin();
+    bool loaded = true;
+    for (; it != items.end(); ++it) {
+        if (!it->is_object()) {
+            logger_->get()->error("Unrecognized sound config");
+            return false;
+        }
+        auto const sound = it->as_object();
+        if (!sound.contains("clip_id") || !sound.contains("file")) {
+            logger_->get()->error("Sound config names no clip_id or no file");
+            return false;
+        }
+        const std::optional<std::string> clip = v3d::asset::readString(sound, "clip_id");
+        const std::optional<std::string> file = v3d::asset::readString(sound, "file");
+        if (!clip || !file) {
+            logger_->get()->error("Sound config gives a clip_id or a file that is not a string");
+            return false;
+        }
+        const std::string& clipId = *clip;
+        const std::string& fileName = *file;
+        // a clip that will not load does not stop the rest of the document from loading.
+        // One missing wav does not leave the app without any of its sounds
+        if (!resolve || !addClip(resolve(fileName), clipId)) {
+            logger_->get()->error("unable to load audio clip [{}] from [{}]", clipId, fileName);
+            loaded = false;
+        }
+    }
+
+    return loaded;
+}
+
+bool Player::load(const boost::json::object& config, v3d::asset::Manager& assets) {
+    return load(config, [&assets](const std::string& source) -> boost::shared_ptr<AudioClip> {
+        const boost::shared_ptr<kind::Sound> sound = assets.load<kind::Sound>(source);
+        return sound ? sound->clip() : boost::shared_ptr<AudioClip>();
+    });
+}
+
+bool Player::addClip(const boost::shared_ptr<AudioClip>& clip, const std::string_view& key) {
+    // play() hands the audio to the mixer. A clip that never read its file is refused here,
+    // so the mixer never receives a null
+    if (!clip || clip->audio() == nullptr) {
+        return false;
+    }
+    const std::string clipId(key);
+    sounds_[clipId] = clip;
+    logger_->get()->debug("SoundEngine::addClip - filed audio clip under id [{}]", clipId);
+
+    return true;
+}
+
+bool Player::has(const std::string_view & clip) const {
+    return sounds_.contains(std::string(clip));
+}
+
+bool Player::playClip(const std::string_view & clip) {
+    // a one shot plays on a track like any other sound, so stopAll() stops it too
+    return play(clip, Play()) != Voice::None;
+}
+
+void Player::reap() {
+    for (std::map<Voice, Playing>::iterator playing = voices_.begin(); playing != voices_.end();) {
+        if (MIX_TrackPlaying(playing->second.track)) {
+            ++playing;
+            continue;
+        }
+        playing = retire(playing);
+    }
+}
+
+std::map<Voice, Player::Playing>::iterator Player::retire(const std::map<Voice, Playing>::iterator & playing) {
+    free_.push_back(playing->second.track);
+    return voices_.erase(playing);
+}
+
+std::map<Voice, Player::Playing>::iterator Player::live(Voice voice) {
+    std::map<Voice, Playing>::iterator found = voices_.find(voice);
+    if (found == voices_.end()) {
+        return found;
+    }
+    // a finished sound keeps its entry until the next play() reaps it, so a lookup checks
+    // the track itself and takes back one that has finished
+    if (!MIX_TrackPlaying(found->second.track)) {
+        retire(found);
+        return voices_.end();
+    }
+    return found;
+}
+
+MIX_Track* Player::claim() {
+    if (!free_.empty()) {
+        MIX_Track* track = free_.back();
+        free_.pop_back();
+        return track;
+    }
+    return MIX_CreateTrack(mixer_);
+}
+
+Voice Player::play(const std::string_view & clip, const Play & how) {
+    // an engine whose initialize() opened no device has nothing to play into
+    if (mixer_ == nullptr) {
+        return Voice::None;
+    }
+    const std::string clipId(clip);
+    const std::map<std::string, boost::shared_ptr<AudioClip>>::const_iterator found = sounds_.find(clipId);
+    if (found == sounds_.end()) {
+        return Voice::None;
+    }
+
+    reap();
+    MIX_Track* track = claim();
+    if (track == nullptr) {
+        logger_->get()->error("no track to play clip [{}] on: {}", clipId, SDL_GetError());
+        return Voice::None;
+    }
+    if (!MIX_SetTrackAudio(track, found->second->audio())) {
+        logger_->get()->error("unable to put clip [{}] on a track: {}", clipId, SDL_GetError());
+        free_.push_back(track);
+        return Voice::None;
+    }
+
+    MIX_SetTrackGain(track, how.gain * busGain(how.bus));
+    if (how.position) {
+        place(track, *how.position);
+    } else {
+        place(track, how.pan);
+    }
+
+    // the properties are the only way to name a loop count or a fade, and the id belongs to
+    // this call rather than to the track
+    const SDL_PropertiesID options = SDL_CreateProperties();
+    if (options != 0) {
+        if (how.loops != 0) {
+            SDL_SetNumberProperty(options, MIX_PROP_PLAY_LOOPS_NUMBER, how.loops);
+        }
+        if (how.fadeInMs > 0) {
+            SDL_SetNumberProperty(options, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, how.fadeInMs);
+        }
+    }
+    const bool started = MIX_PlayTrack(track, options);
+    if (options != 0) {
+        SDL_DestroyProperties(options);
+    }
+    if (!started) {
+        logger_->get()->error("unable to play clip [{}]: {}", clipId, SDL_GetError());
+        free_.push_back(track);
+        return Voice::None;
+    }
+
+    const Voice voice = static_cast<Voice>(nextVoice_++);
+    Playing playing;
+    playing.track = track;
+    playing.bus = how.bus;
+    playing.gain = how.gain;
+    playing.position = how.position;
+    voices_[voice] = playing;
+    return voice;
+}
+
+bool Player::stop(Voice voice, int fadeOutMs) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    // MIX_StopTrack counts a fade in sample frames, which is the track's own rate
+    const Sint64 frames = fadeOutMs > 0 ? MIX_TrackMSToFrames(found->second.track, fadeOutMs) : 0;
+    return MIX_StopTrack(found->second.track, frames > 0 ? frames : 0);
+}
+
+void Player::stopAll(int fadeOutMs) {
+    if (mixer_ == nullptr) {
+        return;
+    }
+    MIX_StopAllTracks(mixer_, fadeOutMs > 0 ? fadeOutMs : 0);
+    // not reaped here: a fade is still playing, and a track taken back mid fade would be
+    // handed to the next sound before it had finished
+}
+
+bool Player::playing(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    return found != voices_.end() && MIX_TrackPlaying(found->second.track);
+}
+
+bool Player::gain(Voice voice, float level) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    found->second.gain = level;
+    return MIX_SetTrackGain(found->second.track, level * busGain(found->second.bus));
+}
+
+float Player::volume(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end() || !MIX_TrackPlaying(found->second.track)) {
+        return 0.0F;
+    }
+    return MIX_GetTrackGain(found->second.track);
+}
+
+bool Player::pan(Voice voice, float value) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    found->second.position.reset();
+    return place(found->second.track, value);
+}
+
+bool Player::position(Voice voice, const glm::vec3& position) {
+    const std::map<Voice, Playing>::iterator found = live(voice);
+    if (found == voices_.end()) {
+        return false;
+    }
+    found->second.position = position;
+    return place(found->second.track, position);
+}
+
+std::optional<glm::vec3> Player::heard(Voice voice) const {
+    const std::map<Voice, Playing>::const_iterator found = voices_.find(voice);
+    if (found == voices_.end() || !found->second.position || !MIX_TrackPlaying(found->second.track)) {
+        return std::nullopt;
+    }
+    MIX_Point3D point{};
+    if (!MIX_GetTrack3DPosition(found->second.track, &point)) {
+        return std::nullopt;
+    }
+    return glm::vec3(point.x, point.y, point.z);
+}
+
+bool Player::listener(const Listener& listener) {
+    const std::optional<Listener> facing = orthonormal(listener);
+    if (!facing) {
+        return false;
+    }
+    listener_ = *facing;
+    // the mixer's listener cannot move, so every placed sound is moved around it instead
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        if (playing.second.position) {
+            place(playing.second.track, *playing.second.position);
+        }
+    }
+    if (events_) {
+        events_->listener(listener_);
+    }
+    return true;
+}
+
+const Listener& Player::listener() const noexcept {
+    return listener_;
+}
+
+void Player::attach(const boost::shared_ptr<Events>& events) {
+    events_ = events;
+    if (events_) {
+        events_->listener(listener_);
+    }
+}
+
+bool Player::place(MIX_Track* track, float pan) {
+    const Stereo gains = stereo(pan);
+    if (gains.left == 1.0F && gains.right == 1.0F) {
+        return MIX_SetTrackStereo(track, nullptr);
+    }
+    const MIX_StereoGains mixed{gains.left, gains.right};
+    return MIX_SetTrackStereo(track, &mixed);
+}
+
+bool Player::place(MIX_Track* track, const glm::vec3& position) const {
+    const glm::vec3 heard = relative(listener_, position);
+    const MIX_Point3D point{heard.x, heard.y, heard.z};
+    return MIX_SetTrack3DPosition(track, &point);
+}
+
+bool Player::busGain(const std::string & bus, float level) {
+    if (bus.empty()) {
+        return false;
+    }
+    buses_[bus] = level;
+    // the mixer keeps a gain per track and none per bus, so each sound on the bus is set to
+    // its own gain times the new level
+    bool set = true;
+    for (const std::pair<const Voice, Playing>& playing : voices_) {
+        if (playing.second.bus == bus && !MIX_SetTrackGain(playing.second.track, playing.second.gain * level)) {
+            set = false;
+        }
+    }
+    return set;
+}
+
+float Player::busGain(const std::string & bus) const {
+    const std::map<std::string, float>::const_iterator found = buses_.find(bus);
+    return found == buses_.end() ? 1.0F : found->second;
+}
+
+};  // namespace v3d::audio

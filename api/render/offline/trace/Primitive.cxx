@@ -53,4 +53,12 @@ void Primitive::opacity(const glm::vec3 & value) {
     opacity_ = value;
 }
 
+const glm::mat4x4 & Primitive::object() const {
+    return object_;
+}
+
+void Primitive::object(const glm::mat4x4 & placement) {
+    object_ = placement;
+}
+
 };  // namespace v3d::render::offline::trace

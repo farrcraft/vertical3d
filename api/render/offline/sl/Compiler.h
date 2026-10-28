@@ -107,6 +107,16 @@ class Compiler final {
      **/
     Type checkBuiltinCall(syntax::Call & call, const std::vector<Type> & given, Type wanted);
     /** Refuse a call that writes an argument which is not a variable that can be assigned. **/
+    /**
+     * An argument to a formal declared output is copied back when the function returns, so it
+     * has to be a variable the caller may assign, of the formal's own type.
+     **/
+    void checkOutputArgument(const syntax::Call & call, std::size_t argument, Type formal, Type given);
+    /**
+     * Give a two-argument faceforward its reference, Ng, as RI defines it. A shader with no Ng
+     * is refused, and a shader that declares its own faceforward is left alone.
+     **/
+    void referenceNg(syntax::Call* call);
     void checkWritten(const syntax::Call & call, const Signature & signature);
     Type checkUnary(const syntax::ExpressionPtr & expression);
     Type checkBinary(const syntax::ExpressionPtr & expression);

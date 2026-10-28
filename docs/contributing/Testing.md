@@ -36,7 +36,9 @@ out/build/x64-Debug/api/image/tests/v3dtest_image.exe --run_test=compare_identic
 ```
 
 CI runs every suite in [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) on each
-pull request and on each push to `main`.
+pull request and on each push to `main`. [.github/workflows/portable.yml](../../.github/workflows/portable.yml)
+builds the libraries that need neither a window nor a device with Clang on Linux, and runs their
+suites there too. [Build.md](Build.md#building-off-msvc) lists them.
 
 ## How the suites are organised
 
@@ -47,8 +49,12 @@ pull request and on each push to `main`.
   `api/render/tests/device/`. See [The render device suite](#the-render-device-suite).
 - **One more for the frame loop on a real window**, `render_window`, from
   `api/render/tests/window/`. See [The render window suite](#the-render-window-suite).
-- **One suite per app that has logic worth testing**: moya, odyssey, pong, tetris, vertical3d
-  and voxel, each in `<app>/tests/`.
+- **One suite per app that has logic worth testing**, in the app's `tests/` directory: moya,
+  vertical3d, and the five demos under `demos/`.
+- **One more for the editor on a real device**, `vertical3d_device`, from
+  `vertical3d/tests/device/`. It draws the editor's shaded pass through the render device
+  suite's headless device, whose `Headless.cpp` it compiles. It skips where there is no device,
+as that suite does, and CI fails it on a skip, as it does that suite.
 
 `ctest -N` lists every suite. The test sources are the record of what each suite checks. A change
 with a testable CPU-side part is expected to add test cases.
@@ -58,14 +64,17 @@ with a testable CPU-side part is expected to add test cases.
 These have no automated test:
 
 - `Feature::Window`, which opens an app's SDL window. The render window suite opens its windows
-  through `render::realtime::Window` and not through the feature.
-- Whether a sound from `audio::Engine` is audible. An engine with no device gives back no
+  through `window::Window` and not through the feature.
+- Whether a sound from `audio::Player` is audible. An engine with no device gives back no
   voice, so most cases run without one. `audio_engine_a_sound_plays_at_its_gain_times_its_bus_test`
   opens SDL's dummy audio driver, which plays into nothing and needs no sound card, and reads
   back the volume each track is set to. `audio_engine_lets_the_dispatcher_go_test` needs SDL's
   audio subsystem to start, and fails on a machine where it cannot.
 - The upload in `ui::paint::TextRenderer`, which needs a device. Its measuring and layout are
   tested with an upload that returns a handle and draws nothing.
+- The FMOD event backend, in CI. Its cases in `FmodEventsTest.cpp` build only when
+  `V3D_FMOD_ROOT` names an FMOD install, and CI has none: FMOD cannot be redistributed, and its
+  download needs an account. They run on a machine where FMOD is installed.
 
 `Engine::eventLoop()` renders, so a test cannot drive it. The order in which an event reaches the
 app, the bindings and the engine is in `Engine::route()`, which a test calls directly with no
@@ -94,8 +103,9 @@ target_link_libraries(v3dtest_image PRIVATE v3dlib_image)
 
 You link the library under test yourself, and every other library whose header the suite
 includes, rather than reaching it through the library under test. Each suite's `TestMain`
-defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device`, whose `main`
-checks for a device first, and `render_window`, whose `main` checks for a window.
+defines `BOOST_TEST_MODULE` and nothing else. The exceptions are `render_device` and
+`vertical3d_device`, whose `main` checks for a device first, and `render_window`, whose `main`
+checks for a window.
 
 A test file puts everything after its includes in one anonymous namespace, its suites and cases
 as well as its fixtures and helpers. `BOOST_AUTO_TEST_CASE` declares a struct named after the
@@ -114,8 +124,9 @@ Some suites take data through the build rule an app uses instead, which copies a
 on the next build whether or not the suite relinks:
 
 - `font` and `ui` take the shared font through `v3d_add_shared_data`.
-- `pong`, `tetris`, `voxel`, `odyssey` and `vertical3d` take their app's `data/` through
-  `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds document.
+- `pong`, `tetris`, `voxel`, `odyssey`, `diorama` and `vertical3d` take their app's `data/`
+  through `v3d_copy_data`, to check the bindings it ships. pong's suite also checks its sounds
+  document, and diorama's decodes every model it places.
 
 See [Traps](#traps) for what the copy means when you add a fixture.
 
@@ -229,6 +240,13 @@ back with `vulkan::frame::Capture`. Every case asserts two things:
   image (see [Reference images](#reference-images)). The rest check chosen pixels or values by
   hand.
 
+A case builds a `v3d::test::Headless` from `device/Headless.h`: an instance, a device and a
+context of its own. For a frame whose every pass names its own target, `draw(frame, target,
+&capture)` records the frame, copies the target's colour or depth into the capture, submits, and
+waits. `picture(frame, target, path)` does the same, writes the colour to a png, and returns it
+read back from the file. A case that draws into the frame's own image, records several frames,
+or copies one layer still records and submits by hand.
+
 Some cases build a pipeline rather than drawing, because only a device can reject a pipeline
 shape that no renderer in the tree uses. One of them reads how much the pipeline cache holds after
 each build. It shows that a pipeline asked for twice is compiled once.
@@ -266,8 +284,8 @@ Background: [ADR-0007](../adr/0007-ci-render-tests-on-software-vulkan.md)
 
 ## The render window suite
 
-`v3dtest_render_window` tests what only a window can show: `Engine3D` acquiring, recording and
-presenting to a swapchain. Each case opens a small SDL window, builds an `Engine3D` on it, and
+`v3dtest_render_window` tests what only a window can show: `WindowRenderer` acquiring, recording and
+presenting to a swapchain. Each case opens a small SDL window, builds an `WindowRenderer` on it, and
 closes both when it ends. Every case asserts validation silence, as the device suite's do.
 
 `main` opens one window before Boost.Test starts. When SDL cannot start, the window cannot be
@@ -279,7 +297,7 @@ A window appears on the screen for each case while the suite runs.
 **In CI a skip is a failure here too.** The Windows runner opens a window, and lavapipe presents
 to it. The suite runs in a workflow step of its own rather than through ctest, and fails the job
 on exit code 77. A skip there means the window or the swapchain stopped working and no
-`Engine3D` case was checked.
+`WindowRenderer` case was checked.
 
 ## Reference images
 
@@ -343,7 +361,8 @@ CI checks the four reference images and every other device case. That does not c
 blended, filtered or antialiased, which is most of what the renderer draws. Check a rendering
 change locally by running an app and reading its log.
 
-1. **Run the app and read `v3d.log`.** The log is written beside the executable. When the Khronos
+1. **Run the app and read its log.** [api/engine/README.md](../api/engine/README.md#logging)
+   says where it is. When the Khronos
    validation layer is installed, the renderer turns it on and sends its messages to the log
    through `vulkan::device::Instance`. A clean run has no validation messages, so a silent log
    is the result you want. Without that routing, a loaded layer prints nothing, which looks the

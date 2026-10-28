@@ -18,24 +18,30 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 
 | Library | What it is for |
 |---|---|
-| [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, atomic file writes and document migration. |
-| [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models. |
-| [`audio`](../../api/audio/) | Sound playback over SDL3_mixer, and the loader for wav files. |
+| [`animation`](../../api/animation/) | Skeletons, poses, animation clips, keyframe curves and the tracks particle effects follow. |
+| [`asset`](../../api/asset/) | Finds files under a data directory and loads them through registered loaders. Holds the JSON and text loaders, the manifest an app lists its documents in, atomic file writes and document migration. |
+| [`asset_media`](../../api/asset/media/) | The loaders for pictures (png, jpeg, tga, bmp) and glTF models, and sprite sheets. |
+| [`audio`](../../api/audio/) | Sound playback over SDL3_mixer with a listener and placed voices, the loader for wav files, and FMOD Studio events when built with FMOD. |
 | [`brep`](../../api/brep/) | Boundary representation meshes with half-edge topology, which the editor models with. |
-| [`config`](../../api/config/) | Reads `data/config.json` and the documents it lists. Also reads camera profiles and sprite sheets. |
-| [`dag`](../../api/dag/) | A node with a unique id, and the transform an editor mesh is placed by. |
-| [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry. |
-| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, the window, config, input and settings. |
+| [`curve`](../../api/curve/) | Curves of four types (poly, Bezier, Catmull-Rom and NURBS), their evaluation, and their conversion to the basis curves renderers take. See [Curves.md](Curves.md). |
+| [`database`](../../api/database/) | A connection to a SQLite database, its statements and its transactions. See [Database.md](Database.md). |
+| [`ecs`](../../api/ecs/) | Shared components and helpers over the EnTT entity registry, and the particle effects its emitter steps. |
+| [`engine`](../../api/engine/) | The game engine: the app lifecycle, the main loop, config, input and settings, and the readers for the window and camera documents. It opens the window. |
 | [`event`](../../api/event/) | Event types, key bindings, and the mapping from a key to a command. |
 | [`font`](../../api/font/) | Rasterizes a typeface with FreeType into a texture atlas and lays out text. |
 | [`grid`](../../api/grid/) | Tile boards: pathfinding, line of sight, terrain from a picture, and overlay geometry. |
-| [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison and the texture atlas. |
+| [`image`](../../api/image/) | Image readers and writers for png, jpeg, tga and bmp, cropping, comparison, the texture atlas and sprite sheet packing. |
 | [`input`](../../api/input/) | Keyboard and mouse devices, and the state of what is held and what changed this frame. |
+| [`interchange`](../../api/interchange/) | Scenes read from glTF in no format's terms: nodes, polygon meshes, cameras, lights, curves and keys. See [Interchange.md](Interchange.md). |
+| [`interchange_usd`](../../api/interchange/usd/) | The USD reader, which fills the same scene. It is the one library that links OpenUSD. |
 | [`log`](../../api/log/) | The process log, a thin wrapper over spdlog. |
-| [`render`](../../api/render/) | The Vulkan realtime renderer: window, frames, passes, draw items, canvases, sprites, meshes and lighting. |
+| [`model`](../../api/model/) | The geometry, materials, skeleton and clips a model file gives. |
+| [`render`](../../api/render/) | The Vulkan realtime renderer: the surface it presents to, frames, passes, draw items, canvases, sprites, meshes and lighting. |
 | [`render_offline`](../../api/render/offline/) | What the offline renderer moya is built on: RIB, the shading language, sampling, the film and the ray tracer. It uses no Vulkan and no SDL. |
-| [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms, models, skeletons, animation, particle effects and random numbers. |
+| [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
+| [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
+| [`window`](../../api/window/) | The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses no graphics API. See [engine/Window.md](engine/Window.md). |
 
 ## How they depend on each other
 
@@ -48,45 +54,56 @@ Boost.
 |---|---|---|
 | `log` | none | spdlog |
 | `type` | none | glm |
+| `animation` | none | glm |
 | `grid` | none | glm |
 | `image` | log | libpng, libjpeg, glm |
 | `asset` | log | (Boost only) |
 | `event` | log, asset | glm, EnTT |
-| `dag` | type | glm |
-| `ecs` | type | glm, EnTT |
-| `brep` | dag, type | glm |
+| `database` | none | SQLite |
+| `ecs` | animation, type | glm, EnTT |
+| `brep` | type | glm |
+| `curve` | none | glm |
+| `model` | animation | glm |
 | `font` | log, image | FreeType, glm |
-| `config` | log, asset, type | glm |
 | `input` | event, type | **SDL3**, glm, EnTT |
-| `asset_media` | log, asset, image, type | cgltf, glm |
-| `audio` | log, event, asset | **SDL3_mixer**, EnTT |
+| `interchange` | asset, curve, type | cgltf, glm |
+| `interchange_usd` | interchange, curve, type | **OpenUSD**, glm |
+| `asset_media` | log, animation, asset, image, interchange, model | glm |
+| `audio` | log, event, asset | **SDL3_mixer**, EnTT, glm |
 | `render_offline` | log, image, type | glm |
-| `render` | log, asset, asset_media, ecs, font, image, type | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
-| `ui` | log, render, asset, event, font, image, input, type | **SDL3**, glm, EnTT |
-| `engine` | log, asset, asset_media, config, event, input, render, type | **SDL3**, EnTT |
+| `window` | log | **SDL3**, glm |
+| `render` | log, animation, asset, asset_media, ecs, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
+| `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
+| `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
+| `shell` | engine, ui, asset | none of its own |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   grid                          no device, no window
-image  asset  dag  ecs
-font   config  brep  asset_media  event
+log   type   animation   grid   database   curve   no device, no window
+image  asset  ecs  brep  model
+interchange
+interchange_usd                            OpenUSD
+font   asset_media  event
 render_offline                             offline renderer, no Vulkan or SDL
-input                                      SDL3
+input  window                              SDL3
 audio                                      SDL3_mixer
+engine                                     SDL3, no Vulkan
 render                                     Vulkan, SDL3
-ui     engine                              Vulkan, SDL3 (through render)
+ui                                         Vulkan, SDL3 (through render)
+shell                                      joins engine and ui
 ```
 
 Three consequences matter when choosing what to link:
 
 - **Anything that links `render` needs the Vulkan SDK to configure**, because the renderer's
-  shaders are compiled at build time. That includes `ui` and `engine`.
+  shaders are compiled at build time. That includes `ui`. `engine` does not link `render`, so
+  a tool that runs the engine with no window needs no Vulkan.
 - **Only `audio` needs SDL3_mixer.** The engine does not link it, so an app that plays sound
   links `v3d::audio` itself and registers its loader. [engine/Audio.md](engine/Audio.md#audio)
   shows how.
-- **`type`, `grid`, `ecs`, `image`, `asset` and `config` need no device and no window**, so a
-  test of game rules built on them runs anywhere.
+- **`type`, `animation`, `model`, `grid`, `ecs`, `image` and `asset` need no device and no
+  window**, so a test of game rules built on them runs anywhere.
 
 A project outside the tree chooses which libraries to build with the `V3D_LIBRARIES` CMake
 variable. [UsingTheApi.md](UsingTheApi.md) covers that.
@@ -100,11 +117,18 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | Draw: frames, passes, canvases, sprites, meshes, lighting | [rendering/](rendering/README.md) |
 | Build menus and HUDs | [ui/](ui/README.md) |
 | Keep game state in entities | [ECS.md](ECS.md) |
-| Use cameras, geometry queries, models, animation or particle effects | [Types.md](Types.md) |
+| Use geometry queries, random numbers, flags or transforms | [Types.md](Types.md) |
+| Use a camera | [Cameras.md](Cameras.md) |
+| Use models, or load glTF | [Models.md](Models.md) |
+| Read a glTF file or a USD stage as a scene of nodes, meshes, cameras and lights | [Interchange.md](Interchange.md) |
+| Use animation or particle effects | [Animation.md](Animation.md) |
+| Draw, evaluate or convert curves: poly, Bezier, Catmull-Rom and NURBS | [Curves.md](Curves.md) |
 | Build a tile board with paths and sight lines | [Grid.md](Grid.md) |
-| Load images, fonts, models and JSON documents | [Assets.md](Assets.md) |
+| Load files and JSON documents, or write them | [Assets.md](Assets.md) |
+| Read, write or pack images | [Images.md](Images.md) |
+| Lay out text with a font | [Fonts.md](Fonts.md) |
 | Change the realtime renderer itself | [../internals/realtime/](../internals/realtime/README.md) |
-| Change the ui library itself | [../internals/UserInterface.md](../internals/UserInterface.md) |
+| Change the ui library itself | [../internals/ui/](../internals/ui/README.md) |
 | Work on moya or `render_offline` | [../offline/](../offline/README.md) |
 | See a complete small app | [examples/starter](../../examples/starter/) |
 
@@ -117,10 +141,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Game engine** — `v3d::engine::Engine` in `api/engine`. It runs the main loop and owns the
   window, the config, the asset manager and the input devices. Each app subclasses it.
   See [engine/](engine/README.md).
-- **Render engine** — `v3d::render::realtime::Engine`, a different class in `api/render`. Its
-  subclass `Engine3D` is the one apps use. See [rendering/](rendering/README.md).
-- **Engine3D** — `v3d::render::realtime::Engine3D`, the realtime renderer an app holds. It
-  builds and presents frames into the window. See [rendering/](rendering/README.md).
+- **WindowRenderer** — `v3d::render::realtime::WindowRenderer` in `api/render`, the realtime
+  renderer an app holds. It builds and presents frames into the window. See
+  [rendering/](rendering/README.md).
 - **Controller** — the class name tetris, voxel and the editor give their game engine subclass.
   It is a naming habit, not an api class.
 - **App** — a subclass of the game engine plus a one-line `main` that calls `run<T>`. See
@@ -166,7 +189,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   is held. See [engine/Input.md](engine/Input.md#polling-the-keyboard-and-mouse).
 - **Held command** — a command whose bound key is down now, answered by `Engine::held()`. See
   [engine/Input.md](engine/Input.md#polling-the-keyboard-and-mouse).
-- **Dispatcher** — the `entt::dispatcher` the engine creates. Devices, the event engine, the ui
+- **Dispatcher** — the `entt::dispatcher` the engine creates. Devices, the event router, the ui
   and audio publish and listen on it.
 - **Config document** — a JSON file listed in `data/config.json` under a type such as `window`
   or `binding`. See [engine/Config.md](engine/Config.md#config-documents).
@@ -187,11 +210,11 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 - **Migration** — one step that upgrades a JSON document by one version. See
   [Assets.md](Assets.md#reading-old-documents-forward).
 - **Texture atlas** — `image::TextureAtlas`, one image that many smaller images are packed into.
-  See [Assets.md](Assets.md#texture-atlas).
+  See [Images.md](Images.md#texture-atlas).
 - **Gutter** — the one-texel border the atlas leaves around every region it packs. See
-  [Assets.md](Assets.md#texture-atlas).
+  [Images.md](Images.md#texture-atlas).
 - **Sprite sheet** — an image plus a table of named pixel rectangles in it, read by
-  `config::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
+  `asset::media::SpriteSheets`. See [engine/Config.md](engine/Config.md#sprite-sheets).
 - **Manifest and closure** — the manifest is the table in `cmake/v3dApiLibraries.cmake` of
   what each api library depends on. The `V3D_LIBRARIES` CMake variable names the api libraries
   a project links. CMake builds those plus everything the manifest says they depend on (the
@@ -213,26 +236,32 @@ Terms are grouped by subject. Each entry links to the document that covers it.
 
 ### Geometry, models and effects
 
-- **Mesh** — three different things: a `brep::BRep` the editor models with, a `type::Model` a
-  file loads into, and a device-side mesh in the renderer. See [Types.md](Types.md#models).
-- **Model** — `type::Model`: one vertex array, one index list, materials and parts. See
-  [Types.md](Types.md#models).
+- **Mesh** — four different things: a `brep::BRep` the editor models with, the
+  `editor::Mesh` scene item that places one, a `model::Model` a file loads into, and a
+  device-side mesh in the renderer. See [Models.md](Models.md).
+- **Curve** — two different things: a `curve::Curve`, a shape in space of one of four types,
+  and an `animation::Curve`, one number keyed on frames. See [Curves.md](Curves.md) and
+  [Animation.md](Animation.md).
+- **Basis curve** — a curve as a renderer takes it: one list of points under one basis, as
+  RI's `Curves` and USD's `BasisCurves` hold it. See [Curves.md](Curves.md#basis-curves).
+- **Model** — `model::Model`: one vertex array, one index list, materials and parts. See
+  [Models.md](Models.md).
 - **Part** — a range of a model's indices drawn with one material. See
-  [Types.md](Types.md#models).
+  [Models.md](Models.md).
 - **Skeleton, clip, pose, palette** — a model's joints; a named animation; every joint's local
   transform at one time; the matrices a skinned vertex is moved by. See
-  [Types.md](Types.md#animation).
+  [Animation.md](Animation.md#animation).
 - **Emitter** — the description of what a particle effect spawns and how the particles move.
-  See [Types.md](Types.md#particle-effects) and [ECS.md](ECS.md#emitter).
+  See [Animation.md](Animation.md#particle-effects) and [ECS.md](ECS.md#emitter).
 - **Hand (handedness)** — which way a camera crosses its basis vectors, and so which world
-  direction is on the right of the screen. See [Types.md](Types.md#handedness).
+  direction is on the right of the screen. See [Cameras.md](Cameras.md#handedness).
 - **Profile** — `type::camera::Profile`, a camera's settings: eye, orientation, clipping, field
-  of view and projection kind. See [Types.md](Types.md#cameras).
+  of view and projection kind. See [Cameras.md](Cameras.md).
 
 ### Drawing
 
 - **Frame** — everything drawn for one presented image: a list of passes, built during the
-  tick and recorded by `Engine3D::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
+  tick and recorded by `WindowRenderer::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Pass** — one drawing operation into one target, with its own camera, clear, depth test and
   list of draw items. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Draw item** — `DrawItem`, a description of one draw: pipeline and material handles, push
@@ -257,7 +286,7 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   pipeline, set or buffer only when it changes. See
   [internals/realtime/](../internals/realtime/README.md).
 - **Lit pass** — a pass that draws meshes with light and shadow through
-  `vulkan::renderer::Lit`. See [rendering/Lighting.md](rendering/Lighting.md).
+  `renderer::Lit`. See [rendering/Lighting.md](rendering/Lighting.md).
 - **Scene set** — descriptor set 2, which a lit pass binds once. It holds the light, the shadow
   map and the frame's joint matrices. See [rendering/Lighting.md](rendering/Lighting.md).
 

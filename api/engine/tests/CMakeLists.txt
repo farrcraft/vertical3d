@@ -9,12 +9,14 @@ v3d_add_test(engine
 	"StatisticsTest.cpp"
 	"EngineTest.cpp"
 	"SettingsTest.cpp"
-	"IsometricControllerTest.cpp")
+	"IsometricControllerTest.cpp"
+	"CameraProfilesTest.cpp"
+	"WindowSizeTest.cpp")
 
 # SDL3: the tests build SDL_Event values directly.
 target_link_libraries(v3dtest_engine PRIVATE
 	v3dlib_engine
-	v3dlib_config
+	v3dlib_ecs
 	v3dlib_asset
 	v3dlib_event
 	v3dlib_log

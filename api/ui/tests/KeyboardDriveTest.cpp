@@ -4,11 +4,11 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
 #include <api/ui/component/Panel.h>
@@ -33,8 +33,8 @@
 namespace {
 
 /**
- * A ui engine holding one container, and an input::Keys over it. Nothing draws, because the
- * focus decides which component a key reaches, and the engine sets the focus without
+ * A ui::Interface holding one container, and an input::Keys over it. Nothing draws, because
+ * the focus decides which component a key reaches, and the interface sets the focus without
  * reading any drawn box.
  **/
 struct Fixture final {
@@ -42,8 +42,8 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
-        ui = boost::make_shared<v3d::ui::Engine>(
-            boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher,
+        ui = boost::make_shared<v3d::ui::Interface>(
+            boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>());
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
@@ -58,7 +58,7 @@ struct Fixture final {
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::event::Context> context;
     std::vector<std::string> sent;
-    boost::shared_ptr<v3d::ui::Engine> ui;
+    boost::shared_ptr<v3d::ui::Interface> ui;
     boost::shared_ptr<v3d::ui::Container> container;
     boost::shared_ptr<v3d::ui::input::Keys> keys;
 };

@@ -8,9 +8,10 @@
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 #include <api/render/realtime/vulkan/frame/CommandPool.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
 
-#include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -19,68 +20,65 @@ namespace v3d::render::realtime::vulkan::memory {
 
 /**
  **/
-Uploader::Uploader(const boost::shared_ptr<device::Device>& device) :
+Uploader::Uploader(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<frame::Ring>& ring) :
     device_(device),
-    commands_(VK_NULL_HANDLE),
-    done_(VK_NULL_HANDLE) {
-    pool_ = boost::make_shared<frame::CommandPool>(device_, device_->families().graphics);
-    std::vector<VkCommandBuffer> buffers = pool_->allocate(1);
-    commands_ = buffers.front();
-
-    // made last, so that nothing after it can throw and leave it to a destructor that never runs
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    device::check(vkCreateFence(device_->handle(), &fenceInfo, nullptr, &done_), "Unable to create the vulkan upload fence");
+    ring_(ring),
+    spare_(boost::make_shared<Spare>()) {
+    spare_->pool = boost::make_shared<frame::CommandPool>(device_, device_->families().graphics);
 }
 
 /**
  **/
-Uploader::~Uploader() {
-    // the buffer is freed with the pool
-    vkDestroyFence(device_->handle(), done_, nullptr);
-}
-
-/**
- **/
-void Uploader::oneShot(const std::function<void(VkCommandBuffer)>& record) const {
+void Uploader::submit(const std::function<void(VkCommandBuffer)>& record, boost::shared_ptr<void> keep) {
     if (!record) {
         return;
     }
 
-    VkResult result = vkResetFences(device_->handle(), 1, &done_);
-    device::check(result, "Unable to reset the vulkan upload fence");
+    if (spare_->ready.empty()) {
+        spare_->ready = spare_->pool->allocate(1);
+    }
+    VkCommandBuffer commands = spare_->ready.back();
+    spare_->ready.pop_back();
 
-    result = vkResetCommandBuffer(commands_, 0);
-    device::check(result, "Unable to reset the vulkan upload command buffer");
+    try {
+        VkResult result = vkResetCommandBuffer(commands, 0);
+        device::check(result, "Unable to reset a vulkan upload command buffer");
 
-    VkCommandBufferBeginInfo begin{};
-    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        VkCommandBufferBeginInfo begin{};
+        begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    result = vkBeginCommandBuffer(commands_, &begin);
-    device::check(result, "Unable to begin the vulkan upload command buffer");
+        result = vkBeginCommandBuffer(commands, &begin);
+        device::check(result, "Unable to begin a vulkan upload command buffer");
 
-    record(commands_);
+        record(commands);
 
-    result = vkEndCommandBuffer(commands_);
-    device::check(result, "Unable to end the vulkan upload command buffer");
+        result = vkEndCommandBuffer(commands);
+        device::check(result, "Unable to end a vulkan upload command buffer");
 
-    VkCommandBufferSubmitInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-    info.commandBuffer = commands_;
+        VkCommandBufferSubmitInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        info.commandBuffer = commands;
 
-    VkSubmitInfo2 submission{};
-    submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-    submission.commandBufferInfoCount = 1;
-    submission.pCommandBufferInfos = &info;
+        VkSubmitInfo2 submission{};
+        submission.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submission.commandBufferInfoCount = 1;
+        submission.pCommandBufferInfos = &info;
 
-    result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submission, done_);
-    device::check(result, "Unable to submit a vulkan upload");
+        result = vkQueueSubmit2(device_->graphicsQueue(), 1, &submission, VK_NULL_HANDLE);
+        device::check(result, "Unable to submit a vulkan upload");
+    } catch (...) {
+        // nothing was submitted, so the buffer can be used again at once
+        spare_->ready.push_back(commands);
+        throw;
+    }
 
-    // the caller's staging allocation goes away when this returns. Only this submission is
-    // waited for, and frames in flight go on running
-    result = vkWaitForFences(device_->handle(), 1, &done_, VK_TRUE, UINT64_MAX);
-    device::check(result, "Unable to wait for a vulkan upload");
+    // the frame being recorded is submitted after this, and its fence covers this submission,
+    // so once it has finished the copy has run
+    ring_->retire([spare = spare_, commands, keep = std::move(keep)]() mutable {
+        keep.reset();
+        spare->ready.push_back(commands);
+    });
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

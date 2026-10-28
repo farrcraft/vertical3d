@@ -12,10 +12,13 @@ runs at `WorldEnd`.
 
 ### First pass: bound, cull and bucket
 
-`RenderContext::addPolygon` does the following for each polygon:
+`RenderContext::addPolygon` adds each polygon to the traced scene, then stores on it the state
+it was submitted under: the object to eye transformation, the colour, the geometric normal and
+the shading state. It then hands the polygon to `reyes::Hider::add`, which does the following:
 
-1. Adds the polygon to the traced scene, then stores on it the state it was submitted under:
-   the object to eye transformation, the colour, the geometric normal and the shading state.
+1. Breaks a polygon with more than four vertices into a fan of quadrilaterals about its first
+   vertex, with a triangle last when the count is odd, because dicing interpolates four
+   corners. Each piece goes through these steps in turn.
 2. Gives each vertex without a `"Cs"` the current colour, and each vertex without an `"N"` the
    geometric normal.
 3. Bounds the polygon in object space and moves the bound to eye space. All eight corners of
@@ -27,22 +30,43 @@ runs at `WorldEnd`.
 6. Culls it against the view frustum, testing the eye space bound against the projection.
 7. Projects all eight corners of the eye space bound into raster space. A corner at or behind
    the eye has no raster position: it is left out of the raster bound and the polygon is marked
-   undiceable. If the raster bound is wider or taller than `sqrt(gridsize) * ShadingRate`
-   pixels, marks it undiceable.
+   undiceable. If the raster bound is wider or taller than `sqrt(gridsize * ShadingRate)`
+   pixels, marks it undiceable. `ShadingRate` is the area of one micropolygon in pixels, as RI
+   defines it.
 8. If it is diceable, moves its vertices and normals into eye space.
 9. Files it in the bucket that holds the upper left corner of its raster bound. A corner off
    the image is clamped to the nearest bucket.
 
-Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
+`Polygon`, `PointsPolygons` and the segments of `Curves` reach this pass. Spheres are not
+diced.
+
+A curve segment, `moya::Curve`, is one cubic Bezier segment, whatever the curve's basis.
+`rib::segments()` cuts a curve into them by the current `Basis`, and `rib::toBezier()` turns
+each into the Bezier segment that is the same cubic. A segment differs from a polygon in this
+pass in two ways:
+
+- **It is measured by its centre line.** A split halves a segment's length and never its width,
+  so the size test reads the box of its control points. Its width only grows the bound it is
+  culled and bucketed by, as a displacement bound does. A ribbon wider than a grid is diced into
+  wider micropolygons rather than split without end.
+- **Moving it into eye space moves its control points** and scales its widths by the cube root
+  of how much the placement scales a volume.
+
+A segment is split by halving it at its middle, and a segment halved sixteen times without
+becoming diceable, as one crossing the eye plane does, is dropped. It is diced into one grid
+that runs along it in its first index and across the ribbon in its second. Each point's
+ribbon spreads square both to the curve and to the line from the eye, and its normal faces the
+eye. Its s runs across the ribbon and its t along the segment, as RI gives a curve's u and v.
 
 ### Second pass: split, dice, shade and hide
 
-`moya::FrameBuffer::render` sweeps the buckets. For each primitive in a bucket:
+`reyes::Buckets::render` sweeps the buckets, which the hider made when the world began. For
+each primitive in a bucket:
 
 - **An undiceable primitive is split** into up to four pieces, by two planes through the centre
-  of its bound, perpendicular to its plane and to each other. Each piece goes back through the
-  first pass, which bounds, culls and buckets it again. A piece with fewer than three vertices,
-  or one no smaller than its parent on any axis, is dropped, so splitting terminates.
+  of its bound, perpendicular to its plane and to each other. Each piece goes back to the
+  hider's first pass, which bounds, culls and buckets it again. A piece with fewer than three
+  vertices, or one no smaller than its parent on any axis, is dropped, so splitting terminates.
 - **A split carries `"st"`, colour and shading normal.** A corner of a piece keeps the values of
   the vertex it came from. A vertex made where a plane cuts an edge takes each value as far
   along the edge as it lies, when both ends of the edge have one, and its normal is
@@ -61,6 +85,9 @@ Only `Polygon` and `PointsPolygons` reach this pass. Spheres are not diced.
   primitive's `Os`. It answers `Renderer::shape()` with the grid, so a
   derivative differences a vertex with the next one along u or v, or the previous one on the
   last row or column. Vertex (i, j) is batch point `i * size + j`, at u = i / (size - 1).
+- **I follows the projection.** Under a perspective camera I is the shading point, since the eye
+  is the origin of camera space. Under an orthographic camera I is (0, 0, 1). E is the origin
+  under both. A traced hit takes the same values, because I is its ray's direction.
 - **The grid is hidden into the samples.** Each micropolygon takes the colour and opacity
   shaded at its first corner. It is tested against each sample in the pixels its bound
   touches, as two triangles, and its depth is interpolated at the sample. The sample keeps it
@@ -105,4 +132,4 @@ Rules:
   the shutter's open time.
 - **`--grid` and `--bucket` on the command line, and `Option "limits"`**, set the grid size and
   bucket size. The command line wins: a size it names is pinned, and a scene's `Option "limits"`
-  leaves a pinned size as it is. `ShadingRate` scales the split threshold.
+  leaves a pinned size as it is. `ShadingRate` sets the split threshold through its area.

@@ -1,11 +1,10 @@
 v3d_add_api_library(render
 	"realtime/Frame.h" "realtime/Frame.cpp"
-	"realtime/Engine.h" "realtime/Engine.cpp" 
-	"realtime/Window.h" "realtime/Window.cpp" 
-	"realtime/Engine3D.h" "realtime/Engine3D.cpp" 
-	"realtime/Context3D.h" "realtime/Context3D.cpp"
+	"realtime/SharedInstance.h" "realtime/SharedInstance.cpp"
+	"realtime/WindowRenderer.h" "realtime/WindowRenderer.cpp" 
+	"realtime/WindowContext.h" "realtime/WindowContext.cpp"
 	"realtime/DeviceContext.h" "realtime/DeviceContext.cxx" 
-	"realtime/Handle.h" "realtime/Registry.h"
+	"realtime/Handle.h" "realtime/Registry.h" "realtime/UploadQueue.h"
 	"realtime/canvas/Canvas.h" "realtime/canvas/Canvas.cpp"
 	"realtime/canvas/Stacks.h" "realtime/canvas/Stacks.cpp"
 	"realtime/canvas/Line.h" "realtime/canvas/Line.cpp"
@@ -26,9 +25,11 @@ v3d_add_api_library(render
 	"realtime/lighting/SceneUniforms.h" "realtime/lighting/SceneUniforms.cpp"
 	"realtime/lighting/Shadow.h" "realtime/lighting/Shadow.cpp"
 	"realtime/Grade.h" "realtime/Grade.cpp"
+	"realtime/LitScene.h" "realtime/LitScene.cpp"
 	"realtime/SortKey.h" "realtime/SortKey.cpp"
 	"realtime/DrawItem.h" "realtime/DrawItem.cpp"
 	"realtime/Pass.h" "realtime/Pass.cpp"
+	"realtime/Present.h" "realtime/Present.cpp"
 	"realtime/vulkan/device/Result.h" "realtime/vulkan/device/Result.cxx" 
 	"realtime/vulkan/device/Instance.h" "realtime/vulkan/device/Instance.cxx" 
 	"realtime/vulkan/device/Surface.h" "realtime/vulkan/device/Surface.cxx" 
@@ -41,11 +42,12 @@ v3d_add_api_library(render
 	"realtime/vulkan/frame/StreamRing.h" "realtime/vulkan/frame/StreamRing.cxx"
 	"realtime/vulkan/frame/Timings.h" "realtime/vulkan/frame/Timings.cxx"
 	"realtime/vulkan/frame/Retirement.h" "realtime/vulkan/frame/Retirement.cxx"
-	"realtime/vulkan/frame/Recorder.h" "realtime/vulkan/frame/Recorder.cxx"
+	"realtime/Recorder.h" "realtime/Recorder.cxx"
 	"realtime/vulkan/pipeline/Pipeline.h" "realtime/vulkan/pipeline/Pipeline.cxx"
-	"realtime/vulkan/pipeline/Material.h" "realtime/vulkan/pipeline/Material.cxx"
+	"realtime/Material.h" "realtime/Material.cxx"
+	"realtime/vulkan/pipeline/TextureArray.h" "realtime/vulkan/pipeline/TextureArray.cxx"
 	"realtime/vulkan/pipeline/Texture.h"
-	"realtime/vulkan/pipeline/Resources.h" "realtime/vulkan/pipeline/Resources.cxx"
+	"realtime/Resources.h" "realtime/Resources.cxx"
 	"realtime/vulkan/memory/Memory.h" "realtime/vulkan/memory/Memory.cxx"
 	"realtime/vulkan/memory/Allocation.h" "realtime/vulkan/memory/Allocation.cxx"
 	"realtime/vulkan/memory/Allocator.h" "realtime/vulkan/memory/Allocator.cxx"
@@ -53,24 +55,24 @@ v3d_add_api_library(render
 	"realtime/vulkan/memory/Buffer.h" "realtime/vulkan/memory/Buffer.cxx"
 	"realtime/vulkan/memory/Uploader.h" "realtime/vulkan/memory/Uploader.cxx"
 	"realtime/vulkan/memory/DeviceBuffer.h" "realtime/vulkan/memory/DeviceBuffer.cxx"
-	"realtime/vulkan/memory/Mesh.h" "realtime/vulkan/memory/Mesh.cxx"
+	"realtime/Mesh.h" "realtime/Mesh.cxx"
 	"realtime/vulkan/memory/Image.h" "realtime/vulkan/memory/Image.cxx"
 	"realtime/vulkan/pipeline/Sampler.h" "realtime/vulkan/pipeline/Sampler.cxx"
 	"realtime/vulkan/pipeline/DescriptorPool.h" "realtime/vulkan/pipeline/DescriptorPool.cxx"
 	"realtime/vulkan/frame/DepthBuffer.h" "realtime/vulkan/frame/DepthBuffer.cxx"
-	"realtime/vulkan/frame/RenderTarget.h" "realtime/vulkan/frame/RenderTarget.cxx"
+	"realtime/RenderTarget.h" "realtime/RenderTarget.cxx"
 	"realtime/vulkan/frame/FrameUniforms.h" "realtime/vulkan/frame/FrameUniforms.cxx"
 	"realtime/vulkan/frame/Capture.h" "realtime/vulkan/frame/Capture.cxx"
 	"realtime/vulkan/pipeline/Formats.h"
 	"realtime/vulkan/pipeline/Builder.h" "realtime/vulkan/pipeline/Builder.cxx"
 	"realtime/vulkan/memory/Barriers.h" "realtime/vulkan/memory/Barriers.cxx"
 	"realtime/vulkan/memory/TextureFactory.h" "realtime/vulkan/memory/TextureFactory.cxx"
-	"realtime/vulkan/renderer/Clip.h"
-	"realtime/vulkan/renderer/Quad.h" "realtime/vulkan/renderer/Quad.cxx"
-	"realtime/vulkan/renderer/Line.h" "realtime/vulkan/renderer/Line.cxx"
-	"realtime/vulkan/renderer/World.h" "realtime/vulkan/renderer/World.cxx"
-	"realtime/vulkan/renderer/Lit.h" "realtime/vulkan/renderer/Lit.cxx"
-	"realtime/vulkan/renderer/FullScreen.h" "realtime/vulkan/renderer/FullScreen.cxx")
+	"realtime/renderer/Clip.h"
+	"realtime/renderer/Quad.h" "realtime/renderer/Quad.cxx"
+	"realtime/renderer/Line.h" "realtime/renderer/Line.cxx"
+	"realtime/renderer/World.h" "realtime/renderer/World.cxx"
+	"realtime/renderer/Lit.h" "realtime/renderer/Lit.cxx"
+	"realtime/renderer/FullScreen.h" "realtime/renderer/FullScreen.cxx")
 
 # The batched quad primitive. Every shader is compiled to SPIR-V and embedded, not loaded
 # from disk, by v3d_add_shader in cmake/v3dHelpers.cmake.
@@ -112,10 +114,13 @@ v3d_add_shader(v3dlib_render "shaders/grade.frag" OUTPUT "grade_linear.frag" DEF
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_image: Grade.h takes the image::Image a colour grade is built from.
+# v3dlib_window: WindowRenderer.h and WindowContext.h take the window they present to.
+# v3dlib_model: MeshRegistry.h and DecodedModel.h take the model::Model a mesh is built from.
+# v3dlib_animation: component/Particles.h holds the animation::SpriteClip a particle plays.
 # Vulkan and SDL3 are PUBLIC because the realtime headers name their types outright:
-# Context3D.h and every vulkan/ header carry VkDevice and its neighbours, and Window.h
+# WindowContext.h and every vulkan/ header carry VkDevice and its neighbours, and Surface.h
 # carries SDL_Window.
-target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_asset v3dlib_image v3dlib_type Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
+target_link_libraries(v3dlib_render PUBLIC v3dlib_log v3dlib_animation v3dlib_asset v3dlib_image v3dlib_model v3dlib_type v3dlib_window Vulkan::Vulkan SDL3::SDL3 glm::glm EnTT::EnTT)
 # PRIVATE: the allocator is an implementation detail of memory::Allocator, and Allocator.h and
 # Allocation.h declare the handles they name rather than including the header that defines them
 target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
@@ -123,21 +128,18 @@ target_link_libraries(v3dlib_render PRIVATE GPUOpen::VulkanMemoryAllocator)
 # VMA is one header that is both declaration and implementation, compiled in exactly one
 # translation unit. Its warnings and both analysers are switched off, as api/asset/media does
 # for cgltf, because a local fix would be lost the next time the port is updated.
-set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES
-	COMPILE_OPTIONS "/analyze-;/W0"
-	SKIP_LINTING TRUE)
+set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES SKIP_LINTING TRUE)
+if(MSVC)
+	set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES COMPILE_OPTIONS "/analyze-;/W0")
+else()
+	# -w is /W0. Clang and GCC have no analyser of /analyze's kind to switch off
+	set_source_files_properties("realtime/vulkan/memory/VmaImpl.cxx" PROPERTIES COMPILE_OPTIONS "-w")
+endif()
 
-# PRIVATE: Canvas.h forward declares font::TextBuffer rather than including it, so a consumer
-# needs the font library only if it names one itself. The ecs components the lit renderer
-# reads are named in its sources and in no header, and so are the model and image assets
-# DecodedModel loads. DecodedModel.cpp names a texture beside its model with
-# boost::filesystem.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_font v3dlib_ecs v3dlib_asset_media Boost::filesystem)
-
-target_compile_options(v3dlib_render PRIVATE /EHsc)
-
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
+# PRIVATE: the ecs components the lit renderer reads are named in its sources and in no header,
+# and so are the model and image assets DecodedModel loads. DecodedModel.cpp names a texture
+# beside its model with boost::filesystem.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_ecs v3dlib_asset_media Boost::filesystem)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

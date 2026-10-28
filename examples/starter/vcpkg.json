@@ -25,6 +25,7 @@
     },
     "sdl3-mixer",
     "spdlog",
+    "sqlite3",
     "vulkan",
     "vulkan-memory-allocator"
   ]

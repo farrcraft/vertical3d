@@ -50,7 +50,7 @@ const float characterWidth = 10.0F;
 
 /**
  * A menu of action items with the given labels, with its level pointing at itself the way
- * the ui engine's loader leaves it.
+ * the ui::Interface's loader leaves it.
  **/
 boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<std::string>& labels) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();

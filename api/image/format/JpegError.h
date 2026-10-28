@@ -14,8 +14,10 @@ namespace v3d::image::format {
 
 // jmp_buf is over-aligned, so the compiler pads the struct and warns (C4324). The padding is
 // the platform's requirement, and the struct is never written to a file.
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4324)
+#endif
 /**
  * The error manager the jpeg reader and writer both install.
  *
@@ -27,7 +29,9 @@ struct JpegError {
     struct jpeg_error_mgr pub;  // first, so a j_common_ptr's err is also one of these
     jmp_buf setjmp_buffer;
 };
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 /**
  * The error_exit a JpegError installs: log through libjpeg's own message routine, then

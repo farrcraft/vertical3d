@@ -32,6 +32,11 @@ enum class Filter : std::uint8_t {
 bool filterNamed(const std::string & name, Filter * filter);
 
 /**
+ * The name a RIB PixelFilter gives a filter, which filterNamed() reads back.
+ **/
+std::string filterName(Filter filter);
+
+/**
  * A pixel filter's weight at an offset from the pixel centre, with RI's formulas.
  *
  * @param offset from the centre, in pixels

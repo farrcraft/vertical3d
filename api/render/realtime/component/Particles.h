@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/Handle.h>
-#include <api/type/animation/SpriteClip.h>
+#include <api/animation/SpriteClip.h>
 
 #include <cstdint>
 
@@ -36,7 +36,7 @@ struct Particles final {
     };
 
     TextureHandle texture;               /**< unset for an untextured quad drawn against white **/
-    boost::shared_ptr<const type::animation::SpriteClip> clip;  /**< shared, since every particle of every emitter plays it **/
+    boost::shared_ptr<const animation::SpriteClip> clip;  /**< shared, since every particle of every emitter plays it **/
     glm::vec2 uv0{0.0F, 0.0F};           /**< the region drawn when there is no clip **/
     glm::vec2 uv1{1.0F, 1.0F};
 

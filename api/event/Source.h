@@ -46,8 +46,8 @@ class Source final : public Event {
 };
 
 /**
- * A source no listener consumed, for the event engine to turn into the commands it is bound
- * to. Only the event engine listens for this.
+ * A source no listener consumed, for the event router to turn into the commands it is bound
+ * to. Only the event router listens for this.
  **/
 struct Unclaimed final {
     const Source* source;  // never null. A pointer, because a dispatcher stores its events by value

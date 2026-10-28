@@ -1,0 +1,79 @@
+#usda 1.0
+(
+    doc = "Written by hand. One prim for each way USD describes curves"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def BasisCurves "Lines"
+{
+    uniform token type = "linear"
+    uniform token wrap = "periodic"
+    int[] curveVertexCounts = [3, 4]
+    point3f[] points = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+    float[] widths = [0.25] (
+        interpolation = "constant"
+    )
+}
+
+def BasisCurves "Bezier"
+{
+    uniform token type = "cubic"
+    uniform token basis = "bezier"
+    uniform token wrap = "nonperiodic"
+    int[] curveVertexCounts = [7]
+    point3f[] points = [(0, 0, 0), (1, 1, 0), (2, 1, 0), (3, 0, 0), (4, -1, 0), (5, -1, 0), (6, 0, 0)]
+}
+
+def BasisCurves "CatmullRom"
+{
+    uniform token type = "cubic"
+    uniform token basis = "catmullRom"
+    uniform token wrap = "nonperiodic"
+    int[] curveVertexCounts = [5]
+    point3f[] points = [(0, 0, 0), (1, 1, 0), (2, 0, 0), (3, 1, 0), (4, 0, 0)]
+}
+
+def BasisCurves "Pinned"
+{
+    uniform token type = "cubic"
+    uniform token basis = "bspline"
+    uniform token wrap = "pinned"
+    int[] curveVertexCounts = [4]
+    point3f[] points = [(0, 0, 0), (1, 2, 0), (2, -1, 0), (3, 0, 0)]
+}
+
+def BasisCurves "Loop"
+{
+    uniform token type = "cubic"
+    uniform token basis = "bspline"
+    uniform token wrap = "periodic"
+    int[] curveVertexCounts = [4]
+    point3f[] points = [(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0)]
+}
+
+def BasisCurves "Broken"
+{
+    uniform token type = "cubic"
+    uniform token basis = "bezier"
+    uniform token wrap = "nonperiodic"
+    int[] curveVertexCounts = [5, 4]
+    point3f[] points = [(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (0, 0, 0), (1, 1, 0), (2, 1, 0), (3, 0, 0)]
+}
+
+def BasisCurves "Hermite"
+{
+    uniform token type = "cubic"
+    uniform token basis = "hermite"
+    int[] curveVertexCounts = [4]
+    point3f[] points = [(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0)]
+}
+
+def NurbsCurves "Circle"
+{
+    int[] curveVertexCounts = [9]
+    int[] order = [3]
+    double[] knots = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4]
+    point3f[] points = [(1, 0, 0), (1, 1, 0), (0, 1, 0), (-1, 1, 0), (-1, 0, 0), (-1, -1, 0), (0, -1, 0), (1, -1, 0), (1, 0, 0)]
+    double[] pointWeights = [1, 0.7071067811865476, 1, 0.7071067811865476, 1, 0.7071067811865476, 1, 0.7071067811865476, 1]
+}

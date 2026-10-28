@@ -7,24 +7,27 @@
 
 #include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
-#include <api/asset/Type.h>
+#include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Window.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/ui/Engine.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/shell/Shell.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/shell/Screen.h>
-#include <api/ui/shell/StatisticsOverlay.h>
+#include <api/window/Window.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
-#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
@@ -88,12 +91,13 @@ constexpr float panelPaddingScale = 0.3F;
 
 /**
  **/
-Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& window,
+Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     const boost::shared_ptr<v3d::log::Logger>& logger,
-    const boost::shared_ptr<v3d::asset::Manager>& assetManager) :
+    const boost::shared_ptr<v3d::asset::Manager>& assetManager, v3d::shell::Shell* shell) :
     logger_(logger),
     assetManager_(assetManager),
-    engine_(logger, assetManager),
+    engine_(logger),
+    shell_(shell),
     background_(background) {
     engine_.initialize(window);
     engine_.clearColour(background_);
@@ -106,7 +110,13 @@ Renderer::Renderer(const boost::shared_ptr<v3d::render::realtime::Window>& windo
         style->barHeight = size * barHeightScale;
         style->panelPadding = size * panelPaddingScale;
     };
-    screen_ = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager, logger, options);
+    shell_->present(&engine_, options);
+    screen_ = shell_->screen();
+
+    shaded_ = boost::make_shared<ShadedPass>(engine_.context());
+    if (!shaded_->nonSolid()) {
+        logger_->get()->warn("the device cannot draw a triangle as its edges or its corners, so a view asked to draws it filled");
+    }
 }
 
 /**
@@ -142,19 +152,13 @@ void Renderer::selectTool(const boost::shared_ptr<SelectTool>& select) {
 
 /**
  **/
-const boost::shared_ptr<v3d::ui::shell::StatisticsOverlay>& Renderer::statistics() const {
-    return screen_->statistics();
-}
-
-/**
- **/
 v3d::ui::paint::Measure Renderer::measure() const {
     return screen_->text()->measure(screen_->size());
 }
 
 /**
  **/
-void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
+void Renderer::ui(const boost::shared_ptr<v3d::ui::Interface>& ui) {
     ui_ = ui;
     if (!ui_) {
         return;
@@ -163,19 +167,13 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Engine>& ui) {
     // a theme names its images but does not load them. The app loads each one as an
     // asset, and the device context's texture service owns the texture it becomes
     ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
-        const v3d::asset::Type type = source.ends_with(".png")
-            ? v3d::asset::Type::ImagePng : v3d::asset::Type::ImageTga;
         const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            assetManager_->load<v3d::asset::media::kind::Image>(source, type);
+            assetManager_->load<v3d::asset::media::kind::Image>(source);
         if (!asset || !asset->image()) {
             return v3d::render::realtime::TextureHandle();
         }
         return engine_.textures()->texture(asset->image());
     });
-
-    // the metrics the constructor worked out from the font size stand unless the theme
-    // names its own
-    screen_->theme(ui_->activeTheme());
 }
 
 /**
@@ -189,8 +187,8 @@ glm::vec2 Renderer::insets() const {
 
 /**
  **/
-void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
-    if (!screen_->begin()) {
+void Renderer::draw() {
+    if (!screen_->begin(shell_->ui().get())) {
         return;
     }
     const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
@@ -198,7 +196,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         return;
     }
 
-    const boost::shared_ptr<v3d::render::realtime::vulkan::renderer::Line> lines = engine_.lines();
+    const boost::shared_ptr<v3d::render::realtime::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid: an empty document is not an error
     const Scene empty;
@@ -214,7 +212,14 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
             continue;
         }
 
-        view->draw(scene, manipulator.get(), target, &canvases_[index], &overlays_[index]);
+        view->draw(scene, &canvases_[index], select_ ? select_->mask() : SelectMask::Object);
+        // the handles go to a canvas of their own because they are an overlay, drawn in a
+        // second pass that does not depth test. On the scene's canvas a handle would be in
+        // the depth tested pass, where the grid's axis lines lie in the same plane and hide it
+        overlays_[index].clear();
+        if (manipulator && view->shows(ViewPort::SHOW_HANDLE)) {
+            manipulator->draw(target, Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
+        }
 
         const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());
@@ -232,6 +237,10 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         overlay->depth(false);
         overlay->camera(view->camera()->view(), view->camera()->projection());
 
+        // the surfaces first, so the wireframe drawn after them is drawn over them
+        if (shaded_ && view->shows(ViewPort::SHOW_MESH)) {
+            shaded_->submit(scene, view->display(), pass.get());
+        }
         if (lines) {
             lines->submit(canvases_[index], pass.get());
             if (!overlays_[index].empty()) {
@@ -240,18 +249,20 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics)
         }
     }
 
-    drawUi(frame, statistics);
+    drawUi(frame);
 
     engine_.renderFrame();
+    if (shaded_) {
+        shaded_->collect();
+    }
 }
 
 /**
  **/
-void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame,
-    const v3d::ui::shell::StatisticsOverlay::Sample& statistics) {
+void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame) {
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
-    screen_->draw(ui_.get(), statistics);
+    shell_->draw();
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
 
     // the rubber band is drawn in window pixels, which is the space this canvas is in
@@ -279,7 +290,24 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
 
 /**
  **/
+v3d::render::realtime::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
+    // the ui stops drawing the old texture this frame, and its image is reclaimed once the
+    // frame in flight has finished with it
+    if (picture_.valid()) {
+        engine_.textures()->release(picture_);
+        picture_ = v3d::render::realtime::TextureHandle();
+    }
+    if (image) {
+        picture_ = engine_.textures()->texture(image);
+    }
+    return picture_;
+}
+
+/**
+ **/
 void Renderer::shutdown() {
+    // the surfaces' buffers go back to the ring, which destroys them once the device is idle
+    shaded_.reset();
     engine_.shutdown();
 }
 

@@ -3,15 +3,22 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
+#include <api/brep/Primitives.h>
+#include <api/type/Transform.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/CommandStack.h>
 #include <vertical3d/src/command/CreateCommand.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/TransformCommand.h>
-#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <cstdint>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -239,7 +246,7 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     const unsigned int id = cube->id();
 
     const boost::shared_ptr<v3d::editor::CreateCommand> command =
@@ -249,7 +256,7 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
     // the command does the creating, so the first do and a redo run the same code
     command->redo();
     BOOST_CHECK_EQUAL(scene->count(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
 
     command->undo();
     BOOST_CHECK_EQUAL(scene->count(), 0U);
@@ -265,8 +272,8 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> plane = v3d::editor::create_poly_plane();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> plane = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
     plane->selected(true);
     scene->add(plane);
@@ -274,7 +281,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     v3d::editor::CreateCommand command(scene, cube, "cube");
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
 
     // the flag lives on the mesh, so undoing the create clears it
     command.undo();
@@ -282,7 +289,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 
     command.redo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{cube});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{cube});
     BOOST_CHECK(!plane->selected());
 
     // with the plane added to the selection, undoing the create takes the cube out of it
@@ -290,50 +297,101 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     plane->selected(true);
     command.undo();
     BOOST_CHECK_EQUAL(scene->selection().size(), 1U);
-    BOOST_CHECK(scene->selection() == v3d::editor::Meshes{plane});
+    BOOST_CHECK(scene->selection() == v3d::editor::Items{plane});
     BOOST_CHECK(!cube->selected());
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
 
-    const v3d::editor::Placement before = v3d::editor::Placement::of(*cube);
+    const v3d::type::Transform before = cube->placement();
 
     cube->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     cube->rotation(glm::angleAxis(1.0F, glm::vec3(0.0F, 1.0F, 0.0F)));
     cube->scale(glm::vec3(2.0F, 2.0F, 2.0F));
-    const v3d::editor::Placement after = v3d::editor::Placement::of(*cube);
+    const v3d::type::Transform after = cube->placement();
 
-    BOOST_CHECK(!before.same(after));
+    BOOST_CHECK(!v3d::editor::same(before, after));
 
-    v3d::editor::TransformCommand command({{.mesh = cube, .before = before, .after = after}}, "translate");
+    v3d::editor::TransformCommand command({{.item = cube, .before = before, .after = after}}, "translate");
     BOOST_CHECK_EQUAL(command.name(), "translate");
 
     // a gesture is undone by restoring the whole placement, not only the part that moved
     command.undo();
     BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
     BOOST_CHECK_CLOSE(cube->scale().x, 1.0F, 0.1F);
-    BOOST_CHECK(v3d::editor::Placement::of(*cube).same(before));
+    BOOST_CHECK(v3d::editor::same(cube->placement(), before));
 
     command.redo();
-    BOOST_CHECK(v3d::editor::Placement::of(*cube).same(after));
+    BOOST_CHECK(v3d::editor::same(cube->placement(), after));
     BOOST_CHECK_CLOSE(cube->translation().y, 2.0F, 0.1F);
 }
 
 BOOST_AUTO_TEST_CASE(placement_tolerance_test) {
-    const v3d::editor::Placement one;
-    v3d::editor::Placement two;
+    const v3d::type::Transform one;
+    v3d::type::Transform two;
 
     // the default placement is the one a mesh is built with
-    BOOST_CHECK(one.same(two));
+    BOOST_CHECK(v3d::editor::same(one, two));
 
     // a gesture that measured nothing still composes a rotation, so the two ends of it
     // differ in the last bits without the object having moved
-    two.translation.x = 1e-9F;
-    BOOST_CHECK(one.same(two));
+    two.position.x = 1e-9F;
+    BOOST_CHECK(v3d::editor::same(one, two));
 
-    two.translation.x = 0.001F;
-    BOOST_CHECK(!one.same(two));
+    two.position.x = 0.001F;
+    BOOST_CHECK(!v3d::editor::same(one, two));
+}
+
+BOOST_AUTO_TEST_CASE(create_camera_and_light_command_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    v3d::editor::CommandStack history;
+
+    // a camera and a light made at a view, as the Create menu makes them
+    v3d::type::camera::Profile view("view");
+    view.eye(glm::vec3(0.0F, 2.0F, -5.0F));
+    const boost::shared_ptr<v3d::editor::Camera> camera =
+        v3d::editor::create_camera(view, v3d::editor::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::Light> light = v3d::editor::create_light(view, v3d::editor::Light::Type::Spot);
+
+    for (const boost::shared_ptr<v3d::editor::Item>& item : v3d::editor::Items{ camera, light }) {
+        const boost::shared_ptr<v3d::editor::CreateCommand> command =
+            boost::make_shared<v3d::editor::CreateCommand>(scene, item, "item");
+        command->redo();
+        history.push(command);
+
+        // a new item of any kind is the selection, and has its document id
+        BOOST_CHECK(scene->selection() == v3d::editor::Items{ item });
+        BOOST_CHECK_GT(item->documentId(), 0);
+    }
+    BOOST_CHECK_EQUAL(scene->count(), 2U);
+
+    // each undoes and redoes, keeping its ids
+    const std::int64_t lightId = light->documentId();
+    BOOST_REQUIRE(history.undo() != nullptr);
+    BOOST_CHECK(!scene->item(light->id()));
+    BOOST_CHECK(!light->selected());
+    BOOST_REQUIRE(history.undo() != nullptr);
+    BOOST_CHECK_EQUAL(scene->count(), 0U);
+    BOOST_REQUIRE(history.redo() != nullptr);
+    BOOST_REQUIRE(history.redo() != nullptr);
+    BOOST_CHECK(scene->item(camera->id()) == camera);
+    BOOST_CHECK_EQUAL(light->documentId(), lightId);
+
+    // and each comes back where the view was
+    BOOST_CHECK(camera->translation() == glm::vec3(0.0F, 2.0F, -5.0F));
+    BOOST_CHECK(light->translation() == glm::vec3(0.0F, 2.0F, -5.0F));
+}
+
+BOOST_AUTO_TEST_CASE(command_stack_mark_unsaved_test) {
+    v3d::editor::CommandStack history;
+    BOOST_CHECK(!history.dirty());
+
+    // a recovered scene matches no position of the history, so it reads as dirty until saved
+    history.markUnsaved();
+    BOOST_CHECK(history.dirty());
+    history.markSaved();
+    BOOST_CHECK(!history.dirty());
 }
 
 };  // namespace

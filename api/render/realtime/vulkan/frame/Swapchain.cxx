@@ -18,14 +18,38 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
+namespace {
+
+/**
+ * @return how a present mode reads in the log
+ **/
+const char* describe(VkPresentModeKHR mode) noexcept {
+    switch (mode) {
+    case VK_PRESENT_MODE_MAILBOX_KHR:
+        return "uncapped (mailbox)";
+    case VK_PRESENT_MODE_FIFO_KHR:
+        return "with vsync (fifo)";
+    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+        return "with adaptive vsync (fifo relaxed)";
+    case VK_PRESENT_MODE_IMMEDIATE_KHR:
+        return "immediately (immediate)";
+    default:
+        return "in a mode with no name here";
+    }
+}
+
+};  // namespace
+
 /**
  **/
 Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-    VkFormat preferred) :
+    VkFormat preferred, const std::vector<VkPresentModeKHR>& present) :
     device_(device),
     logger_(logger),
     swapchain_(VK_NULL_HANDLE),
     preferred_(preferred),
+    wanted_(present),
+    presenting_(VK_PRESENT_MODE_FIFO_KHR),
     format_(VK_FORMAT_UNDEFINED),
     extent_(),
     copyable_(false) {
@@ -167,14 +191,27 @@ VkSurfaceFormatKHR Swapchain::chooseFormat(const std::vector<VkSurfaceFormatKHR>
 
 /**
  **/
-VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes) {
-    for (const VkPresentModeKHR mode : modes) {
-        if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - offered, then wanted, as the header says
+VkPresentModeKHR Swapchain::choosePresentMode(const std::vector<VkPresentModeKHR>& modes, const std::vector<VkPresentModeKHR>& wanted) {
+    for (const VkPresentModeKHR mode : wanted) {
+        if (std::find(modes.begin(), modes.end(), mode) != modes.end()) {
             return mode;
         }
     }
-    // fifo is the only mode every implementation has to offer
+    // the only mode every implementation has to offer
     return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+/**
+ **/
+void Swapchain::request(const std::vector<VkPresentModeKHR>& present) {
+    wanted_ = present;
+}
+
+/**
+ **/
+VkPresentModeKHR Swapchain::presenting() const noexcept {
+    return presenting_;
 }
 
 /**
@@ -197,7 +234,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     const Support support = querySupport();
 
     const VkSurfaceFormatKHR surfaceFormat = chooseFormat(support.formats, preferred_);
-    const VkPresentModeKHR presentMode = choosePresentMode(support.presentModes);
+    const VkPresentModeKHR presentMode = choosePresentMode(support.presentModes, wanted_);
     const VkExtent2D extent = chooseExtent(support.capabilities, width, height);
 
     // a window with no area cannot have a swapchain. Leave it empty until the next recreate()
@@ -261,6 +298,8 @@ void Swapchain::create(uint32_t width, uint32_t height) {
     format_ = surfaceFormat.format;
     extent_ = extent;
     copyable_ = copyable;
+    presenting_ = presentMode;
+    logger_->get()->info("Presenting {}x{} images {}", extent.width, extent.height, describe(presenting_));
 
     uint32_t count = 0;
     result = vkGetSwapchainImagesKHR(device_->handle(), swapchain_, &count, nullptr);

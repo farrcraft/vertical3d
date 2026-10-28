@@ -11,7 +11,7 @@ them drawable.
 boost::shared_ptr<Textures> textures = renderer_->textures();
 TextureHandle sprite = textures->texture(image);                     // a v3d::image::Image
 TextureHandle atlas = textures->texture(pixels, width, height, 1);    // raw bytes; 1 channel for a glyph atlas
-MaterialHandle material = textures->material(sprite);                 // for a DrawItem of your own
+uint32_t slot = textures->slot(sprite);                               // for a DrawItem of your own
 textures->release(sprite);                                            // see Releasing resources
 ```
 
@@ -28,14 +28,24 @@ textures->release(sprite);                                            // see Rel
   TextureHandle floor = textures->texture(image, TextureFactory::Encoding::Srgb, tiling);
   ```
 
-  One sampler is made for each distinct spec and shared by every texture that names it.
-  `material()` binds the texture's own sampler.
+  One sampler is made for each distinct spec and shared by every texture that names it. A
+  texture is always read through its own sampler.
 - `white()` is the 1×1 white texture. It is never released.
-- **Upload at load time.** An upload waits for the GPU to finish the copy, so uploading during
-  play stalls the frame.
+- An upload returns without waiting for the copy, and the texture is drawn from the next frame
+  on.
+- **Every texture is a slot in one array**, bound at set 1, which holds a few thousand textures
+  or as many as the device allows, whichever is fewer. `capacity()` says how many. Registering
+  one more than that throws.
 
-A canvas names textures by `TextureHandle`. A `DrawItem` names a `MaterialHandle`, which binds
-the texture for drawing. `material()` makes one on first use and keeps it.
+A canvas names textures by `TextureHandle`, and the renderers turn each into its slot when they
+submit. A `DrawItem` of your own names `material()`, the one material that binds the array and
+is the same for every texture. It hands its shader `slot(texture)`, in a push constant or in
+data it reads per object. **Read the slot each frame rather than keeping it**, because a texture
+filled or replaced later moves to another slot. A shader declares the array as
+`layout(set = 1, binding = 0) uniform sampler2D textures[]` and reads `textures[slot]`, with
+`GL_EXT_nonuniform_qualifier` enabled. An index that may differ between the fragments of one
+draw, such as one read per instance, is wrapped in `nonuniformEXT()`. An unset or released
+handle's slot is the white texture's.
 
 ## Meshes and the mesh registry
 
@@ -45,7 +55,7 @@ drawn from one file are one upload.
 ```cpp
 MeshRegistry meshes(logger(), renderer_->context(), assets());
 MeshHandle crate = meshes.load("models/crate.gltf");    // relative to the asset manager's root
-MeshHandle floor = meshes.add("floor", model);           // a type::Model built in code
+MeshHandle floor = meshes.add("floor", model);           // a model::Model built in code
 const MeshRegistry::Entry* entry = meshes.resolve(crate);  // nullptr once released
 meshes.release(crate);
 ```
@@ -62,7 +72,7 @@ meshes.release(crate);
 - A texture a model names that cannot be found is logged and drawn white.
 - Parts that name the same image share one texture, across all entries.
 - A model with a part outside its indices or materials is refused with `std::runtime_error`.
-- The vertex layout is `type::Model::Vertex`: position, normal and uv, 32 bytes. A model with a
+- The vertex layout is `model::Model::Vertex`: position, normal and uv, 32 bytes. A model with a
   skeleton is uploaded as `MeshRegistry::SkinnedVertex`, 56 bytes, which adds four joint
   indices and four weights.
 - `clip(handle, name)` returns the index of a skinned entry's animation clip, for
@@ -89,7 +99,9 @@ void MyApp::tick(unsigned int delta) {
   handle.
 - **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops
   once the vertex, index and albedo bytes reach the budget. The default is
-  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 4 MiB. The rest wait for the next poll.
+  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 1 MiB, the same as a texture poll's, which keeps a poll
+  inside an eighth of a 60 Hz frame on the machine it was measured on. The rest wait for the
+  next poll.
 - **`pending(handle)` is true while a request is decoding or waiting for a poll.** A handle that
   is not pending and resolves to nothing failed or was released.
 - **A file that cannot be read or uploaded is reported in the log.** Its handle resolves to
@@ -99,11 +111,38 @@ void MyApp::tick(unsigned int delta) {
 - `count()` leaves out pending requests, and `pending()` counts them.
 - A registry made without a worker throws `std::logic_error` from `request()`.
 
-A texture has no request of its own. Decode the image in a worker job and register it with
-`Textures::texture(image)` in the job's completion.
+### Requesting a texture
+
+`Textures` can request an image by path in the same way, once it is told where to read from and
+what to decode on.
+
+```cpp
+textures->requestFrom(assets(), worker_, logger());
+TextureHandle sky = textures->request("textures/sky.png");  // draws white for now
+
+void MyApp::tick(unsigned int delta) {
+    worker_->poll();     // the decoded images arrive
+    textures->poll();    // and are uploaded, up to a byte budget
+}
+```
+
+- **A requested handle can be drawn at once, and draws white until a poll uploads it.** Its
+  slot is the white texture's until then, and the texture's own from the next draw submitted
+  after the poll. A canvas or a mesh naming the handle needs no change when it fills.
+- **`poll(budget)` uploads in request order**, at least one image when any is ready, and stops
+  once the texel bytes reach the budget. The default is `Textures::DEFAULT_UPLOAD_BUDGET`,
+  which `MeshRegistry` shares.
+- Asking for a path again returns the same handle, uploaded or not.
+- **A file that cannot be read or uploaded is reported in the log**, and its handle draws white
+  until it is released. The path is freed, so asking for it again reads the file again as a new
+  handle.
+- **Releasing a pending handle** drops what the worker decodes for it, and the path can be
+  requested again as a new handle.
+- `request()` takes the same encoding and sampler as `texture()`. Without `requestFrom()` it
+  throws `std::logic_error`.
 
 A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
-and draws itself (voxel's chunks, for instance) is a `vulkan::memory::Mesh` owned by the app. A
+and draws itself (voxel's chunks, for instance) is a `Mesh` owned by the app. A
 `DrawItem` refers to its buffers directly and is valid only while the mesh is alive.
 `Mesh::describe(&item)` fills an item's geometry fields.
 
@@ -124,7 +163,7 @@ resolves to nothing after that.
 | A post pass source | `fullScreen.release(source)`, `grade.release(source)` |
 | A target registration after a resize | `textures->release(handle)`, then register again |
 | Pipelines | Never released. They live as long as the context. |
-| Your own `vulkan::memory::Mesh` | Yours. Keep it alive while any draw item names it. |
+| Your own `Mesh` | Yours. Keep it alive while any draw item names it. |
 
 **Release the renderer in `release()`.** The engine calls an app's `release()` before it
 destroys the window. The GPU device keeps the window's surface alive, so the renderer must be gone

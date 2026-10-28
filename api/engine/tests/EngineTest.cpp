@@ -3,15 +3,20 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/config/Type.h>
+#include <api/ecs/Previous.h>
+#include <api/event/Bindings.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/engine/Application.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Feature.h>
+#include <api/engine/Identity.h>
+#include <api/engine/Settings.h>
+#include <api/engine/WindowSize.h>
 #include <api/event/State.h>
 #include <api/event/Type.h>
+#include <api/log/Logger.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -20,8 +25,12 @@
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
+
+#include <glm/common.hpp>
+#include <glm/vec2.hpp>
 
 namespace {
 
@@ -44,6 +53,7 @@ class TestEngine final : public v3d::engine::Engine {
     }
 
     using Engine::rebind;
+    using Engine::bindings;
 
     bool onEvent(const SDL_Event& event) override {
         offered_.push_back(event.type);
@@ -118,6 +128,14 @@ const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
 const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
 /**
+ * The identity the lifecycle cases run under. It has no organization, so the engine keeps no
+ * settings for it and a case writes nothing to the player's directory.
+ **/
+v3d::engine::Identity lifecycle() {
+    return { .organization = "", .application = "lifecycle" };
+}
+
+/**
  * A key going down, as SDL delivers it. It is the only event in this file that the input
  * devices handle.
  **/
@@ -136,7 +154,7 @@ SDL_Event keyUp(SDL_Keycode key) {
 }
 
 /**
- * An empty feature mask builds the asset manager, the dispatcher and the event engine, and
+ * An empty feature mask builds the asset manager, the dispatcher and the event router, and
  * nothing more. It reads no config, and opens no input devices and no window.
  **/
 BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
@@ -146,7 +164,7 @@ BOOST_AUTO_TEST_CASE(engine_initialize_no_features_test) {
     BOOST_TEST(static_cast<bool>(engine.assets()));
     BOOST_TEST(static_cast<bool>(engine.dispatcher()));
     BOOST_TEST(static_cast<bool>(engine.events()));
-    BOOST_TEST(!engine.config());
+    BOOST_TEST(!engine.manifest());
     BOOST_TEST(!engine.window());
 }
 
@@ -158,10 +176,10 @@ BOOST_AUTO_TEST_CASE(engine_initialize_config_test) {
     TestEngine engine(appPath("good"), configFeature);
 
     BOOST_TEST(engine.initialize());
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Window)));
-    BOOST_TEST(!engine.config()->get(v3d::config::Type::Sound));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::engine::WINDOW_DOCUMENT)));
+    BOOST_TEST(!engine.manifest()->get("sound"));
 }
 
 /**
@@ -358,40 +376,40 @@ BOOST_AUTO_TEST_CASE(engine_no_mappings_key_test) {
     TestEngine engine(appPath("no-mappings-key"), configFeature);
     BOOST_TEST(!engine.initialize());
     // the document itself loaded; reading its mappings rejected it
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_not_an_object_test) {
     TestEngine engine(appPath("mapping-not-object"), configFeature);
     BOOST_TEST(!engine.initialize());
     // the document itself loaded; reading its mappings rejected it
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_source_test) {
     TestEngine engine(appPath("missing-source"), configFeature);
     BOOST_TEST(!engine.initialize());
     // the document itself loaded; reading its mappings rejected it
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_missing_destination_test) {
     TestEngine engine(appPath("missing-destination"), configFeature);
     BOOST_TEST(!engine.initialize());
     // the document itself loaded; reading its mappings rejected it
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
 }
 
 BOOST_AUTO_TEST_CASE(engine_mapping_unsupported_param_test) {
     TestEngine engine(appPath("bad-param"), configFeature);
     BOOST_TEST(!engine.initialize());
     // the document itself loaded; reading its mappings rejected it
-    BOOST_REQUIRE(engine.config());
-    BOOST_TEST(static_cast<bool>(engine.config()->get(v3d::config::Type::Binding)));
+    BOOST_REQUIRE(engine.manifest());
+    BOOST_TEST(static_cast<bool>(engine.manifest()->get(v3d::event::Bindings::DOCUMENT)));
 }
 
 /**
@@ -460,6 +478,85 @@ BOOST_AUTO_TEST_CASE(engine_held_follows_a_rebind_test) {
 }
 
 /**
+ * A rebinding made through the bindings an app is handed is saved under the app's identity as
+ * it is made, and an engine started later under the same identity starts with it.
+ **/
+BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
+    const v3d::engine::Identity identity{ .organization = "vertical3d_tests", .application = "engine_bindings" };
+    // a document an earlier run left would be read as this run's
+    const v3d::engine::Settings left(identity.organization, identity.application, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(!left.path().empty());
+    boost::filesystem::remove(left.path());
+    {
+        TestEngine engine(appPath("good"), boundFeature);
+        engine.identity(identity);
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_REQUIRE(engine.bindings()->rebind("pong::leftPaddleUp", "arrow_up"));
+    }
+
+    TestEngine later(appPath("good"), boundFeature);
+    later.identity(identity);
+    BOOST_REQUIRE(later.initialize());
+    later.offer(keyDown(SDLK_W));
+    BOOST_CHECK(!later.held("pong::leftPaddleUp"));
+    later.offer(keyDown(SDLK_UP));
+    BOOST_CHECK(later.held("pong::leftPaddleUp"));
+}
+
+/**
+ * A position on a plane, which the engine can draw between two steps.
+ **/
+struct Position2D final {
+    glm::vec2 value{0.0F};
+};
+
+Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
+    return Position2D{glm::mix(from.value, to.value, alpha)};
+}
+
+/**
+ * An engine whose simulation moves every Position2D one unit along x, so a case can tell what
+ * a step saw before it moved anything.
+ **/
+class SteppingEngine final : public v3d::engine::Engine {
+ public:
+    explicit SteppingEngine(const std::string& path) : Engine(path) {
+    }
+
+    using Engine::interpolate;
+    using Engine::registry;
+    using Engine::step;
+
+    bool simulate(float /* step */) override {
+        for (auto [entity, position] : registry().view<Position2D>().each()) {
+            position.value.x += 1.0F;
+        }
+        return true;
+    }
+};
+
+/**
+ * A step snapshots each registered type before it simulates, so an entity's Previous holds
+ * where it was before the step moved it. Registering a type twice snapshots it once.
+ **/
+BOOST_AUTO_TEST_CASE(engine_snapshots_registered_types_before_a_step_test) {
+    SteppingEngine engine(appPath("good"));
+    engine.interpolate<Position2D>();
+    engine.interpolate<Position2D>();
+    entt::registry& registry = engine.registry();
+    const entt::entity ball = registry.create();
+    registry.emplace<Position2D>(ball, glm::vec2(3.0F, 0.0F));
+
+    BOOST_REQUIRE(engine.step(0.01F));
+    BOOST_REQUIRE(registry.all_of<v3d::ecs::Previous<Position2D>>(ball));
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<Position2D>>(ball).value.value.x, 3.0F);
+    BOOST_CHECK_EQUAL(registry.get<Position2D>(ball).value.x, 4.0F);
+
+    BOOST_REQUIRE(engine.step(0.01F));
+    BOOST_CHECK_EQUAL(registry.get<v3d::ecs::Previous<Position2D>>(ball).value.value.x, 4.0F);
+}
+
+/**
  * Without Feature::KeyboardInput, held() returns false for every command.
  **/
 BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
@@ -469,12 +566,31 @@ BOOST_AUTO_TEST_CASE(engine_held_without_a_keyboard_test) {
 }
 
 /**
- * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false.
+ * With no binding config there is nothing for a rebind to rebuild, so rebind() returns false,
+ * and there are no bindings to hand out.
  **/
 BOOST_AUTO_TEST_CASE(engine_rebind_without_bindings_test) {
     TestEngine engine(appPath("good"), v3d::engine::Feature::KeyboardInput);
     BOOST_REQUIRE(engine.initialize());
     BOOST_CHECK(!engine.rebind("pong::leftPaddleUp", "arrow_up"));
+    BOOST_CHECK(!engine.bindings());
+}
+
+/**
+ * The bindings an app is handed are the ones the keys go through, so a reset through them
+ * puts back the key the engine holds the command by.
+ **/
+BOOST_AUTO_TEST_CASE(engine_hands_out_the_bindings_it_reads_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    const boost::shared_ptr<v3d::event::Bindings> bindings = engine.bindings();
+    BOOST_REQUIRE(bindings);
+    BOOST_REQUIRE(engine.rebind("pong::leftPaddleUp", "arrow_up"));
+    BOOST_CHECK(bindings->bound("arrow_up") == std::vector<std::string>({"pong::leftPaddleUp"}));
+
+    BOOST_REQUIRE(bindings->reset());
+    engine.offer(keyDown(SDLK_W));
+    BOOST_CHECK(engine.held("pong::leftPaddleUp"));
 }
 
 /**
@@ -648,13 +764,13 @@ class LifecycleEngine final : public v3d::engine::Engine {
  **/
 BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
     Lifecycle started;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &started), EXIT_SUCCESS);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &started), EXIT_SUCCESS);
     BOOST_CHECK_EQUAL(started.started, 1);
     BOOST_CHECK_EQUAL(started.released, 1);
 
     Lifecycle failed;
     failed.starts = false;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &failed), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &failed), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(failed.started, 1);
     BOOST_CHECK_EQUAL(failed.released, 1);
 }
@@ -666,7 +782,7 @@ BOOST_AUTO_TEST_CASE(engine_releases_once_whether_or_not_it_started_test) {
 BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
     Lifecycle throwing;
     throwing.throws = true;
-    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", "lifecycle", &throwing), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &throwing), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(throwing.released, 1);
 }
 

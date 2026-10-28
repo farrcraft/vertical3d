@@ -11,8 +11,8 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 
 #include <cstdint>
 #include <string>
@@ -30,8 +30,8 @@
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -95,8 +95,8 @@ void overlapping(canvas::World* canvas, bool nearFirst) {
  * committed for that submission order.
  **/
 void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::string& name) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, headless->context->ring(), width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     BOOST_REQUIRE(target->depthView() != VK_NULL_HANDLE);
 
     canvas::World canvas;
@@ -110,7 +110,7 @@ void drawAndCheck(v3d::test::Headless* headless, bool nearFirst, const std::stri
 
     headless->context->worldQuads()->submit(canvas, pass.get());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
 
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::Target described;

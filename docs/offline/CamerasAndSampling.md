@@ -9,7 +9,7 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
   `image(channels)` takes the leading planes as the picture and ignores the rest. The plane
   count is not the channel count.
 - **moya's planes are red, green, blue, depth and coverage**, named by
-  `moya::FrameBuffer::Plane`, under either hider.
+  `moya::Planes::Plane`, under either hider.
 - **Coverage is the filtered fraction of a pixel's samples that hit something.** An imager
   reads it as `alpha`. It separates a pixel nothing was drawn into from a black one. It is
   exactly zero or one only at one sample per pixel under a one-pixel box filter.
@@ -17,9 +17,10 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
   number becomes 0.
 - **Raster y runs downward from the upper left.** This is RI's convention and `image::Image`'s
   row order.
-- **Raster space is `raster * screen` applied to a camera space point**: the projection first,
-  then the scale into pixels. A matrix applies to the point on its right. Reversing either the
-  y direction or the order writes a correct render upside down, or in eye units.
+- **Raster space is the projection, then the scale into pixels**, applied to a camera space
+  point. `Camera::raster` holds the two together. A matrix applies to the point on its right.
+  Reversing either the y direction or the order writes a correct render upside down, or in eye
+  units.
 - **A depth is raster space z under either hider**: the projection, then the raster matrix. A
   ray hit is carried back into camera space and projected the same way.
 
@@ -66,6 +67,15 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
 
 - **The defaults are moya's**: a 320 by 240 image, pixel aspect 1, an orthographic projection,
   a 90 degree field of view for a perspective one, and clipping from `1e-10` to `1e38`.
+- **A projection is `"perspective"`, `"orthographic"` or RI_NULL.** RI_NULL, an empty name,
+  applies no projection, so camera space is screen space. Any other name is logged and
+  refused, and the projection in force stays.
+- **`CropWindow` names the part of the picture rendered**, as fractions of its width and
+  height held to `[0, 1]`. As RI states it, the columns rendered are `ceil(width * xmin)` to
+  `ceil(width * xmax) - 1`, and the rows likewise. Every pixel outside them is left empty: no
+  colour, no coverage and the farthest depth. The picture keeps its full size. The ray hider
+  casts no ray outside the window, and the reyes hider renders every bucket. A window with no
+  area is logged and refused.
 - **A picture side is from 1 to 65536 pixels**, `largestResolution` in
   [Sampling.h](../../api/render/offline/Sampling.h), wherever it enters the renderer: `Format`,
   `RiFormat` or the command line. A larger side is refused, and so is one that is not a number,
@@ -78,17 +88,21 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   the scene names either. A scene can set `FrameAspectRatio` or `ScreenWindow` without the other
   reverting it. The default screen window for an image wider than tall is `[-a, a]` by
   `[-1, 1]`, where `a` is the frame aspect.
+- **The camera options are `render::offline::CameraOptions`**, and the camera they give is a
+  `render::offline::Camera`. `CameraOptions` holds RI's rules for the format, frame aspect,
+  screen window, clipping and projection. `freeze()` builds the camera at `WorldBegin`: the view,
+  and the matrices from camera space into screen, raster and NDC. `RenderContext` holds both.
 - **The camera options take effect at `WorldBegin`, in any order.** A `Format`,
   `FrameAspectRatio`, `ScreenWindow` or `Clipping` named after `Projection` still shapes the
-  screen transform, which `prepareWorld()` builds again from the options as they stand.
+  camera, which `prepareWorld()` builds from the options as they stand.
 - **The world to camera transformation applies as it stands.** `RenderContext::prepareWorld()`
-  saves the current transformation as the `"camera"` coordinate system. By the RI standard,
-  that transformation is the world to camera one. A transpose or an inverse of it is correct
-  only when it is a pure rotation.
-- **Both hiders project through the same coordinate systems**, `"camera"`, `"screen"` and
-  `"raster"`. Any camera one hider accepts, the other accepts: an off-centre `ScreenWindow`, a
-  matrix that scales, and a matrix that reverses handedness. RI's camera basis for a general
-  look-at reverses handedness.
+  takes the current transformation as the camera's view. By the RI standard, that
+  transformation is the world to camera one. A transpose or an inverse of it is correct only
+  when it is a pure rotation.
+- **Both hiders project through the same camera.** The reyes hider reads the context's
+  `camera()`, and the ray hider is given the same one. Any camera one hider accepts, the other
+  accepts: an off-centre `ScreenWindow`, a matrix that scales, and a matrix that reverses
+  handedness. RI's camera basis for a general look-at reverses handedness.
 - **The ray hider finds a primary ray by inverting the camera to raster transformation.** It
   solves for camera x and y at a chosen depth, instead of inverting the whole matrix, because
   RI's default clipping range ruins the depth terms of a full inverse. Rays start on the near

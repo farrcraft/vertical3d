@@ -77,6 +77,17 @@ Signature updating(const char* name, Body body, const std::vector<Argument> & ar
     return signature;
 }
 
+/**
+ * A message passing call: it reads the output parameter its first argument names, of the shader
+ * the call's name names, into its second argument, and returns 1 when it could and 0 when not.
+ **/
+Signature messaging(const char* name) {
+    Signature signature = declare(name, Body::MESSAGE, Type::FLOAT, { Argument::STRING, Argument::ANY });
+    signature.outputs = 1;
+    signature.varying = true;
+    return signature;
+}
+
 Signature shading(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
     Signature signature = declare(name, body, result, arguments);
     signature.varying = true;
@@ -121,7 +132,6 @@ std::vector<Signature> build() {
     table.push_back(declare("length", Body::LENGTH, Type::FLOAT, { Argument::POINTLIKE }));
     table.push_back(declare("distance", Body::DISTANCE, Type::FLOAT, { Argument::POINT, Argument::POINT }));
     table.push_back(same("normalize", Body::NORMALIZE, 0, { Argument::POINTLIKE }));
-    table.push_back(same("faceforward", Body::FACEFORWARD, 0, { Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(same("faceforward", Body::FACEFORWARD, 0,
         { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE }));
     table.push_back(declare("reflect", Body::REFLECT, Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));
@@ -201,6 +211,11 @@ std::vector<Signature> build() {
     // computed by the renderer: a shadow, and a traced ray
     table.push_back(shading("transmission", Body::TRANSMISSION, Type::COLOR, { Argument::POINT, Argument::POINT }));
     table.push_back(shading("trace", Body::TRACE, Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
+
+    // RI's message passing between the shaders that run on one point
+    table.push_back(messaging("surface"));
+    table.push_back(messaging("displacement"));
+    table.push_back(messaging("lightsource"));
 
     // an image, read at s and t when no coordinates are given. A colour unless a cast requests
     // a float, which is the first channel

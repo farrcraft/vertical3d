@@ -8,7 +8,7 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
@@ -20,7 +20,7 @@
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
-class Engine3D;
+class WindowRenderer;
 };  // namespace v3d::render::realtime
 
 namespace v3d::ui::shell {
@@ -30,11 +30,11 @@ namespace v3d::ui::shell {
  * over the renderer the app already has.
  *
  * Builds the text renderer, the component renderer and, when Options asks, the statistics
- * overlay and an immediate layer over the Engine3D it is handed. It owns the canvas they
+ * overlay and an immediate layer over the WindowRenderer it is handed. It owns the canvas they
  * draw into. An app opens each frame with begin(), which also skips a minimised window.
  *
  * This lives in api/ui because v3dlib_ui links v3dlib_render, so building it on the render
- * side would be a library cycle. Engine3D is forward-declared so that no api/ui header names
+ * side would be a library cycle. WindowRenderer is forward-declared so that no api/ui header names
  * a Vulkan type.
  *
  * The app decides what is drawn into the canvas and which pass it is submitted to. begin()
@@ -65,7 +65,7 @@ class Screen final {
      *        owned, and it must outlive this. Null builds everything with no device, which
      *        uploads nothing and begins no frame
      **/
-    Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
+    Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
         const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options);
 
     // the text renderer writes into the canvas by its address
@@ -76,13 +76,19 @@ class Screen final {
     ~Screen() = default;
 
     /**
-     * Begin a frame: size the canvas to it, and clear the canvas.
+     * Begin a frame: draw with the ui's active theme, size the canvas to the frame, and
+     * clear the canvas.
      *
+     * The theme is read from the ui every frame, and given to the component renderer and the
+     * immediate layer when it has changed, before either draws. Setting the active theme on
+     * the Interface is all an app does to change it.
+     *
+     * @param ui the ui whose theme is drawn with, or null to keep the theme drawn with now
      * @return false when there is no frame to draw into, because the window is minimised or
      *         there is no renderer. The app then draws nothing and returns. For a minimised
      *         window, the empty frame has already been presented
      **/
-    bool begin();
+    bool begin(const Interface* ui);
 
     /**
      * @return whether the last begin() found the frame a different size from the one before,
@@ -93,7 +99,8 @@ class Screen final {
 
     /**
      * Draw text larger or smaller, rebuilding what captures its size. The dressing is
-     * filled in again for the new size, and the theme is set again on what is rebuilt.
+     * filled in again for the new size, and the theme drawn with is set again on what is
+     * rebuilt.
      *
      * @param factor how much larger than Options::size, from a little above zero
      **/
@@ -107,17 +114,11 @@ class Screen final {
     float size() const noexcept;
 
     /**
-     * Set a theme on the component renderer and the immediate layer, and keep it for what
-     * scale() rebuilds.
-     **/
-    void theme(const boost::shared_ptr<style::Theme>& theme);
-
-    /**
      * Draw a ui, then the statistics over it, into the canvas. Either may be missing.
      *
      * @param ui what to draw, or null for nothing but the statistics
      **/
-    void draw(const Engine* ui, const StatisticsOverlay::Sample& statistics);
+    void draw(const Interface* ui, const StatisticsOverlay::Sample& statistics);
 
     v3d::render::realtime::canvas::Canvas& canvas() noexcept;
     const boost::shared_ptr<paint::TextRenderer>& text() const noexcept;
@@ -139,7 +140,12 @@ class Screen final {
      **/
     void build();
 
-    v3d::render::realtime::Engine3D* engine_;
+    /**
+     * Dress the component renderer and the immediate layer from a theme.
+     **/
+    void theme(const boost::shared_ptr<style::Theme>& theme);
+
+    v3d::render::realtime::WindowRenderer* engine_;
     Options options_;
     float scale_;
     bool resized_;
@@ -148,7 +154,6 @@ class Screen final {
     boost::shared_ptr<paint::ComponentRenderer> components_;
     boost::shared_ptr<StatisticsOverlay> statistics_;
     boost::shared_ptr<Immediate> immediate_;
-    boost::shared_ptr<style::Theme> theme_;
 };
 
 };  // namespace v3d::ui::shell

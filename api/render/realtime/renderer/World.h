@@ -1,0 +1,155 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/canvas/World.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/Resources.h>
+
+#include <vulkan/vulkan.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
+#include <glm/vec4.hpp>
+
+namespace v3d::render::realtime {
+class DeviceContext;
+};  // namespace v3d::render::realtime
+
+namespace v3d::render::realtime::renderer {
+
+/**
+ * The device side of the world space quad primitive.
+ *
+ * An app fills a canvas::World on the CPU during a tick. submit() uploads it into buffers of
+ * the frame about to be recorded, and turns each of its batches into a draw item on a pass.
+ * The buffers are per frame in flight, because the device may still be reading the previous
+ * frame's buffers.
+ *
+ * A frame may submit any number of canvases, and each submission claims a pair of buffers of
+ * its own from the StreamRing. They cannot share one pair: growing a buffer replaces the
+ * allocation, which invalidates the handle every draw item already queued holds.
+ *
+ * **Textures and their descriptors belong to the context's Textures.** A world quad samples
+ * through the same set 1 layout as a ui quad, so an atlas uploaded once serves both and there
+ * is one descriptor pool rather than two. What differs is the vertex stage, which reads the
+ * pass camera at set 0 instead of pushing a projection of its own.
+ **/
+class World final {
+ public:
+    /**
+     * How a canvas's quads combine with what is already drawn.
+     **/
+    enum class Blend : std::uint8_t {
+        /**
+         * Straight alpha over what is there: smoke, a sprite, a tinted fog.
+         **/
+        Alpha,
+
+        /**
+         * Added to what is there by the quad's alpha, so it only ever lightens: a flame, a
+         * spark, a flash. Two additive quads give the same picture in either order.
+         **/
+        Additive
+    };
+
+    /**
+     * What the world quad pipelines are built against.
+     **/
+    struct Spec final {
+        /**
+         * The format of the image the pass draws into, which dynamic rendering needs at
+         * pipeline creation because there is no render pass to take it from.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        VkFormat depth = VK_FORMAT_UNDEFINED;  /**< the depth format, for the second of the two pipelines **/
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
+     *        the quads are built on and drawn through. Every pipeline reads set 0. A world
+     *        canvas is in world space, so the pass's camera is its only transform
+     * @throw std::runtime_error if the pipelines cannot be created
+     **/
+    World(const DeviceContext& context, const Spec& spec);
+
+    /**
+     **/
+    ~World();
+
+    World(const World&) = delete;
+    World& operator=(const World&) = delete;
+
+    /**
+     * Upload a canvas and add a draw item to the pass for each of its batches.
+     *
+     * An empty canvas costs neither an upload nor a draw.
+     *
+     * @param canvas the geometry to draw, which is copied and not kept
+     * @param pass where the draw items are submitted. Its camera is what the quads are
+     *        drawn through, so a pass that never had one set draws them in clip space
+     * @param layer the layer the items' sort key carries, which only has an effect in a
+     *        pass that sorts
+     * @param blend how the canvas's quads combine with what the pass has already drawn. A
+     *        canvas is one blend, so a game fills a canvas of smoke and another of flame
+     * @param tint multiplied into the colour of every quad in the canvas as it is drawn. It
+     *        lights a canvas kept across frames without building it again, and two submissions
+     *        of one canvas can be lit differently. White leaves the colours alone
+     **/
+    void submit(const canvas::World& canvas, Pass* pass, uint16_t layer = 0, Blend blend = Blend::Alpha,
+        const glm::vec4& tint = glm::vec4(1.0F));
+
+ private:
+    /**
+     * Compile the world quad pipeline for each blend twice: once for a pass with a depth
+     * attachment and once for a pass without. Dynamic rendering matches a pipeline to the
+     * attachments of the pass it draws into.
+     *
+     * The ones built for a pass with depth **test without writing**. Solid geometry in front
+     * of a quad hides it, and two blended quads do not cut holes in each other where their
+     * transparent parts overlap.
+     **/
+    void createPipelines(const vulkan::pipeline::Formats & formats);
+
+    /**
+     * Compile one world quad pipeline.
+     *
+     * @param formats the attachment formats. A depth format of VK_FORMAT_UNDEFINED is for a
+     *        pass without depth, and anything else is tested against.
+     **/
+    PipelineHandle createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend);
+
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<Textures> textures_;
+
+    PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+    PipelineHandle depthPipeline_;          /**< for a pass with one, and it tests without writing **/
+    PipelineHandle additivePipeline_;       /**< the same two, adding rather than blending over **/
+    PipelineHandle additiveDepthPipeline_;
+
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+};
+
+};  // namespace v3d::render::realtime::renderer

@@ -22,7 +22,7 @@ namespace v3d::render::realtime::entity {
  * x scale and its height by y. An entity with a previous step is drawn alpha of the way from it.
  * Its key is how far the position lies along the billboard's depth axis.
  *
- * @param alpha Engine::alpha(), the fraction of a step elapsed since the last one
+ * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
  **/
 void sprites(const entt::registry& registry, float alpha, const Billboard& billboard, canvas::DepthOrder* order);
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "GridSet.h"
 #include "ReachableTile.h"
 #include "TileCoord.h"
 #include "TileFilter.h"
@@ -70,6 +71,23 @@ std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord
  * @throws std::invalid_argument if the budget is negative
  **/
 std::vector<ReachableTile> reachableTiles(const TileGrid& grid, TileCoord start, int budget,
+    const TileFilter& enterable = {});
+
+/**
+ * The cheapest route across a set of grids, in world tiles, by the same rules as findPath() on
+ * one grid. A tile in no grid of the set is impassable, so a route never leaves the grids, and
+ * the filter is asked about world tiles.
+ **/
+std::vector<TileCoord> findPath(const GridSet& grids, TileCoord start, TileCoord goal,
+    const TileFilter& enterable = {});
+
+/**
+ * Every tile of a set of grids reachable from start for no more than budget, in world tiles, by
+ * the same rules as reachableTiles() on one grid.
+ *
+ * @throws std::invalid_argument if the budget is negative
+ **/
+std::vector<ReachableTile> reachableTiles(const GridSet& grids, TileCoord start, int budget,
     const TileFilter& enterable = {});
 
 };  // namespace v3d::grid

@@ -145,6 +145,16 @@ export class Writer {
         console.log(`wrote ${save(name, JSON.stringify({ ...document, ...tables }, null, 1) + '\n')}`);
     }
 
+    /**
+     * Write the document as a .gltf, indented by one space, with the buffer in a file of its own
+     * beside it. The document names the file by uri, which is the file name percent-encoded.
+     */
+    gltfBeside(document: Record<string, unknown>, name: string, buffer: string, uri: string): void {
+        console.log(`wrote ${save(buffer, this.blob)} (${this.blob.length} bytes)`);
+        const tables = { ...this.tables(), buffers: [{ byteLength: this.blob.length, uri }] };
+        console.log(`wrote ${save(name, JSON.stringify({ ...document, ...tables }, null, 1) + '\n')}`);
+    }
+
     /** The accessors, buffer views and buffer, in the order a document lists them. */
     private tables(): Record<string, unknown> {
         return { accessors: this.accessors, bufferViews: this.views, buffers: [{ byteLength: this.blob.length }] };

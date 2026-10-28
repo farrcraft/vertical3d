@@ -67,7 +67,7 @@ Most defects here are a divergence from a pattern the codebase already gets righ
   odyssey) all run through `v3d::engine::run<T>` on the `api/` framework. For anything
   app-shaped — config, asset loading, engine initialisation, renderer construction — read how
   a working game does it before theorising about why another one does not.
-  `docs/Games.md` says which api features each game is the best example of.
+  `docs/Demos.md` says which api features each demo is the best example of.
 - Find the nearest working equivalent and read it **completely**, not just the line you
   expect to differ. List every difference, then justify each one. The bug is almost always
   in a difference you would have dismissed.
@@ -121,7 +121,7 @@ failed fix is itself data about what the system is really doing.
 | Symptom | Look first at |
 |---|---|
 | Wrong picture, silent `v3d.log` | First confirm the log says the instance was created with validation on; a run with no layer installed is silent too. Then run the `render_device` suite, with `VK_LAYER_VALIDATE_SYNC=1` after a barrier or layout change. |
-| App exits immediately, no window | `Config::load` rejected `data/config.json`, and `Engine::initialize` returned false. It requires the `{"configs": [{"type", "file"}]}` form, each entry's `type` and `file` must be strings, and every listed file must load. `v3d.log` says which check failed. |
+| App exits immediately, no window | `asset::Manifest::load` rejected `data/config.json`, and `Engine::initialize` returned false. It requires the `{"configs": [{"type", "file"}]}` form, each entry's `type` and `file` must be strings, and every listed file must load. `v3d.log` says which check failed. |
 | `vkCreateInstance` fails | An extension the loader does not advertise — `Instance::requireExtensions` names the missing one before creation is attempted. |
 | "No physical vulkan device supports 1.3" | The driver reports below 1.3, which device selection rejects per ADR-0002. Support tracks driver version more than GPU age; update the driver before suspecting the code. |
 | `LNK2019` on `vk*` symbols | A library calls Vulkan without linking `Vulkan::Vulkan`. `v3dlib_render` links it PUBLIC, so an app never names it; link it on the library that makes the call. |

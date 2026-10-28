@@ -6,7 +6,6 @@
 #include "DepthBuffer.h"
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/vulkan/device/Result.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
@@ -36,11 +35,15 @@ const VkFormat candidates[3] = {
 /**
  **/
 DepthBuffer::DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-    bool sampled) :
+    bool sampled, uint32_t layers) :
     device_(device),
     format_(VK_FORMAT_UNDEFINED),
     extent_(),
-    sampled_(sampled) {
+    sampled_(sampled),
+    layers_(layers) {
+    if (layers_ == 0 || (layers_ > 1 && !sampled_)) {
+        throw std::runtime_error("A vulkan depth buffer of more than one layer has to be sampled, and has at least one");
+    }
     format_ = chooseFormat(device_->physical(), sampled_);
     create(width, height);
 }
@@ -95,6 +98,10 @@ void DepthBuffer::create(uint32_t width, uint32_t height) {
     // the stencil aspect is left out even where the format carries one. Nothing uses
     // stencil, and an attachment view may name only the aspects it is used through
     spec.aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    spec.layers = layers_;
+    // a reader samples a sampled buffer as an array of its layers, so one of one layer is
+    // read the same way as one of several
+    spec.arrayed = sampled_;
     image_ = boost::make_shared<memory::Image>(device_, spec);
 
     if (sampled_) {
@@ -128,16 +135,6 @@ void DepthBuffer::destroy() {
 
 /**
  **/
-void DepthBuffer::recreate(uint32_t width, uint32_t height) {
-    // a frame in flight may still be testing against the image about to go away
-    const VkResult result = vkDeviceWaitIdle(device_->handle());
-    device::check(result, "Unable to wait for the vulkan device before recreating the depth buffer");
-    destroy();
-    create(width, height);
-}
-
-/**
- **/
 bool DepthBuffer::valid() const noexcept {
     return static_cast<bool>(image_);
 }
@@ -150,8 +147,14 @@ VkImage DepthBuffer::image() const noexcept {
 
 /**
  **/
-VkImageView DepthBuffer::view() const noexcept {
-    return image_ ? image_->view() : VK_NULL_HANDLE;
+VkImageView DepthBuffer::view(uint32_t layer) const noexcept {
+    return image_ ? image_->layerView(layer) : VK_NULL_HANDLE;
+}
+
+/**
+ **/
+uint32_t DepthBuffer::layers() const noexcept {
+    return layers_;
 }
 
 /**

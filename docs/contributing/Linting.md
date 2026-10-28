@@ -36,7 +36,7 @@ Run it on the whole tree from the repository root:
 ```
 cpplint --linelength=180 \
   --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=voxel/src/noise --recursive .
+  --exclude=demos/voxel/src/noise --recursive .
 ```
 
 **The expected output is zero errors.**
@@ -46,7 +46,7 @@ The excludes:
 - `out`, `vendor` and `vcpkg_installed` exist only on a developer machine. They hold far more
   files than the project, mostly third-party headers. CI checks out no submodules and installs no
   packages, so it has none of them.
-- `voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
+- `demos/voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
   too.
 
 `--exclude` removes files from the lint, not from the directory walk, so a run still walks the
@@ -73,9 +73,9 @@ image(VK_NULL_HANDLE),
 view(VK_NULL_HANDLE) {
 }
 
-const wchar_t* const charcodes =
-L" !\"#$%&'()*+,-./0123456789:;<=>?"
-L"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
+const char* const charset =
+" !\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 ```
 
 cpplint misreads only the constructor of a nested class: `Plain::Plain()` may indent its
@@ -108,9 +108,9 @@ repository does not own.
 
 Two third-party files are excluded from both analysers:
 
-- `voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
+- `demos/voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
   compile the same file.
-- `api/asset/media/loader/CgltfImpl.cpp`.
+- `api/interchange/CgltfImpl.cxx`.
 
 `/analyze-` removes a file from MSVC's analysis, and `SKIP_LINTING TRUE` removes it from
 clang-tidy. Do not fix findings in these files, because a fix would be lost when the package is
@@ -232,10 +232,11 @@ Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 
-[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs three of the
-review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), prose
-(`scripts/prose.ts`) and boundary input (`scripts/boundary.ts`). It runs on each pull request
-and on each push to `main`. The link rule checks the whole tree. The prose and boundary gates
+[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs four of the
+review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), the library
+table (`scripts/librarytable.ts`), prose (`scripts/prose.ts`) and boundary input
+(`scripts/boundary.ts`). It runs on each pull request and on each push to `main`. The link rule
+and the library table check the whole tree. The prose and boundary gates
 read only the lines added since a base:
 
 - on a pull request, the base is the branch the pull request merges into;

@@ -9,7 +9,7 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Bar.h>
@@ -299,7 +299,7 @@ void ComponentRenderer::ring(v3d::render::realtime::canvas::Canvas* canvas,
 
 /**
  **/
-void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const Engine& ui) const {
+void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const Interface& ui) const {
     for (const boost::shared_ptr<Container>& container : ui.containers()) {
         if (container && container->visible()) {
             draw(canvas, *container);
@@ -778,7 +778,7 @@ bool ComponentRenderer::skin(v3d::render::realtime::canvas::Canvas* canvas, cons
 
 /**
  **/
-glm::vec2 ComponentRenderer::insets(const Engine& ui) const {
+glm::vec2 ComponentRenderer::insets(const Interface& ui) const {
     glm::vec2 total(0.0F, 0.0F);
     for (const boost::shared_ptr<Container>& container : ui.containers()) {
         if (container && container->visible()) {

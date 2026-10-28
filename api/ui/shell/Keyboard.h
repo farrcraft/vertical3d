@@ -13,32 +13,38 @@
 
 union SDL_Event;
 
-namespace v3d::render::realtime {
+namespace v3d::window {
 class Window;
-};  // namespace v3d::render::realtime
+};  // namespace v3d::window
 
 namespace v3d::ui {
-class Engine;
+class Interface;
+class Immediate;
 };  // namespace v3d::ui
 
 namespace v3d::ui::shell {
 
 /**
  * The platform side of input::Keys. It turns an SDL event into a press() or a text() call
- * on input::Keys, and an app's Engine::onEvent() passes it every event.
+ * on input::Keys, and an app's Interface::onEvent() passes it every event.
  *
  * It decodes the event, reads the modifiers from it, supplies the clipboard and turns the
  * platform's text input on and off. input::Keys does none of these itself.
  *
- * A key the ui takes returns true. The app returns that from Engine::onEvent(), so the input
+ * A key the ui takes returns true. The app returns that from Interface::onEvent(), so the input
  * engine does not also map the key to its bound command.
  * Only a key going down is ever taken. A release always goes through, so a key held when a
  * box took the focus is still seen to come up and nothing is left stuck down.
  *
  * **Text input follows the focus.** The platform composes no text until text input is on,
  * so this turns it on while a text box holds the keyboard and off again after. It listens
- * through ui::Engine::onFocus() instead of checking on each event, because the focus also
+ * through ui::Interface::onFocus() instead of checking on each event, because the focus also
  * moves on a mouse press, which this class never sees.
+ *
+ * **An immediate layer can be offered the keys too.** A key or a character the retained ui did
+ * not take goes to the layer's text field, if one holds the keyboard, and text input is on
+ * while either has a field that takes text. A game that draws only through Immediate builds
+ * this with no ui::Interface.
  *
  * The app handles the cursor itself. input::Cursor takes points, not events, so an app
  * passes a press to it directly.
@@ -46,13 +52,14 @@ namespace v3d::ui::shell {
 class Keyboard final {
  public:
     /**
-     * @param ui where the focus is held, and what reports it moving
+     * @param ui where the focus is held, and what reports it moving, or null for an app with
+     *        no retained ui
      * @param dispatcher where a focused component's event is sent
      * @param window whose text input is turned on as the focus reaches a text box, and off
      *        as it leaves. Without a window the keys still edit, but no characters arrive
      **/
-    Keyboard(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-        const boost::shared_ptr<v3d::render::realtime::Window>& window);
+    Keyboard(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+        const boost::shared_ptr<v3d::window::Window>& window);
 
     ~Keyboard();
 
@@ -68,6 +75,13 @@ class Keyboard final {
     bool event(const SDL_Event& event);
 
     /**
+     * Offer the keys the retained ui does not take to an immediate layer as well, and give it
+     * the platform's clipboard. The layer must outlive this object, or be taken off it again
+     * with a null layer first.
+     **/
+    void immediate(Immediate* layer);
+
+    /**
      * The input::Keys underneath, for an app with a key that did not come from the event
      * loop, or for a test driving the ui.
      **/
@@ -81,13 +95,14 @@ class Keyboard final {
 
  private:
     /**
-     * Turn text input on while the focused component takes typed text, and off otherwise.
-     * Called with the newly focused component.
+     * Turn text input on while the focused component takes typed text or the immediate
+     * layer's field holds the keyboard, and off otherwise.
      **/
     void follow(const boost::shared_ptr<Component>& focused);
 
-    boost::shared_ptr<Engine> ui_;
-    boost::shared_ptr<v3d::render::realtime::Window> window_;
+    boost::shared_ptr<Interface> ui_;
+    Immediate* layer_;
+    boost::shared_ptr<v3d::window::Window> window_;
     input::Keys keys_;
 };
 

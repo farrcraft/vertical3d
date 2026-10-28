@@ -15,15 +15,18 @@
 #    is installed.
 #  - a v3d:: alias, which is the name a consumer links. It would stay the same if the api
 #    were later shipped as an installed package.
-#  - /EHsc and /utf-8 in the interface. The directory's own flags apply them only to this
-#    tree's compilation. A consumer that compiles Logger.h without /utf-8 hits the
-#    static_assert in spdlog's bundled fmt.
+#  - /EHsc and /utf-8 under MSVC, for the library and for whatever compiles its headers. A
+#    consumer that compiles Logger.h without /utf-8 hits the static_assert in spdlog's
+#    bundled fmt. Clang and GCC need neither: they enable exceptions, and read and write
+#    UTF-8, by default.
 function(v3d_add_api_library name)
 	set(target "v3dlib_${name}")
 	add_library(${target} ${ARGN})
 	add_library(v3d::${name} ALIAS ${target})
 	target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${V3D_ROOT}>)
-	target_compile_options(${target} INTERFACE /EHsc /utf-8)
+	if(MSVC)
+		target_compile_options(${target} PUBLIC /EHsc /utf-8)
+	endif()
 	# Most libraries name boost in a header, if only for shared_ptr, so every one is given
 	# the headers.
 	target_link_libraries(${target} PUBLIC Boost::headers)
@@ -75,6 +78,46 @@ function(v3d_copy_data target name source)
 	set_target_properties(${target} PROPERTIES V3D_LAST_DATA_TARGET ${copier})
 endfunction()
 
+# Copy OpenUSD's plugins beside an executable that reads USD.
+#
+# OpenUSD reads usd/plugInfo.json beside its libraries, which names each plugin's directory
+# under it, and stops at a breakpoint when it finds none. vcpkg copies the libraries beside each
+# executable but not the plugins. It also installs the plugins beside the libraries, in bin/usd,
+# and that one file in lib/usd, so both are copied. The sources are found from the imported usd
+# target, so a Debug build copies the debug plugins.
+#
+# @param target the executable that links v3dlib_interchange_usd, directly or not
+function(v3d_copy_usd_plugins target)
+	add_custom_command(TARGET ${target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_FILE_DIR:usd>/usd" "$<TARGET_FILE_DIR:${target}>/usd"
+		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE_DIR:usd>/../lib/usd/plugInfo.json" "$<TARGET_FILE_DIR:${target}>/usd/plugInfo.json"
+		COMMENT "Copying OpenUSD's plugins for ${target}"
+		VERBATIM)
+endfunction()
+
+# Copy another target's executable beside a target's own, for a target that runs it, with the
+# shared libraries the program loads, which the target itself may not. The copy is a rule whose
+# input is the executable, for the same reason v3d_copy_data's is. A POST_BUILD step would copy
+# only when the target relinks, and leave an older build of the program beside it.
+#
+# @param target the executable that runs the program
+# @param program the executable target it runs
+function(v3d_copy_program target program)
+	set(copier "${target}_${program}_program")
+	set(stamp "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${copier}.stamp")
+	add_custom_command(OUTPUT "${stamp}"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${program}>" $<TARGET_RUNTIME_DLLS:${program}>
+			"$<TARGET_FILE_DIR:${target}>"
+		COMMAND ${CMAKE_COMMAND} -E touch "${stamp}"
+		DEPENDS "$<TARGET_FILE:${program}>"
+		COMMENT "Copying ${program} beside ${target}"
+		COMMAND_EXPAND_LISTS
+		VERBATIM)
+	add_custom_target(${copier} DEPENDS "${stamp}")
+	add_dependencies(${copier} ${program})
+	add_dependencies(${target} ${copier})
+endfunction()
+
 # Assets shared by more than one app live in the root data/ directory, so there is one
 # committed copy rather than one per app. v3d_add_shared_data copies them into an app's
 # runtime data directory, alongside whatever that app keeps in <app>/data. The engine
@@ -92,8 +135,8 @@ endfunction()
 
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
-# /EHsc and /utf-8, and a working directory beside the executable. The framework's imported
-# target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
+# /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's
+# imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
 # wherever spdlog's bundled fmt is compiled. The working directory lets a test's data files
 # resolve the same way an app's do. Run them with ctest --test-dir out/build/<config>.
 function(v3d_add_test lib)
@@ -104,7 +147,9 @@ function(v3d_add_test lib)
 	# the root PUBLIC. An app suite also compiles the app's own sources, which include each
 	# other by that path. The root is therefore named here, not left to a link.
 	target_include_directories(${target} PRIVATE ${V3D_ROOT})
-	target_compile_options(${target} PRIVATE /EHsc /utf-8)
+	if(MSVC)
+		target_compile_options(${target} PRIVATE /EHsc /utf-8)
+	endif()
 	# Boost.Test's CRT leak check reports at exit, before spdlog's global registry is torn
 	# down, so any test that builds a Logger reports the same permanent false positive.
 	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)

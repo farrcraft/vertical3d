@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/vulkan/renderer/Quad.h>
+#include <api/render/realtime/renderer/Quad.h>
 
 #include <boost/test/unit_test.hpp>
 
-using v3d::render::realtime::vulkan::renderer::Quad;
+using v3d::render::realtime::renderer::Quad;
 
 namespace {
 

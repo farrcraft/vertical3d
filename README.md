@@ -11,34 +11,14 @@ It builds on Windows with MSVC. Nothing is packaged or released; you build it fr
 
 ## The libraries
 
-The libraries are in [api/](api/), one CMake target per directory. Each target is named
-`v3dlib_<name>`, with the alias `v3d::<name>`, and its namespace matches its path, for example
-`v3d::render::realtime`.
-
-| Library | What it does |
-|---|---|
-| [`render`](api/render/) | The Vulkan renderer: frames, passes, 2D quads, lines, lit 3D meshes and post-processing |
-| [`render/offline`](api/render/offline/) | The base of the offline renderer: RIB parsing, the shading language, the film and the ray tracer. Needs no Vulkan (`v3dlib_render_offline`) |
-| [`engine`](api/engine/) | The application base class, the main loop, and startup of the window, config and input |
-| [`ui`](api/ui/) | Menus, toolbars, windows, widgets and themes |
-| [`brep`](api/brep/) | Boundary representation meshes: half-edge topology, faces and vertices |
-| [`type`](api/type/) | Shared value types: geometry and rays, cameras, transforms, models and skeletons, animation clips, particle effects, random numbers |
-| [`dag`](api/dag/) | Scene nodes: an id and a transform for each mesh |
-| [`image`](api/image/) | Image reading and writing (PNG, JPEG, TGA, BMP), cropping and comparison |
-| [`font`](api/font/) | Glyph layout and atlas packing |
-| [`asset`](api/asset/) | Loading files by type, and the loaders for JSON documents |
-| [`asset/media`](api/asset/media/) | Loaders for images and glTF models (`v3dlib_asset_media`) |
-| [`config`](api/config/) | JSON configuration documents |
-| [`event`](api/event/) | Mapping input to named commands, and dispatching them |
-| [`input`](api/input/) | Keyboard and mouse state |
-| [`audio`](api/audio/) | Sound playback through SDL3_mixer |
-| [`ecs`](api/ecs/) | Components and systems on EnTT |
-| [`grid`](api/grid/) | Tile grids: pathfinding, line of sight and overlay geometry |
-| [`log`](api/log/) | Logging through spdlog |
+The libraries are in [api/](api/), one CMake target per directory.
+[docs/api/README.md](docs/api/README.md#the-libraries) lists them, says what each is for, and
+shows how they depend on each other.
 
 ## The applications
 
-Each application is a top-level directory and builds with the libraries.
+Each application builds with the libraries. vertical3d, moya and imagetool are top-level
+directories. The five demos, voxel, pong, tetris, odyssey and diorama, are under [demos/](demos/).
 
 | Application | What it is |
 |---|---|
@@ -46,10 +26,10 @@ Each application is a top-level directory and builds with the libraries.
 | **voxel** | A Minecraft-style voxel terrain generator, with chunked meshes over Perlin noise |
 | **pong** | Pong, with sound and a computer opponent |
 | **tetris** | Tetris |
-| **odyssey** | A tile-based roguelike in early development: a tile map, routes and line of sight, and a player sprite |
+| **odyssey** | A tile-based roguelike in early development: a world of regions loaded as the player moves, routes and line of sight across them, and a player sprite |
+| **diorama** | A lit village of glTF models with shadows under a moving sun, an isometric camera, and a looping sound placed at its well |
 | **moya** | A RenderMan-style renderer. It reads a RIB file and renders it with a Reyes hider (micropolygon grids and buckets), or with ray tracing when the file says `Hider "raytrace"` |
-| **imagetool** | A command-line tool for images. It reads an image, prints its size and bit depth with `--info`, cuts out a rectangle with `--crop x,y,width,height`, and writes the result with `--outfile` |
-| **v3dshell** | A placeholder for a command shell. Its `main` is empty |
+| **imagetool** | A command-line tool for images. It prints an image's size, crops it and converts it, and it packs images into a sprite sheet and unpacks one |
 
 [examples/](examples/) is separate: each example is its own CMake project that uses the
 libraries the way an app in another repository would.
@@ -71,7 +51,8 @@ Start with the documents for what you are doing:
 | Changing the renderer or the UI library | [docs/internals/](docs/internals/) |
 | Working on moya or the offline renderer | [docs/offline/](docs/offline/README.md) |
 | Working on the vertical3d editor | [docs/editor/](docs/editor/README.md) |
-| Working on a game or a tool | [docs/Games.md](docs/Games.md) |
+| Working on a demo | [docs/Demos.md](docs/Demos.md) |
+| Working on imagetool | [docs/Imagetool.md](docs/Imagetool.md) |
 | Reading an example | [examples/README.md](examples/README.md) |
 | Asking why something is designed as it is | [docs/adr/](docs/adr/), the architecture decision records |
 

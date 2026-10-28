@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Scene.h>
 
 #include <string>
 #include <vector>
@@ -24,9 +25,9 @@ namespace v3d::editor {
  * the history that names a part by index still names the same part. The operation has already
  * run when the command is made.
  *
- * Selection is not history, and after a renumbering an old flag could name another part, so
- * undo and redo clear the component selection of each mesh they restore. The objects stay
- * selected.
+ * Selection is not history, and after a renumbering an old index could name another part, so
+ * undo and redo clear the component selection of every item that shows a mesh they restore.
+ * The objects stay selected.
  **/
 class TopologyCommand final : public Command {
  public:
@@ -38,15 +39,17 @@ class TopologyCommand final : public Command {
     };
 
     /**
+     * @param scene the scene whose items show the meshes
      * @param name what the operation is called, which is the name the command reports
      **/
-    TopologyCommand(const std::vector<Change>& changes, const std::string& name);
+    TopologyCommand(const boost::shared_ptr<Scene>& scene, const std::vector<Change>& changes, const std::string& name);
 
     void undo() override;
     void redo() override;
     std::string name() const override;
 
  private:
+    boost::shared_ptr<Scene> scene_;
     std::vector<Change> changes_;
     std::string name_;
 };

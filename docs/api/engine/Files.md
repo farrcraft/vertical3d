@@ -17,8 +17,9 @@ Both return paths ending in a separator. `userPath()` returns an empty string an
 platform cannot say where user files go. The app should then run on its defaults.
 
 **Choose `org` and `app` once and never change them.** They name the directory, so changing
-either one after release loses every player's settings. The tree uses `Vertical3D` as the
-organization and the app's own name as the app, as pong does.
+either one after release loses every player's settings. An app names them once, as the
+`engine::Identity` it passes to `run<T>`. The tree uses `Vertical3D` as the organization and
+the app's own name as the application.
 
 ### Settings
 
@@ -29,19 +30,23 @@ organization and the app's own name as the app, as pong does.
 - A setting nobody changed keeps following whatever the current build ships.
 - An entry this build does not recognise is kept and written back unchanged.
 
-Use it like this:
+**The engine reads the document as it starts**, when the app has an identity, and an app reaches
+it through `Engine::settings()`. It is null in an engine built without an identity, as in a
+test. Use it like this:
 
 ```cpp
-settings_ = boost::make_shared<v3d::engine::Settings>("Vertical3D", "Pong", logger());
-settings_->load();                                      // false if there is no file yet
-double volume = settings_->number("volume", 0.8);       // the fallback if unset
-settings_->set("volume", 0.5);
-settings_->save();                                      // save on every change
+double volume = settings()->number("volume", 0.8);     // the fallback if unset
+settings()->set("volume", 0.5);
+settings()->save();                                     // save on every change
 ```
 
 - The typed reads are `text()`, `number()`, `integer()` and `flag()`. Each returns the fallback
-  when the key is missing or holds a value of another kind.
+  when the key is missing or holds a value of another kind. `value()` returns the stored JSON
+  as it is, for a setting such as a list, and its reader checks its shape.
 - `set()` stores a value. `clear()` forgets one, so it follows the shipped default again.
+- **The engine keeps the player's key bindings under `bindings`.** It applies them after the
+  binding config loads, before `start()`, and saves after every change to them.
+  [Input.md](Input.md#bindings) has the rules.
 - **Call `save()` when a setting changes, not when the app exits.** No exit path is guaranteed
   to run, and a crash should not lose a change.
 - The document is versioned (`Settings::VERSION`). An older document is upgraded as it is read.
@@ -51,9 +56,8 @@ settings_->save();                                      // save on every change
   A player who runs an older build therefore keeps the settings the newer one wrote.
 - Saving is atomic. See [Writing files](#writing-files).
 
-The meaning of each key is the app's. `Settings` stores keys and values; applying one is the
-app's job, for example `Engine::rebind()` for a key or `Window::request()` for a window size.
-pong's `applyStoredBindings()` is the reference.
+The meaning of every other key is the app's. `Settings` stores keys and values, and applying
+one is the app's job, for example `Window::request()` for a window size.
 
 ## Paths
 

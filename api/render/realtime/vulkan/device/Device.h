@@ -72,12 +72,12 @@ class Device final {
      * @param surface the surface the device has to be able to present to, or null for a
      *        headless device that only draws
      * @param allocations how the memory behind every buffer and image on this device is
-     *        found. One allocation per resource unless a consumer asks otherwise, as an
-     *        application with per-frame resources should
+     *        found. Regions of larger blocks unless a consumer asks for one allocation per
+     *        resource
      **/
     Device(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<Instance>& instance,
         const boost::shared_ptr<Surface>& surface = nullptr,
-        memory::Allocator::Kind allocations = memory::Allocator::Kind::Direct);
+        memory::Allocator::Kind allocations = memory::Allocator::Kind::Suballocated);
 
     /**
      **/
@@ -136,6 +136,27 @@ class Device final {
      **/
     const Description& description() const noexcept;
 
+    /**
+     * Whether a pipeline may draw triangles as their edges or their corners, with the polygon
+     * modes VK_POLYGON_MODE_LINE and VK_POLYGON_MODE_POINT. Those need the fillModeNonSolid
+     * feature, which the device turns on when the gpu offers it. A device without it is still
+     * chosen, because nothing else needs it, so a pipeline that would draw that way draws filled.
+     **/
+    bool nonSolidFill() const noexcept;
+
+    /**
+     * Choose the extensions a logical device is created with.
+     *
+     * Public because it has no side effects and needs no device, so a test can check both
+     * branches on a machine with no portability driver.
+     *
+     * @param presenting whether the device presents, which needs the swapchain extension
+     * @param offered the names of the extensions the physical device advertises
+     * @return the swapchain extension when presenting, and the portability subset when the
+     *         device offers it, which a device that offers it must have enabled
+     **/
+    static std::vector<const char*> extensions(bool presenting, const std::vector<std::string>& offered);
+
  private:
     /**
      * Pick the first physical device that can draw, and present when there is a surface,
@@ -151,16 +172,23 @@ class Device final {
     QueueFamilies findFamilies(VkPhysicalDevice device) const;
 
     /**
-     * @param presenting whether the swapchain extension is among the ones needed
-     * @return whether a physical device advertises every extension the renderer needs
+     * @return the names of the extensions a physical device advertises
      **/
-    static bool hasRequiredExtensions(VkPhysicalDevice device, bool presenting);
+    static std::vector<std::string> offered(VkPhysicalDevice device);
 
     /**
-     * @return whether a physical device offers the 1.3 features the renderer draws with, and
-     *         the separate depth and stencil layouts its depth barriers rely on
+     * @param presenting whether the swapchain extension is among the ones needed
+     * @return the first extension the renderer needs that a physical device does not
+     *         advertise, or empty when it advertises them all
      **/
-    static bool hasRequiredFeatures(VkPhysicalDevice device);
+    static std::string missingExtension(VkPhysicalDevice device, bool presenting);
+
+    /**
+     * @return the first of the 1.3 features the renderer draws with, and the separate depth
+     *         and stencil layouts its depth barriers rely on, that a physical device lacks, or
+     *         empty when it has them all
+     **/
+    static std::string missingFeature(VkPhysicalDevice device);
 
     /**
      **/
@@ -176,6 +204,7 @@ class Device final {
     VkQueue presentQueue_;
     float timestampPeriod_;
     Description description_;
+    bool nonSolidFill_;
     /**< created after the logical device. Everything it allocated is freed before it goes **/
     boost::shared_ptr<memory::Allocator> allocator_;
 };

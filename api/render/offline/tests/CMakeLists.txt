@@ -5,12 +5,14 @@ v3d_add_test(render_offline
 	"FrameBufferTest.cxx"
 	"FilmTest.cxx"
 	"AreaTest.cxx"
+	"CameraTest.cxx"
 	"MovingTransformTest.cxx"
 	"TextureTest.cxx"
 	"NoiseTest.cxx"
 	"RibLexerTest.cxx"
 	"RibDeclarationsTest.cxx"
 	"RibReaderTest.cxx"
+	"RibWriterTest.cxx"
 	"RibArgumentsTest.cxx"
 	"SlLexerTest.cxx"
 	"SlParserTest.cxx"
@@ -28,7 +30,9 @@ v3d_add_test(render_offline
 	"SlGlobalsTest.cxx"
 	"SlWalkTest.cxx"
 	"TraceSceneTest.cxx"
-	"TraceHitShaderTest.cxx")
+	"TraceHitShaderTest.cxx"
+	"TraceBatchTest.cxx"
+	"TraceCurveTest.cxx")
 
 target_link_libraries(v3dtest_render_offline PRIVATE v3dlib_render_offline v3dlib_image v3dlib_log v3dlib_type ${Boost_LIBRARIES})
 

@@ -48,7 +48,7 @@ reviewer reports them only when the tool missed one.
 | Class | What it covers | Checked by |
 |---|---|---|
 | **Boundary input** | A value from a file, the command line or a caller converted without a check: a float made an integer, a JSON value read as a string without testing its type, a count used against a buffer, a value that is not finite | `scripts/boundary.ts` on added lines, and review |
-| **Drift** | A comment or document that no longer matches the code, or a claim a change makes that the code does not keep | Review |
+| **Drift** | A comment or document that no longer matches the code, or a claim a change makes that the code does not keep | `scripts/librarytable.ts` for the table of libraries, and review |
 | **Prose** | The writing rules in [Conventions.md](Conventions.md#writing): sentence length, openers, inverted sentences, figures of speech, lines extended past the wrap | `scripts/prose.ts`, on the lines a change adds |
 | **Weak test** | A test that would pass without the code it claims to test | `scripts/failsfirst.ts`, and review |
 | **Cleanup** | An object a constructor made before it threw, a null a function was given, a destructor that can throw, a resource never released | Review |

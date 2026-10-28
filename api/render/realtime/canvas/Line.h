@@ -21,7 +21,7 @@ namespace v3d::render::realtime::canvas {
  * Everything the engine draws as lines, accumulated as one stream of segments.
  *
  * The CPU side of the world space line primitive, and the counterpart of Canvas: filled
- * during a tick and handed to vulkan::renderer::Line, which draws the whole stream as one
+ * during a tick and handed to renderer::Line, which draws the whole stream as one
  * line list. There is no index buffer. Segments rarely share a vertex, so indexing a line
  * list costs more than it saves.
  *

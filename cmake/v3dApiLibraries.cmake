@@ -11,8 +11,8 @@
 
 # Every api library, by the name that follows v3dlib_ and v3d::.
 set(V3D_API_LIBRARIES
-	asset asset_media audio brep config dag ecs engine event font grid image input log
-	render render_offline type ui)
+	animation asset asset_media audio brep curve database ecs engine event font grid image input
+	interchange interchange_usd log model render render_offline shell type ui window)
 
 # PATH is the directory under api/ holding the library, which is the name except where a
 # library sits under another one's directory. REQUIRES is the api libraries it links;
@@ -22,6 +22,10 @@ set(V3D_API_LIBRARIES
 # so there is no selection that does not need it and v3dDependencies.cmake resolves it
 # unconditionally.
 
+set(V3D_API_animation_PATH "animation")
+set(V3D_API_animation_REQUIRES)
+set(V3D_API_animation_PACKAGES glm)
+
 set(V3D_API_asset_PATH "asset")
 set(V3D_API_asset_REQUIRES log)
 set(V3D_API_asset_PACKAGES)
@@ -29,32 +33,33 @@ set(V3D_API_asset_PACKAGES)
 # Under api/asset but a separate library: the loaders for formats that have to be decoded
 # rather than read. A selection that only reads documents does not pull in their packages.
 set(V3D_API_asset_media_PATH "asset/media")
-set(V3D_API_asset_media_REQUIRES log asset image type)
+set(V3D_API_asset_media_REQUIRES log animation asset image interchange model)
 set(V3D_API_asset_media_PACKAGES cgltf glm)
 
 set(V3D_API_audio_PATH "audio")
 set(V3D_API_audio_REQUIRES log event asset)
-set(V3D_API_audio_PACKAGES SDL3_mixer EnTT)
+set(V3D_API_audio_PACKAGES SDL3_mixer EnTT glm)
 
 set(V3D_API_brep_PATH "brep")
-set(V3D_API_brep_REQUIRES dag type)
+set(V3D_API_brep_REQUIRES type)
 set(V3D_API_brep_PACKAGES glm)
 
-set(V3D_API_config_PATH "config")
-set(V3D_API_config_REQUIRES log asset type)
-set(V3D_API_config_PACKAGES glm)
+set(V3D_API_curve_PATH "curve")
+set(V3D_API_curve_REQUIRES)
+set(V3D_API_curve_PACKAGES glm)
 
-set(V3D_API_dag_PATH "dag")
-set(V3D_API_dag_REQUIRES type)
-set(V3D_API_dag_PACKAGES glm)
+# SQLite, for documents that are saved incrementally. No header includes it.
+set(V3D_API_database_PATH "database")
+set(V3D_API_database_REQUIRES)
+set(V3D_API_database_PACKAGES unofficial-sqlite3)
 
 set(V3D_API_ecs_PATH "ecs")
-set(V3D_API_ecs_REQUIRES type)
+set(V3D_API_ecs_REQUIRES animation type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media config event input render type)
-set(V3D_API_engine_PACKAGES SDL3 EnTT)
+set(V3D_API_engine_REQUIRES log asset asset_media ecs event input type window)
+set(V3D_API_engine_PACKAGES SDL3 EnTT glm)
 
 set(V3D_API_event_PATH "event")
 set(V3D_API_event_REQUIRES log asset)
@@ -76,12 +81,27 @@ set(V3D_API_input_PATH "input")
 set(V3D_API_input_REQUIRES event type)
 set(V3D_API_input_PACKAGES SDL3 glm EnTT)
 
+# Scenes read from interchange formats, in no format's terms. It owns cgltf's implementation.
+set(V3D_API_interchange_PATH "interchange")
+set(V3D_API_interchange_REQUIRES asset curve type)
+set(V3D_API_interchange_PACKAGES cgltf glm)
+
+# Under api/interchange but a separate library: the USD reader, the one library that links
+# OpenUSD. The package comes from the manifest's usd feature.
+set(V3D_API_interchange_usd_PATH "interchange/usd")
+set(V3D_API_interchange_usd_REQUIRES interchange curve type)
+set(V3D_API_interchange_usd_PACKAGES glm pxr)
+
 set(V3D_API_log_PATH "log")
 set(V3D_API_log_REQUIRES)
 set(V3D_API_log_PACKAGES spdlog)
 
+set(V3D_API_model_PATH "model")
+set(V3D_API_model_REQUIRES animation)
+set(V3D_API_model_PACKAGES glm)
+
 set(V3D_API_render_PATH "render")
-set(V3D_API_render_REQUIRES log asset asset_media ecs font image type)
+set(V3D_API_render_REQUIRES log animation asset asset_media ecs image model type window)
 set(V3D_API_render_PACKAGES Vulkan VulkanMemoryAllocator SDL3 glm EnTT)
 
 # Under api/render but a separate library: the offline renderer is built on it. It names
@@ -90,13 +110,25 @@ set(V3D_API_render_offline_PATH "render/offline")
 set(V3D_API_render_offline_REQUIRES log image type)
 set(V3D_API_render_offline_PACKAGES glm)
 
+# What every app builds around its own code: the ui, the screen, the menu and the statistics
+# overlay. It joins engine and ui, which do not depend on each other.
+set(V3D_API_shell_PATH "shell")
+set(V3D_API_shell_REQUIRES engine ui asset)
+set(V3D_API_shell_PACKAGES)
+
 set(V3D_API_type_PATH "type")
 set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image input type)
+set(V3D_API_ui_REQUIRES log render asset event font image input type window)
 set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
+
+# The OS window and its platform calls. It names no graphics API, so a selection that needs a
+# window but no renderer does not need the Vulkan SDK.
+set(V3D_API_window_PATH "window")
+set(V3D_API_window_REQUIRES log)
+set(V3D_API_window_PACKAGES SDL3 glm)
 
 # The imported target each package provides. The verification below recognises a package in
 # a link line by this target. A package that provides only an include directory, such as cgltf,
@@ -111,7 +143,11 @@ set(V3D_PACKAGE_TARGETS
 	"JPEG::JPEG=JPEG"
 	"glm::glm=glm"
 	"EnTT::EnTT=EnTT"
-	"spdlog::spdlog=spdlog")
+	"spdlog::spdlog=spdlog"
+	"unofficial::sqlite3::sqlite3=unofficial-sqlite3"
+	"usd=pxr"
+	"usdGeom=pxr"
+	"usdLux=pxr")
 
 # A package that provides only an include directory has no target to appear in a link line.
 # The verification below cannot confirm the library still uses it, and accepts the manifest

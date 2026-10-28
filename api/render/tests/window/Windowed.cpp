@@ -6,15 +6,17 @@
 #include "Windowed.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Engine3D.h>
-#include <api/render/realtime/Window.h>
+#include <api/render/realtime/WindowRenderer.h>
+#include <api/render/realtime/SharedInstance.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
+#include <api/window/Window.h>
 
 #include <SDL3/SDL.h>
 
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -37,7 +39,7 @@ const int windowHeight = 120;
 
 /**
  **/
-Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations) {
+Windowed::Windowed(std::optional<render::realtime::vulkan::memory::Allocator::Kind> allocations) {
     // where a captured frame is written, beside the executable
     boost::filesystem::create_directory("data_out");
 
@@ -45,16 +47,17 @@ Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations
         throw std::runtime_error(std::string("SDL could not start its video subsystem: ") + SDL_GetError());
     }
     logger = boost::make_shared<v3d::log::Logger>();
-    window = boost::make_shared<render::realtime::Window>(logger);
+    window = boost::make_shared<v3d::window::Window>(logger);
     if (!window->create(glm::ivec2(windowWidth, windowHeight))) {
         SDL_Quit();
         throw std::runtime_error(std::string("SDL could not create a window: ") + SDL_GetError());
     }
-    engine = boost::make_shared<render::realtime::Engine3D>(logger, nullptr, VK_FORMAT_UNDEFINED, allocations);
+    renderer = allocations ? boost::make_shared<render::realtime::WindowRenderer>(logger, VK_FORMAT_UNDEFINED, *allocations)
+        : boost::make_shared<render::realtime::WindowRenderer>(logger);
     try {
-        engine->initialize(window);
+        renderer->initialize(window);
     } catch (...) {
-        engine.reset();
+        renderer.reset();
         window->destroy();
         SDL_Quit();
         throw;
@@ -64,9 +67,9 @@ Windowed::Windowed(render::realtime::vulkan::memory::Allocator::Kind allocations
 /**
  **/
 Windowed::~Windowed() {
-    // the engine's device holds the window's surface, so it goes first
-    engine->shutdown();
-    engine.reset();
+    // the renderer's device holds the window's surface, so it goes first
+    renderer->shutdown();
+    renderer.reset();
     window->destroy();
     SDL_Quit();
 }
@@ -75,8 +78,9 @@ Windowed::~Windowed() {
  **/
 bool Windowed::silent() const {
     // nothing reported means a clean run only when the layer is on. Without the layer nothing
-    // checks the calls, and every run reports nothing
-    const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = window->instance();
+    // checks the calls, and every run reports nothing. The renderer's device holds the shared
+    // instance, so this is the one it reported to
+    const boost::shared_ptr<render::realtime::vulkan::device::Instance> instance = render::realtime::sharedInstance(logger);
     if (!instance->validating()) {
         BOOST_TEST_MESSAGE("the validation layer is not installed - this case asserts nothing");
         return false;

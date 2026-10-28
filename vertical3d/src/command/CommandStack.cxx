@@ -111,6 +111,12 @@ void CommandStack::markSaved() noexcept {
 
 /**
  **/
+void CommandStack::markUnsaved() noexcept {
+    saved_.reset();
+}
+
+/**
+ **/
 bool CommandStack::dirty() const noexcept {
     return !saved_ || *saved_ != done_.size();
 }

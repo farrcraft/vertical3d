@@ -17,15 +17,36 @@
     "glm",
     "libjpeg-turbo",
     "libpng",
-    {
-      "name": "sdl3",
-      "features": [
-        "vulkan"
+    "spdlog",
+    "sqlite3"
+  ],
+  "default-features": [
+    "platform",
+    "usd"
+  ],
+  "features": {
+    "platform": {
+      "description": "The window, the device and the audio: what the realtime renderer, the engine, input, the ui and audio need",
+      "dependencies": [
+        {
+          "name": "sdl3",
+          "features": [
+            "vulkan"
+          ]
+        },
+        "sdl3-mixer",
+        "vulkan",
+        "vulkan-memory-allocator"
       ]
     },
-    "sdl3-mixer",
-    "spdlog",
-    "vulkan",
-    "vulkan-memory-allocator"
-  ]
+    "usd": {
+      "description": "OpenUSD without its imaging, which the USD reader in interchange_usd reads a stage through",
+      "dependencies": [
+        {
+          "name": "usd",
+          "default-features": false
+        }
+      ]
+    }
+  }
 }

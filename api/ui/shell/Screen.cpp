@@ -8,8 +8,8 @@
 #include <api/asset/Manager.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Engine3D.h>
-#include <api/ui/Engine.h>
+#include <api/render/realtime/WindowRenderer.h>
+#include <api/ui/Interface.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
@@ -42,7 +42,7 @@ void lineHeight(paint::Dressing* dressing, float size) {
 
 /**
  **/
-Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
+Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
     const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options) :
     engine_(engine),
     options_(options),
@@ -73,10 +73,11 @@ Screen::Screen(v3d::render::realtime::Engine3D* engine, const boost::shared_ptr<
 /**
  **/
 void Screen::build() {
+    // the theme lives on the Interface, and the renderer being replaced is what was last given it
+    const boost::shared_ptr<style::Theme> drawing = components_ ? components_->theme() : boost::shared_ptr<style::Theme>();
     const float drawn = size();
     components_ = boost::make_shared<paint::ComponentRenderer>(text_->measure(drawn), text_->write(&canvas_, drawn));
     options_.dress(&components_->dressing(), drawn);
-    components_->theme(theme_);
 
     if (options_.immediate) {
         // built once and given the new text after that, so a rescale keeps where its windows
@@ -86,11 +87,11 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
-        // the immediate layer has its own Dressing type, which the app's Dress does not fill,
-        // so only the line height is copied across
+        // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
+        // the line height follows the text, so only it is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
-        immediate_->theme(theme_);
     }
+    theme(drawing);
     if (statistics_) {
         statistics_->size(StatisticsOverlay::defaultSize * scale_);
     }
@@ -98,7 +99,10 @@ void Screen::build() {
 
 /**
  **/
-bool Screen::begin() {
+bool Screen::begin(const Interface* ui) {
+    if (ui != nullptr && ui->activeTheme() != components_->theme()) {
+        theme(ui->activeTheme());
+    }
     resized_ = false;
     glm::ivec2 frame(0, 0);
     if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
@@ -145,16 +149,15 @@ float Screen::size() const noexcept {
 /**
  **/
 void Screen::theme(const boost::shared_ptr<style::Theme>& theme) {
-    theme_ = theme;
-    components_->theme(theme_);
+    components_->theme(theme);
     if (immediate_) {
-        immediate_->theme(theme_);
+        immediate_->theme(theme);
     }
 }
 
 /**
  **/
-void Screen::draw(const Engine* ui, const StatisticsOverlay::Sample& statistics) {
+void Screen::draw(const Interface* ui, const StatisticsOverlay::Sample& statistics) {
     if (ui != nullptr) {
         components_->draw(&canvas_, *ui);
     }

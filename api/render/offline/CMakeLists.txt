@@ -1,11 +1,6 @@
 # The code shared by the offline renderer, moya. This library must not link Vulkan or SDL.
 # It touches no window, device or swapchain, so its suite and moya's run in CI on a runner
 # with no GPU. A consumer can also select it without the realtime stack.
-#
-# /utf-8 is set here because api/CMakeLists.txt adds this directory, so it does not inherit
-# api/render's flags. spdlog's bundled fmt has a static_assert that fails without it.
-set(CMAKE_CXX_FLAGS "/utf-8")
-set(CMAKE_C_FLAGS "/utf-8")
 
 v3d_add_api_library(render_offline
 	"Characters.h" "Characters.cxx"
@@ -17,6 +12,8 @@ v3d_add_api_library(render_offline
 	"Sampler.h" "Sampler.cxx"
 	"Uniform.h" "Uniform.cxx"
 	"Area.h" "Area.cxx"
+	"Camera.h" "Camera.cxx"
+	"CameraOptions.h" "CameraOptions.cxx"
 	"Film.h" "Film.cxx"
 	"MovingTransform.h" "MovingTransform.cxx"
 	"SearchPath.h" "SearchPath.cxx"
@@ -31,8 +28,11 @@ v3d_add_api_library(render_offline
 	"rib/Parameters.h" "rib/Parameters.cxx"
 	"rib/Arguments.h" "rib/Arguments.cxx"
 	"rib/Requests.h"
+	"rib/Bases.h" "rib/Bases.cxx"
 	"rib/Handler.h"
 	"rib/Reader.h" "rib/Reader.cxx"
+	"rib/Recorder.h" "rib/Recorder.cxx"
+	"rib/Writer.h" "rib/Writer.cxx"
 	"sl/Token.h"
 	"sl/Lexer.h" "sl/Lexer.cxx"
 	"sl/syntax/Expression.h" "sl/syntax/Expression.cxx"
@@ -86,6 +86,7 @@ v3d_add_api_library(render_offline
 	"trace/Primitive.h" "trace/Primitive.cxx"
 	"trace/Triangle.h" "trace/Triangle.cxx"
 	"trace/Sphere.h" "trace/Sphere.cxx"
+	"trace/Curve.h" "trace/Curve.cxx"
 	"trace/Hit.h"
 	"trace/Scene.h" "trace/Scene.cxx"
 	"trace/HitShader.h" "trace/HitShader.cxx"
@@ -98,8 +99,6 @@ target_link_libraries(v3dlib_render_offline PUBLIC v3dlib_log v3dlib_image v3dli
 # PRIVATE: Textures.cxx searches for a texture file with boost::filesystem, and no header here
 # includes it.
 target_link_libraries(v3dlib_render_offline PRIVATE Boost::filesystem)
-
-target_compile_options(v3dlib_render_offline PRIVATE /EHsc)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

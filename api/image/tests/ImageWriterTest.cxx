@@ -4,14 +4,22 @@
  **/
 
 #include <api/image/Factory.h>
+#include <api/image/File.h>
 #include <api/image/Image.h>
+#include <api/image/Writer.h>
 #include <api/log/Logger.h>
 
 // jpeglib.h names FILE in its stdio helpers without including stdio itself
 #include <stdio.h>
 #include <jpeglib.h>
 
+#include <cstddef>
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -29,6 +37,19 @@ struct OutputDirectory {
     }
 };
 
+/**
+ * Encode an image in the format its file name names, and write it there.
+ **/
+bool write(v3d::image::Factory* factory, const std::string& filename, const boost::shared_ptr<v3d::image::Image>& image) {
+    const std::optional<std::string> encoded = factory->encode(image, v3d::image::Factory::kind(filename));
+    if (!encoded) {
+        return false;
+    }
+    std::ofstream file(filename, std::ios::binary);
+    file.write(encoded->data(), static_cast<std::streamsize>(encoded->size()));
+    return static_cast<bool>(file);
+}
+
 BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     const boost::shared_ptr<v3d::image::Image> img24 = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 2), 24);
     for (unsigned int pixel = 0; pixel < 4; ++pixel) {
@@ -44,7 +65,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     const char* lossless[] = { "data_out/test_write.bmp", "data_out/test_write.tga", "data_out/test_write.png" };
     for (const char* filename : lossless) {
         BOOST_TEST_CONTEXT(filename) {
-            BOOST_CHECK_EQUAL(factory.write(filename, img24), true);
+            BOOST_CHECK_EQUAL(write(&factory, filename, img24), true);
 
             const boost::shared_ptr<v3d::image::Image> image = factory.read(filename);
             BOOST_REQUIRE(image != nullptr);
@@ -59,7 +80,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
 
     // jpeg is lossy, so the blue comes back a shade off
     const std::string jpgFilename("data_out/test_write.jpg");
-    BOOST_CHECK_EQUAL(factory.write(jpgFilename, img24), true);
+    BOOST_CHECK_EQUAL(write(&factory, jpgFilename, img24), true);
     const boost::shared_ptr<v3d::image::Image> imageJpg = factory.read(jpgFilename);
     BOOST_REQUIRE(imageJpg != nullptr);
     BOOST_CHECK_EQUAL(imageJpg->width(), 2U);
@@ -70,7 +91,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_test, OutputDirectory) {
     BOOST_CHECK_GE((*imageJpg)[2], 0xfd);
 
     // an extension with no writer bound to it is refused rather than guessed at
-    BOOST_CHECK_EQUAL(factory.write("data_out/test_write.qwe", img24), false);
+    BOOST_CHECK(!factory.encode(img24, "qwe"));
 }
 
 /**
@@ -94,7 +115,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_orientation_test, OutputDirectory) {
         "data_out/test_orientation.bmp" };
     for (const char* filename : lossless) {
         BOOST_TEST_CONTEXT(filename) {
-            BOOST_REQUIRE_EQUAL(factory.write(filename, image), true);
+            BOOST_REQUIRE_EQUAL(write(&factory, filename, image), true);
 
             const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
@@ -137,12 +158,12 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     v3d::image::Factory factory(logger);
 
     const char* written = "data_out/test_orientation_written.jpg";
-    BOOST_REQUIRE_EQUAL(factory.write(written, image), true);
+    BOOST_REQUIRE_EQUAL(write(&factory, written, image), true);
 
     // what the writer put in the file: scanline 0 has to be the red band
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, written, "rb"), 0);
+        FILE* fp = v3d::image::openFile(written, "rb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_decompress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);
@@ -170,8 +191,8 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_orientation_test, OutputDirectory) {
     // and what the reader makes of a file whose first scanline is red: row 0 of the buffer
     const char* encoded = "data_out/test_orientation_encoded.jpg";
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, encoded, "wb"), 0);
+        FILE* fp = v3d::image::openFile(encoded, "wb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_compress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);
@@ -222,8 +243,8 @@ BOOST_FIXTURE_TEST_CASE(imagereader_greyscale_jpeg_test, OutputDirectory) {
     const unsigned int side = 8;
     const char* greyscale = "data_out/test_greyscale.jpg";
     {
-        FILE* fp = nullptr;
-        BOOST_REQUIRE_EQUAL(fopen_s(&fp, greyscale, "wb"), 0);
+        FILE* fp = v3d::image::openFile(greyscale, "wb");
+        BOOST_REQUIRE(fp != nullptr);
         jpeg_compress_struct cinfo;
         jpeg_error_mgr jerr;
         cinfo.err = jpeg_std_error(&jerr);
@@ -306,7 +327,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
     };
 
     for (const Expectation& expected : lossless) {
-        BOOST_REQUIRE_EQUAL(factory.write(expected.name, grey), true);
+        BOOST_REQUIRE_EQUAL(write(&factory, expected.name, grey), true);
 
         const boost::shared_ptr<v3d::image::Image> back = factory.read(expected.name);
         BOOST_REQUIRE(back);
@@ -327,7 +348,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_grey_test, OutputDirectory) {
 
     // jpeg is lossy, so this says the grey was encoded and decodes to the right shape rather
     // than to the right bytes
-    BOOST_REQUIRE_EQUAL(factory.write("data_out/grey.jpg", grey), true);
+    BOOST_REQUIRE_EQUAL(write(&factory, "data_out/grey.jpg", grey), true);
     const boost::shared_ptr<v3d::image::Image> decoded = factory.read("data_out/grey.jpg");
     BOOST_REQUIRE(decoded);
     BOOST_CHECK_EQUAL(decoded->width(), side);
@@ -351,7 +372,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_jpeg_takes_any_spelling_and_drops_alpha, Out
     const char* names[] = { "data_out/test_rgba.jpg", "data_out/test_rgba.JPEG" };
     for (const char* filename : names) {
         BOOST_TEST_CONTEXT(filename) {
-            BOOST_REQUIRE_EQUAL(factory.write(filename, rgba), true);
+            BOOST_REQUIRE_EQUAL(write(&factory, filename, rgba), true);
             const boost::shared_ptr<v3d::image::Image> read = factory.read(filename);
             BOOST_REQUIRE(read != nullptr);
             BOOST_CHECK_EQUAL(read->bpp(), 24U);
@@ -375,7 +396,7 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
         (*img32)[(pixel * 4) + 3] = 0x80;
     }
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
-    BOOST_REQUIRE(factory.write("data_out/alpha.tga", img32));
+    BOOST_REQUIRE(write(&factory, "data_out/alpha.tga", img32));
 
     const boost::shared_ptr<v3d::image::Image> image = factory.read("data_out/alpha.tga");
     BOOST_REQUIRE(image != nullptr);
@@ -387,22 +408,86 @@ BOOST_FIXTURE_TEST_CASE(imagewriter_tga_alpha_test, OutputDirectory) {
 }
 
 /**
- * A picture wider than a TGA header can describe is refused before the file is opened, so a
- * file already at that name keeps its contents.
+ * A picture wider than a TGA header can describe does not encode, rather than encoding with
+ * its width cut to 16 bits.
  **/
-BOOST_FIXTURE_TEST_CASE(imagewriter_tga_too_wide_leaves_the_file_test, OutputDirectory) {
+BOOST_AUTO_TEST_CASE(imagewriter_tga_too_wide_does_not_encode_test) {
     v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
-    const std::string filename = "data_out/too_wide.tga";
-
-    const boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
-    BOOST_REQUIRE(factory.write(filename, small));
-    const boost::uintmax_t before = boost::filesystem::file_size(filename);
-    BOOST_REQUIRE(before > 0U);
 
     // one row of one byte a pixel, so the picture is wide and still costs only 64 KiB
     const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(65536, 1), 8);
-    BOOST_CHECK(!factory.write(filename, wide));
-    BOOST_CHECK_EQUAL(boost::filesystem::file_size(filename), before);
+    BOOST_CHECK(!factory.encode(wide, "tga"));
+    const boost::shared_ptr<v3d::image::Image> small = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
+    BOOST_CHECK(factory.encode(small, "tga"));
+}
+
+/**
+ * A TGA 2.0 footer is 26 bytes: two 4-byte offsets, which a writer with no extension or
+ * developer area leaves zero, the 16-byte signature, a '.' and a terminating zero. A 2 by 1 grey
+ * picture is an 18-byte header, 2 bytes of pixels and the footer.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_tga_footer_test, OutputDirectory) {
+    const boost::shared_ptr<v3d::image::Image> grey = boost::make_shared<v3d::image::Image>(glm::uvec2(2, 1), 8);
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(write(&factory, "data_out/footer.tga", grey));
+
+    std::ifstream file("data_out/footer.tga", std::ios::binary);
+    const std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    BOOST_REQUIRE_EQUAL(bytes.size(), 18U + 2U + 26U);
+    const std::vector<char> footer(bytes.end() - 26, bytes.end());
+    for (std::size_t i = 0; i < 8; i++) {
+        BOOST_CHECK_EQUAL(footer[i], 0);
+    }
+    BOOST_CHECK_EQUAL(std::string(footer.begin() + 8, footer.begin() + 24), "TRUEVISION-XFILE");
+    BOOST_CHECK_EQUAL(footer[24], '.');
+    BOOST_CHECK_EQUAL(footer[25], 0);
+}
+
+/**
+ * A picture libpng refuses is reported as a failed encode, and the process carries on. libpng
+ * refuses a width above its limit of a million pixels in png_set_IHDR, through png_error.
+ **/
+BOOST_FIXTURE_TEST_CASE(imagewriter_png_error_is_a_failed_encode_test, OutputDirectory) {
+    // one row of one byte a pixel, so the picture is wide and still costs only 2 MB
+    const boost::shared_ptr<v3d::image::Image> wide = boost::make_shared<v3d::image::Image>(glm::uvec2(2000000, 1), 8);
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    BOOST_CHECK(!factory.encode(wide, "png"));
+}
+
+/**
+ * Every format encodes to bytes that its reader decodes from memory, with no file between
+ * them. The picture varies from pixel to pixel, so its jpeg is larger than the chunk the jpeg
+ * writer fills at a time.
+ **/
+BOOST_AUTO_TEST_CASE(imagewriter_encodes_to_bytes_test) {
+    const unsigned int side = 128;
+    const boost::shared_ptr<v3d::image::Image> image = boost::make_shared<v3d::image::Image>(glm::uvec2(side, side), 24);
+    for (unsigned int index = 0; index < side * side * 3; ++index) {
+        (*image)[index] = static_cast<unsigned char>((index * 2654435761U) >> 24U);
+    }
+
+    v3d::image::Factory factory(boost::make_shared<v3d::log::Logger>());
+    for (const char* kind : {"png", "jpg", "tga", "bmp"}) {
+        BOOST_TEST_CONTEXT(kind) {
+            const std::optional<std::string> encoded = factory.encode(image, kind);
+            BOOST_REQUIRE(encoded);
+            const boost::shared_ptr<v3d::image::Image> decoded = encoded
+                ? factory.read(reinterpret_cast<const unsigned char*>(encoded->data()), encoded->size(), kind)
+                : boost::shared_ptr<v3d::image::Image>();
+            BOOST_REQUIRE(decoded != nullptr);
+            BOOST_CHECK_EQUAL(decoded->width(), side);
+            BOOST_CHECK_EQUAL(decoded->height(), side);
+        }
+    }
+    BOOST_CHECK_GT(factory.encode(image, "jpg").value_or(std::string()).size(), 4096U);
+}
+
+/**
+ * The base writer cannot be made, so a format cannot be registered that writes nothing and
+ * reports success.
+ **/
+BOOST_AUTO_TEST_CASE(imagewriter_the_base_writer_is_abstract_test) {
+    BOOST_TEST(std::is_abstract_v<v3d::image::Writer>);
 }
 
 };  // namespace

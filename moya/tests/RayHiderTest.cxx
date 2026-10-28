@@ -4,6 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
+#include <api/render/offline/Camera.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
@@ -11,13 +12,12 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Ray.h>
-#include <moya/libmoya/FrameBuffer.h>
+#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/RIBHandler.h>
 #include <moya/libmoya/RayHider.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/RenderMan.h>
-#include <moya/libmoya/Renderer.h>
 #include <moya/libmoya/Vertex.h>
 
 #include <array>
@@ -33,7 +33,7 @@
 
 namespace {
 
-typedef v3d::moya::FrameBuffer Planes;
+typedef v3d::moya::Planes Planes;
 
 /**
  * A 16 by 16 frame of an orthographic camera looking down +z from z = -1. The frame is
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {
 BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
     RiBegin(RI_NULL);
     RiHider(const_cast<char*>("raytrace"), RI_NULL);
-    BOOST_CHECK(static_cast<v3d::moya::RenderContext*>(RiGetContext())->raytracing());
+    BOOST_CHECK(static_cast<v3d::moya::RIBHandler*>(RiGetContext())->context().raytracing());
     RiEnd();
 }
 
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
     rc.prepareWorld();
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     checkPixel(planes, 8, 8, glm::vec3(0.0F));
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 8, 8), 0.0F);
 }
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
     rightTriangle(rc);
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     const glm::vec3 red(1.0F, 0.0F, 0.0F);
     const glm::vec3 nothing(0.0F);
     // inside, near the middle of the frame
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
     rc.prepareWorld();
     rightTriangle(rc);
 
-    BOOST_CHECK_EQUAL(rc.framebuffer()->primitiveCount(), 0U);
+    BOOST_CHECK_EQUAL(rc.bucketed(), 0U);
     BOOST_CHECK_EQUAL(rc.traced().all<v3d::render::offline::trace::Triangle>().size(), 1U);
 }
 
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
     rc.render();
 
     // the nearer one wins whichever order they were given in
-    checkPixel(*rc.framebuffer()->planes(), 8, 8, closer);
+    checkPixel(*rc.picture(), 8, 8, closer);
 }
 
 /**
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
         rc.surface("constant", v3d::render::offline::rib::ParameterList());
         triangle(rc, {glm::vec3(-1.0F, -1.0F, 5.0F), glm::vec3(1.0F, -1.0F, 5.0F), glm::vec3(0.0F, 1.0F, 5.0F)}, glm::vec3(1.0F));
         rc.render();
-        depth[i] = rc.framebuffer()->planes()->value(Planes::DEPTH, 8, 8);
+        depth[i] = rc.picture()->value(Planes::DEPTH, 8, 8);
     }
     BOOST_CHECK_CLOSE(depth[1], depth[0], 0.01F);
 }
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
     rightTriangle(rc);
     rc.render();
 
-    const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *rc.picture();
     const float inside = planes.value(Planes::COVERAGE, 11, 8);
     const float outside = planes.value(Planes::COVERAGE, 12, 8);
     BOOST_CHECK(inside > 0.5F && inside < 1.0F);
@@ -271,8 +271,8 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
     adaptive(second);
     second.render();
 
-    const v3d::render::offline::FrameBuffer & firstImage = *first.framebuffer()->planes();
-    const v3d::render::offline::FrameBuffer & secondImage = *second.framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & firstImage = *first.picture();
+    const v3d::render::offline::FrameBuffer & secondImage = *second.picture();
     for (unsigned int plane = 0; plane < firstImage.planes(); plane++) {
         for (unsigned int row = 0; row < SIZE; row++) {
             for (unsigned int column = 0; column < SIZE; column++) {
@@ -287,8 +287,7 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
  * [0, 2], and a quad at x in [0, 1] fills the left half of the picture.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -301,7 +300,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
         "Polygon \"P\" [0 -1 2  1 -1 2  1 1 2  0 1 2]\n"
         "WorldEnd\n", &handler));
 
-    const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 3, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 12, 8), 0.0F);
 }
@@ -312,8 +311,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
  * screen.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -327,7 +325,7 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
         "WorldEnd\n", &handler));
 
     // screen x = 2 * world x, so the quad covers screen x over [0, 1], which is columns 8 to 15
-    const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+    const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 9, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 14, 8), 1.0F);
     BOOST_CHECK_EQUAL(planes.value(Planes::COVERAGE, 6, 8), 0.0F);
@@ -339,8 +337,7 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
  * polygon restores what it saved, so only the translation after the block moves the polygon.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -364,8 +361,7 @@ BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
  * "N" is the shading normal and overrides it, and Ng stays the plane.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -389,8 +385,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
  * normal leans the opposite way to the points.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -417,8 +412,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
  * current, and is met where the transformation put it.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -444,8 +438,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
  * two primitives lights them differently. Primitives made under the same lights share one set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
-    v3d::moya::Renderer renderer;
-    v3d::moya::RIBHandler handler(&renderer);
+    v3d::moya::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -479,20 +472,16 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     rc.screenWindow({.left = -0.5F, .right = 1.5F, .bottom = -1.0F, .top = 1.0F});
     rc.clipping({.hither = 0.1F, .yon = 100.0F});
     rc.projection("perspective", 60.0F);
+    rc.prepareWorld();
 
-    v3d::moya::RayHider::Camera camera;
-    camera.toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
-    camera.perspective = true;
-    camera.hither = 0.1F;
-    camera.width = 32;
-    camera.height = 16;
+    const v3d::render::offline::Camera & camera = rc.camera();
     v3d::moya::RayHider hider;
     hider.camera(camera);
 
     for (const glm::vec2 & raster : { glm::vec2(3.5F, 2.5F), glm::vec2(30.0F, 14.0F), glm::vec2(16.0F, 8.0F) }) {
         const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0F)}, rc.sampling());
         BOOST_CHECK_CLOSE(ray.origin().z, 0.1F, 0.01F);
-        const glm::vec3 projected = v3d::moya::project(camera.toRaster, ray.origin() + ray.direction() * 5.0F);
+        const glm::vec3 projected = v3d::moya::project(camera.raster, ray.origin() + ray.direction() * 5.0F);
         BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01F);
         BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01F);
     }
@@ -526,7 +515,7 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
         rc.addPolygon(polygon);
         rc.render();
 
-        const v3d::render::offline::FrameBuffer & planes = *rc.framebuffer()->planes();
+        const v3d::render::offline::FrameBuffer & planes = *rc.picture();
         // near the red corner at the lower left, and near the green one at the lower right
         const unsigned int near[2][2] = { { 1, 14 }, { 12, 14 } };
         for (unsigned int k = 0; k < 2; k++) {
@@ -556,8 +545,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
     const char* hiders[2] = { "hidden", "raytrace" };
     for (const char* hider : hiders) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::Renderer renderer;
-            v3d::moya::RIBHandler handler(&renderer);
+            v3d::moya::RIBHandler handler;
             BOOST_REQUIRE(read(
                 std::string("Hider \"") + hider + "\"\n"
                 "Format 16 16 1\n"
@@ -574,7 +562,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
                 "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\n"
                 "WorldEnd\n", &handler));
 
-            const v3d::render::offline::FrameBuffer & planes = *handler.context().framebuffer()->planes();
+            const v3d::render::offline::FrameBuffer & planes = *handler.context().picture();
             BOOST_CHECK_GT(planes.value(Planes::COVERAGE, 8, 8), 0.9F);
         }
     }

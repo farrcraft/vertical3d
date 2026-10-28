@@ -5,7 +5,7 @@
 
 #include "Playback.h"
 
-#include <api/type/animation/Clock.h>
+#include <api/animation/Clock.h>
 
 #include <algorithm>
 #include <cmath>
@@ -64,7 +64,7 @@ void advance(Playback* playback, float step) {
     // the rest pose has no clock, so only a clip's time advances here. A fade into the rest
     // pose still runs below. Without it, the old clip would never fade out
     if (playback->clip != Playback::none) {
-        const type::animation::Clock clock(playback->duration, playback->loops);
+        const animation::Clock clock(playback->duration, playback->loops);
         playback->time = clock.advance(playback->time, step);
         if (playback->loops && playback->time >= rebaseAfter) {
             playback->time = clock.sample(playback->time);
@@ -74,7 +74,7 @@ void advance(Playback* playback, float step) {
     if (playback->from == Playback::none) {
         return;
     }
-    const type::animation::Clock fading(playback->fromDuration, playback->fromLoops);
+    const animation::Clock fading(playback->fromDuration, playback->fromLoops);
     playback->fromTime = fading.sample(fading.advance(playback->fromTime, step));
     playback->fade = playback->fadeDuration > 0.0F ? std::min(1.0F, playback->fade + (step / playback->fadeDuration)) : 1.0F;
     if (playback->fade >= 1.0F) {
@@ -92,7 +92,7 @@ uint32_t crossed(const Playback& previous, const Playback& current, float marker
     if (previous.clip != current.clip || current.clip == Playback::none) {
         return 0;
     }
-    const type::animation::Clock clock(current.duration, current.loops);
+    const animation::Clock clock(current.duration, current.loops);
     return clock.crossed(unrolled(previous, current), current.time, marker);
 }
 

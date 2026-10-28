@@ -4,11 +4,17 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 [api/rendering/](../../api/rendering/README.md), and these pages do not repeat it.
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
-in [api/render/realtime](../../../api/render/realtime). The root holds the contexts, the frame
-and what a context owns. `canvas/` holds the canvases an app fills on the CPU, `entity/` the
+in [api/render/realtime](../../../api/render/realtime). The root holds what an app names: the
+contexts, the frame and its recorder, render targets, meshes, materials, the handle registry and
+the stores a context owns. The lit scene and the grade there compose renderers into passes.
+`renderer/` holds the renderers, `canvas/` the canvases an app fills on the CPU, `entity/` the
 functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
-The Vulkan side is split into `vulkan/device`, `vulkan/frame`, `vulkan/memory`, `vulkan/pipeline`
-and `vulkan/renderer`.
+
+`vulkan/` holds the wrappers over Vulkan objects, split into `vulkan/device`, `vulkan/frame`,
+`vulkan/memory` and `vulkan/pipeline`. **Nothing in `vulkan/` includes a header above it.** It
+speaks Vulkan's own terms, and the root turns an app's terms into them: `Present` becomes the
+swapchain's list of present modes, for one. An app names `vulkan::` only when it builds a pipeline
+or a buffer of its own.
 
 | Page | Read it to |
 |---|---|
@@ -22,21 +28,23 @@ and `vulkan/renderer`.
 ## Object chain and ownership
 
 ```
-realtime::Window           SDL_WINDOW_VULKAN window; owns vulkan::device::Instance and Surface
-Engine3D                   owns the Context3D and the Frame being built
-  Context3D : DeviceContext
+window::Window             the SDL window, in its own library; holds no Vulkan object
+sharedInstance()           the process's vulkan::device::Instance, shared by every window
+WindowRenderer             owns the WindowContext and the Frame being built
+  WindowContext : DeviceContext
     vulkan::frame::Swapchain   the images presented to the window
     vulkan::frame::Presenter   acquire, submit, present, and their semaphores
   DeviceContext              everything that needs only a device
-    vulkan::device::Device     physical + logical device, queues, memory::Allocator
+    vulkan::device::Device     physical + logical device, queues, memory::Allocator, and the
+                               Surface WindowContext made for the window
     vulkan::frame::Ring        frames in flight: a command buffer and a fence each
     vulkan::pipeline::Cache    the VkPipelineCache
-    vulkan::pipeline::Resources pipelines, materials and textures, by handle
+    Resources                  pipelines, materials and textures, by handle
     vulkan::memory::Uploader   one-shot copies to device-local memory
     vulkan::frame::FrameUniforms set 0: one camera per pass per frame in flight
     vulkan::frame::DepthBuffer the window's depth image, made on first request
-    Textures                   texture factory, set 1 layout and pool, white texture, materials
-    vulkan::renderer::Quad / Line / World   built on first request
+    Textures                   texture factory, the texture array at set 1, white texture, slots
+    renderer::Quad / Line / World   built on first request
 Frame -> Pass -> DrawItem
 ```
 
@@ -46,7 +54,7 @@ orthographic projection and no depth.
 **`DeviceContext` is usable without a window.** It is given a colour format and an extent at
 construction, or later through the protected `describe()`. Every pipeline built through it is
 compiled against that format. A headless context (as in the device tests) is a
-`DeviceContext` on a `Device` built with no surface. `Context3D` has no format at construction
+`DeviceContext` on a `Device` built with no surface. `WindowContext` has no format at construction
 because its swapchain does not exist yet, so it calls `describe()` after creating the swapchain
 and after every rebuild. A renderer already built keeps the format it was compiled
 with.
@@ -54,17 +62,20 @@ with.
 **Member order sets teardown order.** C++ destroys members in reverse declaration order:
 
 - `DeviceContext` declares the `Ring` before everything it paces, so the ring is destroyed after
-  them. A renderer's buffers may still be in flight on one of the ring's fences, and the ring's
-  destructor waits for the device and runs every pending retirement.
-- `Context3D` declares the `Presenter` last, so it is destroyed first. Nothing else may go while
+  them. A renderer's buffers may still be in flight on one of the ring's fences. The context's
+  destructor calls `Ring::drain()`, which waits for the device and runs every pending
+  retirement. A retired object may hold the ring itself, as a mesh does through its uploader, so
+  the ring cannot be left to run them in its own destructor.
+- `WindowContext` declares the `Presenter` last, so it is destroyed first. Nothing else may go while
   a frame it submitted is in flight.
 - `Device` resets its `memory::Allocator` explicitly in its destructor body, before
   `vkDestroyDevice`. A suballocator frees its blocks against the device, which must still exist.
 
-**`Engine3D::shutdown()`** waits for the ring to go idle, drops the frame, and resets the
-context. The context must go before the window: the device holds the window's surface alive,
-and `Window::destroy()` unloads the Vulkan library. A surface destroyed after that is never
-destroyed, and the instance reports it leaked.
+**`WindowRenderer::shutdown()`** waits for the ring to go idle, drops the frame, and resets the
+context. The context must go before the window, because the device holds the surface made for
+the window, and a surface has to be destroyed before its window. The surface holds the shared
+instance, so the instance, and the Vulkan loader under it, outlive every surface made against
+them.
 
 There is no `VkRenderPass` and no `VkFramebuffer` anywhere. Every pass draws through dynamic
 rendering.
@@ -83,9 +94,11 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
   except in a lit pipeline, which reads it from the scene's object buffer by instance index.
 - **Never write a barrier inline.** Use or add a function in `memory/Barriers.h`.
 - **Never destroy a GPU object a frame may still use.** Retire it through `Ring::retire()`. This
-  covers materials, textures, sets, descriptor pools, outgrown stream buffers and target images.
-- **Never share one stream buffer between two submissions.** `Buffer::grow()` replaces the
-  allocation and invalidates the handle earlier draw items hold.
+  covers materials, textures, sets, descriptor pools, outgrown stream and readback buffers,
+  target images and the window's depth buffer. Only `Swapchain::recreate()` waits for the device
+  instead.
+- **Never share one stream buffer between two submissions.** The second submission's writes land
+  while the device may still be reading the first's.
 - **Write per-frame data after `Ring::waitFrame()`** and before the ring begins the frame.
   `StreamRing::claim()` and `Lit::scene()` do this, and `Lit::object()` writes into the slot
   `scene()` waited for. Anything new keeping per-frame data must do the same.
@@ -106,6 +119,8 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
 ## Tests
 
 Unit tests that need no GPU (canvas batching, sort keys, frame ordering, recorder checks,
-swapchain format choice, retirement, capture conversion) and device tests that draw headless
-are in [api/render/tests](../../../api/render/tests). How to run them and verify a rendering
-change is in [contributing/Testing.md](../../contributing/Testing.md).
+swapchain format choice, retirement, capture conversion) are in
+[api/render/tests](../../../api/render/tests). Device tests that draw headless are in its
+`device/` directory, and the `render_window` suite in `window/` presents to a real window. How
+to run them and verify a rendering change is in
+[contributing/Testing.md](../../contributing/Testing.md).

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/config/CameraProfiles.h>
+#include <api/engine/CameraProfiles.h>
 #include <api/log/Logger.h>
 #include <vertical3d/src/Controller.h>
 
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
     BOOST_REQUIRE(cameras.is_open());
     std::stringstream text;
     text << cameras.rdbuf();
-    v3d::config::CameraProfiles profiles(boost::make_shared<v3d::log::Logger>());
+    v3d::engine::CameraProfiles profiles(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(profiles.load(boost::json::parse(text.str()).as_object()));
 
     const v3d::editor::Controller engine("");

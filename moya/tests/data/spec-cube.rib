@@ -8,6 +8,8 @@ Clipping 1 100
 # moved five units along +z
 Translate 0 0 5
 WorldBegin
+# a light that casts shadows calls transmission, so the traced scene is kept after rendering
+LightSource "distantlight" 1
 # from here to the end of the cube, the specification's example as it stands. Each face is the
 # same polygon at z = +0.5, the far face, and the rotation before it decides which face it
 # becomes. The comments name the face the specification gives each one

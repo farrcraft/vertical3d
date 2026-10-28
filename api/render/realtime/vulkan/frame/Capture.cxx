@@ -5,6 +5,7 @@
 
 #include "Capture.h"
 
+#include <api/asset/Writer.h>
 #include <api/image/Image.h>
 #include <api/image/writer/Png.h>
 #include <api/log/Logger.h>
@@ -12,10 +13,12 @@
 #include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 
+#include "Ring.h"
 #include "Swapchain.h"
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -27,8 +30,10 @@ namespace v3d::render::realtime::vulkan::frame {
 
 /**
  **/
-Capture::Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<log::Logger>& logger) :
+Capture::Capture(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Ring>& ring,
+    const boost::shared_ptr<log::Logger>& logger) :
     device_(device),
+    ring_(ring),
     logger_(logger),
     width_(0),
     height_(0),
@@ -43,7 +48,8 @@ image(VK_NULL_HANDLE),
 extent{0, 0},
 format(VK_FORMAT_UNDEFINED),
 layout(VK_IMAGE_LAYOUT_UNDEFINED),
-depth(false) {
+depth(false),
+layer(0) {
 }
 
 /**
@@ -58,10 +64,12 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
     format_ = source.format;
 
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width_) * height_ * 4;
-    if (!readback_) {
+    if (!readback_ || readback_->size() < bytes) {
+        const boost::shared_ptr<memory::Buffer> outgrown = readback_;
         readback_ = boost::make_shared<memory::Buffer>(device_, memory::BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT, .bytes = bytes});
-    } else {
-        readback_->grow(bytes);
+        if (outgrown) {
+            ring_->retire([outgrown]() {});
+        }
     }
 
     const VkImageAspectFlags aspect = depth_ ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -70,7 +78,7 @@ void Capture::record(VkCommandBuffer commands, const Source& source) {
     VkBufferImageCopy region{};
     region.imageSubresource.aspectMask = aspect;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.baseArrayLayer = source.layer;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {width_, height_, 1};
@@ -108,7 +116,8 @@ bool Capture::write(std::string_view filename) {
     readback_->read(pixels.data(), static_cast<VkDeviceSize>(pixels.size()));
 
     image::writer::Png png(logger_);
-    if (!png.write(filename, convert(pixels.data(), width_, height_, format_))) {
+    const std::optional<std::string> encoded = png.encode(convert(pixels.data(), width_, height_, format_));
+    if (!encoded || !v3d::asset::writeFile(std::string(filename), *encoded)) {
         return false;
     }
 

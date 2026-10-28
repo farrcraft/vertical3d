@@ -1,0 +1,142 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/log/Logger.h>
+#include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/vulkan/frame/StreamRing.h>
+#include <api/render/realtime/vulkan/memory/Buffer.h>
+#include <api/render/realtime/vulkan/memory/TextureFactory.h>
+#include <api/render/realtime/vulkan/pipeline/Cache.h>
+#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
+#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/Resources.h>
+
+#include <vulkan/vulkan.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
+
+namespace v3d::image {
+class Image;
+};  // namespace v3d::image
+
+namespace v3d::render::realtime {
+class DeviceContext;
+class RenderTarget;
+};  // namespace v3d::render::realtime
+
+namespace v3d::render::realtime::renderer {
+
+/**
+ * The device side of the batched quad primitive.
+ *
+ * Every 2D thing in the engine draws through Quad: a rectangle, a sprite and a glyph differ
+ * only in which texture is bound and what the vertex colour is.
+ *
+ * An app fills a canvas::Canvas on the CPU during a tick. submit() uploads its geometry into
+ * buffers of the frame about to be recorded, and turns each of its batches into a draw item
+ * on a pass. The buffers are per frame in flight, because the device may still be reading
+ * the previous frame's buffers.
+ *
+ * A frame may submit any number of canvases, and each submission claims a pair of buffers of
+ * its own from the StreamRing. They cannot share one pair: growing a buffer replaces the
+ * allocation, which invalidates the handle every draw item already queued holds.
+ *
+ * The pipelines it registers belong to Resources and live until it is destroyed.
+ * Textures and their materials belong to the context's Textures.
+ **/
+class Quad final {
+ public:
+    /**
+     * What the quad pipelines are built against.
+     **/
+    struct Spec final {
+        /**
+         * The format of the image the pass draws into, which dynamic rendering needs at
+         * pipeline creation because there is no render pass to take it from.
+         **/
+        VkFormat colour = VK_FORMAT_UNDEFINED;
+        VkFormat depth = VK_FORMAT_UNDEFINED;  /**< the depth format, for the second of the two pipelines **/
+    };
+
+    /**
+     * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
+     *        the quads are built on and drawn through. Set 0's layout is declared so that a
+     *        pass can bind one camera across the quads and every other pipeline
+     * @throw std::runtime_error if the pipelines or their resources cannot be created
+     **/
+    Quad(const DeviceContext& context, const Spec& spec);
+
+    /**
+     **/
+    ~Quad();
+
+    Quad(const Quad&) = delete;
+    Quad& operator=(const Quad&) = delete;
+
+    /**
+     * Upload a canvas and add a draw item to the pass for each of its batches.
+     *
+     * The projection is taken from the canvas, so the caller only has to have sized it.
+     * An empty canvas costs neither an upload nor a draw.
+     *
+     * @param canvas the geometry to draw, which is copied and not kept
+     * @param pass where the draw items are submitted
+     * @param layer the layer the items' sort key carries. It only has an effect in a pass
+     *        that sorts. An unsorted pass records in submission order, and within one
+     *        canvas, submission order decides what is on top
+     **/
+    void submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer = 0);
+
+    /**
+     * Whether a quad drawn into this format is decoded to linear before it is written.
+     *
+     * A quad's colour is the colour that should appear. An _SRGB format encodes what is stored,
+     * so for one of those the quad is decoded first and the encode gives the colour back. Any
+     * other format stores what it is given.
+     *
+     * Needs no device, so a test can check which formats are converted.
+     **/
+    static bool linearises(VkFormat colour) noexcept;
+
+ private:
+    /**
+     * Compile the quad pipeline twice: once for a pass with a depth attachment and once for a
+     * pass without.
+     *
+     * Two, because dynamic rendering matches a pipeline to the attachments of the pass it
+     * draws into: one built with no depth format cannot draw into a pass that has one.
+     * Neither tests nor writes depth. 2D is painter ordered either way, and a ui drawn over a
+     * scene has to stay on top of it whatever depth the scene left.
+     **/
+    void createPipelines(const vulkan::pipeline::Formats & formats);
+
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<vulkan::pipeline::Cache> cache_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
+    boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
+    boost::shared_ptr<Textures> textures_;
+
+    PipelineHandle pipeline_;               /**< for a pass with no depth attachment **/
+    PipelineHandle depthPipeline_;          /**< for a pass with one **/
+
+    boost::shared_ptr<vulkan::frame::StreamRing> stream_;  /**< what a frame's geometry is streamed through **/
+};
+
+};  // namespace v3d::render::realtime::renderer

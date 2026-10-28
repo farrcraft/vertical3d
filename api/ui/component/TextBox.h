@@ -7,11 +7,12 @@
 
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
+#include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Text.h>
 
 #include <cstddef>
 #include <string>
-#include <utility>
+#include <string_view>
 
 namespace v3d::ui::component {
 
@@ -21,15 +22,8 @@ namespace v3d::ui::component {
  * A text box holds the text it shows, the way a SelectList holds its rows, because a
  * half-typed word has nowhere else to be kept. Whatever handles its command reads text().
  *
- * The editing is here, and the key routing is in input::Keys. Keys chooses the operation
- * for a key, and this component carries it out.
- *
- * The caret is a byte offset into utf-8, and every operation moves it to a character
- * boundary, so a multi-byte character is inserted, stepped over and erased whole.
- *
- * A selection is an anchor plus the caret, two byte offsets. Nothing is selected exactly
- * when the two are equal. Every operation that moves the caret says whether the anchor
- * moves with it. Cut, copy and paste are then a run of bytes and an insertion.
+ * The editing is input::LineEdit's, and every editing call here is that class's call on the
+ * box's line. The key routing is in input::Keys, which chooses the operation for a key.
  *
  * The box never reaches the clipboard. input::Keys receives clipboard access as callbacks,
  * so api/ui names no SDL type. input::Cursor measures text through the app's Measure
@@ -173,6 +167,11 @@ class TextBox : public Component {
     std::size_t at(const glm::vec2& point, const paint::Measure& measure) const;
 
     /**
+     * The line the box edits, for input::edit() to carry out a key on.
+     **/
+    input::LineEdit* line() noexcept;
+
+    /**
      * Where the text was last drawn from, in canvas pixels: the inside edge of the box, less
      * however far the line slid to keep the caret in view.
      *
@@ -190,30 +189,9 @@ class TextBox : public Component {
     v3d::event::Event event() const;
 
  private:
-    /**
-     * The character boundary at or before an offset, so a caret never lands inside a
-     * multi-byte character however it was asked to move.
-     **/
-    std::size_t boundary(std::size_t offset) const noexcept;
-
-    /**
-     * The character boundary after an offset, which is the end of the character that
-     * starts there.
-     **/
-    std::size_t forward(std::size_t offset) const noexcept;
-
-    /**
-     * @return where the selected run starts and where it ends: the lower of the anchor and
-     *      the caret first, then the higher
-     **/
-    std::pair<std::size_t, std::size_t> run() const noexcept;
-
-    std::string text_;
+    input::LineEdit line_;
     std::string placeholder_;
     v3d::event::Event event_;
-    std::size_t caret_;
-    std::size_t anchor_;
-    std::size_t limit_;
     float pen_;
 };
 

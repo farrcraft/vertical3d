@@ -9,7 +9,9 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
-#include <api/render/realtime/vulkan/pipeline/Formats.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <vulkan/vulkan.h>
 
@@ -23,17 +25,15 @@ namespace v3d::render::realtime {
 
 class DeviceContext;
 
-namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan::frame
 
 namespace vulkan::pipeline {
 class Sampler;
 };  // namespace vulkan::pipeline
 
-namespace vulkan::renderer {
+namespace renderer {
 class FullScreen;
-};  // namespace vulkan::renderer
+};  // namespace renderer
 
 /**
  * A colour grade: a full-screen pass that looks every pixel of a scene up in a 16 cubed table.
@@ -57,13 +57,20 @@ class Grade final {
     static const uint32_t SIZE = 16;
 
     /**
-     * @param formats the colour format of what the grade draws into, and the depth format of
-     *        the pass it is drawn in, or undefined for none
-     * @param strip the table, or empty for the identity
+     * What the grade draws into, and the table it starts with.
+     **/
+    struct Spec final {
+        VkFormat colour = VK_FORMAT_UNDEFINED;  /**< the format of what the grade draws into **/
+        VkFormat depth = VK_FORMAT_UNDEFINED;   /**< the depth format of the pass it is drawn in, or undefined for none **/
+        boost::shared_ptr<image::Image> strip;  /**< the table, or empty for the identity **/
+    };
+
+    /**
+     * @param context the device, resources, ring and frame uniforms the grade is built on, and
+     *        the logger a failed release is reported through
      * @throw std::runtime_error if the pipeline or the table cannot be made
      **/
-    Grade(const boost::shared_ptr<log::Logger>& logger, const boost::shared_ptr<DeviceContext>& context,
-        const vulkan::pipeline::Formats& formats, const boost::shared_ptr<image::Image>& strip = boost::shared_ptr<image::Image>());
+    Grade(const DeviceContext& context, const Spec& spec);
 
     /**
      * Release the table, and every source not yet released, through the Ring, so a frame in
@@ -84,7 +91,7 @@ class Grade final {
      * @return the source submit() names
      * @throw std::runtime_error if the scene has no colour image, or the source cannot be bound
      **/
-    MaterialHandle source(const vulkan::frame::RenderTarget& scene, uint32_t slot = 0);
+    MaterialHandle source(const RenderTarget& scene, uint32_t slot = 0);
 
     /**
      * Release a source, and the scene's registration with it.
@@ -98,8 +105,8 @@ class Grade final {
      * a slow change between two tables a game lerps itself.
      *
      * A new table is made and the old one retired through the Ring, so a frame in flight
-     * finishes with the table it was recorded against. Uploading the new table waits for that
-     * upload alone, not for frames in flight. Every source keeps the handle source() gave it.
+     * finishes with the table it was recorded against. The new table's upload does not wait
+     * for the GPU. Every source keeps the handle source() gave it.
      * Call this before the frame's submit(): a submit() earlier in the same frame still draws
      * with the old table.
      *
@@ -141,7 +148,7 @@ class Grade final {
     /**
      * @return the pass a source's material belongs to
      **/
-    vulkan::renderer::FullScreen& pass(const Source& source) const;
+    renderer::FullScreen& pass(const Source& source) const;
 
     /**
      * Register a table's texels as a texture, uploaded into an image of its own.
@@ -149,9 +156,11 @@ class Grade final {
     TextureHandle createTable(const std::vector<uint8_t>& texels);
 
     boost::shared_ptr<log::Logger> logger_;
-    boost::shared_ptr<DeviceContext> context_;
-    boost::shared_ptr<vulkan::renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
-    boost::shared_ptr<vulkan::renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
+    boost::shared_ptr<vulkan::device::Device> device_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::memory::Uploader> uploader_;
+    boost::shared_ptr<renderer::FullScreen> shown_;     /**< for a scene that holds display values **/
+    boost::shared_ptr<renderer::FullScreen> decoded_;   /**< for an _SRGB scene, read as linear **/
     boost::shared_ptr<vulkan::pipeline::Sampler> nearest_;
     TextureHandle tableTexture_;
     std::map<MaterialHandle, Source> sources_;

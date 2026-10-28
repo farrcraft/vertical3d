@@ -13,8 +13,12 @@ not *what needs doing*.
 A plan changes as work lands, so keep its state notes current. When every phase is closed, the
 plan moves to [plans/completed/](plans/completed/). Its unfinished items move to
 [TODO.md](TODO.md). An open question that closed as "decided against" belongs in the ADR that
-decided it. One that closed as "done, and nothing needs more yet" belongs in the document that
-owns the subject. Neither goes in `TODO.md`, which holds only missing or unfinished work.
+decided it. One that closed as "done" belongs in the document that owns the subject. Neither
+goes in `TODO.md`, which holds only missing or unfinished work.
+
+**Open work can be done at any time.** No item waits for a game, a scene or a second caller to
+need it. A plan does not hold a step back until a condition is met, and a roadmap or a TODO
+entry does not name a condition that makes it due.
 
 **An audit or a survey** lives in [audits/](audits/). It is written for a tree that is being
 folded into the current layout or deleted. It lists what has to land elsewhere first, and it
@@ -24,6 +28,13 @@ is the only record of that tree once the tree is gone.
 what the area would need, and in what order, written while the code is fresh in someone's
 head. A roadmap is not a schedule. When one of its sections is started, that section gets a
 plan and the roadmap links to it.
+
+**A completed plan, roadmap or audit is a record, not a reference.** Everything under a
+`completed/` directory describes the tree as it stood when that work closed. Nobody updates it
+when the code moves, and nobody repairs its links, paths or line numbers. Read it to learn why
+work was ordered as it was, or what an old tree held. Read the reference documents to learn how
+the tree works now. A reference document never relies on a record for a current fact. The prose
+gate does not check these directories.
 
 ## 2. Decide
 

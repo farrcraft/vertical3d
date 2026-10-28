@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 
 #include <cstdint>
 #include <functional>
@@ -69,17 +69,17 @@ class FileChooser final {
      * @param engine the ui the components are looked up in, or null for none
      * @param names what the components are called, which are Names' own when not given
      **/
-    explicit FileChooser(const boost::shared_ptr<Engine>& engine);
-    FileChooser(const boost::shared_ptr<Engine>& engine, const Names& names);
+    explicit FileChooser(const boost::shared_ptr<Interface>& engine);
+    FileChooser(const boost::shared_ptr<Interface>& engine, const Names& names);
 
     /**
      * Put the chooser up, listing a directory.
      *
-     * @param extension the files listed, as ".json"; empty lists every file. A name saved
-     *        without it is given it
+     * @param extensions the files listed, each as ".json"; none lists every file. A name
+     *        saved with none of them is given the first
      * @param chosen called with the path when accept() succeeds, after the chooser closes
      **/
-    void open(Mode mode, const boost::filesystem::path& directory, const std::string& extension,
+    void open(Mode mode, const boost::filesystem::path& directory, const std::vector<std::string>& extensions,
         const Chosen& chosen);
 
     void close();
@@ -139,11 +139,16 @@ class FileChooser final {
     void show();
     boost::shared_ptr<Container> container() const;
 
-    boost::shared_ptr<Engine> engine_;
+    /**
+     * @return whether a file has one of the extensions listed, which every file has when none is
+     **/
+    bool passes(const boost::filesystem::path& file) const;
+
+    boost::shared_ptr<Interface> engine_;
     Names names_;
     Mode mode_;
     boost::filesystem::path directory_;
-    std::string extension_;
+    std::vector<std::string> extensions_;
     Chosen chosen_;
     std::vector<Entry> entries_;
     std::string name_;

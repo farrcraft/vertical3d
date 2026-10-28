@@ -29,18 +29,28 @@ set(V3D_LIBRARIES "all" CACHE STRING "The api libraries to build, or \"all\"")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options("/permissive-")
+# Every flag is spelled for the compiler that reads it. MSVC's spelling is a file name to Clang
+# and GCC, so a flag given to every compiler stops every compiler but MSVC. Each MSVC flag has
+# the flag that means the same to Clang and GCC beside it, or a note that they need none.
+# clang-cl reads MSVC's spellings, and CMake sets MSVC for it too.
+if(MSVC)
+	# standard conformance. Clang and GCC conform by default
+	add_compile_options("/permissive-")
 
-# CMake seeds CMAKE_CXX_FLAGS with /W3, and MSVC reports D9025 for a command line that names
-# two warning levels, so the default has to come out before /W4 goes in.
-string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-add_compile_options("/W4")
+	# CMake seeds CMAKE_CXX_FLAGS with /W3, and MSVC reports D9025 for a command line that
+	# names two warning levels, so the default has to come out before /W4 goes in.
+	string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+	add_compile_options("/W4")
 
-# C4062 (an enumerator a switch does not handle) is off at /W4, so turn it on. A switch over
-# an enum lists every enumerator and has no default label. When an enumerator is added, the
-# warning names every switch that has to handle it. A switch with a default label is not
-# reported.
-add_compile_options("/w14062")
+	# C4062 (an enumerator a switch does not handle) is off at /W4, so turn it on. A switch
+	# over an enum lists every enumerator and has no default label. When an enumerator is
+	# added, the warning names every switch that has to handle it. A switch with a default
+	# label is not reported.
+	add_compile_options("/w14062")
+else()
+	# the warnings /W4 asks MSVC for. -Wall carries -Wswitch, which is C4062
+	add_compile_options("-Wall" "-Wextra")
+endif()
 
 # The static analysis gates. /WX is on only when this project is the top level one. A
 # consumer that nests this tree builds it with its own toolset, and a warning that a newer
@@ -53,7 +63,11 @@ option(V3D_ANALYZE "Run MSVC's /analyze static analysis with the compiler" OFF)
 option(V3D_CLANG_TIDY "Run clang-tidy over every source the compiler builds" OFF)
 
 if(V3D_WARNINGS_AS_ERRORS)
-	add_compile_options("/WX")
+	if(MSVC)
+		add_compile_options("/WX")
+	else()
+		add_compile_options("-Werror")
+	endif()
 endif()
 
 # /analyze's findings are the C6xxx and C26xxx numbers, and they reach /WX like any other
@@ -63,6 +77,9 @@ endif()
 # reports findings in code this repository does not own. /analyze:external- is not the
 # default, so it must be stated.
 if(V3D_ANALYZE)
+	if(NOT MSVC)
+		message(FATAL_ERROR "V3D_ANALYZE runs MSVC's /analyze, which only MSVC has. Use V3D_CLANG_TIDY with another compiler.")
+	endif()
 	add_compile_options("/analyze" "/analyze:external-")
 endif()
 
@@ -78,7 +95,12 @@ endif()
 # the command, which is the only position that survives.
 if(V3D_CLANG_TIDY)
 	find_program(V3D_CLANG_TIDY_EXECUTABLE NAMES clang-tidy REQUIRED)
-	set(CMAKE_CXX_CLANG_TIDY "${V3D_CLANG_TIDY_EXECUTABLE}" "--quiet" "--extra-arg-before=/EHsc")
+	set(CMAKE_CXX_CLANG_TIDY "${V3D_CLANG_TIDY_EXECUTABLE}" "--quiet")
+	# only for MSVC's command lines. Clang and GCC enable exceptions by default, and drop
+	# nothing from theirs
+	if(MSVC)
+		list(APPEND CMAKE_CXX_CLANG_TIDY "--extra-arg-before=/EHsc")
+	endif()
 	# One switch decides whether a finding stops the build, whichever analyser made it.
 	# Without this, clang-tidy prints a finding and the build carries on.
 	if(V3D_WARNINGS_AS_ERRORS)
@@ -90,16 +112,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
 
-# The tests cover every api library, and the apps between them link every api library,
-# directly or through another, so either needs the whole api. A consumer that narrows the
-# selection and leaves the apps or tests on has asked for two things that contradict, and
-# configure fails.
-if(V3D_BUILD_APPS OR V3D_BUILD_TESTS)
-	if(NOT V3D_LIBRARIES STREQUAL "all")
-		message(FATAL_ERROR
-			"V3D_LIBRARIES names a subset, but V3D_BUILD_APPS or V3D_BUILD_TESTS is on and "
-			"both need the whole api. Set them OFF, or leave V3D_LIBRARIES as \"all\".")
-	endif()
+# The apps between them link every api library, directly or through another, so they need the
+# whole api. A consumer that narrows the selection and leaves the apps on has asked for two
+# things that contradict, and configure fails. The tests do not: each library's suite links
+# only that library's closure, so a narrowed selection with the tests on builds the suites of
+# the libraries it selected.
+if(V3D_BUILD_APPS AND NOT V3D_LIBRARIES STREQUAL "all")
+	message(FATAL_ERROR
+		"V3D_LIBRARIES names a subset, but V3D_BUILD_APPS is on and the apps need the whole "
+		"api. Set it OFF, or leave V3D_LIBRARIES as \"all\".")
 endif()
 
 if(V3D_LIBRARIES STREQUAL "all")
@@ -122,11 +143,7 @@ add_subdirectory("api")
 
 if(V3D_BUILD_APPS)
 	add_subdirectory("moya")
-	add_subdirectory("v3dshell")
-	add_subdirectory("pong")
-	add_subdirectory("tetris")
-	add_subdirectory("voxel")
-	add_subdirectory("odyssey")
+	add_subdirectory("demos")
 	add_subdirectory("vertical3d")
 	add_subdirectory("imagetool")
 endif()

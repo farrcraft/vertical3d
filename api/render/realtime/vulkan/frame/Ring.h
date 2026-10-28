@@ -9,6 +9,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -93,6 +94,14 @@ class Ring final {
     void waitIdleNoThrow() const noexcept;
 
     /**
+     * Wait for the device, then destroy everything retired, finished or not, as the destructor
+     * does. The owner of a ring calls it before it lets the ring go, because a retired object
+     * may hold the ring itself, as a mesh does through its uploader. The ring would then never
+     * be destroyed, and the device under it would never be either.
+     **/
+    void drain() noexcept;
+
+    /**
      * @return how many frames have been begun since the Ring was built
      **/
     uint64_t begun() const noexcept;
@@ -125,6 +134,11 @@ class Ring final {
      * destructor once the device is idle. It is the last use of whatever it captured.
      **/
     void retire(std::function<void()> destroy);
+
+    /**
+     * @return how many retired objects are waiting for their frames to finish
+     **/
+    std::size_t retiring() const noexcept;
 
     /**
      * Reset the current frame's fence and return it, for the submit that ends the frame to

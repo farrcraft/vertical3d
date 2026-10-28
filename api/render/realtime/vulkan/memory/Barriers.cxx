@@ -31,7 +31,8 @@ VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, const Tr
     barrier.image = image;
     barrier.subresourceRange.aspectMask = aspect;
     barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.layerCount = 1;
+    // every layer, so that a layered target moves into a layout in one barrier
+    barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
     return barrier;
 }
 

@@ -3,17 +3,26 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
+#include <api/brep/Primitives.h>
+#include <api/curve/Curve.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
+#include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/CreatePoly.h>
+#include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectMask.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
 #include <optional>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/make_shared.hpp>
@@ -47,25 +56,20 @@ boost::shared_ptr<v3d::editor::SelectTool> tool(const boost::shared_ptr<v3d::edi
 }
 
 /**
- * How many components of a mesh are selected, across all three kinds.
+ * How many components of a mesh item are selected, across all three kinds.
  **/
-std::size_t selectedComponents(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
+std::size_t selectedComponents(const v3d::editor::Scene& scene, const boost::shared_ptr<v3d::editor::Mesh>& item) {
     std::size_t count = 0;
-    for (std::size_t index = 0; index < mesh->vertexCount(); index++) {
-        count += mesh->vertex(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-    }
-    for (std::size_t index = 0; index < mesh->edgeCount(); index++) {
-        count += mesh->edge(static_cast<unsigned int>(index))->selected() ? 1 : 0;
-    }
-    for (std::size_t index = 0; index < mesh->faceCount(); index++) {
-        count += mesh->face(static_cast<unsigned int>(index))->selected() ? 1 : 0;
+    for (const v3d::editor::Component kind : { v3d::editor::Component::Vertex, v3d::editor::Component::Edge,
+        v3d::editor::Component::Face }) {
+        count += scene.components().of(item->id(), kind).size();
     }
     return count;
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_object_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     scene->add(cube);
 
     const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
@@ -90,10 +94,10 @@ BOOST_AUTO_TEST_CASE(select_tool_object_test) {
 
 BOOST_AUTO_TEST_CASE(select_tool_one_object_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> first = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(-0.75F, 0.0F, 0.0F));
     scene->add(first);
-    const boost::shared_ptr<v3d::brep::BRep> second = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     second->translation(glm::vec3(0.75F, 0.0F, 0.0F));
     scene->add(second);
 
@@ -116,8 +120,8 @@ BOOST_AUTO_TEST_CASE(select_tool_one_object_test) {
 struct TwoCubes {
     TwoCubes() :
         scene(boost::make_shared<v3d::editor::Scene>()),
-        left(v3d::editor::create_poly_cube()),
-        right(v3d::editor::create_poly_cube()),
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
         leftCube(50.0F, 200.0F),
         rightCube(350.0F, 200.0F),
         nowhere(200.0F, 10.0F) {
@@ -128,8 +132,8 @@ struct TwoCubes {
     }
 
     boost::shared_ptr<v3d::editor::Scene> scene;
-    boost::shared_ptr<v3d::brep::BRep> left;
-    boost::shared_ptr<v3d::brep::BRep> right;
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
     // at two hundred pixels to the unit, the middle of each cube's front face, and a point
     // on neither cube
     glm::vec2 leftCube;
@@ -183,32 +187,32 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
     select->button(1, true, cubes.rightCube);
 
     // the component selection spans both objects
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a miss while adding keeps the components
     select->button(1, true, cubes.nowhere);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a second click while adding takes the face away and leaves the other
     select->button(1, true, cubes.leftCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
 
     // a plain click replaces the components in every object
     select->adding(false);
     select->button(1, true, cubes.leftCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 1U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
 
     // a mask change clears the components in every object, and keeps both objects
     select->adding(true);
     select->button(1, true, cubes.rightCube);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 1U);
     select->activate("vertex");
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.scene->selection().size(), 2U);
 }
 
@@ -220,8 +224,8 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
 struct TwoSmallCubes {
     TwoSmallCubes() :
         scene(boost::make_shared<v3d::editor::Scene>()),
-        left(v3d::editor::create_poly_cube()),
-        right(v3d::editor::create_poly_cube()) {
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
         left->scale(glm::vec3(0.5F, 0.5F, 0.5F));
         right->scale(glm::vec3(0.5F, 0.5F, 0.5F));
         left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
@@ -231,8 +235,8 @@ struct TwoSmallCubes {
     }
 
     boost::shared_ptr<v3d::editor::Scene> scene;
-    boost::shared_ptr<v3d::brep::BRep> left;
-    boost::shared_ptr<v3d::brep::BRep> right;
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
 };
 
 /**
@@ -282,15 +286,15 @@ BOOST_AUTO_TEST_CASE(select_tool_band_component_test) {
 
     // only the selected object's faces are found, and every one of them is inside
     drag(select.get(), glm::vec2(10.0F, 10.0F), glm::vec2(390.0F, 390.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 6U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 6U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.right->selected(), false);
 
     // a band in a component mode replaces the components and keeps the objects
     cubes.right->selected(true);
     drag(select.get(), glm::vec2(390.0F, 10.0F), glm::vec2(210.0F, 390.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.left), 0U);
-    BOOST_CHECK_EQUAL(selectedComponents(cubes.right), 6U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 6U);
     BOOST_CHECK_EQUAL(cubes.left->selected(), true);
 }
 
@@ -334,7 +338,7 @@ BOOST_AUTO_TEST_CASE(select_tool_band_threshold_test) {
 
 BOOST_AUTO_TEST_CASE(select_tool_component_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     scene->add(cube);
 
     const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
@@ -343,7 +347,7 @@ BOOST_AUTO_TEST_CASE(select_tool_component_test) {
 
     // nothing is selected, so there is no object to pick a component of
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
 
     select->activate("object");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
@@ -351,47 +355,47 @@ BOOST_AUTO_TEST_CASE(select_tool_component_test) {
 
     select->activate("face");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 1U);
     // the object stays selected while its components are being worked on
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // clicking the same face again deselects it
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
 
     // a miss clears the components without losing the object
     select->button(1, true, glm::vec2(200.0F, 200.0F));
     select->button(1, true, glm::vec2(10.0F, 10.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
     BOOST_CHECK_EQUAL(cube->selected(), true);
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_mask_change_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     scene->add(cube);
 
     const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
     select->button(1, true, glm::vec2(200.0F, 200.0F));
     select->activate("face");
     select->button(1, true, glm::vec2(200.0F, 200.0F));
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 1U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 1U);
 
     // changing the mask clears the components: a face selection means nothing to an
     // operation working on edges, and leaving it set would let two kinds be selected at once
     select->activate("edge");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
-    BOOST_CHECK_EQUAL(selectedComponents(cube), 0U);
+    BOOST_CHECK_EQUAL(selectedComponents(*scene, cube), 0U);
     BOOST_CHECK_EQUAL(cube->selected(), true);
 
     // a name that is not a mask leaves the tool alone
-    select->activate("curve");
+    select->activate("spline");
     BOOST_CHECK(select->mask() == v3d::editor::SelectMask::Edge);
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_no_view_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::brep::BRep> cube = v3d::editor::create_poly_cube();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
     scene->add(cube);
 
     // the cursor is over no view until it has moved into one, and a click then picks
@@ -400,6 +404,96 @@ BOOST_AUTO_TEST_CASE(select_tool_no_view_test) {
     select.button(1, true, glm::vec2(200.0F, 200.0F));
     BOOST_CHECK_EQUAL(cube->selected(), false);
     BOOST_CHECK_EQUAL(select.hit().valid, false);
+}
+
+BOOST_AUTO_TEST_CASE(select_mask_kinds_test) {
+    // every mask's name reads back as that mask
+    for (const v3d::editor::SelectMask mask : { v3d::editor::SelectMask::Object, v3d::editor::SelectMask::Vertex,
+        v3d::editor::SelectMask::Edge, v3d::editor::SelectMask::Face, v3d::editor::SelectMask::Mesh,
+        v3d::editor::SelectMask::Light, v3d::editor::SelectMask::Camera, v3d::editor::SelectMask::Curve,
+        v3d::editor::SelectMask::Handle }) {
+        v3d::editor::SelectMask read = v3d::editor::SelectMask::Face;
+        BOOST_CHECK(v3d::editor::selectMask(v3d::editor::selectMaskName(mask), &read));
+        BOOST_CHECK(read == mask);
+    }
+
+    // the whole item masks take their own kind, and object takes every kind
+    BOOST_CHECK(v3d::editor::selectsItems(v3d::editor::SelectMask::Light));
+    BOOST_CHECK(!v3d::editor::selectsItems(v3d::editor::SelectMask::Edge));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Object, v3d::editor::Item::Kind::Camera));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Camera, v3d::editor::Item::Kind::Camera));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Camera, v3d::editor::Item::Kind::Light));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Light));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Face, v3d::editor::Item::Kind::Mesh));
+    BOOST_CHECK(v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Curve, v3d::editor::Item::Kind::Mesh));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Mesh, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(!v3d::editor::selectMask("spline", nullptr));
+
+    // the handle mask selects a part of a curve, not a kind of item
+    BOOST_CHECK(!v3d::editor::selectsItems(v3d::editor::SelectMask::Handle));
+    BOOST_CHECK(!v3d::editor::takes(v3d::editor::SelectMask::Handle, v3d::editor::Item::Kind::Curve));
+    BOOST_CHECK(v3d::editor::componentOf(v3d::editor::SelectMask::Handle) == v3d::editor::Component::Handle);
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_curve_parts_test) {
+    // a Bezier curve from the middle of the view's left half to the middle of its right, whose
+    // handles lie a quarter unit above and below its two points
+    const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
+    v3d::curve::Bezier bezier;
+    for (const float x : { -0.5F, 0.5F }) {
+        bezier.points.push_back({ .position = { x, 0.0F, 0.0F }, .left = { x, -0.25F, 0.0F }, .right = { x, 0.25F, 0.0F },
+            .leftType = v3d::curve::Handle::Free, .rightType = v3d::curve::Handle::Free });
+    }
+    BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Curve> curve = boost::make_shared<v3d::editor::Curve>(curves);
+    scene->add(curve);
+    curve->selected(true);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+    // where a point of the curve is in the tool's view
+    const auto at = [&select](const glm::vec3& point) {
+        const boost::shared_ptr<v3d::type::camera::Camera> camera = select->view()->camera();
+        camera->createProjection();
+        camera->createView();
+        int viewport[4] = { 0, 0, 400, 400 };
+        const glm::vec3 projected = camera->project(point, viewport);
+        return glm::vec2(projected[0], projected[1]);
+    };
+
+    // under the vertex mask a click on the second point selects it, and the curve stays selected
+    select->activate("vertex");
+    select->button(1, true, at(glm::vec3(0.5F, 0.0F, 0.0F)));
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Vertex) == std::vector<v3d::brep::Index>{ 1 });
+    BOOST_CHECK(curve->selected());
+
+    // under the handle mask a click on the first point's right handle selects that handle alone
+    select->activate("handle");
+    BOOST_CHECK(!scene->components().any(curve->id()));
+    select->button(1, true, at(glm::vec3(-0.5F, 0.25F, 0.0F)));
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Handle) == std::vector<v3d::brep::Index>{ 1 });
+    BOOST_CHECK(scene->components().of(curve->id(), v3d::editor::Component::Vertex).empty());
+}
+
+BOOST_AUTO_TEST_CASE(select_tool_light_mask_test) {
+    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    light->translation(glm::vec3(0.0F, 0.0F, -0.5F));
+    scene->add(cube);
+    scene->add(light);
+    const boost::shared_ptr<v3d::editor::SelectTool> select = tool(scene);
+
+    // under the light mask a click selects the light whole, through the cube in front of the
+    // view's middle, which that mask does not take
+    select->activate("light");
+    select->button(1, true, glm::vec2(200.0F, 200.0F));
+    BOOST_CHECK(light->selected());
+    BOOST_CHECK(!cube->selected());
+
+    // and a miss clears it, as a miss under the object mask does
+    select->button(1, true, glm::vec2(10.0F, 10.0F));
+    BOOST_CHECK(!light->selected());
 }
 
 };  // namespace

@@ -14,8 +14,18 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 
 ## Packages from vcpkg
 
-vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json). The packages are
-installed into `out/build/<config>/vcpkg_installed/` during the first configure.
+vcpkg installs these in manifest mode, from [vcpkg.json](../../vcpkg.json), during the first
+configure. [Build.md](Build.md#traps) says where they go, and why that directory is kept.
+
+SDL3, SDL3_mixer, Vulkan and vulkan-memory-allocator are in the manifest's `platform` feature,
+which is a default feature, so a configure installs them unless it is given
+`-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`. Only a build of the libraries that need neither a
+window nor a device leaves it out, as the Linux CI job does. A new port that only the window,
+the device or the audio needs goes in that feature.
+
+OpenUSD is in the manifest's `usd` feature, also a default one, for the same reason: only
+`v3dlib_interchange_usd` uses it, and it is the largest package in the tree. Its first install
+builds TBB and OpenUSD from source, which takes a long time.
 
 | Port | Notes |
 |---|---|
@@ -29,8 +39,10 @@ installed into `out/build/<config>/vcpkg_installed/` during the first configure.
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
+| sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
-| vulkan-memory-allocator | Used by `memory::Allocator` when an app turns on suballocation. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
+| vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
 
 The configure looks only for the packages that the selected api libraries need. A build of this
 repository always selects every library, so it needs all of them. Boost is always looked for,

@@ -18,10 +18,9 @@
 #include <api/render/realtime/component/Particles.h>
 #include <api/render/realtime/component/Sprite.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/type/animation/SpriteClip.h>
-#include <api/type/animation/Track.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/animation/SpriteClip.h>
+#include <api/animation/Track.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
 
@@ -51,10 +50,9 @@ using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::component::Particles;
 using v3d::render::realtime::component::Sprite;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
-using v3d::type::animation::SpriteClip;
-using v3d::type::animation::Track;
+using v3d::render::realtime::RenderTarget;
+using v3d::animation::SpriteClip;
+using v3d::animation::Track;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -109,7 +107,7 @@ void flame(entt::registry* registry, const glm::vec3& at, const TextureHandle& t
     registry->emplace<Transform>(entity).position = at;
     Emitter& emitter = registry->emplace<Emitter>(entity, 11U);
     emitter.description.rate = 40.0F;
-    emitter.description.shape = v3d::type::effect::Emitter::Shape::Sphere;
+    emitter.description.shape = v3d::ecs::effect::Emitter::Shape::Sphere;
     emitter.description.extent = glm::vec3(0.15F);
     emitter.description.spread = 0.3F;
     emitter.description.speedMin = 0.8F;
@@ -178,8 +176,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     canvas.tint(glm::vec4(1.0F, 0.75F, 0.55F, 1.0F));
     order.into(&canvas);
 
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless->device, headless->context->ring(),
-        width, height, colourFormat, false);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = false});
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("world");
     pass->target(target);
@@ -187,17 +185,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->camera(camera.view(), camera.projection());
     headless->context->worldQuads()->submit(canvas, pass.get());
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-    Capture capture(headless->device, headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
+    headless->draw(frame, *target, &capture);
 
     const std::string path = "data_out/" + name + ".png";
     if (!capture.write(path)) {

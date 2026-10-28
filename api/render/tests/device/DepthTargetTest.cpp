@@ -8,8 +8,8 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/Barriers.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/memory/Image.h>
@@ -30,8 +30,8 @@ using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::PipelineHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::vulkan::memory::Buffer;
 using v3d::render::realtime::vulkan::memory::Image;
 using v3d::render::realtime::vulkan::pipeline::Builder;
@@ -119,7 +119,7 @@ std::vector<float> drawDepth(v3d::test::Headless* headless, const boost::shared_
     // every pass names a target of its own, so the frame is given no image
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->depthImage();
     source.extent = target->extent();
@@ -173,7 +173,7 @@ std::vector<float> drawBeside(v3d::test::Headless* headless, const boost::shared
     VkCommandBuffer commands = headless->context->ring()->begin();
     Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources());
 
-    Capture capture(headless->device, headless->logger);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
     Capture::Source source;
     source.image = target->depthImage();
     source.extent = target->extent();
@@ -195,8 +195,8 @@ BOOST_AUTO_TEST_SUITE(depth_target_test)
  **/
 BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     BOOST_REQUIRE(target->image() == VK_NULL_HANDLE);
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
@@ -221,8 +221,8 @@ BOOST_AUTO_TEST_CASE(a_depth_only_target_holds_the_depth_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(a_pass_bias_moves_the_depth_drawn) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
         return;
@@ -248,8 +248,8 @@ BOOST_AUTO_TEST_CASE(a_pass_without_depth_beside_one_with_it) {
     for (const bool depthFirst : {false, true}) {
         BOOST_TEST_CONTEXT("the pass with depth " << (depthFirst ? "first" : "second")) {
             v3d::test::Headless headless(colourFormat, width, height);
-            const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device,
-                headless.context->ring(), width, height, VK_FORMAT_UNDEFINED, true, true);
+            const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+                RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
             if (target->depthFormat() != VK_FORMAT_D32_SFLOAT) {
                 BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
                 return;

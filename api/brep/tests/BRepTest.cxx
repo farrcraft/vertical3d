@@ -7,11 +7,12 @@
 #include <api/brep/Face.h>
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
+#include <api/brep/Operations.h>
 #include <api/brep/Topology.h>
 #include <api/type/geometry/AABBox.h>
 
 #include <algorithm>
-#include <type_traits>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -129,41 +130,15 @@ BOOST_AUTO_TEST_CASE(brep_shared_vertex_test) {
     BOOST_CHECK_EQUAL((bound.max() == glm::vec3(1.0F, 1.0F, 2.0F)), true);
 }
 
-BOOST_AUTO_TEST_CASE(brep_identity_test) {
-    v3d::brep::BRep first;
-    const v3d::brep::BRep second;
+BOOST_AUTO_TEST_CASE(brep_copy_test) {
+    v3d::brep::BRep original;
+    original.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
 
-    // a mesh is a dag::Node, so it has an id for the selection model to key on
-    BOOST_CHECK(first.id() != second.id());
-    // a copy would share that id with its original, so a mesh cannot be copied
-    static_assert(!std::is_copy_constructible_v<v3d::brep::BRep>);
-    static_assert(!std::is_copy_assignable_v<v3d::brep::BRep>);
-
-    // and a dag::Transform, so its geometry is described about its own origin
-    first.translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    const glm::vec4 placed = first.matrix() * glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
-    BOOST_CHECK_CLOSE(placed.x, 5.0F, 0.01F);
-}
-
-BOOST_AUTO_TEST_CASE(brep_selection_test) {
-    v3d::brep::BRep mesh;
-    mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-
-    BOOST_CHECK_EQUAL(mesh.selected(), false);
-    mesh.selected(true);
-    BOOST_CHECK_EQUAL(mesh.selected(), true);
-
-    mesh.vertex(0)->selected(true);
-    mesh.edge(0)->selected(true);
-    mesh.face(0)->selected(true);
-
-    mesh.deselectComponents();
-
-    BOOST_CHECK_EQUAL(mesh.vertex(0)->selected(), false);
-    BOOST_CHECK_EQUAL(mesh.edge(0)->selected(), false);
-    BOOST_CHECK_EQUAL(mesh.face(0)->selected(), false);
-    // the object's own selection survives a component deselect
-    BOOST_CHECK_EQUAL(mesh.selected(), true);
+    // a mesh is geometry alone, so a copy is a separate mesh with the same parts
+    v3d::brep::BRep copy = original;
+    BOOST_CHECK_EQUAL(copy.vertexCount(), original.vertexCount());
+    copy.vertex(0)->point(glm::vec3(9.0F, 0.0F, 0.0F));
+    BOOST_CHECK(original.vertex(0)->point() != glm::vec3(9.0F, 0.0F, 0.0F));
 }
 
 /**
@@ -434,6 +409,28 @@ BOOST_AUTO_TEST_CASE(brep_newell_normal_test) {
         glm::vec3(0.0F, 0.0F, 1.0F));
     BOOST_CHECK(v3d::brep::newellNormal(line, 0) == glm::vec3(0.0F));
     BOOST_CHECK(v3d::brep::newellNormal(line, 7) == glm::vec3(0.0F));
+}
+
+BOOST_AUTO_TEST_CASE(brep_changes_test) {
+    v3d::brep::BRep mesh;
+    BOOST_CHECK_EQUAL(mesh.changes(), 0U);
+
+    // adding a part counts
+    mesh.addFace(quad(0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+    const std::uint64_t built = mesh.changes();
+    BOOST_CHECK_GT(built, 0U);
+
+    // a part changed in place is counted by touch(), and a restore counts
+    const v3d::brep::BRep::Snapshot before = mesh.snapshot();
+    mesh.vertex(0)->point(glm::vec3(5.0F));
+    mesh.touch();
+    BOOST_CHECK_EQUAL(mesh.changes(), built + 1);
+    mesh.restore(before);
+    BOOST_CHECK_EQUAL(mesh.changes(), built + 2);
+
+    // an operation counts, because it works through the mesh
+    BOOST_REQUIRE(v3d::brep::splitEdge(mesh, 0).has_value());
+    BOOST_CHECK_GT(mesh.changes(), built + 2);
 }
 
 };  // namespace

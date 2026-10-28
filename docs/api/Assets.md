@@ -1,19 +1,19 @@
-# Assets, images, fonts and files
+# Assets and files
 
 This page is for someone writing an app against the api. It covers loading files through the
-asset manager, the loaders for pictures, models and sound, JSON documents, writing files
-safely, upgrading old documents, `api/image`, `api/font` and glTF models. Terms are defined in
-the [glossary](README.md#glossary).
+asset manager, loading on a worker thread, the loaders, JSON documents, writing files safely and
+upgrading old documents. Terms are defined in the [glossary](README.md#glossary).
+
+What the loaders read is described with the type they read into: images in
+[Images.md](Images.md), models and glTF in [Models.md](Models.md), and typefaces in
+[Fonts.md](Fonts.md).
 
 - [The asset manager](#the-asset-manager)
+- [Loading on a worker thread](#loading-on-a-worker-thread)
 - [Loaders](#loaders)
 - [JSON documents](#json-documents)
 - [Writing documents](#writing-documents)
 - [Reading old documents forward](#reading-old-documents-forward)
-- [Images](#images)
-- [Texture atlas](#texture-atlas)
-- [Fonts](#fonts)
-- [Models and glTF](#models-and-gltf)
 
 ## The asset manager
 
@@ -29,8 +29,9 @@ auto model = assets()->load<v3d::asset::media::kind::Model>("knight.glb");
 ```
 
 - `load<T>(name)` picks the loader from the file's extension, which is matched in lower case,
-  and returns the asset as `T`.
-- `load<T>(name, type)` names the `asset::Type` instead of using the extension.
+  and returns the asset as `T`. A file whose extension no loader reads, or that has none, is
+  loaded by the loader registered for `T`.
+- `load(name)` returns the asset as an `asset::Asset`, and needs an extension a loader reads.
 - `path(name)` returns the full path a name resolves to, for code that opens the file itself.
 - **Every failure gives a null pointer and a line in the log.** A missing file, a file that does
   not decode, an extension nothing is registered for, and a file of a different kind than `T`
@@ -84,7 +85,7 @@ Background: [ADR-0086](../adr/0086-loading-one-worker-thread-polled-from-the-mai
 ## Loaders
 
 A manager loads only file types that have a loader registered on it. Each loader is registered
-for one `asset::Type` and a list of extensions.
+for the class of asset it produces, its kind, and a list of extensions.
 
 | Registered by | Extensions | Returns |
 |---|---|---|
@@ -103,25 +104,30 @@ for one `asset::Type` and a list of extensions.
 - **A typeface is not an asset.** The size a face is rasterized at belongs to the caller, so
   `ui::paint::TextRenderer` opens the face itself at the path `Manager::path()` gives.
 
-To add a format, derive from `asset::Loader` ([api/asset/Loader.h](../../api/asset/Loader.h)),
+To add a loader, derive from `asset::Loader` ([api/asset/Loader.h](../../api/asset/Loader.h)),
 implement `load(name)`, and register it:
 
 ```cpp
-manager.registerLoader(boost::make_shared<MyLoader>(logger), {".map"});
+manager.registerLoader(boost::make_shared<MyLoader>(logger), {".lvl"});
 ```
 
-- Extensions include the dot and are lower case.
-- Registering a type again replaces its loader.
+- A loader passes its kind to the `Loader` constructor, as `typeid(MyLevel)`, and every asset
+  it returns is of that class. Any library or app can add a kind.
+- Extensions include the dot and are lower case. An extension registered again moves to the new
+  loader.
+- **A second loader of one kind** keeps the extensions it was registered with, and takes over the
+  files whose extension no loader reads. The first keeps its own extensions.
 - **`load()` returns null and logs on failure. It never throws.**
 - **A loader holds no state between calls.** One instance serves everything that loads through
   the manager, possibly on several threads at once, so a setting left on it by one caller would
   be seen by the next.
 
-Splitting the loaders this way keeps each library's dependencies small. `config` needs only the
-JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an app that links `audio`
-pulls in SDL3_mixer.
+Splitting the loaders this way keeps each library's dependencies small. A library that reads only
+documents needs only the JSON loader, so it does not pull in libpng, libjpeg or FreeType. Only an
+app that links `audio` pulls in SDL3_mixer.
 
-Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md)
+Background: [ADR-0079](../adr/0079-assets-loaders-are-registered.md),
+[ADR-0118](../adr/0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md)
 
 ## JSON documents
 
@@ -200,8 +206,9 @@ name. An unqualified `serialize()` on a `boost::json::value` finds `boost::json:
 argument-dependent lookup, and that writes the whole document on one line.
 
 What a document holds is the caller's decision. These functions decide only how it reaches the
-disk. `engine::Settings`, the editor's project files and `config::SpriteSheets` all write
-through them.
+disk. `engine::Settings`, the editor's project manifests and `asset::media::SpriteSheets` all write
+through them. The editor's scene documents are SQLite databases, written in a transaction rather
+than by a rename. See [editor/Files.md](../editor/Files.md#scene-documents).
 
 Background: [ADR-0041](../adr/0041-files-write-documents-atomically.md)
 
@@ -248,190 +255,3 @@ The rules:
 - A step can never be removed while documents of the version before it may still exist.
 
 Background: [ADR-0073](../adr/0073-files-migrate-old-documents-one-version-at-a-time.md)
-
-## Images
-
-`api/image` (`v3d::image`) reads, writes and compares images. It depends on libpng and libjpeg
-and on no device.
-
-### Image
-
-`image::Image` ([api/image/Image.h](../../api/image/Image.h)) is a buffer of pixels with a width,
-a height and a bit depth.
-
-- **Row 0 is the top of the picture.** Every reader produces this order, and the canvas, the
-  texture upload and the atlas packer all expect it.
-- **`format()` is the channel count:** `Format::Grey` (1), `RGB` (3) or `RGBA` (4). It follows
-  the depth.
-- **An `Image` cannot be copied.** It owns its buffer. Hold one through
-  `boost::shared_ptr<Image>`, and use `image::crop()` to make a copy of all or part of one.
-
-### Reading and writing
-
-`image::Factory` ([api/image/Factory.h](../../api/image/Factory.h)) reads and writes by file
-extension: `png`, `jpg`, `jpeg`, `bmp` and `tga`.
-
-```cpp
-v3d::image::Factory factory(logger);
-boost::shared_ptr<v3d::image::Image> picture = factory.read("sprite.png");
-factory.write("out.tga", picture);
-```
-
-- `read(data, size, kind)` decodes from memory. Pass the format key, such as `"png"`, because a
-  buffer has no extension. A glTF file's embedded images are read this way.
-- Every reader returns rows top to bottom. A bmp is read at 8, 16, 24 or 32 bits, uncompressed
-  or, at 16 and 32 bits, packed by the masks its header gives. 16 bits uncompressed is five bits
-  a channel. 32 bits reads as RGBA, and as opaque when its alpha is zero everywhere, since most
-  writers leave it unused. Every other depth comes back as RGB.
-- Each read returns null when the file will not open or does not decode.
-- Through the asset manager, an image file loads as `asset::media::kind::Image`, and `image()`
-  returns the `image::Image`.
-
-**The readers do not agree on greyscale.** Know which you are reading:
-
-| Format | A greyscale file reads as |
-|---|---|
-| png | RGB. The reader has libpng expand grey to RGB. |
-| bmp | RGB. An 8-bit file's indices are resolved through its palette. |
-| jpeg | RGB. The reader always has the decoder output RGB. |
-| tga | Grey, at the file's own depth. |
-
-**Every writer can write greyscale**: png as a grey image, tga as type 3, jpeg as
-`JCS_GRAYSCALE`, and bmp as 8-bit indices into a 256-entry grey ramp.
-
-### Other functions
-
-- `crop(source, x, y, width, height)` cuts a rectangle into a new image at the same depth. It
-  returns null when the rectangle is empty or not wholly inside the source. Use it to cut a
-  sprite back out of a packed sheet.
-- `swapRedBlue(from, to, {.pixels, .channels})` swaps the first and third bytes of each pixel, for
-  converting between RGB and the BGR order BMP and TGA store. The buffers may be the same.
-- `compare(a, b, tolerance)` compares two images channel by channel and returns a
-  `Difference`. It records the worst pixel even when the images match. `description()` gives
-  one line saying what differed and where. Keep the tolerance for float rounding between
-  compilers, not for "close enough".
-
-## Texture atlas
-
-`image::TextureAtlas` ([api/image/TextureAtlas.h](../../api/image/TextureAtlas.h)) packs many
-small images into one larger image, so they can share one texture.
-
-```cpp
-v3d::image::TextureAtlas atlas(512, 512, 4, logger);     // width, height, bytes per texel
-glm::ivec4 r = atlas.region(32, 32);                     // the size you will blit
-if (r.x < 0) { /* the atlas is full */ }
-atlas.region(r.x, r.y, r.z, r.w, pixels, 32 * 4);        // blit into it
-```
-
-- **Ask for the size you will blit, and blit into exactly the rectangle you get back.** The
-  atlas reserves a one-texel gutter on all four sides of every region itself. Do not add the
-  gutter to what you ask for or subtract it from what you get.
-- `region(width, height)` returns `x`, `y`, width and height of the usable rectangle, or an `x`
-  and `y` of -1 when there is no room left.
-- The sheet also keeps a one-texel border around its edge.
-- **The gutter is left as zero:** black at depth 3, transparent black at depth 4. Edge texels
-  are not copied into it. A linear sampler reading exactly at a region's edge therefore fades
-  slightly towards the gutter. If that shows, inset the uvs by half a texel, as tetris does.
-- Each region costs two texels more per axis than its size. The largest region a 16 × 16 atlas
-  can hold is 12 × 12.
-- `image()` returns the packed image for upload, and `write(filename)` saves it.
-
-Without a gutter, a linear sampler at a region's edge reads the neighbouring region's texels.
-The visible result is a thin line of the wrong colour along a sprite's edge, with nothing in the
-log.
-
-## Fonts
-
-`api/font` (`v3d::font`) rasterizes typefaces with FreeType into a texture atlas and lays out
-text as quads. Most apps do not use it directly: `ui::paint::TextRenderer` owns a font, its atlas
-and the drawing of text. See [ui/](ui/README.md).
-
-- **`TextureFont(filename, size, logger, spread)`** loads one face at one size.
-  - With `spread` 0 the glyphs are plain coverage.
-  - With a `spread` above 0 the glyphs are a signed distance field. `size` is then the base size,
-    and text at any other size is drawn as a ratio of it. `spread` is how many pixels either side
-    of an edge the field runs. A larger spread lets a glyph scale up further before its edge
-    softens, and costs `2 × spread` extra texels per axis of every glyph.
-- **`atlas(textureAtlas)`** sets the atlas the glyphs pack into, and **`loadGlyphs(charcodes)`**
-  rasterizes and packs them. **Check its result.** It returns false when any glyph did not fit.
-  Text drawn with a partly packed font is missing characters and measures short, so layout
-  around it is wrong as well.
-- `glyph(charcode)` returns a glyph's size, offset, advance and uvs, or null if it was not
-  loaded. A charcode it has not seen is rasterized and packed then. `glyph(-1)` is an opaque
-  white square, used to draw lines and backgrounds.
-- `packed(charcode)` returns a glyph only if it is already packed, and never adds one. Use it
-  once the atlas has been uploaded, since a glyph packed afterwards is not on the device.
-- `ascender()`, `descender()`, `height()`, `linegap()`, `underlinePosition()` and
-  `underlineThickness()` are the face's metrics.
-- **`TextureFontCache(width, height, depth, logger)`** shares one atlas among several fonts.
-  Depth is 1 for coverage or a distance field, and 3 for subpixel coverage.
-- **`TextureTextBuffer::addText(&pen, markup, text)`** lays out a wide string as quads, moving
-  the pen. A `Markup` sets the size, colours, gamma, underline, overline, strikethrough and the
-  font. A size of zero or less, which is a new markup's, means the font's own size.
-
-## Models and glTF
-
-The glTF loader ([api/asset/media/loader/Gltf.h](../../api/asset/media/loader/Gltf.h)) reads
-`.gltf` and `.glb` files into an `asset::media::kind::Model`. Its `model()` is a `type::Model`,
-described in [Types.md](Types.md#models).
-
-### What the loader builds
-
-- **One model per file**, with one vertex array and one index list. The loader walks the file's
-  scene from its root nodes and merges every mesh a node names, placed by the node's world
-  matrix. Normals are turned by that matrix's inverse transpose.
-- The scene is the file's default scene, or its first, or every root node when it has none.
-- **A mesh named by two nodes is merged twice.** A file that reuses one mesh many times makes a
-  larger upload than the file.
-- **Primitives that share a material become one part**, in the order the loader reaches them.
-  Parts are in the order their materials first appear. A primitive with no material uses a
-  default one.
-- Positions are required. Normals and uvs are read where a primitive has them, and are zero
-  where it does not.
-- A primitive with no indices gets a sequential run, so the model is always indexed.
-- Triangle strips and fans become triangle lists, wound as glTF winds them. A primitive of
-  points or lines is left out with a warning, because a model holds triangles.
-- A file that does not read or parse gives no asset and a log line.
-- **A file that fails validation gives no asset and a log line.** The loader validates before it
-  reads an accessor, so an accessor that runs past its buffer view, or an index past the last
-  vertex, rejects the whole file.
-
-### Materials and textures
-
-**Only the base colour is read**, from the metallic-roughness model.
-
-- **A texture the file names arrives as a name**, in `Material::baseColourTexture`. The name is
-  the file's uri with its percent-escapes decoded, so `my%20texture.png` arrives as
-  `my texture.png`. It is relative to the model file. It is resolved through the asset
-  manager and uploaded by whoever draws the model: the renderer's `MeshRegistry` does this for
-  a model it loads. The model never holds the pixels of a named texture.
-- **A texture the file embeds arrives decoded.** A `.glb` stores images in its own buffer, and a
-  `.gltf` may inline one as a data uri, whose `data:image/png` or `data:image/jpeg` prefix
-  states its type when the file gives no `mimeType`. Neither has a name to give, so the loader
-  decodes it and `kind::Model::baseColourImage(material)` returns it. It is null for a named
-  texture or no texture.
-- An embedded image in a format glTF does not allow, or one that does not decode, costs the
-  model that texture. The model still loads.
-
-### Skins and animation
-
-- **The first skin** any mesh in the scene is bound to becomes the model's skeleton. Its joints
-  are reordered so that every parent comes before its children.
-- **A skin with fewer inverse bind matrices than joints gives no asset** and a log line, and so
-  does one whose inverse bind matrices are not 4x4 matrices. A skin with no inverse bind
-  matrices binds each joint by the identity.
-- Every vertex gets an influence. **Four influences per vertex are read**, and a second set of
-  joints and weights is dropped.
-- **A skinned mesh is placed by its joints, not by its node.**
-- **An unskinned mesh in a skinned file follows the nearest joint above it rigidly**, or the
-  first root joint if it is under none. It stands where its node puts it while that joint is
-  at rest.
-- **Every animation in the file becomes a clip**, keeping the channels that animate the
-  skeleton's joints. A file with no skeleton has no clips.
-
-### Drawing a model
-
-A `type::Model` holds no device resources. To draw it, register it with the renderer's
-`MeshRegistry`, which uploads it once per path. [rendering/](rendering/README.md) covers that.
-
-Background: [ADR-0069](../adr/0069-models-material-parts-over-one-vertex-buffer.md)

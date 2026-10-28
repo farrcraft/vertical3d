@@ -6,14 +6,16 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/config/Config.h>
+#include <api/asset/Manifest.h>
+#include <api/ecs/Previous.h>
 #include <api/event/Bindings.h>
 #include <api/event/Commands.h>
-#include <api/event/Engine.h>
-#include <api/input/Engine.h>
+#include <api/event/Router.h>
+#include <api/input/Devices.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Window.h>
+#include <api/window/Window.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <string_view>
@@ -21,6 +23,8 @@
 
 #include "Accumulator.h"
 #include "Feature.h"
+#include "Identity.h"
+#include "Settings.h"
 #include "Statistics.h"
 
 #include <boost/json.hpp>
@@ -81,7 +85,7 @@ class Engine {
      * not the commands the bindings make from them. Polling the keyboard does not replace
      * this, because a press and a release inside one frame poll as no change.
      *
-     * Returning true consumes the event, and the input engine never maps it to a command.
+     * Returning true consumes the event, and it is never mapped to a command.
      * One click then cannot both press a button and issue an order. ui::Cursor::press()
      * applies the same rule inside api/ui. The engine handles quit, resize and focus events
      * whatever this returns.
@@ -148,19 +152,26 @@ class Engine {
     bool quitting() const noexcept;
 
     /**
+     * Name the app, before initialize(). run<T> does this. An engine with an identity reads
+     * the player's settings as it starts, and saves the player's key bindings in them.
+     **/
+    void identity(const Identity& identity);
+    const Identity& identity() const noexcept;
+
+    /**
      * @return Window
      **/
-    boost::shared_ptr<v3d::render::realtime::Window> window() const;
+    boost::shared_ptr<v3d::window::Window> window() const;
 
     /**
      * What the engine built, for an app to build on. Each is null until initialize() runs.
-     * config() stays null unless the app asks for Feature::Config.
+     * manifest() stays null unless the app asks for Feature::Config.
      **/
     const boost::shared_ptr<v3d::log::Logger>& logger() const noexcept;
-    const boost::shared_ptr<v3d::config::Config>& config() const noexcept;
+    const boost::shared_ptr<v3d::asset::Manifest>& manifest() const noexcept;
     const boost::shared_ptr<v3d::asset::Manager>& assets() const noexcept;
     const boost::shared_ptr<entt::dispatcher>& dispatcher() const noexcept;
-    const boost::shared_ptr<v3d::event::Engine>& events() const noexcept;
+    const boost::shared_ptr<v3d::event::Router>& events() const noexcept;
 
     /**
      * The keys held now, and the edges: the keys pressed or released during this frame's
@@ -266,14 +277,11 @@ class Engine {
 
     /**
      * One of the documents config.json names, or null when there is no config or it names
-     * none of that type. An app treats every such document as optional.
+     * none of that kind. The library that reads a kind declares its name, as
+     * ui::Interface::DOCUMENT, and an app names its own. An app treats every such document as
+     * optional.
      **/
-    const boost::json::object* document(v3d::config::Type type) const;
-
-    /**
-     * The same for a type the app names itself - one the api has no enum for.
-     **/
-    const boost::json::object* document(std::string_view type) const;
+    const boost::json::object* document(std::string_view kind) const;
 
     /**
      * Time the rest of the scope as a named span in the loop's statistics. This is how an
@@ -292,8 +300,8 @@ class Engine {
      * Bind a command to a different key than the config gave it, keeping the context and
      * the edge from the config.
      *
-     * The change is not saved. It lasts for the process unless the app stores it, for
-     * example in a document under engine::userPath().
+     * The change is saved in the player's settings when the app has an identity, and the
+     * next run starts with it.
      *
      * @param command the destination the binding drives, as "context::name"
      * @param key the source event name to bind it to, which for a keyboard binding is a
@@ -301,6 +309,44 @@ class Engine {
      * @return whether the bindings were rebuilt, which is false with no binding config
      **/
     bool rebind(const std::string& command, const std::string& key);
+
+    /**
+     * The bindings the binding config installed, for an app's controls screen: what a command
+     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
+     * the overrides. A change made through them is saved as rebind() saves one.
+     *
+     * @return null when the app has no binding config
+     **/
+    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
+
+    /**
+     * What the player changed, in the document kept under the app's identity. The engine
+     * keeps the player's key bindings here, under "bindings". An app keeps its own settings
+     * beside them, and saves after each change.
+     *
+     * @return null when the app has no identity, as in a test that builds an engine itself
+     **/
+    const boost::shared_ptr<Settings>& settings() const noexcept;
+
+    /**
+     * Snapshot every entity's T into its ecs::Previous<T> before each simulation step, so a
+     * renderer can draw between the last two steps. An app registers each type it draws that
+     * way once, in its constructor or start(). Registering a type again does nothing.
+     **/
+    template <typename T>
+    void interpolate() {
+        const Snapshot snapshot = &v3d::ecs::snapshot<T>;
+        if (std::find(snapshots_.begin(), snapshots_.end(), snapshot) == snapshots_.end()) {
+            snapshots_.push_back(snapshot);
+        }
+    }
+
+    /**
+     * One fixed simulation step: snapshot each type interpolate() registered, then simulate().
+     * eventLoop() calls it once for each step due. It is separate so that a test can run a
+     * step.
+     **/
+    bool step(float seconds);
 
     /**
      * Offer one polled event to the app, the input devices and the engine, in that order.
@@ -338,6 +384,10 @@ class Engine {
 
      entt::registry registry_;
 
+     // what interpolate() registered, run in order before each simulate()
+     typedef void (*Snapshot)(entt::registry& registry);
+     std::vector<Snapshot> snapshots_;
+
      // the bindings from the binding config, read by held() and rebuilt by rebind()
      boost::shared_ptr<v3d::event::Bindings> bindings_;
 
@@ -347,19 +397,27 @@ class Engine {
       **/
      bool shutdown();
 
+     /**
+      * Read the player's settings, apply the bindings they saved, and save the bindings after
+      * each change to them from then on.
+      **/
+     void loadSettings();
+
      template <typename T, typename... Args>
-     friend int run(const char* executable, const std::string& name, Args&&... args);
+     friend int run(const char* executable, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
-     boost::shared_ptr<v3d::config::Config> config_;
-     boost::shared_ptr<v3d::render::realtime::Window> window_;
+     boost::shared_ptr<v3d::asset::Manifest> manifest_;
+     boost::shared_ptr<v3d::window::Window> window_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
-     boost::shared_ptr<v3d::event::Engine> eventEngine_;
+     boost::shared_ptr<v3d::event::Router> router_;
      Accumulator accumulator_;
      Statistics statistics_;
 
      std::string appPath_;
+     Identity identity_;
+     boost::shared_ptr<Settings> settings_;
      Features features_;
      bool needShutdown_;
      bool released_ = false;
@@ -368,7 +426,7 @@ class Engine {
      v3d::event::Commands commands_;
      bool quitting_;
      bool minimized_ = false;
-     boost::shared_ptr<v3d::input::Engine> inputEngine_;
+     boost::shared_ptr<v3d::input::Devices> devices_;
 };
 
 };  // namespace v3d::engine

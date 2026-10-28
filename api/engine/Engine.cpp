@@ -6,17 +6,16 @@
 #include "Engine.h"
 
 #include <api/asset/Manager.h>
+#include <api/asset/Manifest.h>
 #include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
-#include <api/config/Config.h>
-#include <api/config/Type.h>
-#include <api/config/WindowSize.h>
-#include <api/event/Engine.h>
+#include <api/event/Bindings.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
-#include <api/input/Engine.h>
+#include <api/input/Devices.h>
 #include <api/input/KeyState.h>
 #include <api/input/Keyboard.h>
 #include <api/input/Mouse.h>
@@ -34,12 +33,63 @@
 #include <vector>
 
 #include "Feature.h"
+#include "Identity.h"
+#include "Settings.h"
 #include "Statistics.h"
+#include "WindowSize.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
 namespace v3d::engine {
+
+namespace {
+
+/** The settings key the player's key bindings are kept under. **/
+const char* const BINDINGS = "bindings";
+
+/**
+ * The player's key bindings as the settings keep them: a list of overrides, each the command,
+ * the source it replaces, and the name it binds instead.
+ **/
+boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overrides) {
+    boost::json::array saved;
+    for (const v3d::event::Bindings::Override& made : overrides) {
+        saved.push_back(boost::json::object{ { "command", made.command }, { "source", made.source }, { "name", made.name } });
+    }
+    return saved;
+}
+
+/**
+ * The overrides a settings document holds. An entry of another shape, from a hand edit, is
+ * left out.
+ **/
+std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved) {
+    std::vector<v3d::event::Bindings::Override> overrides;
+    if (!saved.is_array()) {
+        return overrides;
+    }
+    for (const boost::json::value& entry : saved.as_array()) {
+        const boost::json::object* fields = entry.if_object();
+        if (fields == nullptr) {
+            continue;
+        }
+        const boost::json::value* command = fields->if_contains("command");
+        const boost::json::value* source = fields->if_contains("source");
+        const boost::json::value* name = fields->if_contains("name");
+        if (command == nullptr || !command->is_string() || source == nullptr || !source->is_string() ||
+            name == nullptr || !name->is_string()) {
+            continue;
+        }
+        overrides.push_back({ .command = std::string(command->as_string()), .source = std::string(source->as_string()),
+            .name = std::string(name->as_string()) });
+    }
+    return overrides;
+}
+
+};  // namespace
+
 /**
  **/
 Engine::Engine(const std::string& appPath) :
@@ -84,8 +134,54 @@ bool Engine::quitting() const noexcept {
 
 /**
  **/
+void Engine::identity(const Identity& identity) {
+    identity_ = identity;
+}
+
+/**
+ **/
+const Identity& Engine::identity() const noexcept {
+    return identity_;
+}
+
+/**
+ **/
+const boost::shared_ptr<Settings>& Engine::settings() const noexcept {
+    return settings_;
+}
+
+/**
+ **/
+void Engine::loadSettings() {
+    if (!identity_.named()) {
+        return;
+    }
+    settings_ = boost::make_shared<Settings>(identity_.organization, identity_.application, logger_);
+    // a missing document is a player who changed nothing, and every setting takes its default
+    settings_->load();
+    if (!bindings_) {
+        return;
+    }
+    const boost::json::value* saved = settings_->value(BINDINGS);
+    if (saved != nullptr) {
+        bindings_->restore(read(*saved));
+    }
+    // each change is saved as it is made. No exit path is certain to run, and a crash should
+    // not lose a rebinding
+    bindings_->changed([this]() {
+        settings_->set(BINDINGS, boost::json::value(save(bindings_->overrides())));
+        settings_->save();
+    });
+}
+
+/**
+ **/
 bool Engine::rebind(const std::string& command, const std::string& key) {
     return bindings_ && bindings_->rebind(command, key);
+}
+
+boost::shared_ptr<v3d::event::Bindings> Engine::bindings() const noexcept {
+    return bindings_;
 }
 
 /**
@@ -101,12 +197,13 @@ bool Engine::initialize() {
     v3d::asset::media::registerLoaders(*assetManager_, logger_);
 
     dispatcher_ = boost::make_shared<entt::dispatcher>();
-    eventEngine_ = boost::make_shared<v3d::event::Engine>(dispatcher_);
+    router_ = boost::make_shared<v3d::event::Router>(dispatcher_);
     commandListener_ = dispatcher_->sink<v3d::event::Event>().connect<&Engine::command>(*this);
 
     if (features_.has(Feature::Config) && !loadConfig()) {
         return false;
     }
+    loadSettings();
     startInput();
     if (features_.has(Feature::Window) && !openWindow()) {
         return false;
@@ -125,14 +222,14 @@ bool Engine::initialize() {
 /**
  **/
 bool Engine::loadConfig() {
-    config_ = boost::make_shared<v3d::config::Config>(logger_);
-    if (!config_->load(assetManager_)) {
+    manifest_ = boost::make_shared<v3d::asset::Manifest>(logger_);
+    if (!manifest_->load(*assetManager_, "config.json")) {
         return false;
     }
     // a binding config is optional: an app with none sends no commands from a key
-    const boost::shared_ptr<v3d::asset::kind::Json> mappings = config_->get(v3d::config::Type::Binding);
+    const boost::shared_ptr<v3d::asset::kind::Json> mappings = manifest_->get(v3d::event::Bindings::DOCUMENT);
     if (mappings) {
-        bindings_ = boost::make_shared<v3d::event::Bindings>(eventEngine_, logger_,
+        bindings_ = boost::make_shared<v3d::event::Bindings>(router_, logger_,
             [](const v3d::event::Event& source) {
                 const std::string_view device = source.context() ? source.context()->name() : std::string_view();
                 if (device == "keyboard") {
@@ -161,7 +258,7 @@ void Engine::startInput() {
         devices |= v3d::input::DeviceType::Mouse;
     }
     if (!devices.empty()) {
-        inputEngine_ = boost::make_shared<v3d::input::Engine>(eventEngine_, dispatcher_, devices);
+        devices_ = boost::make_shared<v3d::input::Devices>(router_, dispatcher_, devices);
     }
 }
 
@@ -175,19 +272,19 @@ bool Engine::openWindow() {
     // from here on, shutdown() or ~Engine has to destroy the window and quit SDL
     needShutdown_ = true;
 
-    window_ = boost::make_shared<v3d::render::realtime::Window>(logger_);
+    window_ = boost::make_shared<v3d::window::Window>(logger_);
 
     // a size of -1 leaves the window at its own default, so an app with no window
     // config, or none carrying dimensions, still gets a window
     int width = -1;
     int height = -1;
     if (features_.has(Feature::Config)) {
-        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = config_->get(v3d::config::Type::Window);
+        const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = manifest_->get(WINDOW_DOCUMENT);
         if (windowConfig) {
             // as with the bindings, a window document that cannot be read makes startup
             // return false rather than throw
             const boost::json::object& doc = windowConfig->document();
-            const std::optional<glm::ivec2> size = v3d::config::windowSize(doc);
+            const std::optional<glm::ivec2> size = windowSize(doc);
             if (!size) {
                 logger_->get()->error("The window config needs a window with a whole width and height an int can hold");
                 return false;
@@ -216,17 +313,11 @@ Features Engine::features() const {
 
 /**
  **/
-const boost::json::object* Engine::document(v3d::config::Type type) const {
-    return document(v3d::config::typeName(type));
-}
-
-/**
- **/
-const boost::json::object* Engine::document(std::string_view type) const {
-    if (!config_) {
+const boost::json::object* Engine::document(std::string_view kind) const {
+    if (!manifest_) {
         return nullptr;
     }
-    const boost::shared_ptr<v3d::asset::kind::Json> held = config_->get(type);
+    const boost::shared_ptr<v3d::asset::kind::Json> held = manifest_->get(kind);
     return held ? &held->document() : nullptr;
 }
 
@@ -302,10 +393,10 @@ std::vector<std::string> Engine::unhandled() const {
 /**
  **/
 std::vector<std::string> Engine::unhandled(const boost::json::object& document) const {
-    // the bindings install what they read into an event engine. They get a private one here,
+    // the bindings install what they read into an event router. They get a private one here,
     // not the one the loop routes through
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Engine>(dispatcher), boost::make_shared<v3d::log::Logger>());
+    v3d::event::Bindings bindings(boost::make_shared<v3d::event::Router>(dispatcher), boost::make_shared<v3d::log::Logger>());
     if (!bindings.load(document)) {
         return std::vector<std::string>{ "mappings" };
     }
@@ -323,7 +414,7 @@ bool Engine::render() {
 void Engine::route(const SDL_Event& event) {
     // the app sees the event first, because its ui draws over the scene and the cursor
     // points at the ui first. An event the app consumes never reaches the bindings
-    if (!onEvent(event) && inputEngine_ && inputEngine_->filterEvent(event)) {
+    if (!onEvent(event) && devices_ && devices_->filterEvent(event)) {
         return;
     }
     // quit, resize and focus are window events rather than input, so the engine handles
@@ -417,7 +508,7 @@ bool Engine::eventLoop() {
         // the frame and carries the remainder forward
         statistics_.frame(std::chrono::nanoseconds(elapsed), accumulator_.accumulate(elapsed));
         while (accumulator_.drain()) {
-            if (!simulate(Accumulator::seconds)) {
+            if (!step(Accumulator::seconds)) {
                 return false;
             }
         }
@@ -426,8 +517,8 @@ bool Engine::eventLoop() {
         }
         // the edges belong to this frame, and everything that reads them has now run. The
         // loop clears them so that an app does not have to
-        if (inputEngine_) {
-            inputEngine_->flush();
+        if (devices_) {
+            devices_->flush();
         }
     }
     return true;
@@ -436,13 +527,13 @@ bool Engine::eventLoop() {
 /**
  **/
 const v3d::input::KeyState* Engine::keys() const {
-    return inputEngine_ ? inputEngine_->keys() : nullptr;
+    return devices_ ? devices_->keys() : nullptr;
 }
 
 /**
  **/
 const v3d::input::MouseState* Engine::mouse() const {
-    return inputEngine_ ? inputEngine_->mouse() : nullptr;
+    return devices_ ? devices_->mouse() : nullptr;
 }
 
 /**
@@ -464,6 +555,15 @@ bool Engine::tick(unsigned int /* delta */) {
 
 /**
  **/
+bool Engine::step(float seconds) {
+    for (const Snapshot snapshot : snapshots_) {
+        snapshot(registry_);
+    }
+    return simulate(seconds);
+}
+
+/**
+ **/
 bool Engine::simulate(float /* step */) {
     return true;
 }
@@ -476,7 +576,7 @@ const Statistics& Engine::statistics() const noexcept {
     return statistics_;
 }
 
-boost::shared_ptr<v3d::render::realtime::Window> Engine::window() const {
+boost::shared_ptr<v3d::window::Window> Engine::window() const {
     return window_;
 }
 
@@ -484,8 +584,8 @@ const boost::shared_ptr<v3d::log::Logger>& Engine::logger() const noexcept {
     return logger_;
 }
 
-const boost::shared_ptr<v3d::config::Config>& Engine::config() const noexcept {
-    return config_;
+const boost::shared_ptr<v3d::asset::Manifest>& Engine::manifest() const noexcept {
+    return manifest_;
 }
 
 const boost::shared_ptr<v3d::asset::Manager>& Engine::assets() const noexcept {
@@ -504,8 +604,8 @@ const entt::registry& Engine::registry() const noexcept {
     return registry_;
 }
 
-const boost::shared_ptr<v3d::event::Engine>& Engine::events() const noexcept {
-    return eventEngine_;
+const boost::shared_ptr<v3d::event::Router>& Engine::events() const noexcept {
+    return router_;
 }
 
 };  // namespace v3d::engine

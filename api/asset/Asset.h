@@ -5,18 +5,18 @@
 
 #pragma once
 
-#include "Type.h"
-
 #include <string>
 
 namespace v3d::asset {
 /**
+ * Something a loader read from a file. Its class is its kind: a loader is registered for the
+ * class it produces, and a caller holds the asset as that class.
  **/
 class Asset {
  public:
     /**
      **/
-    Asset(const std::string& name, Type t);
+    explicit Asset(const std::string& name);
 
     /**
      * Default destructor
@@ -28,13 +28,7 @@ class Asset {
      **/
     const std::string& name() const noexcept;
 
-    /**
-     * @return the type it was loaded as
-     **/
-    Type type() const noexcept;
-
  private:
     std::string name_;
-    Type type_;
 };
 };  // namespace v3d::asset

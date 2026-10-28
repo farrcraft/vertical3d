@@ -11,6 +11,7 @@
 #include "CommandPool.h"
 #include "Timings.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <utility>
@@ -107,6 +108,13 @@ void Ring::waitIdleNoThrow() const noexcept {
 
 /**
  **/
+void Ring::drain() noexcept {
+    waitIdleNoThrow();
+    retired_.flush();
+}
+
+/**
+ **/
 uint64_t Ring::begun() const noexcept {
     return begun_;
 }
@@ -134,6 +142,12 @@ uint64_t Ring::recording() const noexcept {
  **/
 void Ring::retire(std::function<void()> destroy) {
     retired_.retire(recording(), std::move(destroy));
+}
+
+/**
+ **/
+std::size_t Ring::retiring() const noexcept {
+    return retired_.pending();
 }
 
 /**

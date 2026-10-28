@@ -35,8 +35,9 @@ macro(v3d_find_packages)
 	foreach(v3d_package IN ITEMS ${ARGN})
 		if(v3d_package STREQUAL "cgltf")
 			# a single header with no CMake config of its own, so there is no target to link
-			# and the header has to be found by hand. api/asset/media puts this on its own
-			# include path, because the vcpkg include directory is not on a global include path.
+			# and the header has to be found by hand. interchange and asset_media each put this
+			# on their own include path, because the vcpkg include directory is not on a global
+			# include path.
 			find_path(V3D_CGLTF_INCLUDE_DIR NAMES "cgltf.h" REQUIRED)
 		elseif(v3d_package STREQUAL "JPEG")
 			find_package(JPEG REQUIRED)
@@ -50,7 +51,10 @@ macro(v3d_find_packages)
 			# memory::Allocator suballocates through VMA. Header only, and it requires the
 			# include directory holding vulkan.h, which Vulkan::Vulkan already carries.
 			find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog)$")
+		elseif(v3d_package STREQUAL "unofficial-sqlite3")
+			# vcpkg's sqlite3 port provides only a config package, under this name.
+			find_package(unofficial-sqlite3 CONFIG REQUIRED)
+		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog|pxr)$")
 			find_package(${v3d_package} CONFIG REQUIRED)
 		else()
 			find_package(${v3d_package} REQUIRED)

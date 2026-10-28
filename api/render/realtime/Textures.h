@@ -5,48 +5,66 @@
 
 #pragma once
 
+#include <api/asset/Manager.h>
+#include <api/asset/Worker.h>
 #include <api/image/Image.h>
+#include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/UploadQueue.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
-#include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Sampler.h>
+#include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
 
-namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan::frame
 
 /**
- * The textures a context holds and the materials they are sampled through.
+ * The textures a context holds, each in a slot of one texture array.
  *
- * Every pipeline that samples a texture at set 1 declares this one layout, so a material made
- * here serves the quad, the world quad and the lit renderer alike, and an atlas is uploaded
- * once. It belongs to the context, not to any renderer, so a context that draws no quads,
- * such as a headless one or one loading meshes, can still register textures.
+ * Every pipeline that samples a texture declares the array's layout at set 1 and binds its one
+ * material, which is the same for every draw. A draw names its texture by slot(), read from the
+ * handle when the draw is submitted, so the quad, the world quad and the lit renderer share
+ * every texture, and an atlas is uploaded once. It belongs to the context, not to any renderer,
+ * so a context that draws no quads, such as a headless one or one loading meshes, can still
+ * register textures.
  *
- * What is registered belongs to pipeline::Resources. The white texture lives as long as the
- * context. Any other texture lives until it is released here, along with its material.
+ * What is registered belongs to Resources. The white texture lives as long as the
+ * context. Any other texture lives until it is released here, along with its slot.
  **/
 class Textures final {
  public:
+    /**
+     * The most bytes poll() uploads by default before it leaves the rest for the next call.
+     * MeshRegistry's poll() takes the same.
+     *
+     * One poll at this budget stays inside an eighth of a 60 Hz frame, about 2.1 ms. That holds
+     * while a region of 512 by 512 textures and 64 by 64 vertex meshes streams in, on
+     * suballocated memory. Measured on an AMD Radeon RX 6600 in a Release build: a texture poll
+     * took 0.2 to 0.6 ms, and a mesh poll 0.3 to 1.2 ms. The poll that had the allocator open a
+     * new block of device memory took up to 4.7 ms. upload_budget_test measures it again.
+     **/
+    static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{1} * 1024 * 1024;
+
     /**
      * @param uploader the context's Uploader, which copies every texture
      * @throw std::runtime_error if the white texture cannot be uploaded
      **/
     Textures(const boost::shared_ptr<vulkan::device::Device>& device,
-        const boost::shared_ptr<vulkan::pipeline::Resources>& resources,
+        const boost::shared_ptr<Resources>& resources,
         const boost::shared_ptr<vulkan::frame::Ring>& ring,
         const boost::shared_ptr<vulkan::memory::Uploader>& uploader);
 
@@ -72,6 +90,45 @@ class Textures final {
         const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
 
     /**
+     * Where request() reads an image from and decodes it: the asset manager a path is relative
+     * to, and the worker it is decoded on. Until this is called, request() throws.
+     *
+     * @param logger where an image that could not be read or uploaded is reported
+     **/
+    void requestFrom(const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker,
+        const boost::shared_ptr<log::Logger>& logger);
+
+    /**
+     * An image read and decoded on the worker, and uploaded by a later poll().
+     *
+     * The handle can be drawn at once. Until poll() uploads the image it reads the white
+     * texture's slot, and resolves to a texture holding the white image. Asking for a path again
+     * returns the same handle, uploaded or not. An image that cannot be read or uploaded is
+     * reported in the log, and its handle reads white until it is released. Its path is freed,
+     * so asking for it again reads the file again, as a new handle. Releasing a request before
+     * its image arrives drops what the worker decodes for it.
+     *
+     * @param path relative to the asset manager's root
+     * @param encoding and sampler as texture() takes them
+     * @throw std::logic_error if requestFrom() has not been called
+     **/
+    TextureHandle request(const std::string& path,
+        vulkan::memory::TextureFactory::Encoding encoding = vulkan::memory::TextureFactory::Encoding::Display,
+        const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
+
+    /**
+     * Upload the requested images whose decoding has finished, in the order they were requested.
+     *
+     * It uploads at least one when any is ready, and stops once the bytes uploaded reach the
+     * budget. Call it once a frame, after polling the worker. A handle uploaded here reads its
+     * own slot from the next draw that is submitted.
+     *
+     * @param budget the bytes of texels to upload before stopping
+     * @return how many images were uploaded
+     **/
+    std::size_t poll(std::size_t budget = DEFAULT_UPLOAD_BUDGET);
+
+    /**
      * Register a render target so that a draw can sample what a pass drew into it.
      *
      * What is registered shares the target's images. Registering the same image again gives
@@ -87,7 +144,7 @@ class Textures final {
      * @param slot which of the target's images. A target with one image per frame in flight
      *        has one handle per slot, and a reader names current() or previous() each frame.
      **/
-    TextureHandle texture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
+    TextureHandle texture(const RenderTarget& target, uint32_t slot = 0);
 
     /**
      * Register a render target's depth image, so that a draw can sample what a pass tested
@@ -99,7 +156,7 @@ class Textures final {
      * texture, because a set written against an image with no sampled usage is undefined,
      * and a white shadow map only leaves the scene unshadowed.
      **/
-    TextureHandle depthTexture(const vulkan::frame::RenderTarget& target, uint32_t slot = 0);
+    TextureHandle depthTexture(const RenderTarget& target, uint32_t slot = 0);
 
     /**
      * @return the 1x1 white texture an untextured draw samples
@@ -107,12 +164,20 @@ class Textures final {
     TextureHandle white() const noexcept;
 
     /**
-     * The descriptor set that binds a texture at set 1, created on first use and kept.
-     *
-     * @return the material to name on a draw item, or an unset handle for a texture this does
-     *         not hold
+     * @return the material that binds the texture array at set 1, the same for every textured
+     *         draw. It lives as long as the context
      **/
-    MaterialHandle material(const TextureHandle& handle);
+    MaterialHandle material() const noexcept;
+
+    /**
+     * Where a texture sits in the array, for a draw to read it by.
+     *
+     * Read it when the draw is submitted, not once and kept, because a texture filled or
+     * replaced later moves to another slot.
+     *
+     * @return the texture's slot, or the white texture's for an unset handle or one released
+     **/
+    uint32_t slot(const TextureHandle& handle) const;
 
     /**
      * @return set 1's layout, which every pipeline sampling a texture declares
@@ -120,11 +185,16 @@ class Textures final {
     VkDescriptorSetLayout layout() const noexcept;
 
     /**
-     * Release a texture and the material drawn with it.
+     * @return how many textures the array can hold at once, the white texture among them
+     **/
+    uint32_t capacity() const noexcept;
+
+    /**
+     * Release a texture and its slot.
      *
-     * The texture handle resolves to nothing at once. The material goes on resolving for the
-     * frame being queued, so items queued before the release draw with the texture. The image
-     * and the descriptor set are reclaimed once that frame has finished.
+     * The texture handle resolves to nothing at once, and slot() gives the white texture's.
+     * Items queued before the release keep the slot they were given, and draw with the texture.
+     * The image and the slot are reclaimed once the frame being queued has finished.
      *
      * @return whether anything was released. The white texture is never released, so a handle
      *         depthTexture() gave back for a target with nothing to sample can be released
@@ -134,12 +204,13 @@ class Textures final {
 
  private:
     boost::shared_ptr<vulkan::device::Device> device_;
-    boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::memory::TextureFactory> factory_;
-    boost::shared_ptr<vulkan::pipeline::DescriptorPool> sets_;  /**< set 1, the sampler every textured draw reads through **/
+    boost::shared_ptr<vulkan::pipeline::TextureArray> array_;  /**< set 1, which every textured draw reads through **/
+    MaterialHandle material_;  /**< what binds array_ **/
     TextureHandle white_;
-    /**< keyed by the whole handle, so a slot reused after a release never finds the old set **/
-    std::map<TextureHandle, MaterialHandle> materials_;
+    std::map<TextureHandle, uint32_t> slots_;  /**< keyed by the whole handle, so a slot reused after a release never finds the old one **/
     /**
      * The handle each registered render target image has, by its view. A view cannot be reused
      * while its entry is here, because the registered texture keeps the image alive until it is
@@ -149,6 +220,44 @@ class Textures final {
 
     /** A render target image's handle, registered the first time it is asked for. **/
     TextureHandle registered(const vulkan::pipeline::Texture& texture);
+
+    /** Register a texture, and give it a slot. **/
+    TextureHandle add(const vulkan::pipeline::Texture& texture);
+
+    /**
+     * A slot for a texture just made. A texture that has none is retired through the ring, not
+     * destroyed, because its upload may still be running.
+     *
+     * @throw std::runtime_error if every slot is taken
+     **/
+    uint32_t place(const vulkan::pipeline::Texture& texture);
+
+    /**
+     * What a request() asked for, kept while its handle is held. It is pending until its image
+     * is uploaded. One that fails is dropped.
+     **/
+    struct Request final {
+        std::string path;
+        vulkan::memory::TextureFactory::Encoding encoding;
+        vulkan::pipeline::Sampler::Spec sampler;
+        bool pending = true;
+    };
+
+    /**
+     * Upload a decoded image into its request's handle, and say how many bytes it cost.
+     *
+     * @throw std::runtime_error if the file held no image, and whatever the upload throws
+     **/
+    std::size_t fill(const TextureHandle& handle, const boost::shared_ptr<image::Image>& image, Request* request);
+
+    boost::shared_ptr<asset::Manager> assets_;
+    boost::shared_ptr<asset::Worker> worker_;
+    boost::shared_ptr<log::Logger> logger_;
+    /** Each request's decoded image, or null for a file that held none. **/
+    UploadQueue<TextureTag, boost::shared_ptr<image::Image>> uploads_;
+    std::map<TextureHandle, Request> requests_;
+    /** The handle each requested path was given. **/
+    std::map<std::string, TextureHandle> requested_;
 };
 
 };  // namespace v3d::render::realtime

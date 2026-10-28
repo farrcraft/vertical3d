@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/audio/Engine.h>
+#include <api/audio/Player.h>
 #include <api/audio/Play.h>
 #include <api/log/Logger.h>
 
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(a_pan_outside_the_range_is_clamped) {
  * A voice nobody was given takes no pan, with or without a device.
  **/
 BOOST_AUTO_TEST_CASE(a_pan_without_a_device_finds_no_voice) {
-    v3d::audio::Engine sound(boost::make_shared<v3d::log::Logger>(), boost::make_shared<entt::dispatcher>());
+    v3d::audio::Player sound(boost::make_shared<v3d::log::Logger>(), boost::make_shared<entt::dispatcher>());
     BOOST_TEST(!sound.pan(v3d::audio::Voice::None, 0.5F));
     BOOST_TEST(!sound.pan(v3d::audio::Voice{1}, -0.5F));
 }

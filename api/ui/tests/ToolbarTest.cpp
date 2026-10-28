@@ -4,13 +4,13 @@
  **/
 
 #include <api/event/Context.h>
-#include <api/event/Engine.h>
+#include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -369,8 +369,8 @@ BOOST_AUTO_TEST_CASE(a_left_strip_listed_first_still_starts_below_a_top_one) {
  **/
 BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    const boost::shared_ptr<v3d::ui::Engine> ui = boost::make_shared<v3d::ui::Engine>(
-        boost::make_shared<v3d::event::Engine>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "editor", "visible": true,
         "components": [ { "type": "toolbar", "name": "tools", "edge": "top", "buttons": [
             { "label": "Select", "name": "select" }, { "label": "Move", "name": 7 }

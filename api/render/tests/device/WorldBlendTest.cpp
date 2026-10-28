@@ -9,9 +9,8 @@
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/renderer/World.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -30,9 +29,8 @@
 using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
-using v3d::render::realtime::vulkan::renderer::World;
+using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::renderer::World;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -72,8 +70,8 @@ canvas::World::Corners rect(float minX, float maxX) {
  **/
 boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, const canvas::World& canvas,
     World::Blend blend, const std::string& name, const std::vector<glm::vec4>& tints = {glm::vec4(1.0F)}) {
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(
-        headless->device, headless->context->ring(), width, height, colourFormat, false);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless->context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = false});
 
     Frame frame;
     const boost::shared_ptr<Pass> pass = frame.pass("world");
@@ -84,18 +82,8 @@ boost::shared_ptr<v3d::image::Image> blended(v3d::test::Headless* headless, cons
         headless->context->worldQuads()->submit(canvas, pass.get(), 0, blend, tint);
     }
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
-    Capture capture(headless->device, headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
+    headless->draw(frame, *target, &capture);
 
     const std::string path = "data_out/" + name + ".png";
     if (!capture.write(path)) {

@@ -67,6 +67,9 @@ named. The language is in `api/render/offline/sl`.
   shader's own function is pasted in at each call, bracketed so that a `return` inside it ends
   the function for those points, not the shader. Recursion is rejected at the call graph, so
   inlining terminates.
+- **An `output` formal is passed by reference.** What the function leaves in it is copied back
+  to the caller's variable when the function returns. The argument has to be a variable the
+  caller may assign, of the formal's own type, since a coercion on the way in has no way back.
 
 ### Shaders, lights and spaces
 
@@ -97,10 +100,12 @@ named. The language is in `api/render/offline/sl`.
   neighbouring point: one over a grid's span, or a traced hit's stencil step.
 - **A grid and a traced hit have different current spaces.** A grid is shaded in camera space
   and a traced hit in world space. The space table is therefore a callback each renderer
-  implements (`sl::runtime::Renderer::space`), not a constant in the library. Neither a grid
-  nor a traced hit has an answer for `"object"`, because that is the transformation at the
-  primitive, and neither kind of primitive carries it. The machine reports the space as
-  unknown and leaves the value where it was.
+  implements (`sl::runtime::Renderer::space`), not a constant in the library.
+- **`"object"` is the primitive's space**, as the transformation stood when the primitive was
+  submitted. It differs from `"shader"` when a scene transforms between `Surface` and the
+  primitive. A reyes primitive carries it in its `Shading`, and a traced primitive carries it
+  as `trace::Primitive::object()`, so both hiders give the same answer. A moving primitive
+  answers with the pose it is stored in.
 - **`Renderer::space(name)` maps current space into the named space**, as RenderMan defines
   it. Every space follows that direction, `"shader"` included: it is the inverse of the
   shader's placement, since the placement maps the shader's own space into current space.
@@ -119,10 +124,12 @@ named. The language is in `api/render/offline/sl`.
   it, with either end of a two-space form projected. A point whose w is at or below 1e-6 is
   left undivided. `sl::project` is that divide, and moya's own projection calls it. A vector or
   a normal is not divided, because it has no position.
-- **Both hiders answer the projected spaces from one camera.** `trace::Scene::projection()`
-  holds the camera to screen, raster and NDC matrices, which moya sets when the world begins.
-  A grid and a traced hit both read them, so a shader that reads a projected position gets the
-  same value under either hider.
+- **Both hiders answer every space from one table.** A renderer answers `"current"`,
+  `"shader"` and `"object"` itself. Every other name goes to the traced scene: the spaces the
+  `Camera` defines, which moya sets when the world begins, and the spaces the scene named with
+  `RiCoordinateSystem`. `trace::Scene::fromWorld()` answers from world space, a traced hit's
+  current space, and `fromCamera()` from camera space, a grid's. A shader that reads a space
+  gets the same value under either hider.
 
 ### Built-in shaders
 
@@ -178,6 +185,10 @@ files on disk.
   or column. A traced hit's neighbours are its stencil, described in
   [RayTracing.md](RayTracing.md). A batch of lone points has none, and every derivative there
   is zero.
+  - **A program records whether it differentiates** (`Program::differentiates`): it calls one of
+    these five, or reads `du` or `dv`. A call through the shader's own function counts, because
+    the function is inlined. The ray hider shades a hit's neighbours only for a program that
+    differentiates.
   - `Du` and `Dv` take a float, a colour or a position. A position's derivative is a vector.
   - A uniform value's derivative is zero, because it is the same at every point.
   - `Deriv(num, den)` is RI's `Du(num) / Du(den) + Dv(num) / Dv(den)`. A term is dropped where
@@ -199,10 +210,12 @@ files on disk.
   `Globals::shine`, and the light's machine reads it from `Machine::gather`. With no cone, as
   under `ambient()`, the light shines along its axis.
 - **A machine's reports reach the log.** A report says what a run could not do, such as a space
-  no renderer named or a stub that was called. Each distinct report is logged once per
-  machine as a warning, through the logger of the shader instance that wrote the machine's
-  parameters. A shader whose parameter defaults fail to run is reported in the same way, once
-  per machine, and the renderer treats it as a run that failed.
+  no renderer named or a stub that was called. A report made while the shader runs starts with
+  the line and column of the instruction that made it, as `line 3, column 9: `. Each distinct
+  report, position included, is logged once per machine as a warning, through the logger of
+  the shader instance that wrote the machine's parameters. One fault at two places in the
+  source is therefore reported twice. A shader whose parameter defaults fail to run is reported
+  in the same way, once per machine, and the renderer treats it as a run that failed.
 - **A run that fails is reported by the machine.** `Machine::run()` returns false and reports
   `error()`, such as a shader that runs without end. No renderer logs it again. A grid or a
   traced hit whose surface fails is drawn as if it had no shader. A light that fails lights
@@ -225,9 +238,21 @@ files on disk.
   argument that the built-in reads and then writes in place. `setxcomp`, `setycomp`, `setzcomp`
   and `setcomp` each update their first argument. The compiler requires a variable there that
   the shader may assign, and propagates the storage class of the call's inputs into it, as an
-  assignment would. `fresnel` is the one built-in with outputs: it returns the unpolarised
-  reflectance of a dielectric, with `refract`'s conventions, and writes the reflected and
-  refracted directions.
+  assignment would. `fresnel` returns the unpolarised reflectance of a dielectric, with
+  `refract`'s conventions, and writes the reflected and refracted directions.
+- **A shader reads another's `output` parameter through message passing**, as RI defines it.
+  `surface("name", v)`, `displacement("name", v)` and `lightsource("name", v)` copy that
+  shader's parameter into `v` and return 1, or return 0 and leave `v` as it was. The parameter
+  has to be declared `output` and be of `v`'s type.
+  - A light reads `surface()`: the surface being shaded, as its values stand when the light
+    runs.
+  - A surface reads `displacement()`: the displacement shader that ran on the same grid. A
+    traced hit has none to read, because a traced primitive was displaced when it was diced.
+  - A surface reads `lightsource()` inside an `illuminance` body: the light the body is running
+    for.
+  - The renderer answers through `runtime::Renderer::message`, with `Machine::output()` reading
+    the other machine. `"surface"` and `"displacement"` are keywords, and inside a shader's body
+    the parser reads them as these calls.
 - **The componentwise maths takes a float or a triple.** `abs`, `sign`, `floor`, `ceil`,
   `round`, `sqrt`, `exp`, one-argument `log`, `mod`, `pow`, `min`, `max`, `clamp` and `mix`
   apply the same function to each component. A float argument is read for every component.
@@ -267,16 +292,22 @@ Both hiders carry two normals, because SL's `faceforward` and `calculatenormal` 
 terms of the pair:
 
 - **`Ng` is the geometric normal**: the plane the primitive lies in, one value across it, wound
-  the way its vertices are.
+  the way its vertices are. A polygon wound clockwise as the camera sees it has an `Ng` that
+  faces the camera.
 - **`N` is the shading normal.** A scene sets it per vertex with a varying `"N"`. Without one,
   `N` equals `Ng`, and the surface is faceted.
 
 Rules:
 
+- **Two-argument `faceforward(N, I)` turns `N` by `Ng`**, as RI defines it: the compiler supplies
+  `Ng` as the third argument. A light shader has no `Ng`, so the two-argument form is refused
+  there and the reference has to be given. A scene that gives `"N"` facing the camera has to
+  wind its polygons so that `Ng` faces the camera too. Otherwise `faceforward` turns the normal
+  away and the surface is shaded from behind.
 - **A normal transforms by the inverse transpose**, never by the matrix that moves the points.
   The two agree under a rotation and a uniform scale, so the fault stays hidden until a scene
   scales one axis.
-- **moya's `Vertex` holds both.** `RenderContext::addPolygon` fills them from
+- **moya's `Vertex` holds both.** `reyes::Hider::add` fills them from
   `Polygon::geometricNormal()` before transforming anything. The diceable branch moves both into
   eye space. Dicing interpolates `N` and renormalises it. `Ng` is copied, since there is one.
 - **A split carries `N` across.** A corner of a piece keeps the normal of the vertex it came

@@ -5,16 +5,16 @@ drawn.
 
 ## Post passes and the colour grade
 
-`vulkan::renderer::FullScreen` draws one triangle covering a target, with a fragment shader you
+`renderer::FullScreen` draws one triangle covering a target, with a fragment shader you
 supply as SPIR-V. Use it for any pass over a whole image: a blur, a tone map, a vignette.
 
 ```cpp
-vulkan::renderer::FullScreen::Spec spec;
+renderer::FullScreen::Spec spec;
 spec.name = "vignette";
 spec.fragment = vignetteSpirv;                // reads uv at location 0
 spec.sources = 1;                             // images bound at set 1, bindings 0 upwards
 spec.colour = swapchainFormat;                // what the pass draws into
-vulkan::renderer::FullScreen post(device, cache, resources, ring, uniforms, spec);
+renderer::FullScreen post(*context, spec);
 
 MaterialHandle source = post.source({sceneTexture});   // once, and again after a resize
 colour->reads(scene);
@@ -34,8 +34,8 @@ post.submit(source, colour.get());
 table.
 
 ```cpp
-Grade grade(logger(), context, swapchainFormat, VK_FORMAT_UNDEFINED, strip);   // once
-MaterialHandle source = grade.source(*scene);                                  // again after a resize
+Grade grade(*context, {.colour = swapchainFormat, .strip = strip});   // once
+MaterialHandle source = grade.source(*scene);                         // again after a resize
 
 colour->reads(scene);
 grade.submit(source, colour.get());
@@ -53,9 +53,9 @@ grade.submit(source, colour.get());
 - The scene is read one texel per pixel, so the grade must draw into a target the scene's size.
 - `replace(texels)` changes the table from the next frame. Use it for a zone's own look, or lerp
   two tables yourself for a slow change. Call it before the frame's `submit()`. The texels are
-  in the order `Grade::table()` returns. Sources keep their handles. Uploading the new table
-  waits for the GPU queue to go idle, so a lerp that replaces the table every frame stalls every
-  frame.
+  in the order `Grade::table()` returns. Sources keep their handles. The new table's upload
+  does not wait for the GPU, and the old table is retired through the Ring. A lerp that replaces
+  the table every frame makes and uploads a table every frame.
 - `grade.release(source)` lets a source go. Destroying the grade releases its table and any
   source still held.
 
@@ -66,10 +66,10 @@ shader writes is the value on screen. Every colour and texture in an unlit app i
 display space, and textures are uploaded as `UNORM` to match. Blending happens in display space.
 
 **An app that writes linear light chooses the swapchain format.** Pass a format to the
-`Engine3D` constructor:
+`WindowRenderer` constructor:
 
 ```cpp
-renderer_ = boost::make_shared<Engine3D>(logger(), assets(), VK_FORMAT_B8G8R8A8_SRGB);
+renderer_ = boost::make_shared<WindowRenderer>(logger(), VK_FORMAT_B8G8R8A8_SRGB);
 ```
 
 - If the surface offers that format in a non-linear sRGB colour space, the swapchain uses it.

@@ -12,10 +12,10 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/render/realtime/renderer/Quad.h>
+#include <api/render/realtime/renderer/World.h>
 
 #include "Textures.h"
 
@@ -35,8 +35,8 @@ extent_(extent),
 depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
-    resources_ = boost::make_shared<vulkan::pipeline::Resources>(device_, ring_);
-    uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_);
+    resources_ = boost::make_shared<Resources>(device_, ring_);
+    uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_, ring_);
     textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
     frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that
@@ -47,9 +47,11 @@ depthFormat_(VK_FORMAT_UNDEFINED) {
 /**
  **/
 DeviceContext::~DeviceContext() {
-    // the device may still be drawing with everything about to be destroyed
+    // the device may still be drawing with everything about to be destroyed, and what was
+    // retired may hold the ring, so it is destroyed here rather than left to the ring's own
+    // destructor
     if (ring_) {
-        ring_->waitIdleNoThrow();
+        ring_->drain();
     }
 }
 
@@ -57,6 +59,12 @@ DeviceContext::~DeviceContext() {
  **/
 boost::shared_ptr<vulkan::device::Device> DeviceContext::device() const {
     return device_;
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::log::Logger> DeviceContext::logger() const {
+    return logger_;
 }
 
 /**
@@ -73,7 +81,7 @@ boost::shared_ptr<vulkan::pipeline::Cache> DeviceContext::pipelineCache() const 
 
 /**
  **/
-boost::shared_ptr<vulkan::pipeline::Resources> DeviceContext::resources() const {
+boost::shared_ptr<Resources> DeviceContext::resources() const {
     return resources_;
 }
 
@@ -109,9 +117,17 @@ VkFormat DeviceContext::depthFormat() const noexcept {
 
 /**
  **/
-void DeviceContext::describe(VkFormat colour, const VkExtent2D& extent) noexcept {
+void DeviceContext::describe(VkFormat colour, const VkExtent2D& extent) {
+    const bool resized = extent.width != extent_.width || extent.height != extent_.height;
     colourFormat_ = colour;
     extent_ = extent;
+    if (depth_ && resized) {
+        // the depth buffer is only correct while it is the size of what it is attached to. A
+        // frame in flight may still be testing against the old one
+        const boost::shared_ptr<vulkan::frame::DepthBuffer> outgrown = depth_;
+        depth_ = boost::make_shared<vulkan::frame::DepthBuffer>(device_, extent_.width, extent_.height);
+        ring_->retire([outgrown]() {});
+    }
 }
 
 /**
@@ -137,10 +153,9 @@ boost::shared_ptr<Textures> DeviceContext::textures() const {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Quad> DeviceContext::quads() {
+boost::shared_ptr<renderer::Quad> DeviceContext::quads() {
     if (!quads_) {
-        quads_ = boost::make_shared<vulkan::renderer::Quad>(device_, pipelineCache_, resources_, ring_,
-            frameUniforms_, textures_, colourFormat_, depthFormat_);
+        quads_ = boost::make_shared<renderer::Quad>(*this, renderer::Quad::Spec{.colour = colourFormat_, .depth = depthFormat_});
     }
     return quads_;
 }
@@ -153,10 +168,9 @@ bool DeviceContext::hasQuads() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::Line> DeviceContext::lines() {
+boost::shared_ptr<renderer::Line> DeviceContext::lines() {
     if (!lines_) {
-        lines_ = boost::make_shared<vulkan::renderer::Line>(device_, pipelineCache_, resources_, ring_,
-            frameUniforms_, colourFormat_, depthFormat_);
+        lines_ = boost::make_shared<renderer::Line>(*this, renderer::Line::Spec{.colour = colourFormat_, .depth = depthFormat_});
     }
     return lines_;
 }
@@ -169,10 +183,9 @@ bool DeviceContext::hasLines() const noexcept {
 
 /**
  **/
-boost::shared_ptr<vulkan::renderer::World> DeviceContext::worldQuads() {
+boost::shared_ptr<renderer::World> DeviceContext::worldQuads() {
     if (!worldQuads_) {
-        worldQuads_ = boost::make_shared<vulkan::renderer::World>(device_, pipelineCache_, resources_,
-            ring_, frameUniforms_, textures_, colourFormat_, depthFormat_);
+        worldQuads_ = boost::make_shared<renderer::World>(*this, renderer::World::Spec{.colour = colourFormat_, .depth = depthFormat_});
     }
     return worldQuads_;
 }

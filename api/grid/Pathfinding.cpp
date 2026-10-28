@@ -6,6 +6,7 @@
 #include "Pathfinding.h"
 
 #include "DistanceField.h"
+#include "GridSet.h"
 #include "ReachableTile.h"
 #include "TileCoord.h"
 #include "TileFilter.h"
@@ -57,34 +58,33 @@ struct Frontier {
 typedef std::priority_queue<Frontier, std::vector<Frontier>, std::greater<>> Queue;
 
 /**
- * The grid plus the caller's filter, and the movement rules that read both.
+ * The grids plus the caller's filter, and the movement rules that read both.
  **/
 class Walk {
  public:
-    Walk(const TileGrid& grid, const TileFilter& enterable) :
-        grid_(grid),
+    Walk(const GridSet& grids, const TileFilter& enterable) :
+        grids_(grids),
         enterable_(enterable) {
     }
 
     std::size_t count() const {
-        return static_cast<std::size_t>(grid_.width()) * static_cast<std::size_t>(grid_.height());
+        return grids_.count();
     }
 
     std::size_t index(TileCoord tile) const {
-        return grid_.index(tile);
+        return grids_.index(tile);
     }
 
     TileCoord coord(std::size_t index) const {
-        const int width = grid_.width();
-        return TileCoord{ static_cast<int>(index) % width, static_cast<int>(index) / width };
+        return grids_.tile(index);
     }
 
     /**
-     * Whether a tile may be entered at all. Off grid tiles are impassable, so this needs no
+     * Whether a tile may be entered at all. A tile in no grid is impassable, so this needs no
      * separate bounds test.
      **/
     bool open(TileCoord tile) const {
-        return grid_.passable(tile) && (!enterable_ || enterable_(tile));
+        return grids_.passable(tile) && (!enterable_ || enterable_(tile));
     }
 
     /**
@@ -105,7 +105,7 @@ class Walk {
     }
 
  private:
-    const TileGrid& grid_;
+    const GridSet& grids_;
     const TileFilter& enterable_;
 };
 
@@ -166,14 +166,18 @@ int tileDistance(TileCoord from, TileCoord to) {
 }
 
 std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord goal, const TileFilter& enterable) {
-    if (!grid.contains(start) || !grid.contains(goal)) {
+    return findPath(GridSet::local(grid), start, goal, enterable);
+}
+
+std::vector<TileCoord> findPath(const GridSet& grids, TileCoord start, TileCoord goal, const TileFilter& enterable) {
+    if (!grids.contains(start) || !grids.contains(goal)) {
         return {};
     }
     if (start == goal) {
         return { start };
     }
 
-    const Walk walk(grid, enterable);
+    const Walk walk(grids, enterable);
     if (!walk.open(goal)) {
         return {};
     }
@@ -229,41 +233,46 @@ std::vector<TileCoord> findPath(const TileGrid& grid, TileCoord start, TileCoord
 
 std::vector<ReachableTile> reachableTiles(const TileGrid& grid, TileCoord start, int budget,
     const TileFilter& enterable) {
+    return reachableTiles(GridSet::local(grid), start, budget, enterable);
+}
+
+std::vector<ReachableTile> reachableTiles(const GridSet& grids, TileCoord start, int budget,
+    const TileFilter& enterable) {
     if (budget < 0) {
         throw std::invalid_argument("a movement budget cannot be " + std::to_string(budget));
     }
-    if (!grid.contains(start)) {
+    if (!grids.contains(start)) {
         return {};
     }
 
     std::vector<ReachableTile> reached;
-    flood(Walk(grid, enterable), start, budget,
+    flood(Walk(grids, enterable), start, budget,
         [&reached](TileCoord tile, int cost) { reached.push_back(ReachableTile{ tile, cost }); });
     return reached;
 }
 
-DistanceField::DistanceField(const TileGrid& grid, TileCoord goal, const TileFilter& enterable) {
-    if (!grid.contains(goal)) {
+DistanceField::DistanceField(const TileGrid& grid, TileCoord goal, const TileFilter& enterable) :
+    DistanceField(GridSet::local(grid), goal, enterable) {
+}
+
+DistanceField::DistanceField(const GridSet& grids, TileCoord goal, const TileFilter& enterable) :
+    grids_(grids) {
+    if (!grids.contains(goal)) {
         return;
     }
 
-    width_ = grid.width();
     // the flood goes outward from the goal and records each cost on the tile a step leads to.
     // That is also the cost of the route back, because a step costs the same in both
     // directions, and a diagonal passes between the same two tiles from either end. A budget
     // of UNREACHED sets no limit. UNREACHED and UNREACHABLE are the same value
-    costs_ = flood(Walk(grid, enterable), goal, UNREACHED, {});
+    costs_ = flood(Walk(grids, enterable), goal, UNREACHED, {});
 }
 
 int DistanceField::cost(TileCoord tile) const {
-    if (width_ <= 0 || tile.x < 0 || tile.x >= width_ || tile.y < 0) {
+    if (costs_.empty() || !grids_.contains(tile)) {
         return UNREACHABLE;
     }
-
-    const std::size_t index =
-        (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
-
-    return index < costs_.size() ? costs_[index] : UNREACHABLE;
+    return costs_[grids_.index(tile)];
 }
 
 bool DistanceField::reaches(TileCoord tile) const {

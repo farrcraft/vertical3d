@@ -32,6 +32,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::render::offline::sl::runtime {
@@ -289,14 +290,11 @@ void geometry(const Site & site, unsigned int point) {
         case Body::NORMALIZE:
             site.target->triple(point, unit(site.argument(0).triple(point)));
             return;
-        case Body::FACEFORWARD: {
-            // two arguments means the reference is the normal itself, for a shader that
-            // has no Ng
-            const glm::vec3 normal = site.argument(0).triple(point);
-            const glm::vec3 reference = site.count() == 3 ? site.argument(2).triple(point) : normal;
-            site.target->triple(point, faceforward(normal, site.argument(1).triple(point), reference));
+        case Body::FACEFORWARD:
+            // the compiler gives the two-argument form Ng as its third argument
+            site.target->triple(point, faceforward(site.argument(0).triple(point), site.argument(1).triple(point),
+                site.argument(2).triple(point)));
             return;
-        }
         case Body::REFLECT: {
             const glm::vec3 incident = site.argument(0).triple(point);
             const glm::vec3 normal = site.argument(1).triple(point);
@@ -414,6 +412,23 @@ void componentwise(const Site & site, unsigned int point) {
 enum class Direction : std::uint8_t { U, V };
 
 /**
+ * The step in u or v from a point to its neighbour: its stencil group's own, or the shape's
+ * du or dv.
+ **/
+float stride(const Renderer::Shape & shape, unsigned int point, Direction direction) {
+    const bool alongU = direction == Direction::U;
+    if (shape.layout == Renderer::Shape::Layout::STENCIL && shape.steps != nullptr) {
+        const std::size_t group = point / 3U;
+        if (group >= shape.steps->size()) {
+            return 0.0F;
+        }
+        const glm::vec2 & steps = (*shape.steps)[group];
+        return alongU ? steps.x : steps.y;
+    }
+    return alongU ? shape.du : shape.dv;
+}
+
+/**
  * The two points a derivative at a point differences, and the step between them, or false
  * where the shape gives the point no neighbour that way. On a grid the neighbour is the next
  * point, or the previous one on the last row or column.
@@ -421,15 +436,20 @@ enum class Direction : std::uint8_t { U, V };
 bool neighbours(const Renderer::Shape & shape, unsigned int point, Direction direction,
     unsigned int* from, unsigned int* to, float* step) {
     const bool alongU = direction == Direction::U;
-    *step = alongU ? shape.du : shape.dv;
+    *step = stride(shape, point, direction);
     if (!(*step > 0.0F)) {
         return false;
     }
     switch (shape.layout) {
-        case Renderer::Shape::Layout::STENCIL:
-            *from = 0;
-            *to = alongU ? 1U : 2U;
+        case Renderer::Shape::Layout::STENCIL: {
+            const unsigned int group = point / 3U;
+            if (group >= shape.along) {
+                return false;
+            }
+            *from = group * 3U;
+            *to = *from + (alongU ? 1U : 2U);
             return true;
+        }
         case Renderer::Shape::Layout::GRID: {
             const unsigned int across = shape.across == 0 ? 1U : shape.across;
             const unsigned int index = alongU ? point / across : point % across;
@@ -504,8 +524,8 @@ void derivatives(const Site & site, unsigned int point) {
             return;
         }
         case Body::AREA: {
-            const glm::vec3 u = slope(value, site.shape, point, Direction::U) * site.shape.du;
-            const glm::vec3 v = slope(value, site.shape, point, Direction::V) * site.shape.dv;
+            const glm::vec3 u = slope(value, site.shape, point, Direction::U) * stride(site.shape, point, Direction::U);
+            const glm::vec3 v = slope(value, site.shape, point, Direction::V) * stride(site.shape, point, Direction::V);
             site.target->number(point, glm::length(glm::cross(u, v)));
             return;
         }
@@ -684,8 +704,7 @@ void Machine::builtin(const Instruction & instruction) {
     }
     site.given = &given;
     site.target = &answer;
-    if (body == Body::TRANSMISSION || body == Body::TRACE) {
-        shadowed(body == Body::TRACE, *given[0], *given[1], &answer);
+    if (answered(table[index], instruction, given, &answer)) {
         return;
     }
     // a function that changes an argument in place writes that register, not its result.
@@ -786,6 +805,43 @@ void Machine::ambient(Value* target) {
             if (reached[point] != 0 && writable(*target, point)) {
                 target->triple(point, target->triple(point) + colour_.triple(point));
             }
+        }
+    }
+}
+
+bool Machine::answered(const Signature & signature, const Instruction & instruction,
+    const std::vector<const Value*> & given, Value* answer) {
+    if (signature.body == Body::TRANSMISSION || signature.body == Body::TRACE) {
+        shadowed(signature.body == Body::TRACE, *given[0], *given[1], answer);
+        return true;
+    }
+    if (signature.body == Body::MESSAGE) {
+        std::vector<Value*> outputs = written(instruction, signature.outputs);
+        if (!outputs.empty()) {
+            message(signature.name, given[0]->text(), outputs.front(), answer);
+        }
+        return true;
+    }
+    return false;
+}
+
+void Machine::message(const std::string & shader, const std::string & name, Value* variable, Value* target) {
+    Value read;
+    read.reset(variable->type(), variable->storage(), batch_);
+    const bool found = renderer_ != nullptr && renderer_->message(shader, name, &read);
+    const unsigned int wide = target->storage() == Storage::VARYING ? batch_ : 1;
+    for (unsigned int point = 0; point < wide; point++) {
+        if (writable(*target, point)) {
+            target->number(point, found ? 1.0F : 0.0F);
+        }
+    }
+    if (!found) {
+        return;
+    }
+    const unsigned int across = variable->storage() == Storage::VARYING ? batch_ : 1;
+    for (unsigned int point = 0; point < across; point++) {
+        if (writable(*variable, point)) {
+            variable->assign(read, point);
         }
     }
 }

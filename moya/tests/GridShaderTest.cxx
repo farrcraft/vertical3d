@@ -499,4 +499,129 @@ BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
     BOOST_CHECK_EQUAL(grid.vertex(2, 2).point().z, 5.0F);
 }
 
+/**
+ * I is the direction from the eye to the shading point. Under an orthographic camera every
+ * point is seen along z, so I is (0, 0, 1) in camera space, as the ray hider casts its rays.
+ * Under a perspective camera the eye is the origin of camera space, so I is the point itself.
+ **/
+BOOST_AUTO_TEST_CASE(moya_i_follows_the_projection_test) {
+    v3d::moya::RenderContext orthographic;
+    prepare(&orthographic);
+    orthographic.searchpath("data:&");
+    orthographic.surface("incident", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid seen = facing({});
+    orthographic.shader().shade(orthographic.shading(), &seen);
+    const glm::vec3 along = seen.vertex(1, 1).color();
+    BOOST_CHECK_SMALL(along.x, 0.0001F);
+    BOOST_CHECK_SMALL(along.y, 0.0001F);
+    BOOST_CHECK_CLOSE(along.z, 1.0F, 0.01F);
+
+    v3d::moya::RenderContext perspective;
+    perspective.projection("perspective");
+    prepare(&perspective);
+    perspective.searchpath("data:&");
+    perspective.surface("incident", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid fanned = facing({});
+    perspective.shader().shade(perspective.shading(), &fanned);
+    const glm::vec3 point = fanned.vertex(1, 1).color();
+    BOOST_CHECK_CLOSE(point.x, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(point.y, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(point.z, 5.0F, 0.01F);
+}
+
+/**
+ * "object" space is the space of the primitive being shaded, as the transformation stood when
+ * it was submitted. A translation after the surface shader moves the primitive and not the
+ * shader, so the two spaces differ.
+ **/
+BOOST_AUTO_TEST_CASE(moya_object_space_is_the_primitives_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.surface("objectspace", ParameterList());
+    rc.translate(1.0F, 0.0F, 0.0F);
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    rc.shader().shade(rc.shading(), &grid);
+    // the vertex is at (1, 1, 5) in camera space, one unit along x from its object's origin
+    const glm::vec3 here = grid.vertex(1, 1).color();
+    BOOST_CHECK_SMALL(here.x, 0.0001F);
+    BOOST_CHECK_CLOSE(here.y, 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(here.z, 5.0F, 0.01F);
+}
+
+/**
+ * Two-argument faceforward turns N against I by Ng, as RI defines it. A grid whose shading
+ * normal faces the camera while its plane faces away is turned to face away, because Ng
+ * decides. With N as its own reference, it would have stayed facing the camera.
+ **/
+BOOST_AUTO_TEST_CASE(moya_faceforward_turns_by_ng_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.surface("faceforwarded", ParameterList());
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
+            v3d::moya::Vertex vert = grid.vertex(i, j);
+            vert.geometricNormal(glm::vec3(0.0F, 0.0F, 1.0F));
+            grid.addVertex(vert, i, j);
+        }
+    }
+    rc.shader().shade(rc.shading(), &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().z, 1.0F, 0.01F);
+}
+
+/**
+ * A surface reads an output parameter of the displacement shader that ran on its grid.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_surface_reads_its_displacement_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.displacement("lifted", ParameterList());
+    rc.surface("heightshown", ParameterList());
+
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    const v3d::moya::Shading shading = rc.shading();
+    rc.shader().displace(shading, &grid);
+    rc.shader().shade(shading, &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.25F, 0.01F);
+    BOOST_CHECK_SMALL(grid.vertex(1, 1).color().b, 0.0001F);
+
+    // with no displacement shader there is nothing to read, and the surface says so in blue
+    v3d::moya::RenderContext bare;
+    prepare(&bare);
+    bare.searchpath("data:&");
+    bare.surface("heightshown", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid plain = facing({});
+    bare.shader().shade(bare.shading(), &plain);
+    BOOST_CHECK_CLOSE(plain.vertex(1, 1).color().b, 1.0F, 0.01F);
+}
+
+/**
+ * Inside an illuminance loop, a surface reads an output parameter of the light the loop is
+ * running for. A light reads an output parameter of the surface it is lighting.
+ **/
+BOOST_AUTO_TEST_CASE(moya_lights_and_surfaces_pass_messages_test) {
+    v3d::moya::RenderContext rc;
+    prepare(&rc);
+    rc.searchpath("data:&");
+    rc.lightSource({.shader = "messenger", .handle = "1"}, ParameterList());
+    rc.surface("heard", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid grid = facing({});
+    rc.shader().shade(rc.shading(), &grid);
+    BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.5F, 0.01F);
+
+    v3d::moya::RenderContext asked;
+    prepare(&asked);
+    asked.searchpath("data:&");
+    asked.lightSource({.shader = "asker", .handle = "1"}, ParameterList());
+    asked.surface("told", ParameterList());
+    v3d::moya::reyes::MicroPolygonGrid lit = facing({});
+    asked.shader().shade(asked.shading(), &lit);
+    BOOST_CHECK_CLOSE(lit.vertex(1, 1).color().r, 0.75F, 0.01F);
+}
+
 };  // namespace

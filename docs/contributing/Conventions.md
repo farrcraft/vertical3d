@@ -46,7 +46,7 @@ compiles just as well. To check for mistakes, run this over the source directori
 repository root, whose `out/` directory holds the vcpkg installs):
 
 ```
-grep -rn '#include "[^"]*/' api moya pong tetris voxel odyssey vertical3d imagetool v3dshell examples
+grep -rn '#include "[^"]*/' api moya demos vertical3d imagetool examples
 ```
 
 It should report only generated `.inc` headers. Searching for `../` alone is not enough, because
@@ -199,8 +199,9 @@ still has one home per reader, and the other document links to it rather than co
 
 **A new option keeps today's behaviour as the default.** When a consumer needs the api to
 behave differently, add a parameter whose default is the current behaviour, rather than
-changing the behaviour or forking the type. The swapchain format, the camera's handedness and
-memory suballocation all follow this rule.
+changing the behaviour or forking the type. The swapchain format and the camera's handedness
+follow this rule. A default changes only on a measured reason, recorded in an ADR, as the
+allocator's did.
 
 **A `switch` over an enum has no `default:`.** MSVC warning C4062 is an error in this tree,
 so adding an enumerator fails the build at every switch that does not handle it.

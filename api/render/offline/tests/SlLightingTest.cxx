@@ -492,8 +492,8 @@ BOOST_AUTO_TEST_CASE(sllighting_transmission_without_a_renderer_test) {
 
     BOOST_CHECK_CLOSE(lit.colour(0).r, 1.0F, 0.1F);
     BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(lit.machine().reports()[0],
-        "'transmission' has nothing to cast a shadow here, so all the light gets through");
+    BOOST_CHECK(lit.machine().reports()[0].ends_with(
+        "'transmission' has nothing to cast a shadow here, so all the light gets through"));
 }
 
 /**
@@ -507,8 +507,47 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
 
     BOOST_CHECK_SMALL(lit.colour(0).r, 0.0001F);
     BOOST_REQUIRE_EQUAL(lit.machine().reports().size(), 1U);
-    BOOST_CHECK_EQUAL(lit.machine().reports()[0],
-        "'trace' is not answered by this renderer, so a ray comes back black");
+    BOOST_CHECK(lit.machine().reports()[0].ends_with(
+        "'trace' is not answered by this renderer, so a ray comes back black"));
+}
+
+/**
+ * A program records whether it calls trace or transmission, so a renderer can tell whether
+ * it needs its traced scene. A call inside the shader's own function counts, because the
+ * function is inlined into the shader.
+ **/
+BOOST_AUTO_TEST_CASE(sllighting_a_program_records_that_it_traces_test) {
+    Program program;
+    std::string error;
+
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    color shadowed(point from) {\n"
+        "        return transmission(from, point (0, 0, 10));\n"
+        "    }\n"
+        "    Ci = shadowed(P);\n"
+        "}\n", &program, &error), error);
+    BOOST_CHECK(program.traces);
+
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    color reflected(point from) {\n"
+        "        return trace(from, vector (0, 0, 1));\n"
+        "    }\n"
+        "    Ci = reflected(P);\n"
+        "}\n", &program, &error), error);
+    BOOST_CHECK(program.traces);
+
+    // a function that traces nothing, and a library function, leave the mark unset on a
+    // program that was marked before
+    BOOST_REQUIRE_MESSAGE(build(
+        "surface s() {\n"
+        "    color lit(normal toward) {\n"
+        "        return diffuse(toward);\n"
+        "    }\n"
+        "    Ci = lit(normalize(N)) + ambient();\n"
+        "}\n", &program, &error), error);
+    BOOST_CHECK(!program.traces);
 }
 
 /**

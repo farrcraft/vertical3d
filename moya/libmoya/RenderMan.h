@@ -35,10 +35,10 @@ typedef void RtVoid;
 
 // callbacks
 typedef RtFloat (RtFilterFunc)(RtFloat, RtFloat, RtFloat, RtFloat);
-typedef RtFloat (RtErrorHandler)(RtInt, RtInt, char*);
-typedef RtFloat (RtProcSubdivFunc)(RtPointer, RtFloat);
-typedef RtFloat (RtProcFreeFunc)(RtPointer);
-typedef RtFloat (RtArchiveCallback)(RtToken, char *, ...);
+typedef RtVoid (RtErrorHandler)(RtInt, RtInt, char*);
+typedef RtVoid (RtProcSubdivFunc)(RtPointer, RtFloat);
+typedef RtVoid (RtProcFreeFunc)(RtPointer);
+typedef RtVoid (RtArchiveCallback)(RtToken, char *, ...);
 
 // pointer types
 typedef RtPointer RtObjectHandle;

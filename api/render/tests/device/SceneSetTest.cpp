@@ -10,8 +10,8 @@
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
@@ -32,8 +32,8 @@ using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::PipelineHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::vulkan::memory::Buffer;
 using v3d::render::realtime::vulkan::pipeline::Builder;
 using v3d::render::realtime::vulkan::pipeline::DescriptorPool;
@@ -114,7 +114,8 @@ BOOST_AUTO_TEST_SUITE(scene_set_test)
  **/
 BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -142,7 +143,7 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
 
     const PipelineHandle pipeline = scenePipeline(&headless, pool.layout());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     draw(&headless, target, pipeline, scene, &capture);
 
     BOOST_CHECK(headless.silent());
@@ -167,7 +168,8 @@ BOOST_AUTO_TEST_CASE(a_pass_binds_its_scene_at_set_2) {
  **/
 BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     VkDescriptorSetLayoutBinding block{};
     block.binding = 0;
@@ -178,7 +180,7 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_in_a_pass_with_no_scene_throws) {
 
     const PipelineHandle pipeline = scenePipeline(&headless, pool.layout());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     BOOST_CHECK_THROW(draw(&headless, target, pipeline, VK_NULL_HANDLE, &capture), std::runtime_error);
 }
 

@@ -6,7 +6,6 @@
 #include "Text.h"
 
 #include <api/asset/Asset.h>
-#include <api/asset/Type.h>
 
 #include <string>
 
@@ -14,8 +13,9 @@ namespace v3d::asset::kind {
 
 /**
  **/
-Text::Text(const std::string& name, Type t, const std::string& content) :
-    Asset(name, t),
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - where the text came from, then the text
+Text::Text(const std::string& name, const std::string& content) :
+    Asset(name),
     content_(content) {
 }
 

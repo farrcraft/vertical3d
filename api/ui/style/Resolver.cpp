@@ -62,38 +62,46 @@ const paint::Dressing& Resolver::base() const noexcept {
     return base_;
 }
 
-void Resolver::chrome() {
-    const boost::shared_ptr<Style> style = lookup(chromeClass, std::string_view());
+void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* overlay, paint::Dressing* dressing) {
     if (!style) {
         return;
     }
 
-    overlay_.colour(style, "panel", &base_, &paint::Dressing::panel);
-    overlay_.colour(style, "border", &base_, &paint::Dressing::border);
-    overlay_.colour(style, "track", &base_, &paint::Dressing::track);
-    overlay_.colour(style, "fill", &base_, &paint::Dressing::fill);
-    overlay_.colour(style, "thumb", &base_, &paint::Dressing::thumb);
-    overlay_.colour(style, "mark", &base_, &paint::Dressing::mark);
-    overlay_.colour(style, "caret", &base_, &paint::Dressing::caret);
-    overlay_.colour(style, "placeholder", &base_, &paint::Dressing::placeholder);
-    overlay_.colour(style, "tab", &base_, &paint::Dressing::tab);
-    overlay_.colour(style, "text", &base_, &paint::Dressing::text);
-    overlay_.colour(style, "active-text", &base_, &paint::Dressing::activeText);
-    overlay_.colour(style, "disabled-text", &base_, &paint::Dressing::disabledText);
-    overlay_.colour(style, "highlight", &base_, &paint::Dressing::highlight);
-    overlay_.colour(style, "hover", &base_, &paint::Dressing::hover);
-    overlay_.colour(style, "focus", &base_, &paint::Dressing::focus);
+    overlay->colour(style, "panel", dressing, &paint::Dressing::panel);
+    overlay->colour(style, "border", dressing, &paint::Dressing::border);
+    overlay->colour(style, "title-bar", dressing, &paint::Dressing::titleBar);
+    overlay->colour(style, "track", dressing, &paint::Dressing::track);
+    overlay->colour(style, "fill", dressing, &paint::Dressing::fill);
+    overlay->colour(style, "thumb", dressing, &paint::Dressing::thumb);
+    overlay->colour(style, "mark", dressing, &paint::Dressing::mark);
+    overlay->colour(style, "caret", dressing, &paint::Dressing::caret);
+    overlay->colour(style, "placeholder", dressing, &paint::Dressing::placeholder);
+    overlay->colour(style, "tab", dressing, &paint::Dressing::tab);
+    overlay->colour(style, "widget", dressing, &paint::Dressing::widget);
+    overlay->colour(style, "rule", dressing, &paint::Dressing::rule);
+    overlay->colour(style, "text", dressing, &paint::Dressing::text);
+    overlay->colour(style, "active-text", dressing, &paint::Dressing::activeText);
+    overlay->colour(style, "disabled-text", dressing, &paint::Dressing::disabledText);
+    overlay->colour(style, "highlight", dressing, &paint::Dressing::highlight);
+    overlay->colour(style, "hover", dressing, &paint::Dressing::hover);
+    overlay->colour(style, "focus", dressing, &paint::Dressing::focus);
 
-    overlay_.metric(style, "line-height", &base_, &paint::Dressing::lineHeight);
-    overlay_.metric(style, "padding", &base_, &paint::Dressing::padding);
-    overlay_.metric(style, "bar-height", &base_, &paint::Dressing::barHeight);
-    overlay_.metric(style, "icon-size", &base_, &paint::Dressing::iconSize);
-    overlay_.metric(style, "panel-padding", &base_, &paint::Dressing::panelPadding);
-    overlay_.metric(style, "scrollbar-width", &base_, &paint::Dressing::scrollbarWidth);
-    overlay_.metric(style, "mark-size", &base_, &paint::Dressing::markSize);
-    overlay_.metric(style, "border-width", &base_, &paint::Dressing::borderWidth);
-    overlay_.metric(style, "focus-width", &base_, &paint::Dressing::focusWidth);
-    overlay_.metric(style, "radius", &base_, &paint::Dressing::radius);
+    overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight);
+    overlay->metric(style, "padding", dressing, &paint::Dressing::padding);
+    overlay->metric(style, "spacing", dressing, &paint::Dressing::spacing);
+    overlay->metric(style, "bar-height", dressing, &paint::Dressing::barHeight);
+    overlay->metric(style, "icon-size", dressing, &paint::Dressing::iconSize);
+    overlay->metric(style, "panel-padding", dressing, &paint::Dressing::panelPadding);
+    overlay->metric(style, "scrollbar-width", dressing, &paint::Dressing::scrollbarWidth);
+    overlay->metric(style, "mark-size", dressing, &paint::Dressing::markSize);
+    overlay->metric(style, "border-width", dressing, &paint::Dressing::borderWidth);
+    overlay->metric(style, "focus-width", dressing, &paint::Dressing::focusWidth);
+    overlay->metric(style, "radius", dressing, &paint::Dressing::radius);
+    overlay->metric(style, "indent", dressing, &paint::Dressing::indent);
+}
+
+void Resolver::chrome() {
+    readBase(lookup(chromeClass, std::string_view()), &overlay_, &base_);
 }
 
 const char* Resolver::named(Class className) noexcept {

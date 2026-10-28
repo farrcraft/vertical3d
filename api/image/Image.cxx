@@ -31,10 +31,10 @@ Image::Format formatOf(uint8_t bpp) {
 
 };  // namespace
 
-Image::Image() : data_(0), width_(0), height_(0), bpp_(24), format_(Format::RGB) {
+Image::Image() : data_(0), bpp_(24), width_(0), height_(0), format_(Format::RGB) {
 }
 
-Image::Image(const glm::uvec2& dimensions, uint8_t bitsPerPixel) : width_(dimensions.x), height_(dimensions.y), bpp_(bitsPerPixel), format_(formatOf(bitsPerPixel)) {
+Image::Image(const glm::uvec2& dimensions, uint8_t bitsPerPixel) : bpp_(bitsPerPixel), width_(dimensions.x), height_(dimensions.y), format_(formatOf(bitsPerPixel)) {
     const unsigned int bytesPerPixel = bpp_ / 8;
     const uint64_t size = static_cast<uint64_t>(width_) * height_ * bytesPerPixel;
     data_ = new unsigned char[size];

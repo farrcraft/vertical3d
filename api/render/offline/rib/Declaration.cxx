@@ -71,10 +71,10 @@ unsigned int arrayCount(std::string * word) {
 
 };  // namespace
 
-Declaration::Declaration() {
+Declaration::Declaration() noexcept {
 }
 
-Declaration::Declaration(Storage storage, Type type, unsigned int count) :
+Declaration::Declaration(Storage storage, Type type, unsigned int count) noexcept :
     storage_(storage),
     type_(type),
     count_(count) {
@@ -136,6 +136,36 @@ unsigned int Declaration::floats() const {
             return 1;
     }
     return 1;
+}
+
+std::string Declaration::text() const {
+    std::string storage;
+    switch (storage_) {
+        case Storage::CONSTANT: storage = "constant"; break;
+        case Storage::UNIFORM: storage = "uniform"; break;
+        case Storage::VARYING: storage = "varying"; break;
+        case Storage::VERTEX: storage = "vertex"; break;
+    }
+    std::string type;
+    switch (type_) {
+        case Type::FLOAT: type = "float"; break;
+        case Type::INTEGER: type = "integer"; break;
+        case Type::STRING: type = "string"; break;
+        case Type::COLOR: type = "color"; break;
+        case Type::POINT: type = "point"; break;
+        case Type::VECTOR: type = "vector"; break;
+        case Type::NORMAL: type = "normal"; break;
+        case Type::MATRIX: type = "matrix"; break;
+        case Type::HPOINT: type = "hpoint"; break;
+    }
+    if (count_ != 1) {
+        type += "[" + std::to_string(count_) + "]";
+    }
+    return storage + " " + type;
+}
+
+bool Declaration::operator==(const Declaration & other) const {
+    return storage_ == other.storage_ && type_ == other.type_ && count_ == other.count_;
 }
 
 unsigned int Declaration::elements(unsigned int vertices) const {

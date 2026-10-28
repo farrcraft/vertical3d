@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(feature_combine_test) {
 
 /**
  * Nothing asked for is nothing enabled, which is the set a test passes when it needs only the
- * asset manager and the event engine.
+ * asset manager and the event router.
  **/
 BOOST_AUTO_TEST_CASE(feature_none_test) {
     const v3d::engine::Features features;
@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(feature_none_test) {
 
 /**
  * A set grows by |=, and a single feature converts to a set of one wherever a set is
- * expected. The engine builds the input engine's device list this way.
+ * expected. The engine builds the input device list this way.
  **/
 BOOST_AUTO_TEST_CASE(feature_accumulate_test) {
     v3d::input::DeviceTypes devices;

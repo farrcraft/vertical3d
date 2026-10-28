@@ -5,22 +5,28 @@
 
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
+#include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Mesh.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
+#include <api/render/realtime/vulkan/frame/Ring.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
+#include <api/render/realtime/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
 #include <boost/make_shared.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Headless.h"
@@ -30,8 +36,8 @@ using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 
 namespace {
 
@@ -108,7 +114,8 @@ BOOST_AUTO_TEST_SUITE(release_test)
  **/
 BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, texture, nullptr);
@@ -131,7 +138,8 @@ BOOST_AUTO_TEST_CASE(a_texture_released_in_flight_outlives_its_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws_it) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     // one frame submitted first, so the ring has begun a frame before the release
     idle(&headless);
@@ -158,7 +166,7 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     Recorder::record(commands, frame, described, *headless.context->resources(), headless.context->frameUniforms().get());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     Capture::Source source;
     source.image = target->image();
     source.extent = target->extent();
@@ -195,12 +203,12 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
  **/
 BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<v3d::render::realtime::vulkan::pipeline::Resources> resources = headless.context->resources();
+    const boost::shared_ptr<v3d::render::realtime::Resources> resources = headless.context->resources();
 
     idle(&headless);
     const std::size_t before = resources->textureCount();
     const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
-    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::vulkan::pipeline::Material());
+    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::Material());
 
     BOOST_CHECK(resources->release(material));
     BOOST_CHECK(!resources->release(material));
@@ -233,7 +241,8 @@ BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
  **/
 BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     TextureHandle red = flat(&headless, 0xFF, 0x00, 0x00);
     draw(&headless, target, red, nullptr);
@@ -245,7 +254,7 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
     TextureHandle green = flat(&headless, 0x00, 0xFF, 0x00);
     BOOST_REQUIRE_EQUAL(green.id(), red.id());
 
-    Capture capture(headless.device, headless.logger);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
     draw(&headless, target, green, &capture);
     headless.context->ring()->waitIdle();
 
@@ -272,7 +281,8 @@ BOOST_AUTO_TEST_CASE(a_reused_slot_draws_its_new_texture) {
  **/
 BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     draw(&headless, target, flat(&headless, 0xFF, 0x00, 0x00), nullptr);
     target->recreate(width / 2, height / 2);
@@ -292,8 +302,10 @@ BOOST_AUTO_TEST_CASE(a_target_resized_in_flight_outlives_its_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_registered_target_keeps_its_image_through_a_resize) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
-    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
+    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
 
     draw(&headless, source, flat(&headless, 0x00, 0x00, 0xFF), nullptr);
     const TextureHandle registered = headless.context->textures()->texture(*source);
@@ -320,6 +332,64 @@ BOOST_AUTO_TEST_CASE(the_white_texture_is_not_released) {
 
     BOOST_CHECK(!headless.context->textures()->release(white));
     BOOST_CHECK(headless.context->resources()->texture(white) != nullptr);
+}
+
+/**
+ * A capture of a larger image replaces the readback buffer and retires the old one through the
+ * ring, because the copy recorded into an earlier frame may still be writing into it. The frames
+ * before the case run out first, so the only retirement left is the one the capture makes.
+ **/
+BOOST_AUTO_TEST_CASE(a_capture_retires_the_readback_it_outgrows) {
+    v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<RenderTarget> small = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
+    const boost::shared_ptr<RenderTarget> large = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width * 2, .height = height * 2, .colour = colourFormat});
+    const TextureHandle texture = flat(&headless, 0x00, 0xFF, 0x00);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
+
+    draw(&headless, small, texture, &capture);
+    for (uint32_t turn = 0; turn <= headless.context->ring()->framesInFlight(); turn++) {
+        idle(&headless);
+    }
+    BOOST_CHECK_EQUAL(headless.context->ring()->retiring(), 0U);
+    draw(&headless, large, texture, &capture);
+    BOOST_CHECK_EQUAL(headless.context->ring()->retiring(), 1U);
+
+    headless.context->ring()->waitIdle();
+    BOOST_CHECK(capture.write("data_out/release_capture_outgrown.png"));
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A context given a new extent replaces the depth buffer it allocated with one of that size, and
+ * retires the old one through the ring, because a frame in flight may still test against it. The
+ * same extent again keeps the buffer.
+ **/
+BOOST_AUTO_TEST_CASE(a_new_extent_retires_the_depth_buffer) {
+    /** A context whose destination a case can describe, as WindowContext does after a resize. **/
+    class Described final : public v3d::render::realtime::DeviceContext {
+     public:
+        using DeviceContext::DeviceContext;
+        using DeviceContext::describe;
+    };
+
+    const v3d::test::Headless headless(colourFormat, width, height);
+    const boost::shared_ptr<Described> context = boost::make_shared<Described>(headless.logger, headless.device, colourFormat,
+        VkExtent2D{width, height});
+    const boost::shared_ptr<v3d::render::realtime::vulkan::frame::DepthBuffer> first = context->depth();
+    const std::size_t before = context->ring()->retiring();
+
+    context->describe(colourFormat, VkExtent2D{width, height});
+    BOOST_CHECK(context->depth() == first);
+    BOOST_CHECK_EQUAL(context->ring()->retiring(), before);
+
+    context->describe(colourFormat, VkExtent2D{width * 2, height * 2});
+    BOOST_CHECK(context->depth() != first);
+    BOOST_CHECK_EQUAL(context->depth()->extent().width, width * 2);
+    BOOST_CHECK_EQUAL(context->depth()->extent().height, height * 2);
+    BOOST_CHECK_EQUAL(context->ring()->retiring(), before + 1);
+    BOOST_CHECK(headless.silent());
 }
 
 /**
@@ -355,8 +425,8 @@ BOOST_AUTO_TEST_CASE(a_stream_holds_what_one_frame_asked_for) {
  **/
 BOOST_AUTO_TEST_CASE(a_target_registered_twice_has_one_handle) {
     const v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true, .sampledDepth = true});
 
     const TextureHandle first = headless.context->textures()->texture(*target);
     BOOST_CHECK(headless.context->textures()->texture(*target) == first);
@@ -446,9 +516,10 @@ BOOST_AUTO_TEST_CASE(a_claim_on_the_next_slot_starts_from_its_front) {
  **/
 BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
-        colourFormat, true, true);
-    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> source = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true, .sampledDepth = true});
+    const boost::shared_ptr<RenderTarget> into = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
     const TextureHandle depth = headless.context->textures()->depthTexture(*source);
 
     Canvas canvas;
@@ -473,6 +544,27 @@ BOOST_AUTO_TEST_CASE(a_depth_texture_draws_on_a_canvas) {
     headless.submit(commands);
     headless.context->ring()->waitIdle();
 
+    BOOST_CHECK(headless.silent());
+}
+
+/**
+ * A context destroys its ring however it is let go, even with a mesh still retired into it. The
+ * mesh holds the ring through its uploader, so a ring left to its own destructor would keep
+ * itself, and the device under it, alive.
+ **/
+BOOST_AUTO_TEST_CASE(a_context_destroys_its_ring_whatever_was_retired_into_it) {
+    const v3d::test::Headless headless(colourFormat, width, height);
+    boost::weak_ptr<v3d::render::realtime::vulkan::frame::Ring> ring;
+    {
+        const boost::shared_ptr<v3d::render::realtime::DeviceContext> context = boost::make_shared<v3d::render::realtime::DeviceContext>(
+            headless.logger, headless.device, colourFormat, VkExtent2D{width, height});
+        ring = context->ring();
+        const std::vector<float> vertices(9, 0.0F);
+        const boost::shared_ptr<v3d::render::realtime::Mesh> mesh = boost::make_shared<v3d::render::realtime::Mesh>(context->device(),
+            context->uploader(), std::as_bytes(std::span(vertices)), 3U);
+        context->ring()->retire([mesh]() {});
+    }
+    BOOST_CHECK(ring.expired());
     BOOST_CHECK(headless.silent());
 }
 

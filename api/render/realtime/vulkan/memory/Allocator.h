@@ -21,10 +21,11 @@ namespace v3d::render::realtime::vulkan::memory {
 /**
  * Gives a buffer or an image memory to live in, and takes it back.
  *
- * Kind::Direct makes one device allocation per resource. That suits resources made once at
- * load time and freed at shutdown. It does not suit an app with per-frame buffers, because
- * maxMemoryAllocationCount is a real device limit. Kind::Suballocated places each resource in
- * a region of a larger block, through the Vulkan Memory Allocator.
+ * Kind::Suballocated, the default, places each resource in a region of a larger block, through
+ * the Vulkan Memory Allocator. A device allocation is slow to make, and maxMemoryAllocationCount
+ * is a real device limit, so a world that streams textures and meshes in needs it.
+ * Kind::Direct makes one device allocation per resource, for a case that requires each
+ * resource's memory to be its own.
  *
  * Every allocation in the renderer goes through Allocator, so the choice is made in one place.
  **/
@@ -45,10 +46,10 @@ class Allocator final {
      * @param physical the physical device whose memory types are chosen from
      * @param instance the instance the device came from, which a suballocator needs to load
      *        the entry points it calls
-     * @param kind how to find memory. Direct unless the consumer asked otherwise.
+     * @param kind how to find memory. Suballocated unless the consumer asked otherwise.
      * @throw std::runtime_error if a suballocator was asked for and could not be created
      **/
-    Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind = Kind::Direct);
+    Allocator(VkDevice device, VkPhysicalDevice physical, VkInstance instance, Kind kind = Kind::Suballocated);
 
     /**
      * @return how this finds memory

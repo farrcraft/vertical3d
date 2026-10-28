@@ -6,11 +6,10 @@
 #include "DecodedModel.h"
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/image/Image.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <cstddef>
 #include <map>
@@ -26,7 +25,7 @@ namespace v3d::render::realtime {
  **/
 DecodedModel decodeModel(asset::Manager& assets, const std::string& path, const AlbedoUploaded& uploaded) {
     const boost::shared_ptr<asset::media::kind::Model> loaded =
-        assets.load<asset::media::kind::Model>(path, asset::Type::ModelGltf);
+        assets.load<asset::media::kind::Model>(path);
     if (!loaded || !loaded->model()) {
         throw std::runtime_error("Unable to load a model from " + path);
     }
@@ -36,7 +35,7 @@ DecodedModel decodeModel(asset::Manager& assets, const std::string& path, const 
     decoded.model = loaded->model();
 
     // an image packed into the file is the file's own, and one it names is resolved beside it
-    const std::vector<type::Model::Material>& materials = decoded.model->materials();
+    const std::vector<model::Model::Material>& materials = decoded.model->materials();
     decoded.albedos.resize(materials.size());
     for (std::size_t index = 0; index < materials.size(); index++) {
         const std::string& named = materials[index].baseColourTexture;

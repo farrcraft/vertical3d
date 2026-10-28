@@ -25,9 +25,9 @@ namespace v3d::render::realtime::vulkan::memory {
  * rewrites its whole content every frame should use Buffer instead.
  *
  * The buffer is not mapped and cannot be written to directly. upload() is the only way to
- * fill it. upload() waits for the copy and not for frames in flight, so no frame may be
- * reading the buffer when it is called. The constructors upload into a buffer nothing has
- * read yet.
+ * fill it. upload() submits the copy and returns without waiting, and the copy is visible to
+ * every submission after it. No frame may be reading the buffer when it is called. The
+ * constructors upload into a buffer nothing has read yet.
  **/
 class DeviceBuffer final {
  public:
@@ -66,7 +66,7 @@ class DeviceBuffer final {
     VkDeviceSize size() const noexcept;
 
     /**
-     * Copy into device local memory through a staging buffer, waiting for the copy.
+     * Copy into device local memory through a staging buffer, without waiting for the copy.
      * @throw std::runtime_error if the write would run off the end
      **/
     void upload(const void* data, VkDeviceSize bytes, VkDeviceSize offset = 0);

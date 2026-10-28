@@ -4,14 +4,17 @@ v3d_add_test(asset_media
 	"TestMain.cpp"
 	"GltfTest.cpp"
 	"MediaTest.cpp"
-	"ThreadTest.cpp")
+	"ThreadTest.cpp"
+	"SheetPackingTest.cpp"
+	"SpriteSheetsTest.cpp")
 
 target_link_libraries(v3dtest_asset_media PRIVATE
 	v3dlib_asset_media
+	v3dlib_animation
 	v3dlib_asset
 	v3dlib_log
 	v3dlib_image
-	v3dlib_type
+	v3dlib_model
 	${Boost_LIBRARIES}
 	${PNG_LIBRARIES}
 	JPEG::JPEG)

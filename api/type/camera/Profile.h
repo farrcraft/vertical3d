@@ -41,13 +41,15 @@ class Profile {
 
         explicit Profile(const std::string & name);
         /**
-        *	Where the eye is, and its up, right and view directions.
+        *	Where the eye is, and its up, right and view directions. The defaults are the
+        *	basis a profile made by name has. It looks along +z, with right = up x direction as
+        *	the default hand builds it. An identity rotation views along it.
         */
         struct Frame {
             glm::vec3 eye{0.0F};
             glm::vec3 up{0.0F, 1.0F, 0.0F};
             glm::vec3 right{1.0F, 0.0F, 0.0F};
-            glm::vec3 direction{0.0F, 0.0F, -1.0F};
+            glm::vec3 direction{0.0F, 0.0F, 1.0F};
         };
 
         /**

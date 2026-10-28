@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -18,9 +19,7 @@
 
 namespace v3d::render::realtime {
 
-namespace vulkan::frame {
 class RenderTarget;
-};  // namespace vulkan::frame
 
 /**
  * One pass of a frame: a target, whether to clear it, a camera, and the draw items to record
@@ -106,12 +105,26 @@ class Pass final {
      *
      * Passing an empty pointer puts the pass back on the swapchain image.
      **/
-    void target(const boost::shared_ptr<vulkan::frame::RenderTarget>& target) noexcept;
+    void target(const boost::shared_ptr<RenderTarget>& target) noexcept;
+
+    /**
+     * Which layer of a layered target's depth the pass draws into, as one cascade of a shadow
+     * map does. Zero, the default, is the only layer of any other target. Recorder throws for
+     * a layer the target does not have.
+     *
+     * Kept across reset(), as the target is.
+     **/
+    void layer(uint32_t layer) noexcept;
+
+    /**
+     * @return the layer the pass draws into
+     **/
+    uint32_t layer() const noexcept;
 
     /**
      * @return the target the pass draws into, or an empty pointer for the swapchain image
      **/
-    const boost::shared_ptr<vulkan::frame::RenderTarget>& target() const noexcept;
+    const boost::shared_ptr<RenderTarget>& target() const noexcept;
 
     /**
      * Declare that this pass samples what another pass drew into a target, so the frame
@@ -121,12 +134,12 @@ class Pass final {
      * Kept across reset(), as the target is, because it is configuration rather than
      * per-frame content.
      **/
-    void reads(const boost::shared_ptr<vulkan::frame::RenderTarget>& target);
+    void reads(const boost::shared_ptr<RenderTarget>& target);
 
     /**
      * @return the targets this pass samples, in the order they were named
      **/
-    const std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>>& reads() const noexcept;
+    const std::vector<boost::shared_ptr<RenderTarget>>& reads() const noexcept;
 
     /**
      * The region of the target the pass draws into, as x, y, width, height in pixels.
@@ -269,8 +282,9 @@ class Pass final {
     glm::mat4 view_;
     glm::mat4 projection_;
     std::vector<DrawItem> items_;
-    boost::shared_ptr<vulkan::frame::RenderTarget> target_;
-    std::vector<boost::shared_ptr<vulkan::frame::RenderTarget>> reads_;
+    boost::shared_ptr<RenderTarget> target_;
+    std::vector<boost::shared_ptr<RenderTarget>> reads_;
+    uint32_t layer_ = 0;
     VkDescriptorSet scene_;
     std::optional<DepthBias> bias_;
     std::optional<bool> write_;

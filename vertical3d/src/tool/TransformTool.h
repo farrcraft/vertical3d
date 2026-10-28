@@ -10,9 +10,10 @@
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/VertexCommand.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
+#include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstdint>
@@ -73,7 +74,7 @@ class TransformTool final : public Tool {
     /**
      * The view a drag is measured in, set as the cursor moves between viewports.
      **/
-    void view(const boost::shared_ptr<ViewPort>& view);
+    void view(const boost::shared_ptr<ViewPort>& view) override;
 
     /**
      * @return the view the tool is transforming in, which may be null
@@ -112,7 +113,12 @@ class TransformTool final : public Tool {
      * @return whether a handle is being dragged. While it is, the same press does not
      *         also select
      **/
-    bool dragging() const noexcept;
+    bool dragging() const noexcept override;
+
+    /**
+     * @return whether a handle of the target is under the point
+     **/
+    bool takes(const glm::vec2& position) const override;
 
     /**
      * End a drag without recording it, as replacing the scene does. The mesh the gesture
@@ -122,6 +128,11 @@ class TransformTool final : public Tool {
     void cancel();
 
  private:
+    /**
+     * @return the view's camera and region, which the handles are seen through
+     **/
+    Screen screen() const;
+
     /**
      * Record the gesture that has just ended, if it moved anything. Every path out of a
      * drag, a release or a mode change, comes through here. A change that reached the mesh
@@ -147,8 +158,9 @@ class TransformTool final : public Tool {
     glm::vec2 last_;
     SelectMask mask_;
     Target dragged_;
-    std::vector<Placement> before_;
+    std::vector<v3d::type::Transform> before_;
     std::vector<VertexCommand::Shape> shapes_;
+    std::vector<VertexCommand::Outline> outlines_;
 };
 
 /**

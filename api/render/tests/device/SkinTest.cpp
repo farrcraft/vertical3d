@@ -4,7 +4,6 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/ecs/component/Playback.h>
@@ -23,10 +22,10 @@
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
-#include <api/render/realtime/vulkan/renderer/Lit.h>
-#include <api/type/Model.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/renderer/Lit.h>
+#include <api/model/Model.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Isometric.h>
 
@@ -53,9 +52,9 @@ using v3d::render::realtime::MeshRegistry;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::entity::Poses;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
-using v3d::render::realtime::vulkan::renderer::Lit;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::renderer::Lit;
 
 namespace lighting = v3d::render::realtime::lighting;
 
@@ -79,12 +78,12 @@ boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headles
 /**
  * The strip as a static model: the same vertices, parts and materials with its skin taken off.
  **/
-v3d::type::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
+v3d::model::Model stripped(const boost::shared_ptr<v3d::asset::Manager>& manager) {
     const boost::shared_ptr<v3d::asset::media::kind::Model> loaded =
-        boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load(STRIP, v3d::asset::Type::ModelGltf));
+        boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(manager->load<v3d::asset::media::kind::Model>(STRIP));
     BOOST_REQUIRE(loaded && loaded->model());
-    v3d::type::Model model = *loaded->model();
-    model.skeleton() = v3d::type::Skeleton();
+    v3d::model::Model model = *loaded->model();
+    model.skeleton() = v3d::animation::Skeleton();
     model.influences().clear();
     model.clips().clear();
     return model;
@@ -133,18 +132,8 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
         v3d::render::realtime::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
-    Capture capture(headless->device, headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
+    headless->draw(frame, *target, &capture);
     if (!capture.write(path)) {
         return boost::shared_ptr<v3d::image::Image>();
     }
@@ -178,8 +167,7 @@ std::size_t differing(v3d::image::Image& first, v3d::image::Image& second) {
 }
 
 Lit makeLit(v3d::test::Headless* headless, const boost::shared_ptr<RenderTarget>& target, VkFormat shadow) {
-    return Lit(headless->device, headless->context->pipelineCache(), headless->context->resources(), headless->context->ring(),
-        headless->context->frameUniforms(), headless->context->textures(), colourFormat, target->depthFormat(), shadow);
+    return Lit(*headless->context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = shadow});
 }
 
 BOOST_AUTO_TEST_SUITE(skin_test)
@@ -217,7 +205,7 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle strip = meshes.load(STRIP);
     const MeshHandle doomed = meshes.add("doomed", *boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
-        assets(headless)->load(STRIP, v3d::asset::Type::ModelGltf))->model());
+        assets(headless)->load<v3d::asset::media::kind::Model>(STRIP))->model());
 
     entt::registry registry;
     lay(&registry, strip);
@@ -245,8 +233,8 @@ BOOST_AUTO_TEST_CASE(an_entity_with_nothing_playing_stands_at_rest) {
  **/
 BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     const boost::shared_ptr<v3d::asset::Manager> manager = assets(headless);
     MeshRegistry meshes(headless.logger, headless.context, manager);
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
@@ -273,8 +261,8 @@ BOOST_AUTO_TEST_CASE(a_skin_at_rest_draws_its_unskinned_mesh) {
  **/
 BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
     const MeshHandle strip = meshes.load(STRIP);
@@ -307,8 +295,8 @@ BOOST_AUTO_TEST_CASE(a_bent_strip_is_drawn_and_silent) {
  **/
 BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
     const MeshHandle rig = meshes.load("blender_strip.glb");
@@ -346,37 +334,38 @@ BOOST_AUTO_TEST_CASE(an_exported_rig_is_drawn_mid_clip) {
 BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     const uint32_t size = 16;
     v3d::test::Headless headless(colourFormat, size, size);
-    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        size, size, VK_FORMAT_UNDEFINED, true, true);
+    const boost::shared_ptr<RenderTarget> map = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = size, .height = size, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     if (map->depthFormat() != VK_FORMAT_D32_SFLOAT) {
         BOOST_TEST_MESSAGE("The device gives no sampled D32_SFLOAT, so there is no exact depth to compare");
         return;
     }
 
     // a square at z = -0.5 facing -z, towards the light, wound counter clockwise from there
-    v3d::type::Model square;
+    v3d::model::Model square;
     const glm::vec3 corners[4] = {{0.5F, -0.5F, -0.5F}, {-0.5F, -0.5F, -0.5F}, {-0.5F, 0.5F, -0.5F}, {0.5F, 0.5F, -0.5F}};
     for (const glm::vec3& corner : corners) {
-        v3d::type::Model::Vertex vertex;
+        v3d::model::Model::Vertex vertex;
         vertex.position = corner;
         vertex.normal = glm::vec3(0.0F, 0.0F, -1.0F);
         square.vertices().push_back(vertex);
-        v3d::type::Model::Influence influence;
+        v3d::model::Model::Influence influence;
         influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
         square.influences().push_back(influence);
     }
     square.indices() = {0, 1, 2, 0, 2, 3};
     square.materials().emplace_back();
     square.parts().push_back({0, 6, 0});
-    v3d::type::Skeleton::Joint joint;
+    v3d::animation::Skeleton::Joint joint;
     joint.translation = glm::vec3(0.0F, 0.0F, 0.5F);
     square.skeleton().joints.push_back(joint);
 
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     const MeshHandle handle = meshes.add("square", square);
-    Lit lit(headless.device, headless.context->pipelineCache(), headless.context->resources(), headless.context->ring(),
-        headless.context->frameUniforms(), headless.context->textures(), colourFormat,
-        v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()), map->depthFormat());
+    Lit lit(*headless.context,
+        Lit::Spec{.colour = colourFormat,
+            .depth = v3d::render::realtime::vulkan::frame::DepthBuffer::chooseFormat(headless.device->physical()),
+            .shadow = map->depthFormat()});
 
     entt::registry registry;
     const entt::entity entity = registry.create();
@@ -399,18 +388,8 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
 
-    VkCommandBuffer commands = headless.context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless.context->resources(),
-        headless.context->frameUniforms().get());
-    Capture capture(headless.device, headless.logger);
-    Capture::Source source;
-    source.image = map->depthImage();
-    source.extent = map->extent();
-    source.format = map->depthFormat();
-    source.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    source.depth = true;
-    capture.record(commands, source);
-    headless.submitAndWait(commands);
+    Capture capture(headless.device, headless.context->ring(), headless.logger);
+    headless.draw(frame, *map, &capture, v3d::test::Headless::Read::Depth);
 
     BOOST_CHECK(headless.silent());
     const std::vector<float> depths = capture.depth();
@@ -424,8 +403,8 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
  **/
 BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     MeshRegistry meshes(headless.logger, headless.context, assets(headless));
     Lit lit = makeLit(&headless, target, VK_FORMAT_UNDEFINED);
     const MeshHandle strip = meshes.load(STRIP);

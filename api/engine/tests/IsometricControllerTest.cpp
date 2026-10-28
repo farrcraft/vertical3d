@@ -19,6 +19,7 @@
 
 #include <entt/entt.hpp>
 #include <glm/geometric.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 using v3d::engine::IsometricController;
@@ -174,6 +175,90 @@ BOOST_AUTO_TEST_CASE(a_destroyed_controller_stops_listening) {
     }
     dispatcher->trigger(press("rotate_right", false));
     BOOST_TEST(orbit.azimuth() == 0);
+}
+
+/**
+ * A notch away from the player zooms in by the stated step, a notch toward the player zooms out
+ * by it, and the wheel stops at the orbit's clamp. A negative step turns the wheel round.
+ **/
+BOOST_AUTO_TEST_CASE(the_wheel_zooms_a_step_a_notch) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const std::set<std::string, std::less<>> down;
+    IsometricController::Speeds speeds;
+    speeds.notch = 2.0F;
+    Isometric orbit;
+    IsometricController controller(&orbit, dispatcher, holding(&down), IsometricController::Commands(), speeds);
+
+    controller.wheel(1.0F);
+    BOOST_TEST(orbit.zoom() == Isometric::DEFAULT_ZOOM - 2.0F, boost::test_tools::tolerance(1e-5F));
+    controller.wheel(-1.0F);
+    BOOST_TEST(orbit.zoom() == Isometric::DEFAULT_ZOOM, boost::test_tools::tolerance(1e-5F));
+    controller.wheel(100.0F);
+    BOOST_TEST(orbit.zoom() == Isometric::MINIMUM_ZOOM, boost::test_tools::tolerance(1e-5F));
+
+    speeds.notch = -2.0F;
+    Isometric reversed;
+    IsometricController turned(&reversed, dispatcher, holding(&down), IsometricController::Commands(), speeds);
+    turned.wheel(1.0F);
+    BOOST_TEST(reversed.zoom() == Isometric::DEFAULT_ZOOM + 2.0F, boost::test_tools::tolerance(1e-5F));
+}
+
+/**
+ * With a margin, a cursor at the left edge for one step pans the target against right() by the
+ * pan speed times the step, and one at the top pans it along forward(). A cursor in the middle
+ * of the window, outside it, or over the ui pans nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_cursor_at_an_edge_pans_toward_it) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const std::set<std::string, std::less<>> down;
+    const glm::vec2 viewport(800.0F, 600.0F);
+
+    const auto moved = [&](const glm::vec2& at, bool overUi) {
+        Isometric orbit;
+        IsometricController controller(&orbit, dispatcher, holding(&down));
+        controller.edgePan(10.0F);
+        controller.cursor(at, viewport, overUi);
+        controller.simulate(0.5F);
+        return orbit.target() - Isometric().target();
+    };
+
+    // the default pan speed for half a second
+    const float distance = IsometricController::Speeds().pan * 0.5F;
+    const Isometric axes;
+    BOOST_TEST(near(moved(glm::vec2(5.0F, 300.0F), false), -axes.right() * distance));
+    BOOST_TEST(near(moved(glm::vec2(400.0F, 2.0F), false), axes.forward() * distance));
+    BOOST_TEST(near(moved(glm::vec2(799.0F, 300.0F), false), axes.right() * distance));
+    BOOST_TEST(near(moved(glm::vec2(400.0F, 300.0F), false), glm::vec3(0.0F)));
+    BOOST_TEST(near(moved(glm::vec2(5.0F, 300.0F), true), glm::vec3(0.0F)));
+    BOOST_TEST(near(moved(glm::vec2(-5.0F, 300.0F), false), glm::vec3(0.0F)));
+}
+
+/**
+ * Edge pan is off until it is given a margin, so a controller an app built before it existed
+ * does not start panning when the cursor reaches an edge.
+ **/
+BOOST_AUTO_TEST_CASE(edge_pan_is_off_by_default) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const std::set<std::string, std::less<>> down;
+    Isometric orbit;
+    IsometricController controller(&orbit, dispatcher, holding(&down));
+    controller.cursor(glm::vec2(0.0F, 0.0F), glm::vec2(800.0F, 600.0F), false);
+    controller.simulate(1.0F);
+    BOOST_TEST(near(orbit.target(), Isometric().target()));
+}
+
+/**
+ * A key held toward the edge the cursor is at pans at one speed, not at two.
+ **/
+BOOST_AUTO_TEST_CASE(an_edge_and_a_key_together_pan_at_one_speed) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const std::set<std::string, std::less<>> down{"camera::pan_right"};
+    Isometric orbit;
+    IsometricController controller(&orbit, dispatcher, holding(&down));
+    controller.edgePan(10.0F);
+    controller.cursor(glm::vec2(799.0F, 300.0F), glm::vec2(800.0F, 600.0F), false);
+    controller.simulate(1.0F);
+    BOOST_TEST(near(orbit.target() - Isometric().target(), Isometric().right() * IsometricController::Speeds().pan));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

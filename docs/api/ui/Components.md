@@ -99,7 +99,7 @@ A disabled component, or one inside a disabled component:
 | document | `"enabled": false` on any component; `"state": "disabled"` on a button style |
 
 A component disabled while it has the focus keeps `focused()` until something moves the
-focus. It draws no ring and takes no keys, but `Engine::focused()` still returns it and
+focus. It draws no ring and takes no keys, but `Interface::focused()` still returns it and
 `onFocus()` is not called. `tab` and `escape` still move the focus off it.
 
 ## Clipping

@@ -5,7 +5,7 @@
 
 #include "Emitter.h"
 
-#include <api/type/effect/Emitter.h>
+#include <api/ecs/effect/Emitter.h>
 
 #include "Transform.h"
 
@@ -25,7 +25,7 @@ void emit(entt::registry& registry, float step) {
         const Transform* transform = registry.try_get<Transform>(entity);
         const glm::vec3 origin = transform != nullptr ? transform->position : glm::vec3(0.0F);
         const glm::quat orientation = transform != nullptr ? transform->rotation : glm::identity<glm::quat>();
-        type::effect::step(emitter.description, &emitter.state, origin, orientation, step);
+        ecs::effect::step(emitter.description, &emitter.state, origin, orientation, step);
     }
 }
 

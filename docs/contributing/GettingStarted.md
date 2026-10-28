@@ -55,36 +55,18 @@ You do not install packages yourself. The first configure installs them.
 
 ## 4. Build libnoise
 
-The voxel app and its tests link libnoise, and the full build fails until it is built. From the
-repository root, in a developer environment, replace `<repo>` with the absolute path of your
-clone and run:
-
-```
-cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL \
-  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug
-cmake --build vendor/libnoise/build-ninja
-```
-
-[Dependencies.md](Dependencies.md#building-libnoise) explains the options.
+The voxel app and its tests link libnoise, and the full build fails until it is built. Build it
+from a developer environment with the two commands in
+[Dependencies.md](Dependencies.md#building-libnoise).
 
 ## 5. Configure
 
-There is no `CMakePresets.json`. Visual Studio configures from
-[CMakeSettings.json](../../CMakeSettings.json) when you open the folder. From a developer
-environment:
+Visual Studio configures the tree when you open the folder. From a developer environment, run
+the configure command in [Build.md](Build.md#configure-and-build).
 
-```
-cmake -S . -B out/build/x64-Debug -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows
-```
-
-**The first configure is slow**, because vcpkg builds every package from source. The packages go
-into `out/build/x64-Debug/vcpkg_installed/`. Never delete that directory: read
-[Build.md](Build.md#traps) before you reset a build directory.
+**The first configure is slow**, because vcpkg builds every package from source. Read
+[Build.md](Build.md#traps) before you ever reset a build directory: it says which directory
+holds the packages, and why it is kept.
 
 [Build.md](Build.md#the-options) lists the configure options.
 
@@ -130,15 +112,17 @@ beside it:
 
 | App | Executable |
 |---|---|
-| pong | `out/build/x64-Debug/pong/pong.exe` |
-| tetris | `out/build/x64-Debug/tetris/tetris.exe` |
-| voxel | `out/build/x64-Debug/voxel/voxel.exe` |
-| odyssey | `out/build/x64-Debug/odyssey/Odyssey.exe` |
+| pong | `out/build/x64-Debug/demos/pong/pong.exe` |
+| tetris | `out/build/x64-Debug/demos/tetris/tetris.exe` |
+| voxel | `out/build/x64-Debug/demos/voxel/voxel.exe` |
+| odyssey | `out/build/x64-Debug/demos/odyssey/odyssey.exe` |
+| diorama | `out/build/x64-Debug/demos/diorama/diorama.exe` |
 | vertical3d (the editor) | `out/build/x64-Debug/vertical3d/vertical3d.exe` |
 | moya | `out/build/x64-Debug/moya/moya/moya.exe` |
 | imagetool | `out/build/x64-Debug/imagetool/imagetool.exe` |
 
-Each app writes a log, `v3d.log`, in the same directory as its executable. Open it after a run.
+Each app writes a log, and [api/engine/README.md](../api/engine/README.md#logging) says where.
+Open it after a run.
 With the Vulkan SDK installed, the renderer turns on the validation layer and writes its messages
 to this log. A run with no validation messages is a clean run.
 [Testing.md](Testing.md#verifying-a-rendering-change) explains how to check a rendering change.

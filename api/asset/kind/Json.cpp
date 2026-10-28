@@ -6,7 +6,6 @@
 #include "Json.h"
 
 #include <api/asset/Asset.h>
-#include <api/asset/Type.h>
 
 #include <string>
 
@@ -14,8 +13,8 @@ namespace v3d::asset::kind {
 
 /**
  **/
-Json::Json(const std::string& name, Type t, const boost::json::object& doc) :
-    Asset(name, t),
+Json::Json(const std::string& name, const boost::json::object& doc) :
+    Asset(name),
     document_(doc) {
 }
 

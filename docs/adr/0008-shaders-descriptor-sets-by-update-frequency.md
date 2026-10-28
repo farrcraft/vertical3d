@@ -2,7 +2,7 @@
 
 **Status**: amended
 **Date**: 2026-08-31
-**Amended by**: [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md), [ADR-0088](0088-lit-per-object-data-in-a-storage-buffer.md)
+**Amended by**: [ADR-0064](0064-lighting-lit-passes-use-the-shared-recorder.md), [ADR-0088](0088-lit-per-object-data-in-a-storage-buffer.md), [ADR-0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md)
 **Documented in**: [internals/realtime/Pipelines.md](../internals/realtime/Pipelines.md)
 
 ## Context

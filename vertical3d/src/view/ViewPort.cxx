@@ -9,12 +9,11 @@
 #include <api/type/Checked.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/manipulator/Manipulator.h>
-#include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/WireframeVisitor.h>
+#include <vertical3d/src/selection/SelectMask.h>
 
 #include "ConstructionPlane.h"
+#include "WireframeVisitor.h"
 
 #include <cstdint>
 #include <limits>
@@ -29,7 +28,7 @@ namespace v3d::editor {
 ViewPort::ViewPort(const std::string& name, const v3d::type::camera::Profile& profile) :
     name_(name),
     region_(0.0F, 0.0F, 0.0F, 0.0F),
-    showFlags_(SHOW_GRID | SHOW_MESH | SHOW_HANDLE) {
+    showFlags_(SHOW_GRID | SHOW_MESH | SHOW_CAMERA | SHOW_LIGHT | SHOW_HANDLE) {
     camera_ = boost::make_shared<v3d::type::camera::Camera>(profile);
 }
 
@@ -102,21 +101,29 @@ bool ViewPort::shows(VisibleFilter filter) const noexcept {
 
 /**
  **/
+const ViewPort::Display& ViewPort::display() const noexcept {
+    return display_;
+}
+
+/**
+ **/
+ViewPort::Display& ViewPort::display() noexcept {
+    return display_;
+}
+
+/**
+ **/
 ConstructionPlane& ViewPort::grid() noexcept {
     return grid_;
 }
 
 /**
  **/
-void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Target& target,
-    v3d::render::realtime::canvas::Line* canvas, v3d::render::realtime::canvas::Line* handles) {
+void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask) {
     if (canvas == nullptr) {
         return;
     }
     canvas->clear();
-    if (handles != nullptr) {
-        handles->clear();
-    }
 
     // the matrices are rebuilt once a frame rather than on every camera move, so a
     // frame sees one consistent view however many moves went into it
@@ -127,13 +134,13 @@ void ViewPort::draw(const Scene& scene, const Manipulator* manipulator, const Ta
         grid_.draw(*camera_, canvas);
     }
 
-    if (shows(SHOW_MESH)) {
-        WireframeVisitor wireframe(canvas);
+    // a curve's control points are shown while they can be picked
+    const bool controls = mask == SelectMask::Vertex || mask == SelectMask::Handle;
+    const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
+        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
+    if (shown.meshes || shown.cameras || shown.lights) {
+        WireframeVisitor wireframe(canvas, shown, &scene.components());
         scene.accept(&wireframe);
-    }
-
-    if (shows(SHOW_HANDLE) && manipulator != nullptr && handles != nullptr) {
-        manipulator->draw(target, *this, handles);
     }
 }
 

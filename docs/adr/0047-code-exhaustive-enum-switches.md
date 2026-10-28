@@ -51,11 +51,12 @@ under a comment that says why.
   - A case that does nothing is a decision written as a case label, not an omission.
   - The grouped no-op cases document which values take part in which behaviour.
 - **Costs**:
-  - The check is MSVC's. Another compiler builds the same code without enforcing it.
+  - The check is the compiler's: C4062 under MSVC and `-Wswitch` under Clang. A compiler that
+    warns about neither builds the same code without enforcing it.
   - Switches are longer, and a reader passes many no-op labels to reach the cases that act.
   - The number of places to edit is unchanged. They are checked, not fewer.
   - A `default:` added back to any switch removes the check there silently.
   - A loop over enumerator values, such as parsing a name back to a type, depends on the last
     enumerator and is checked only by a test.
 - **Revisit when**: the number of switches over one enum keeps growing, which would make a
-  registry worth its cost, or the tree starts building with another compiler.
+  registry worth its cost.

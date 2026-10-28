@@ -1,0 +1,94 @@
+# Builds and tests the api libraries that need neither a window nor a device with Clang on
+# Linux, so the api keeps building with a compiler other than MSVC. The rest of CI builds with
+# MSVC on Windows. The libraries are the ones whose closure names neither SDL3 nor Vulkan, and
+# the job builds each one's own suite.
+name: portable
+
+# push is filtered to the default branch and pull_request is not. A branch in this repository
+# fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
+# whole life of a pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    env:
+      BUILD_DIR: out/build/linux
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/out/build/vcpkg-cache
+      PORTABLE_LIBRARIES: "asset;asset_media;brep;curve;database;ecs;event;font;grid;image;interchange;log;render_offline;type"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Clang 20, not the image's default. libstdc++ declares std::expected only to a compiler
+      # that reports C++20's concepts in full, which Clang 18 does not
+      - name: Install Clang and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-20 ninja-build
+          clang++-20 --version
+
+      # The key names what vcpkg hashes into a package's ABI that this job can vary: the ports
+      # and the registry baseline that fixes their versions. Anything else on the image that
+      # changes an ABI makes every archive miss, so the key ends in the run id and a restore
+      # takes the newest archive under the prefix.
+      - name: Restore the vcpkg binaries
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+
+      - name: Make the vcpkg cache directory
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          find "$VCPKG_DEFAULT_BINARY_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
+
+      # The manifest's default feature is the window, the device and the audio, which these
+      # libraries do not use, so it is left out and SDL3 and Vulkan are never built.
+      - name: Configure
+        run: |
+          cmake -S . -B "$BUILD_DIR" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang-20 \
+            -DCMAKE_CXX_COMPILER=clang++-20 \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON \
+            -DV3D_BUILD_APPS=OFF \
+            -DV3D_BUILD_TESTS=ON \
+            "-DV3D_LIBRARIES=$PORTABLE_LIBRARIES"
+
+      # Saved only when the configure built an archive the restore did not bring, so a run that
+      # built nothing does not store another copy of the same packages.
+      - name: Check for new vcpkg binaries
+        id: vcpkg-new
+        run: |
+          find "$VCPKG_DEFAULT_BINARY_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-now.txt"
+          if cmp -s "$RUNNER_TEMP/vcpkg-restored.txt" "$RUNNER_TEMP/vcpkg-now.txt"; then
+            echo "built=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the vcpkg binaries
+        if: steps.vcpkg-new.outputs.built == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+
+      - name: Build
+        run: cmake --build "$BUILD_DIR"
+
+      - name: Test
+        run: ctest --test-dir "$BUILD_DIR" --output-on-failure

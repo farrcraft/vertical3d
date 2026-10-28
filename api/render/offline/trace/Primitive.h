@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
@@ -82,6 +83,14 @@ class Primitive {
     void opacity(const glm::vec3 & value);
 
     /**
+     * The primitive's object space into world space, as the transformation stood when the
+     * scene created it: SL's "object" space. A moving primitive keeps the transformation of
+     * the pose it is stored in. The identity for a primitive built in code without one.
+     **/
+    const glm::mat4x4 & object() const;
+    void object(const glm::mat4x4 & placement);
+
+    /**
      * The lights that were on when the scene created it. A traced hit is shaded against
      * these, so a reflection shows the surface lit as the camera sees it. Null for a
      * primitive given none, which is shaded by the scene's own list.
@@ -106,6 +115,7 @@ class Primitive {
     v3d::render::offline::sl::Placed surface_;
     Lights lights_;
     glm::vec3 opacity_ = glm::vec3(1.0F);
+    glm::mat4x4 object_ = glm::mat4x4(1.0F);
     glm::vec3 colour_;
 };
 

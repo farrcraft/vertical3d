@@ -1,15 +1,18 @@
 v3d_add_api_library(ecs
-	"component/Position2D.h" "component/Position2D.cpp"
- "component/Position1D.h" "component/Position1D.cpp"
- "component/Color3.h"
- "component/Transform.h" "component/Transform.cpp"
- "component/Playback.h" "component/Playback.cpp"
- "component/Emitter.h" "component/Emitter.cpp"
- "Previous.h"
- "Ref.h"
- "System.h" "System.cpp")
+	"component/Transform.h" "component/Transform.cpp"
+	"component/Playback.h" "component/Playback.cpp"
+	"component/Emitter.h" "component/Emitter.cpp"
+	"effect/Emitter.h" "effect/Emitter.cxx"
+	"effect/Particle.h" "effect/Particle.cxx"
+	"effect/State.h" "effect/State.cxx"
+	"effect/Weather.h" "effect/Weather.cxx"
+	"Previous.h"
+	"Ref.h"
+	"System.h" "System.cpp")
 
-target_link_libraries(v3dlib_ecs PUBLIC v3dlib_type glm::glm EnTT::EnTT)
+# PUBLIC: Playback.h holds an animation::Clock, an effect::Emitter holds animation tracks, and
+# effect::State draws from a type::Random.
+target_link_libraries(v3dlib_ecs PUBLIC v3dlib_animation v3dlib_type glm::glm EnTT::EnTT)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

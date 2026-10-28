@@ -79,7 +79,8 @@ pipeline::Texture TextureFactory::create(const Pixels& source, Encoding encoding
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * uploaded;
 
-    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
+    const boost::shared_ptr<Buffer> staging = boost::make_shared<Buffer>(device_,
+        BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
     if (channels == 3) {
         // no device has to support a three channel format, so widen on the way in
         std::vector<unsigned char> widened(static_cast<std::size_t>(bytes));
@@ -90,9 +91,9 @@ pipeline::Texture TextureFactory::create(const Pixels& source, Encoding encoding
             widened[(pixel * 4) + 2] = pixels[(pixel * 3) + 2];
             widened[(pixel * 4) + 3] = 0xFF;
         }
-        staging.write(widened.data(), bytes);
+        staging->write(widened.data(), bytes);
     } else {
-        staging.write(pixels, bytes);
+        staging->write(pixels, bytes);
     }
 
     Image::Spec spec;
@@ -125,8 +126,9 @@ pipeline::Texture TextureFactory::volume(const unsigned char* texels, uint32_t w
         throw std::runtime_error("A vulkan volume texture needs texels and a non-zero size");
     }
     const VkDeviceSize bytes = static_cast<VkDeviceSize>(width) * height * depth * 4;
-    Buffer staging(device_, {.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
-    staging.write(texels, bytes);
+    const boost::shared_ptr<Buffer> staging = boost::make_shared<Buffer>(device_,
+        BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
+    staging->write(texels, bytes);
 
     Image::Spec spec;
     spec.width = width;
@@ -157,10 +159,11 @@ boost::shared_ptr<pipeline::Sampler> TextureFactory::sampler(const pipeline::Sam
 
 /**
  **/
-void TextureFactory::upload(const Buffer& staging, const Image& image, const VkExtent3D& extent) const {
-    VkBuffer source = staging.handle();
+void TextureFactory::upload(const boost::shared_ptr<Buffer>& staging, const Image& image, const VkExtent3D& extent) const {
+    VkBuffer source = staging->handle();
     VkImage target = image.handle();
-    uploader_->oneShot([source, target, extent](VkCommandBuffer commands) {
+    // the uploader holds the staging buffer until the copy has run
+    uploader_->submit([source, target, extent](VkCommandBuffer commands) {
         record(commands, {forUpload(target)});
 
         VkBufferImageCopy copy{};
@@ -170,7 +173,7 @@ void TextureFactory::upload(const Buffer& staging, const Image& image, const VkE
         vkCmdCopyBufferToImage(commands, source, target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
         record(commands, {uploadedForSampling(target)});
-    });
+    }, staging);
 }
 
 };  // namespace v3d::render::realtime::vulkan::memory

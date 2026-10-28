@@ -104,6 +104,13 @@ class Settings final {
     bool flag(const std::string& key, bool fallback) const;
 
     /**
+     * @return the stored value as it is, or null when the key is absent. A setting the typed
+     *         reads cannot hold, such as a list, is read through this, and its reader checks
+     *         its shape
+     **/
+    const boost::json::value* value(const std::string& key) const;
+
+    /**
      * Store one setting, in the kind the matching read gives back.
      *
      * The const char* overload is not redundant: without it a string literal binds to the
@@ -127,6 +134,11 @@ class Settings final {
     /**
      **/
     void set(const std::string& key, bool value);
+
+    /**
+     * Store a setting the typed reads cannot hold, which value() reads back.
+     **/
+    void set(const std::string& key, const boost::json::value& value);
 
     /**
      * Forget one setting, so it tracks the shipped default again.

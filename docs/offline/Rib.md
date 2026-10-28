@@ -21,14 +21,15 @@ The reader recognises these requests:
 | Options | `version`, `Declare`, `Option`, `Hider`, `Format`, `FrameAspectRatio`, `ScreenWindow`, `CropWindow`, `Projection`, `Clipping`, `Display`, `Imager` |
 | Sampling and lens | `PixelSamples`, `PixelFilter`, `PixelVariance`, `DepthOfField`, `Shutter` |
 | Blocks | `FrameBegin`, `FrameEnd`, `WorldBegin`, `WorldEnd`, `AttributeBegin`, `AttributeEnd`, `TransformBegin`, `TransformEnd`, `MotionBegin`, `MotionEnd` |
-| Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale` |
-| Attributes | `Color`, `Opacity`, `ShadingRate`, `Attribute` |
+| Transforms | `Identity`, `Transform`, `ConcatTransform`, `Translate`, `Rotate`, `Scale`, `CoordinateSystem`, `CoordSysTransform` |
+| Attributes | `Color`, `Opacity`, `ShadingRate`, `Basis`, `Attribute` |
 | Shaders and lights | `Surface`, `Displacement`, `LightSource`, `AreaLightSource`, `Illuminate`, `MakeTexture` |
-| Geometry | `Polygon`, `PointsPolygons`, `Sphere` |
+| Geometry | `Polygon`, `PointsPolygons`, `Sphere`, `Curves` |
 
-moya acts on all of them except `CropWindow`, `FrameBegin` and `FrameEnd`, which it accepts and
-ignores. `Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`,
-`texture`) and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
+moya acts on all of them except `version`, `FrameBegin`, `FrameEnd` and `MakeTexture`, which it
+accepts and ignores.
+`Option` acts on `"limits"` (`bucketsize`, `gridsize`), `"searchpath"` (`shader`, `texture`)
+and `"trace"` (`maxdepth`). `Attribute` acts on `"light"` (`nsamples`) and
 `"displacementbound"` (`sphere`, `coordinatesystem`), and reports any other attribute once by
 name.
 
@@ -69,6 +70,38 @@ name.
 - **The C interface reads a parameter's values by its declared type.** An `integer` parameter's
   array holds `RtInt`s and a `string` parameter's holds `RtString`s. Every other type's holds
   `RtFloat`s.
+- **A C entry point and a file's request reach the same `RIBHandler` method.** A variadic entry
+  point forwards to its `V` form, which converts the arguments and calls the handler, so the two
+  forms of a request cannot differ. `RiPolygon` and the RIB `Polygon` both read `"P"`, `"Cs"`,
+  `"N"` and `"st"`.
+- **A shader, light or space with an empty name names nothing.** `RIBHandler` ignores the
+  request, and the state stays as it was. The C interface passes `RI_NULL` on as the empty name.
+- **No `Display` parameter is read.** Each one a scene gives is logged as not used.
+- **`RiGetContext` returns a handle that lasts until `RiEnd` ends its context.** `RiContext`
+  makes that context active again, and a handle to a context that has ended is ignored. `RiEnd`
+  with no context begun does nothing.
+- **A polygon sent before `WorldBegin` is not drawn.** The camera is fixed at `WorldBegin`, so
+  the polygon cannot be placed. The first one is logged.
+- **A coordinate system that is neither predefined nor saved is refused.** `CoordSysTransform`
+  logs it and keeps the current transformation, and a lookup of it logs and gives the identity.
+- **A scene cannot save a predefined name.** `object`, `world`, `camera`, `screen`, `raster` and
+  `NDC` are set by the camera. `RiCoordinateSystem` with one of them is logged and saves
+  nothing, so the hiders read the camera the scene set up.
+- **A `Sphere`'s varying parameters hold four values**, one at each corner of its parameter
+  space, as RI defines them for a quadric. A uniform one holds one. moya reads no sphere
+  parameter.
+- **A `Basis` is a name RI defines or sixteen numbers, in each direction.** The names are
+  `"bezier"`, `"b-spline"`, `"catmull-rom"`, `"hermite"` and `"power"`, and each is followed by
+  its step, from 1 to 4. Any other name or step is an error. `rib::namedBasis()` gives a name's
+  matrix, in RI's row order, and `rib::basisName()` a matrix's name, which the writer uses to
+  write a standard basis by name.
+- **A `Curves` request is `"linear"` or `"cubic"`, and `"periodic"` or `"nonperiodic"`.** Any
+  other type or wrap is an error. How many values a varying parameter holds depends on the
+  basis's step, which the reader does not track, so its length is not checked.
+- **moya draws a curve as a ribbon** of its width, a varying `"width"` at each end of each
+  segment, or else its `"constantwidth"`, or else 1. A cubic curve is evaluated through the
+  `Basis` current when it is declared. Counts that reach past `"P"` draw nothing past it, and are
+  logged.
 - **A `Polygon` carries no vertex count.** The count is the length of `"P"`, which the reader
   divides out. A parameter list is therefore parsed before the count is known, and an
   unbracketed varying or vertex parameter ends the parse instead of being guessed at.
@@ -83,9 +116,8 @@ name.
   not a converted file.
 - **`Attribute "displacementbound"` is a distance in object space**, or in the space its
   `"string coordinatesystem"` names: `"object"`, `"world"`, `"camera"`, or one the scene saved
-  with `RiCoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
-  space's axes. A space the scene never named is reported, and object space is used. The RIB
-  reader does not read `CoordinateSystem`, so a file can name only the three predefined spaces.
+  with `CoordinateSystem`. moya keeps it in camera space, scaled by the largest stretch of the
+  space's axes. A space the scene never named is reported, and object space is used.
 - **`AreaLightSource` becomes an ordinary light** unless a handler overrides
   `Handler::areaLightSource`. moya overrides it, and `RiAreaLightSource` does the same.
 - **An area light keeps the geometry declared after it in the same attribute block.** Every
@@ -96,7 +128,8 @@ name.
 - **A primitive repeated inside a motion block is a deformation, which moya does not build.**
   The reader hands the later poses to `Handler::deformation()`, which returns null unless a
   renderer overrides it, and lists them in `Reader::unsupported()`. The primitive is drawn at
-  the block's first time.
+  the block's first time. `RIBHandler` leaves out a later pose that reaches it through the C
+  interface in the same way, and logs the first one.
 - **A polygon's `"st"` is its texture coordinates**, two floats per vertex. A traced triangle
   weights its corners' values by its barycentric coordinates. A triangle given none has `s` and
   `t` equal to those coordinates. The reyes hider interpolates `"st"` across a grid, as it does
@@ -104,6 +137,24 @@ name.
   parameters.
 - **A `PointsPolygons` face with fewer than three vertices is skipped.** The first face whose
   indices run past the end of the index list ends the request.
+
+### Writing and recording
+
+Two handlers in `api/render/offline/rib` take requests from anything that sends them, such as
+the editor's export, rather than from the reader.
+
+- **`rib::Writer` writes each request as a line of ASCII RIB**, which the reader reads back as
+  the same request. A number takes the fewest digits that read back as the same float. A
+  parameter is written by its name when its declaration is the one in force. Otherwise it
+  carries its declaration inline, as in `"uniform float Ks"`. A deforming primitive is written
+  as it was given, because RIB carries a deformation as the same primitive given again.
+- **RIB has no number for an infinity or a NaN.** The writer writes an infinity as the largest
+  float of its sign and a NaN as 0. `DepthOfField`'s infinite fstop is the exception, and is
+  written as the request with no arguments, which is a pinhole.
+- **`rib::Recorder` keeps each request with copies of its arguments**, and `replay()` passes them
+  in order to another handler, as often as it is called. A deforming primitive goes to that
+  handler's `deformation()`, and is dropped when that is null, as the reader drops it. A
+  recording cannot be copied or moved, so one passed to another thread is held by a pointer.
 
 Background: [ADR-0023](../adr/0023-offline-rib-is-the-scene-format.md),
 [ADR-0025](../adr/0025-offline-rib-reader-calls-a-typed-handler-interface.md)

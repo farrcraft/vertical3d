@@ -10,14 +10,16 @@ the api rather than customised it.
 
 ### GameMenu
 
-`GameMenu` is the pause menu a game puts up over itself.
+`GameMenu` is the pause menu a game puts up over itself. An app on the game engine has its
+`shell::Shell` build it with `Options::menu`, as [engine/Shell.md](../engine/Shell.md) shows. The
+shell calls `declare()` in its constructor and builds the menu in `start()`:
 
 ```cpp
-// in the app's constructor
-v3d::ui::shell::GameMenu::declare(commands(), menu_);
+// in a constructor
+v3d::ui::shell::GameMenu::declare(commands, menu_);
 
-// in start()
-menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(vgui_, [this](bool suspended) {
+// once the ui is loaded
+menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [this](bool suspended) {
     scene_->pause(suspended);
 });
 ```
@@ -71,15 +73,15 @@ It adds no component type. It drives components the document names (defaults in
 | `folder` | a `label` | where the list is, or the question being asked |
 
 ```cpp
-chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::filesystem::path& chosen) {
+chooser_->open(FileChooser::Mode::Save, directory, { ".json" }, [this](const boost::filesystem::path& chosen) {
     save(chosen);
 });
 ```
 
 - The app routes the list's command to `pick()`, and its buttons' commands to `accept()` and
   `close()`.
-- The listing is `..` (except at the root), then the directories, then the files that match
-  the extension, each sorted by name.
+- The listing is `..` (except at the root), then the directories, then the files that have one
+  of the extensions, each sorted by name. With no extensions, every file is listed.
 - `pick()` on a directory steps into it, on `..` steps up, and on a file puts its name in the
   field. A new listing has no row chosen, so a `pick()` with no row named does nothing until one
   is chosen in it.
@@ -87,9 +89,10 @@ chooser_->open(FileChooser::Mode::Save, directory, ".json", [this](const boost::
   colon. A colon is refused on every platform: on Windows it makes a drive relative path or an
   alternate data stream. A name must also be its own file name, so no other form leaves the
   directory. In `Open` mode `accept()` refuses a file that does not exist.
-- In `Save` mode a bare name is given the extension. Saving over an existing file asks first:
-  `accept()` returns false and `confirming()` is true. Listing another directory clears the
-  question. Accepting the same name again in the same directory replaces the file.
+- In `Save` mode a name with none of the extensions is given the first. Saving over an
+  existing file asks first: `accept()` returns false and `confirming()` is true. Listing another
+  directory clears the question. Accepting the same name again in the same directory replaces
+  the file.
 
 ### Prompt
 

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/type/effect/Emitter.h>
-#include <api/type/effect/State.h>
+#include <api/ecs/effect/Emitter.h>
+#include <api/ecs/effect/State.h>
 
 #include <cstdint>
 
@@ -21,7 +21,7 @@ namespace v3d::ecs::component {
  * emit() steps it from the entity's Transform, so its particles start where the entity stands.
  * A game does not snapshot an Emitter, because each particle keeps its own previous position.
  * The game sets how many particles it emits by writing description.rate, or by calling
- * type::effect::burst().
+ * ecs::effect::burst().
  **/
 struct Emitter final {
     /**
@@ -30,8 +30,8 @@ struct Emitter final {
      **/
     explicit Emitter(uint64_t seed = 0);
 
-    type::effect::Emitter description;
-    type::effect::State state;
+    ecs::effect::Emitter description;
+    ecs::effect::State state;
 };
 
 /**

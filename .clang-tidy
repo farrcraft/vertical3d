@@ -18,7 +18,7 @@
 #  - readability-ambiguous-smartptr-reset-call wants (*p).reset() wherever a pointee has a
 #    reset() of its own - scene_, frame_, mesh_. The only spelling that satisfies it is worse
 #    to read than the one it replaces, and the case it exists to catch is handled where it
-#    arises: Engine3D releases its frame by assigning nullptr, not by reset().
+#    arises: WindowRenderer releases its frame by assigning nullptr, not by reset().
 #  - misc-no-recursion reports a menu and its submenus, a viewport layout and its children, and
 #    a json value and its members. Each is a tree whose depth is a document's, and recursion is
 #    what walking one looks like.
@@ -60,7 +60,7 @@ Checks: >
 #
 # The pattern is matched against the include as spelled rather than against a resolved path, so
 # the vendored header is named by its own last two segments - what reaches the filter is
-# voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
+# demos\voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)|(.*[\\/]noise[\\/]noiseutils\.h)'
 

@@ -18,6 +18,7 @@
 #include "Handler.h"
 #include "Lexer.h"
 #include "Parameters.h"
+#include "Requests.h"
 #include "Token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -99,6 +100,7 @@ class Reader final {
     Result attributeRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result shaderRequest(const std::string & name, Lexer * lexer, Handler * handler);
     Result primitiveRequest(const std::string & name, Lexer * lexer, Handler * handler);
+    Result curvesRequest(Lexer * lexer, Handler * handler);
 
     static void skipArguments(Lexer * lexer);
 
@@ -110,6 +112,8 @@ class Reader final {
      *        unbracketed varying or vertex parameter has no known length and ends the parse.
      **/
     bool parameters(Lexer * lexer, unsigned int vertices, ParameterList * list);
+    /** One direction of a Basis request: a name or sixteen numbers, then a step from 1 to 4. **/
+    bool basis(Lexer * lexer, Basis::Matrix * matrix, unsigned int * step);
     bool values(Lexer * lexer, const Declaration & declaration, unsigned int vertices,
         const std::string & name, std::vector<float> * floats, std::vector<std::string> * strings);
     static void skipArray(Lexer * lexer);

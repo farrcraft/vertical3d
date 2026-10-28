@@ -9,13 +9,7 @@ For anyone building, testing or changing the tree.
 
 | Document | Covers |
 |---|---|
-| [contributing/GettingStarted.md](contributing/GettingStarted.md) | From a fresh clone to a running app and a passing test run |
-| [contributing/Build.md](contributing/Build.md) | Configuring, the CMake layout and options, shaders, linking rules, and traps |
-| [contributing/Dependencies.md](contributing/Dependencies.md) | vcpkg, the Vulkan SDK, libnoise, and adding or updating a package |
-| [contributing/Testing.md](contributing/Testing.md) | Running and writing tests, the GPU tests, reference images, and checking a rendering change |
-| [contributing/Linting.md](contributing/Linting.md) | cpplint, warnings as errors, `/analyze` and clang-tidy |
-| [contributing/Review.md](contributing/Review.md) | What counts as a review finding, what a reviewer reads, and what a fix has to do |
-| [contributing/Conventions.md](contributing/Conventions.md) | Code style, and how to write comments and documents |
+| [contributing/](contributing/README.md) | Getting started, building, dependencies, testing, linting, review and conventions |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Where engine changes are made when you found the problem from another project |
 
 ## Writing an app against the api
@@ -30,9 +24,17 @@ For anyone using the libraries under `api/`, inside this tree or from another re
 | [api/rendering/](api/rendering/README.md) | Drawing: frames and passes, 2D and world primitives, meshes, lighting, capture |
 | [api/ui/](api/ui/README.md) | Building a UI from documents or in immediate mode, themes, focus and input |
 | [api/ECS.md](api/ECS.md) | The entity registry, shared components, interpolation, animation and particles |
-| [api/Types.md](api/Types.md) | Geometry, cameras, transforms, random numbers, animation and effect data |
+| [api/Types.md](api/Types.md) | Geometry queries, random numbers, checked conversions, flags and transforms |
+| [api/Cameras.md](api/Cameras.md) | The camera profile, its matrices and handedness, and the isometric orbit |
+| [api/Models.md](api/Models.md) | `model::Model`, skeletons, and loading glTF |
+| [api/Animation.md](api/Animation.md) | Clips, poses, curves, tracks and particle effects |
+| [api/Curves.md](api/Curves.md) | Curves of four types, their evaluation, Bezier handles, and conversion to basis curves |
 | [api/Grid.md](api/Grid.md) | Tile grids: movement, line of sight, terrain maps |
-| [api/Assets.md](api/Assets.md) | The asset manager and loaders, images, fonts, models and JSON documents |
+| [api/Assets.md](api/Assets.md) | The asset manager and loaders, loading on a worker, JSON documents, and writing files |
+| [api/Images.md](api/Images.md) | Images, the texture atlas, and packing a sprite sheet |
+| [api/Fonts.md](api/Fonts.md) | Typefaces, glyph atlases and text layout |
+| [api/Database.md](api/Database.md) | SQLite connections, statements and transactions |
+| [api/Interchange.md](api/Interchange.md) | Reading a glTF file or a USD stage as a scene of nodes, meshes, cameras, lights and keys |
 | [../examples/README.md](../examples/README.md) | The example projects |
 
 ## Changing the libraries themselves
@@ -41,8 +43,7 @@ For anyone working inside a library rather than using it.
 
 | Document | Covers |
 |---|---|
-| [internals/realtime/](internals/realtime/README.md) | How `api/render/realtime` works: frames in flight, recording, memory, descriptor sets |
-| [internals/UserInterface.md](internals/UserInterface.md) | How `api/ui` works: layout, drawing, hit testing and input routing |
+| [internals/](internals/README.md) | How `api/render/realtime` and `api/ui` work inside |
 | [offline/](offline/README.md) | moya and `api/render/offline`: RIB, the hiders, the shading language, the film |
 
 ## The applications
@@ -50,7 +51,8 @@ For anyone working inside a library rather than using it.
 | Document | Covers |
 |---|---|
 | [editor/](editor/README.md) | The `vertical3d` editor and `api/brep` |
-| [Games.md](Games.md) | pong, tetris, voxel and odyssey, plus imagetool and v3dshell |
+| [Demos.md](Demos.md) | The five demos in `demos/`: pong, tetris, voxel, odyssey and diorama |
+| [Imagetool.md](Imagetool.md) | `imagetool`, the command-line image tool |
 
 ## The project record
 

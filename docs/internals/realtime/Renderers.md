@@ -1,24 +1,31 @@
 # The renderers
 
-The classes in `vulkan/renderer` that turn a canvas, lines, world quads or lit meshes into draw
+The classes in `renderer/` that turn a canvas, lines, world quads or lit meshes into draw
 items.
 
 ## The renderers
 
-Each renderer in `vulkan/renderer` takes the context's device, pipeline cache, resources, ring
-and frame uniforms, plus the colour and depth formats it draws into. Each compiles a variant per
-depth state.
+Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `Grade` and
+`RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
+resources, ring, frame uniforms and textures. It holds no pointer to the context, because the
+context owns the `Quad`, `Line` and `World` it builds. `Quad`, `Line` and `World` take the
+colour and depth formats they draw into, and each of them compiles a variant per depth state.
+
+- `Quad`, `World` and `Lit` bind the textures they sample through the context's `Textures`.
+- `Lit` also takes the shadow map's format, its shaders and the front face.
+- `FullScreen` takes its fragment shader, how many images it samples, and the formats
+  of the pass it draws in.
 
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
 | `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
-| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias; built only when given a shadow format |
+| `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
 `DeviceContext` builds `Quad`, `Line` and `World` on first request against its colour format and
-`depthFormat()`. `Quad` is lazy too, because `Context3D` has no format until the
+`depthFormat()`. `Quad` is lazy too, because `WindowContext` has no format until the
 swapchain exists.
 
 **Quad text.** A batch carries a text flag, and `Canvas` never merges across it. The fragment
@@ -28,7 +35,7 @@ one-pixel edge at any scale. Other batches return `colour * texel`.
 **Lit front faces are clockwise by default.** A model is wound counter-clockwise seen from
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on
 `Profile::Hand::DirectionCrossUp` also mirrors x, which reverses the winding again, so `Lit`
-takes the front face as its last constructor argument. All six pipelines cull by it.
+takes the front face in its `Spec`. All six pipelines cull by it.
 `lighting::shadowLight()` builds its view the way `type::camera::Camera` does in the hand it is
 given, so faces wind the same under the light and the shadow pipeline culls as the cel one does.
 
@@ -41,8 +48,13 @@ grow by doubling, and retire an outgrown buffer through the ring. An object buff
 copies the objects already added, because the frame's draws name them by index. A static
 object has `firstJoint = 0`, and its pipeline ignores it.
 
-**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `type::Model::Vertex` (32 bytes) followed by
-`type::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
+The shadow map binding holds a 2D array view, a layer per cascade. With no map, it holds a map of
+one layer and one texel that `Lit` owns, cleared to the far plane at construction. The binding
+therefore always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
+own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
+
+**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes) followed by
+`model::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
 
 **`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
 A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the
@@ -52,7 +64,7 @@ for the grade's target, so they decode the result before an `_SRGB` target store
 belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::oneShot`, which waits for that upload and not for frames in flight. `Grade`'s
+`Uploader::submit`, which does not wait for the upload. `Grade`'s
 destructor releases its table and every source still in the map, before its `FullScreen` goes.
 `source()` releases the scene's registration if binding the material throws.
 

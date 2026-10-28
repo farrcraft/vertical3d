@@ -345,6 +345,27 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
 }
 
 /**
+ * Only a check or a radio item has a mark. An action item told it is checked still draws none.
+ **/
+BOOST_AUTO_TEST_CASE(an_action_item_draws_no_mark) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    fixture.bar->press(fixture.label(0));
+
+    fixture.draw();
+    const std::size_t unmarked = fixture.canvas.vertices().size();
+
+    const boost::shared_ptr<v3d::ui::component::menu::Item> open = fixture.bar->find("test::open");
+    BOOST_REQUIRE(open);
+    open->checked(true);
+    BOOST_CHECK(!open->checked());
+
+    fixture.draw();
+    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unmarked);
+}
+
+/**
  * An item is findable by the command it sends, however deep it is, and an unbound one is
  * skipped. A submenu item has no event.
  **/

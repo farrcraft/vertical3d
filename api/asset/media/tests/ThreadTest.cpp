@@ -5,6 +5,7 @@
 
 #include <api/asset/Asset.h>
 #include <api/asset/Manager.h>
+#include <api/asset/Writer.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
@@ -12,13 +13,14 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/type/Model.h>
+#include <api/model/Model.h>
 
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <latch>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -63,8 +65,11 @@ boost::shared_ptr<v3d::asset::Manager> prepare(const std::vector<std::string>& m
 
     v3d::image::Factory factory(logger);
     const boost::shared_ptr<v3d::image::Image> picture = gradient();
-    BOOST_REQUIRE(factory.write(std::string(ROOT) + "/gradient.png", picture));
-    BOOST_REQUIRE(factory.write(std::string(ROOT) + "/gradient.jpg", picture));
+    for (const char* name : {"gradient.png", "gradient.jpg"}) {
+        const std::optional<std::string> encoded = factory.encode(picture, v3d::image::Factory::kind(name));
+        BOOST_REQUIRE(encoded);
+        BOOST_REQUIRE(v3d::asset::writeFile(boost::filesystem::path(ROOT) / name, *encoded));
+    }
     for (const std::string& model : models) {
         boost::filesystem::copy_file(boost::filesystem::path("data") / model, boost::filesystem::path(ROOT) / model,
             boost::filesystem::copy_options::overwrite_existing);
@@ -90,14 +95,14 @@ bool same(const boost::shared_ptr<v3d::asset::Asset>& expected, const boost::sha
     if (!expectedModel || !actualModel || !expectedModel->model() || !actualModel->model()) {
         return false;
     }
-    const v3d::type::Model& left = *expectedModel->model();
-    const v3d::type::Model& right = *actualModel->model();
+    const v3d::model::Model& left = *expectedModel->model();
+    const v3d::model::Model& right = *actualModel->model();
     if (left.vertices().size() != right.vertices().size() || left.indices() != right.indices() ||
         left.parts().size() != right.parts().size() || left.materials().size() != right.materials().size()) {
         return false;
     }
     if (std::memcmp(left.vertices().data(), right.vertices().data(),
-        left.vertices().size() * sizeof(v3d::type::Model::Vertex)) != 0) {
+        left.vertices().size() * sizeof(v3d::model::Model::Vertex)) != 0) {
         return false;
     }
     for (std::size_t material = 0; material < left.materials().size(); material++) {
@@ -127,7 +132,7 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
 
     std::vector<boost::shared_ptr<v3d::asset::Asset>> expected;
     for (const std::string& name : names) {
-        expected.push_back(assets->loadTypeFromExt(name));
+        expected.push_back(assets->load(name));
         BOOST_REQUIRE_MESSAGE(expected.back(), name << " loads on one thread");
     }
 
@@ -143,7 +148,7 @@ BOOST_AUTO_TEST_CASE(thread_one_manager_loads_on_many_threads_test) {
             for (std::size_t round = 0; round < rounds; round++) {
                 // each thread starts at a different file, so different decoders run at once
                 const std::size_t which = (worker + round) % names.size();
-                if (!same(expected[which], assets->loadTypeFromExt(names[which]))) {
+                if (!same(expected[which], assets->load(names[which]))) {
                     mismatches++;
                 }
             }

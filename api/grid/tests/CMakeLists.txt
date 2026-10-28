@@ -3,6 +3,8 @@ v3d_add_test(grid
 	"TileGridTest.cpp"
 	"PathfindingTest.cpp"
 	"LineOfSightTest.cpp"
+	"SightTest.cpp"
+	"GridSetTest.cpp"
 	"OverlayTest.cpp"
 	"PictureTest.cpp")
 

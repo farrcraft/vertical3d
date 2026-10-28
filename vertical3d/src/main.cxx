@@ -9,5 +9,5 @@
 #include "Controller.h"
 
 int main(int /* argc */, char *argv[]) {
-    return v3d::engine::run<v3d::editor::Controller>(argv[0], "Vertical|3D");
+    return v3d::engine::run<v3d::editor::Controller>(argv[0], { .organization = "Vertical3D", .application = "Editor" });
 }

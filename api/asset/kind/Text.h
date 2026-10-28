@@ -19,7 +19,7 @@ class Text final : public Asset {
  public:
     /**
      **/
-    Text(const std::string& name, Type t, const std::string& content);
+    Text(const std::string& name, const std::string& content);
 
     /**
      **/

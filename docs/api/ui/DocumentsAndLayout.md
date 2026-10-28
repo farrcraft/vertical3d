@@ -18,15 +18,27 @@ A ui document is JSON with three top-level keys:
 ```
 
 - `themes` (required) is an array of themes. See [Themes and styles](Themes.md#themes-and-styles).
-- `theme` (optional) names the active theme. A name that matches no theme fails the load.
+- `theme` (optional) names the active theme. A name that matches no theme fails the load,
+  because the document would otherwise be half loaded.
 - `containers` (required) is an array. Each container has a `name`, a `visible` flag and a
   `components` array. A container is shown and hidden as a whole.
 
-**A member of the wrong type never throws out of the load.** A required member fails the load
-with a log line when it is missing or of the wrong type. The required members are a component's
-`type` and `name`, a container's `name`, `visible` and `components`, and a menu item's `label`
-and `type`. An
-optional one of the wrong type is logged and ignored, and the setting keeps its default.
+**One rule decides what a bad member does, for themes and components alike.** Nothing throws
+out of the load.
+
+- A required member that is missing, of the wrong type, or a word it does not take fails the
+  load with a log line. An entry of an array that is of the wrong type fails it the same way.
+- An optional member of the wrong type, or a word it does not take, is logged as a warning and
+  ignored, and the setting keeps its default. That includes an optional array such as
+  `children` or `styles`, and a word such as an `anchor`, an `edge` or a button style's `state`.
+
+The required members are these, and every other member is optional:
+
+- a container's `name`, `visible` and `components`, and a component's `type` and `name`
+- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`
+- a toolbar's `buttons` and an icon's `source`
+- a theme's `name`, and a style's `class` and `name`
+- a style property's `name`, with a colour's or a number's `value` and an image's `source`
 
 Every component entry has a `type` and a `name`. These keys apply to every component:
 

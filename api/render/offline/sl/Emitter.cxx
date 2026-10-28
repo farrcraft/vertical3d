@@ -32,6 +32,7 @@
 #include <api/render/offline/sl/syntax/Variable.h>
 #include <api/render/offline/sl/syntax/While.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -176,6 +177,8 @@ bool Emitter::emit(runtime::Program* program) {
     program_->name = shader_->name;
     program_->registers.clear();
     program_->instructions.clear();
+    program_->traces = false;
+    program_->differentiates = false;
     // the symbols come first and in the compiler's order, so a renderer can bind a parameter
     // or read Ci by the symbol's index without looking up its name
     for (const Symbol & symbol : symbols_) {
@@ -184,6 +187,7 @@ bool Emitter::emit(runtime::Program* program) {
         reg.storage = symbol.storage;
         reg.name = symbol.name;
         reg.parameter = symbol.role == Symbol::Role::PARAMETER;
+        reg.output = reg.parameter && symbol.output;
         program_->registers.push_back(reg);
     }
     program_->symbols = symbols_.size();
@@ -204,6 +208,31 @@ bool Emitter::emit(runtime::Program* program) {
         program_->prologue = 0;
         return false;
     }
+    const std::vector<Signature> & table = builtins();
+    program_->traces = std::ranges::any_of(program_->instructions, [&table](const runtime::Instruction & instruction) {
+        if (instruction.opcode != runtime::Opcode::CALL) {
+            return false;
+        }
+        const Signature::Body body = table[static_cast<std::size_t>(instruction.left)].body;
+        return body == Signature::Body::TRACE || body == Signature::Body::TRANSMISSION;
+    });
+    // du and dv are the steps to the neighbours, so a shader that reads them differentiates
+    // as surely as one that calls Du
+    const int du = program_->symbol("du");
+    const int dv = program_->symbol("dv");
+    const auto steps = [du, dv](int reg) { return reg >= 0 && (reg == du || reg == dv); };
+    program_->differentiates = std::ranges::any_of(program_->instructions, [&table, &steps](const runtime::Instruction & instruction) {
+        if (std::ranges::any_of(instruction.arguments, steps)) {
+            return true;
+        }
+        // a call's left operand is the built-in it calls, not a register
+        if (instruction.opcode != runtime::Opcode::CALL) {
+            return steps(instruction.left) || steps(instruction.right);
+        }
+        const Signature::Body body = table[static_cast<std::size_t>(instruction.left)].body;
+        return body == Signature::Body::DU || body == Signature::Body::DV || body == Signature::Body::DERIV ||
+            body == Signature::Body::AREA || body == Signature::Body::CALCULATENORMAL;
+    });
     return true;
 }
 
@@ -575,6 +604,13 @@ int Emitter::emitInline(const syntax::ExpressionPtr & expression) {
     emitBlock(function.body);
     returns_.pop_back();
     put(runtime::Opcode::LEAVE, {.target = -1, .left = -1, .right = -1}, expression);
+    // an output formal is passed by reference. The compiler makes its argument a variable, so
+    // what the body left in the formal goes back to that variable's register
+    for (std::size_t i = 0; i < given.size() && i < function.parameters.size(); i++) {
+        if (function.parameters[i].output) {
+            put(runtime::Opcode::MOVE, {.target = given[i], .left = function.parameters[i].symbol, .right = -1}, call.arguments[i]);
+        }
+    }
     return result;
 }
 

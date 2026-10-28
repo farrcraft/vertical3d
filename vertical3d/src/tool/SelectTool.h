@@ -7,13 +7,13 @@
 
 #include <api/log/Logger.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <optional>
 #include <string>
 
 #include "Picker.h"
-#include "SelectMask.h"
 #include "Tool.h"
 
 #include <boost/shared_ptr.hpp>
@@ -72,7 +72,7 @@ class SelectTool final : public Tool {
     /**
      * The view a click will be cast into, set as the cursor moves between viewports.
      **/
-    void view(const boost::shared_ptr<ViewPort>& view);
+    void view(const boost::shared_ptr<ViewPort>& view) override;
 
     /**
      * @return the view the tool is picking in, which may be null
@@ -106,7 +106,12 @@ class SelectTool final : public Tool {
      * @return whether a press on nothing is held. The view it was made in stays the view
      *         the release is measured in
      **/
-    bool dragging() const noexcept;
+    bool dragging() const noexcept override;
+
+    /**
+     * @return true: a press no other tool takes picks
+     **/
+    bool takes(const glm::vec2& position) const override;
 
     /**
      * @return the rubber band being dragged, or nothing unless a held press has moved far

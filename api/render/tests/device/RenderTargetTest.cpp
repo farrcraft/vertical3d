@@ -11,8 +11,8 @@
 #include <api/render/realtime/Frame.h>
 #include <api/render/realtime/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/vulkan/frame/Recorder.h>
-#include <api/render/realtime/vulkan/frame/RenderTarget.h>
+#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 
@@ -33,8 +33,8 @@ using v3d::render::realtime::Frame;
 using v3d::render::realtime::Pass;
 using v3d::render::realtime::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::vulkan::frame::Recorder;
-using v3d::render::realtime::vulkan::frame::RenderTarget;
+using v3d::render::realtime::Recorder;
+using v3d::render::realtime::RenderTarget;
 using v3d::render::realtime::vulkan::memory::Buffer;
 using v3d::render::realtime::vulkan::pipeline::Builder;
 
@@ -91,18 +91,8 @@ std::vector<unsigned char> drawFrame(v3d::test::Headless* headless, const boost:
     writer->target(slots);
     writer->clearColour(colour);
 
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get());
-
-    Capture capture(headless->device, headless->logger);
-    Capture::Source source;
-    source.image = output->image();
-    source.extent = output->extent();
-    source.format = output->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
+    headless->draw(frame, *output, &capture);
     return centre(headless, &capture, path);
 }
 
@@ -120,10 +110,11 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
     const uint32_t frames = headless.context->ring()->framesInFlight();
     BOOST_REQUIRE_GT(frames, 1U);
 
-    const boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, false, false, frames);
-    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat);
+    const boost::shared_ptr<RenderTarget> slots = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = false, .sampledDepth = false,
+            .images = frames});
+    const boost::shared_ptr<RenderTarget> output = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat});
     BOOST_REQUIRE_EQUAL(slots->images(), frames);
 
     std::vector<TextureHandle> handles;
@@ -155,8 +146,8 @@ BOOST_AUTO_TEST_CASE(a_target_per_frame_reads_the_frame_before) {
 BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
     const v3d::test::Headless headless(colourFormat, width, height);
     const uint32_t frames = headless.context->ring()->framesInFlight();
-    BOOST_CHECK_THROW(RenderTarget(headless.device, headless.context->ring(), width, height, colourFormat, false, false,
-        frames + 1), std::runtime_error);
+    BOOST_CHECK_THROW(RenderTarget(*headless.context, RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat,
+        .images = frames + 1}), std::runtime_error);
 }
 
 /**
@@ -165,8 +156,8 @@ BOOST_AUTO_TEST_CASE(a_target_holds_one_image_or_one_per_frame) {
  **/
 BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
     const v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
     VkImage image = target->image();
     VkImageView view = target->view();
     VkImage depth = target->depthImage();
@@ -195,8 +186,8 @@ BOOST_AUTO_TEST_CASE(a_failed_recreate_leaves_the_target_as_it_was) {
  **/
 BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
     const v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(),
-        width, height, VK_FORMAT_B8G8R8A8_UNORM);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_B8G8R8A8_UNORM});
 
     Builder builder(headless.device);
     builder.name("rgba")
@@ -230,8 +221,8 @@ BOOST_AUTO_TEST_CASE(a_pipeline_for_another_format_throws) {
  **/
 BOOST_AUTO_TEST_CASE(only_a_swapchain_pass_wants_the_swapchain_depth) {
     const v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(headless.device, headless.context->ring(), width, height,
-        colourFormat, true);
+    const boost::shared_ptr<RenderTarget> target = boost::make_shared<RenderTarget>(*headless.context,
+        RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat, .depth = true});
 
     Frame frame;
     const boost::shared_ptr<Pass> offscreen = frame.pass("offscreen");

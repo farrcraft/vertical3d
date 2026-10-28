@@ -9,7 +9,7 @@ v3d_add_api_library(event
  "kind/Sound.h" "kind/Sound.cpp"
  "Event.h" "Event.cpp"
  "Mapper.h" "Mapper.cpp"
- "Engine.h" "Engine.cpp"
+ "Router.h" "Router.cpp"
  "Bindings.h" "Bindings.cpp"
  "Commands.h" "Commands.cpp"
  "Source.h" "Source.cpp"

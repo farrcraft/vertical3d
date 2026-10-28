@@ -8,7 +8,7 @@
 #include <api/event/Commands.h>
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/menu/Menu.h>
 
 #include <functional>
@@ -60,12 +60,12 @@ class GameMenu {
      * @param names the container that is shown and hidden, and the menu inside it that
      *        navigation drives
      **/
-    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend, const Names& names);
+    GameMenu(const boost::shared_ptr<Interface>& engine, const Suspend& suspend, const Names& names);
 
     /**
      * The default container and menu names.
      **/
-    GameMenu(const boost::shared_ptr<Engine>& engine, const Suspend& suspend);
+    GameMenu(const boost::shared_ptr<Interface>& engine, const Suspend& suspend);
 
     /**
      * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",
@@ -130,7 +130,7 @@ class GameMenu {
     boost::shared_ptr<Container> container() const;
     boost::shared_ptr<component::menu::Menu> menu() const;
 
-    boost::shared_ptr<Engine> engine_;
+    boost::shared_ptr<Interface> engine_;
     Suspend suspend_;
     std::string containerName_;
     std::string menuName_;

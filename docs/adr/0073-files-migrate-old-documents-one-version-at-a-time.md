@@ -1,7 +1,8 @@
 # ADR-0073: Files: migrate old documents one version at a time
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-04
+**Amended by**: [ADR-0102](0102-editor-scene-records-are-rows-with-json-payloads.md)
 **Documented in**: [api/Assets.md](../api/Assets.md)
 
 ## Context

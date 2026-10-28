@@ -26,7 +26,7 @@ content went. Numbers are never reused.
 | [0003](0003-rendering-one-engine-for-2d-and-3d.md) | Rendering: one engine for 2D and 3D | accepted |
 | [0004](0004-rendering-submit-draw-items-as-data.md) | Rendering: submit draw items as data | accepted |
 | [0005](0005-2d-one-batched-quad-pipeline.md) | 2D: one batched quad pipeline | amended by 0036, 0042 |
-| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088 |
+| [0008](0008-shaders-descriptor-sets-by-update-frequency.md) | Shaders: descriptor sets by update frequency | amended by 0064, 0088, 0109 |
 | [0009](0009-colour-display-space-unorm-swapchain.md) | Colour: display space, UNORM swapchain | amended by 0049, 0066 |
 | [0010](0010-meshes-owned-by-the-app-that-built-them.md) | Meshes: owned by the app that built them | amended by 0061; superseded by 0065 |
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
@@ -39,7 +39,7 @@ content went. Numbers are never reused.
 | [0049](0049-swapchain-caller-picks-the-format.md) | Swapchain: caller picks the format | accepted |
 | [0051](0051-frames-in-flight-ring-separate-from-presenting.md) | Frames: in-flight ring separate from presenting | accepted |
 | [0052](0052-camera-selectable-handedness.md) | Camera: selectable handedness | accepted |
-| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | accepted |
+| [0053](0053-memory-optional-vma-suballocation.md) | Memory: optional VMA suballocation | amended by 0110 |
 | 0055 | *Not a decision. Now in api/image/TextureAtlas.h* | removed |
 | 0056 | *Not a decision. Now in api/type/camera/Profile.h* | removed |
 | [0061](0061-resources-explicit-release-generational-handles.md) | Resources: explicit release, generational handles | accepted |
@@ -53,6 +53,10 @@ content went. Numbers are never reused.
 | [0082](0082-textures-owned-by-the-device-context.md) | Textures: owned by the device context | accepted |
 | [0085](0085-rendering-a-pass-chooses-whether-depth-is-written.md) | Rendering: a pass chooses whether depth is written | accepted |
 | [0088](0088-lit-per-object-data-in-a-storage-buffer.md) | Lit: per-object data in a storage buffer | accepted |
+| [0108](0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md) | Memory: an upload is its own submission, freed by the ring | accepted |
+| [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
+| [0110](0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted |
+| [0115](0115-rendering-cascaded-shadows-in-a-layered-map.md) | Rendering: cascaded shadows in a layered map | accepted |
 
 ## Offline rendering
 
@@ -67,9 +71,12 @@ content went. Numbers are never reused.
 | [0077](0077-offline-one-shared-ray-tracer.md) | Offline: one shared ray tracer | superseded by 0078 |
 | [0078](0078-offline-moya-is-the-one-renderer-ray-tracing-is-a-hider.md) | Offline: moya is the one renderer, ray tracing is a hider | accepted |
 | [0092](0092-offline-a-bounding-volume-hierarchy-for-traced-rays.md) | Offline: a bounding volume hierarchy for traced rays | accepted |
-| [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | accepted |
+| [0093](0093-offline-derivatives-from-neighbouring-shading-points.md) | Offline: derivatives from neighbouring shading points | amended by 0113, 0114 |
 | [0094](0094-offline-area-lights-sampled-per-shading-point.md) | Offline: area lights sampled per shading point | accepted |
 | [0095](0095-offline-displaced-geometry-is-diced-into-the-traced-scene.md) | Offline: displaced geometry is diced into the traced scene | accepted |
+| [0113](0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth | accepted |
+| [0114](0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative | accepted |
+| [0125](0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons | accepted |
 
 ## User interface
 
@@ -97,10 +104,10 @@ content went. Numbers are never reused.
 | [0028](0028-apps-the-shared-app-shell-lives-in-the-api.md) | Apps: the shared app shell lives in the api | accepted |
 | [0030](0030-models-one-interleaved-array.md) | Models: one interleaved array | superseded by 0069 |
 | [0032](0032-loop-fixed-step-simulation-variable-rate-rendering.md) | Loop: fixed-step simulation, variable-rate rendering | accepted |
-| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | accepted |
+| [0041](0041-files-write-documents-atomically.md) | Files: write documents atomically | amended by 0101 |
 | [0043](0043-input-apps-see-raw-events-before-bindings.md) | Input: apps see raw events before bindings | amended by 0081 |
 | [0069](0069-models-material-parts-over-one-vertex-buffer.md) | Models: material parts over one vertex buffer | accepted |
-| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | accepted |
+| [0073](0073-files-migrate-old-documents-one-version-at-a-time.md) | Files: migrate old documents one version at a time | amended by 0102 |
 | [0079](0079-assets-loaders-are-registered.md) | Assets: loaders are registered | accepted |
 | [0080](0080-apps-the-engine-owns-startup-and-shutdown-order.md) | Apps: the engine owns startup and shutdown order | accepted |
 | [0081](0081-input-key-events-and-commands-are-separate.md) | Input: key events and commands are separate | accepted |
@@ -109,6 +116,12 @@ content went. Numbers are never reused.
 | [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
 | [0090](0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted |
 | [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
+| [0116](0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted |
+| [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |
+| [0118](0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) | Assets: a loader is keyed by the kind it produces | accepted |
+| [0119](0119-assets-an-apps-document-list-is-an-asset-manifest.md) | Assets: an app's document list is an asset manifest | accepted |
+| [0123](0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene | accepted |
+| [0112](0112-audio-a-voice-is-placed-in-world-coordinates.md) | Audio: a voice is placed in world coordinates | accepted |
 
 ## Grid and ECS
 
@@ -120,21 +133,35 @@ content went. Numbers are never reused.
 | [0063](0063-ecs-draw-from-a-transform-plus-a-component-per-kind.md) | ECS: draw from a transform plus a component per kind | accepted |
 | [0070](0070-animation-cpu-sampling-playback-on-the-fixed-step.md) | Animation: CPU sampling, playback on the fixed step | accepted |
 | [0072](0072-particles-an-emitter-component-owns-its-particles.md) | Particles: an emitter component owns its particles | accepted |
-| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | accepted |
+| [0087](0087-grid-a-region-is-a-grid-placed-by-its-corner.md) | Grid: a region is a grid placed by its corner | amended by 0111 |
+| [0111](0111-grid-a-search-may-span-a-set-of-placed-grids.md) | Grid: a search may span a set of placed grids | accepted |
 
 ## Editor
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | accepted |
+| [0013](0013-editor-a-mesh-is-a-dag-node.md) | Editor: a mesh is a dag node | superseded by 0099 |
 | [0014](0014-editor-pick-by-cpu-ray-cast.md) | Editor: pick by CPU ray cast | accepted |
 | [0015](0015-editor-manipulators-edit-the-object-transform.md) | Editor: manipulators edit the object transform | amended by 0096 |
 | [0016](0016-editor-undo-records-completed-changes.md) | Editor: undo records completed changes | accepted |
 | 0017 | *Not a decision. Now in docs/editor/CommandsAndUndo.md and api/event/Commands.h* | removed |
-| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041 |
+| [0018](0018-editor-projects-saved-as-json-with-exact-topology.md) | Editor: projects saved as JSON with exact topology | amended by 0041; superseded by 0101 |
 | [0096](0096-editor-handles-pivot-at-the-mean-of-the-selection.md) | Editor: handles pivot at the mean of the selection | accepted |
 | [0097](0097-editor-faces-wind-clockwise-seen-from-outside.md) | Editor: faces wind clockwise seen from outside | accepted |
 | [0098](0098-editor-topology-changes-undone-from-snapshots.md) | Editor: topology changes undone from snapshots | accepted |
+| [0099](0099-editor-scene-items-own-identity-and-placement.md) | Editor: scene items own identity and placement | amended by 0104 |
+| [0100](0100-editor-a-project-is-a-directory-with-a-manifest.md) | Editor: a project is a directory with a manifest | accepted |
+| [0101](0101-editor-a-scene-document-is-a-sqlite-database.md) | Editor: a scene document is a SQLite database | accepted |
+| [0102](0102-editor-scene-records-are-rows-with-json-payloads.md) | Editor: scene records are rows with JSON payloads | accepted |
+| [0103](0103-editor-items-have-persistent-document-ids.md) | Editor: items have persistent document ids | accepted |
+| [0104](0104-editor-the-scene-evaluates-a-hierarchy-of-items.md) | Editor: the scene evaluates a hierarchy of items | accepted |
+| [0105](0105-editor-animation-is-scalar-curves-on-item-properties.md) | Editor: animation is scalar curves on item properties | accepted |
+| [0106](0106-editor-a-renderer-interface-for-interactive-a-process-for-batch.md) | Editor: a renderer interface for interactive, a process for batch | accepted |
+| [0120](0120-editor-a-frame-is-evaluated-not-posed-into-items.md) | Editor: a frame is evaluated, not posed into items | accepted |
+| [0121](0121-editor-component-selection-belongs-to-the-item.md) | Editor: component selection belongs to the item | amended by 0126 |
+| [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
+| [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
+| [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
 
 ## Build, testing and code
 
@@ -147,6 +174,7 @@ content went. Numbers are never reused.
 | [0048](0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted |
 | 0050 | *Merged into 0054* | removed |
 | [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
+| [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | accepted |
 
 ## Process
 

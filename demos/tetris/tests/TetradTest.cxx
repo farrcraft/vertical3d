@@ -1,0 +1,123 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include <demos/tetris/src/Tetrad.h>
+
+#include <string>
+
+#include <boost/test/unit_test.hpp>
+
+namespace {
+
+/**
+ * An L, whose layout differs from each of its own rotations. A turn that did nothing, or
+ * turned the wrong way, therefore shows up.
+ **/
+Tetrad::ShapeInfo el() {
+    Tetrad::ShapeInfo shape;
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            shape.layout_[i][j] = 0;
+        }
+    }
+    shape.layout_[0][0] = 1;
+    shape.layout_[1][0] = 1;
+    shape.layout_[2][0] = 1;
+    shape.layout_[2][1] = 1;
+    shape.color_ = "orange";
+    return shape;
+}
+
+bool same(const Tetrad::ShapeInfo & left, const Tetrad::ShapeInfo & right) {
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            if (left.layout_[i][j] != right.layout_[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+BOOST_AUTO_TEST_CASE(tetrad_rotation_test) {
+    const Tetrad::ShapeInfo start = el();
+
+    Tetrad piece(start);
+    piece.rotate(Tetrad::CLOCKWISE);
+    BOOST_CHECK_EQUAL(same(piece.shape(), start), false);
+    BOOST_CHECK_EQUAL(piece.orientation(), 1U);
+
+    // four turns the same way come back to where they started
+    piece.rotate(Tetrad::CLOCKWISE);
+    piece.rotate(Tetrad::CLOCKWISE);
+    piece.rotate(Tetrad::CLOCKWISE);
+    BOOST_CHECK_EQUAL(same(piece.shape(), start), true);
+    BOOST_CHECK_EQUAL(piece.orientation(), 0U);
+}
+
+BOOST_AUTO_TEST_CASE(tetrad_counterclockwise_test) {
+    const Tetrad::ShapeInfo start = el();
+
+    // the two directions have to be each other's inverse
+    Tetrad piece(start);
+    piece.rotate(Tetrad::COUNTERCLOCKWISE);
+    BOOST_CHECK_EQUAL(same(piece.shape(), start), false);
+    BOOST_CHECK_EQUAL(piece.orientation(), 3U);
+
+    piece.rotate(Tetrad::CLOCKWISE);
+    BOOST_CHECK_EQUAL(same(piece.shape(), start), true);
+    BOOST_CHECK_EQUAL(piece.orientation(), 0U);
+}
+
+BOOST_AUTO_TEST_CASE(tetrad_normalize_test) {
+    const Tetrad::ShapeInfo shape = el();
+    // push it away from the corner
+    Tetrad::ShapeInfo moved = shape;
+    for (unsigned int i = 0; i < 4; i++) {
+        for (unsigned int j = 0; j < 4; j++) {
+            moved.layout_[i][j] = 0;
+        }
+    }
+    moved.layout_[1][1] = 1;
+    moved.layout_[2][1] = 1;
+
+    Tetrad::normalize(&moved);
+    BOOST_CHECK_EQUAL(moved.layout_[0][0], 1);
+    BOOST_CHECK_EQUAL(moved.layout_[1][0], 1);
+    BOOST_CHECK_EQUAL(moved.layout_[1][1], 0);
+
+    // a turn leaves the result normalised too, so a shape never drifts out of the corner
+    Tetrad piece(shape);
+    piece.rotate(Tetrad::CLOCKWISE);
+    const Tetrad::ShapeInfo turned = piece.shape();
+    Tetrad::ShapeInfo again = turned;
+    Tetrad::normalize(&again);
+    BOOST_CHECK_EQUAL(same(turned, again), true);
+}
+
+BOOST_AUTO_TEST_CASE(tetrad_assignment_test) {
+    Tetrad piece(el());
+    piece.position(Tetrad::PositionType(4, 7));
+
+    // assignment copies the position, as the implicit copy constructor does
+    Tetrad copy;
+    copy = piece;
+    BOOST_CHECK_EQUAL(copy.position().first, 4U);
+    BOOST_CHECK_EQUAL(copy.position().second, 7U);
+    BOOST_CHECK_EQUAL(copy.initialized(), true);
+    BOOST_CHECK_EQUAL(same(copy.shape(), piece.shape()), true);
+}
+
+BOOST_AUTO_TEST_CASE(tetrad_extent_test) {
+    // the L is three tall and two wide, so a width and height that swapped rows for columns
+    // would fail. An empty tetrad has no extent
+    const Tetrad piece(el());
+    BOOST_CHECK_EQUAL(piece.width(), 2U);
+    BOOST_CHECK_EQUAL(piece.height(), 3U);
+
+    BOOST_CHECK_EQUAL(Tetrad().width(), 0U);
+}
+
+};  // namespace

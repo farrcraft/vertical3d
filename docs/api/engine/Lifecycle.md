@@ -27,7 +27,7 @@ class AppEngine : public v3d::engine::Engine {
 #include <api/engine/Main.h>
 
 int main(int argc, char* argv[]) {
-    return v3d::engine::run<AppEngine>(argv[0], "myapp");
+    return v3d::engine::run<AppEngine>(argv[0], { .organization = "Vertical3D", .application = "MyApp" });
 }
 ```
 
@@ -38,19 +38,21 @@ translation unit. An app does not include `SDL_main.h` itself.
 
 ### The run function
 
-`v3d::engine::run<T>(argv[0], name, args...)` in
+`v3d::engine::run<T>(argv[0], identity, args...)` in
 [api/engine/Application.h](../../../api/engine/Application.h) is the whole of `main`. It does this,
 in order:
 
 1. Works out the app path, the directory the executable is in, from `argv[0]`.
-2. Opens the log at `v3d.log` in that directory. If that file cannot be opened, as in a
-   directory the app cannot write to, the log goes to stderr instead and the app still runs.
+2. Opens the log, as [Logging](README.md#logging) describes.
 3. Constructs `T` with the app path, followed by any extra `args` you passed. Use those for
    options parsed from the command line before the engine exists.
-4. Calls `initialize()` and then `eventLoop()` inside a `try` block. An exception is written to
-   the log as `"<name> failed: <message>"`. A windowed app has no console, so the log is the
+4. Gives the engine the app's `engine::Identity`: the organization and the application the
+   player's files are kept under. [Files.md](Files.md#settings-and-the-players-files) says how
+   to choose them.
+5. Calls `initialize()` and then `eventLoop()` inside a `try` block. An exception is written to
+   the log as `"<application> failed: <message>"`. A windowed app has no console, so the log is the
    only place an error is readable.
-5. Calls `shutdown()` after the `try` block, so it runs whether the loop ended normally or by
+6. Calls `shutdown()` after the `try` block, so it runs whether the loop ended normally or by
    throwing. A throw from `release()`, such as a lost device, is caught and logged the same
    way. The window and SDL are then left to the engine's destructor, which runs after the app's
    own members are destroyed, so whatever presents to the window is still released first.
@@ -67,7 +69,7 @@ otherwise.
 1. The logger.
 2. The asset manager, rooted at `<app path>/data/`, with the picture and model loaders
    registered on it.
-3. The event dispatcher (`entt::dispatcher`) and the event engine.
+3. The event dispatcher (`entt::dispatcher`) and the event router.
 4. With `Feature::Config`: the config, read from `data/config.json`, and the bindings, if the
    config lists a binding document.
 5. With `Feature::KeyboardInput` or `Feature::MouseInput`: the input devices.
@@ -108,10 +110,10 @@ are already destroyed when a base class destructor runs.
   `initialize()` or call `shutdown()`; neither is possible.
 - **Release everything that presents to the window in `release()`.** That includes a second
   renderer built after startup.
-- **A quit command calls `quit()`.** `quit()` sets a flag, and the loop stops before the next
-  frame. The loop still ticks and renders after an event handler returns, so the window must
-  outlive the handler. An app cannot reach `shutdown()`, so it cannot tear the window down from
-  a handler.
+- **A quit command calls `quit()`.** `quit()` sets a flag. The loop stops polling events, and
+  leaves as soon as the handler returns, without ticking or rendering that frame. The window
+  stays open until the engine releases the app. An app cannot reach `shutdown()`, so it cannot
+  tear the window down from a handler.
 - The engine already answers the `ui::quit` command, a window close request and an SDL quit
   event. A menu's quit item and a quit key can both send `ui::quit`. It answers
   `ui::fullscreen` too, by switching the window between full screen and a window.

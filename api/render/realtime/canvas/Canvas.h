@@ -8,6 +8,7 @@
 #include <api/render/realtime/Handle.h>
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include "Stacks.h"
@@ -15,10 +16,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-
-namespace v3d::font {
-class TextBuffer;
-};  // namespace v3d::font
 
 namespace v3d::render::realtime::canvas {
 
@@ -36,7 +33,7 @@ namespace v3d::render::realtime::canvas {
  * from a glyph atlas and a label sample the same texture and must not merge.
  *
  * Nothing here calls Vulkan. The canvas is filled during a tick and handed to
- * vulkan::renderer::Quad, which uploads it and turns each batch into a draw item.
+ * renderer::Quad, which uploads it and turns each batch into a draw item.
  *
  * Coordinates are in pixels with the origin at the top left, and the modelview stack
  * applies on the cpu as vertices are added. A canvas given a space draws in that space's
@@ -243,16 +240,32 @@ class Canvas final {
     void ring(const Ring& shape, const glm::vec4& colour);
 
     /**
-     * Append text that a font's text buffer has already laid out.
+     * A filled band between two points, at any angle, as one untextured quad.
      *
-     * The buffer holds positions, atlas coordinates and colours, so this copies them
-     * into the stream against the atlas texture. Laying the text out is the font
-     * library's job.
+     * Its long sides run parallel to the line from one point to the other, half the width
+     * either side of it. Its ends are square and stop at the two points. A segment whose
+     * points are the same, or whose width is not more than zero, draws nothing.
+     **/
+    struct Segment {
+        glm::vec2 from{0.0F};
+        glm::vec2 to{0.0F};
+        float width = 0.0F;
+    };
+
+    void segment(const Segment& shape, const glm::vec4& colour);
+
+    /**
+     * Append text that has already been laid out, as vertices and the triangles over them.
      *
-     * @param text a laid out text buffer, whose contents are copied rather than kept
+     * The run is drawn against the atlas the glyphs were packed into, and is marked as text,
+     * so it never merges with a picture that samples the same texture. Laying the text out is
+     * the caller's job.
+     *
+     * @param vertices positions, atlas coordinates and colours, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
      * @param atlas the texture the glyphs were packed into
      **/
-    void text(const v3d::font::TextBuffer& text, const TextureHandle& atlas);
+    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
 
     /**
      * @return the vertex stream, in the layout the quad pipeline declares

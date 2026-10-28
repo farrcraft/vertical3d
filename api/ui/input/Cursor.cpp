@@ -7,7 +7,7 @@
 
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
@@ -76,7 +76,7 @@ void lit(const boost::shared_ptr<Component>& component, bool on) {
 
 };  // namespace
 
-Cursor::Cursor(const boost::shared_ptr<Engine>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
+Cursor::Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const paint::Measure& measure) :
     ui_(ui),
     dispatcher_(dispatcher),

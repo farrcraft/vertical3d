@@ -59,12 +59,6 @@ std::optional<Segment> loopSegment(const BRep & mesh, const std::vector<Index> &
 bool ownsEdge(const BRep & mesh, Index edge);
 
 /**
- * Whether the edge a half edge belongs to is selected: the two halves are one edge to a
- * selection, so either being selected is enough.
- **/
-bool edgeSelected(const BRep & mesh, Index edge);
-
-/**
  * The half edges that leave a vertex, in index order.
  *
  * A half edge names the vertex it ends at, so the half edge after it in its loop is one that
@@ -87,6 +81,11 @@ std::vector<Index> facesAround(const BRep & mesh, Index vertex);
  * @return zero for a face with no area, or with fewer than three points
  **/
 glm::vec3 newellNormal(const BRep & mesh, Index face);
+
+/**
+ * The same normal, for a face given as its points in loop order.
+ **/
+glm::vec3 newellNormal(const std::vector<glm::vec3> & points);
 
 /**
  * The mid point of a face: the average of the vertices its loop ends at.

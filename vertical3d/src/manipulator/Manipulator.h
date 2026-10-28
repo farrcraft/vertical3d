@@ -7,8 +7,8 @@
 
 #include <api/brep/BRep.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/view/ViewPort.h>
 
+#include "Screen.h"
 #include "Target.h"
 
 #include <cstdint>
@@ -126,7 +126,7 @@ class Manipulator {
      * The view's camera matrices are rebuilt first, so the handles match where the camera
      * is now rather than where it was when the last frame was drawn.
      **/
-    Placement placement(const Target& target, const ViewPort& view) const;
+    Placement placement(const Target& target, const Screen& screen) const;
 
     /**
      * Which handle the cursor is over.
@@ -134,13 +134,13 @@ class Manipulator {
      * @param axis set to the handle under the cursor, and untouched when there is none
      * @return whether a handle is under the cursor
      **/
-    virtual bool grab(const Target& target, const ViewPort& view,
+    virtual bool grab(const Target& target, const Screen& screen,
         const glm::vec2& cursor, Axis* axis) const;
 
     /**
      * Append the handles to a canvas, in world space. Nothing is drawn for an empty target.
      **/
-    virtual void draw(const Target& target, const ViewPort& view,
+    virtual void draw(const Target& target, const Screen& screen,
         v3d::render::realtime::canvas::Line* canvas) const = 0;
 
     /**
@@ -149,7 +149,7 @@ class Manipulator {
      * @param from where the cursor was
      * @param to where it is
      **/
-    void apply(const Target& target, const ViewPort& view, const glm::vec2& from, const glm::vec2& to) const;
+    void apply(Target* target, const Screen& screen, const glm::vec2& from, const glm::vec2& to) const;
 
  protected:
     /**
@@ -158,7 +158,7 @@ class Manipulator {
      * @param seat where the handles are
      * @return false when the drag does nothing, and the target is left alone
      **/
-    virtual bool measure(const Placement& seat, const ViewPort& view, const glm::vec2& from, const glm::vec2& to,
+    virtual bool measure(const Placement& seat, const Screen& screen, const glm::vec2& from, const glm::vec2& to,
         Motion* motion) const = 0;
 
     /**
@@ -198,14 +198,14 @@ class Manipulator {
      * Where a world point lands in the view, in window pixels.
      * @return false if the view has no area, or the point is not in front of the camera
      **/
-    static bool project(const ViewPort& view, const glm::vec3& point, glm::vec2* position);
+    static bool project(const Screen& screen, const glm::vec3& point, glm::vec2* position);
 
     /**
      * The world units one pixel of the view covers at a point. Measured by unprojecting
      * a pixel step rather than from the projection's terms, so the perspective and the
      * orthographic cases are one piece of code.
      **/
-    static float unitsPerPixel(const ViewPort& view, const glm::vec3& at);
+    static float unitsPerPixel(const Screen& screen, const glm::vec3& at);
 
     /**
      * The camera's axes in world space, read out of the view matrix the view draws with, so
@@ -218,7 +218,7 @@ class Manipulator {
         glm::vec3 forward{0.0F, 0.0F, 1.0F};  /**< into the screen **/
     };
 
-    static Basis basis(const ViewPort& view);
+    static Basis basis(const Screen& screen);
 
     /**
      * Two unit vectors spanning the plane a direction is normal to, for drawing a ring
@@ -244,7 +244,7 @@ class Manipulator {
      * pointing at the viewer projects to a point and returns zero rather than dividing
      * by its zero length.
      **/
-    static float along(const ViewPort& view, const Placement& placement, Axis axis,
+    static float along(const Screen& screen, const Placement& placement, Axis axis,
         const glm::vec2& from, const glm::vec2& to);
 
     /**

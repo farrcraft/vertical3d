@@ -12,6 +12,7 @@
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/trace/Scene.h>
+#include <api/type/geometry/Line.h>
 #include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 
@@ -52,11 +53,13 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
     return held;
 }
 
+glm::vec3 GridShader::incident(const glm::vec3 & point) const {
+    return context_->perspective() ? point : glm::vec3(0.0F, 0.0F, 1.0F);
+}
+
 bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
-    // every matrix maps out of camera space, the reyes hider's current space. The context's
-    // table holds world to camera and camera to screen, so "world" is the inverse of its
-    // entry and "screen" is the entry itself
-    if (name == "current" || name == "camera") {
+    // every matrix maps out of camera space, the reyes hider's current space
+    if (name == "current") {
         *matrix = glm::mat4x4(1.0F);
         return true;
     }
@@ -66,29 +69,16 @@ bool GridShader::space(const std::string & name, glm::mat4x4* matrix) {
         *matrix = glm::inverse(placement_);
         return true;
     }
-    if (name == "world") {
-        *matrix = glm::inverse(context_->coordinateSystem("camera"));
+    // "object" is the transform in force at the primitive rather than at the shader. The two
+    // differ in a scene that transforms between Surface and Polygon
+    if (name == "object") {
+        *matrix = glm::inverse(object_);
         return true;
     }
-    // the projected spaces are the ones the ray hider answers with, so a shader that reads
-    // one gives the same value under either hider
-    const v3d::render::offline::trace::Scene::Projection & projection = context_->traced().projection();
-    if (name == "screen") {
-        *matrix = projection.screen;
-        return true;
-    }
-    if (name == "raster") {
-        *matrix = projection.raster;
-        return true;
-    }
-    if (name == "NDC") {
-        *matrix = projection.ndc;
-        return true;
-    }
-    // "object" is the transform in force at the primitive rather than at the shader. shade()
-    // receives only the primitive's Shading, which does not hold it. The shader's transform
-    // differs from it in a scene that transforms between Surface and Polygon
-    return false;
+    // every other space is the traced scene's: one the camera defines, or one the scene named.
+    // The ray hider answers from the same table, so a shader that reads one gives the same
+    // value under either hider
+    return context_->traced().fromCamera(name, matrix);
 }
 
 v3d::render::offline::sl::runtime::Renderer::Shape GridShader::shape() const {
@@ -107,6 +97,19 @@ const v3d::render::offline::Texture* GridShader::texture(const std::string & nam
     return context_->textures().find(name);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the signature is Renderer::message
+bool GridShader::message(const std::string & shader, const std::string & name, Value* value) {
+    const Run* from = nullptr;
+    if (shader == "surface") {
+        from = surfaceRun_;
+    } else if (shader == "displacement") {
+        from = displacementRun_;
+    } else if (shader == "lightsource") {
+        from = lightRun_;
+    }
+    return from != nullptr && from->machine.output(name, value);
+}
+
 bool GridShader::transmission(const Value & from, const Value & to, Value* fraction) {
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 source(toWorld_ * glm::vec4(from.triple(point), 1.0F));
@@ -118,11 +121,20 @@ bool GridShader::transmission(const Value & from, const Value & to, Value* fract
 }
 
 bool GridShader::trace(const Value & origin, const Value & direction, Value* colour) {
+    // the grid's rays are traced as one batch, so their hits are shaded together
+    std::vector<v3d::type::geometry::Line> paths;
+    std::vector<glm::vec3> geometric;
+    paths.reserve(batch_);
+    geometric.reserve(batch_);
     for (unsigned int point = 0; point < batch_; point++) {
         const glm::vec3 start(toWorld_ * glm::vec4(origin.triple(point), 1.0F));
         const glm::vec3 along = glm::mat3(toWorld_) * direction.triple(point);
-        colour->triple(point, tracer_.traced({.origin = start, .direction = along},
-            point < planes_.size() ? planes_[point] : glm::vec3(0.0F)));
+        paths.push_back({.origin = start, .direction = along});
+        geometric.push_back(point < planes_.size() ? planes_[point] : glm::vec3(0.0F));
+    }
+    const std::vector<glm::vec3> seen = tracer_.traced(paths, geometric, std::vector<float>(batch_, tracer_.time()));
+    for (unsigned int point = 0; point < batch_; point++) {
+        colour->triple(point, seen[point]);
     }
     return true;
 }
@@ -162,6 +174,8 @@ bool GridShader::light(unsigned int index, const Value & surface, const v3d::ren
     const bool ran = held.globals.shine(shining, &held.machine, batch_, surface, gathering, direction, colour, reached,
         ambient, shining.area ? &from : nullptr);
     placement_ = was;
+    // the illuminance body that runs next for this light reads its output parameters
+    lightRun_ = ran ? &held : nullptr;
     if (ran && shining.area) {
         // each sample carries its share of the light
         for (unsigned int point = 0; point < batch_; point++) {
@@ -172,6 +186,8 @@ bool GridShader::light(unsigned int index, const Value & surface, const v3d::ren
 }
 
 void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
+    // a grid with no displacement shader has none for its surface to read
+    displacementRun_ = nullptr;
     if (!shading.displacement.shader || grid == nullptr) {
         return;
     }
@@ -182,6 +198,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
     }
     // a displacement shader names no lights, so shading_ stays null while it runs
     placement_ = shading.displacement.placement;
+    object_ = shading.object;
     batch_ = batch;
     size_ = size;
     Run & held = run(shading.displacement.shader, batch);
@@ -196,7 +213,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
-            point.incident = vert.point();
+            point.incident = incident(vert.point());
             const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
                 glm::vec2(static_cast<float>(i) / span, static_cast<float>(j) / span);
             point.s = st.x;
@@ -212,6 +229,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
     if (!held.machine.run()) {
         return;
     }
+    displacementRun_ = &held;
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             Vertex vert = grid->vertex(i, j);
@@ -234,6 +252,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     }
     shading_ = &shading;
     placement_ = shading.placement;
+    object_ = shading.object;
     batch_ = batch;
     size_ = size;
     toWorld_ = glm::inverse(context_->coordinateSystem("camera"));
@@ -259,9 +278,7 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
-            // the eye is the origin of camera space, so I is the point itself. This is the
-            // perspective camera's I, and an orthographic camera is given the same value
-            point.incident = vert.point();
+            point.incident = incident(vert.point());
             point.colour = vert.color();
             point.opacity = shading.opacity;
             const glm::vec2 st = vert.hasTexCoord() ? vert.st() :
@@ -280,7 +297,14 @@ void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
     }
     held.globals.eye(&held.machine, glm::vec3(0.0F));
 
-    if (!held.machine.run()) {
+    surfaceRun_ = &held;
+    lightRun_ = nullptr;
+    const bool ran = held.machine.run();
+    surfaceRun_ = nullptr;
+    lightRun_ = nullptr;
+    // the displacement belongs to this grid, and the next grid sets its own
+    displacementRun_ = nullptr;
+    if (!ran) {
         shading_ = nullptr;
         return;
     }

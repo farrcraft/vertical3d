@@ -1,0 +1,152 @@
+{
+  "mappings": [
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "w"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "pan_up"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "s"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "pan_down"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "a"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "pan_left"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "d"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "pan_right"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "q",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "rotate_left"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "e",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "rotate_right"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "r"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "zoom_in"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f"
+      },
+      "destination": {
+        "context": "camera",
+        "name": "zoom_out"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "escape",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "showGameMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "return",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "selectMenu"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuPrevious"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuNext"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f1",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "fullscreen"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "diorama",
+        "name": "toggleStatistics"
+      }
+    }
+  ]
+}

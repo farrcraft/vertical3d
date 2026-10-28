@@ -13,10 +13,10 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/vulkan/pipeline/Resources.h>
-#include <api/render/realtime/vulkan/renderer/Line.h>
-#include <api/render/realtime/vulkan/renderer/Quad.h>
-#include <api/render/realtime/vulkan/renderer/World.h>
+#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/renderer/Line.h>
+#include <api/render/realtime/renderer/Quad.h>
+#include <api/render/realtime/renderer/World.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -25,7 +25,7 @@ namespace v3d::render::realtime {
  * Everything a context owns that needs only a device: the frames in flight, the pipeline
  * cache and resources, the uploader, set 0, and the quad, line and world quad renderers.
  *
- * A DeviceContext is usable on its own. Context3D derives from it to draw into a window, and
+ * A DeviceContext is usable on its own. WindowContext derives from it to draw into a window, and
  * adds the swapchain and the Presenter. A context that draws into an offscreen target is a
  * DeviceContext given that target's format and size. Under dynamic rendering a pipeline is
  * built against the format of whatever it draws into, and that format is all a renderer needs
@@ -41,7 +41,7 @@ class DeviceContext {
      * @param logger
      * @param device the device everything here is built on
      * @param colour the colour format of what this draws into, and what every pipeline built
-     *        here is built against. Context3D passes VK_FORMAT_UNDEFINED, because its
+     *        here is built against. WindowContext passes VK_FORMAT_UNDEFINED, because its
      *        swapchain does not exist yet, and calls describe() later
      * @param extent the size of that destination
      * @param framesInFlight how many frames may be recorded ahead of the device
@@ -59,6 +59,11 @@ class DeviceContext {
     boost::shared_ptr<vulkan::device::Device> device() const;
 
     /**
+     * @return where the context and what is built on it report
+     **/
+    boost::shared_ptr<v3d::log::Logger> logger() const;
+
+    /**
      * @return the frames recorded ahead of the device. Anything keeping a resource per frame
      *         in flight indexes it by this
      **/
@@ -72,7 +77,7 @@ class DeviceContext {
     /**
      * @return the pipelines, materials and textures a draw item can name by handle
      **/
-    boost::shared_ptr<vulkan::pipeline::Resources> resources() const;
+    boost::shared_ptr<Resources> resources() const;
 
     /**
      * @return set 0, where each pass's camera is written and bound from
@@ -129,7 +134,7 @@ class DeviceContext {
      * @return the batched quad primitive, which all 2D drawing goes through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::Quad> quads();
+    boost::shared_ptr<renderer::Quad> quads();
 
     /**
      * @return whether a quad renderer has been built, without building one
@@ -140,7 +145,7 @@ class DeviceContext {
      * @return the world space line primitive, which every line in the engine draws through
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::Line> lines();
+    boost::shared_ptr<renderer::Line> lines();
 
     /**
      * @return whether a line renderer has been built, without building one
@@ -151,7 +156,7 @@ class DeviceContext {
      * @return the world space quad primitive
      * @throw std::runtime_error if its pipelines cannot be created
      **/
-    boost::shared_ptr<vulkan::renderer::World> worldQuads();
+    boost::shared_ptr<renderer::World> worldQuads();
 
     /**
      * @return whether a world quad renderer has been built, without building one
@@ -162,14 +167,16 @@ class DeviceContext {
     /**
      * Say what this context draws into.
      *
-     * Context3D's swapchain is created after the DeviceContext, and is recreated whenever the
-     * window changes size, so Context3D calls describe() each time. A renderer already built
-     * keeps the format it was compiled with.
+     * WindowContext's swapchain is created after the DeviceContext, and is recreated whenever the
+     * window changes size, so WindowContext calls describe() each time. A renderer already built
+     * keeps the format it was compiled with. A depth buffer already allocated is replaced by
+     * one of the new extent, and the old one is retired through the ring.
      *
      * @param colour the colour format of the destination
      * @param extent its size
+     * @throw std::runtime_error if the new depth buffer cannot be allocated
      **/
-    void describe(VkFormat colour, const VkExtent2D& extent) noexcept;
+    void describe(VkFormat colour, const VkExtent2D& extent);
 
  private:
     boost::shared_ptr<v3d::log::Logger> logger_;
@@ -178,7 +185,7 @@ class DeviceContext {
     // waits for the device and runs what they retired
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache_;
-    boost::shared_ptr<vulkan::pipeline::Resources> resources_;
+    boost::shared_ptr<Resources> resources_;
     boost::shared_ptr<vulkan::memory::Uploader> uploader_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms_;
     boost::shared_ptr<vulkan::frame::DepthBuffer> depth_;
@@ -186,8 +193,8 @@ class DeviceContext {
     VkExtent2D extent_;
     VkFormat depthFormat_;
     boost::shared_ptr<Textures> textures_;
-    boost::shared_ptr<vulkan::renderer::Quad> quads_;
-    boost::shared_ptr<vulkan::renderer::Line> lines_;
-    boost::shared_ptr<vulkan::renderer::World> worldQuads_;
+    boost::shared_ptr<renderer::Quad> quads_;
+    boost::shared_ptr<renderer::Line> lines_;
+    boost::shared_ptr<renderer::World> worldQuads_;
 };
 };  // namespace v3d::render::realtime

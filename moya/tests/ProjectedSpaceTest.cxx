@@ -63,24 +63,34 @@ struct Answers {
 };
 
 /**
- * BODY run over a batch of one against a renderer, which answers its spaces.
+ * A shader's body run over a batch of one against a renderer, which answers its spaces.
  **/
-Answers run(v3d::render::offline::sl::runtime::Renderer* renderer) {
-    const std::string source = std::string("surface test() {\n") + BODY + "}\n";
+v3d::render::offline::sl::runtime::Machine & execute(v3d::render::offline::sl::runtime::Renderer* renderer,
+    const std::string & body, v3d::render::offline::sl::runtime::Program* program,
+    v3d::render::offline::sl::runtime::Machine* machine) {
+    const std::string source = std::string("surface test() {\n") + body + "}\n";
     std::istringstream stream(source);
     v3d::render::offline::sl::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error());
     v3d::render::offline::sl::Compiler compiler(shaders[0]);
     BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error());
-    v3d::render::offline::sl::runtime::Program program;
     v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
-    BOOST_REQUIRE_MESSAGE(emitter.emit(&program), emitter.error());
+    BOOST_REQUIRE_MESSAGE(emitter.emit(program), emitter.error());
+    machine->renderer(renderer);
+    machine->prepare(*program, 1);
+    BOOST_REQUIRE_MESSAGE(machine->run(), machine->error());
+    BOOST_CHECK(machine->reports().empty());
+    return *machine;
+}
+
+/**
+ * BODY run over a batch of one against a renderer.
+ **/
+Answers run(v3d::render::offline::sl::runtime::Renderer* renderer) {
+    v3d::render::offline::sl::runtime::Program program;
     v3d::render::offline::sl::runtime::Machine machine;
-    machine.renderer(renderer);
-    machine.prepare(program, 1);
-    BOOST_REQUIRE_MESSAGE(machine.run(), machine.error());
-    BOOST_CHECK(machine.reports().empty());
+    execute(renderer, BODY, &program, &machine);
 
     Answers answers;
     answers.raster = machine.value(program.symbol("raster")).triple(0);
@@ -141,14 +151,8 @@ BOOST_AUTO_TEST_CASE(moya_raster_space_divides_by_w_test) {
     BOOST_CHECK_CLOSE(answers.raster.y, 26.4F, 0.01F);
 
     // the ray the ray hider casts through that raster position passes through the point
-    v3d::moya::RayHider::Camera camera;
-    camera.toRaster = rc.coordinateSystem("raster") * rc.coordinateSystem("screen");
-    camera.perspective = true;
-    camera.hither = 0.1F;
-    camera.width = 64;
-    camera.height = 48;
     v3d::moya::RayHider hider;
-    hider.camera(camera);
+    hider.camera(rc.camera());
     const v3d::type::geometry::Ray ray = hider.ray(
         {.raster = glm::vec2(answers.raster), .lens = glm::vec2(0.0F)}, rc.sampling());
     BOOST_CHECK_SMALL(glm::length(glm::cross(glm::normalize(ray.direction()), glm::normalize(offAxis()))), 1.0e-5F);
@@ -202,6 +206,37 @@ BOOST_AUTO_TEST_CASE(moya_projected_spaces_agree_between_the_hiders_test) {
     BOOST_CHECK_CLOSE(traced.depth, grid.depth, 0.01F);
     BOOST_CHECK_SMALL(glm::length(traced.back - offAxis()), 1.0e-4F);
     BOOST_CHECK_SMALL(glm::length(traced.cast - offAxis()), 1.0e-4F);
+}
+
+/**
+ * A space the scene named answers under either hider, and is the same space under both.
+ * "lamp" is saved inside the world block after a translate, so a point in it is the world
+ * point moved back by that translate.
+ **/
+BOOST_AUTO_TEST_CASE(moya_a_named_space_answers_under_both_hiders_test) {
+    v3d::moya::RenderContext rc;
+    frame(&rc);
+    rc.translate(1.0F, 2.0F, 3.0F);
+    rc.saveCoordinateSystem("lamp");
+    const char* const body =
+        "point here = point \"camera\" (0.4, -0.2, 2);\n"
+        "point there = ptransform(\"lamp\", here);\n";
+
+    // the camera sits at (-0.5, 0, -2), so the point is at (-0.1, -0.2, 0) in world space
+    const glm::vec3 expected(-1.1F, -2.2F, -3.0F);
+    v3d::render::offline::sl::runtime::Program gridProgram;
+    v3d::render::offline::sl::runtime::Machine gridMachine;
+    execute(&rc.shader(), body, &gridProgram, &gridMachine);
+    const glm::vec3 grid = gridMachine.value(gridProgram.symbol("there")).triple(0);
+    BOOST_CHECK_SMALL(glm::length(grid - expected), 1.0e-4F);
+
+    v3d::render::offline::trace::Tracer tracer(&rc.traced(), &rc.textures());
+    v3d::render::offline::trace::HitShader hit(&tracer, centre(&rc));
+    v3d::render::offline::sl::runtime::Program hitProgram;
+    v3d::render::offline::sl::runtime::Machine hitMachine;
+    execute(&hit, body, &hitProgram, &hitMachine);
+    const glm::vec3 traced = hitMachine.value(hitProgram.symbol("there")).triple(0);
+    BOOST_CHECK_SMALL(glm::length(traced - expected), 1.0e-4F);
 }
 
 };  // namespace

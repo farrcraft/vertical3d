@@ -5,20 +5,19 @@
 
 #include "Controller.h"
 
-#include <api/brep/BRep.h>
-#include <api/config/CameraProfiles.h>
-#include <api/config/Type.h>
+#include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
-#include <api/engine/Statistics.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
-#include <api/render/realtime/Window.h>
+#include <api/image/Image.h>
+#include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/camera/Profile.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
-#include <api/ui/Engine.h>
+#include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Item.h>
@@ -26,19 +25,27 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
-#include <vertical3d/src/command/Command.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/CreateCommand.h>
-#include <vertical3d/src/command/TopologyCommand.h>
-#include <vertical3d/src/scene/CreatePoly.h>
-#include <vertical3d/src/scene/Modelling.h>
-#include <vertical3d/src/scene/Project.h>
-#include <vertical3d/src/scene/RIBExportVisitor.h>
+#include <api/window/Window.h>
+#include <vertical3d/src/control/Playback.h>
+#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/render/Batch.h>
+#include <vertical3d/src/render/MoyaDelegate.h>
+#include <vertical3d/src/render/RenderPanels.h>
+#include <vertical3d/src/render/Shot.h>
+#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/store/Project.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
+#include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -46,12 +53,15 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
-#include <fstream>
 
 #include "Renderer.h"
 
+#include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::editor {
 
@@ -64,6 +74,22 @@ namespace {
 const char* const uiContainer = "editor";
 const char* const menuBar = "menu-bar";
 
+#ifdef _WIN32
+const char* const MOYA = "moya.exe";
+#else
+const char* const MOYA = "moya";
+#endif
+
+/**
+ * The editor's shell. It has no game menu, because the editor's menu is its menu bar.
+ **/
+v3d::shell::Shell::Options shellOptions() {
+    v3d::shell::Shell::Options options;
+    options.menu = false;
+    options.statistics = "view::show::statistics";
+    return options;
+}
+
 };  // namespace
 
 /**
@@ -71,26 +97,23 @@ const char* const menuBar = "menu-bar";
 Controller::Controller(const std::string& path) :
     v3d::engine::Engine(path),
     path_(path),
-    projectPath_(boost::filesystem::path(path) / "project.json"),
-    cursor_(0.0F, 0.0F),
-    uiGrab_(false) {
+    shell_(this, shellOptions()) {
     registerCommands();
 }
 
 /**
  **/
 bool Controller::start() {
-    if (!config()) {
+    if (!manifest()) {
         logger()->get()->error("The editor needs its config to know what to draw");
         return false;
     }
 
-    scene_ = boost::make_shared<Scene>();
-    project_ = boost::make_shared<Project>(logger());
-    history_ = boost::make_shared<CommandStack>();
+    document_ = boost::make_shared<Document>(logger(), boost::filesystem::path(path_) / "project");
+    playback_ = boost::make_shared<Playback>(document_);
 
-    profiles_ = boost::make_shared<v3d::config::CameraProfiles>(logger());
-    const boost::json::object* cameras = document(v3d::config::Type::Camera);
+    profiles_ = boost::make_shared<v3d::engine::CameraProfiles>(logger());
+    const boost::json::object* cameras = document(v3d::engine::CameraProfiles::DOCUMENT);
     if (cameras == nullptr) {
         logger()->get()->error("The editor has no camera config, so its views would have no cameras");
         return false;
@@ -100,7 +123,7 @@ bool Controller::start() {
     }
 
     layout_ = boost::make_shared<ViewLayout>(logger());
-    if (!layout_->load(config()->get(v3d::config::Type::Layout))) {
+    if (!layout_->load(manifest()->get(ViewLayout::DOCUMENT))) {
         return false;
     }
 
@@ -108,24 +131,32 @@ bool Controller::start() {
         return false;
     }
 
+    const boost::shared_ptr<Scene>& scene = document_->scene();
     cameraTool_ = boost::make_shared<CameraControlTool>();
-    selectTool_ = boost::make_shared<SelectTool>(scene_, logger());
-    transformTool_ = boost::make_shared<TransformTool>(scene_, logger());
-    transformTool_->commands(history_);
+    selectTool_ = boost::make_shared<SelectTool>(scene, logger());
+    transformTool_ = boost::make_shared<TransformTool>(scene, logger());
+    transformTool_->commands(document_->history());
+    // one button drives three tools. With a camera move held or latched, the drag drives a
+    // camera. Otherwise a handle of the selection under the cursor takes the press, and a
+    // press no handle took picks
+    tools_ = boost::make_shared<ToolRouter>();
+    tools_->add(cameraTool_);
+    tools_->add(transformTool_);
+    tools_->add(selectTool_);
 
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
-    renderer_ = boost::make_shared<Renderer>(window(), logger(), assets());
+    renderer_ = boost::make_shared<Renderer>(window(), logger(), assets(), &shell_);
     renderer_->views(views_);
-    renderer_->scene(scene_);
+    renderer_->scene(scene);
     renderer_->transformTool(transformTool_);
     renderer_->selectTool(selectTool_);
 
     if (!buildUi()) {
         return false;
     }
-    renderer_->ui(vgui_);
+    renderer_->ui(shell_.ui());
 
     for (const std::string& name : refused_) {
         logger()->get()->error("{} is registered twice", name);
@@ -143,6 +174,10 @@ bool Controller::start() {
     syncCaption();
 
     logger()->get()->info("{} with {} views", layout_->name(), views_.size());
+
+    // the editor starts on the default project without reading it, so an autosave a crash left
+    // there is the one way back to that session's work
+    offerRecovery();
     return true;
 }
 
@@ -150,41 +185,47 @@ bool Controller::start() {
  **/
 bool Controller::buildViews() {
     views_.clear();
-    for (const ViewLayout::View& view : layout_->views()) {
+    return std::ranges::all_of(layout_->views(), [this](const ViewLayout::View& view) {
         if (!profiles_->has(view.camera)) {
             logger()->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
             return false;
         }
         views_.push_back(boost::make_shared<ViewPort>(view.name, profiles_->get(view.camera)));
-    }
-    if (!views_.empty()) {
-        activeView_ = views_.front();
-    }
-    return true;
+        return true;
+    });
 }
 
 /**
  **/
 bool Controller::buildUi() {
-    const boost::json::object* config = document(v3d::config::Type::Ui);
+    const boost::json::object* config = document(v3d::ui::Interface::DOCUMENT);
     if (config == nullptr) {
         logger()->get()->error("The editor has no ui config, so it would have no menus");
         return false;
     }
 
-    vgui_ = boost::make_shared<v3d::ui::Engine>(events(), dispatcher(), logger());
-    if (!vgui_->load(*config)) {
+    if (!shell_.start()) {
         return false;
     }
+    const boost::shared_ptr<v3d::ui::Interface>& vgui = shell_.ui();
     // the ui hit-tests the cursor before the app, in the order its own strips are drawn.
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer
-    uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), renderer_->measure());
-    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui_, dispatcher(), window());
-    chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui_);
-    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui_);
+    const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
+        boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
+    pointer_ = boost::make_shared<Pointer>(cursor, layout_, views_, tools_, [this](const boost::shared_ptr<ViewPort>&) {
+        // the show flags a check item draws are the active view's
+        syncUi();
+    });
+    uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
+    chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
+    prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
+    // moya.exe is built beside the editor
+    renderWindow_ = boost::make_shared<RenderWindow>(boost::make_shared<RenderPanels>(vgui),
+        boost::make_shared<MoyaDelegate>(logger()), boost::make_shared<Batch>(logger(), boost::filesystem::path(path_) / MOYA),
+        [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
 
-    const boost::shared_ptr<v3d::ui::Container> container = vgui_->container(uiContainer);
+    const boost::shared_ptr<v3d::ui::Container> container = vgui->container(uiContainer);
     if (!container) {
         logger()->get()->error("The ui config has no {} container", uiContainer);
         return false;
@@ -212,7 +253,7 @@ void Controller::syncUi() {
     if (!menu_) {
         return;
     }
-    auto mark = [this](const char* command, bool on) {
+    auto mark = [this](const std::string& command, bool on) {
         const boost::shared_ptr<v3d::ui::component::menu::Item> item = menu_->find(command);
         if (item) {
             item->checked(on);
@@ -227,16 +268,31 @@ void Controller::syncUi() {
         }
     };
 
-    if (activeView_) {
-        mark("view::show::mesh", activeView_->shows(ViewPort::SHOW_MESH));
-        mark("view::show::handle", activeView_->shows(ViewPort::SHOW_HANDLE));
-        mark("view::show::grid", activeView_->shows(ViewPort::SHOW_GRID));
+    const boost::shared_ptr<ViewPort> activeView = pointer_ ? pointer_->activeView() : nullptr;
+    if (activeView) {
+        mark("view::show::mesh", activeView->shows(ViewPort::SHOW_MESH));
+        mark("view::show::camera", activeView->shows(ViewPort::SHOW_CAMERA));
+        mark("view::show::light", activeView->shows(ViewPort::SHOW_LIGHT));
+        mark("view::show::handle", activeView->shows(ViewPort::SHOW_HANDLE));
+        mark("view::show::grid", activeView->shows(ViewPort::SHOW_GRID));
+        const ViewPort::Display& shown = activeView->display();
+        mark("view::shade::flat", shown.shading == Shading::Flat);
+        mark("view::shade::smooth", shown.shading == Shading::Smooth);
+        mark("view::cull::none", shown.cull == ViewPort::Cull::None);
+        mark("view::cull::front", shown.cull == ViewPort::Cull::Front);
+        mark("view::cull::back", shown.cull == ViewPort::Cull::Back);
+        mark("view::cull::both", shown.cull == ViewPort::Cull::Both);
+        for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
+            { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
+            mark(std::string("view::rendermode::front::") + name, shown.front == fill);
+            mark(std::string("view::rendermode::back::") + name, shown.back == fill);
+        }
 
         // a view laid out from a profile the menu does not offer, such as a second
         // perspective, marks none of the fixed views
-        const v3d::type::camera::Camera& camera = *activeView_->camera();
+        const v3d::type::camera::Camera& camera = *activeView->camera();
         for (const FixedView& view : fixedViews()) {
-            mark(view.command.c_str(), camera.profile().name() == view.profile);
+            mark(view.command, camera.profile().name() == view.profile);
         }
         mark("view::camera::orthographic", camera.orthographic());
     }
@@ -246,6 +302,17 @@ void Controller::syncUi() {
     mark("select::mask::vertex", mask == SelectMask::Vertex);
     mark("select::mask::edge", mask == SelectMask::Edge);
     mark("select::mask::face", mask == SelectMask::Face);
+    const CameraControlTool::CameraMode latched = cameraTool_->latched();
+    mark("camera::truck", latched == CameraControlTool::CAMERA_MODE_TRUCK);
+    mark("camera::dolly", latched == CameraControlTool::CAMERA_MODE_DOLLY);
+    mark("camera::zoom", latched == CameraControlTool::CAMERA_MODE_ZOOM);
+    mark("camera::pan", latched == CameraControlTool::CAMERA_MODE_PAN);
+    mark("camera::pitch", latched == CameraControlTool::CAMERA_MODE_PITCH);
+    mark("select::mask::mesh", mask == SelectMask::Mesh);
+    mark("select::mask::light", mask == SelectMask::Light);
+    mark("select::mask::camera", mask == SelectMask::Camera);
+    mark("select::mask::curve", mask == SelectMask::Curve);
+    mark("select::mask::handle", mask == SelectMask::Handle);
 
     const TransformTool::Mode mode = transformTool_->mode();
     mark("transform::select", mode == TransformTool::Mode::None);
@@ -257,15 +324,49 @@ void Controller::syncUi() {
 /**
  **/
 void Controller::syncCaption() {
-    if (!history_) {
+    if (!document_) {
         return;
     }
-    const std::string caption = "Vertical|3D - " + projectPath_.filename().string() + (history_->dirty() ? " *" : "");
+    std::string caption = "Vertical|3D - " + document_->project()->directory().filename().string() +
+        (document_->dirty() ? " *" : "") + " - frame " + std::to_string(document_->scene()->timeline().frame);
+    const Batch::Status batch = renderWindow_ ? renderWindow_->batchStatus() : Batch::Status();
+    if (batch.running) {
+        caption += " - rendering " + std::to_string(batch.done + 1) + " of " + std::to_string(batch.total);
+    }
     if (caption == caption_) {
         return;
     }
     caption_ = caption;
     window()->caption(caption_);
+}
+
+/**
+ **/
+void Controller::report(const Outcome& outcome) {
+    if (!outcome.message.empty()) {
+        logger()->get()->info("{}", outcome.message);
+    }
+}
+
+/**
+ **/
+void Controller::masked(SelectMask mask, const std::string& name, const std::function<Outcome()>& operation) {
+    if (selectTool_->mask() != mask) {
+        logger()->get()->info("{} needs the {} select mask", name, selectMaskName(mask));
+        return;
+    }
+    report(operation());
+}
+
+/**
+ **/
+void Controller::atView(const std::string& what, const std::function<void(const v3d::type::camera::Profile&)>& run) {
+    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
+    if (!view || !view->camera()) {
+        logger()->get()->info("{} at a view, and there is no active view", what);
+        return;
+    }
+    run(view->camera()->profile());
 }
 
 /**
@@ -293,56 +394,133 @@ void Controller::registerCommands() {
             refused_.push_back(name);
         }
     };
+    const auto selection = [this]() { return document_->scene()->selection(); };
 
     // a key binding in mappings.json and a menu item in the ui config invoke a command
     // by these names, so all three have to spell them the same way
-    press("create::poly::cube", [this]() { createPoly("cube"); });
-    press("create::poly::plane", [this]() { createPoly("plane"); });
-    press("create::poly::cylinder", [this]() { createPoly("cylinder"); });
-    press("create::poly::cone", [this]() { createPoly("cone"); });
-    press("transform::poly::split_edge", [this]() { splitSelectedEdges(); });
-    press("transform::poly::split_face", [this]() { splitSelectedFace(); });
-    press("transform::poly::extrude_face", [this]() { changeSelectedFaces("extrude face", extrudeFaces); });
-    press("transform::poly::inset_face", [this]() { changeSelectedFaces("inset face", insetFaces); });
-    press("transform::poly::merge_vertices", [this]() { mergeSelectedVertices(); });
+    for (const auto& [name, primitive] : std::vector<std::pair<const char*, Document::Primitive>>{
+        { "cube", Document::Primitive::Cube }, { "plane", Document::Primitive::Plane },
+        { "cylinder", Document::Primitive::Cylinder }, { "cone", Document::Primitive::Cone } }) {
+        press(std::string("create::poly::") + name, [this, primitive]() { report(document_->createPrimitive(primitive)); });
+    }
+    for (const auto& [name, projection] : std::vector<std::pair<const char*, Camera::Projection>>{
+        { "create::perspective::camera", Camera::Projection::Perspective },
+        { "create::ortho::camera", Camera::Projection::Orthographic } }) {
+        press(name, [this, projection]() {
+            atView("a camera is made", [this, projection](const v3d::type::camera::Profile& at) {
+                report(document_->createCamera(at, projection));
+            });
+        });
+    }
+    for (const auto& [name, type] : std::vector<std::pair<const char*, Light::Type>>{
+        { "create::light::point", Light::Type::Point }, { "create::light::distant", Light::Type::Distant },
+        { "create::light::spot", Light::Type::Spot } }) {
+        press(name, [this, type]() {
+            atView("a light is made", [this, type](const v3d::type::camera::Profile& at) { report(document_->createLight(at, type)); });
+        });
+    }
+    for (const auto& [name, type] : std::vector<std::pair<const char*, CurveType>>{
+        { "create::curve::poly", CurveType::Poly }, { "create::curve::bezier", CurveType::Bezier },
+        { "create::curve::catmull_rom", CurveType::CatmullRom }, { "create::curve::nurbs", CurveType::Nurbs } }) {
+        press(name, [this, type]() { report(document_->createCurve(type)); });
+    }
+    press("create::group", [this, selection]() { report(document_->group(selection())); });
+    press("timeline::set", [this, selection]() { report(document_->key(selection(), document_->scene()->timeline().frame)); });
 
-    press("select::mask::object", [this]() { selectMask("object"); });
-    press("select::mask::vertex", [this]() { selectMask("vertex"); });
-    press("select::mask::edge", [this]() { selectMask("edge"); });
-    press("select::mask::face", [this]() { selectMask("face"); });
+    press("render::view", [this]() {
+        atView("a render is seen", [this](const v3d::type::camera::Profile&) { renderWindow_->show(*document_->scene(), shot()); });
+    });
+    press("render::stop", [this]() { renderWindow_->stop(); });
+    press("render::close", [this]() { renderWindow_->close(); });
+    press("render::settings", [this]() { renderWindow_->openSettings(document_->scene()->renderSettings()); });
+    press("render::settings::apply", [this]() { report(renderWindow_->applySettings(document_.get())); });
+    press("render::settings::cancel", [this]() { renderWindow_->closeSettings(); });
+    press("render::batch", [this]() {
+        atView("a batch with no scene camera is seen", [this](const v3d::type::camera::Profile& view) {
+            report(renderWindow_->batch(document_->scene().get(), view, document_->project()->directory() / "renders"));
+        });
+    });
 
-    press("transform::select", [this]() { transformMode("select"); });
-    press("transform::translate", [this]() { transformMode("translate"); });
-    press("transform::rotate", [this]() { transformMode("rotate"); });
-    press("transform::scale", [this]() { transformMode("scale"); });
+    press("timeline::playback::play", [this]() { playback_->play(); });
+    press("timeline::playback::stop", [this]() { playback_->stop(); });
+    press("timeline::playback::next", [this]() { playback_->step(1); });
+    press("timeline::playback::previous", [this]() { playback_->step(-1); });
+    press("timeline::playback::first", [this]() { playback_->first(); });
+    press("timeline::playback::last", [this]() { playback_->last(); });
+    press("timeline::playback::next_key", [this, selection]() { playback_->nextKey(selection(), true); });
+    press("timeline::playback::previous_key", [this, selection]() { playback_->nextKey(selection(), false); });
+    press("timeline::playback::first_key", [this, selection]() { playback_->firstKey(selection()); });
+    press("timeline::playback::last_key", [this, selection]() { playback_->lastKey(selection()); });
 
-    // camera and light have flags on the view but nothing draws them, so they have no
-    // command: a toggle for either would appear to work and change nothing
-    press("view::show::grid", [this]() { toggleShow(ViewPort::SHOW_GRID); });
-    press("view::show::mesh", [this]() { toggleShow(ViewPort::SHOW_MESH); });
-    press("view::show::handle", [this]() { toggleShow(ViewPort::SHOW_HANDLE); });
+    press("transform::poly::split_edge", [this]() { masked(SelectMask::Edge, "split edge", [this]() { return document_->splitEdges(); }); });
+    press("transform::poly::split_face", [this]() { masked(SelectMask::Vertex, "split face", [this]() { return document_->splitFace(); }); });
+    press("transform::poly::extrude_face", [this]() {
+        masked(SelectMask::Face, "extrude face", [this]() { return document_->extrudeFaces(); });
+    });
+    press("transform::poly::inset_face", [this]() { masked(SelectMask::Face, "inset face", [this]() { return document_->insetFaces(); }); });
+    press("transform::poly::merge_vertices", [this]() {
+        masked(SelectMask::Vertex, "merge vertices", [this]() { return document_->mergeVertices(); });
+    });
+
+    for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve", "handle" }) {
+        press(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
+    }
+
+    // the Camera Manipulators menu latches a move, so a drag with no modifier drives the
+    // camera until the move is chosen again or a transform mode is
+    for (const char* move : { "truck", "dolly", "zoom", "pan", "pitch" }) {
+        press(std::string("camera::") + move, [this, move]() { cameraTool_->latch(move); });
+    }
+    for (const char* mode : { "select", "translate", "rotate", "scale" }) {
+        press(std::string("transform::") + mode, [this, mode]() { transformMode(mode); });
+    }
+
+    // how the active view draws. Each view keeps its own
+    const auto display = [this](const std::function<void(ViewPort*)>& change) {
+        if (pointer_ && pointer_->activeView()) {
+            change(pointer_->activeView().get());
+        }
+    };
+    press("view::shade::flat", [display]() { display([](ViewPort* view) { view->display().shading = Shading::Flat; }); });
+    press("view::shade::smooth", [display]() { display([](ViewPort* view) { view->display().shading = Shading::Smooth; }); });
+    for (const auto& [name, cull] : std::vector<std::pair<const char*, ViewPort::Cull>>{ { "none", ViewPort::Cull::None },
+        { "front", ViewPort::Cull::Front }, { "back", ViewPort::Cull::Back }, { "both", ViewPort::Cull::Both } }) {
+        press(std::string("view::cull::") + name, [display, cull]() { display([cull](ViewPort* view) { view->display().cull = cull; }); });
+    }
+    for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
+        { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
+        press(std::string("view::rendermode::front::") + name,
+            [display, fill]() { display([fill](ViewPort* view) { view->display().front = fill; }); });
+        press(std::string("view::rendermode::back::") + name,
+            [display, fill]() { display([fill](ViewPort* view) { view->display().back = fill; }); });
+    }
+    for (const auto& [name, filter] : std::vector<std::pair<const char*, ViewPort::VisibleFilter>>{
+        { "grid", ViewPort::SHOW_GRID }, { "mesh", ViewPort::SHOW_MESH }, { "camera", ViewPort::SHOW_CAMERA },
+        { "light", ViewPort::SHOW_LIGHT }, { "handle", ViewPort::SHOW_HANDLE } }) {
+        press(std::string("view::show::") + name,
+            [display, filter]() { display([filter](ViewPort* view) { view->show(filter, !view->shows(filter)); }); });
+    }
     for (const FixedView& view : fixedViews()) {
         const std::string profile = view.profile;
         press(view.command, [this, profile]() { look(profile); });
     }
     press("view::camera::orthographic", [this]() { toggleProjection(); });
-    // not a view flag: the readout covers the window rather than one pane, so the renderer
-    // shows it and nothing here reads it back
-    press("view::show::statistics", [this]() { renderer_->statistics()->toggle(); });
+    // view::show::statistics is not a view flag: the readout covers the window rather than one
+    // pane, so the shell shows it and nothing here reads it back
 
-    // zoom and truck are held rather than latched: the modifier going down chooses what a
-    // drag of the primary button performs and it coming up puts the tool back to none
-    hold("view::camera::zoom", [this](const v3d::event::Event& event) {
-        cameraMode("zoom", event.state() != v3d::event::State::Released);
-    });
-    hold("view::camera::truck", [this](const v3d::event::Event& event) {
-        cameraMode("truck", event.state() != v3d::event::State::Released);
-    });
-    // pan is a button of its own, so holding it is the drag
+    // these are held: the modifier going down chooses what a drag of the primary button
+    // performs, and it coming up puts the tool back to whatever is latched
+    for (const char* move : { "zoom", "dolly", "truck" }) {
+        hold(std::string("view::camera::") + move, [this, move](const v3d::event::Event& event) {
+            cameraMode(move, event.state() != v3d::event::State::Released);
+        });
+    }
+    // pan is a button of its own, so holding it is the drag. It drives the camera alone,
+    // whatever the primary button is doing
     hold("view::camera::pan", [this](const v3d::event::Event& event) {
         const bool pressed = event.state() != v3d::event::State::Released;
         cameraMode("pan", pressed);
-        cameraTool_->button(1, pressed, cursor_);
+        cameraTool_->button(1, pressed, pointer_ ? pointer_->cursor() : glm::vec2(0.0F, 0.0F));
     });
     // held: while it is down a click adds to the selection or takes away from it
     hold("select::add", [this](const v3d::event::Event& event) {
@@ -350,206 +528,88 @@ void Controller::registerCommands() {
     });
 
     hold("view::drag", [this](const v3d::event::Event& event) {
-        drag(event.state() == v3d::event::State::Pressed);
+        if (pointer_) {
+            pointer_->button(event.state() == v3d::event::State::Pressed);
+        }
     });
 
     press("project::load", [this]() { openProject(); });
-    press("project::save", [this]() { saveProject(); });
+    press("project::save", [this]() { document_->save(); });
     press("project::saveAs", [this]() { saveProjectAs(); });
     press("project::chooser::pick", [this]() { chooser_->pick(); });
     press("project::chooser::accept", [this]() { chooser_->accept(); });
     press("project::chooser::cancel", [this]() { chooser_->close(); });
     press("project::export::rib", [this]() { exportProject(); });
+    press("project::import::gltf", [this]() { importScene({ ".gltf", ".glb" }); });
+    press("project::import::usd", [this]() { importScene({ ".usd", ".usda", ".usdc", ".usdz" }); });
     // the prompt's buttons, in the order its answers are given
     press("project::prompt::answer0", [this]() { prompt_->answer(0); });
     press("project::prompt::answer1", [this]() { prompt_->answer(1); });
     press("project::prompt::answer2", [this]() { prompt_->answer(2); });
 
-    press("edit::undo", [this]() { history("undo"); });
-    press("edit::redo", [this]() { history("redo"); });
+    press("edit::undo", [this]() { report(document_->undo()); });
+    press("edit::redo", [this]() { report(document_->redo()); });
 }
 
 /**
  **/
-void Controller::createPoly(const std::string& name) {
-    boost::shared_ptr<v3d::brep::BRep> mesh;
-    if (name == "cube") {
-        mesh = create_poly_cube();
-    } else if (name == "plane") {
-        mesh = create_poly_plane();
-    } else if (name == "cylinder") {
-        mesh = create_poly_cylinder();
-    } else if (name == "cone") {
-        mesh = create_poly_cone();
-    } else {
-        return;
-    }
-
-    // the command does the creating, so making a mesh and redoing one run the same code
-    const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, mesh, name);
-    command->redo();
-    history_->push(command);
-    logger()->get()->info("created a {} - {} meshes", name, scene_->count());
-}
-
-/**
- **/
-void Controller::splitSelectedEdges() {
-    if (selectTool_->mask() != SelectMask::Edge) {
-        logger()->get()->info("split edge needs the edge select mask");
-        return;
-    }
-    const boost::shared_ptr<TopologyCommand> command = splitEdges(*scene_);
-    if (!command) {
-        logger()->get()->info("split edge: no edge is selected");
-        return;
-    }
-    history_->push(command);
-    logger()->get()->info("split the selected edges");
-}
-
-/**
- **/
-void Controller::splitSelectedFace() {
-    if (selectTool_->mask() != SelectMask::Vertex) {
-        logger()->get()->info("split face needs the vertex select mask");
-        return;
-    }
-    std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = splitFace(*scene_, &problem);
-    if (!command) {
-        logger()->get()->info("split face: {}", problem);
-        return;
-    }
-    history_->push(command);
-    logger()->get()->info("split a face between the selected vertices");
-}
-
-/**
- **/
-void Controller::mergeSelectedVertices() {
-    if (selectTool_->mask() != SelectMask::Vertex) {
-        logger()->get()->info("merge vertices needs the vertex select mask");
-        return;
-    }
-    std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = mergeVertices(*scene_, &problem);
-    if (!command) {
-        logger()->get()->info("merge vertices: {}", problem);
-        return;
-    }
-    history_->push(command);
-    logger()->get()->info("merged the selected vertices");
-}
-
-/**
- **/
-void Controller::changeSelectedFaces(const std::string& name, FaceOperation operation) {
-    if (selectTool_->mask() != SelectMask::Face) {
-        logger()->get()->info("{} needs the face select mask", name);
-        return;
-    }
-    const boost::shared_ptr<TopologyCommand> command = operation(*scene_);
-    if (!command) {
-        logger()->get()->info("{}: no face is selected", name);
-        return;
-    }
-    history_->push(command);
-    logger()->get()->info("{}: done to the selected faces", name);
-}
-
-/**
- **/
-void Controller::history(const std::string& name) {
-    boost::shared_ptr<Command> command;
-    if (name == "undo") {
-        command = history_->undo();
-    } else if (name == "redo") {
-        command = history_->redo();
-    } else {
-        return;
-    }
-    if (!command) {
-        logger()->get()->info("nothing to {}", name);
-        return;
-    }
-    logger()->get()->info("{} {}", name, command->name());
-}
-
-/**
- **/
-std::string Controller::exportPath() const {
-    return path_ + "export.rib";
+v3d::type::camera::Profile Controller::shot() const {
+    return shotFrom(*document_->scene(), pointer_->activeView()->camera()->profile());
 }
 
 /**
  **/
 void Controller::exportProject() {
-    if (!activeView_ || !activeView_->camera()) {
-        logger()->get()->error("nothing to export a scene from - there is no active view");
-        return;
-    }
+    atView("a scene is exported", [this](const v3d::type::camera::Profile&) {
+        // the picture is named beside the export, so rendering the file writes it there
+        const boost::filesystem::path directory(path_);
+        report(document_->exportRib(directory / "export.rib", shot(), (directory / "export.png").generic_string()));
+    });
+}
 
-    std::ofstream file(exportPath().c_str());
-    if (!file.is_open()) {
-        logger()->get()->error("could not write {}", exportPath());
-        return;
-    }
-
-    RIBExportVisitor visitor(&file);
-    const glm::uvec2 size = activeView_->camera()->profile().size();
-    visitor.begin(*activeView_->camera(), size.x, size.y);
-    scene_->accept(&visitor);
-    visitor.end();
-
-    logger()->get()->info("exported {} mesh(es) to {}", scene_->count(), exportPath());
+/**
+ **/
+void Controller::importScene(const std::vector<std::string>& extensions) {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), extensions,
+        [this](const boost::filesystem::path& chosen) { report(document_->importScene(chosen)); });
 }
 
 /**
  **/
 void Controller::openProject() {
     askBeforeDiscarding([this]() {
-        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, projectPath_.parent_path(), ".json",
+        // a project is opened by its manifest
+        chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), { ".json" },
             [this](const boost::filesystem::path& chosen) {
                 // a gesture under way is holding the mesh it started on, which the read is
                 // about to take out of the scene
                 transformTool_->cancel();
-                if (!project_->read(chosen.string(), scene_)) {
-                    return;
+                if (document_->open(chosen)) {
+                    offerRecovery();
                 }
-                projectPath_ = chosen;
-                // the history describes the scene that was replaced, so none of it can be
-                // undone against the new one. Clearing it also marks the new scene as saved
-                history_->clear();
             });
     });
 }
 
 /**
  **/
-bool Controller::saveProject() {
-    if (!project_->write(projectPath_.string(), scene_)) {
-        return false;
-    }
-    history_->markSaved();
-    return true;
-}
-
-/**
- **/
 void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
-    if (!history_->dirty() || !prompt_) {
+    if (!document_->dirty() || !prompt_) {
         proceed();
         return;
     }
-    prompt_->open("Save the changes to " + projectPath_.filename().string() + "?", {
+    prompt_->open("Save the changes to " + document_->project()->directory().filename().string() + "?", {
         { "Save", [this, proceed]() {
             // a project that could not be written still has changes to lose
-            if (saveProject()) {
+            if (document_->save()) {
                 proceed();
             }
         } },
-        { "Discard", proceed },
+        { "Discard", [this, proceed]() {
+            // the changes are thrown away, so an autosave of them is not offered again
+            document_->discardRecovery();
+            proceed();
+        } },
         { "Cancel", {} }
     }, {});
 }
@@ -557,7 +617,7 @@ void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
 /**
  **/
 bool Controller::quitRequested() {
-    if (!history_ || !history_->dirty()) {
+    if (!document_ || !document_->dirty()) {
         return true;
     }
     // a second close while the question is up would replace it, and lose what the first one
@@ -572,21 +632,9 @@ bool Controller::quitRequested() {
 /**
  **/
 void Controller::saveProjectAs() {
-    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, projectPath_.parent_path(), ".json",
-        [this](const boost::filesystem::path& chosen) {
-            if (project_->write(chosen.string(), scene_)) {
-                projectPath_ = chosen;
-                history_->markSaved();
-            }
-        });
-}
-
-/**
- **/
-void Controller::toggleShow(ViewPort::VisibleFilter filter) {
-    if (activeView_) {
-        activeView_->show(filter, !activeView_->shows(filter));
-    }
+    // the name typed is the new project's directory, so no extension is added to it
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, document_->project()->directory().parent_path(), {},
+        [this](const boost::filesystem::path& chosen) { document_->saveAs(chosen); });
 }
 
 /**
@@ -607,31 +655,35 @@ const std::vector<Controller::FixedView>& Controller::fixedViews() {
 /**
  **/
 void Controller::look(const std::string& profile) {
-    if (!activeView_) {
+    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
+    if (!view) {
         return;
     }
     if (!profiles_->has(profile)) {
         logger()->get()->error("There is no camera profile called {}", profile);
         return;
     }
-    activeView_->look(profiles_->get(profile));
-    logger()->get()->info("{} shows the {} camera", activeView_->name(), profile);
+    view->look(profiles_->get(profile));
+    logger()->get()->info("{} shows the {} camera", view->name(), profile);
 }
 
 /**
  **/
 void Controller::toggleProjection() {
-    if (!activeView_) {
+    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
+    if (!view) {
         return;
     }
-    const boost::shared_ptr<v3d::type::camera::Camera> camera = activeView_->camera();
+    const boost::shared_ptr<v3d::type::camera::Camera> camera = view->camera();
     camera->orthographic(!camera->orthographic());
-    logger()->get()->info("{} is {}", activeView_->name(), camera->orthographic() ? "orthographic" : "perspective");
+    logger()->get()->info("{} is {}", view->name(), camera->orthographic() ? "orthographic" : "perspective");
 }
 
 /**
  **/
 void Controller::transformMode(const std::string& name) {
+    // choosing a manipulator asks for the handles, so a latched camera move lets them go
+    cameraTool_->unlatch();
     transformTool_->activate(name);
 }
 
@@ -660,103 +712,85 @@ bool Controller::onEvent(const SDL_Event& event) {
 
 /**
  **/
-bool Controller::uiMotion(const glm::vec2& cursor) {
-    return uiCursor_ && uiCursor_->motion(cursor);
-}
-
-/**
- **/
-bool Controller::uiPress(const glm::vec2& cursor) {
-    return uiCursor_ && uiCursor_->press(cursor);
-}
-
-/**
- **/
-void Controller::drag(bool pressed) {
-    // the ui is drawn over every view, so it is offered the press first. The release that
-    // ends a press the ui took goes nowhere else
-    if (pressed) {
-        uiGrab_ = uiPress(cursor_);
-        if (uiGrab_) {
-            return;
-        }
-        // a press on a divider between views resizes them, and no tool sees it
-        if (layout_->grab(cursor_.x, cursor_.y)) {
-            return;
-        }
-    } else if (uiGrab_) {
-        uiGrab_ = false;
-        if (uiCursor_) {
-            uiCursor_->release(cursor_);
-        }
-        return;
-    } else if (layout_->grabbed()) {
-        layout_->release();
-        return;
-    }
-
-    // the primary mouse button. The mapped event carries no button number, because the
-    // binding names which button it is
-    cameraTool_->button(1, pressed, cursor_);
-    // one button drives three tools. With a modifier held, the drag drives a camera.
-    // Otherwise a handle of the selection under the cursor takes the press, and a press no
-    // handle took picks
-    if (cameraTool_->mode() != CameraControlTool::CAMERA_MODE_NONE) {
-        // a modifier pressed during a handle drag or a rubber band does not keep the
-        // release from the tool that ends it
-        if (!pressed) {
-            transformTool_->button(1, false, cursor_);
-            selectTool_->button(1, false, cursor_);
-        }
-        return;
-    }
-    transformTool_->button(1, pressed, cursor_);
-    if (!transformTool_->dragging()) {
-        selectTool_->button(1, pressed, cursor_);
-    }
-}
-
-/**
- **/
 void Controller::layoutViews(int width, int height) {
+    if (!pointer_) {
+        return;
+    }
     // the menu bar and the toolbars cover strips along two edges, and the views divide
     // what is left
     const glm::vec2 inset = renderer_ ? renderer_->insets() : glm::vec2(0.0F, 0.0F);
-    layout_->resize(glm::vec4(inset.x, inset.y,
+    pointer_->resize(glm::vec4(inset.x, inset.y,
         std::max(0.0F, static_cast<float>(width) - inset.x),
         std::max(0.0F, static_cast<float>(height) - inset.y)));
-    placeViews();
-}
-
-/**
- **/
-void Controller::placeViews() {
-    const std::vector<ViewLayout::View>& regions = layout_->views();
-    for (std::size_t index = 0; index < views_.size() && index < regions.size(); index++) {
-        views_[index]->resize(regions[index].region);
-    }
-    if (cameraTool_ && cameraTool_->view()) {
-        // the arcball is sized by the view, so it has to hear about the new region too
-        cameraTool_->view(cameraTool_->view());
-    }
 }
 
 /**
  **/
 bool Controller::render() {
-    const v3d::engine::Statistics& measured = statistics();
-    renderer_->draw({ measured.mean(), measured.last(), measured.steps() });
+    renderer_->draw();
     return true;
 }
 
 /**
  **/
 bool Controller::release() {
+    if (document_) {
+        document_->close();
+    }
+    // a render's thread and a batch's are waited for, before anything they report to goes
+    if (renderWindow_) {
+        renderWindow_->release();
+    }
+    // the screen draws through the renderer, so it goes first
+    shell_.release();
     if (renderer_) {
         // the device has to be idle before the window it presents to is destroyed
         renderer_->shutdown();
     }
     return true;
+}
+
+/**
+ **/
+bool Controller::tick(unsigned int delta) {
+    if (document_) {
+        document_->tick(delta);
+    }
+    if (renderWindow_ && renderWindow_->open() && pointer_ && pointer_->activeView() && pointer_->activeView()->camera()) {
+        renderWindow_->tick(*document_->scene(), shot());
+    }
+    if (renderWindow_) {
+        syncCaption();
+    }
+    return Engine::tick(delta);
+}
+
+/**
+ **/
+bool Controller::simulate(float step) {
+    if (playback_) {
+        const bool playing = playback_->playing();
+        playback_->simulate(step);
+        if (playing) {
+            syncCaption();
+        }
+    }
+    return Engine::simulate(step);
+}
+
+/**
+ **/
+void Controller::offerRecovery() {
+    if (!document_->recoverable() || !prompt_) {
+        return;
+    }
+    prompt_->open("Recover the unsaved changes to " + document_->project()->directory().filename().string() + "?", {
+        { "Recover", [this]() {
+            transformTool_->cancel();
+            document_->recover();
+        } },
+        { "Discard", [this]() { document_->discardRecovery(); } }
+    }, {});
 }
 
 /**
@@ -768,49 +802,8 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
 /**
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
-    cursor_ = event.position();
-
-    if (layout_ && layout_->grabbed()) {
-        layout_->drag(cursor_.x, cursor_.y);
-        placeViews();
-        return;
-    }
-
-    const bool dragging = (cameraTool_ && cameraTool_->dragging()) || (transformTool_ && transformTool_->dragging()) ||
-        (selectTool_ && selectTool_->dragging());
-    // while a drag is under way the ui is not offered the cursor, so a drag that passes
-    // over the menu bar or a toolbar is not interrupted
-    if (!dragging && uiMotion(cursor_)) {
-        return;
-    }
-
-    // the view under the cursor becomes the one a drag drives. It does not change during a
-    // drag, so a drag that crosses a border between views keeps its camera
-    if (!dragging) {
-        const std::size_t index = layout_->viewAt(cursor_.x, cursor_.y);
-        if (index < views_.size()) {
-            const bool changed = views_[index] != activeView_;
-            activeView_ = views_[index];
-            if (changed) {
-                // the show flags a check item draws are the active view's
-                syncUi();
-            }
-            cameraTool_->view(activeView_);
-            if (selectTool_) {
-                selectTool_->view(activeView_);
-            }
-            transformTool_->view(activeView_);
-        }
-    }
-
-    if (cameraTool_) {
-        cameraTool_->motion(cursor_);
-    }
-    if (transformTool_) {
-        transformTool_->motion(cursor_);
-    }
-    if (selectTool_) {
-        selectTool_->motion(cursor_);
+    if (pointer_) {
+        pointer_->motion(event.position());
     }
 }
 

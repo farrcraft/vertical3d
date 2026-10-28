@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "GridSet.h"
 #include "TileCoord.h"
 #include "TileGrid.h"
 
@@ -45,6 +46,14 @@ typedef std::function<bool(TileCoord)> SightBlocker;
  * An endpoint off the grid has no sight, so a caller needs no separate bounds test.
  **/
 bool hasLineOfSight(const TileGrid& grid, TileCoord from, TileCoord to, const SightBlocker& blocks = {});
+
+/**
+ * Whether nothing blocks sight between two world tiles of a set of grids, by the same rules as
+ * on one grid. A tile in no grid of the set blocks sight, so a line that leaves the grids is
+ * stopped, and a region that is not loaded cannot be seen into. The blocker is asked about
+ * world tiles.
+ **/
+bool hasLineOfSight(const GridSet& grids, TileCoord from, TileCoord to, const SightBlocker& blocks = {});
 
 /**
  * The tiles the sight line passes through, from first and to last.

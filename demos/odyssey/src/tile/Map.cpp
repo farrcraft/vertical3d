@@ -1,0 +1,196 @@
+/**
+ * The Untitled Adventure / Odyssey
+ * Copyright (c) 2026 Joshua Farr (josh@farrcraft.com)
+ **/
+
+#include "Map.h"
+
+#include <api/asset/kind/Json.h>
+#include <api/grid/Picture.h>
+#include <api/grid/Terrain.h>
+#include <api/grid/TileCoord.h>
+#include <api/grid/TileGrid.h>
+#include <api/grid/Unknown.h>
+#include <api/log/Logger.h>
+
+#include "Tile.h"
+
+#include <cstddef>
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <boost/make_shared.hpp>
+
+namespace odyssey::tile {
+
+namespace {
+
+constexpr char floorGlyph = '.';
+constexpr char wallGlyph = '#';
+constexpr char crateGlyph = 'o';
+constexpr char startGlyph = '@';
+
+/**
+ * @param glyph a character from a map row, which the grid has already accepted
+ * @return the kind it names
+ **/
+Kind kindFromGlyph(char glyph) {
+    switch (glyph) {
+    case wallGlyph:
+        return Kind::Wall;
+    case crateGlyph:
+        return Kind::Crate;
+    default:
+        return Kind::Floor;
+    }
+}
+
+/**
+ * Whether the grid lets a kind be walked on. The grid keeps passability and cover as
+ * independent flags, and each kind sets both.
+ **/
+bool passable(Kind kind) {
+    return kind == Kind::Floor;
+}
+
+v3d::grid::Cover cover(Kind kind) {
+    switch (kind) {
+    case Kind::Wall:
+        return v3d::grid::Cover::Full;
+    case Kind::Crate:
+        return v3d::grid::Cover::Half;
+    default:
+        return v3d::grid::Cover::None;
+    }
+}
+
+/**
+ * The terrain legend for v3d::grid::fromPicture. The start glyph is not in it.
+ * fromPicture() reports each glyph missing from the legend as unknown,
+ * and load() reads the start from those tiles.
+ **/
+std::map<char, v3d::grid::Terrain> legend() {
+    std::map<char, v3d::grid::Terrain> terrain;
+    for (const char glyph : {floorGlyph, wallGlyph, crateGlyph}) {
+        const Kind kind = kindFromGlyph(glyph);
+        terrain[glyph] = v3d::grid::Terrain{passable(kind), cover(kind)};
+    }
+    return terrain;
+}
+
+};  // namespace
+
+/**
+ **/
+Map::Map(const boost::shared_ptr<v3d::log::Logger>& logger) :
+    logger_(logger) {
+}
+
+/**
+ **/
+bool Map::load(const boost::shared_ptr<v3d::asset::kind::Json>& document, const std::optional<glm::vec3>& corner) {
+    if (!document) {
+        logger_->get()->error("there is no map document to read");
+        return false;
+    }
+    auto const doc = document->document();
+    if (!doc.contains("tiles") || !doc.at("tiles").is_array()) {
+        logger_->get()->error("the map has no tiles array");
+        return false;
+    }
+    const boost::json::array& rows = doc.at("tiles").as_array();
+    if (rows.empty()) {
+        logger_->get()->error("the map has no rows");
+        return false;
+    }
+
+    std::vector<std::string> lines;
+    for (auto const& row : rows) {
+        if (!row.is_string()) {
+            logger_->get()->error("a map row is not a string");
+            return false;
+        }
+        lines.emplace_back(row.as_string());
+    }
+
+    v3d::grid::Picture picture = v3d::grid::fromPicture(lines, legend(), TILE_SIZE, corner);
+    if (!picture.grid) {
+        logger_->get()->error("the map cannot be read: {}", picture.error);
+        return false;
+    }
+
+    // read the whole document before touching this map's own state, so a rejected one
+    // leaves whatever was loaded before intact
+    v3d::grid::TileCoord start{-1, -1};
+    for (const v3d::grid::Unknown& unknown : picture.unknown) {
+        if (unknown.glyph != startGlyph) {
+            logger_->get()->error("the map has an unknown tile '{}' at {}, {}", unknown.glyph,
+                unknown.tiles.front().x, unknown.tiles.front().y);
+            return false;
+        }
+        // a start tile is floor. When the document has more than one '@', the last is the start
+        for (const v3d::grid::TileCoord& tile : unknown.tiles) {
+            picture.grid->setPassable(tile, passable(Kind::Floor));
+            picture.grid->setCover(tile, cover(Kind::Floor));
+        }
+        start = unknown.tiles.back();
+    }
+
+    const std::size_t width = lines.front().size();
+    std::vector<Kind> kinds;
+    kinds.reserve(width * lines.size());
+    for (const std::string& line : lines) {
+        for (const char glyph : line) {
+            kinds.push_back(kindFromGlyph(glyph));
+        }
+    }
+
+    auto grid = boost::make_shared<v3d::grid::TileGrid>(std::move(*picture.grid));
+    for (std::size_t i = 0; start.x < 0 && i < kinds.size(); i++) {
+        if (passable(kinds[i])) {
+            start = v3d::grid::TileCoord{static_cast<int>(i % width), static_cast<int>(i / width)};
+        }
+    }
+    if (start.x < 0) {
+        logger_->get()->error("the map has nowhere to stand");
+        return false;
+    }
+
+    grid_ = grid;
+    kinds_ = kinds;
+    start_ = start;
+    return true;
+}
+
+/**
+ **/
+bool Map::loaded() const noexcept {
+    return grid_ != nullptr;
+}
+
+/**
+ **/
+const boost::shared_ptr<v3d::grid::TileGrid>& Map::grid() const noexcept {
+    return grid_;
+}
+
+/**
+ **/
+Kind Map::kind(v3d::grid::TileCoord tile) const {
+    if (!grid_ || !grid_->contains(tile)) {
+        return Kind::Wall;
+    }
+    return kinds_[(static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(grid_->width())) +
+        static_cast<std::size_t>(tile.x)];
+}
+
+/**
+ **/
+v3d::grid::TileCoord Map::start() const noexcept {
+    return start_;
+}
+
+};  // namespace odyssey::tile

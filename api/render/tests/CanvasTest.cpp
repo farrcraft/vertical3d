@@ -3,14 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/TextBuffer.h>
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace {
@@ -254,8 +256,8 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
 }
 
 /**
- * Text is copied out of a laid out text buffer against the atlas it was packed into, with
- * the buffer's indices rebased onto the canvas's own vertex stream.
+ * Laid out text is copied in against the atlas it was packed into, with its indices rebased
+ * onto the canvas's own vertex stream.
  **/
 BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
     v3d::render::realtime::canvas::Canvas canvas;
@@ -263,19 +265,15 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
 
-    // one glyph quad, as a text buffer would have laid it out
-    v3d::font::TextBuffer buffer;
+    // one glyph quad, as a font would have laid it out
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> quad;
+    quad.reserve(4);
     for (int corner = 0; corner < 4; corner++) {
-        buffer.addVertex(glm::vec3(static_cast<float>(corner), 0.0F, 0.0F));
-        buffer.addTextureCoordinate(glm::vec2(0.0F, 0.0F));
-        buffer.addColor(white);
+        quad.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
     }
-    const unsigned int order[6] = {0, 2, 1, 0, 3, 2};
-    for (int index = 0; index < 6; index++) {
-        buffer.addIndex(order[index]);
-    }
+    const std::vector<uint32_t> order = {0, 2, 1, 0, 3, 2};
 
-    canvas.text(buffer, atlas);
+    canvas.text(quad, order, atlas);
 
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2);
     BOOST_CHECK(canvas.batches()[1].texture == atlas);
@@ -286,17 +284,33 @@ BOOST_AUTO_TEST_CASE(text_is_appended_against_its_atlas_and_reindexed) {
 }
 
 /**
- * A text buffer with nothing in it adds neither vertices nor a batch, so drawing an empty
- * string does not split the batch a caller is in the middle of.
+ * Text with nothing in it adds neither vertices nor a batch, so drawing an empty string does
+ * not split the batch a caller is in the middle of.
  **/
 BOOST_AUTO_TEST_CASE(empty_text_adds_no_batch) {
     v3d::render::realtime::canvas::Canvas canvas;
 
     canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
-    const v3d::font::TextBuffer buffer;
-    canvas.text(buffer, v3d::render::realtime::TextureHandle(9));
+    canvas.text({}, {}, v3d::render::realtime::TextureHandle(9));
 
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+}
+
+/**
+ * A run with an index past its own vertices draws nothing, rather than a triangle through a
+ * vertex the run did not add.
+ **/
+BOOST_AUTO_TEST_CASE(text_with_an_index_past_its_vertices_draws_nothing) {
+    v3d::render::realtime::canvas::Canvas canvas;
+
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
+    const std::vector<v3d::render::realtime::canvas::Canvas::Vertex> one = {
+        {.position = glm::vec2(0.0F), .uv = glm::vec2(0.0F), .colour = white}};
+    const std::vector<uint32_t> order = {0, 0, 1};
+    canvas.text(one, order, v3d::render::realtime::TextureHandle(9));
+
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4);
 }
 
 /**
@@ -572,6 +586,90 @@ BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
     canvas.space(glm::vec2(800.0F, 600.0F), v3d::render::realtime::canvas::Canvas::Fit::Contain);
     canvas.clear();
     BOOST_CHECK_CLOSE(canvas.viewport().z, 1200.0F, 0.001F);
+}
+
+/**
+ * A segment at an angle has its long sides parallel to the line between its points, half the
+ * width either side of it. Its corners are offset across the line, not along an axis.
+ **/
+BOOST_AUTO_TEST_CASE(a_segment_at_an_angle_is_offset_across_its_line) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const float angle = 0.5235988F;  // thirty degrees
+    const glm::vec2 from(10.0F, 20.0F);
+    const glm::vec2 to = from + (glm::vec2(std::cos(angle), std::sin(angle)) * 40.0F);
+    canvas.segment({.from = from, .to = to, .width = 4.0F}, red);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4);
+    BOOST_CHECK_EQUAL(canvas.indices().size(), 6);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK(!canvas.batches()[0].texture.valid());
+
+    // the line's direction turned a quarter, half the width long
+    const glm::vec2 side = glm::vec2(-std::sin(angle), std::cos(angle)) * 2.0F;
+    const glm::vec2 corners[] = {from - side, from + side, to + side, to - side};
+    for (std::size_t index = 0; index < 4; index++) {
+        BOOST_CHECK_CLOSE(canvas.vertices()[index].position.x, corners[index].x, 0.001F);
+        BOOST_CHECK_CLOSE(canvas.vertices()[index].position.y, corners[index].y, 0.001F);
+        BOOST_CHECK(canvas.vertices()[index].colour == red);
+    }
+}
+
+/**
+ * A segment is drawn through the transform stack as a rectangle is, so one laid along an axis
+ * lands on the corners of the rectangle it covers.
+ **/
+BOOST_AUTO_TEST_CASE(a_segment_under_a_transform_lands_where_a_rectangle_would) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.push();
+    canvas.translate(glm::vec2(10.0F, 20.0F));
+    canvas.scale(glm::vec2(2.0F, 3.0F));
+    canvas.rect(glm::vec2(1.0F, 1.0F), glm::vec2(2.0F, 2.0F), white);
+    canvas.segment({.from = glm::vec2(1.0F, 1.5F), .to = glm::vec2(2.0F, 1.5F), .width = 1.0F}, white);
+    canvas.pop();
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8);
+    for (std::size_t index = 0; index < 4; index++) {
+        BOOST_CHECK_CLOSE(canvas.vertices()[index + 4].position.x, canvas.vertices()[index].position.x, 0.001F);
+        BOOST_CHECK_CLOSE(canvas.vertices()[index + 4].position.y, canvas.vertices()[index].position.y, 0.001F);
+    }
+}
+
+/**
+ * A segment is untextured, so it joins the open untextured batch rather than cutting a new
+ * one, inside a clip as well as out of one.
+ **/
+BOOST_AUTO_TEST_CASE(a_segment_joins_the_untextured_batch) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const v3d::render::realtime::canvas::Canvas::Segment diagonal{
+        .from = glm::vec2(0.0F, 0.0F), .to = glm::vec2(30.0F, 40.0F), .width = 2.0F};
+
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(10.0F, 10.0F), white);
+    canvas.segment(diagonal, white);
+    canvas.rect(glm::vec2(20.0F, 0.0F), glm::vec2(30.0F, 10.0F), white);
+    canvas.clip(glm::vec2(0.0F, 0.0F), glm::vec2(50.0F, 50.0F));
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(10.0F, 10.0F), white);
+    canvas.segment(diagonal, white);
+    canvas.rect(glm::vec2(20.0F, 0.0F), glm::vec2(30.0F, 10.0F), white);
+    canvas.unclip();
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2);
+    BOOST_CHECK(!canvas.batches()[0].clipped);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].indices, 18);
+    BOOST_CHECK(canvas.batches()[1].clipped);
+    BOOST_CHECK_EQUAL(canvas.batches()[1].indices, 18);
+}
+
+/**
+ * A segment with no length or no width has no sides to draw, so it adds nothing, not even an
+ * empty batch.
+ **/
+BOOST_AUTO_TEST_CASE(a_segment_with_no_length_or_width_draws_nothing) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.segment({.from = glm::vec2(5.0F, 5.0F), .to = glm::vec2(5.0F, 5.0F), .width = 3.0F}, white);
+    canvas.segment({.from = glm::vec2(0.0F, 0.0F), .to = glm::vec2(5.0F, 5.0F), .width = 0.0F}, white);
+
+    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(canvas.batches().empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

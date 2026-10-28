@@ -4,11 +4,12 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/asset/Type.h>
 #include <api/asset/media/Loaders.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/asset/media/kind/Model.h>
 #include <api/log/Logger.h>
+
+#include <typeinfo>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
@@ -29,16 +30,18 @@ boost::shared_ptr<v3d::asset::Manager> manager() {
 BOOST_AUTO_TEST_CASE(media_registered_by_extension_test) {
     auto assets = manager();
 
-    auto picture = assets->loadTypeFromExt("pixel.png");
+    auto picture = assets->load("pixel.png");
     BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::media::kind::Image>(picture)));
 
-    auto model = assets->loadTypeFromExt("two_surfaces.glb");
+    auto model = assets->load("two_surfaces.glb");
     BOOST_TEST(static_cast<bool>(boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(model)));
 
-    for (auto type : {v3d::asset::Type::ImagePng, v3d::asset::Type::ImageJpeg, v3d::asset::Type::ImageTga,
-        v3d::asset::Type::ImageBmp, v3d::asset::Type::ModelGltf}) {
-        BOOST_TEST((assets->resolveLoader(type)->type() == type));
-    }
+    auto images = assets->resolveLoader<v3d::asset::media::kind::Image>();
+    BOOST_REQUIRE(images);
+    BOOST_TEST((images->kind() == typeid(v3d::asset::media::kind::Image)));
+    auto models = assets->resolveLoader<v3d::asset::media::kind::Model>();
+    BOOST_REQUIRE(models);
+    BOOST_TEST((models->kind() == typeid(v3d::asset::media::kind::Model)));
 }
 
 /**
@@ -47,8 +50,8 @@ BOOST_AUTO_TEST_CASE(media_registered_by_extension_test) {
 BOOST_AUTO_TEST_CASE(media_missing_image_test) {
     auto assets = manager();
 
-    BOOST_TEST(!assets->loadTypeFromExt("absent.png"));
-    BOOST_TEST(!assets->load("document.json", v3d::asset::Type::ImagePng));
+    BOOST_TEST(!assets->load("absent.png"));
+    BOOST_TEST(!assets->load<v3d::asset::media::kind::Image>("document.json"));
 }
 
 /**
@@ -59,9 +62,9 @@ BOOST_AUTO_TEST_CASE(media_unregistered_manager_loads_only_documents_test) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::asset::Manager plain("data", logger);
 
-    BOOST_TEST(!plain.loadTypeFromExt("pixel.png"));
-    BOOST_TEST(!plain.loadTypeFromExt("two_surfaces.glb"));
-    BOOST_TEST(static_cast<bool>(plain.loadTypeFromExt("document.json")));
+    BOOST_TEST(!plain.load("pixel.png"));
+    BOOST_TEST(!plain.load("two_surfaces.glb"));
+    BOOST_TEST(static_cast<bool>(plain.load("document.json")));
 }
 
 };  // namespace

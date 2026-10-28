@@ -15,6 +15,7 @@
 
 #include "Engine.h"
 
+#include <glm/common.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::engine {
@@ -49,7 +50,12 @@ void IsometricController::simulate(float step) {
     const auto axis = [this](const std::string& positive, const std::string& negative) {
         return (held_(positive) ? 1.0F : 0.0F) - (held_(negative) ? 1.0F : 0.0F);
     };
-    const glm::vec2 pan(axis(commands_.panRight, commands_.panLeft), axis(commands_.panUp, commands_.panDown));
+    // the cursor at an edge pans as the command for that edge would, and with a key held toward
+    // the same edge it still pans at one speed, not two
+    const glm::vec2 edge = edgeAxes();
+    const glm::vec2 pan = glm::clamp(
+        glm::vec2(axis(commands_.panRight, commands_.panLeft), axis(commands_.panUp, commands_.panDown)) + edge,
+        glm::vec2(-1.0F), glm::vec2(1.0F));
     if (pan.x != 0.0F || pan.y != 0.0F) {
         orbit_->pan(pan * (speeds_.pan * step));
     }
@@ -72,6 +78,48 @@ void IsometricController::receive(const event::Event& event) {
     } else if (command == commands_.rotateRight) {
         orbit_->rotate(1);
     }
+}
+
+/**
+ **/
+void IsometricController::wheel(float notches) {
+    if (orbit_ == nullptr || notches == 0.0F) {
+        return;
+    }
+    // a notch away from the player zooms in, which narrows the view's half height
+    orbit_->zoomBy(-notches * speeds_.notch);
+}
+
+/**
+ **/
+void IsometricController::edgePan(float margin) noexcept {
+    margin_ = margin > 0.0F ? margin : 0.0F;
+}
+
+/**
+ **/
+void IsometricController::cursor(const glm::vec2& at, const glm::vec2& viewport, bool overUi) noexcept {
+    cursor_ = at;
+    viewport_ = viewport;
+    overUi_ = overUi;
+}
+
+/**
+ **/
+glm::vec2 IsometricController::edgeAxes() const noexcept {
+    // a cursor outside the window, as one that has left it is, pans nothing
+    const bool inside = cursor_.x >= 0.0F && cursor_.y >= 0.0F && cursor_.x < viewport_.x && cursor_.y < viewport_.y;
+    if (margin_ <= 0.0F || overUi_ || !inside) {
+        return glm::vec2(0.0F);
+    }
+    const auto toward = [this](float at, float size) {
+        if (at < margin_) {
+            return -1.0F;
+        }
+        return at >= size - margin_ ? 1.0F : 0.0F;
+    };
+    // the top of the window is forward, which is the positive pan, and y grows down the window
+    return glm::vec2(toward(cursor_.x, viewport_.x), -toward(cursor_.y, viewport_.y));
 }
 
 };  // namespace v3d::engine

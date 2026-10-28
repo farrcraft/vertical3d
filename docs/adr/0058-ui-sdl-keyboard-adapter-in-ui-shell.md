@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-09-13
 **Amends**: [ADR-0040](0040-ui-keyboard-focus-and-text-input.md)
-**Documented in**: [api/ui/Setup.md](../api/ui/Setup.md), [internals/UserInterface.md](../internals/UserInterface.md)
+**Documented in**: [api/ui/Setup.md](../api/ui/Setup.md), [internals/ui/Input.md](../internals/ui/Input.md)
 
 ## Context
 

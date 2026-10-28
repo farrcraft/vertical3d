@@ -5,11 +5,14 @@
 
 #include "Polygon.h"
 
+#include <api/render/offline/rib/Parameters.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/type/geometry/Plane.h>
+#include <moya/libmoya/reyes/Hider.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -18,6 +21,8 @@
 
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
+
+#include <boost/make_shared.hpp>
 
 #include "RenderContext.h"
 #include "Vertex.h"
@@ -63,6 +68,62 @@ bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometr
 }
 
 };  // namespace
+
+boost::shared_ptr<Polygon> Polygon::build(const std::vector<glm::vec3> & points,
+    const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
+    const std::vector<float> & st, const std::vector<unsigned int> & indices) {
+    boost::shared_ptr<Polygon> polygon = boost::make_shared<Polygon>();
+    for (const unsigned int index : indices) {
+        if (index >= points.size()) {
+            continue;
+        }
+        Vertex vertex;
+        vertex.point(points[index]);
+        if (index < colors.size()) {
+            vertex.color(colors[index]);
+        }
+        if (index < normals.size()) {
+            vertex.normal(normals[index]);
+        }
+        const std::size_t pair = 2 * static_cast<std::size_t>(index);
+        if (pair + 2 <= st.size()) {
+            vertex.st(glm::vec2(st[pair], st[pair + 1]));
+        }
+        polygon->addVertex(vertex);
+    }
+    return polygon;
+}
+
+std::vector<boost::shared_ptr<Polygon>> Polygon::quads() const {
+    std::vector<boost::shared_ptr<Polygon>> pieces;
+    for (size_t first = 1; first + 1 < vertices_.size(); first += 2) {
+        const boost::shared_ptr<Polygon> piece = boost::make_shared<Polygon>();
+        piece->addVertex(vertices_[0]);
+        const size_t last = std::min(first + 2, vertices_.size() - 1);
+        for (size_t i = first; i <= last; i++) {
+            piece->addVertex(vertices_[i]);
+        }
+        if (placed()) {
+            piece->place(placement(), color(), normal(), shading());
+            piece->motion(motion());
+        }
+        pieces.push_back(piece);
+    }
+    return pieces;
+}
+
+boost::shared_ptr<Polygon> Polygon::from(const v3d::render::offline::rib::ParameterList & parameters,
+    unsigned int vertices) {
+    const std::vector<glm::vec3> points = parameters.points("P");
+    std::vector<unsigned int> indices;
+    for (unsigned int i = 0; i < vertices && i < points.size(); i++) {
+        indices.push_back(i);
+    }
+    if (indices.size() < 3) {
+        return {};
+    }
+    return build(points, parameters.points("Cs"), parameters.points("N"), parameters.floats("st"), indices);
+}
 
 Polygon::Polygon() {
 }
@@ -147,7 +208,7 @@ void Polygon::clip(const v3d::type::geometry::Plane & plane) {
     vertices_ = std::move(clipped);
 }
 
-// the bound in the space the vertices are in: object space, until RenderContext::addPolygon()
+// the bound in the space the vertices are in: object space, until reyes::Hider::add()
 // moves a diceable polygon's vertices into eye space
 v3d::type::geometry::AABBox Polygon::bound(void) const {
     v3d::type::geometry::AABBox bound;
@@ -282,7 +343,7 @@ void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, 
 
 /*
     Cut the polygon by a plane. p1 takes the negative side and p2 the positive, and both
-    start empty. split(RenderContext &) calls this three times to make four pieces.
+    start empty. split() calls this three times to make four pieces.
 */
 void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2) {
     // intersect each edge with the plane
@@ -310,7 +371,7 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     Cut the polygon into four by two planes through the centre of its bound. Both are
     perpendicular to the polygon's plane, and the second is perpendicular to the first.
 */
-void Polygon::split(RenderContext & rc) {
+void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
     // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
@@ -361,8 +422,8 @@ void Polygon::split(RenderContext & rc) {
     p1->split(plane, pf1, pf2);
     p2->split(plane, pf3, pf4);
 
-    // each piece goes back through RenderContext::addPolygon(), which bounds, culls and
-    // measures it against the grid again. The caller discards this polygon
+    // each piece goes back to the hider, which bounds, culls and measures it against the grid
+    // again. The caller discards this polygon
     const boost::shared_ptr<Polygon> pieces[] = { pf1, pf2, pf3, pf4 };
     for (const boost::shared_ptr<Polygon> & piece : pieces) {
         if (progress(piece, bounds)) {
@@ -372,21 +433,21 @@ void Polygon::split(RenderContext & rc) {
                 piece->place(placement(), color(), normal(), shading());
                 piece->motion(motion());
             }
-            rc.addPolygon(piece);
+            hider.add(piece, &rc);
         }
     }
 }
 
 /*
-    RenderContext::addPolygon() moves a diceable polygon's vertices into eye space, so the
+    reyes::Hider::add() moves a diceable polygon's vertices into eye space, so the
     grid is built in eye space. The hider projects it to raster space.
 */
 bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
-        side has n - 1 micropolygons a side. RenderContext::addPolygon() marks for splitting
-        anything whose raster bound is wider or taller than the square root of the grid size
-        times the shading rate, so one grid covers what reaches here.
+        side has n - 1 micropolygons a side. reyes::Hider::add() marks for splitting
+        anything whose raster bound is wider or taller than sqrt(grid size * shading rate)
+        pixels, so one grid covers what reaches here.
     */
     const unsigned int across = static_cast<unsigned int>(sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger
     return dice(grid, across);
@@ -400,10 +461,9 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned i
     grid.reset(new reyes::MicroPolygonGrid(across + 1));
 
     /*
-        bilinear interpolation over the polygon's first four vertices. A triangle's fourth
-        corner degenerates onto its third. A polygon with more than four vertices has the
-        rest dropped, so its grid does not cover the part of the polygon past the fourth
-        vertex.
+        bilinear interpolation over the polygon's four vertices. A triangle's fourth corner
+        degenerates onto its third. reyes::Hider::add() breaks a polygon with more
+        than four vertices into pieces before it reaches here.
     */
     const size_t fourth = vertices_.size() > 3 ? 3 : 2;
     const glm::vec3 corners[4] = {
@@ -429,7 +489,7 @@ bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned i
         vertices_[fourth].normal()
     };
     // the geometric normal is one value across the primitive, so there is nothing to
-    // interpolate: addPolygon() wrote the same one onto every vertex
+    // interpolate: reyes::Hider::add() wrote the same one onto every vertex
     const glm::vec3 geometric = vertices_[0].geometricNormal();
     // texture coordinates interpolate only when the scene gave every corner one. A grid
     // without them takes its own parameters as s and t when it is shaded
