@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
 }
 
 /**
- * A component type the library does not know is refused rather than skipped, so a typo in a
+ * A component type the library does not recognise is refused rather than skipped, so a typo in a
  * config is not a component silently missing from the window.
  **/
 BOOST_AUTO_TEST_CASE(an_unknown_component_type_is_refused) {

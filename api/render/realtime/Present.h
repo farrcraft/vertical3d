@@ -13,7 +13,7 @@
 namespace v3d::render::realtime {
 
 /**
- * How the window's images are presented, which is what a settings screen calls vsync.
+ * How the window's images are presented. A settings screen calls this choice vsync.
  *
  * It is a request. A driver need not offer every mode, so each one falls back to a mode it does
  * offer, and the mode in use is reported back as one of these too. FIFO is the one mode every

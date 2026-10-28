@@ -32,8 +32,8 @@ namespace v3d::event {
  *
  * An override replaces the name of every source the document gives a command, or of one of
  * them. They are applied in the order they were made, so a later one wins where two name the
- * same source. Two mappings an override leaves identical, which is what a command bound to two
- * keys becomes when both are rebound to one, are installed once, so the command fires once.
+ * same source. Two mappings an override leaves identical are installed once, so the command
+ * fires once. A command bound to two keys has two such mappings when both are rebound to one.
  *
  * Bindings does not tell a key from a mouse button. The Known check passed to the constructor
  * decides whether a source names something a device can send. A source the check rejects is

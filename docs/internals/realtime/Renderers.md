@@ -49,8 +49,8 @@ copies the objects already added, because the frame's draws name them by index. 
 object has `firstJoint = 0`, and its pipeline ignores it.
 
 The shadow map binding holds a 2D array view, a layer per cascade. With no map, it holds a map of
-one layer and one texel that `Lit` owns, cleared to the far plane at construction, so the
-binding always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
+one layer and one texel that `Lit` owns, cleared to the far plane at construction. The binding
+therefore always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
 own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
 
 **Skinned vertex.** `MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes) followed by

@@ -24,8 +24,8 @@ namespace v3d::render::realtime::vulkan::memory {
  * Kind::Suballocated, the default, places each resource in a region of a larger block, through
  * the Vulkan Memory Allocator. A device allocation is slow to make, and maxMemoryAllocationCount
  * is a real device limit, so a world that streams textures and meshes in needs it.
- * Kind::Direct makes one device allocation per resource, for a case that wants each resource's
- * memory to be its own.
+ * Kind::Direct makes one device allocation per resource, for a case that requires each
+ * resource's memory to be its own.
  *
  * Every allocation in the renderer goes through Allocator, so the choice is made in one place.
  **/

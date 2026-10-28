@@ -140,10 +140,10 @@ Background: [ADR-0014](../adr/0014-editor-pick-by-cpu-ray-cast.md)
 ## Component selection
 
 **An item holds whether it is selected as a whole, and the scene holds which of its parts are.**
-`Scene::components()` is a `Components`: for each mesh item, by its `id()`, the indices of its
-selected vertices, half edges and faces in the item's geometry, and for each curve item the
-numbers of its selected control points and handles. Neither `api/brep` nor `api/curve` holds a
-selection.
+`Scene::components()` is a `Components`. For each mesh item, by its `id()`, it holds the
+indices of its selected vertices, half edges and faces in the item's geometry. For each curve
+item it holds the numbers of its selected control points and handles. Neither `api/brep` nor
+`api/curve` holds a selection.
 
 - **A curve's parts are numbered across all of its curves.** Control points are numbered from
   zero, the first curve's first, so a point's number is the count of points in the curves before
@@ -207,11 +207,11 @@ handle's type as well as its place. A move that would leave a curve that cannot 
 such as one with a point at infinity, leaves that curve as it was.
 
 **Where the handles are.** Handles are drawn at the pivot: the mean of the selected objects'
-origins, or of the moved vertices, control points and curve handles in world space. For one object that is its own origin, where
-its transform pivots. Their length is a fixed number of pixels (90), converted to world units
-through the `Screen` a manipulator is given: a view's camera and its region of the window. A
-handle therefore keeps its on-screen size at any distance. Handles are drawn in the handle
-pass, which has no depth test.
+origins, or of the moved vertices, control points and curve handles in world space. For one
+object that is its own origin, where its transform pivots. Their length is a fixed number of
+pixels (90), converted to world units through the `Screen` a manipulator is given: a view's
+camera and its region of the window. A handle therefore keeps its on-screen size at any
+distance. Handles are drawn in the handle pass, which has no depth test.
 
 **Moving a set.** Everything the target holds moves in one gesture, about the one pivot. A
 manipulator measures a `Motion` (an offset, a turn and a stretch) and the target applies it:

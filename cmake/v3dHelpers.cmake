@@ -135,8 +135,8 @@ endfunction()
 
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
-# /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's imported
-# target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
+# /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's
+# imported target carries BOOST_TEST_DYN_LINK, since vcpkg builds boost shared. /utf-8 is required
 # wherever spdlog's bundled fmt is compiled. The working directory lets a test's data files
 # resolve the same way an app's do. Run them with ctest --test-dir out/build/<config>.
 function(v3d_add_test lib)

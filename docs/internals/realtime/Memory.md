@@ -286,7 +286,7 @@ serves every primitive from one pool.
 
 `Textures::depthTexture(target)` and `texture(target)` return the white texture for a target with
 nothing of that kind to sample. A descriptor written against an image without sampled usage is
-undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never releases the white
-texture, so such a handle can be released like any other.
+undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never releases
+the white texture, so such a handle can be released like any other.
 
 Background: [ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md)

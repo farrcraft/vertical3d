@@ -53,8 +53,8 @@ BOOST_AUTO_TEST_CASE(an_instance_enumerates_portability_drivers_where_the_loader
 
 /**
  * A loader that does not offer it is not asked for it, and the instance gets no flag. An older
- * loader would refuse an extension it does not know, and this is every conformant desktop
- * driver's case.
+ * loader refuses an extension it does not recognise. Every conformant desktop driver is in this
+ * case.
  **/
 BOOST_AUTO_TEST_CASE(an_instance_asks_for_nothing_a_loader_does_not_offer) {
     const std::vector<std::string> offered{"VK_KHR_surface", VK_EXT_DEBUG_UTILS_EXTENSION_NAME};

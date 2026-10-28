@@ -80,7 +80,7 @@ struct Uploader final {
 
 /**
  * Answers the names in a sprite sheet with the one texture the sheet was uploaded to and the
- * part of it each name is, the way an app with sheets would, and nothing for anything else.
+ * part of it each name is, the way an app with sheets would. Any other name gets nothing.
  **/
 struct Sheet final {
     v3d::ui::Image operator()(const std::string& source) const {

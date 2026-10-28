@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(pack_tries_a_largest_side_that_is_not_a_power_of_two_test) 
     BOOST_CHECK_EQUAL(packing.sheet->width(), 48U);
 }
 
-/** Sprites that do not fit in the largest sheet are refused with a reason, and nothing is packed. **/
+/** Sprites that do not fit in the largest sheet are refused with a reason, and none is packed. **/
 BOOST_AUTO_TEST_CASE(pack_refuses_sprites_that_do_not_fit_test) {
     const v3d::image::Packing packing = v3d::image::pack({
         {.name = "a", .image = painted(glm::uvec2(20, 20), 32)},

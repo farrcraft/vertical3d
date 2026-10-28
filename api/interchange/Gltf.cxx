@@ -38,9 +38,9 @@ namespace v3d::interchange {
 namespace {
 
 /**
- * cgltf's file reader: the document and every buffer it names are read through
- * asset::readFile, as every other file the api reads is. cgltf has already joined a buffer's
- * uri to the document's directory and decoded its percent-escapes.
+ * cgltf's file reader. The document and every buffer it names are read through
+ * asset::readFile, as every other file the api reads is. cgltf has already joined a
+ * buffer's uri to the document's directory and decoded its percent-escapes.
  **/
 cgltf_result readThroughAssets(const cgltf_memory_options* /* memory */, const cgltf_file_options* /* file */,
     const char* path, cgltf_size* size, void** data) {

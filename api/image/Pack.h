@@ -69,8 +69,9 @@ class Unpacking final {
  * zero.
  *
  * Sprites are refused, with a reason, when there are none, when one has no image or no
- * pixels, when two share a name, when their depths differ, when the depth is not 8, 24 or 32
- * bits, when `largest` is under 16, or when they do not all fit in `largest`.
+ * pixels, or when two share a name. They are also refused when their depths differ or the
+ * depth is not 8, 24 or 32 bits. Last, they are refused when `largest` is under 16, or when
+ * they do not all fit in `largest`.
  *
  * @param largest the longest side the sheet may have
  **/

@@ -535,8 +535,8 @@ BOOST_AUTO_TEST_CASE(the_cascades_cover_the_view_without_gaps) {
 
 /**
  * Each cascade keeps its radius as the camera moves and turns, so its texels stay the same
- * size, and keeps a point fixed in the world at the same place within its texel as the camera
- * slides.
+ * size. As the camera slides, a point fixed in the world stays at the same place within its
+ * texel.
  **/
 BOOST_AUTO_TEST_CASE(the_cascades_hold_still_as_the_camera_moves) {
     const std::vector<float> splits = {8.0F, 25.0F, 70.0F};
@@ -599,8 +599,8 @@ BOOST_AUTO_TEST_CASE(the_cascade_fit_refuses_what_it_cannot_fit) {
 
 /**
  * A caster throws a shadow into a cascade while a sphere around it meets the box the cascade is
- * drawn through: a radius either side across the light, and two radii towards and away from
- * it. Just past any face of the box it does not.
+ * drawn through. The box reaches a radius either side across the light, and two radii towards
+ * and away from it. Just past any face of the box the caster throws no shadow.
  **/
 BOOST_AUTO_TEST_CASE(a_caster_casts_into_a_cascade_while_it_meets_its_box) {
     const lighting::ShadowBounds cascade{.centre = glm::vec3(5.0F, 0.0F, 0.0F), .radius = 10.0F};

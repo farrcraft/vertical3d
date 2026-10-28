@@ -512,8 +512,8 @@ BOOST_AUTO_TEST_CASE(sllighting_trace_without_a_renderer_test) {
 }
 
 /**
- * A program records whether it calls trace or transmission, so a renderer knows whether it
- * needs its traced scene. A call inside the shader's own function counts, because the
+ * A program records whether it calls trace or transmission, so a renderer can tell whether
+ * it needs its traced scene. A call inside the shader's own function counts, because the
  * function is inlined into the shader.
  **/
 BOOST_AUTO_TEST_CASE(sllighting_a_program_records_that_it_traces_test) {

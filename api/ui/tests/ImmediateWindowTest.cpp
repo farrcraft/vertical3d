@@ -229,7 +229,8 @@ BOOST_AUTO_TEST_CASE(a_bar_appears_the_frame_after_a_window_overflows) {
     ui.endWindow();
     ui.end();
 
-    // the second frame knows it overflowed, so it draws a track and a thumb the first had not
+    // the second frame has the first frame's overflow, so it draws a track and a thumb the first
+    // had not
     BOOST_CHECK(canvas.indices().size() > unscrolled);
 }
 

@@ -39,7 +39,7 @@ textures->release(sprite);                                            // see Rel
 
 A canvas names textures by `TextureHandle`, and the renderers turn each into its slot when they
 submit. A `DrawItem` of your own names `material()`, the one material that binds the array and
-is the same for every texture, and hands its shader `slot(texture)`, in a push constant or in
+is the same for every texture. It hands its shader `slot(texture)`, in a push constant or in
 data it reads per object. **Read the slot each frame rather than keeping it**, because a texture
 filled or replaced later moves to another slot. A shader declares the array as
 `layout(set = 1, binding = 0) uniform sampler2D textures[]` and reads `textures[slot]`, with

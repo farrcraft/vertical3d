@@ -27,9 +27,9 @@ enum class Component : std::uint8_t { Vertex, Edge, Face, Handle };
 /**
  * Which parts of which mesh and curve items are selected.
  *
- * A part is named by its item's id() and its index in the item's geometry: a vertex, a half
- * edge or a face of a mesh, or a control point or a handle of a curve as CurvePoint numbers
- * them. The selection belongs to the item, not to the geometry, so two items that share one
+ * A part is named by its item's id() and its index in the item's geometry. A part is a vertex,
+ * a half edge or a face of a mesh, or a control point or a handle of a curve as CurvePoint
+ * numbers them. The selection belongs to the item, not to the geometry, so two items that share one
  * mesh select its parts apart. An edge is selected when either of its two halves is.
  *
  * An index names whatever part holds it now. An operation that renumbers an item's geometry

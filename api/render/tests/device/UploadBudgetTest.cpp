@@ -51,7 +51,7 @@ constexpr std::uint64_t pollShare = 1000000000ULL / 60ULL / 8ULL;
 
 /**
  * A region's worth of content, as a world streams it: textures of 512 by 512, and meshes of a
- * 64 by 64 grid of vertices, about the detail of a prop or a stretch of terrain.
+ * 64 by 64 grid of vertices. A mesh is about the detail of a prop or a stretch of terrain.
  **/
 constexpr unsigned int regionTextures = 24;
 constexpr uint32_t textureSide = 512;
@@ -141,9 +141,9 @@ BOOST_AUTO_TEST_SUITE(upload_budget_test)
  * of device memory has it make a new one, which costs more than a poll's uploads do.
  *
  * It is disabled, because what it measures belongs to the machine it runs on and to a Release
- * build. Run it by hand:
+ * build. Run it by hand from out/build/x64-Release/api/render/tests:
  *
- *     out/build/x64-Release/api/render/tests/v3dtest_render_device.exe --run_test=upload_budget_test --log_level=message
+ *     v3dtest_render_device.exe --run_test=upload_budget_test --log_level=message
  *
  * Passes before the change: it measures the budget as it stands, and fails only if the number
  * the change sets is too large for this machine.

@@ -241,8 +241,8 @@ Instance::Enabling Instance::enable(const std::vector<const char*>& requested, c
     if (validating) {
         enabling.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
-    // asked for only where the loader offers it, so an older loader, which would refuse an
-    // extension it does not know, still creates the instance
+    // asked for only where the loader offers it, because an older loader will not create an
+    // instance with an extension it does not recognise
     if (std::find(offered.begin(), offered.end(), VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != offered.end()) {
         enabling.extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         enabling.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;

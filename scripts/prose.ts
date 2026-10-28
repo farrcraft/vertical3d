@@ -69,7 +69,7 @@ const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-
 const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
 
 // Historical records, and third-party or generated trees.
-const EXCLUDED_PREFIXES = ['vendor/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
+const EXCLUDED_PREFIXES = ['vendor/', 'demos/voxel/src/noise/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
     'docs/audits/'];
 // An accepted ADR's body is not edited, so only a new ADR file is checked.
 const ADR_BODY = /^docs\/adr\/\d{4}-[^/]*\.md$/;

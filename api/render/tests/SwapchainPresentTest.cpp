@@ -56,9 +56,8 @@ BOOST_AUTO_TEST_CASE(fifo_alone_answers_every_request) {
 }
 
 /**
- * With fifo and mailbox, a request for vsync takes fifo though mailbox is offered, and a
- * request for a mode that is not offered falls back as Present says: adaptive vsync to vsync,
- * and immediate to uncapped.
+ * With fifo and mailbox offered, a request for vsync takes fifo. A request for a mode that is
+ * not offered falls back as Present says: adaptive vsync to vsync, and immediate to uncapped.
  **/
 BOOST_AUTO_TEST_CASE(a_request_falls_back_to_what_is_offered) {
     BOOST_CHECK_EQUAL(Swapchain::choosePresentMode(fifoAndMailbox(), presentModes(Present::Uncapped)), VK_PRESENT_MODE_MAILBOX_KHR);

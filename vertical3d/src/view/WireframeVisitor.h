@@ -31,10 +31,10 @@ namespace v3d::editor {
  * through its world matrix without the scale, so it keeps its size. A selected item is drawn
  * in the selection's colour.
  *
- * A selected curve item can also show what shapes it: a small box at each control point, the
- * lines between a NURBS curve's control points, and a line from each Bezier point to each of its
- * handles with a box at the handle's end. A selected control point or handle is drawn in the
- * component colour.
+ * A selected curve item can also show what shapes it. It draws a small box at each control
+ * point and the lines between a NURBS curve's control points. From each Bezier point it draws a
+ * line to each of its handles, with a box at the handle's end. A selected control point or
+ * handle is drawn in the component colour.
  *
  * These are lines, drawn over the shaded pass. A selected face is drawn as its boundary, and a
  * selected vertex as a small box.

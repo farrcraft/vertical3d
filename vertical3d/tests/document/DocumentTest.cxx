@@ -256,8 +256,8 @@ BOOST_AUTO_TEST_CASE(a_gltf_file_imports_as_one_change) {
 
 /**
  * A USD stage comes in the same way. Blender writes each object as a prim with its data
- * beneath it, so the box is a group holding a mesh of six quads, and the stage's z up is turned
- * to y up at its top.
+ * beneath it, so the box is a group holding a mesh of six quads. The stage's z up is turned to
+ * y up at its top.
  **/
 BOOST_AUTO_TEST_CASE(a_usd_stage_imports_as_one_change) {
     const Scratch scratch("usd");

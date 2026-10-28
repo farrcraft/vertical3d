@@ -36,8 +36,8 @@ The sound document lists clips by id:
   `Voice::None` is no sound, which a failed `play()` returns. `audio::Play` sets the bus, the
   loop count (-1 loops until stopped), a fade-in, a gain, and a pan or a position.
 - `stop(voice, fadeOutMs)`, `stopAll()`, `playing(voice)`, `gain(voice, level)`,
-  `volume(voice)`, `pan(voice, value)` and `position(voice, point)` control playing sounds. A voice that has finished is
-  refused, never confused with a newer sound.
+  `volume(voice)`, `pan(voice, value)` and `position(voice, point)` control playing sounds. A
+  voice that has finished is refused, never confused with a newer sound.
 - **A pan runs from -1, left, through 0 to 1, right.** The side a sound is panned towards stays
   at full gain, and the other falls in a straight line to silence at the end. A centred sound is
   exactly an unpanned one. A pan past either end is held there, and one that is not finite is
@@ -58,8 +58,8 @@ The sound document lists clips by id:
   either.
 - The three need not be unit length or at right angles: the engine makes them so, keeping
   forward's direction and the side right is on. A listener that faces no way is refused and the
-  last one kept: a forward, an up or a right of zero, a forward and an up that are parallel, a
-  right in their plane, or a value that is not finite.
+  last one kept. Such a listener has a forward, an up or a right of zero, a forward and an up
+  that are parallel, a right in their plane, or a value that is not finite.
 - **A placed sound is quieter the further it is.** The fall-off is SDL_mixer's own and cannot be
   tuned. A placed sound is mixed in mono and spread across the speakers by its direction.
 - `heard(voice)` reads back where the mixer holds a placed sound: relative to the listener, with
@@ -106,7 +106,8 @@ sound_->attach(events_);                                 // hear events from sou
   The null backend plays nothing.
 - **Every call says whether it did anything.** `bank()`, `play()`, `parameter()`, `volume()`
   and `paused()` return false for a bank that did not load, an event no loaded bank holds, or a
-  parameter or a mixer path that does not exist, and always on the null backend. A game treats false as silence, not as an error.
+  parameter or a mixer path that does not exist. They always return false on the null backend.
+  A game treats false as silence, not as an error.
 - **A missing event or parameter is logged once per name.** The FMOD backend warns the first time
   an event is not found or a parameter cannot be set, and returns false without logging on every
   later call for that name. A parameter set every frame writes one line, not one a frame. An
@@ -115,7 +116,7 @@ sound_->attach(events_);                                 // hear events from sou
   it, so without it no event is found by name.
 - **`volume(path, level)` sets a bus or a VCA**, told apart by the path: `"bus:/"` is the master
   bus, `"bus:/Music"` a bus under it, and `"vca:/SFX"` a VCA. A VCA scales the buses assigned to
-  it without changing their routing, which is what a player's slider usually wants. 1 is as
+  it without changing their routing. A player's volume slider usually sets a VCA. 1 is as
   authored and 0 is silent, and a level below 0 is taken as 0. `volume(path)` reads the level
   back.
 - **`paused(bus, on)` pauses a bus** and everything routed through it. `"bus:/"` pauses

@@ -206,9 +206,9 @@ class Player final {
      * The listener is kept with or without a device, and starts at the origin facing -z with
      * +x to its right.
      *
-     * @return false for a listener that faces no way: a forward, an up or a right of zero, a
-     *         forward and an up that are parallel, a right in their plane, or a value that is
-     *         not finite. The last listener is kept
+     * @return false for a listener that faces no way, and the last listener is kept. Such a
+     *         listener has a forward, an up or a right of zero, a forward and an up that are
+     *         parallel, a right in their plane, or a value that is not finite
      **/
     bool listener(const Listener& listener);
 

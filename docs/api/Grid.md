@@ -1,8 +1,8 @@
 # Tile grids
 
 This page is for someone writing an app against the api. It covers `api/grid`: tile boards,
-coordinates, movement and pathfinding, line of sight and fog of war, building a board from a picture, and the
-geometry for drawing an overlay. Terms are defined in the [glossary](README.md#glossary).
+coordinates, movement and pathfinding, line of sight and fog of war, building a board from a
+picture, and the geometry for drawing an overlay. Terms are defined in the [glossary](README.md#glossary).
 
 - [What the library is](#what-the-library-is)
 - [The board and its coordinates](#the-board-and-its-coordinates)
@@ -101,11 +101,11 @@ std::vector<TileCoord> route = v3d::grid::findPath(loaded, playerTile, goalTile)
   is a wall: a route never plans through it and sight never sees into it. A route found over
   what is loaded therefore stays valid when another region arrives.
 - **The rules are one grid's.** A diagonal step between two blocked tiles is refused when they
-  lie in different grids, sight is symmetric across a seam, and a route may leave a region and
+  lie in different grids, and sight is symmetric across a seam. A route may leave a region and
   come back into it, which two routes joined at the seam cannot find.
-- **A grid joins only when it fits.** `refusal(grid)` says why one cannot: a tile size other than
-  the set's, a corner that is not a whole number of tiles from the world's origin, or a tile a
-  grid already in the set holds.
+- **A grid joins only when it fits.** `refusal(grid)` says why one cannot. The reasons are a tile
+  size other than the set's, a corner that is not a whole number of tiles from the world's
+  origin, or a tile a grid already in the set holds.
 - **A set holds references.** Build it from what is loaded when a search is made, and do not keep
   it past a release. A `DistanceField` keeps where the grids lie and reads none of them after it
   is built, so it may outlive them.

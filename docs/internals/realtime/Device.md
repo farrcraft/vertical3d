@@ -26,10 +26,11 @@ A portability driver implements Vulkan over another API, as MoltenVK does over M
 leave out parts of the specification. A loader hides one from an instance that has not asked for
 it.
 
-- `Instance::enable(requested, offered, validating)` chooses what the instance is created with. It
-  adds `VK_KHR_portability_enumeration`, and sets `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR`,
-  only when the loader offers the extension. An older loader refuses an extension it does not
-  know, so one that does not offer it is not asked. `Instance::portability()` says which way it
+- `Instance::enable(requested, offered, validating)` chooses what the instance is created with.
+  It adds `VK_KHR_portability_enumeration`, and sets
+  `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR`, only when the loader offers the extension.
+  An older loader refuses an extension it does not implement, so one that does not offer it is
+  not asked. `Instance::portability()` says which way it
   went, and the instance's log line says so too.
 - `Device::extensions(presenting, offered)` chooses what the logical device is created with. It
   adds `VK_KHR_portability_subset` when the physical device offers it, because a device that offers

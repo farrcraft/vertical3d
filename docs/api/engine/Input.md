@@ -253,7 +253,7 @@ controller_.reset();
   notch, inside the orbit's clamps. A notch away from the player zooms in. A negative
   `Speeds::notch` turns the wheel round, for a player who prefers it the other way. A notch is not
   held, so it zooms when `wheel()` is called rather than over a step. Pass what the mouse turned
-  since the last call, which is what `MouseState::wheel()` gives.
+  since the last call. `MouseState::wheel()` gives that amount.
 - **Edge pan is off until `edgePan(margin)` turns it on.** With a margin in pixels, a cursor within
   it of an edge pans the view toward that edge at `Speeds::pan`, from `simulate()`. The top edge is
   forward. `cursor(at, viewport, overUi)` tells the controller where the cursor is. A cursor outside

@@ -53,9 +53,9 @@ its own.
 
 ## Consequences
 
-- **Gains**: near shadows keep their detail over a long view, each cascade's pass draws only the
-  casters that reach it and is timed on its own, and one map is a single cascade, so a game
-  fitting one map is unchanged.
+- **Gains**: near shadows keep their detail over a long view. Each cascade's pass draws only the
+  casters that reach it and is timed on its own. One map is a single cascade, so a game fitting
+  one map is unchanged.
 - **Costs**: a pass and a set of draws per cascade, each caster's object added to the frame once
   per cascade it reaches. Every layer has the same size. A replacement shader declares the
   push constant and reads the map as an array. A skinned caster is never culled, because only

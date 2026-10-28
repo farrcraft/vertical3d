@@ -148,8 +148,9 @@ BOOST_AUTO_TEST_CASE(a_route_may_leave_a_grid_and_come_back) {
 
 /**
  * A diagonal may not pass between two blocked tiles that lie in different grids. With west's
- * wall moved up to (3, 2), the step from west's (3, 1) to east's (0, 2), world (4, 2), would pass
- * between west's wall and east's, so it is refused and the route goes the long way.
+ * wall moved up to (3, 2), consider the step from west's (3, 1) to east's (0, 2), world (4, 2).
+ * It would pass between west's wall and east's, so it is refused and the route goes the long
+ * way.
  **/
 BOOST_AUTO_TEST_CASE(a_diagonal_between_walls_in_two_grids_is_refused) {
     const TileGrid west = board({ "...#", "....", "###." }, at(0, 0));

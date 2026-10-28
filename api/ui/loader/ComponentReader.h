@@ -50,10 +50,10 @@ namespace v3d::ui::loader {
 /**
  * Reads the containers of a ui document and the components in them.
  *
- * It reads by the rule Members.h states. A container's name, visible flag and components, a
- * component's type and name, a menu bar's menus, a menu's label and items, a menu item's
- * label and type, a toolbar's buttons and an icon's source are required. Everything else is
- * optional.
+ * It reads by the rule Members.h states. These members are required: a container's name,
+ * visible flag and components, and a component's type and name. A menu bar's menus, a menu's
+ * label and items, a menu item's label and type, a toolbar's buttons and an icon's source are
+ * required too. Everything else is optional.
  **/
 class ComponentReader final {
  public:
@@ -149,8 +149,8 @@ class ComponentReader final {
      * the parent they are measured from.
      *
      * A number is pixels and a string ending in % is a fraction of the parent, so
-     * "position": [10, "50%"] is ten pixels in and half way down. A component naming neither
-     * is left Auto, which is its natural size where it has one.
+     * "position": [10, "50%"] is ten pixels in and half way down. A component naming
+     * neither is left Auto, which is its natural size where it has one.
      **/
     void readLayout(const boost::json::object& entry, Layout* layout);
 

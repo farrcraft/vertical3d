@@ -27,14 +27,14 @@ choice.
 - **For**: no app's memory changes, and the default keeps what each existing app was built
   against.
 - **Against**: on the development machine a poll fits a frame's share only at a quarter of a
-  megabyte, about one texture or two meshes, so a region takes more than a second to stream,
+  megabyte, about one texture or two meshes. A region then takes more than a second to stream,
   and the allocation limit stays.
 - **Rejected because**: every vendor guide and engine suballocates for this reason, and measured
   here it makes a poll several times cheaper.
 
 ### Suballocate only, and remove direct allocation
 - **For**: one path, with no choice to make or test.
-- **Against**: a case that wants each resource's memory to be its own, such as a check that a
+- **Against**: a case that requires each resource's memory to be its own, such as a check that a
   resource is bound at offset zero, loses the way to ask for it.
 - **Rejected because**: the direct path costs little to keep, and a device test still draws
   through it.

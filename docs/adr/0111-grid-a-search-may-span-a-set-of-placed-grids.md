@@ -17,7 +17,7 @@ and each hands the search the grids it has loaded rather than copies of them.
 
 `findPath`, `reachableTiles`, `DistanceField` and `hasLineOfSight` also take a set of placed
 grids and work in world tiles, with the movement and sight rules of one grid. The set holds
-references to the grids the game says are loaded, refuses grids whose tile sizes differ, whose
+references to the grids the game says are loaded. It refuses grids whose tile sizes differ, whose
 corners are off the tile lattice or that overlap, and treats a tile in no grid as impassable and
 opaque. One grid is a set of one, so there is one search.
 

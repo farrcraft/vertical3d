@@ -8,8 +8,8 @@
 ## Context
 
 A texture requested by path has to be named by a draw before its image has loaded, and has to
-show its pixels once it has, without a descriptor set that a frame in flight is reading being
-rewritten. Today each texture has a descriptor set of its own at set 1, and code that keeps that
+show its pixels once it has. Neither may rewrite a descriptor set that a frame in flight is
+reading. Today each texture has a descriptor set of its own at set 1, and code that keeps that
 set's handle, such as a mesh part, never sees a different image. Materials that sample several
 textures, sprite batches that change texture between quads, and textures streamed a mip level at
 a time all need a texture to change what a draw reads without the draw changing. Every 1.3
@@ -17,18 +17,19 @@ device this project targets, and the software driver CI runs, supports descripto
 
 ## Decision
 
-Every two-dimensional texture a context holds is a slot in one array of combined image samplers,
-bound once per pass in place of a set per texture, and a textured draw names its texture by slot
-index. A texture's handle resolves to a slot. Filling or replacing a texture writes its image
-into a free slot and points the handle there, and the old slot is retired through the frame ring.
+Every two-dimensional texture a context holds is a slot in one array of combined image samplers.
+The array is bound once per pass in place of a set per texture, and a textured draw names its
+texture by slot index. A texture's handle resolves to a slot. Filling or replacing a texture
+writes its image into a free slot and points the handle there, and the old slot is retired
+through the frame ring.
 
 ## Alternatives
 
 ### Swap the image behind a stable handle, and rewrite its sets
 - **For**: keeps one set per texture as ADR-0008 has it, and every pipeline layout and shader as
   they are. It is the texture reference Unreal draws through.
-- **Against**: each set that names a texture has to be found and written again when it fills, so
-  sets that other code writes, a full-screen pass's or a material with several textures, need
+- **Against**: each set that names a texture has to be found and written again when it fills.
+  Sets that other code writes, a full-screen pass's or a material with several textures, need
   the texture to track them. A batch still breaks at every change of texture.
 - **Rejected because**: the tracking grows with every kind of set that names a texture, where a
   slot index needs none.

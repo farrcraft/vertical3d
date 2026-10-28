@@ -105,14 +105,14 @@ std::optional<ShadowBounds> fitShadow(const entt::registry& registry, std::span<
 std::optional<ShadowBounds> fitShadowToView(const glm::mat4& viewProjection, float distance, const glm::vec3& towards, uint32_t texels);
 
 /**
- * The most cascades a shadow map has, which is how many SceneUniforms holds.
+ * The most cascades a shadow map has. SceneUniforms holds this many.
  **/
 inline constexpr uint32_t maximumCascades = 4;
 
 /**
- * Where each cascade of a shadow map ends, by the practical split scheme: each split is a
- * blend of a logarithmic one, which gives every cascade the same ratio of far to near, and a
- * uniform one, which gives every cascade the same length.
+ * Where each cascade of a shadow map ends, by the practical split scheme. Each split is a blend
+ * of a logarithmic split and a uniform one. A logarithmic split gives every cascade the same
+ * ratio of far to near, and a uniform split gives every cascade the same length.
  *
  * A distance is measured from the camera's near plane along its view direction, as
  * fitCascades() takes it.

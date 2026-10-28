@@ -18,9 +18,9 @@
 namespace v3d::editor {
 
 /**
- * One gesture of a manipulator on components: where the vertices it moved were, and the
- * normals of the faces around them, when the handle was grabbed and when it was let go, and the
- * curves whose control points or handles it moved.
+ * One gesture of a manipulator on components. It stores where the vertices it moved were, and
+ * the normals of the faces around them, when the handle was grabbed and when it was let go. It
+ * also stores the curves whose control points or handles it moved.
  *
  * Undo and redo write the stored positions and normals back rather than applying the
  * inverse of the motion, so they restore both exactly. A curve is stored whole, so the types a

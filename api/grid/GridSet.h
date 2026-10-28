@@ -58,9 +58,9 @@ class GridSet final {
     void add(const TileGrid& grid);
 
     /**
-     * Why a grid cannot join this set, or nothing when it can: a tile size that is not the
-     * set's, a corner that is not a whole number of tiles from the world's origin, or a tile
-     * that a grid already in the set holds.
+     * Why a grid cannot join this set, or nothing when it can. A grid is refused for a tile
+     * size that is not the set's, or a corner that is not a whole number of tiles from the
+     * world's origin. It is also refused for a tile that a grid already in the set holds.
      **/
     std::optional<std::string> refusal(const TileGrid& grid) const;
 
@@ -131,7 +131,7 @@ class GridSet final {
     /** Add a grid at an origin, in world tiles. **/
     void place(const TileGrid& grid, TileCoord origin);
 
-    /** The world tile a grid's tile (0, 0) would be, or nothing when its corner is off the lattice. **/
+    /** The world tile at a grid's tile (0, 0), or nothing when its corner is off the lattice. **/
     static std::optional<TileCoord> lattice(const TileGrid& grid);
 
     std::vector<Placed> grids_;

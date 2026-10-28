@@ -53,7 +53,7 @@ developed and fully verified with, and the Windows gates are unchanged.
   both.
 
 ### Check it on a macOS runner
-- **For**: the platform a consumer actually wants, with Apple's Clang and libc++.
+- **For**: the platform a consumer ships on, with Apple's Clang and libc++.
 - **Against**: a macOS runner costs several times a Linux one and builds the dependencies again
   from cold, and Metal leaves the renderer out either way.
 - **Rejected because**: Clang on Linux catches the compiler and platform faults at a fraction of

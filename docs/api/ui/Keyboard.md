@@ -143,7 +143,7 @@ selected, or leaves the anchor behind, which selects the run the caret crossed.
   typed into.
 - `placeholder` is shown in the `placeholder` colour while the box is empty.
 - The clipboard is a pair of callbacks, `input::Clipboard { read, write }`. `shell::Keyboard`
-  supplies SDL's, to its `input::Keys` and to an immediate layer it is offered. Without a `write`, a cut does not remove the text. Without a `read`, a
-  paste inserts nothing.
+  supplies SDL's, to its `input::Keys` and to an immediate layer it is offered. Without a
+  `write`, a cut does not remove the text. Without a `read`, a paste inserts nothing.
 - A copy or a cut with nothing selected does nothing, so the clipboard keeps what it had.
 - Placing the caret by clicking needs the `Measure` passed to `Cursor`.

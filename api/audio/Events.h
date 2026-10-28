@@ -141,8 +141,8 @@ class Events {
     virtual bool parameter(std::string_view name, float value) = 0;
 
     /**
-     * Set how loud a bus or a VCA plays, which is what a player's volume slider moves. The path
-     * says which it is: "bus:/" is the master bus, "bus:/Music" a bus under it, and
+     * Set how loud a bus or a VCA plays. A player's volume slider sets this. The path says
+     * which it is: "bus:/" is the master bus, "bus:/Music" a bus under it, and
      * "vca:/SFX" a VCA. A VCA scales the buses assigned to it without changing their routing.
      *
      * A path is found through the strings bank, so the bank that holds the names has to be

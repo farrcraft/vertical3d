@@ -590,7 +590,7 @@ BOOST_AUTO_TEST_CASE(a_space_survives_a_clear) {
 
 /**
  * A segment at an angle has its long sides parallel to the line between its points, half the
- * width either side of it, so its corners are offset across the line and not along an axis.
+ * width either side of it. Its corners are offset across the line, not along an axis.
  **/
 BOOST_AUTO_TEST_CASE(a_segment_at_an_angle_is_offset_across_its_line) {
     v3d::render::realtime::canvas::Canvas canvas;

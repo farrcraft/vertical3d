@@ -38,8 +38,8 @@ using PositionKey = std::array<std::uint32_t, 3>;
 
 /**
  * A float holding a small whole number has its low bits clear, and a table picks a bucket by
- * the low bits of the hash, so the words are folded together and handed to the standard hash,
- * which mixes every bit.
+ * the low bits of the hash. The words are therefore folded together and handed to the
+ * standard hash, which mixes every bit.
  **/
 struct PositionHash {
     std::size_t operator()(const PositionKey& key) const noexcept {

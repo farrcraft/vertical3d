@@ -244,7 +244,8 @@ bool Curve::intersect(const v3d::type::geometry::Ray & ray, float from, const Po
     const float tolerance = BOW * widest;
     if (bend > 0.0F) {
         const float levels = std::log2(std::sqrt(2.0F) * 6.0F * bend / (8.0F * tolerance)) / 2.0F;
-        depth = levels > 0.0F ? std::clamp(static_cast<int>(std::lround(levels)), 0, DEEPEST) : 0;
+        // a NaN fails the test, and std::min bounds an infinity
+        depth = levels > 0.0F ? static_cast<int>(std::lround(std::min(levels, static_cast<float>(DEEPEST)))) : 0;  // checked: levels is in (0, DEEPEST]
     }
 
     Search search(widths_, from, pose, { .origin = origin, .along = along }, ray);

@@ -42,10 +42,10 @@ enum class Winding : std::uint8_t { Clockwise, CounterClockwise };
  * How build() reads its input.
  *
  * joinTriangles joins pairs of triangles back into the quads they were cut from, for a format
- * that stores triangles only. Two triangles are joined across an edge they share when that edge
- * is the longest of each, as the diagonal of a quad is, when the quad they make is convex, and
- * when their normals differ by no more than joinAngle, in radians. Where a triangle could join
- * either of two neighbours, the flatter pair is joined first.
+ * that stores triangles only. Two triangles are joined across an edge they share when three
+ * things hold. The edge is the longest of each, as the diagonal of a quad is. The quad they
+ * make is convex. Their normals differ by no more than joinAngle, in radians. Where a triangle
+ * could join either of two neighbours, the flatter pair is joined first.
  **/
 struct BuildOptions {
     /**
@@ -80,8 +80,9 @@ struct Built {
  * its points. The time taken grows in proportion to the number of corners, apart from sorting
  * the pairs of triangles that could be joined.
  *
- * The input is refused when a count or an index is out of range, a point is not finite, a face
- * visits one vertex twice, or two faces run along one edge in the same direction. The last
+ * The input is refused when a count or an index is out of range, or a point is not finite. It
+ * is also refused when a face visits one vertex twice, or two faces run along one edge in the
+ * same direction. The last
  * happens where three or more faces meet at an edge, or where neighbouring faces disagree about
  * which side is outside.
  **/

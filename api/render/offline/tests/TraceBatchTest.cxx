@@ -74,9 +74,10 @@ void camera(Scene* scene, float scale) {
 }
 
 /**
- * A scene with something for every path through a batch: a matte floor that more than one
- * batch of rays meets, two tilted triangles that share one differentiating shader, a matte
- * pane half seen through, and a mirrored sphere that traces what it reflects.
+ * A scene with something for every path through a batch. It holds a matte floor that more
+ * than one batch of rays meets, and two tilted triangles that share one differentiating
+ * shader. It also holds a matte pane half seen through, and a mirrored sphere that traces
+ * what it reflects.
  **/
 Scene mixed() {
     Scene scene;
@@ -138,9 +139,9 @@ Scene mixed() {
     const v3d::render::offline::trace::Lights dim = boost::make_shared<const std::vector<v3d::render::offline::sl::Placed>>(
         std::vector<v3d::render::offline::sl::Placed>{ shader("distantlight", ShaderType::LIGHT, overhead) });
     narrow(0.75F, Held());
-    narrow(1.25F, {.object = shifted});
+    narrow(1.25F, {.object = shifted, .lights = {}});
     narrow(1.75F, Held());
-    narrow(2.25F, {.placement = shifted});
+    narrow(2.25F, {.placement = shifted, .lights = {}});
     narrow(2.75F, Held());
     narrow(3.25F, {.lights = dim});
 
@@ -169,9 +170,9 @@ std::vector<Tracer::Look> grid() {
 BOOST_AUTO_TEST_SUITE(trace_batch_test)
 
 /**
- * A ray sees the same through a batch as alone, to the last bit. The batch mixes shaders,
- * shades more hits of one shader than one run holds, gives two hits of one run their own
- * derivatives and their own shadows, composites a surface it sees through before the floor
+ * A ray sees the same through a batch as alone, to the last bit. The batch mixes shaders, and
+ * shades more hits of one shader than one run holds. It gives two hits of one run their own
+ * derivatives and their own shadows. It composites a surface it sees through before the floor
  * behind it, and traces a mirror's reflections as a batch of their own. It also holds hits of
  * one shader instance that differ in placement, object space and lights. A batch that let one
  * hit's state reach another's, or composited out of order, would change some ray's answer.

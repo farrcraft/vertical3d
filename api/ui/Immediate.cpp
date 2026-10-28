@@ -6,6 +6,7 @@
 #include "Immediate.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/type/Checked.h>
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
@@ -16,9 +17,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -34,6 +37,12 @@ namespace {
  * compromise between the two.
  **/
 const float scrubRate = 0.25F;
+
+/**
+ * The most units one frame's drag may move a value. A larger step is not a hand on a mouse, and
+ * is ignored.
+ **/
+const int32_t scrubLimit = 1000000;
 
 /**
  * The side of the square a bullet is drawn in, as a fraction of a row.
@@ -270,9 +279,13 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
 
     bool changed = false;
     if (reaction.held && context_->drag.x != 0.0F) {
-        const int moved = static_cast<int>(std::lround(context_->drag.x * scrubRate));
-        if (moved != 0) {
-            const int wanted = std::clamp(*value + moved, low, high);
+        // the cursor comes from the caller, so a step that is not finite or not a plausible
+        // distance is ignored
+        const std::optional<int32_t> moved = v3d::type::toInteger(std::round(context_->drag.x * scrubRate),
+            {.minimum = -scrubLimit, .maximum = scrubLimit});
+        if (moved.has_value() && *moved != 0) {
+            const int wanted = static_cast<int>(std::clamp(static_cast<int64_t>(*value) + *moved, static_cast<int64_t>(low),
+                static_cast<int64_t>(high)));
             changed = wanted != *value;
             *value = wanted;
         }

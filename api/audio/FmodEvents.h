@@ -43,8 +43,9 @@ namespace v3d::audio {
  * has stopped, and released by the next update() after that.
  *
  * An event no bank holds, a global parameter FMOD will not set, and a bus or VCA path no bank
- * holds, are each logged once per name for the life of the backend. Every later call for that name still returns false. A
- * caller that sets a parameter every frame therefore writes one warning, not one a frame.
+ * holds, are each logged once per name for the life of the backend. Every later call for that
+ * name still returns false. A caller that sets a parameter every frame therefore writes one
+ * warning, not one a frame.
  **/
 class FmodEvents final : public Events {
  public:

@@ -48,11 +48,11 @@ struct Motion {
  *
  * In object mode the target is the selected objects, which move through their transforms.
  * A motion is measured in world space and written back in each object's parent's space, so
- * an object beneath another moves as the motion says. In a component mode it is the distinct
- * vertices of the selected components, or the selected control points and handles of curves,
- * which move in world space and are written back in each object's own space, and the objects'
- * transforms are left alone. A component target may span several objects, meshes and curves
- * together.
+ * an object beneath another moves as the motion says. In a component mode the target is the
+ * distinct vertices of the selected components, or the selected control points and handles of
+ * curves. They move in world space and are written back in each object's own space, and the
+ * objects' transforms are left alone. A component target may span several objects, meshes and
+ * curves together.
  *
  * A curve's control point carries its Bezier handles with it, and the curve then places its
  * automatic handles again. A handle moves as dragging one does: a moved automatic handle

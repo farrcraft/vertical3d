@@ -257,8 +257,8 @@ slice is small, so its texels are small.
   cascade, and each later one moves the lookup further, by its radius over the first's,
   because its texels are wider.
 - `fitCascades` returns nothing for splits that are empty, more than 4, not increasing, or not
-  above zero, a light direction that is zero or not finite, fewer than 4 texels, or a matrix
-  that cannot be inverted.
+  above zero. It also returns nothing for a light direction that is zero or not finite, fewer
+  than 4 texels, or a matrix that cannot be inverted.
 - **One map is a single cascade.** `pack(settings, light, texel)` packs one matrix as a cascade
   that reaches every distance, so a map fitted by `fitShadow` or `fitShadowToView` is drawn as
   before.
@@ -304,8 +304,8 @@ entity::meshes(registry, alpha(), meshes, &lit, settings.outline, pass.get(), po
 | `shadowStrength` | How much of a band a shadow removes. Zero still draws the shadow pass but ignores it. |
 
 `lighting::pack(settings, lightViewProjection, texel)`, or `pack(settings, cascades, texel)`,
-turns the settings into the `SceneUniforms` that `scene()` takes. Changing `colour` and `shadowColour` over time is how a
-scene's light changes through a day.
+turns the settings into the `SceneUniforms` that `scene()` takes. Change `colour` and
+`shadowColour` over time to change a scene's light through a day.
 
 ### The outline
 

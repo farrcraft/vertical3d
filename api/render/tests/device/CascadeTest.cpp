@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_SUITE(cascade_test)
  * A long view drawn with three cascades. Each cascade's pass draws its casters into its own
  * layer, and the near one leaves out the casters that cannot reach it. On the ground, each
  * cube's shadow falls where its own cascade puts it, which only a map of three layers read
- * through the right matrix gives. The validation layer reports nothing, and the pass timings
- * hold each cascade's pass under its name, which is what each one costs.
+ * through the right matrix gives. The validation layer reports nothing. The pass timings hold
+ * each cascade's pass under its name, as the cost of that cascade.
  *
  * The pictures are written to data_out/cascades.png and data_out/cascades_unshadowed.png for a
  * person to look at.

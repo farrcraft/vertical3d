@@ -31,13 +31,13 @@ the copy makes it visible to every later submission on the queue.
   queue, and still needs the path this decision takes for uploads outside a frame.
 
 ### A dedicated transfer queue
-- **For**: the copy engine runs the copies while the graphics queue draws, which is how engines
-  that stream heavily, such as The Forge and Godot's transfer workers, do it.
+- **For**: the copy engine runs the copies while the graphics queue draws. Engines that stream
+  heavily, such as The Forge and Godot's transfer workers, do it this way.
 - **Against**: each resource needs a release on the transfer queue and an acquire before its first
   use on the graphics queue, and the frame waits on a semaphore. Devices without the family fall
   back to the graphics queue, and CI has only the fallback, so the handoff is never tested there.
 - **Rejected because**: at the default upload budget of a few megabytes a poll, the copy takes a
-  fraction of a millisecond, so there is little to overlap, and the path it adds is the one CI
+  fraction of a millisecond, so there is little to overlap. The path it adds is the one CI
   cannot run.
 
 ## Consequences

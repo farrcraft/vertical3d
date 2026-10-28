@@ -87,8 +87,8 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
-        // the app's Dress fills in a hud's sizes, which are larger than a tool panel's, so
-        // only the line height, which follows the text, is copied across
+        // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
+        // the line height follows the text, so only it is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
     }
     theme(drawing);

@@ -25,7 +25,7 @@ builds everything else.
 The constructor takes two optional choices after the logger. The first is the colour
 format to present through, covered in [ColourAndPost.md](ColourAndPost.md). The second is how the
 device finds memory. It defaults to regions of larger blocks, which suits streaming and keeps
-an app far under the device's limit on allocations. A case that wants one allocation per
+an app far under the device's limit on allocations. A case that requires one allocation per
 resource passes `vulkan::memory::Allocator::Kind::Direct`:
 
 ```cpp

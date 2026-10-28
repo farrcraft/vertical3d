@@ -92,7 +92,8 @@ it, which the editor's interface already sends.
 
 [] **A console.** Nothing drives the editor but its menus and bindings. A console panel, and a
 headless mode that runs a script against a project, would call the same operations on
-`Document` that they do, which take what they act on as arguments and return what to say. The
+`Document` that they do. Those operations take what they act on as arguments and return what
+to say. The
 console needs a way to name items and parts in text, and a parser from a line to a call.
 
 [] **A batch renders one frame at a time.** Its frames are independent files, and could run as

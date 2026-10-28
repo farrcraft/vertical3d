@@ -17,8 +17,8 @@ so that a picture does not change.
 ## Decision
 
 The tracer traces and shades rays in batches. The hits of a batch that share a surface shader,
-its placement, an object space and their lights are shaded by one run, and the rays that run
-traces, and the rays that continue through a surface, are the next batch. The ray hider casts
+its placement, an object space and their lights are shaded by one run. The rays that run traces,
+and the rays that continue through a surface, are the next batch. The ray hider casts
 each row pass by pass, every unsettled pixel's samples as one batch.
 
 ## Alternatives

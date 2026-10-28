@@ -56,8 +56,8 @@ BOOST_AUTO_TEST_CASE(the_default_listener_hears_the_world_as_it_is) {
 }
 
 /**
- * A point is heard by where it is from the listener: what is ahead is at -z, what is to the
- * right is at +x, and what is above is at +y, however the listener stands and turns.
+ * A point is heard by where it is from the listener, however the listener stands and turns.
+ * What is ahead is at -z, what is to the right is at +x, and what is above is at +y.
  **/
 BOOST_AUTO_TEST_CASE(a_point_is_heard_from_where_the_listener_stands) {
     // moved and facing the default way, a point two ahead of it is heard two ahead

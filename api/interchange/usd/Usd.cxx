@@ -67,8 +67,8 @@ namespace {
 constexpr double APERTURE_UNIT = 0.1;
 
 /**
- * A shaping cone of a quarter turn or more lights the whole half space in front of it, which is
- * what a sphere light with no shaping does on that side, so only a narrower one is a spot.
+ * A shaping cone of a quarter turn or more lights the whole half space in front of it. A sphere
+ * light with no shaping lights that side the same way, so only a narrower cone is a spot.
  **/
 constexpr float WIDEST_SPOT = 90.0F;
 

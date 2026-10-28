@@ -4,7 +4,7 @@
 # the job builds each one's own suite.
 name: portable
 
-# push is filtered to the default branch and pull_request is not: a branch in this repository
+# push is filtered to the default branch and pull_request is not. A branch in this repository
 # fires both events, so an unfiltered "on: [push, pull_request]" runs every job twice for the
 # whole life of a pull request.
 on:

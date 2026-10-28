@@ -88,16 +88,15 @@ Rules:
   the scene's object buffer at set 2 by instance index. A lit draw names its object as its first
   instance, and `Lit::object()` returns that index.
 - **A texture is a slot, not a set.** Every textured item names the one material `Textures`
-  holds, so set 1 is bound once while the pipeline stays bound, and the item carries its
-  texture's slot: a quad and a world quad in a push constant, a lit object in its
-  `Lit::Object::albedo`. The binding is partially bound and may be written while frames that
-  bind it are in flight, so a slot is written only when it is free: one released is freed
-  through the ring. A device without runtime descriptor arrays, partially bound bindings,
-  updates while pending, and dynamic and non-uniform indexing of sampled image arrays is not
-  selected.
-- **A full-screen pass binds its sources in a set of its own** at set 1, because a source mixes
-  two-dimensional images, depth images in their read-only layout and a grade's volume table,
-  and names them as they are when it is made.
+  holds, so set 1 is bound once while the pipeline stays bound. The item carries its texture's
+  slot: a quad and a world quad in a push constant, a lit object in its `Lit::Object::albedo`.
+  The binding is partially bound and may be written while frames that bind it are in flight, so
+  a slot is written only when it is free: one released is freed through the ring. A device
+  without runtime descriptor arrays, partially bound bindings, updates while pending, and
+  dynamic and non-uniform indexing of sampled image arrays is not selected.
+- **A full-screen pass binds its sources in a set of its own** at set 1. A source mixes
+  two-dimensional images, depth images in their read-only layout and a grade's volume table.
+  The set names them as they are when it is made.
 - A pipeline that declares set 2 must be drawn in a pass that names a scene set; the recorder
   checks this.
 

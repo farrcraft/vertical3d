@@ -33,9 +33,10 @@ struct Listener final {
  * its direction, up is turned towards it within the plane they share, and right is the side of
  * that plane the given right is on.
  *
- * @return nothing for a value that is not finite, a forward or an up of zero length, a forward
- *         and an up that are parallel, and a right that lies in the plane of the other two.
- *         None of those says which way the listener faces or which side is its right
+ * @return nothing for a value that is not finite, or a forward or an up of zero length. The
+ *         same holds for a forward and an up that are parallel, and for a right that lies in
+ *         the plane of the other two. None of those says which way the listener faces or which
+ *         side is its right
  **/
 std::optional<Listener> orthonormal(const Listener& listener) noexcept;
 

@@ -32,11 +32,13 @@ out of the load.
   ignored, and the setting keeps its default. That includes an optional array such as
   `children` or `styles`, and a word such as an `anchor`, an `edge` or a button style's `state`.
 
-The required members are a container's `name`, `visible` and `components`; a component's
-`type` and `name`; a menu bar's `menus`; a menu's `label` and `items`; a menu item's `label`
-and `type`; a toolbar's `buttons`; an icon's `source`; a theme's `name`; a style's `class` and
-`name`; and a style property's `name`, with a colour's or a number's `value` and an image's
-`source`. Every other member is optional.
+The required members are these, and every other member is optional:
+
+- a container's `name`, `visible` and `components`, and a component's `type` and `name`
+- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`
+- a toolbar's `buttons` and an icon's `source`
+- a theme's `name`, and a style's `class` and `name`
+- a style property's `name`, with a colour's or a number's `value` and an image's `source`
 
 Every component entry has a `type` and a `name`. These keys apply to every component:
 
