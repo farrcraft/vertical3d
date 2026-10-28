@@ -682,8 +682,8 @@ export function dropCall(text: string, line: number, command: string): string | 
 // names it and resolves to a file the worktree lacks, and the configure runs again. A list in
 // another directory that spells the name the same way names a different file, and keeps it. The
 // drops are added to dropped, marked with whether the change added the source. A call in a
-// tests/ CMakeLists.txt to a command the configure does not know is removed, and the configure
-// runs again.
+// tests/ CMakeLists.txt that the configure reports as an unknown command is removed, and the
+// configure runs again.
 function configure(worktree: string, build: string, mainBuild: string, cache: Map<string, string>, env: Env,
                    scratch: string, head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
     let toolchain = cache.get("CMAKE_TOOLCHAIN_FILE") ?? "vendor/vcpkg/scripts/buildsystems/vcpkg.cmake";
