@@ -33,6 +33,8 @@
 //    an app source a suite compiles. That source is dropped from the list in the worktree. When
 //    the configure reports a source missing, it is dropped from each list that names a file of
 //    that name the worktree lacks; a list whose entry resolves to a file that exists keeps it.
+//    A head tests/CMakeLists.txt can also call a CMake helper the change added outside tests/.
+//    When the configure reports the command unknown, the call is removed from the worktree.
 // 3. Configures the worktree into its own build directory and builds only the affected suites.
 //    The configure reuses the packages the main build already installed: it points
 //    VCPKG_INSTALLED_DIR at that install, turns VCPKG_MANIFEST_INSTALL off, and uses the
@@ -55,7 +57,8 @@
 //                        the case uses an API the change added. This counts as failing. When a
 //                        test file fails to compile, or its object names a symbol the link
 //                        cannot find, the file is dropped from the suite in the worktree and the
-//                        rest are built and run.
+//                        rest are built and run. A suite whose directory the base does not
+//                        configure, because the change added or moved it, fails to build too.
 //     PASSES - weak      the case passes without the change. It does not test the change.
 //     passes, stated     the case passes without the change, and its doc comment says why.
 //     passes, covers the base
@@ -630,10 +633,57 @@ function missingSources(output: string): string[] {
     return [...output.matchAll(/Cannot find source file:\s*\r?\n(?:\s*\r?\n)?\s*(\S[^\r\n]*)/g)].map((m) => m[1].trim());
 }
 
+// A call a failed configure reports to an unknown command: the file as the configure printed it,
+// the line the call starts on, and the command.
+export type UnknownCall = { file: string; line: number; command: string };
+
+export function unknownCommands(output: string): UnknownCall[] {
+    const calls = output.matchAll(/CMake Error at (\S[^\r\n]*?):(\d+) \((\w+)\):\s*\r?\n\s*Unknown CMake command "\3"/g);
+    return [...calls].map((m) => ({ file: m[1], line: Number(m[2]), command: m[3] }));
+}
+
+// The text with the call to command that starts on the given line removed, up to its closing
+// parenthesis, or null when that line has no such call. CMake command names ignore case.
+export function dropCall(text: string, line: number, command: string): string | null {
+    let start = 0;
+    for (let n = 1; n < line; n++) {
+        start = text.indexOf("\n", start) + 1;
+        if (start === 0) {
+            return null;
+        }
+    }
+    const end = text.indexOf("\n", start);
+    const found = new RegExp(`\\b${escapeRegExp(command)}\\s*\\(`, "i").exec(text.slice(start, end === -1 ? undefined : end));
+    if (!found) {
+        return null;
+    }
+    let depth = 0;
+    let quoted = false;
+    for (let i = start + found.index + found[0].length - 1; i < text.length; i++) {
+        const c = text[i];
+        if (quoted) {
+            if (c === "\\") {
+                i++;
+            } else if (c === "\"") {
+                quoted = false;
+            }
+        } else if (c === "\"") {
+            quoted = true;
+        } else if (c === "(") {
+            depth++;
+        } else if (c === ")" && --depth === 0) {
+            return text.slice(0, start + found.index) + text.slice(i + 1);
+        }
+    }
+    return null;
+}
+
 // Configures the worktree. A source the configure cannot find is dropped from each head list that
 // names it and resolves to a file the worktree lacks, and the configure runs again. A list in
 // another directory that spells the name the same way names a different file, and keeps it. The
-// drops are added to dropped, marked with whether the change added the source.
+// drops are added to dropped, marked with whether the change added the source. A call in a
+// tests/ CMakeLists.txt to a command the configure does not know is removed, and the configure
+// runs again.
 function configure(worktree: string, build: string, mainBuild: string, cache: Map<string, string>, env: Env,
                    scratch: string, head: string, added: Set<string>, dropped: Map<string, Drop[]>): void {
     let toolchain = cache.get("CMAKE_TOOLCHAIN_FILE") ?? "vendor/vcpkg/scripts/buildsystems/vcpkg.cmake";
@@ -680,6 +730,20 @@ function configure(worktree: string, build: string, mainBuild: string, cache: Ma
                     dropped.set(suite, [...(dropped.get(suite) ?? []), { source, added: added.has(source) }]);
                     progress = true;
                 }
+            }
+        }
+        // a head tests/CMakeLists.txt can call a helper the change added outside tests/
+        for (const { file, line, command: name } of unknownCommands(output)) {
+            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join("/");
+            if (!isTestFile(relative)) {
+                continue;
+            }
+            const full = path.join(worktree, ...relative.split("/"));
+            const text = fs.existsSync(full) ? dropCall(fs.readFileSync(full, "utf8"), line, name) : null;
+            if (text !== null) {
+                fs.writeFileSync(full, text);
+                console.log(`dropped the call to ${name} from ${relative}: the base has no such command`);
+                progress = true;
             }
         }
         if (!progress || attempt >= 10) {
@@ -935,6 +999,15 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
         for (const suite of [...bySuite.keys()].sort()) {
             const suiteCases = bySuite.get(suite)!;
             const directory = headMap.get(suiteCases[0].file)!.directory;
+            // a base that does not add the head suite's directory, such as one where the change
+            // moved it, may still build a binary of that name from somewhere else
+            if (!fs.existsSync(path.join(build, ...directory.split("/"), "CMakeFiles", `v3dtest_${suite}.dir`))) {
+                for (const c of suiteCases) {
+                    c.result = FAILS_TO_BUILD;
+                    c.note = `the base does not configure ${directory}`;
+                }
+                continue;
+            }
             const sources = listed.filter((s) => s.suite === suite).map((s) => s.source);
             const executable = buildSuite(suite, directory, sources, suiteCases, worktree, build, env, scratch);
             for (const c of suiteCases) {
