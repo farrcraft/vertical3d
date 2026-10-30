@@ -95,6 +95,9 @@ content went. Numbers are never reused.
 | [0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted |
 | [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
 | 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
+| [0128](0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted |
+| [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | accepted |
+| [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
 
 ## Engine, input and assets
 
@@ -162,6 +165,7 @@ content went. Numbers are never reused.
 | [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
 | [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
 | [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
+| [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | accepted |
 
 ## Build, testing and code
 

@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [UiPolish](UiPolish.md) | UI, shell, editor, demos | A theme derived from a few colours, Inter at two weights, display scaling, shadows, transitions and tooltips; an editor of tiled areas holding editors as tabs, with a status bar and command search; and a designed game menu in each game's accent |
 
 ## Completed plans
 
