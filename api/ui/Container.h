@@ -34,6 +34,14 @@ class Container {
      */
     void visible(bool vis);
 
+    /**
+     * Whether the container dims everything drawn before it, as a pause menu or a prompt that
+     * waits on an answer does. The dressing's backdrop is laid over the whole canvas before the
+     * container's components are drawn. Off unless set.
+     **/
+    bool backdrop() const noexcept;
+    void backdrop(bool dims) noexcept;
+
     void add(const boost::shared_ptr<Component>& component);
     /**
      * Find a component by name, anywhere in the container - the components it holds and
@@ -72,6 +80,7 @@ class Container {
     std::string name_;
     std::vector<boost::shared_ptr<Component>> components_;
     bool visible_;
+    bool backdrop_;
 };
 
 };  // namespace v3d::ui

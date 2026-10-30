@@ -249,6 +249,11 @@ class ComponentRenderer {
 
  private:
     /**
+     * Draw the shadow a menu's box casts, moved down by the dressing's offset.
+     **/
+    void cast(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max) const;
+
+    /**
      * Draw one dropped panel of a menu bar, leaving every item holding its own row.
      *
      * @param origin where the panel's top left corner would go, before it is moved to

@@ -28,6 +28,8 @@ constexpr float FOCUS_WIDTH = 2.0F;
 constexpr float INDENT = 14.0F;
 /** semibold, as CSS numbers it **/
 constexpr float TITLE_WEIGHT = 600.0F;
+constexpr float SHADOW_SIZE = 12.0F;
+constexpr float SHADOW_OFFSET = 4.0F;
 
 // the sizes the immediate layer starts with where they differ, in pixels
 constexpr float TOOLS_LINE_HEIGHT = 18.0F;
@@ -39,7 +41,7 @@ constexpr float TOOLS_RADIUS = 3.0F;
 /** every size a scale multiplies, which leaves out the outlines and the title weight **/
 constexpr std::array SIZES{&Dressing::lineHeight, &Dressing::padding, &Dressing::spacing, &Dressing::barHeight,
 &Dressing::iconSize, &Dressing::panelPadding, &Dressing::scrollbarWidth, &Dressing::markSize, &Dressing::radius,
-&Dressing::indent};
+&Dressing::indent, &Dressing::shadowSize, &Dressing::shadowOffset};
 
 };  // namespace
 
@@ -57,6 +59,8 @@ focusWidth(FOCUS_WIDTH),
 radius(0.0F),
 indent(INDENT),
 titleWeight(TITLE_WEIGHT),
+shadowSize(SHADOW_SIZE),
+shadowOffset(SHADOW_OFFSET),
 gap(),
 bar(),
 panel(),
@@ -80,7 +84,9 @@ highlight(),
 selected(),
 hover(),
 pressed(),
-focus() {
+focus(),
+shadow(),
+backdrop() {
     Palette().dress(Palette::Use::Chrome, this);
 }
 

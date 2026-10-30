@@ -33,7 +33,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
-| `paint::fillBox`, `strokeBox`, `plateBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models |
+| `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
@@ -140,7 +140,8 @@ hit testing. None of these feed back into a box.
 ## Draw order and hit testing
 
 `ComponentRenderer::draw(canvas, engine)` draws each visible container in the order the
-document listed them. Within a container:
+document listed them. A container whose `backdrop()` is set first lays the dressing's backdrop
+over the whole canvas, which dims every container drawn before it. Within a container:
 
 1. Components in `Container::ordered()` order, which is by `depth` with insertion order kept
    between equal depths. The sort runs on every call, because a depth can change after a

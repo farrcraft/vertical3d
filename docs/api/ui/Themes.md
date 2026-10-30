@@ -70,6 +70,9 @@ the contrast 1, and the defaults every app starts from are derived from them.
   distance.
 - **One step per role.** Each colour role takes one step of one scale. The `ui` and `tools`
   classes differ only in `track` and `tab`, which sit at the level of a widget in `tools`.
+- **Shadows and backdrops are black.** `shadow` is black at 45% in a dark theme and 18% in a
+  light one, where a shadow shows more. `backdrop` is black at 60% in either, because what it
+  dims is the scene behind the ui and not the theme's own surfaces.
 - **Legible by construction.** `highlight` starts one step below the accent and is darkened
   until `active-text` reads on it at 4.5:1. An accent of any lightness therefore gives a
   highlight that carries text.
@@ -121,6 +124,8 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `hover` | what is drawn behind the item the cursor is on | both |
 | `pressed` | the face of a flat button while a press on it is held | retained |
 | `focus` | the ring around the component that has the keyboard, or the outline of the field that has it | both |
+| `shadow` | the shadow a menu casts, at its darkest | retained |
+| `backdrop` | what is laid over everything behind a container that dims it | retained |
 | `line-height` | the height of one line of text | both |
 | `padding` | the gap between text and the panel or widget around it | both |
 | `spacing` | the gap between one widget and the next | immediate |
@@ -133,10 +138,16 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `focus-width` | how thick the focus ring is | retained |
 | `radius` | how far corners are rounded, 0 for square | both |
 | `indent` | how far a bullet pushes its text in | immediate |
+| `shadow-size` | how far past a menu's edge its shadow fades out. Defaults to 12 | retained |
+| `shadow-offset` | how far down a menu's shadow is moved. Defaults to 4 | retained |
 | `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu
 panels, toolbar strips and button labels.
+
+A centred menu and each panel a menu bar drops cast a shadow: their box moved down by
+`shadow-offset`, filled with `shadow`, with an edge that fades to nothing over `shadow-size`.
+A `shadow` with no alpha draws none.
 
 An app can also set these values in code, through `ComponentRenderer::dressing()`,
 `Immediate::dressing()` or `Screen::Options::dress`. Where the theme names a value, the theme

@@ -263,6 +263,19 @@ void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& u
 
 /**
  **/
+void Canvas::rect(const glm::vec2& min, const glm::vec2& max, const Corners& colours) {
+    open(TextureHandle());
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    vertex({.position = glm::vec2(min.x, min.y), .uv = glm::vec2(0.0F, 0.0F), .colour = colours.topLeft});
+    vertex({.position = glm::vec2(min.x, max.y), .uv = glm::vec2(0.0F, 1.0F), .colour = colours.bottomLeft});
+    vertex({.position = glm::vec2(max.x, max.y), .uv = glm::vec2(1.0F, 1.0F), .colour = colours.bottomRight});
+    vertex({.position = glm::vec2(max.x, min.y), .uv = glm::vec2(1.0F, 0.0F), .colour = colours.topRight});
+    quad(first);
+}
+
+/**
+ **/
 void Canvas::segment(const Segment& shape, const glm::vec4& colour) {
     const glm::vec2 along = shape.to - shape.from;
     const float length = std::hypot(along.x, along.y);
@@ -290,6 +303,10 @@ void Canvas::circle(const glm::vec2& centre, float radius, unsigned int sides, c
 }
 
 void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
+    ring(shape, {.inner = colour, .outer = colour});
+}
+
+void Canvas::ring(const Ring& shape, const Blend& colours) {
     const glm::vec2& centre = shape.centre;
     const float outer = shape.outer;
     const float inner = shape.inner;
@@ -300,7 +317,7 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
         return;
     }
     if (inner <= 0.0F) {
-        arc({.centre = centre, .radius = outer, .sides = sides, .start = start, .sweep = sweep}, colour);
+        fan({.centre = centre, .radius = outer, .sides = sides, .start = start, .sweep = sweep}, colours);
         return;
     }
     open(TextureHandle());
@@ -310,8 +327,8 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
         const glm::vec2 direction(std::cos(angle), std::sin(angle));
-        vertex({.position = centre + direction * outer, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
-        vertex({.position = centre + direction * inner, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
+        vertex({.position = centre + direction * outer, .uv = glm::vec2(0.5F, 0.5F), .colour = colours.outer});
+        vertex({.position = centre + direction * inner, .uv = glm::vec2(0.5F, 0.5F), .colour = colours.inner});
     }
 
     // two triangles per segment, over the pair of vertices at each end of it
@@ -328,6 +345,10 @@ void Canvas::ring(const Ring& shape, const glm::vec4& colour) {
 }
 
 void Canvas::arc(const Arc& shape, const glm::vec4& colour) {
+    fan(shape, {.inner = colour, .outer = colour});
+}
+
+void Canvas::fan(const Arc& shape, const Blend& colours) {
     const glm::vec2& centre = shape.centre;
     const float radius = shape.radius;
     const unsigned int sides = shape.sides;
@@ -339,12 +360,12 @@ void Canvas::arc(const Arc& shape, const glm::vec4& colour) {
     open(TextureHandle());
 
     const uint32_t centreIndex = static_cast<uint32_t>(vertices_.size());
-    vertex({.position = centre, .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
+    vertex({.position = centre, .uv = glm::vec2(0.5F, 0.5F), .colour = colours.inner});
 
     const float step = sweep / static_cast<float>(sides);
     for (unsigned int side = 0; side <= sides; side++) {
         const float angle = start + (step * static_cast<float>(side));
-        vertex({.position = centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), .uv = glm::vec2(0.5F, 0.5F), .colour = colour});
+        vertex({.position = centre + glm::vec2(std::cos(angle) * radius, std::sin(angle) * radius), .uv = glm::vec2(0.5F, 0.5F), .colour = colours.outer});
     }
 
     // a fan written out as triangles, so it batches with the quads around it. A full turn

@@ -122,6 +122,7 @@ bool ComponentReader::readContainer(const boost::json::object& entry) {
         return false;
     }
     const boost::shared_ptr<Container> container = boost::make_shared<Container>(*named, *visible);
+    container->backdrop(optionalFlag(*logger_, entry, "backdrop", false));
     containers_.push_back(container);
 
     return std::ranges::all_of(*components, [this, &container](const boost::json::value& item) {

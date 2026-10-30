@@ -71,6 +71,25 @@ BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
 }
 
 /**
+ * A container dims what is behind it only when its document asks it to.
+ **/
+BOOST_AUTO_TEST_CASE(a_container_may_ask_for_a_backdrop) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [
+            { "name": "hud", "visible": true, "components": [] },
+            { "name": "pause", "visible": false, "backdrop": true, "components": [] }
+        ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    BOOST_REQUIRE(ui->container("hud"));
+    BOOST_REQUIRE(ui->container("pause"));
+    BOOST_CHECK(!ui->container("hud")->backdrop());
+    BOOST_CHECK(ui->container("pause")->backdrop());
+}
+
+/**
  * A component type the library does not recognise is refused rather than skipped, so a typo in a
  * config is not a component silently missing from the window.
  **/

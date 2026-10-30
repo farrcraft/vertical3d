@@ -20,6 +20,7 @@
 #include <api/ui/style/property/Color.h>
 #include <api/ui/style/property/Number.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -72,7 +73,7 @@ BOOST_AUTO_TEST_SUITE(component_renderer_test)
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer renderer(
+    v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
             Written line;
@@ -81,6 +82,8 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
             line.colour = colour;
             written.push_back(line);
         });
+    // the shadow under the panel is counted by its own case
+    renderer.dressing().shadow = glm::vec4(0.0F);
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -113,6 +116,71 @@ BOOST_AUTO_TEST_CASE(a_menu_is_drawn_with_the_dressing_radius) {
     renderer.draw(&rounded, buildMenu({"One", "Two", "Three"}));
 
     BOOST_CHECK_GT(rounded.vertices().size(), square.vertices().size());
+}
+
+/**
+ * A menu casts a shadow before its panel is drawn: the panel's box moved down by the offset,
+ * in the shadow's colour, with a fade around it.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_casts_a_shadow_under_its_panel) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::Dressing& dress = renderer.dressing();
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two"});
+    renderer.draw(&canvas, menu);
+
+    // with square corners the shadow's box is one rectangle, drawn first
+    const glm::vec2 rim(dress.borderWidth, dress.borderWidth);
+    const glm::vec2 drop(0.0F, dress.shadowOffset);
+    const glm::vec2 min = menu->position() - rim + drop;
+    const glm::vec2 max = menu->position() + static_cast<const v3d::ui::Component&>(*menu).size() + rim + drop;
+    BOOST_REQUIRE_GE(canvas.vertices().size(), 4U);
+    for (std::size_t index = 0; index < 4; index++) {
+        const v3d::render::realtime::canvas::Canvas::Vertex& vertex = canvas.vertices()[index];
+        BOOST_CHECK(vertex.colour == dress.shadow);
+        BOOST_CHECK(vertex.position.x == min.x || vertex.position.x == max.x);
+        BOOST_CHECK(vertex.position.y == min.y || vertex.position.y == max.y);
+    }
+    // and its fade reaches past that box
+    const auto reaches = [&](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
+        return vertex.position.y >= max.y + dress.shadowSize - 0.001F;
+    };
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), reaches));
+}
+
+/**
+ * A container that asks for a backdrop lays the backdrop over the whole canvas before its own
+ * components, and one that does not draws none.
+ **/
+BOOST_AUTO_TEST_CASE(a_container_with_a_backdrop_dims_the_canvas_first) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+
+    v3d::ui::Container plain("plain", true);
+    plain.add(buildMenu({"One"}));
+    v3d::render::realtime::canvas::Canvas without;
+    without.resize(glm::uvec2(800, 600));
+    renderer.draw(&without, plain);
+
+    v3d::ui::Container dimmed("dimmed", true);
+    dimmed.backdrop(true);
+    dimmed.add(buildMenu({"One"}));
+    v3d::render::realtime::canvas::Canvas with;
+    with.resize(glm::uvec2(800, 600));
+    renderer.draw(&with, dimmed);
+
+    BOOST_REQUIRE_EQUAL(with.vertices().size(), without.vertices().size() + 4);
+    for (std::size_t index = 0; index < 4; index++) {
+        const v3d::render::realtime::canvas::Canvas::Vertex& vertex = with.vertices()[index];
+        BOOST_CHECK(vertex.colour == renderer.dressing().backdrop);
+        BOOST_CHECK(vertex.position.x == 0.0F || vertex.position.x == 800.0F);
+        BOOST_CHECK(vertex.position.y == 0.0F || vertex.position.y == 600.0F);
+    }
 }
 
 /**
@@ -218,6 +286,8 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
     v3d::ui::paint::ComponentRenderer renderer(
         [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
         [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    // the panel is found by where its vertices fall, after nothing but its edges
+    renderer.dressing().shadow = glm::vec4(0.0F);
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));

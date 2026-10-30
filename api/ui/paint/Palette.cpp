@@ -129,6 +129,14 @@ constexpr float DARK_SELECTED_ALPHA = 0.24F;
 constexpr float LIGHT_SELECTED_ALPHA = 0.18F;
 constexpr float DARK_HAIRLINE_ALPHA = 0.07F;
 constexpr float LIGHT_HAIRLINE_ALPHA = 0.10F;
+// how dark a shadow is at its darkest, in a dark theme and in a light one. A light surface
+// shows a shadow more, so it needs less
+constexpr float DARK_SHADOW_ALPHA = 0.45F;
+constexpr float LIGHT_SHADOW_ALPHA = 0.18F;
+/** how much a backdrop darkens what is behind it, whatever the theme, since that is a game's scene **/
+constexpr float BACKDROP_ALPHA = 0.6F;
+/** what a shadow and a backdrop darken with **/
+constexpr glm::vec4 BLACK(0.0F, 0.0F, 0.0F, 1.0F);
 
 float linear(float channel) noexcept {
     return channel <= GAMMA_KNEE ? channel / LINEAR_SLOPE
@@ -272,7 +280,9 @@ Palette::Roles Palette::roles(Use use) const noexcept {
         {.field = &Dressing::fill, .colour = tint[ACCENT_STEP]},
         {.field = &Dressing::mark, .colour = tint[ACCENT_STEP]},
         {.field = &Dressing::caret, .colour = tint[ACCENT_STEP]},
-        {.field = &Dressing::focus, .colour = tint[ACCENT_STEP]}}};
+        {.field = &Dressing::focus, .colour = tint[ACCENT_STEP]},
+        {.field = &Dressing::shadow, .colour = faded(BLACK, dark_ ? DARK_SHADOW_ALPHA : LIGHT_SHADOW_ALPHA)},
+        {.field = &Dressing::backdrop, .colour = faded(BLACK, BACKDROP_ALPHA)}}};
 }
 
 void Palette::dress(Use use, Dressing* dressing) const noexcept {

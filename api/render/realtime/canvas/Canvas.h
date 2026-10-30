@@ -194,6 +194,25 @@ class Canvas final {
         const glm::vec4& colour, const TextureHandle& texture);
 
     /**
+     * The colour at each corner of a rectangle, which blend across it.
+     *
+     * The rectangle is two triangles, and the colours blend within each. A blend along one
+     * axis, where two neighbouring corners share a colour, is exact. Four different colours
+     * show the diagonal the triangles meet on.
+     **/
+    struct Corners {
+        glm::vec4 topLeft{1.0F};
+        glm::vec4 topRight{1.0F};
+        glm::vec4 bottomRight{1.0F};
+        glm::vec4 bottomLeft{1.0F};
+    };
+
+    /**
+     * An untextured rectangle whose colour blends from corner to corner.
+     **/
+    void rect(const glm::vec2& min, const glm::vec2& max, const Corners& colours);
+
+    /**
      * A filled circle, as a fan of triangles.
      * @param sides how many segments to approximate it with
      **/
@@ -238,6 +257,20 @@ class Canvas final {
     };
 
     void ring(const Ring& shape, const glm::vec4& colour);
+
+    /**
+     * The colours a shape blends between, from its inside out.
+     **/
+    struct Blend {
+        glm::vec4 inner{1.0F};
+        glm::vec4 outer{1.0F};
+    };
+
+    /**
+     * A band between two radii whose colour blends from the inner radius to the outer one.
+     * With no hole it is a wedge blending from its centre to its rim.
+     **/
+    void ring(const Ring& shape, const Blend& colours);
 
     /**
      * A filled band between two points, at any angle, as one untextured quad.
@@ -307,6 +340,11 @@ class Canvas final {
      * Two triangles over the last four vertices added, wound counter clockwise.
      **/
     void quad(uint32_t first);
+
+    /**
+     * A wedge as a fan of triangles, the inner colour at its centre and the outer at its rim.
+     **/
+    void fan(const Arc& shape, const Blend& colours);
 
     /**
      * A point in the space's units, in pixels.

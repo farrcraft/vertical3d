@@ -148,7 +148,8 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
   colour with.
 - **Steps 2 and 3 are independent**, and are best done early so that later steps are sized in
   their final face and scale.
-- **Step 4 blocks step 6's menu shadows and step 14's backdrop.**
+- **Step 4 blocks the shadows of step 6's tooltips and step 9's notices, and step 14's
+  backdrop.**
 - **Step 10 blocks step 7's maximise key, step 6's shortcut column and step 11's shortcut
   hints**, since each needs a chord to show.
 - **Step 7 blocks steps 8, 12 and 13.** A viewport header, the outliner and the properties editor
@@ -229,11 +230,26 @@ on the whole canvas.
 
 ### Step 4 — Soft shadows and a backdrop
 
-Open.
+**Closed.**
 
-- The canvas gains a rounded box whose edge fades out over a given width. It draws a menu's,
-  a tooltip's and a notice's shadow.
-- `Screen` can dim the whole canvas behind a container, for a pause menu or a modal prompt.
+- The canvas gains a rectangle with a colour per corner, and a ring that blends from its inner
+  radius to its outer one, or from its centre to its rim when it has no hole.
+- `paint::shadowBox` fills a rounded box and fades its edge to nothing over a width. The fade is
+  three bands on half a turn of a cosine, so it has no hard inner edge, and its corners turn about the box's
+  own corner centres, so no two pieces overlap.
+- `Dressing` gains `shadow`, `backdrop`, `shadowSize` and `shadowOffset`. Both colours are palette
+  roles. A shadow is black at 45% in a dark theme and 18% in a light one, and a backdrop black at
+  60% in either.
+- A centred menu and every panel a menu bar drops cast a shadow now, since both exist. Tooltips
+  and notices take theirs when steps 6 and 9 draw them.
+- A container's `backdrop` flag, read from its document, lays the backdrop over the whole canvas
+  before the container is drawn. It is on `Container` rather than `Screen`, because the
+  component renderer draws containers in order and the game menu and the prompt are each one.
+  No app sets it until step 14.
+- The canvas suite covers both blends. The painter suite pins the fade's curve, and checks that
+  the pieces cover the reach once, square and rounded. The renderer suite covers a menu's shadow
+  and a backdrop, and the document suite the flag. pong's menu was photographed: under the
+  panel the shadow darkens the court's divider from 89 to 49, and it fades back over 12 pixels.
 
 ### Step 5 — Transitions
 

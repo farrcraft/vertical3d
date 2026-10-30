@@ -22,6 +22,10 @@ A ui document is JSON with three top-level keys:
   because the document would otherwise be half loaded.
 - `containers` (required) is an array. Each container has a `name`, a `visible` flag and a
   `components` array. A container is shown and hidden as a whole.
+- A container may set `backdrop` to true, as a pause menu or a prompt does. Everything drawn
+  before it is then dimmed: the theme's `backdrop` colour is laid over the whole canvas before
+  the container's components are drawn. It is false by default, and `Container::backdrop()`
+  sets it in code.
 
 **One rule decides what a bad member does, for themes and components alike.** Nothing throws
 out of the load.

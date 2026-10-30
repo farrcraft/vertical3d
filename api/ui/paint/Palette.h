@@ -57,7 +57,7 @@ class Palette final {
     };
 
     /** How many colour roles a Dressing has, each of which a palette gives a colour. **/
-    static constexpr std::size_t roleCount = 24;
+    static constexpr std::size_t roleCount = 26;
 
     using Roles = std::array<Role, roleCount>;
 

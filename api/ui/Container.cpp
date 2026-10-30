@@ -69,7 +69,8 @@ boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component
 
 Container::Container(const std::string& name, bool visible) :
     name_(name),
-    visible_(visible) {
+    visible_(visible),
+    backdrop_(false) {
 }
 
 void Container::add(const boost::shared_ptr<Component>& component) {
@@ -118,6 +119,14 @@ bool Container::visible() const {
 
 void Container::visible(bool vis) {
     visible_ = vis;
+}
+
+bool Container::backdrop() const noexcept {
+    return backdrop_;
+}
+
+void Container::backdrop(bool dims) noexcept {
+    backdrop_ = dims;
 }
 
 std::string_view Container::name() const {

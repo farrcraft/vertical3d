@@ -117,6 +117,8 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->colour(style, "hover", dressing, &paint::Dressing::hover);
     overlay->colour(style, "pressed", dressing, &paint::Dressing::pressed);
     overlay->colour(style, "focus", dressing, &paint::Dressing::focus);
+    overlay->colour(style, "shadow", dressing, &paint::Dressing::shadow);
+    overlay->colour(style, "backdrop", dressing, &paint::Dressing::backdrop);
 
     overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight, scale);
     overlay->metric(style, "padding", dressing, &paint::Dressing::padding, scale);
@@ -130,6 +132,8 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->width(style, "focus-width", dressing, &paint::Dressing::focusWidth, scale, &paint::Dressing::outline);
     overlay->metric(style, "radius", dressing, &paint::Dressing::radius, scale);
     overlay->metric(style, "indent", dressing, &paint::Dressing::indent, scale);
+    overlay->metric(style, "shadow-size", dressing, &paint::Dressing::shadowSize, scale);
+    overlay->metric(style, "shadow-offset", dressing, &paint::Dressing::shadowOffset, scale);
     overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
 }
 

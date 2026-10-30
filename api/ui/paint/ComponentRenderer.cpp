@@ -321,6 +321,9 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     // the box every root component is laid out against
     const v3d::type::geometry::Bound2D area({.position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()))});
+    if (container.backdrop()) {
+        canvas->rect(area.position(), area.position() + area.size(), base().backdrop);
+    }
 
     std::vector<std::pair<boost::shared_ptr<component::Toolbar>, glm::vec2>> strips;
     std::vector<boost::shared_ptr<component::menu::Bar>> bars;
@@ -828,6 +831,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // the border is traced just outside the box the items are laid out in
     const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    cast(canvas, origin - rim, origin + glm::vec2(width, height) + rim);
     plateBox(canvas, origin - rim, origin + glm::vec2(width, height) + rim, base().radius, base().borderWidth,
         {.inside = base().panel, .outline = base().border});
 
@@ -935,6 +939,13 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
 /**
  **/
+void ComponentRenderer::cast(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max) const {
+    const glm::vec2 drop(0.0F, base().shadowOffset);
+    shadowBox(canvas, min + drop, max + drop, {.radius = base().radius, .reach = base().shadowSize, .colour = base().shadow});
+}
+
+/**
+ **/
 void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu,
     const glm::vec2& origin) const {
     const std::size_t count = menu->count();
@@ -949,6 +960,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
 
     // the border is traced just outside the box the items are laid out in
     const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    cast(canvas, corner - rim, corner + size + rim);
     plateBox(canvas, corner - rim, corner + size + rim, base().radius, base().borderWidth,
         {.inside = base().panel, .outline = base().border});
 

@@ -64,6 +64,8 @@ struct Dressing final {
     float radius;          /**< how far a panel's or a window's corners are rounded, 0 for square **/
     float indent;          /**< how far a bullet pushes its text in **/
     float titleWeight;     /**< how heavy a window's title and a table's header are set, as CSS numbers weights **/
+    float shadowSize;      /**< how far past a menu's edge its shadow fades out **/
+    float shadowOffset;    /**< how far down a menu's shadow is moved, as if lit from above **/
     glm::vec4 gap;           /**< what shows between two areas that tile a window **/
     glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/
@@ -88,6 +90,8 @@ struct Dressing final {
     glm::vec4 hover;         /**< what is drawn behind the item the cursor is on **/
     glm::vec4 pressed;       /**< the face of a button or an item while a press on it is held **/
     glm::vec4 focus;         /**< the ring around whatever the keyboard is on **/
+    glm::vec4 shadow;        /**< the shadow a menu casts, at its darkest **/
+    glm::vec4 backdrop;      /**< what is laid over everything behind a container that dims it **/
 };
 
 };  // namespace v3d::ui::paint
