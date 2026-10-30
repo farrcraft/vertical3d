@@ -109,6 +109,13 @@ class Immediate {
     void titles(const paint::Write& write);
 
     /**
+     * Draw larger or smaller. Every size of the dressing goes back to the built-in one at this
+     * scale, and a theme's sizes are multiplied by it, from the next theme(). The colours are
+     * kept.
+     **/
+    void scale(float factor);
+
+    /**
      * @return the colours and metrics, to be changed in place. They start from
      *      paint::Dressing::tools()
      **/

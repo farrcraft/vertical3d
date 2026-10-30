@@ -23,13 +23,15 @@ Each polled SDL event is offered to three places, in this order:
    devices never see it.
 2. **The input devices**, which update the key and mouse state and publish source events. A
    key or mouse event they handle stops here.
-3. **The engine's own handling** of quit, window close, resize and focus. This runs whatever
-   `onEvent()` returned.
+3. **The engine's own handling** of quit, window close, resize, focus and the monitor's scale.
+   This runs whatever `onEvent()` returned.
 
 On a resize the engine updates the window's size and publishes
 `event::kind::WindowResize`. On a focus change it publishes `event::kind::WindowFocus`. A key
 released while the window is unfocused never arrives, so an app that tracks held keys itself
-should drop them when focus is lost.
+should drop them when focus is lost. When the monitor's scale changes, or the window moves to a
+monitor with another, it publishes `event::kind::DisplayScale` with `Window::displayScale()`,
+which the shell passes to its screen.
 
 Rules for `onEvent()`:
 

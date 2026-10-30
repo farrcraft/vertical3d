@@ -120,6 +120,12 @@ class ComponentRenderer {
     boost::shared_ptr<style::Theme> theme() const noexcept;
 
     /**
+     * Multiply a theme's sizes, which are logical pixels. dressing() is not changed, so the
+     * caller sets it at the same scale. Takes effect at the next theme().
+     **/
+    void scale(float factor) noexcept;
+
+    /**
      * Draw a label - one line of text at the position it holds.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Label>& label) const;

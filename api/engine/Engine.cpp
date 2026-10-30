@@ -12,6 +12,7 @@
 #include <api/event/Bindings.h>
 #include <api/event/Router.h>
 #include <api/event/Event.h>
+#include <api/event/kind/DisplayScale.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
@@ -453,6 +454,12 @@ void Engine::handleEvent(const SDL_Event& event) {
         break;
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
+        break;
+    // the monitor's scale changed, or the window moved to a monitor with another
+    case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+        if (window_) {
+            dispatcher_->trigger(v3d::event::kind::DisplayScale(window_->displayScale()));
+        }
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
         minimized_ = true;

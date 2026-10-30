@@ -9,6 +9,8 @@
 #include <api/asset/Manifest.h>
 #include <api/engine/Engine.h>
 #include <api/engine/Statistics.h>
+#include <api/event/kind/DisplayScale.h>
+#include <api/window/Window.h>
 #include <api/ui/Interface.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
@@ -52,11 +54,25 @@ bool Shell::start(const v3d::ui::shell::GameMenu::Suspend& suspend) {
  **/
 void Shell::present(v3d::render::realtime::WindowRenderer* renderer, const v3d::ui::shell::Screen::Options& options) {
     screen_ = boost::make_shared<v3d::ui::shell::Screen>(renderer, engine_->assets(), engine_->logger(), options);
+    // the monitor's scale now, and whenever it changes after
+    if (engine_->window()) {
+        screen_->display(engine_->window()->displayScale());
+    }
+    scaled_ = engine_->dispatcher()->sink<v3d::event::kind::DisplayScale>().connect<&Shell::rescale>(*this);
+}
+
+/**
+ **/
+void Shell::rescale(const v3d::event::kind::DisplayScale& event) {
+    if (screen_) {
+        screen_->display(event.scale());
+    }
 }
 
 /**
  **/
 void Shell::release() {
+    scaled_.release();
     screen_.reset();
     menu_.reset();
     ui_.reset();

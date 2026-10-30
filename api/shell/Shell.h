@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/engine/Engine.h>
+#include <api/event/kind/DisplayScale.h>
 #include <api/ui/Interface.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
@@ -14,6 +15,7 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#include <entt/entt.hpp>
 
 namespace v3d::render::realtime {
 class WindowRenderer;
@@ -114,11 +116,18 @@ class Shell final {
     void draw();
 
  private:
+    /**
+     * Give the screen the monitor's new scale.
+     **/
+    void rescale(const v3d::event::kind::DisplayScale& event);
+
     v3d::engine::Engine* engine_;
     Options options_;
     boost::shared_ptr<v3d::ui::Interface> ui_;
     boost::shared_ptr<v3d::ui::shell::GameMenu> menu_;
     boost::shared_ptr<v3d::ui::shell::Screen> screen_;
+    // connected while there is a screen. A shell does not outlive its engine's dispatcher
+    entt::scoped_connection scaled_;
 };
 
 };  // namespace v3d::shell

@@ -114,6 +114,15 @@ bool Window::focused() const {
     return (SDL_GetWindowFlags(window_) & SDL_WINDOW_INPUT_FOCUS) != 0;
 }
 
+float Window::displayScale() const {
+    if (window_ == nullptr) {
+        return 1.0F;
+    }
+    // SDL answers 0 when it cannot read the scale
+    const float scale = SDL_GetWindowDisplayScale(window_);
+    return scale > 0.0F ? scale : 1.0F;
+}
+
 /**
  **/
 bool Window::fullscreen(bool on) {

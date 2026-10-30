@@ -215,6 +215,12 @@ boost::shared_ptr<style::Theme> ComponentRenderer::theme() const noexcept {
 
 /**
  **/
+void ComponentRenderer::scale(float factor) noexcept {
+    styles_.scale(factor);
+}
+
+/**
+ **/
 void ComponentRenderer::paint(v3d::render::realtime::canvas::Canvas* canvas,
     const boost::shared_ptr<Component>& component) const {
     switch (component->type()) {

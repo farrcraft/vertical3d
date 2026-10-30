@@ -15,7 +15,9 @@ A theme is data in the ui document. It is a list of styles. Each style has a `cl
 ```
 
 - A colour's `value` is four numbers, RGBA from 0 to 1.
-- A number's `value` is one number.
+- A number's `value` is one number. A size is in logical pixels, which the screen multiplies by its
+  scale (see [Scaling](Setup.md#scaling-to-the-monitor-and-the-window)). An outline's width is
+  rounded down to whole device pixels and is never less than one.
 - An image has a `source`, which the app resolves (see [Images](#images)).
 - Any other member of a style is not read. Every component's text is drawn in the text
   renderer's typeface, so a theme does not name fonts. A theme chooses a weight for a role, such

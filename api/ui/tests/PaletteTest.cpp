@@ -171,6 +171,40 @@ BOOST_AUTO_TEST_CASE(dressing_leaves_the_metrics_alone) {
     BOOST_CHECK(near(dressing.panel, hex(0x202830U), 1.0F));
 }
 
+/**
+ * A scaled dressing multiplies every size and keeps every colour. An outline is rounded down to
+ * whole pixels, is never thinner than one, and stays none when it was none.
+ **/
+BOOST_AUTO_TEST_CASE(a_scaled_dressing_multiplies_its_sizes) {
+    Dressing dressing;
+    dressing.radius = 4.0F;
+    const Dressing doubled = dressing.scaled(2.0F);
+    BOOST_CHECK_CLOSE(doubled.padding, dressing.padding * 2.0F, 0.001F);
+    BOOST_CHECK_CLOSE(doubled.lineHeight, dressing.lineHeight * 2.0F, 0.001F);
+    BOOST_CHECK_CLOSE(doubled.radius, 8.0F, 0.001F);
+    BOOST_CHECK_CLOSE(doubled.borderWidth, 2.0F, 0.001F);
+    BOOST_CHECK_CLOSE(doubled.titleWeight, dressing.titleWeight, 0.001F);
+    BOOST_CHECK(doubled.highlight == dressing.highlight);
+
+    BOOST_CHECK_CLOSE(dressing.scaled(1.5F).borderWidth, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(dressing.scaled(0.5F).borderWidth, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(Dressing::outline(0.0F, 2.0F), 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(Dressing::outline(2.0F, 1.5F), 3.0F, 0.001F);
+}
+
+/**
+ * Resizing a dressing takes another's sizes and keeps its own colours.
+ **/
+BOOST_AUTO_TEST_CASE(resizing_a_dressing_keeps_its_colours) {
+    Dressing dressing;
+    dressing.text = glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
+    const Dressing large = Dressing().scaled(3.0F);
+    dressing.resize(large);
+    BOOST_CHECK_CLOSE(dressing.padding, large.padding, 0.001F);
+    BOOST_CHECK_CLOSE(dressing.borderWidth, large.borderWidth, 0.001F);
+    BOOST_CHECK(dressing.text == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

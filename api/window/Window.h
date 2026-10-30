@@ -99,6 +99,14 @@ class Window final {
     bool focused() const;
 
     /**
+     * How much larger than its pixel size a ui is drawn on the monitor the window is on, to look
+     * the size it was designed at: 1 at 100%, 1.5 at 150%.
+     *
+     * @return the scale, and 1 while there is no window or the scale cannot be read
+     **/
+    float displayScale() const;
+
+    /**
      * Fill the display the window is on, or go back to a window.
      *
      * The display keeps its own mode, so the change is a resize as far as the swapchain is

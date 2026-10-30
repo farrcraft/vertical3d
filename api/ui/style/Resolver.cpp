@@ -35,7 +35,16 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
     return styles.empty() ? nullptr : styles.front();
 }
 
-Resolver::Resolver() {
+Resolver::Resolver() :
+scale_(1.0F) {
+}
+
+void Resolver::scale(float factor) noexcept {
+    scale_ = factor;
+}
+
+float Resolver::scale() const noexcept {
+    return scale_;
 }
 
 void Resolver::theme(const boost::shared_ptr<Theme>& theme) {
@@ -66,7 +75,7 @@ const paint::Dressing& Resolver::base() const noexcept {
 }
 
 void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Overlay<paint::Dressing>* overlay,
-    paint::Dressing* dressing) {
+    paint::Dressing* dressing, float scale) {
     if (!style) {
         return;
     }
@@ -109,23 +118,23 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->colour(style, "pressed", dressing, &paint::Dressing::pressed);
     overlay->colour(style, "focus", dressing, &paint::Dressing::focus);
 
-    overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight);
-    overlay->metric(style, "padding", dressing, &paint::Dressing::padding);
-    overlay->metric(style, "spacing", dressing, &paint::Dressing::spacing);
-    overlay->metric(style, "bar-height", dressing, &paint::Dressing::barHeight);
-    overlay->metric(style, "icon-size", dressing, &paint::Dressing::iconSize);
-    overlay->metric(style, "panel-padding", dressing, &paint::Dressing::panelPadding);
-    overlay->metric(style, "scrollbar-width", dressing, &paint::Dressing::scrollbarWidth);
-    overlay->metric(style, "mark-size", dressing, &paint::Dressing::markSize);
-    overlay->metric(style, "border-width", dressing, &paint::Dressing::borderWidth);
-    overlay->metric(style, "focus-width", dressing, &paint::Dressing::focusWidth);
-    overlay->metric(style, "radius", dressing, &paint::Dressing::radius);
-    overlay->metric(style, "indent", dressing, &paint::Dressing::indent);
+    overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight, scale);
+    overlay->metric(style, "padding", dressing, &paint::Dressing::padding, scale);
+    overlay->metric(style, "spacing", dressing, &paint::Dressing::spacing, scale);
+    overlay->metric(style, "bar-height", dressing, &paint::Dressing::barHeight, scale);
+    overlay->metric(style, "icon-size", dressing, &paint::Dressing::iconSize, scale);
+    overlay->metric(style, "panel-padding", dressing, &paint::Dressing::panelPadding, scale);
+    overlay->metric(style, "scrollbar-width", dressing, &paint::Dressing::scrollbarWidth, scale);
+    overlay->metric(style, "mark-size", dressing, &paint::Dressing::markSize, scale);
+    overlay->width(style, "border-width", dressing, &paint::Dressing::borderWidth, scale, &paint::Dressing::outline);
+    overlay->width(style, "focus-width", dressing, &paint::Dressing::focusWidth, scale, &paint::Dressing::outline);
+    overlay->metric(style, "radius", dressing, &paint::Dressing::radius, scale);
+    overlay->metric(style, "indent", dressing, &paint::Dressing::indent, scale);
     overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
 }
 
 void Resolver::chrome() {
-    readBase(lookup(chromeClass, std::string_view()), paint::Palette::Use::Chrome, &overlay_, &base_);
+    readBase(lookup(chromeClass, std::string_view()), paint::Palette::Use::Chrome, &overlay_, &base_, scale_);
 }
 
 const char* Resolver::named(Class className) noexcept {
@@ -155,20 +164,35 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
     if (!style) {
         return dressing;
     }
+    // a theme gives sizes in logical pixels, which the screen's scale multiplies
+    const auto metric = [this](const boost::shared_ptr<Style>& from, const std::string& key, float* into) {
+        if (from->property(key, "number")) {
+            float read = 0.0F;
+            readMetric(from, key, &read);
+            *into = read * scale_;
+        }
+    };
+    const auto width = [this](const boost::shared_ptr<Style>& from, const std::string& key, float* into) {
+        if (from->property(key, "number")) {
+            float read = 0.0F;
+            readMetric(from, key, &read);
+            *into = paint::Dressing::outline(read, scale_);
+        }
+    };
 
     switch (className) {
         case Class::Panel:
             readColour(style, "background", &dressing.panel);
             readColour(style, "border", &dressing.border);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
             break;
         case Class::Bar:
             readColour(style, "track", &dressing.track);
             readColour(style, "fill", &dressing.fill);
             readColour(style, "border", &dressing.border);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
             break;
         case Class::Scrollbar:
             // a scrollbar dresses from its own class, so a theme that paints a health bar
@@ -176,8 +200,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "track", &dressing.track);
             readColour(style, "thumb", &dressing.thumb);
             readColour(style, "border", &dressing.border);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
             break;
         case Class::Slider:
             // a track, the fill up to the thumb, and the thumb. A class of its own, so a
@@ -186,9 +210,9 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "fill", &dressing.fill);
             readColour(style, "thumb", &dressing.thumb);
             readColour(style, "border", &dressing.border);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
-            readMetric(style, "mark-size", &dressing.markSize);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
+            metric(style, "mark-size", &dressing.markSize);
             break;
         case Class::CheckBox:
         case Class::Radio:
@@ -198,8 +222,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "mark", &dressing.mark);
             readColour(style, "border", &dressing.border);
             readColour(style, "text", &dressing.text);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "mark-size", &dressing.markSize);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "mark-size", &dressing.markSize);
             break;
         case Class::List:
             readColour(style, "background", &dressing.panel);
@@ -207,9 +231,9 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "highlight", &dressing.highlight);
             readColour(style, "text", &dressing.text);
             readColour(style, "active-text", &dressing.activeText);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
-            readMetric(style, "line-height", &dressing.lineHeight);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
+            metric(style, "line-height", &dressing.lineHeight);
             break;
         case Class::Tabs:
             readColour(style, "background", &dressing.panel);
@@ -218,8 +242,8 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "text", &dressing.text);
             readColour(style, "active-text", &dressing.activeText);
             readColour(style, "border", &dressing.border);
-            readMetric(style, "bar-height", &dressing.barHeight);
-            readMetric(style, "radius", &dressing.radius);
+            metric(style, "bar-height", &dressing.barHeight);
+            metric(style, "radius", &dressing.radius);
             break;
         case Class::TextBox:
             readColour(style, "background", &dressing.panel);
@@ -229,9 +253,9 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             readColour(style, "placeholder", &dressing.placeholder);
             // what is drawn behind the selected run, the way a list highlights a chosen row
             readColour(style, "highlight", &dressing.highlight);
-            readMetric(style, "border-width", &dressing.borderWidth);
-            readMetric(style, "radius", &dressing.radius);
-            readMetric(style, "line-height", &dressing.lineHeight);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "radius", &dressing.radius);
+            metric(style, "line-height", &dressing.lineHeight);
             break;
         case Class::Button:
             // a button's fill comes from its skin and its label colour from the base, so
@@ -241,7 +265,7 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
     // every class may override the focus ring, so it is read once here for all of them.
     // A class naming neither property draws the base's ring
     readColour(style, "focus", &dressing.focus);
-    readMetric(style, "focus-width", &dressing.focusWidth);
+    width(style, "focus-width", &dressing.focusWidth);
     return dressing;
 }
 

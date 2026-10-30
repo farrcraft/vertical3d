@@ -48,6 +48,8 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
     engine_(engine),
     options_(options),
     scale_(1.0F),
+    display_(1.0F),
+    built_(0.0F),
     resized_(false) {
     if (!options_.dress) {
         options_.dress = lineHeight;
@@ -76,8 +78,13 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
 void Screen::build() {
     // the theme lives on the Interface, and the renderer being replaced is what was last given it
     const boost::shared_ptr<style::Theme> drawing = components_ ? components_->theme() : boost::shared_ptr<style::Theme>();
+    built_ = factor();
     const float drawn = size();
     components_ = boost::make_shared<paint::ComponentRenderer>(text_->measure(drawn), text_->write(&canvas_, drawn));
+    // the built-in sizes at this scale, which the app's dress then fills in from the text size,
+    // and a theme's sizes at the same scale
+    components_->dressing() = paint::Dressing().scaled(built_);
+    components_->scale(built_);
     options_.dress(&components_->dressing(), drawn);
 
     if (options_.immediate) {
@@ -89,13 +96,14 @@ void Screen::build() {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
         immediate_->titles(text_->write(&canvas_, drawn, paint::Weight::SemiBold));
+        immediate_->scale(built_);
         // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
         // the line height follows the text, so only it is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
     }
     theme(drawing);
     if (statistics_) {
-        statistics_->size(StatisticsOverlay::defaultSize * scale_);
+        statistics_->size(StatisticsOverlay::defaultSize * built_);
     }
 }
 
@@ -115,6 +123,10 @@ bool Screen::begin(const Interface* ui) {
     if (canvas_.width() != width || canvas_.height() != height) {
         canvas_.resize(glm::uvec2(width, height));
         resized_ = true;
+        // a screen that follows the window's height is drawn at a new size
+        if (factor() != built_) {
+            build();
+        }
     }
     canvas_.clear();
     return true;
@@ -138,6 +150,31 @@ void Screen::scale(float factor) {
 
 /**
  **/
+void Screen::display(float monitor) {
+    if (monitor <= 0.0F || monitor == display_) {
+        return;
+    }
+    display_ = monitor;
+    if (factor() != built_) {
+        build();
+    }
+}
+
+/**
+ **/
+float Screen::factor() const noexcept {
+    if (options_.scaling == Scaling::Display) {
+        return scale_ * display_;
+    }
+    // before the first frame the canvas has no height, and the screen is drawn at its own scale
+    if (canvas_.height() == 0 || options_.reference <= 0.0F) {
+        return scale_;
+    }
+    return scale_ * (static_cast<float>(canvas_.height()) / options_.reference);
+}
+
+/**
+ **/
 float Screen::scale() const noexcept {
     return scale_;
 }
@@ -145,7 +182,7 @@ float Screen::scale() const noexcept {
 /**
  **/
 float Screen::size() const noexcept {
-    return options_.size * scale_;
+    return options_.size * factor();
 }
 
 /**

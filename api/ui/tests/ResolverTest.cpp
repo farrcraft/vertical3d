@@ -545,6 +545,32 @@ BOOST_AUTO_TEST_CASE(a_tools_style_derives_the_immediate_roles) {
     BOOST_CHECK(dressing.mark == v3d::ui::paint::Dressing::tools().mark);
 }
 
+/**
+ * A theme's sizes are logical pixels, which the resolver's scale multiplies, in the base style
+ * and in a class's own. A size equal to the one already there is multiplied all the same, and an
+ * outline is rounded as Dressing::outline() rounds it.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_size_is_multiplied_by_the_scale) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("sized");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    metric(chrome, "padding", 8.0F);
+    metric(chrome, "line-height", 32.0F);
+    metric(chrome, "border-width", 1.0F);
+    theme->addStyle(chrome);
+    const boost::shared_ptr<v3d::ui::style::Style> plate = style("default", "panel");
+    metric(plate, "radius", 4.0F);
+    theme->addStyle(plate);
+
+    Resolver resolver;
+    resolver.scale(1.5F);
+    resolver.base().lineHeight = 32.0F;
+    resolver.theme(theme);
+    BOOST_CHECK_CLOSE(resolver.base().padding, 12.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 48.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().borderWidth, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.resolve(Resolver::Class::Panel, std::string_view()).radius, 6.0F, 0.001F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

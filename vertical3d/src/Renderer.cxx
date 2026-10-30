@@ -66,7 +66,8 @@ const char* const handleSuffix = " handles";
 const char* const uiPass = "ui";
 
 /**
- * How large the whole ui is drawn, as a multiple of the size it was laid out at.
+ * How large the whole ui is drawn, as a multiple of the size it was laid out at. The screen
+ * multiplies it by the monitor's scale.
  *
  * Every metric below is a multiple of the text size, and the text size is a multiple of
  * this, so the editor scales by one number. Glyphs are distance fields, so a new scale

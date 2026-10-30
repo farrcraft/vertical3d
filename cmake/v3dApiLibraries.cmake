@@ -113,8 +113,8 @@ set(V3D_API_render_offline_PACKAGES glm)
 # What every app builds around its own code: the ui, the screen, the menu and the statistics
 # overlay. It joins engine and ui, which do not depend on each other.
 set(V3D_API_shell_PATH "shell")
-set(V3D_API_shell_REQUIRES engine ui asset)
-set(V3D_API_shell_PACKAGES)
+set(V3D_API_shell_REQUIRES engine event ui asset window)
+set(V3D_API_shell_PACKAGES EnTT)
 
 set(V3D_API_type_PATH "type")
 set(V3D_API_type_REQUIRES)

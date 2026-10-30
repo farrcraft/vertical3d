@@ -104,6 +104,7 @@ clipped(false) {
 Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     measure(measurer),
     write(writer),
+    scale(1.0F),
     dressing(paint::Dressing::tools()),
     canvas(nullptr),
     previousCursor(0.0F, 0.0F),

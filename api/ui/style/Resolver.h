@@ -46,9 +46,11 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
  *
  * @param style the base style, or null to read nothing
  * @param use which ui model the roles are derived for
+ * @param scale what the style's sizes are multiplied by. An outline's width is rounded as
+ *      Dressing::outline() rounds it
  **/
 void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Overlay<paint::Dressing>* overlay,
-    paint::Dressing* dressing);
+    paint::Dressing* dressing, float scale = 1.0F);
 
 /**
  * Turns a theme into the colours and metrics a component is drawn with, once per style
@@ -108,6 +110,14 @@ class Resolver final {
     void chrome();
 
     /**
+     * What a theme's sizes are multiplied by, which the screen's scale sets. A size the base
+     * already holds is not changed, so the caller scales the base itself. Takes effect at the
+     * next theme().
+     **/
+    void scale(float factor) noexcept;
+    float scale() const noexcept;
+
+    /**
      * The colours and metrics a component of this class, naming this style, is drawn with.
      *
      * @param name what the component's style() returns, which may be empty. A component
@@ -160,6 +170,7 @@ class Resolver final {
 
     boost::shared_ptr<Theme> theme_;
     paint::Dressing base_;
+    float scale_;
     // what the current theme wrote over base_
     Overlay<paint::Dressing> overlay_;
 

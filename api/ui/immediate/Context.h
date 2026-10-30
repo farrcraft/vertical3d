@@ -285,6 +285,8 @@ class Context final {
     paint::Write write;
     // how semibold text is drawn, which may be empty
     paint::Write strong;
+    // what a theme's sizes are multiplied by
+    float scale;
     paint::Dressing dressing;
     // what the current theme wrote over dressing
     style::Overlay<paint::Dressing> overlay;

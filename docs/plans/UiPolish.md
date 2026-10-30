@@ -137,7 +137,7 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 | UI: which face the ui is set in. Decided in ADR-0129: Inter Regular and SemiBold, with Noto Sans for the characters Inter lacks. | 2 |
 | Shell: how the games' menus are designed. Decided in ADR-0130: one designed shell, with a title and an accent colour per game. | 14 |
 | Editor: how the window is divided. Decided in ADR-0127: tiled areas that hold editors as tabs. | 7 |
-| UI: where the display's scale comes from, and what it multiplies. To be decided at step 3. | 3 |
+| UI: where the display's scale comes from, and what it multiplies. Decided in ADR-0131: a tool follows the monitor and a game its window's height, a user preference multiplies either, and the text and every size are redrawn at the result. | 3 |
 | UI: where a transition's state lives, given that a retained component is redrawn from its layout every frame. To be decided at step 5. | 5 |
 | Input: how a binding names a chord such as Ctrl+Z, and how a chord and a held modifier share a key. To be decided at step 10. | 10 |
 | Editor: where an area layout is saved: with the project, in the user's settings, or as named workspaces in both. To be decided at step 7. | 7 |
@@ -209,13 +209,23 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 
 ### Step 3 — The display's scale
 
-Open. Needs its decision.
+**Closed.** ADR-0131 decided it, after weighing the monitor's scale for every app and a transform
+on the whole canvas.
 
-- The window reports the display's scale, and reports it again when the window moves to another
-  display.
-- `Screen` multiplies every dressing metric and text size by it. A one-pixel line stays one
-  device pixel.
-- The editor's `uiScale` setting multiplies the display's scale rather than replacing it.
+- `Window::displayScale()` reads SDL's display scale, and the engine publishes
+  `event::kind::DisplayScale` when it changes. `Shell::present()` gives the screen the scale, and
+  passes each new one on.
+- `Screen::Options::scaling` is `Display` for a tool or `Height` for a game, against
+  `Options::reference`. `factor()` is `scale()` times what the rule follows, and the screen
+  rebuilds when it changes. Every app keeps `Display` until its game pass, in step 17.
+- The dressings start from `Dressing::scaled()`, and the resolver and the immediate layer multiply
+  a theme's sizes by the factor. An outline is rounded down to whole device pixels and is never
+  less than one.
+- The editor's `uiScale` multiplies the monitor's scale through its text size.
+- `v3dlib_shell` names `event`, `window` and EnTT, which it now uses directly.
+- The palette, resolver and screen suites cover scaled dressings, a theme's sizes at a scale,
+  both rules and the immediate layer across a rescale. The window's scale and the event need a
+  window, so they are checked by running the editor.
 
 ### Step 4 — Soft shadows and a backdrop
 

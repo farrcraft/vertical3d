@@ -131,13 +131,35 @@ class Overlay final {
 
     /**
      * Read a number as readMetric() does, and remember what it replaced.
+     *
+     * @param scale what the number is multiplied by, for a size the theme gives in logical pixels
      **/
-    void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field) {
-        const float was = dressing->*field;
-        readMetric(target, name, &(dressing->*field));
-        if (dressing->*field != was) {
-            metrics_.emplace_back(field, was);
+    void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field,
+        float scale = 1.0F) {
+        if (!target || !target->property(name, "number")) {
+            return;
         }
+        const float was = dressing->*field;
+        float read = was;
+        readMetric(target, name, &read);
+        dressing->*field = read * scale;
+        metrics_.emplace_back(field, was);
+    }
+
+    /**
+     * Read a number as metric() does, and turn it to an outline's width at a scale with round.
+     **/
+    template <typename Round>
+    void width(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field,
+        float scale, Round round) {
+        if (!target || !target->property(name, "number")) {
+            return;
+        }
+        const float was = dressing->*field;
+        float read = was;
+        readMetric(target, name, &read);
+        dressing->*field = round(read, scale);
+        metrics_.emplace_back(field, was);
     }
 
     /**

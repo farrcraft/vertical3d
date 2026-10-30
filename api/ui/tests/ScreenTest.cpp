@@ -174,6 +174,61 @@ BOOST_AUTO_TEST_CASE(a_screen_without_statistics_draws_nothing_for_none) {
     BOOST_CHECK(screen.canvas().empty());
 }
 
+/**
+ * A tool's screen follows the monitor's scale, times the scale the app sets, and its text is
+ * drawn at the size times both.
+ **/
+BOOST_AUTO_TEST_CASE(a_tool_screen_follows_the_monitor) {
+    v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), sized(20.0F));
+    const float padding = screen.components().dressing().padding;
+    screen.display(1.5F);
+    BOOST_CHECK_CLOSE(screen.factor(), 1.5F, 0.001F);
+    BOOST_CHECK_CLOSE(screen.size(), 30.0F, 0.001F);
+    BOOST_CHECK_CLOSE(screen.components().dressing().padding, padding * 1.5F, 0.001F);
+
+    screen.scale(2.0F);
+    BOOST_CHECK_CLOSE(screen.factor(), 3.0F, 0.001F);
+    BOOST_CHECK_CLOSE(screen.size(), 60.0F, 0.001F);
+}
+
+/**
+ * A game's screen follows its window's height against the reference, times the scale the app
+ * sets, and the monitor's scale does not change it.
+ **/
+BOOST_AUTO_TEST_CASE(a_game_screen_follows_its_window) {
+    v3d::ui::shell::Screen::Options options = sized(20.0F);
+    options.scaling = v3d::ui::shell::Screen::Scaling::Height;
+    options.reference = 1080.0F;
+    v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), options);
+    // before the first frame there is no window height to follow
+    BOOST_CHECK_CLOSE(screen.factor(), 1.0F, 0.001F);
+
+    screen.canvas().resize(glm::uvec2(1920, 2160));
+    BOOST_CHECK_CLOSE(screen.factor(), 2.0F, 0.001F);
+    screen.display(1.5F);
+    BOOST_CHECK_CLOSE(screen.factor(), 2.0F, 0.001F);
+    screen.scale(1.25F);
+    BOOST_CHECK_CLOSE(screen.factor(), 2.5F, 0.001F);
+    BOOST_CHECK_CLOSE(screen.size(), 50.0F, 0.001F);
+}
+
+/**
+ * An immediate layer is drawn at the screen's scale, and keeps its colours across a rescale.
+ **/
+BOOST_AUTO_TEST_CASE(the_immediate_layer_follows_the_screen) {
+    v3d::ui::shell::Screen::Options options = sized(20.0F);
+    options.immediate = true;
+    v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), options);
+    BOOST_REQUIRE(screen.immediate() != nullptr);
+    const float padding = screen.immediate()->dressing().padding;
+    const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+    screen.immediate()->dressing().text = red;
+
+    screen.display(2.0F);
+    BOOST_CHECK_CLOSE(screen.immediate()->dressing().padding, padding * 2.0F, 0.001F);
+    BOOST_CHECK(screen.immediate()->dressing().text == red);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

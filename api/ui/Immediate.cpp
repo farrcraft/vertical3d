@@ -88,6 +88,13 @@ void Immediate::titles(const paint::Write& write) {
     context_->strong = write;
 }
 
+void Immediate::scale(float factor) {
+    // the theme's sizes were read at the last scale, so they are put back before the new one
+    context_->overlay.restore(&context_->dressing);
+    context_->scale = factor;
+    context_->dressing.resize(paint::Dressing::tools().scaled(factor));
+}
+
 paint::Dressing& Immediate::dressing() noexcept {
     return context_->dressing;
 }
@@ -97,7 +104,7 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     // last theme's value does not linger
     context_->overlay.restore(&context_->dressing);
     style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), paint::Palette::Use::Tools,
-        &context_->overlay, &context_->dressing);
+        &context_->overlay, &context_->dressing, context_->scale);
 }
 
 void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {

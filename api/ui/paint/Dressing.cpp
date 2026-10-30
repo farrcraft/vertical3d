@@ -7,6 +7,10 @@
 
 #include "Palette.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+
 namespace v3d::ui::paint {
 
 namespace {
@@ -31,6 +35,11 @@ constexpr float TOOLS_PADDING = 6.0F;
 constexpr float TOOLS_BAR_HEIGHT = 22.0F;
 constexpr float TOOLS_SCROLLBAR_WIDTH = 10.0F;
 constexpr float TOOLS_RADIUS = 3.0F;
+
+/** every size a scale multiplies, which leaves out the outlines and the title weight **/
+constexpr std::array SIZES{&Dressing::lineHeight, &Dressing::padding, &Dressing::spacing, &Dressing::barHeight,
+&Dressing::iconSize, &Dressing::panelPadding, &Dressing::scrollbarWidth, &Dressing::markSize, &Dressing::radius,
+&Dressing::indent};
 
 };  // namespace
 
@@ -73,6 +82,32 @@ hover(),
 pressed(),
 focus() {
     Palette().dress(Palette::Use::Chrome, this);
+}
+
+Dressing Dressing::scaled(float factor) const noexcept {
+    Dressing dressing = *this;
+    for (float Dressing::* const size : SIZES) {
+        dressing.*size = this->*size * factor;
+    }
+    dressing.borderWidth = outline(borderWidth, factor);
+    dressing.focusWidth = outline(focusWidth, factor);
+    return dressing;
+}
+
+void Dressing::resize(const Dressing& from) noexcept {
+    for (float Dressing::* const size : SIZES) {
+        this->*size = from.*size;
+    }
+    borderWidth = from.borderWidth;
+    focusWidth = from.focusWidth;
+    titleWeight = from.titleWeight;
+}
+
+float Dressing::outline(float width, float factor) noexcept {
+    if (width <= 0.0F) {
+        return 0.0F;
+    }
+    return std::max(1.0F, std::floor(width * factor));
 }
 
 Dressing Dressing::tools() noexcept {

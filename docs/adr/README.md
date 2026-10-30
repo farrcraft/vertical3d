@@ -98,6 +98,7 @@ content went. Numbers are never reused.
 | [0128](0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted |
 | [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | accepted |
 | [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
+| [0131](0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted |
 
 ## Engine, input and assets
 

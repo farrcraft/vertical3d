@@ -34,6 +34,23 @@ struct Dressing final {
      **/
     static Dressing tools() noexcept;
 
+    /**
+     * The same dressing drawn larger or smaller. Every size is multiplied by the factor, except
+     * that an outline's width goes through outline(). Colours and the title weight are kept.
+     **/
+    Dressing scaled(float factor) const noexcept;
+
+    /**
+     * Take every size and the title weight from another dressing, keeping this one's colours.
+     **/
+    void resize(const Dressing& from) noexcept;
+
+    /**
+     * How wide an outline is at a scale, in whole device pixels: the width times the factor,
+     * rounded down, and never less than one. An outline of no width stays none.
+     **/
+    static float outline(float width, float factor) noexcept;
+
     float lineHeight;      /**< the height of one line of text: a menu item, a list row, a label row **/
     float padding;         /**< the gap between the text and the panel or widget around it **/
     float spacing;         /**< the gap between one immediate widget and the next **/
