@@ -5,6 +5,7 @@
 
 #include "Keyboard.h"
 
+#include <api/event/Chord.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
@@ -146,6 +147,13 @@ const KeyState& Keyboard::state() const {
     return state_;
 }
 
+v3d::event::Modifiers modifiers(SDL_Keymod held) noexcept {
+    return v3d::event::Modifiers{
+        .ctrl = (held & SDL_KMOD_CTRL) != 0,
+        .shift = (held & SDL_KMOD_SHIFT) != 0,
+        .alt = (held & SDL_KMOD_ALT) != 0};
+}
+
 /**
  **/
 bool Keyboard::handleEvent(const SDL_Event& event) {
@@ -186,6 +194,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     v3d::event::Source source(name, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
     // only a press can repeat, so a release is never marked as one
     source.repeat(pressed && event.key.repeat);
+    source.modifiers(modifiers(event.key.mod));
     v3d::event::publish(*dispatcher(), source);
 
     return true;

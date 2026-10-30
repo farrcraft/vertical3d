@@ -11,6 +11,8 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
 
+#include "Keyboard.h"
+
 #include <algorithm>
 #include <initializer_list>
 #include <string>
@@ -95,8 +97,10 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
     // publish a source event for the bindings to map, as the keyboard does. The edge is the
     // event's state, not its data.
-    v3d::event::publish(*dispatcher(), v3d::event::Source(buttonName, context(),
-        pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
+    v3d::event::Source source(buttonName, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
+    // a button event carries no modifiers of its own, so they are read as they stand now
+    source.modifiers(modifiers(SDL_GetModState()));
+    v3d::event::publish(*dispatcher(), source);
 
     return true;
 }

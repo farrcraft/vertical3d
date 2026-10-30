@@ -440,6 +440,27 @@ BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
 }
 
 /**
+ * A command bound to a chord is held while its key and its modifier are both down, the
+ * modifier on either side of the keyboard.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_a_chord_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+
+    engine.offer(keyDown(SDLK_S));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyDown(SDLK_RCTRL));
+    BOOST_CHECK(engine.held("project::save"));
+    engine.offer(keyUp(SDLK_RCTRL));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyDown(SDLK_LCTRL));
+    BOOST_CHECK(engine.held("project::save"));
+    engine.offer(keyUp(SDLK_S));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyUp(SDLK_LCTRL));
+}
+
+/**
  * A command is held while the key bound to it is, whether the binding fires on both edges or
  * on the press alone.
  **/

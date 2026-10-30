@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Chord.h>
 #include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/event/Mapper.h>
@@ -32,6 +33,63 @@ v3d::event::Event destination(const boost::shared_ptr<v3d::event::Context>& cont
     v3d::event::Event event(name, context);
     event.type(v3d::event::Type::Destination);
     return event;
+}
+
+/**
+ * A chord claims its key from the plain binding while its modifiers are held, and the plain
+ * binding fires while they are not. Of two chords on one key, the one naming more of the
+ * modifiers held wins.
+ **/
+BOOST_AUTO_TEST_CASE(mapper_the_most_specific_chord_wins_test) {
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> edit = boost::make_shared<v3d::event::Context>("edit");
+    v3d::event::Mapper mapper("global");
+    mapper.map(source(keyboard, "z", v3d::event::State::Any), destination(edit, "type"));
+    mapper.map(source(keyboard, "ctrl+z", v3d::event::State::Any), destination(edit, "undo"));
+    mapper.map(source(keyboard, "ctrl+shift+z", v3d::event::State::Any), destination(edit, "redo"));
+
+    const v3d::event::Event z = source(keyboard, "z", v3d::event::State::Pressed);
+    const auto fired = [&](const v3d::event::Modifiers& held) {
+        const std::vector<v3d::event::Event> found = mapper.destinations(z, held);
+        BOOST_REQUIRE_EQUAL(found.size(), 1U);
+        return std::string(found[0].name());
+    };
+    BOOST_TEST(fired(v3d::event::Modifiers()) == "type");
+    BOOST_TEST(fired({.ctrl = true, .shift = false, .alt = false}) == "undo");
+    BOOST_TEST(fired({.ctrl = true, .shift = true, .alt = false}) == "redo");
+    // Alt is claimed by nothing, so it falls through to what Ctrl alone binds
+    BOOST_TEST(fired({.ctrl = true, .shift = false, .alt = true}) == "undo");
+}
+
+/**
+ * A plain binding fires under a modifier no chord on its key claims, so a drag still works
+ * while a modifier held for a camera move is down.
+ **/
+BOOST_AUTO_TEST_CASE(mapper_a_plain_binding_fires_under_an_unclaimed_modifier_test) {
+    const boost::shared_ptr<v3d::event::Context> mouse = boost::make_shared<v3d::event::Context>("mouse");
+    const boost::shared_ptr<v3d::event::Context> view = boost::make_shared<v3d::event::Context>("view");
+    v3d::event::Mapper mapper("global");
+    mapper.map(source(mouse, "left", v3d::event::State::Any), destination(view, "drag"));
+
+    const std::vector<v3d::event::Event> found = mapper.destinations(source(mouse, "left", v3d::event::State::Pressed),
+        {.ctrl = true, .shift = false, .alt = false});
+    BOOST_REQUIRE_EQUAL(found.size(), 1U);
+    BOOST_TEST(found[0].name() == "drag");
+}
+
+/**
+ * A chord is reported as it was bound, modifiers and all.
+ **/
+BOOST_AUTO_TEST_CASE(mapper_reports_a_chord_as_bound_test) {
+    const boost::shared_ptr<v3d::event::Context> keyboard = boost::make_shared<v3d::event::Context>("keyboard");
+    const boost::shared_ptr<v3d::event::Context> edit = boost::make_shared<v3d::event::Context>("edit");
+    v3d::event::Mapper mapper("global");
+    mapper.map(source(keyboard, "ctrl+z", v3d::event::State::Pressed), destination(edit, "undo"));
+
+    const std::vector<v3d::event::Event> found = mapper.sources("edit::undo");
+    BOOST_REQUIRE_EQUAL(found.size(), 1U);
+    BOOST_TEST(found[0].name() == "ctrl+z");
+    BOOST_CHECK(found[0].state() == v3d::event::State::Pressed);
 }
 
 BOOST_AUTO_TEST_CASE(mapper_test) {

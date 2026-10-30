@@ -262,7 +262,7 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "o",
+        "name": "ctrl+o",
         "state": "pressed"
       },
       "destination": {
@@ -273,7 +273,7 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "s",
+        "name": "ctrl+s",
         "state": "pressed"
       },
       "destination": {
@@ -284,7 +284,7 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "z",
+        "name": "ctrl+z",
         "state": "pressed"
       },
       "destination": {
@@ -295,7 +295,18 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "y",
+        "name": "ctrl+y",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "redo"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "ctrl+shift+z",
         "state": "pressed"
       },
       "destination": {

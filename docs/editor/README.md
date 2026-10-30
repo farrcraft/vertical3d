@@ -43,13 +43,14 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
 | P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
-| Z, Y | `edit::undo`, `edit::redo` | Step the history |
-| O, S | `project::load`, `project::save` | Open a project; save the current one |
+| Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
+| Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
 | Project > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 
-The bindings cannot express a key chord such as Ctrl+Z, so undo and redo use bare keys. Left
-Ctrl is also the truck modifier. Save As and RIB export are on the Project menu only.
+Left Ctrl is also the truck modifier, so truck mode is on while a Ctrl chord is pressed. It
+drives the camera only during a drag, so the chord is unaffected. Save As and RIB export are on
+the Project menu only.
 
 ## Source layout
 

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "Chord.h"
 #include "Event.h"
 
 #include <map>
@@ -24,18 +25,23 @@ class Mapper {
     /**
      * Bind a source event to a destination event.
      * One source may be bound to several destinations - an arrow key driving both a
-     * paddle and a menu, say - and every one of them is sent when it occurs.
+     * paddle and a menu, say - and every one of them is sent when it occurs. A source named
+     * as a chord, such as "ctrl+z", is bound to its key with those modifiers.
      **/
     void map(const Event& source, const Event& destination);
 
     /**
-     * Find every destination bound to a source event.
+     * Find every destination bound to a source event, with modifiers held.
+     *
      * A binding matches when it was bound to the edge the source occurred on, or to
-     * State::Any.
+     * State::Any, and every modifier it names is held. Of the bindings that match, only those
+     * naming the most modifiers are sent. Ctrl+Z therefore sends what "ctrl+z" is bound to and
+     * not what "z" is, while a Ctrl+click sends what "left" is bound to when nothing binds
+     * "ctrl+left".
      *
      * @return the matching destinations, empty when the source is bound to nothing
      **/
-    std::vector<Event> destinations(const Event& source) const;
+    std::vector<Event> destinations(const Event& source, const Modifiers& held = Modifiers()) const;
 
     /**
      * Find every source bound to a destination, whatever edge each was bound on and
@@ -53,7 +59,18 @@ class Mapper {
     std::vector<std::string> destinations() const;
 
  private:
-    std::multimap<Event, Event> mappings_;
+    /**
+     * One binding: what it sends, the modifiers it needs held, and the source as it was bound,
+     * chord and all, for sources() to answer with.
+     **/
+    struct Binding final {
+        Event destination;
+        Modifiers modifiers;
+        Event source;
+    };
+
+    // keyed by the source's key alone, so every chord on one key sits beside its plain binding
+    std::multimap<Event, Binding> mappings_;
     std::string name_;
 };
 };  // namespace v3d::event

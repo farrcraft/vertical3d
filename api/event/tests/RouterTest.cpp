@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Chord.h>
 #include <api/event/Context.h>
 #include <api/event/Router.h>
 #include <api/event/Event.h>
@@ -93,6 +94,50 @@ BOOST_AUTO_TEST_CASE(engine_mapping_test) {
     // an unbound key produces nothing
     v3d::event::publish(*dispatcher, source(keyboard, "q", v3d::event::State::Pressed));
     BOOST_CHECK_EQUAL(recorder.events_.size(), 3U);
+}
+
+/**
+ * A source matches the chords its modifiers make. A chord's repeats and its release go to what
+ * its press matched, so letting go of Ctrl before Z still releases the chord rather than
+ * firing the plain key.
+ **/
+BOOST_AUTO_TEST_CASE(engine_routes_a_chord_from_press_to_release_test) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::event::Router engine(dispatcher);
+    Recorder recorder;
+    dispatcher->sink<v3d::event::Event>().connect<&Recorder::handle>(recorder);
+
+    const boost::shared_ptr<v3d::event::Context> keyboard = engine.resolveContext("keyboard");
+    const boost::shared_ptr<v3d::event::Context> edit = engine.resolveContext("edit");
+    const boost::shared_ptr<v3d::event::Mapper> mapper = boost::make_shared<v3d::event::Mapper>("global");
+    v3d::event::Event type("type", edit);
+    type.type(v3d::event::Type::Destination);
+    v3d::event::Event undo("undo", edit);
+    undo.type(v3d::event::Type::Destination);
+    mapper->map(source(keyboard, "z", v3d::event::State::Any), type);
+    mapper->map(source(keyboard, "ctrl+z", v3d::event::State::Any), undo);
+    engine.addMapper(mapper);
+
+    const v3d::event::Modifiers ctrl{.ctrl = true, .shift = false, .alt = false};
+    v3d::event::Source press = source(keyboard, "z", v3d::event::State::Pressed);
+    press.modifiers(ctrl);
+    v3d::event::publish(*dispatcher, press);
+    // the repeat and the release arrive with Ctrl already let go
+    v3d::event::Source repeat = source(keyboard, "z", v3d::event::State::Pressed);
+    repeat.repeat(true);
+    v3d::event::publish(*dispatcher, repeat);
+    v3d::event::publish(*dispatcher, source(keyboard, "z", v3d::event::State::Released));
+
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 3U);
+    for (const v3d::event::Event& sent : recorder.events_) {
+        BOOST_TEST(sent.name() == "undo");
+    }
+    BOOST_CHECK(recorder.events_[2].state() == v3d::event::State::Released);
+
+    // and the next press of Z alone is the plain key again
+    v3d::event::publish(*dispatcher, source(keyboard, "z", v3d::event::State::Pressed));
+    BOOST_REQUIRE_EQUAL(recorder.events_.size(), 4U);
+    BOOST_TEST(recorder.events_[3].name() == "type");
 }
 
 BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {

@@ -10,6 +10,7 @@
 #include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
 #include <api/event/Bindings.h>
+#include <api/event/Chord.h>
 #include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/DisplayScale.h>
@@ -550,8 +551,16 @@ bool Engine::held(std::string_view command) const {
     if (!bindings_ || state == nullptr) {
         return false;
     }
-    return std::ranges::any_of(bindings_->sources(command),
-        [state](const v3d::event::Event& source) { return state->held(source.name()); });
+    // a chord is held while its key and every modifier it names are down, on either side
+    const auto down = [state](const v3d::event::Event& source) {
+        const v3d::event::Chord split = v3d::event::chord(source.name());
+        const v3d::event::Modifiers& needed = split.modifiers;
+        return state->held(split.key) &&
+            (!needed.ctrl || state->held("left_control") || state->held("right_control")) &&
+            (!needed.shift || state->held("left_shift") || state->held("right_shift")) &&
+            (!needed.alt || state->held("left_alt") || state->held("right_alt"));
+    };
+    return std::ranges::any_of(bindings_->sources(command), down);
 }
 
 /**

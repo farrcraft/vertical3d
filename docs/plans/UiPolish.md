@@ -139,7 +139,7 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 | Editor: how the window is divided. Decided in ADR-0127: tiled areas that hold editors as tabs. | 7 |
 | UI: where the display's scale comes from, and what it multiplies. Decided in ADR-0131: a tool follows the monitor and a game its window's height, a user preference multiplies either, and the text and every size are redrawn at the result. | 3 |
 | UI: where a transition's state lives. Decided in ADR-0132: on what it animates, a retained component or an immediate widget's per-id state, on a clock of real time. | 5 |
-| Input: how a binding names a chord such as Ctrl+Z, and how a chord and a held modifier share a key. To be decided at step 10. | 10 |
+| Input: how a binding names a chord, and how a chord and a held modifier share a key. Decided in ADR-0133: modifier words before the key, and the most specific binding wins it. | 10 |
 | Editor: where an area layout is saved: with the project, in the user's settings, or as named workspaces in both. To be decided at step 7. | 7 |
 
 ## What blocks what
@@ -320,13 +320,25 @@ Open. Needs step 7 for where a notice is shown.
 
 ### Step 10 — Key chords
 
-Open. Needs its decision.
+**Closed.** ADR-0133 decided it, after weighing an exact match and letting every match fire.
 
-- A binding can name a key with modifiers, such as Ctrl+Z. A modifier held alone still drives
+- A source name may put `ctrl`, `shift` and `alt` before its key, as in `ctrl+shift+z`, each
+  matching either side of the keyboard. `event::chord()` splits a name into its key and its
+  modifiers.
+- A source carries the modifiers held when it was sent, which both devices read from SDL. The
+  mapper fires, of the bindings on a key whose modifiers are held, only those naming the most.
+  A plain binding still fires under a modifier no chord claims, so a held modifier still drives
   the camera tools.
-- The editor binds undo, redo, save and maximise to their usual chords.
-- [editor/README.md](../editor/README.md#running-it) loses its note that bindings cannot express
-  a chord.
+- The router sends a key's repeats and release to what its press matched, so letting go of Ctrl
+  first still releases the chord. `Engine::held()` holds a chord while its key and its
+  modifiers are down.
+- A chord keeps its whole name in the bindings, so rebinding, saved overrides and `bound()` are
+  unchanged, and the owner's check is put to its key.
+- The editor binds undo to Ctrl+Z, redo to Ctrl+Y and Ctrl+Shift+Z, open to Ctrl+O and save to
+  Ctrl+S. Maximise has no command until step 7, which binds it to Ctrl+Space.
+- The chord, mapper, router, bindings and engine suites cover parsing, the most specific match,
+  a plain binding under an unclaimed modifier, a chord's release after its modifier, a chord's
+  name in the bindings and a held chord.
 
 ### Step 11 — Command search
 

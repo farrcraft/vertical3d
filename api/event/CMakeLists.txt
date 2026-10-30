@@ -8,6 +8,7 @@ v3d_add_api_library(event
  "kind/DisplayScale.h" "kind/DisplayScale.cpp"
  "kind/WindowFocus.h" "kind/WindowFocus.cpp"
  "kind/Sound.h" "kind/Sound.cpp"
+ "Chord.h" "Chord.cpp"
  "Event.h" "Event.cpp"
  "Mapper.h" "Mapper.cpp"
  "Router.h" "Router.cpp"

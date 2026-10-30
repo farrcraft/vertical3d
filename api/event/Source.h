@@ -8,6 +8,7 @@
 #include <string>
 
 #include "Context.h"
+#include "Chord.h"
 #include "Event.h"
 #include "State.h"
 
@@ -39,10 +40,18 @@ class Source final : public Event {
 
     bool consumed() const noexcept;
 
+    /**
+     * The modifiers held when the source was sent, which decide the chords it matches. A
+     * device sets them. None unless set.
+     **/
+    void modifiers(const Modifiers& held) noexcept;
+    const Modifiers& modifiers() const noexcept;
+
  private:
     // shared, because the dispatcher hands its listeners a copy of the source, and publish()
     // reads the flag on the original
     boost::shared_ptr<bool> consumed_;
+    Modifiers modifiers_;
 };
 
 /**

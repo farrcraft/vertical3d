@@ -120,6 +120,7 @@ content went. Numbers are never reused.
 | [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
 | [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
 | [0090](0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted |
+| [0133](0133-input-the-most-specific-chord-wins-a-key.md) | Input: the most specific chord wins a key | accepted |
 | [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
 | [0116](0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted |
 | [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |

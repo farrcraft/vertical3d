@@ -104,7 +104,8 @@ The binding document is the config document of type `binding`, conventionally
 
 - `source.context` is `keyboard` or `mouse`. `source.name` is a key name from the table in
   [api/input/Keyboard.cpp](../../../api/input/Keyboard.cpp), such as `w`, `escape` or
-  `arrow_up`, or a mouse button: `left`, `middle`, `right`, `x1` or `x2`.
+  `arrow_up`, or a mouse button: `left`, `middle`, `right`, `x1` or `x2`. It may be a
+  [chord](#chords), such as `ctrl+z`.
 - `source.state` is optional. `pressed` or `down` binds the press only, `released` or `up` the
   release only, and anything else, including no state, binds both.
 - `destination.context` and `destination.name` name the command. `destination.param` is
@@ -113,6 +114,33 @@ The binding document is the config document of type `binding`, conventionally
 - A name no device can send is logged and bound anyway. It never fires.
 - Every `name`, `context` and `state` is a string. A malformed document, including one that
   gives any of them another type, is logged, and startup fails.
+
+### Chords
+
+A source name may put modifier words before its key, joined by `+`: `ctrl+z`, `ctrl+shift+z`,
+`alt+left`. The words are `ctrl`, `shift` and `alt`, in any order, and each matches that
+modifier on either side of the keyboard. The key's own name, such as `left_control`, still binds
+that one physical key.
+
+**The most specific binding wins a key.** A press or a click fires the bindings on its key whose
+modifiers are all held, and of those only the ones that name the most modifiers.
+
+- Ctrl+Z fires what `ctrl+z` is bound to, and not what `z` is.
+- Ctrl+Shift+Z fires `ctrl+shift+z` where it is bound, and `ctrl+z` where it is not.
+- A plain binding fires under any modifier that no chord on its key names. A left drag with
+  Ctrl held fires `left` when nothing binds `ctrl+left`, so a held modifier can change what a
+  drag does.
+- A modifier key's own press and release always fire its own bindings, including when it
+  starts a chord.
+- A key's repeats and its release go to the bindings its press fired, whichever key is let go
+  first.
+- A word before the last `+` that is not a modifier makes the whole name a key, which no device
+  sends. It is logged at load like any other unknown key.
+- `held(command)` is true for a chord while its key and every modifier it names are down.
+- A chord keeps its whole name wherever a source is named: in `sources()`, `bound()`, a rebind
+  and a saved override.
+
+Background: [ADR-0133](../../adr/0133-input-the-most-specific-chord-wins-a-key.md)
 
 `Engine::rebind(command, key)` points a command at a different key while the app runs, for a
 rebinding screen. The command keeps the context and the edge the document gave it. The engine
