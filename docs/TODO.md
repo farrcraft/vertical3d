@@ -61,6 +61,12 @@ heap reporting one 72 byte block. The other FMOD cases, each run alone, report n
 is allocated on the CRT heap, not FMOD's, so it is something `FmodEvents` or the case allocates
 around `start()` and `stop()`.
 
+[] **Validation: a resized editor draws one frame of views past the swapchain.** Maximising the
+editor from 1024 by 768 to 2560 by 1369 logs `vkCmdBeginRendering` errors whose render area,
+such as an offset of 712 and a height of 657, runs past the 1024 by 768 attachments. The views
+are laid out for the new window size while that frame still draws into the old swapchain
+images, which are recreated a moment later.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
