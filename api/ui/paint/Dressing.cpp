@@ -22,6 +22,8 @@ constexpr float SCROLLBAR_WIDTH = 12.0F;
 constexpr float MARK_SIZE = 16.0F;
 constexpr float FOCUS_WIDTH = 2.0F;
 constexpr float INDENT = 14.0F;
+/** semibold, as CSS numbers it **/
+constexpr float TITLE_WEIGHT = 600.0F;
 
 // the sizes the immediate layer starts with where they differ, in pixels
 constexpr float TOOLS_LINE_HEIGHT = 18.0F;
@@ -45,6 +47,7 @@ borderWidth(1.0F),
 focusWidth(FOCUS_WIDTH),
 radius(0.0F),
 indent(INDENT),
+titleWeight(TITLE_WEIGHT),
 gap(),
 bar(),
 panel(),

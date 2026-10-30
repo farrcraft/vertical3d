@@ -46,6 +46,7 @@ struct Dressing final {
     float focusWidth;      /**< how thick the ring around the focused component is **/
     float radius;          /**< how far a panel's or a window's corners are rounded, 0 for square **/
     float indent;          /**< how far a bullet pushes its text in **/
+    float titleWeight;     /**< how heavy a window's title and a table's header are set, as CSS numbers weights **/
     glm::vec4 gap;           /**< what shows between two areas that tile a window **/
     glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/

@@ -174,7 +174,7 @@ void Immediate::headerRow() {
     paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.titleBar);
     for (std::size_t index = 0; index < context_->table.headers.size(); index++) {
         const glm::vec2 corner(context_->columnStart(static_cast<unsigned int>(index)) + (context_->dressing.padding * 0.5F), min.y);
-        context_->label(context_->table.headers[index], corner, glm::vec2(0.0F, context_->dressing.lineHeight), context_->dressing.disabledText);
+        context_->title(context_->table.headers[index], corner, glm::vec2(0.0F, context_->dressing.lineHeight), context_->dressing.secondaryText);
     }
     context_->row.penY = max.y + context_->dressing.spacing;
     nextRow();

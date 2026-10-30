@@ -18,7 +18,8 @@ A theme is data in the ui document. It is a list of styles. Each style has a `cl
 - A number's `value` is one number.
 - An image has a `source`, which the app resolves (see [Images](#images)).
 - Any other member of a style is not read. Every component's text is drawn in the text
-  renderer's font, so a theme does not name fonts.
+  renderer's typeface, so a theme does not name fonts. A theme chooses a weight for a role, such
+  as `title-weight`.
 
 A component's `style` key names a style within its class. A component that names no style is
 dressed by the first style of its class in the theme. One style can therefore dress every
@@ -130,6 +131,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `focus-width` | how thick the focus ring is | retained |
 | `radius` | how far corners are rounded, 0 for square | both |
 | `indent` | how far a bullet pushes its text in | immediate |
+| `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu
 panels, toolbar strips and button labels.

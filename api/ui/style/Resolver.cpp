@@ -121,6 +121,7 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->metric(style, "focus-width", dressing, &paint::Dressing::focusWidth);
     overlay->metric(style, "radius", dressing, &paint::Dressing::radius);
     overlay->metric(style, "indent", dressing, &paint::Dressing::indent);
+    overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
 }
 
 void Resolver::chrome() {

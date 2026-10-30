@@ -185,6 +185,10 @@ void TextureFont::atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas
     atlas_ = atlas;
 }
 
+void TextureFont::fallback(const boost::shared_ptr<TextureFont>& font) {
+    fallback_ = font;
+}
+
 boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
     boost::shared_ptr<Glyph> glyph(new Glyph);
 
@@ -206,6 +210,14 @@ boost::shared_ptr<TextureFont::Glyph> TextureFont::createGlyph() {
 }
 
 boost::shared_ptr<TextureFont::Glyph> TextureFont::packed(char32_t charcode) const {
+    boost::shared_ptr<Glyph> found = own(charcode);
+    if (found || !fallback_ || charcode == SOLID) {
+        return found;
+    }
+    return fallback_->packed(charcode);
+}
+
+boost::shared_ptr<TextureFont::Glyph> TextureFont::own(char32_t charcode) const {
     for (const boost::shared_ptr<Glyph>& candidate : glyphs_) {
         if ((candidate->charcode_ == charcode) &&
             ((charcode == SOLID) ||
@@ -453,6 +465,22 @@ float TextureFont::width(std::string_view utf8, float size) const {
     return size > 0.0F && size_ > 0.0F ? width * (size / size_) : width;
 }
 
+void TextureFont::divide(const std::u32string& charcodes, std::u32string* mine, std::u32string* lacking) const {
+    for (const char32_t charcode : charcodes) {
+        // a code point packed by an earlier call, or by another face sharing this fallback,
+        // is not packed twice
+        if (own(charcode)) {
+            continue;
+        }
+        // index zero is the face's missing glyph, so the code point goes to the fallback
+        if (fallback_ && FT_Get_Char_Index(freetype_->face_, charcode) == 0) {
+            lacking->push_back(charcode);
+        } else {
+            mine->push_back(charcode);
+        }
+    }
+}
+
 bool TextureFont::pack(const std::u32string& charcodes) {
     if (!atlas_) {
         return false;
@@ -473,9 +501,13 @@ bool TextureFont::pack(const std::u32string& charcodes) {
         FT_Property_Set(freetype_->library_, "sdf", "spread", &property);
     }
 
+    std::u32string mine;
+    std::u32string lacking;
+    divide(charcodes, &mine, &lacking);
+
     unsigned int missed = 0;
-    for (std::size_t i = 0; i < charcodes.size(); ++i) {
-        const FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, charcodes[i]);
+    for (std::size_t i = 0; i < mine.size(); ++i) {
+        const FT_UInt glyphIndex = FT_Get_Char_Index(freetype_->face_, mine[i]);
         const FT_Int32 flags = glyphLoadFlags(freetype_->library_, outline_, hinting_ != 0,
             atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
 
@@ -525,7 +557,7 @@ bool TextureFont::pack(const std::u32string& charcodes) {
         atlas_->region(glm::ivec4(x, y, w, rows), rendered.bitmap.buffer, rendered.bitmap.pitch);
 
         const boost::shared_ptr<Glyph> glyph = createGlyph();
-        glyph->charcode_ = charcodes[i];
+        glyph->charcode_ = mine[i];
         glyph->width_ = w;
         glyph->height_ = rows;
         glyph->outline_ = outline_;
@@ -552,11 +584,11 @@ bool TextureFont::pack(const std::u32string& charcodes) {
 
     if (missed > 0) {
         logger_->get()->error("{} of {} glyphs did not fit the {}x{} atlas at size {}",
-            missed, charcodes.size(), atlas_->width(), atlas_->height(), size_);
+            missed, mine.size(), atlas_->width(), atlas_->height(), size_);
         return false;
     }
 
-    return true;
+    return lacking.empty() || fallback_->pack(lacking);
 }
 
 float TextureFont::size() const {

@@ -186,14 +186,26 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 
 ### Step 2 — Inter in two weights
 
-Open. ADR-0129 decided it.
+**Closed.** ADR-0129 decided it.
 
-- `data/fonts/` gains Inter Regular and SemiBold with their licence.
-- `TextRenderer` packs several faces into its atlas, and draws a code point the first face lacks
-  from the next.
-- `paint::Measure` and `paint::Write` take a weight. A theme sets the weight of a title, a header
-  and the chosen item.
-- `TextRenderer`'s tests cover the fallback and the second weight.
+- `data/fonts/` holds Inter 4.1 Regular and SemiBold from the Inter project's release, with
+  `Inter-OFL.txt`. Noto Sans's licence is renamed `NotoSans-OFL.txt` to sit beside it.
+- `TextureFont::fallback()` gives a face another face for the code points it lacks. Packing
+  sends each one there, `packed()` looks there, and a fallback shared by two faces packs a code
+  point once. Every glyph lookup goes through `packed()`, so the text buffer needed no change.
+- `TextRenderer` packs the regular and semibold faces into one atlas, with Noto Sans as the
+  fallback both share. Its default atlas is 1024 on a side, for the second face. A missing
+  semibold face sets semibold text regular, and a missing fallback leaves the missing glyph.
+- `paint::Measure` and `paint::Write` keep their signatures. `TextRenderer::measure()` and
+  `write()` take a `paint::Weight` instead, so a renderer is handed one pair per weight.
+- `Dressing::titleWeight`, read from `title-weight`, sets a window's title and a table's header
+  semibold, through the writer `Immediate::titles()` is given. `Screen` gives it the semibold
+  face. A table's header is drawn in secondary text rather than disabled text. No retained
+  component has a title, so the chosen item's weight waits on a component that draws one, in
+  step 14's menu title.
+- The font suite covers the fallback and a shared fallback packing once. The ui suite covers both
+  weights, the fallback through `TextRenderer`, a missing face, the weight numbers and the
+  title's writer.
 
 ### Step 3 — The display's scale
 

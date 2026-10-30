@@ -84,6 +84,10 @@ void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
     context_->write = write;
 }
 
+void Immediate::titles(const paint::Write& write) {
+    context_->strong = write;
+}
+
 paint::Dressing& Immediate::dressing() noexcept {
     return context_->dressing;
 }

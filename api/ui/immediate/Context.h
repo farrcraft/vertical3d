@@ -217,6 +217,12 @@ class Context final {
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
     /**
+     * Draw a title or a header as label() does, in the semibold face when the dressing's
+     * titleWeight asks for it and there is one.
+     **/
+    void title(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
+
+    /**
      * @return the colour to draw text in, given what the caller asked for and whether
      *      anything has disabled it
      **/
@@ -277,6 +283,8 @@ class Context final {
 
     paint::Measure measure;
     paint::Write write;
+    // how semibold text is drawn, which may be empty
+    paint::Write strong;
     paint::Dressing dressing;
     // what the current theme wrote over dressing
     style::Overlay<paint::Dressing> overlay;

@@ -78,7 +78,7 @@ bool Immediate::window(const std::string& title, const v3d::type::geometry::Boun
     paint::plateBox(context_->canvas, min, max, context_->dressing.radius, context_->dressing.borderWidth, {.inside = background, .outline = context_->dressing.border});
     paint::fillBox(context_->canvas, min + glm::vec2(context_->dressing.borderWidth, context_->dressing.borderWidth),
         glm::vec2(barMax.x - context_->dressing.borderWidth, barMax.y), context_->dressing.radius, context_->dressing.titleBar);
-    context_->label(title, min + glm::vec2(context_->dressing.padding, 0.0F), glm::vec2(size.x, context_->dressing.barHeight), context_->dressing.text);
+    context_->title(title, min + glm::vec2(context_->dressing.padding, 0.0F), glm::vec2(size.x, context_->dressing.barHeight), context_->dressing.text);
 
     // a press that stayed put folds; one that moved has already moved the window this
     // frame and does not fold it as well

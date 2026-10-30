@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -28,6 +29,20 @@ namespace v3d::ui::paint {
  * building a string would allocate once per label per frame. The caller keeps the text alive
  * for the length of the call. The callee does not keep the view.
  **/
+
+/**
+ * How heavy the face is that text is set in.
+ **/
+enum class Weight : std::uint8_t {
+    Regular,
+    SemiBold
+};
+
+/**
+ * The weight a theme's number names, as CSS numbers weights: below 500 is regular, and 500 and
+ * above is semibold.
+ **/
+Weight weight(float number) noexcept;
 
 /**
  * How wide a string will be when it is drawn, in pixels.

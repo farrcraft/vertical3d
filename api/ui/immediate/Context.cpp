@@ -234,4 +234,14 @@ void Context::label(const std::string& line, const glm::vec2& min, const glm::ve
     write(line, pen, colour);
 }
 
+void Context::title(const std::string& line, const glm::vec2& min, const glm::vec2& size,
+    const glm::vec4& colour) const {
+    if (!strong || paint::weight(dressing.titleWeight) != paint::Weight::SemiBold) {
+        label(line, min, size, colour);
+        return;
+    }
+    const glm::vec2 pen(min.x, min.y + ((size.y + (dressing.lineHeight * 0.5F)) * 0.5F));
+    strong(line, pen, colour);
+}
+
 };  // namespace v3d::ui::immediate

@@ -68,13 +68,28 @@ Neither renderer names a font type. This keeps `api/ui` testable without a windo
 The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
 must stay valid for the length of the call.
 
-`v3d::ui::paint::TextRenderer` supplies the pair. It holds one font, packed into one atlas of
-signed distance field glyphs. `measure(size)` and `write(canvas, size)` return callbacks for
-one drawn size. Two sizes from one `TextRenderer` share the same atlas.
+`v3d::ui::paint::TextRenderer` supplies the pair. It holds one typeface in two weights, packed
+into one atlas of signed distance field glyphs. `measure(size, weight)` and
+`write(canvas, size, weight)` return callbacks for one drawn size and one `paint::Weight`, regular
+or semibold. Every size and weight from one `TextRenderer` shares the same atlas.
+
+The faces are in the shared data directory:
+
+| Face | File | Used for |
+|---|---|---|
+| Regular | `fonts/Inter-Regular.ttf` | all text, unless a role asks for semibold |
+| SemiBold | `fonts/Inter-SemiBold.ttf` | a role whose weight is semibold, such as a window's title |
+| Fallback | `fonts/NotoSans-Regular.ttf` | a character the two Inter faces lack, in either weight |
+
+`TextRenderer::Faces` names other files. A semibold face that cannot be loaded sets semibold text
+in the regular face, and a fallback that cannot be loaded leaves the missing glyph in place. Both
+are logged. Each face's licence is beside it in `fonts/`.
+
+Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md)
 
 The glyphs a `TextRenderer` can draw are the characters of the UTF-8 charset given to its
-constructor, which defaults to printable ascii. They are packed and uploaded once, and the
-atlas is not added to afterwards.
+constructor, which defaults to printable ascii. Each weight packs them all. They are packed and
+uploaded once, and the atlas is not added to afterwards.
 Text is UTF-8, and `v3d::font` decodes it and lays it out. A code point outside the packed set
 measures as zero width and draws nothing. An app that shows other characters passes them in the
 charset, and may need a larger atlas to hold them.

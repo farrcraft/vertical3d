@@ -102,6 +102,13 @@ class Immediate {
     void text(const paint::Measure& measure, const paint::Write& write);
 
     /**
+     * How the app draws text in the semibold face. A window's title and a table's header are
+     * drawn through it when the dressing's titleWeight is semibold. Without one, they are drawn
+     * through the write given to text().
+     **/
+    void titles(const paint::Write& write);
+
+    /**
      * @return the colours and metrics, to be changed in place. They start from
      *      paint::Dressing::tools()
      **/

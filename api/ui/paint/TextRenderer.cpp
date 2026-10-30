@@ -29,14 +29,24 @@ const char* const TextRenderer::ascii =
 "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 "`abcdefghijklmnopqrstuvwxyz{|}~";
 
-const char* const TextRenderer::defaultFont = "fonts/NotoSans-Regular.ttf";
+const char* const TextRenderer::defaultFont = "fonts/Inter-Regular.ttf";
+const char* const TextRenderer::semiBoldFont = "fonts/Inter-SemiBold.ttf";
+const char* const TextRenderer::fallbackFont = "fonts/NotoSans-Regular.ttf";
 
-// found by packing printable ascii, not by arithmetic. 48 with a spread of 8 is the largest
-// pair tried that fits a 512 atlas: 48 with 12 does not, and 64 with 8 does not. A charset
-// or a base that needs more passes larger atlas dimensions
+// found by packing printable ascii, not by arithmetic. 48 with a spread of 8 fits one face in
+// a 512 atlas with little to spare, and two faces need twice the room. A charset or a base
+// that needs more passes larger atlas dimensions
 const float TextRenderer::baseSize = 48.0F;
 const unsigned int TextRenderer::defaultSpread = 8;
-const unsigned int TextRenderer::defaultAtlas = 512;
+const unsigned int TextRenderer::defaultAtlas = 1024;
+
+/**
+ **/
+TextRenderer::Faces::Faces() :
+regular(defaultFont),
+semiBold(semiBoldFont),
+fallback(fallbackFont) {
+}
 
 /**
  **/
@@ -44,7 +54,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     const boost::shared_ptr<v3d::log::Logger>& logger,
     const Upload& upload,
     float size,
-    const std::string& font,
+    const Faces& faces,
     std::string_view charset,
     unsigned int spread,
     const glm::uvec2& atlas) :
@@ -55,23 +65,53 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     cache_ = boost::make_shared<v3d::font::TextureFontCache>(atlas.x, atlas.y, 1, logger);
     markup_.size_ = size_;
 
-    // the face is opened here, not loaded as an asset, because this renderer chooses the
+    // each face is opened here, not loaded as an asset, because this renderer chooses the
     // size it is rasterized at. The manager only supplies the file's path
-    const boost::shared_ptr<v3d::font::TextureFont> face =
-        boost::make_shared<v3d::font::TextureFont>(assetManager->path(font), markup_.size_, logger, spread);
-    face->atlas(cache_->atlas());
-    if (!face->loadGlyphs(charset)) {
+    const auto open = [&](const std::string& file) {
+        const boost::shared_ptr<v3d::font::TextureFont> opened =
+            boost::make_shared<v3d::font::TextureFont>(assetManager->path(file), size_, logger, spread);
+        opened->atlas(cache_->atlas());
+        return opened;
+    };
+
+    boost::shared_ptr<v3d::font::TextureFont> fallback;
+    if (!faces.fallback.empty()) {
+        fallback = open(faces.fallback);
+        // packing nothing opens the file, so a fallback that will not load is found here
+        // rather than as glyphs that are silently missing
+        if (!fallback->loadGlyphs(std::string_view())) {
+            logger->get()->warn("{} could not be loaded, so a character the faces lack draws as their missing glyph", faces.fallback);
+            fallback.reset();
+        }
+    }
+
+    regular_ = open(faces.regular);
+    regular_->fallback(fallback);
+    if (!regular_->loadGlyphs(charset)) {
         // a face that would not open packs nothing, and one that opened into an atlas too
         // small packs only some glyphs. Either way nothing is drawn, so no text is shown
         // with characters missing
-        logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", font, size_);
+        logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", faces.regular, size_);
+        regular_.reset();
         return;
     }
     // the opaque white square a line or a background is drawn with. The text buffer looks it
     // up with every glyph, so it is packed now, before the upload
-    face->glyph(v3d::font::TextureFont::SOLID);
-    cache_->add(face);
-    markup_.font_ = face;
+    regular_->glyph(v3d::font::TextureFont::SOLID);
+    cache_->add(regular_);
+
+    if (!faces.semiBold.empty()) {
+        semiBold_ = open(faces.semiBold);
+        semiBold_->fallback(fallback);
+        if (semiBold_->loadGlyphs(charset)) {
+            semiBold_->glyph(v3d::font::TextureFont::SOLID);
+            cache_->add(semiBold_);
+        } else {
+            logger->get()->warn("{} could not be packed at size {}, so semibold text is drawn in {}", faces.semiBold, size_, faces.regular);
+            semiBold_.reset();
+        }
+    }
+    markup_.font_ = regular_;
 
     // every glyph is packed by now, so the atlas can go to the device once and stay there
     atlas_ = upload(cache_->atlas()->image());
@@ -93,19 +133,26 @@ float TextRenderer::size() const noexcept {
 
 /**
  **/
-float TextRenderer::width(std::string_view text, float size) const {
-    return loaded() ? markup_.font_->width(text, size) : 0.0F;
+float TextRenderer::width(std::string_view text, float size, Weight weight) const {
+    return loaded() ? face(weight)->width(text, size) : 0.0F;
+}
+
+/**
+ **/
+const boost::shared_ptr<v3d::font::TextureFont>& TextRenderer::face(Weight weight) const noexcept {
+    return weight == Weight::SemiBold && semiBold_ ? semiBold_ : regular_;
 }
 
 /**
  **/
 void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour,
-    float size) {
+    float size, Weight weight) {
     if (text.empty() || canvas == nullptr || !loaded()) {
         return;
     }
     buffer_->clear();
     markup_.foregroundColor_ = colour;
+    markup_.font_ = face(weight);
     // the markup's size against the font's is what the layout scales its metrics by
     markup_.size_ = size > 0.0F ? size : size_;
 
@@ -127,17 +174,17 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
 
 /**
  **/
-Measure TextRenderer::measure(float size) const {
-    return [this, size](std::string_view text) -> float {
-        return width(text, size);
+Measure TextRenderer::measure(float size, Weight weight) const {
+    return [this, size, weight](std::string_view text) -> float {
+        return width(text, size, weight);
     };
 }
 
 /**
  **/
-Write TextRenderer::write(v3d::render::realtime::canvas::Canvas* canvas, float size) {
-    return [this, canvas, size](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-        draw(canvas, text, pen, colour, size);
+Write TextRenderer::write(v3d::render::realtime::canvas::Canvas* canvas, float size, Weight weight) {
+    return [this, canvas, size, weight](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+        draw(canvas, text, pen, colour, size, weight);
     };
 }
 

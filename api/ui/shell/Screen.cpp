@@ -12,6 +12,7 @@
 #include <api/ui/Interface.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include "StatisticsOverlay.h"
@@ -87,6 +88,7 @@ void Screen::build() {
         } else {
             immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
         }
+        immediate_->titles(text_->write(&canvas_, drawn, paint::Weight::SemiBold));
         // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
         // the line height follows the text, so only it is copied across
         immediate_->dressing().lineHeight = components_->dressing().lineHeight;
