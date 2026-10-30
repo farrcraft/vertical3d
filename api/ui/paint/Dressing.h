@@ -21,9 +21,10 @@ namespace v3d::ui::paint {
  * because a hud is read at a glance and a tool panel is read closely: the default
  * constructor gives the retained ui's values, and tools() gives the immediate layer's.
  *
- * A theme's "ui" style sets the retained defaults, and its "tools" style sets the immediate
- * ones. A component's own style class sets what differs from the "ui" values. A value that
- * no style sets keeps its default, so an empty theme changes nothing.
+ * The default colours are a Palette's, built from its built-in base and accent. A theme's "ui"
+ * style sets the retained defaults, and its "tools" style sets the immediate ones. A component's
+ * own style class sets what differs from the "ui" values. A value that no style sets keeps its
+ * default, so an empty theme changes nothing.
  **/
 struct Dressing final {
     Dressing() noexcept;
@@ -45,6 +46,8 @@ struct Dressing final {
     float focusWidth;      /**< how thick the ring around the focused component is **/
     float radius;          /**< how far a panel's or a window's corners are rounded, 0 for square **/
     float indent;          /**< how far a bullet pushes its text in **/
+    glm::vec4 gap;           /**< what shows between two areas that tile a window **/
+    glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/
     glm::vec4 border;        /**< an outline **/
     glm::vec4 titleBar;      /**< the band across the top of a window, and a table's header **/
@@ -57,11 +60,15 @@ struct Dressing final {
     glm::vec4 tab;           /**< a tab that is not the chosen one **/
     glm::vec4 widget;        /**< the face of an immediate button, field or check box at rest **/
     glm::vec4 rule;          /**< a separator, and the line under an immediate tab strip **/
+    glm::vec4 hairline;      /**< a faint line that divides without drawing the eye, such as the edge of an area **/
     glm::vec4 text;          /**< ordinary text **/
     glm::vec4 activeText;    /**< the text of the chosen or hovered item: a menu item, a row, a tab, a button **/
-    glm::vec4 disabledText;  /**< the text of a control that cannot be used, and secondary text **/
+    glm::vec4 secondaryText; /**< text that says less than the text beside it, such as a shortcut **/
+    glm::vec4 disabledText;  /**< the text of a control that cannot be used, and a placeholder **/
     glm::vec4 highlight;     /**< what is drawn behind the chosen item, and behind selected text **/
+    glm::vec4 selected;      /**< what is drawn behind an item that is chosen, under ordinary text **/
     glm::vec4 hover;         /**< what is drawn behind the item the cursor is on **/
+    glm::vec4 pressed;       /**< the face of a button or an item while a press on it is held **/
     glm::vec4 focus;         /**< the ring around whatever the keyboard is on **/
 };
 

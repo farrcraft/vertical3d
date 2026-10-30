@@ -32,6 +32,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `Arranger` | [Arranger.h](../../../api/ui/Arranger.h) | resolves every box in a tree and calls back to paint each one |
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
+| `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
@@ -183,7 +184,11 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
 - `chrome()` reads the theme's `ui` style into the base through `style::readBase()`.
   `Immediate::theme()` reads the `tools` style through the same function, so the two base
   classes cannot drift apart in their keys. A key added to `Dressing` is added to `readBase()`
-  and to the table in [Themes.md](../../api/ui/Themes.md#the-base-classes-ui-and-tools).
+  and to the table in [Themes.md](../../api/ui/Themes.md#the-base-classes-ui-and-tools). A
+  colour key is also given a step in `Palette::roles()`, and `Palette::roleCount` counts it.
+- `readBase()` derives every colour from a `Palette` first when the style names `base`,
+  `accent` or `contrast`, writing each through `Overlay::set()`. The roles the style names are
+  read after, so they win, and a theme switch undoes both through the same overlay.
 - `resolve(class, name)` returns the cached answer, or computes one with `dress()`: a copy of
   the base, overwritten by whatever that class's style names, plus `focus` and `focus-width`.
 - The cache is dropped when the theme changes and when the base is taken by non-const

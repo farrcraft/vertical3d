@@ -119,6 +119,17 @@ class Overlay final {
     }
 
     /**
+     * Write a colour that does not come from a property, and remember what it replaced.
+     **/
+    void set(D* dressing, glm::vec4 D::* field, const glm::vec4& value) {
+        const glm::vec4 was = dressing->*field;
+        dressing->*field = value;
+        if (value != was) {
+            colours_.emplace_back(field, was);
+        }
+    }
+
+    /**
      * Read a number as readMetric() does, and remember what it replaced.
      **/
     void metric(const boost::shared_ptr<Style>& target, const std::string& name, D* dressing, float D::* field) {

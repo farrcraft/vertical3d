@@ -186,17 +186,45 @@ bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec
     }
     held_ = picked;
     ui_->focus(picked);
+    if (picked->type() == component::Type::Button && usable(*picked)) {
+        boost::dynamic_pointer_cast<component::Button>(picked)->state(component::Button::STATE_PRESS);
+    }
     act(picked, point);
     return true;
 }
 
 bool Cursor::release(const glm::vec2& point) {
+    if (ui_) {
+        for (const boost::shared_ptr<Container>& container : ui_->containers()) {
+            if (!container) {
+                continue;
+            }
+            std::vector<boost::shared_ptr<component::menu::Bar>> bars;
+            std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
+            strips(container, &bars, &toolbars);
+            for (const boost::shared_ptr<component::Toolbar>& bar : toolbars) {
+                if (bar) {
+                    bar->release(point);
+                }
+            }
+        }
+    }
+
     const boost::shared_ptr<Component> holding = held_.lock();
     held_.reset();
     if (!holding) {
         return false;
     }
     follow(holding, point);
+    if (holding->type() == component::Type::Button) {
+        const bool over = holding->bound().contains(point);
+        lit(holding, over);
+        // a press let go off its button leaves nothing hovered, so the next motion back onto
+        // the button lights it again
+        if (!over && hovered_.lock() == holding) {
+            hovered_.reset();
+        }
+    }
     return true;
 }
 

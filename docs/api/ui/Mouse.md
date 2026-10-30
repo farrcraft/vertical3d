@@ -56,6 +56,8 @@ Hover:
 - A button lights up under the cursor, on a strip or in the tree. Only the component a press
   would land on is lit, so unpickable labels never flicker as the cursor crosses them.
 - Hover is a button state only. No other component has a hover look.
+- A press on a button, on a strip or in the tree, draws it in the `pressed` colour until the
+  press comes up. It is then hovered if the cursor is still on it, and normal if not.
 
 Everything is tested against the boxes left by the last draw. **Draw before routing input,**
 or an app sees a dead ui for one frame. Nothing can be picked before the first frame is

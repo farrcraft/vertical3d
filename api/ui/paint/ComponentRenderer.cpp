@@ -402,11 +402,16 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // a button that cannot be used is never lit, whatever the cursor last left on it. A
     // checked toggle keeps its highlight whether or not the cursor is on it, so a strip
-    // shows which mask and which tool are in force
-    const bool lit = usable(*button) &&
-        (button->checked() || button->state() == component::Button::STATE_HOVER);
+    // shows which mask and which tool are in force. A held press shows over both
+    const bool held = usable(*button) && button->state() == component::Button::STATE_PRESS;
+    const bool lit = held || (usable(*button) &&
+        (button->checked() || button->state() == component::Button::STATE_HOVER));
     if (!skin(canvas, *button, min, min + size) && lit) {
-        canvas->rect(min, min + size, button->checked() ? base().highlight : base().hover);
+        glm::vec4 face = button->checked() ? base().highlight : base().hover;
+        if (held) {
+            face = base().pressed;
+        }
+        canvas->rect(min, min + size, face);
     }
 
     // a resolved icon is drawn instead of the label, not as well as it. Until the image has
@@ -815,9 +820,10 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const float width = static_cast<const Component&>(*level).size().x;
     const float height = static_cast<const Component&>(*level).size().y;
 
-    // a one pixel border, as a filled rectangle with the panel drawn over it
-    canvas->rect(origin - glm::vec2(1.0F, 1.0F), origin + glm::vec2(width + 1.0F, height + 1.0F), base().border);
-    canvas->rect(origin, origin + glm::vec2(width, height), base().panel);
+    // the border is traced just outside the box the items are laid out in
+    const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    plateBox(canvas, origin - rim, origin + glm::vec2(width, height) + rim, base().radius, base().borderWidth,
+        {.inside = base().panel, .outline = base().border});
 
     const boost::shared_ptr<component::menu::Item> active = level->active();
 
@@ -826,10 +832,10 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         const bool selected = active && (*level)[index] == active;
 
         if (selected) {
-            canvas->rect(
+            fillBox(canvas,
                 glm::vec2(origin.x + (base().padding * 0.5F), top),
                 glm::vec2(origin.x + width - (base().padding * 0.5F), top + base().lineHeight),
-                base().highlight);
+                base().radius, base().highlight);
         }
 
         // the pen sits on the baseline, most of the way down the line box. Descenders go in
@@ -935,8 +941,10 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
     const glm::vec2 size = static_cast<const Component&>(*menu).size();
     const float column = base().lineHeight * Arranger::markColumn;
 
-    canvas->rect(corner - glm::vec2(1.0F, 1.0F), corner + size + glm::vec2(1.0F, 1.0F), base().border);
-    canvas->rect(corner, corner + size, base().panel);
+    // the border is traced just outside the box the items are laid out in
+    const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    plateBox(canvas, corner - rim, corner + size + rim, base().radius, base().borderWidth,
+        {.inside = base().panel, .outline = base().border});
 
     const boost::shared_ptr<component::menu::Item> active = menu->active();
 

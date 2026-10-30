@@ -47,8 +47,55 @@ with no styles draws in the defaults.
 Each key means the same thing in both. A key a ui model has nothing to draw with is read and
 has no effect there.
 
+### Colours from a base, an accent and a contrast
+
+A `ui` or `tools` style can set every colour at once from three keys:
+
+| Key | Kind | What it sets |
+|---|---|---|
+| `base` | colour | the surface a panel is drawn on. A base lighter than mid grey makes a light theme, with text darker than its surfaces |
+| `accent` | colour | the solid accent: marks, the caret, the focus ring and the filled part of a bar. The highlight is a darker step of it |
+| `contrast` | number | how far apart the steps are. 1 is the built-in spread, above 1 spreads them, and 0 gives every surface the base's lightness |
+
+A style that names any of the three has every colour role derived from them, and one it does
+not name takes its built-in value. The built-in base is `#1d1f23`, the accent `#4d8ce6`, and
+the contrast 1, and the defaults every app starts from are derived from them.
+
+- **Two scales.** `paint::Palette` works out a twelve-step neutral scale of the base's hue and a
+  twelve-step accent scale of the accent's hue. Each step's lightness is a fixed distance from
+  the base's or the accent's, measured in the OKLCH colour space. The contrast multiplies every
+  distance.
+- **One step per role.** Each colour role takes one step of one scale. The `ui` and `tools`
+  classes differ only in `track` and `tab`, which sit at the level of a widget in `tools`.
+- **Legible by construction.** `highlight` starts one step below the accent and is darkened
+  until `active-text` reads on it at 4.5:1. An accent of any lightness therefore gives a
+  highlight that carries text.
+- **Named roles win.** A role the style names directly is read after the derivation and
+  replaces the derived colour. Metrics are never derived.
+- **Derived colours replace the app's.** A colour an app wrote into `dressing()` is replaced by a
+  derived one, as a colour the theme named would replace it. A switch to another theme puts it
+  back.
+
+```json
+{ "class": "ui", "name": "default",
+  "colors":  [ { "name": "accent", "value": [0.95, 0.55, 0.20, 1.0] } ] }
+```
+
+The built-in roles meet these contrasts, and the ui suite checks them:
+
+| Role | Against | At least |
+|---|---|---|
+| `text`, `secondary-text` | `panel`, `title-bar`, `widget`, `hover`, `bar` | 4.5:1 |
+| `active-text` | `highlight`, `hover`, `pressed` | 4.5:1 |
+| `disabled-text`, `placeholder` | `panel`, `widget` | 3:1 |
+| `border`, `focus`, `mark`, `caret` | `panel` | 3:1 |
+
+Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-and-contrast.md)
+
 | Key | What it colours or sizes | Drawn by |
 |---|---|---|
+| `gap` | what shows between two areas that tile a window | the app, through `dressing()` |
+| `bar` | a strip along an edge: a menu bar, a status bar, a strip of tabs | the app, through `dressing()` |
 | `panel` | the background of a panel, a window, a menu, a list or a text box | both |
 | `border` | an outline | both |
 | `title-bar` | the band across the top of a window, and a table's header | immediate |
@@ -61,11 +108,15 @@ has no effect there.
 | `tab` | a tab that is not the chosen one | both |
 | `widget` | the face of a button, a field or a check box at rest | immediate |
 | `rule` | a separator, and the line under a tab strip | immediate |
+| `hairline` | a faint line that divides without drawing the eye, such as the edge of an area | the app, through `dressing()` |
 | `text` | ordinary text | both |
 | `active-text` | the text of the chosen or hovered item | both |
-| `disabled-text` | the text of a control that cannot be used, and secondary text | both |
+| `secondary-text` | text that says less than the text beside it, such as a shortcut | the app, through `dressing()` |
+| `disabled-text` | the text of a control that cannot be used | both |
 | `highlight` | what is drawn behind the chosen item, and behind selected text | both |
+| `selected` | what is drawn behind an item that is chosen, under ordinary text | the app, through `dressing()` |
 | `hover` | what is drawn behind the item the cursor is on | both |
+| `pressed` | the face of a flat button while a press on it is held | retained |
 | `focus` | the ring around the component that has the keyboard, or the outline of the field that has it | both |
 | `line-height` | the height of one line of text | both |
 | `padding` | the gap between text and the panel or widget around it | both |

@@ -293,6 +293,38 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_tree_is_hovered_under_the_cursor) {
 }
 
 /**
+ * A press on a button draws it in the pressed colour until the press comes up. Let go on the
+ * button, it is hovered again. Let go off it, it is not, and moving back onto it lights it.
+ **/
+BOOST_AUTO_TEST_CASE(a_held_button_is_drawn_pressed) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Start");
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
+    fixture.draw();
+
+    const glm::vec2 on(160.0F, 65.0F);
+    fixture.cursor->motion(on);
+    BOOST_CHECK(fixture.cursor->press(on));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_PRESS);
+    fixture.draw();
+    BOOST_REQUIRE(!fixture.canvas.vertices().empty());
+    BOOST_CHECK(fixture.canvas.vertices().front().colour == fixture.renderer.dressing().pressed);
+
+    BOOST_CHECK(fixture.cursor->release(on));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
+
+    BOOST_CHECK(fixture.cursor->press(on));
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(400.0F, 400.0F)));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(!fixture.cursor->hovered());
+
+    fixture.cursor->motion(on);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
+}
+
+/**
  * Only one thing is hovered at a time, and it is the one a press would land on - so moving
  * between two overlapping buttons takes the highlight off the one underneath.
  **/

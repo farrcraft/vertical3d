@@ -6,6 +6,7 @@
 #include "Resolver.h"
 
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/style/Style.h>
 
 #include <cstddef>
@@ -14,6 +15,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <glm/vec4.hpp>
 
 #include "Theme.h"
 
@@ -62,11 +65,27 @@ const paint::Dressing& Resolver::base() const noexcept {
     return base_;
 }
 
-void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* overlay, paint::Dressing* dressing) {
+void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Overlay<paint::Dressing>* overlay,
+    paint::Dressing* dressing) {
     if (!style) {
         return;
     }
 
+    if (style->property("base", "color") || style->property("accent", "color") ||
+        style->property("contrast", "number")) {
+        glm::vec4 base = paint::Palette::base;
+        glm::vec4 accent = paint::Palette::accent;
+        float contrast = 1.0F;
+        readColour(style, "base", &base);
+        readColour(style, "accent", &accent);
+        readMetric(style, "contrast", &contrast);
+        for (const paint::Palette::Role& role : paint::Palette(base, accent, contrast).roles(use)) {
+            overlay->set(dressing, role.field, role.colour);
+        }
+    }
+
+    overlay->colour(style, "gap", dressing, &paint::Dressing::gap);
+    overlay->colour(style, "bar", dressing, &paint::Dressing::bar);
     overlay->colour(style, "panel", dressing, &paint::Dressing::panel);
     overlay->colour(style, "border", dressing, &paint::Dressing::border);
     overlay->colour(style, "title-bar", dressing, &paint::Dressing::titleBar);
@@ -79,11 +98,15 @@ void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* o
     overlay->colour(style, "tab", dressing, &paint::Dressing::tab);
     overlay->colour(style, "widget", dressing, &paint::Dressing::widget);
     overlay->colour(style, "rule", dressing, &paint::Dressing::rule);
+    overlay->colour(style, "hairline", dressing, &paint::Dressing::hairline);
     overlay->colour(style, "text", dressing, &paint::Dressing::text);
     overlay->colour(style, "active-text", dressing, &paint::Dressing::activeText);
+    overlay->colour(style, "secondary-text", dressing, &paint::Dressing::secondaryText);
     overlay->colour(style, "disabled-text", dressing, &paint::Dressing::disabledText);
     overlay->colour(style, "highlight", dressing, &paint::Dressing::highlight);
+    overlay->colour(style, "selected", dressing, &paint::Dressing::selected);
     overlay->colour(style, "hover", dressing, &paint::Dressing::hover);
+    overlay->colour(style, "pressed", dressing, &paint::Dressing::pressed);
     overlay->colour(style, "focus", dressing, &paint::Dressing::focus);
 
     overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight);
@@ -101,7 +124,7 @@ void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* o
 }
 
 void Resolver::chrome() {
-    readBase(lookup(chromeClass, std::string_view()), &overlay_, &base_);
+    readBase(lookup(chromeClass, std::string_view()), paint::Palette::Use::Chrome, &overlay_, &base_);
 }
 
 const char* Resolver::named(Class className) noexcept {

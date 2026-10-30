@@ -83,7 +83,7 @@ accessibility guidelines for the games. The numbers below are the targets each s
 | Control | `#2e3137` |
 | Hover | `#383b42` |
 | Hairline | white at 7% |
-| Text, secondary text, tertiary text | `#e4e6ea`, `#9ba1aa`, `#858b94` |
+| Text, secondary text, disabled text | `#e4e6ea`, `#a3a7b1`, `#858b94` |
 | Accent | `#4d8ce6` |
 | Selected geometry in a view | `#f2a33a` |
 | Axes x, y, z | `#d9595f`, `#72b052`, `#5590e8` |
@@ -160,18 +160,29 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 
 ### Step 1 — Roles derived from three colours
 
-Open. ADR-0128 decided it.
+**Closed.** ADR-0128 decided it.
 
-- `paint::Dressing` gains the roles and states the design names: pressed, selected and disabled
-  fills, a hairline, the bar and gap colours, secondary and tertiary text.
-- A theme's `ui` and `tools` styles may give `base`, `accent` and `contrast`. `api/ui` derives a
-  twelve-step neutral scale and a twelve-step accent scale from them, and assigns each role a
-  step. A role the theme names overrides its derived value.
-- Flat buttons, toolbar buttons and menu items draw a pressed state. Menus and dropped panels
-  draw with `radius`.
-- Tests pin the derivation, and check every text role against its surface at 4.5:1 and every
-  control edge at 3:1 for the built-in values.
-- [Themes.md](../api/ui/Themes.md) states the derivation and the override rule.
+- `paint::Palette` derives a twelve-step neutral scale and a twelve-step accent scale in OKLCH,
+  and gives each `Dressing` colour role one step. Each neutral step has a lightness offset and a
+  share of the base's chroma, fitted so that the built-in base reproduces the design's scale.
+- `Dressing` gains `gap`, `bar`, `hairline`, `secondaryText`, `selected` and `pressed`, and its
+  defaults are the built-in palette's. Disabled text is the design's tertiary text, so the two are
+  one role, and no disabled fill was needed.
+- Secondary text is a step lighter than the design drew it, at `#a3a7b1`, because the drawn one
+  read at 4.3:1 on a hover.
+- A `ui` or `tools` style that names `base`, `accent` or `contrast` derives every colour, and the
+  roles it names directly win. The editor's theme, which only restated the old defaults, is
+  empty, so the editor draws the derived colours.
+- The highlight darkens until active text reads on it at 4.5:1, so any accent gives a usable
+  highlight.
+- Buttons in the tree and on toolbars draw `pressed` while a press is held, and go back to
+  hovered or normal on release. A menu item has no held state, because it acts as the press
+  lands. Menus and dropped panels draw with `radius`, and with their border traced around them.
+- `PaletteTest` pins the scale and checks each role's contrast for both ui models. The resolver,
+  toolbar, cursor and renderer suites cover derivation, overrides, undoing a theme, the pressed
+  state and rounded menus.
+- [Themes.md](../api/ui/Themes.md#colours-from-a-base-an-accent-and-a-contrast) states the
+  derivation, the override rule and the contrasts.
 
 ### Step 2 — Inter in two weights
 

@@ -215,6 +215,27 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
 }
 
 /**
+ * A pressed button is drawn pressed until the press comes up. It then shows its hover when the
+ * cursor is still on it, and goes back to normal when the cursor has left.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_press_holds_until_release) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
+
+    const glm::vec2 on = Fixture::centre(*bar->button(2));
+    BOOST_TEST(bar->press(on));
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_PRESS));
+    bar->release(on);
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_HOVER));
+
+    BOOST_TEST(bar->press(on));
+    bar->release(glm::vec2(10.0F, 400.0F));
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_NORMAL));
+}
+
+/**
  * A button is found by the command it sends. Whatever handles a command marks the button
  * that names it this way. A button that is not a toggle never shows a mark.
  **/

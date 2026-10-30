@@ -46,6 +46,7 @@ v3d_add_api_library(ui
 	"paint/ComponentRenderer.h" "paint/ComponentRenderer.cpp"
 	"paint/Dressing.h" "paint/Dressing.cpp"
 	"paint/Painter.h" "paint/Painter.cpp"
+	"paint/Palette.h" "paint/Palette.cpp"
 	"paint/Text.h" "paint/Text.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
 	"shell/FileChooser.h" "shell/FileChooser.cpp"

@@ -79,6 +79,9 @@ class Cursor final {
      * to where the button came up, as it would on a motion(), so a slider whose value changes
      * there sends its command. Nothing else is sent, because a command is sent when the press
      * lands, as on a toolbar.
+     *
+     * A button drawn pressed, in the tree or on a toolbar, goes back to hovered when the cursor
+     * is still on it, and to normal when it is not.
      * @return whether the ui took it
      **/
     bool release(const glm::vec2& point);

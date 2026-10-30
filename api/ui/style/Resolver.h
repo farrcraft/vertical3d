@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/style/Style.h>
 
 #include <array>
@@ -36,12 +37,18 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
 /**
  * Read a base style into a dressing: a theme's "ui" style for the retained components, or
  * its "tools" style for the immediate layer. Both are read by the same keys, each named for
- * one Dressing field. Only the properties the style names are overwritten, and the overlay
- * remembers what each replaced.
+ * one Dressing field, and the overlay remembers what each replaced.
+ *
+ * A style that names a "base" colour, an "accent" colour or a "contrast" has every colour role
+ * derived from them by a Palette. One it does not name takes the palette's built-in value. The
+ * roles the style names directly are read after, and override what was derived. A style that
+ * names none of the three overwrites only the properties it names.
  *
  * @param style the base style, or null to read nothing
+ * @param use which ui model the roles are derived for
  **/
-void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* overlay, paint::Dressing* dressing);
+void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Overlay<paint::Dressing>* overlay,
+    paint::Dressing* dressing);
 
 /**
  * Turns a theme into the colours and metrics a component is drawn with, once per style

@@ -2,20 +2,7 @@
   "themes": [
     {
       "name": "default",
-      "styles": [
-        {
-          "class": "ui",
-          "name": "default",
-          "colors": [
-            { "name": "panel", "value": [0.05, 0.06, 0.09, 0.92] },
-            { "name": "border", "value": [0.35, 0.38, 0.45, 1.0] },
-            { "name": "text", "value": [0.78, 0.80, 0.84, 1.0] },
-            { "name": "active-text", "value": [1.0, 1.0, 1.0, 1.0] },
-            { "name": "highlight", "value": [0.16, 0.34, 0.58, 1.0] },
-            { "name": "hover", "value": [0.16, 0.18, 0.24, 1.0] }
-          ]
-        }
-      ]
+      "styles": []
     }
   ],
   "containers": [

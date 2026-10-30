@@ -66,9 +66,9 @@ boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<st
 BOOST_AUTO_TEST_SUITE(component_renderer_test)
 
 /**
- * A menu is a panel, a highlight behind the active item, and one label per item. The panel is
- * two quads - a border with the background drawn over it - so a three item menu is five
- * rectangles, all untextured and so all one batch.
+ * A menu is a panel, a highlight behind the active item, and one label per item. With square
+ * corners the panel is five quads - four edges traced around it and the background inside them -
+ * so a three item menu is six rectangles, all untextured and so all one batch.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
@@ -90,9 +90,29 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     BOOST_REQUIRE_EQUAL(written.size(), 3);
     BOOST_CHECK_EQUAL(written[0].text, "One");
     BOOST_CHECK_EQUAL(written[2].text, "Three");
-    // the border, the panel and the highlight behind the active item
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 3 * 4);
+    // four edges, the panel and the highlight behind the active item
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 6 * 4);
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+}
+
+/**
+ * A menu takes the dressing's radius: its panel and its highlight are drawn with rounded
+ * corners, which takes more geometry than square ones.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_is_drawn_with_the_dressing_radius) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::render::realtime::canvas::Canvas square;
+    square.resize(glm::uvec2(800, 600));
+    renderer.draw(&square, buildMenu({"One", "Two", "Three"}));
+
+    renderer.dressing().radius = 6.0F;
+    v3d::render::realtime::canvas::Canvas rounded;
+    rounded.resize(glm::uvec2(800, 600));
+    renderer.draw(&rounded, buildMenu({"One", "Two", "Three"}));
+
+    BOOST_CHECK_GT(rounded.vertices().size(), square.vertices().size());
 }
 
 /**
@@ -204,12 +224,12 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
 
     renderer.draw(&canvas, buildMenu({"a", "abcdefghij"}));
 
-    BOOST_REQUIRE(canvas.vertices().size() >= 8);
-    // vertices 4..7 are the panel, drawn over the border: min at [4], max at [6]
+    BOOST_REQUIRE(canvas.vertices().size() >= 20);
+    // vertices 16..19 are the panel, filled inside the four edges: min at [16], max at [18]
     const float padding = renderer.dressing().padding;
     const float expectedWidth = (10.0F * characterWidth) + (padding * 2.0F);
-    const float left = canvas.vertices()[4].position.x;
-    const float right = canvas.vertices()[6].position.x;
+    const float left = canvas.vertices()[16].position.x;
+    const float right = canvas.vertices()[18].position.x;
 
     BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01F);
     BOOST_CHECK_CLOSE((left + right) * 0.5F, 400.0F, 0.01F);

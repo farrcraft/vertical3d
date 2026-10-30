@@ -10,6 +10,7 @@
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Theme.h>
@@ -91,7 +92,8 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     // the new theme starts from what was there before any theme, so where it is silent the
     // last theme's value does not linger
     context_->overlay.restore(&context_->dressing);
-    style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), &context_->overlay, &context_->dressing);
+    style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), paint::Palette::Use::Tools,
+        &context_->overlay, &context_->dressing);
 }
 
 void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {
