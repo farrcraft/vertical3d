@@ -13,6 +13,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 - [The layout rule: never read an earlier frame's box](#the-layout-rule-never-read-an-earlier-frames-box)
 - [Draw order and hit testing](#draw-order-and-hit-testing)
 - [Styles and the Resolver](#styles-and-the-resolver)
+- [Transitions](#transitions)
 - [Adding a component type](#adding-a-component-type)
 - [Known limitations](#known-limitations)
 
@@ -31,6 +32,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `component::*` | [component/](../../../api/ui/component) | one class per type, plus `Type`, `name()`, `parse()` and `traits()` in [Type.h](../../../api/ui/component/Type.h) |
 | `Arranger` | [Arranger.h](../../../api/ui/Arranger.h) | resolves every box in a tree and calls back to paint each one |
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
+| `Clock`, `Transition`, `Opening`, `Motion` | [Transition.h](../../../api/ui/Transition.h) | the ui's time, a colour easing toward what is asked for, how far something has opened, and what a component or a widget keeps of them |
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
@@ -208,6 +210,37 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
 
 A theme property is found by two strings, its name and its class. A typo in either is a
 property silently not found.
+
+## Transitions
+
+A transition's state lives on what it animates. A retained `Component` holds a `Motion`, written
+as it is drawn: a `Transition` for its fill, one for its text, and an `Opening`. The immediate
+layer keeps a `Transition` for a widget's fill in the widget's `Retained` entry, through
+`Context::eased(id, colour)`. A transition outlives the component renderer, which a rescale
+rebuilds, and goes with its component or with its id when that ages out.
+
+- **A change of colour starts a transition.** Drawing code works out the colour it wants this
+  frame, exactly as it would without transitions, and passes it to `Transition::toward()`. When
+  it differs from the last colour asked for, the transition starts from the colour shown at that
+  moment. Nothing hooks the cursor, so a change made from the keyboard or by the app eases the
+  same way. `away()` eases out a fill that is no longer wanted, in its own colour.
+- **An opening is measured in frames.** `Opening::progress()` starts again when the thing was
+  not drawn on the frame before, so a menu eases in each time it opens. Closing needs nothing.
+  The renderer eases the progress out, then fades the panel through `Canvas::fade()` and lifts
+  it by `openDistance` through the transform, so text fades with it.
+- **The clock is real time.** `shell::Screen::begin()` advances a `Clock` by the time since the
+  last frame began, counts the frame, and hands it to `ComponentRenderer::clock()` and
+  `Immediate::clock()`. A renderer or layer never given a clock uses durations of zero, so a
+  test that does not set one sees every change at once.
+- **Layout never reads a transition.** A lifted panel's boxes stay where the arranger put them,
+  and only the drawing moves. The layout rule above holds unchanged.
+- **The durations are dressing values**, `hoverDuration` and `openDuration`, in seconds. They are
+  not multiplied by the scale, and `Dressing::resize()` copies them with the sizes.
+
+To animate something new, give its colour a `Transition` in `Motion` or in `Retained`, and pass
+the colour it wants each frame through it. A field added to `Motion` costs every component.
+
+Background: [ADR-0132](../../adr/0132-ui-transition-state-lives-on-what-it-animates.md)
 
 ## Parents and held items
 

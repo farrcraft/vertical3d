@@ -166,6 +166,28 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
 }
 
 /**
+ * A theme's durations are read in seconds and are not multiplied by the scale, which is for
+ * sizes. The distance a menu slides is a size, and is.
+ **/
+BOOST_AUTO_TEST_CASE(durations_are_read_and_not_scaled) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", "ui");
+    metric(chrome, "hover-duration", 0.25F);
+    metric(chrome, "open-duration", 0.5F);
+    metric(chrome, "open-distance", 6.0F);
+    theme->addStyle(chrome);
+
+    Resolver resolver;
+    resolver.scale(2.0F);
+    resolver.theme(theme);
+
+    BOOST_CHECK_CLOSE(resolver.base().hoverDuration, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().openDuration, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().openDistance, 12.0F, 0.001F);
+}
+
+/**
  * The theme names the colour a control that cannot be used is drawn in. It is named once in
  * "ui" rather than per class, so a theme that dresses one control disabled has dressed them
  * all.

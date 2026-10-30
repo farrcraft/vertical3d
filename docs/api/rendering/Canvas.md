@@ -88,6 +88,21 @@ canvas.unclip();
   drawn into a pass whose viewport is offset from the image's corner is clipped in the wrong
   place.
 
+### Fading
+
+```cpp
+canvas.fade(0.5F);
+// ... everything here is drawn at half its alpha ...
+canvas.unfade();
+```
+
+- Each vertex's alpha is multiplied by the opacity as it is added, so text and textured quads
+  fade with everything else.
+- A fade inside a fade multiplies, and `unfade()` goes back to the opacity before the matching
+  `fade()`. `clear()` drops any fade left open.
+- Pieces that overlap under one fade are each faded, so where they overlap shows through more
+  than either does alone. A shape drawn as pieces that never overlap fades evenly.
+
 ### Text
 
 `Canvas::text(vertices, indices, atlas)` copies text that has already been laid out, as

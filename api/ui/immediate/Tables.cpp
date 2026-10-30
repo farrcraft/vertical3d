@@ -59,7 +59,7 @@ bool Immediate::tab(const std::string& label) {
 
     // a tab at rest is drawn as a tab, not as a widget's face
     const bool lit = context_->disabled == 0 && (selected || reaction.hovered);
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, lit ? context_->face(selected, reaction.hovered) : context_->dressing.tab);
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, lit ? context_->face(selected, reaction.hovered) : context_->dressing.tab));
     context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size,
         selected ? context_->dressing.activeText : context_->dressing.text);
     return selected;

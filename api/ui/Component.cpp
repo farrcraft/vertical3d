@@ -6,6 +6,7 @@
 #include "Component.h"
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Transition.h>
 #include <api/ui/component/Type.h>
 
 #include "Layout.h"
@@ -223,6 +224,10 @@ std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::share
             return first->depth() < second->depth();
         });
     return sorted;
+}
+
+Motion& Component::motion() noexcept {
+    return motion_;
 }
 
 };  // end namespace v3d::ui

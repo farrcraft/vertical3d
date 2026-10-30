@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/Transition.h>
 
 #include <string>
 #include <vector>
@@ -207,6 +208,12 @@ class Component {
     bool enabled() const;
     void enabled(bool on);
 
+    /**
+     * The transitions drawing has under way on this component: its fill, its text and its
+     * opening. Written as it is drawn, and never read by layout.
+     **/
+    Motion& motion() noexcept;
+
  private:
     Layout layout_;
     std::vector<boost::shared_ptr<Component>> children_;
@@ -224,6 +231,7 @@ class Component {
     bool focused_;
     bool clip_;
     component::Type type_;
+    Motion motion_;
 };
 
 /**

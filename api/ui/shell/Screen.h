@@ -10,11 +10,13 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/Transition.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 
@@ -92,8 +94,8 @@ class Screen final {
     ~Screen() = default;
 
     /**
-     * Begin a frame: draw with the ui's active theme, size the canvas to the frame, and
-     * clear the canvas.
+     * Begin a frame: draw with the ui's active theme, size the canvas to the frame, clear the
+     * canvas, and move the ui's clock on by the real time since the last frame began.
      *
      * The theme is read from the ui every frame, and given to the component renderer and the
      * immediate layer when it has changed, before either draws. Setting the active theme on
@@ -178,6 +180,9 @@ class Screen final {
     // the factor() the text and the dressings were last built at
     float built_;
     bool resized_;
+    // the ui's clock, which transitions are measured on, and when it was last moved on
+    Clock clock_;
+    std::chrono::steady_clock::time_point last_;
     v3d::render::realtime::canvas::Canvas canvas_;
     boost::shared_ptr<paint::TextRenderer> text_;
     boost::shared_ptr<paint::ComponentRenderer> components_;

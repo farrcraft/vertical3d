@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/Immediate.h>
+#include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -56,6 +57,7 @@ struct Retained final {
     bool collapsed;    /**< whether a window is folded to its title bar **/
     bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
     int chosen;        /**< the item a combo's list was clicked on, taken next frame, or -1 **/
+    Transition face;   /**< the fill of its box, easing from one colour to the next **/
 };
 
 /**
@@ -236,6 +238,14 @@ class Context final {
     glm::vec4 face(bool lit, bool under) const;
 
     /**
+     * Ease a widget's fill toward a colour over the dressing's hover duration, from wherever
+     * its last change had reached. Without a clock the colour is drawn at once.
+     *
+     * @return the colour to draw this frame
+     **/
+    glm::vec4 eased(Id id, const glm::vec4& colour);
+
+    /**
      * Give the keyboard to a text field, or take it from whichever has it, and tell whoever
      * listens to onTyping().
      **/
@@ -287,6 +297,9 @@ class Context final {
     paint::Write strong;
     // what a theme's sizes are multiplied by
     float scale;
+    // the time transitions are measured on, and whether one has been given
+    Clock clock;
+    bool timed;
     paint::Dressing dressing;
     // what the current theme wrote over dressing
     style::Overlay<paint::Dressing> overlay;

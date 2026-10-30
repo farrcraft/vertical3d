@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
+#include <api/ui/Transition.h>
 #include <api/ui/style/Resolver.h>
 
 #include <string>
@@ -124,6 +125,13 @@ class ComponentRenderer {
      * caller sets it at the same scale. Takes effect at the next theme().
      **/
     void scale(float factor) noexcept;
+
+    /**
+     * The time the next draw is at. A change of a fill or a text colour eases over the
+     * dressing's hover duration, and a menu opens over its open duration, both measured on
+     * this clock. A renderer that is never given a clock draws every change at once.
+     **/
+    void clock(const Clock& now) noexcept;
 
     /**
      * Draw a label - one line of text at the position it holds.
@@ -293,11 +301,33 @@ class ComponentRenderer {
      **/
     const Dressing& base() const noexcept;
 
+    /**
+     * Ease a colour toward what is asked for, or fade it out in its own colour when nothing
+     * is, over the hover duration.
+     **/
+    glm::vec4 toward(Transition* transition, const glm::vec4& target) const;
+    glm::vec4 away(Transition* transition) const;
+
+    /**
+     * How far open something is, from 0 to 1, easing out so it slows as it lands.
+     **/
+    float opened(Opening* opening) const;
+
+    /**
+     * Draw a menu's panel, and everything in it, faded and lifted by how far it has opened.
+     * Every begin() is matched by an end().
+     **/
+    void begin(v3d::render::realtime::canvas::Canvas* canvas, float open) const;
+    static void end(v3d::render::realtime::canvas::Canvas* canvas);
+
     Measure measure_;
     Write write_;
     style::Resolver styles_;
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;
+    Clock clock_;
+    // whether clock() has been called, without which nothing eases
+    bool timed_;
 };
 
 };  // namespace v3d::ui::paint

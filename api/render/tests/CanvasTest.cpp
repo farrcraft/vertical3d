@@ -309,6 +309,49 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
 }
 
 /**
+ * A fade multiplies the alpha of everything drawn under it, text included, and nested fades
+ * multiply. Unfading goes back to the opacity before, and unfading too far leaves it whole.
+ **/
+BOOST_AUTO_TEST_CASE(a_fade_multiplies_the_alpha_of_what_is_drawn_under_it) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const glm::vec2 low(0.0F, 0.0F);
+    const glm::vec2 high(1.0F, 1.0F);
+
+    canvas.fade(0.5F);
+    canvas.rect(low, high, red);
+    canvas.fade(0.5F);
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> glyph;
+    glyph.reserve(4);
+    for (int corner = 0; corner < 4; corner++) {
+        glyph.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
+    }
+    canvas.text(glyph, std::vector<uint32_t>{0, 2, 1, 0, 3, 2}, v3d::render::realtime::TextureHandle(4));
+    canvas.unfade();
+    canvas.rect(low, high, red);
+    canvas.unfade();
+    canvas.unfade();
+    canvas.rect(low, high, red);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[4].colour.a, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[8].colour.a, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[12].colour.a, 1.0F, 0.001F);
+    // the colour itself is untouched
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.r, 1.0F, 0.001F);
+}
+
+/**
+ * Clearing the canvas drops any fade left open, so one frame's cannot dim the next.
+ **/
+BOOST_AUTO_TEST_CASE(clearing_drops_what_is_faded) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.fade(0.25F);
+    canvas.clear();
+    BOOST_CHECK_CLOSE(canvas.opacity(), 1.0F, 0.001F);
+}
+
+/**
  * Laid out text is copied in against the atlas it was packed into, with its indices rebased
  * onto the canvas's own vertex stream.
  **/

@@ -105,6 +105,7 @@ Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     measure(measurer),
     write(writer),
     scale(1.0F),
+    timed(false),
     dressing(paint::Dressing::tools()),
     canvas(nullptr),
     previousCursor(0.0F, 0.0F),
@@ -215,6 +216,10 @@ Reaction Context::interact(Id id, const glm::vec2& min, const glm::vec2& max) {
 
 glm::vec4 Context::ink(const glm::vec4& colour) const {
     return disabled > 0 ? dressing.disabledText : colour;
+}
+
+glm::vec4 Context::eased(Id id, const glm::vec4& colour) {
+    return retain(id).face.toward(colour, clock, timed ? dressing.hoverDuration : 0.0F);
 }
 
 glm::vec4 Context::face(bool lit, bool under) const {

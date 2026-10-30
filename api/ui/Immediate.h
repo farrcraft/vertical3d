@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -114,6 +115,13 @@ class Immediate {
      * kept.
      **/
     void scale(float factor);
+
+    /**
+     * The time the next frame is drawn at. A change of a widget's fill eases over the
+     * dressing's hover duration on this clock. A layer that is never given a clock draws every
+     * change at once.
+     **/
+    void clock(const Clock& now) noexcept;
 
     /**
      * @return the colours and metrics, to be changed in place. They start from

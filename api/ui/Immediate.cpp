@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/Checked.h>
+#include <api/ui/Transition.h>
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
@@ -86,6 +87,11 @@ void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
 
 void Immediate::titles(const paint::Write& write) {
     context_->strong = write;
+}
+
+void Immediate::clock(const Clock& now) noexcept {
+    context_->clock = now;
+    context_->timed = true;
 }
 
 void Immediate::scale(float factor) {
@@ -241,7 +247,7 @@ bool Immediate::button(const std::string& label) {
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, min + size);
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size,
         context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
     return reaction.clicked;
@@ -256,7 +262,7 @@ bool Immediate::smallButton(const std::string& label) {
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, min + size);
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     context_->label(label, min + glm::vec2(context_->dressing.padding * 0.5F, 0.0F), size,
         context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
     return reaction.clicked;
@@ -304,7 +310,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
         }
     }
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     std::string shown(label);
     shown.append("  ").append(std::to_string(*value));
     context_->label(shown, min + glm::vec2(context_->dressing.padding, 0.0F), size, context_->ink(context_->dressing.text));
@@ -324,7 +330,7 @@ bool Immediate::checkbox(const std::string& label, bool* value) {
         *value = !*value;
     }
 
-    paint::fillBox(context_->canvas, min, min + glm::vec2(side, side), context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + glm::vec2(side, side), context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     if (*value) {
         const glm::vec2 inset(side * tickInset, side * tickInset);
         paint::fillBox(context_->canvas, min + inset, min + glm::vec2(side, side) - inset, 0.0F, context_->ink(context_->dressing.mark));
@@ -355,7 +361,7 @@ bool Immediate::sliderFloat(const std::string& label, float* value, float low, f
 
     const float span = high - low;
     const float part = span == 0.0F ? 0.0F : std::clamp((*value - low) / span, 0.0F, 1.0F);
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     if (part > 0.0F) {
         paint::fillBox(context_->canvas, min, glm::vec2(min.x + (size.x * part), min.y + size.y), context_->dressing.radius, context_->ink(context_->dressing.fill));
     }

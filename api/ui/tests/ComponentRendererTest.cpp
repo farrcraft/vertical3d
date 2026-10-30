@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -181,6 +182,116 @@ BOOST_AUTO_TEST_CASE(a_container_with_a_backdrop_dims_the_canvas_first) {
         BOOST_CHECK(vertex.position.x == 0.0F || vertex.position.x == 800.0F);
         BOOST_CHECK(vertex.position.y == 0.0F || vertex.position.y == 600.0F);
     }
+}
+
+/**
+ * A button's fill eases toward its hover colour over the hover duration once a clock is given,
+ * from nothing, and eases out again in its own colour.
+ **/
+BOOST_AUTO_TEST_CASE(a_hovered_button_eases_its_fill) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    renderer.dressing().hoverDuration = 0.1F;
+    const glm::vec4 hover = renderer.dressing().hover;
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::Button> button = boost::make_shared<v3d::ui::component::Button>();
+    button->label("Go");
+    button->size(glm::vec2(120.0F, 30.0F));
+
+    const auto drawAt = [&](float now, std::uint64_t frame) {
+        canvas.clear();
+        renderer.clock({.now = now, .frame = frame});
+        renderer.draw(&canvas, button);
+    };
+
+    // at rest there is no fill at all
+    drawAt(0.0F, 1);
+    BOOST_CHECK(canvas.empty());
+
+    button->state(v3d::ui::component::Button::STATE_HOVER);
+    drawAt(1.0F, 2);
+    drawAt(1.05F, 3);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, hover.a * 0.5F, 0.1F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.r, hover.r, 0.1F);
+
+    drawAt(1.2F, 4);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK(canvas.vertices()[0].colour == hover);
+
+    button->state(v3d::ui::component::Button::STATE_NORMAL);
+    drawAt(2.0F, 5);
+    drawAt(2.05F, 6);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, hover.a * 0.5F, 0.1F);
+    drawAt(2.2F, 7);
+    BOOST_CHECK(canvas.empty());
+}
+
+/**
+ * A menu opens faded out and lifted by the open distance, and lands whole and in place once
+ * the open duration has passed. Its boxes, which the cursor picks against, never move.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_opens_faded_and_lifted) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    renderer.dressing().shadow = glm::vec4(0.0F);
+    renderer.dressing().openDuration = 0.2F;
+    renderer.dressing().openDistance = 8.0F;
+    const glm::vec4 panel = renderer.dressing().panel;
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two"});
+
+    // the panel's fill is the fifth rectangle, inside its four edges
+    const auto fill = [&canvas]() { return canvas.vertices()[16]; };
+
+    renderer.clock({.now = 1.0F, .frame = 1});
+    renderer.draw(&canvas, menu);
+    const glm::vec2 placed = menu->position();
+    BOOST_REQUIRE_GE(canvas.vertices().size(), 20U);
+    BOOST_CHECK_SMALL(fill().colour.a, 0.001F);
+    BOOST_CHECK_CLOSE(fill().position.y, placed.y - 8.0F, 0.01F);
+
+    canvas.clear();
+    renderer.clock({.now = 1.3F, .frame = 2});
+    renderer.draw(&canvas, menu);
+    BOOST_CHECK(fill().colour == panel);
+    BOOST_CHECK_CLOSE(fill().position.y, placed.y, 0.01F);
+    BOOST_CHECK(menu->position() == placed);
+
+    // closed for a frame, and so opening again
+    canvas.clear();
+    renderer.clock({.now = 2.0F, .frame = 4});
+    renderer.draw(&canvas, menu);
+    BOOST_CHECK_SMALL(fill().colour.a, 0.001F);
+}
+
+/**
+ * A renderer never given a clock draws every change at once, whatever its durations.
+ **/
+BOOST_AUTO_TEST_CASE(without_a_clock_a_change_shows_at_once) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    renderer.dressing().hoverDuration = 10.0F;
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::Button> button = boost::make_shared<v3d::ui::component::Button>();
+    button->size(glm::vec2(120.0F, 30.0F));
+    renderer.draw(&canvas, button);
+
+    button->state(v3d::ui::component::Button::STATE_HOVER);
+    canvas.clear();
+    renderer.draw(&canvas, button);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK(canvas.vertices()[0].colour == renderer.dressing().hover);
 }
 
 /**

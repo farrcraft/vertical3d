@@ -35,6 +35,7 @@ v3d_add_test(ui
 	"TextRendererTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp"
+	"TransitionTest.cpp"
 	"TypeTest.cpp")
 
 target_link_libraries(v3dtest_ui PRIVATE

@@ -24,7 +24,8 @@ The layer keeps almost nothing between frames. These are members of the context:
 - `active` and `pressAt`: what a press went down on, and where
 - `wheeled`: the topmost scrolling region under the cursor, which takes the wheel
 - `states`: a `Retained` per id, holding a window's fold, drag offset and scroll, a scrolled
-  region's content height, a tab strip's selection, and the item a combo's list was clicked on
+  region's content height, a tab strip's selection, the item a combo's list was clicked on, and
+  the transition of a widget's fill
 - `typing`, `edit` and `written`: the text field that has the keyboard, the line it is
   editing, and what it last wrote to the caller's string. A caller's string that differs from
   `written` was changed by the caller, and replaces the line

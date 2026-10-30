@@ -105,7 +105,7 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
 
     const bool focused = context_->typing == id;
     paint::plateBox(context_->canvas, min, max, context_->dressing.radius, context_->dressing.borderWidth,
-        {.inside = context_->face(false, reaction.hovered && !focused), .outline = focused ? context_->dressing.focus : context_->dressing.border});
+        {.inside = context_->eased(id, context_->face(false, reaction.hovered && !focused)), .outline = focused ? context_->dressing.focus : context_->dressing.border});
     if (high.x <= low.x) {
         return changed;
     }

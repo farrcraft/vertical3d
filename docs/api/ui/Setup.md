@@ -44,6 +44,11 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   canvas to the frame, and clears it. It returns false when the window is minimised or there is
   no renderer. A null ui keeps the theme drawn with. The theme is applied before anything draws,
   so a theme change shows in full on the next frame.
+- `begin(ui)` also moves the ui's clock on by the real time since the last frame began, and
+  hands it to the component renderer and the immediate layer. Transitions are measured on it.
+  It follows real time rather than the simulation, so a menu eases open over a paused game. An
+  app that draws a `ComponentRenderer` or an `Immediate` without a screen gives each a
+  `ui::Clock` through `clock()`, and one never given a clock draws every change at once.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
 - The passes, the draw order and where the canvas is submitted stay the app's.

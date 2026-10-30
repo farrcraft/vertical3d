@@ -134,6 +134,9 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->metric(style, "indent", dressing, &paint::Dressing::indent, scale);
     overlay->metric(style, "shadow-size", dressing, &paint::Dressing::shadowSize, scale);
     overlay->metric(style, "shadow-offset", dressing, &paint::Dressing::shadowOffset, scale);
+    overlay->metric(style, "open-distance", dressing, &paint::Dressing::openDistance, scale);
+    overlay->metric(style, "hover-duration", dressing, &paint::Dressing::hoverDuration);
+    overlay->metric(style, "open-duration", dressing, &paint::Dressing::openDuration);
     overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
 }
 

@@ -140,6 +140,9 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `indent` | how far a bullet pushes its text in | immediate |
 | `shadow-size` | how far past a menu's edge its shadow fades out. Defaults to 12 | retained |
 | `shadow-offset` | how far down a menu's shadow is moved. Defaults to 4 | retained |
+| `open-distance` | how far above its place a menu starts as it opens, sliding down into it. Defaults to 4 | retained |
+| `hover-duration` | how long a change of fill or text colour eases over, in seconds. Defaults to 0.1, and 0 changes at once | both |
+| `open-duration` | how long a menu takes to open, in seconds. Defaults to 0.12, and 0 opens at once | retained |
 | `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu
@@ -148,6 +151,13 @@ panels, toolbar strips and button labels.
 A centred menu and each panel a menu bar drops cast a shadow: their box moved down by
 `shadow-offset`, filled with `shadow`, with an edge that fades to nothing over `shadow-size`.
 A `shadow` with no alpha draws none.
+
+A change of a fill or a text colour eases over `hover-duration`, whatever caused it: the cursor
+moving onto a button, a press, a menu item chosen from the keyboard. A fill that appears fades
+in its own colour, and one that goes fades out in its own colour. A centred menu and a dropped
+panel open over `open-duration`, fading in as they slide down `open-distance` into place, and
+close at once. Only colour, opacity and that slide move: a component is picked where it lands
+from the first frame. In the immediate layer a widget's fill eases, and its text changes at once.
 
 An app can also set these values in code, through `ComponentRenderer::dressing()`,
 `Immediate::dressing()` or `Screen::Options::dress`. Where the theme names a value, the theme

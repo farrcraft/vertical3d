@@ -10,6 +10,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/ui/Interface.h>
+#include <api/ui/Transition.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -17,6 +18,7 @@
 
 #include "StatisticsOverlay.h"
 
+#include <chrono>
 #include <cstdint>
 
 #include <boost/make_shared.hpp>
@@ -129,6 +131,19 @@ bool Screen::begin(const Interface* ui) {
         }
     }
     canvas_.clear();
+
+    // real time rather than the simulation's, so a menu still eases open over a paused game.
+    // The first frame starts the clock at zero
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    if (clock_.frame > 0) {
+        clock_.now += std::chrono::duration<float>(now - last_).count();
+    }
+    last_ = now;
+    clock_.frame++;
+    components_->clock(clock_);
+    if (immediate_) {
+        immediate_->clock(clock_);
+    }
     return true;
 }
 

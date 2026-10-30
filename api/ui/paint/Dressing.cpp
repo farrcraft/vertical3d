@@ -30,6 +30,10 @@ constexpr float INDENT = 14.0F;
 constexpr float TITLE_WEIGHT = 600.0F;
 constexpr float SHADOW_SIZE = 12.0F;
 constexpr float SHADOW_OFFSET = 4.0F;
+constexpr float OPEN_DISTANCE = 4.0F;
+// how long a hover and an opening menu take, in seconds
+constexpr float HOVER_DURATION = 0.1F;
+constexpr float OPEN_DURATION = 0.12F;
 
 // the sizes the immediate layer starts with where they differ, in pixels
 constexpr float TOOLS_LINE_HEIGHT = 18.0F;
@@ -38,10 +42,10 @@ constexpr float TOOLS_BAR_HEIGHT = 22.0F;
 constexpr float TOOLS_SCROLLBAR_WIDTH = 10.0F;
 constexpr float TOOLS_RADIUS = 3.0F;
 
-/** every size a scale multiplies, which leaves out the outlines and the title weight **/
+/** every size a scale multiplies, which leaves out the outlines, the durations and the title weight **/
 constexpr std::array SIZES{&Dressing::lineHeight, &Dressing::padding, &Dressing::spacing, &Dressing::barHeight,
 &Dressing::iconSize, &Dressing::panelPadding, &Dressing::scrollbarWidth, &Dressing::markSize, &Dressing::radius,
-&Dressing::indent, &Dressing::shadowSize, &Dressing::shadowOffset};
+&Dressing::indent, &Dressing::shadowSize, &Dressing::shadowOffset, &Dressing::openDistance};
 
 };  // namespace
 
@@ -61,6 +65,9 @@ indent(INDENT),
 titleWeight(TITLE_WEIGHT),
 shadowSize(SHADOW_SIZE),
 shadowOffset(SHADOW_OFFSET),
+openDistance(OPEN_DISTANCE),
+hoverDuration(HOVER_DURATION),
+openDuration(OPEN_DURATION),
 gap(),
 bar(),
 panel(),
@@ -107,6 +114,8 @@ void Dressing::resize(const Dressing& from) noexcept {
     borderWidth = from.borderWidth;
     focusWidth = from.focusWidth;
     titleWeight = from.titleWeight;
+    hoverDuration = from.hoverDuration;
+    openDuration = from.openDuration;
 }
 
 float Dressing::outline(float width, float factor) noexcept {

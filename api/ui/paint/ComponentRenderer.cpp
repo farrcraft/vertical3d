@@ -12,6 +12,7 @@
 #include <api/ui/Interface.h>
 #include <api/ui/Image.h>
 #include <api/ui/Length.h>
+#include <api/ui/Transition.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/CheckBox.h>
@@ -184,7 +185,8 @@ v3d::ui::Image image(const boost::shared_ptr<style::Style>& target, const std::s
 ComponentRenderer::ComponentRenderer(const Measure& measure, const Write& write) :
     measure_(measure),
     write_(write),
-    arranger_(measure, styles_) {
+    arranger_(measure, styles_),
+    timed_(false) {
 }
 
 // out of line, so that the header need not complete the types the members hold
@@ -217,6 +219,47 @@ boost::shared_ptr<style::Theme> ComponentRenderer::theme() const noexcept {
  **/
 void ComponentRenderer::scale(float factor) noexcept {
     styles_.scale(factor);
+}
+
+/**
+ **/
+void ComponentRenderer::clock(const Clock& now) noexcept {
+    clock_ = now;
+    timed_ = true;
+}
+
+/**
+ **/
+glm::vec4 ComponentRenderer::toward(Transition* transition, const glm::vec4& target) const {
+    return transition->toward(target, clock_, timed_ ? base().hoverDuration : 0.0F);
+}
+
+/**
+ **/
+glm::vec4 ComponentRenderer::away(Transition* transition) const {
+    return transition->away(clock_, timed_ ? base().hoverDuration : 0.0F);
+}
+
+/**
+ **/
+float ComponentRenderer::opened(Opening* opening) const {
+    const float rest = 1.0F - opening->progress(clock_, timed_ ? base().openDuration : 0.0F);
+    return 1.0F - (rest * rest);
+}
+
+/**
+ **/
+void ComponentRenderer::begin(v3d::render::realtime::canvas::Canvas* canvas, float open) const {
+    canvas->fade(open);
+    canvas->push();
+    canvas->translate(glm::vec2(0.0F, -(1.0F - open) * base().openDistance));
+}
+
+/**
+ **/
+void ComponentRenderer::end(v3d::render::realtime::canvas::Canvas* canvas) {
+    canvas->pop();
+    canvas->unfade();
 }
 
 /**
@@ -415,12 +458,15 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const bool held = usable(*button) && button->state() == component::Button::STATE_PRESS;
     const bool lit = held || (usable(*button) &&
         (button->checked() || button->state() == component::Button::STATE_HOVER));
-    if (!skin(canvas, *button, min, min + size) && lit) {
+    if (!skin(canvas, *button, min, min + size)) {
         glm::vec4 face = button->checked() ? base().highlight : base().hover;
         if (held) {
             face = base().pressed;
         }
-        canvas->rect(min, min + size, face);
+        const glm::vec4 shown = lit ? toward(&button->motion().face, face) : away(&button->motion().face);
+        if (shown.a > 0.0F) {
+            canvas->rect(min, min + size, shown);
+        }
     }
 
     // a resolved icon is drawn instead of the label, not as well as it. Until the image has
@@ -435,7 +481,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
 
     const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5F), min.y + (size.y * widgetBaseline));
-    write_(label, baseline, ink(*button, base(), lit ? base().activeText : base().text));
+    write_(label, baseline, toward(&button->motion().ink, ink(*button, base(), lit ? base().activeText : base().text)));
 }
 
 /**
@@ -831,6 +877,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // the border is traced just outside the box the items are laid out in
     const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    begin(canvas, opened(&level->motion().opening));
     cast(canvas, origin - rim, origin + glm::vec2(width, height) + rim);
     plateBox(canvas, origin - rim, origin + glm::vec2(width, height) + rim, base().radius, base().borderWidth,
         {.inside = base().panel, .outline = base().border});
@@ -839,21 +886,26 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     for (std::size_t index = 0; index < count; index++) {
         const float top = origin.y + base().padding + (base().lineHeight * static_cast<float>(index));
-        const bool selected = active && (*level)[index] == active;
+        const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
+        if (!item) {
+            continue;
+        }
+        const bool selected = active && item == active;
 
-        if (selected) {
+        const glm::vec4 lit = selected ? toward(&item->motion().face, base().highlight) : away(&item->motion().face);
+        if (lit.a > 0.0F) {
             fillBox(canvas,
                 glm::vec2(origin.x + (base().padding * 0.5F), top),
                 glm::vec2(origin.x + width - (base().padding * 0.5F), top + base().lineHeight),
-                base().radius, base().highlight);
+                base().radius, lit);
         }
 
         // the pen sits on the baseline, most of the way down the line box. Descenders go in
         // the space below it
         const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * lineBaseline));
-        const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
-        write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
+        write_(item->text(), pen, toward(&item->motion().ink, itemInk(item, base(), selected)));
     }
+    end(canvas);
 }
 
 /**
@@ -884,10 +936,13 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         bar->place(index, glm::vec2(pen, 0.0F), glm::vec2(extent, base().barHeight));
 
         const bool lit = bar->open() == static_cast<int>(index) || bar->hover() == static_cast<int>(index);
-        if (lit) {
-            canvas->rect(glm::vec2(pen, 0.0F), glm::vec2(pen + extent, base().barHeight), base().highlight);
+        Motion& motion = menu->motion();
+        const glm::vec4 face = lit ? toward(&motion.face, base().highlight) : away(&motion.face);
+        if (face.a > 0.0F) {
+            canvas->rect(glm::vec2(pen, 0.0F), glm::vec2(pen + extent, base().barHeight), face);
         }
-        write_(label, glm::vec2(pen + (base().padding * 0.5F), base().barHeight * widgetBaseline), lit ? base().activeText : base().text);
+        write_(label, glm::vec2(pen + (base().padding * 0.5F), base().barHeight * widgetBaseline),
+            toward(&motion.ink, lit ? base().activeText : base().text));
         pen += extent;
     }
 
@@ -960,6 +1015,7 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
 
     // the border is traced just outside the box the items are laid out in
     const glm::vec2 rim(base().borderWidth, base().borderWidth);
+    begin(canvas, opened(&menu->motion().opening));
     cast(canvas, corner - rim, corner + size + rim);
     plateBox(canvas, corner - rim, corner + size + rim, base().radius, base().borderWidth,
         {.inside = base().panel, .outline = base().border});
@@ -971,8 +1027,11 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         const float top = corner.y + base().panelPadding + (base().lineHeight * static_cast<float>(index));
         const bool selected = active && item == active;
 
-        if (selected) {
-            canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + base().lineHeight), base().highlight);
+        if (item) {
+            const glm::vec4 lit = selected ? toward(&item->motion().face, base().highlight) : away(&item->motion().face);
+            if (lit.a > 0.0F) {
+                canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + base().lineHeight), lit);
+            }
         }
 
         if (item && item->checked()) {
@@ -989,8 +1048,11 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         }
 
         const glm::vec2 pen(corner.x + column, top + (base().lineHeight * lineBaseline));
-        write_(item ? item->text() : std::string(), pen, itemInk(item, base(), selected));
+        if (item) {
+            write_(item->text(), pen, toward(&item->motion().ink, itemInk(item, base(), selected)));
+        }
     }
+    end(canvas);
 }
 
 };  // namespace v3d::ui::paint

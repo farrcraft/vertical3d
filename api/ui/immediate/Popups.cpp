@@ -58,7 +58,7 @@ bool Immediate::combo(const std::string& label, int* selected, const std::vector
         context_->popup.selected = *selected;
     }
 
-    paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->face(open || reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->eased(id, context_->face(open || reaction.held, reaction.hovered)));
     const float mark = context_->dressing.lineHeight * comboMark;
     const glm::vec2 markMin(max.x - context_->dressing.padding - mark, min.y + ((size.y - mark) * 0.5F));
     paint::fillBox(context_->canvas, markMin, markMin + glm::vec2(mark, mark), 0.0F,

@@ -36,12 +36,14 @@ struct Dressing final {
 
     /**
      * The same dressing drawn larger or smaller. Every size is multiplied by the factor, except
-     * that an outline's width goes through outline(). Colours and the title weight are kept.
+     * that an outline's width goes through outline(). Colours, durations and the title weight
+     * are kept.
      **/
     Dressing scaled(float factor) const noexcept;
 
     /**
-     * Take every size and the title weight from another dressing, keeping this one's colours.
+     * Take every size, every duration and the title weight from another dressing, keeping this
+     * one's colours.
      **/
     void resize(const Dressing& from) noexcept;
 
@@ -66,6 +68,9 @@ struct Dressing final {
     float titleWeight;     /**< how heavy a window's title and a table's header are set, as CSS numbers weights **/
     float shadowSize;      /**< how far past a menu's edge its shadow fades out **/
     float shadowOffset;    /**< how far down a menu's shadow is moved, as if lit from above **/
+    float openDistance;    /**< how far above its place a menu starts as it opens, sliding down into it **/
+    float hoverDuration;   /**< how long a change of fill or text colour eases over, in seconds. 0 changes at once **/
+    float openDuration;    /**< how long a menu takes to open, in seconds. 0 opens at once **/
     glm::vec4 gap;           /**< what shows between two areas that tile a window **/
     glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/

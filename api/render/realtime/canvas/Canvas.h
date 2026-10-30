@@ -178,6 +178,24 @@ class Canvas final {
     void unclip();
 
     /**
+     * Draw everything until the matching unfade() more transparent: each vertex's alpha is
+     * multiplied by the opacity as it is added, text included. Nested fades multiply.
+     *
+     * @param alpha how opaque, clamped to [0, 1]
+     **/
+    void fade(float alpha);
+
+    /**
+     * Go back to the opacity before the matching fade(). Unfading nothing leaves it whole.
+     **/
+    void unfade();
+
+    /**
+     * @return what the alpha of each vertex added now is multiplied by
+     **/
+    float opacity() const noexcept;
+
+    /**
      * An untextured rectangle, drawn against the renderer's white texture.
      * @param min the top left corner in pixels
      * @param max the bottom right corner in pixels
@@ -357,6 +375,7 @@ class Canvas final {
     Fit fit_;
     TransformStack transforms_;
     ClipStack clips_;  /**< in the image's pixels, already transformed **/
+    std::vector<float> fades_;  /**< the opacity each open fade() leaves, the innermost last **/
     std::vector<Vertex> vertices_;
     std::vector<uint32_t> indices_;
     std::vector<Batch> batches_;

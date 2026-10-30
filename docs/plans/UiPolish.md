@@ -138,7 +138,7 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 | Shell: how the games' menus are designed. Decided in ADR-0130: one designed shell, with a title and an accent colour per game. | 14 |
 | Editor: how the window is divided. Decided in ADR-0127: tiled areas that hold editors as tabs. | 7 |
 | UI: where the display's scale comes from, and what it multiplies. Decided in ADR-0131: a tool follows the monitor and a game its window's height, a user preference multiplies either, and the text and every size are redrawn at the result. | 3 |
-| UI: where a transition's state lives, given that a retained component is redrawn from its layout every frame. To be decided at step 5. | 5 |
+| UI: where a transition's state lives. Decided in ADR-0132: on what it animates, a retained component or an immediate widget's per-id state, on a clock of real time. | 5 |
 | Input: how a binding names a chord such as Ctrl+Z, and how a chord and a held modifier share a key. To be decided at step 10. | 10 |
 | Editor: where an area layout is saved: with the project, in the user's settings, or as named workspaces in both. To be decided at step 7. | 7 |
 
@@ -253,12 +253,27 @@ on the whole canvas.
 
 ### Step 5 — Transitions
 
-Open. Needs its decision.
+**Closed.** ADR-0132 decided it, after weighing a store in the renderer and a record kept by the
+cursor router.
 
-- A hover change, a menu opening and a notice fading run over the durations in the design. The
-  dressing holds the durations, and a duration of 0 turns a transition off.
-- Layout stays a function of the current frame's input. A transition changes only colour,
-  opacity and a small offset.
+- `ui::Transition` eases a colour toward whatever is asked for, starting whenever that changes and
+  from the colour shown at that moment. A fill that appears or goes fades in its own colour.
+  `ui::Opening` measures how far something has opened since the frame it was first drawn.
+- A retained component carries a `Motion`, and an immediate widget's `Retained` entry a fill
+  transition. Buttons, menu items, menu bar titles and the immediate layer's widget fills ease
+  over `hover-duration`. A centred menu and a dropped panel fade in and slide down
+  `open-distance` over `open-duration`, and close at once.
+- The canvas gains `fade()` and `unfade()`, which multiply the alpha of everything drawn under
+  them, text included.
+- `Screen::begin()` advances a clock by the real time between frames and hands it to both ui
+  models, so no app changed. Without a clock, every change shows at once.
+- Layout never reads a transition, so a sliding panel is picked where it lands.
+- Notices fade when step 9 draws them, and the game menu opens over 150 to 200 ms when step 14's
+  game theme sets `open-duration`.
+- The transition suite covers easing, retargeting partway, easing in from nothing, easing away
+  and opening across frames. The canvas suite covers fading, and the renderer, immediate and
+  resolver suites cover a button's hover, a menu opening, drawing without a clock, the
+  immediate layer's fill and the theme's durations.
 
 ### Step 6 — Tooltips and menus
 

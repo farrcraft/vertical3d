@@ -9,6 +9,7 @@ v3d_add_api_library(ui
 	"Layout.h" "Layout.cpp"
 	"Length.h" "Length.cpp"
 	"Loader.h" "Loader.cpp"
+	"Transition.h" "Transition.cpp"
 	"component/Bar.h" "component/Bar.cpp"
 	"component/Box.h" "component/Box.cpp"
 	"component/Button.h" "component/Button.cpp"

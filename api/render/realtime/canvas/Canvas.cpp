@@ -52,6 +52,7 @@ void Canvas::clear() {
     batches_.clear();
     transforms_.reset();
     clips_.reset();
+    fades_.clear();
 }
 
 /**
@@ -197,6 +198,26 @@ void Canvas::unclip() {
 
 /**
  **/
+void Canvas::fade(float alpha) {
+    fades_.push_back(opacity() * std::clamp(alpha, 0.0F, 1.0F));
+}
+
+/**
+ **/
+void Canvas::unfade() {
+    if (!fades_.empty()) {
+        fades_.pop_back();
+    }
+}
+
+/**
+ **/
+float Canvas::opacity() const noexcept {
+    return fades_.empty() ? 1.0F : fades_.back();
+}
+
+/**
+ **/
 void Canvas::open(const TextureHandle& texture, bool text) {
     const bool clipped = clips_.clipped();
     const glm::vec4 clip = clips_.top();
@@ -226,6 +247,7 @@ void Canvas::vertex(const Vertex& untransformed) {
     added.position.y = (transform[0][1] * position.x) + (transform[1][1] * position.y) + transform[3][1];
     added.uv = untransformed.uv;
     added.colour = untransformed.colour;
+    added.colour.a *= opacity();
     vertices_.push_back(added);
 }
 
