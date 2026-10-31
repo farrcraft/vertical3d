@@ -31,6 +31,7 @@ namespace v3d::editor {
 GroupCommand::GroupCommand(const boost::shared_ptr<Scene>& scene, const Items& items) :
     scene_(scene),
     group_(boost::make_shared<Group>()) {
+    group_->name("Group");
     if (!scene_) {
         return;
     }

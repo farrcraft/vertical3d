@@ -167,6 +167,9 @@ class Importer final {
         if (made.empty()) {
             made.push_back(boost::make_shared<Group>());
         }
+        for (const boost::shared_ptr<Item>& item : made) {
+            item->name(node.name);
+        }
 
         corrections_[index] = turned(*made.front()) ? halfTurn() : glm::identity<glm::quat>();
         const glm::quat back = glm::inverse(parentCorrection(node));

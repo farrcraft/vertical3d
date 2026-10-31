@@ -172,17 +172,23 @@ kinds:
     saved that refers to an item names it by its document id.
 
   An item cannot be copied, because a copy would share both ids.
+- **Name.** `Item::name()` is what the item is called. Any text is a name, an empty one
+  included, and two items may share one, since nothing refers to an item by its name. A new
+  item is named for its kind, with each word begun in capitals, such as `Cube`, `Point Light`
+  or `Group`. An imported item takes its node's name. The document saves the name, so a rename
+  moves the revision. Background:
+  [ADR-0135](../adr/0135-editor-item-names-are-labels-that-need-not-be-unique.md)
 - **Placement.** `placement()` is a translation, a rotation and a scale, measured in the space of
   the item's parent. A command undoes a gesture by setting all three at once. `matrix()` composes
   them as translation × rotation × scale, which is the item's local matrix. Where the item is in
   the world comes from the scene's evaluation. `translation(v)` sets the position, and
   `translate(v)` adds an offset to it. A camera and a light ignore their scale.
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
-  its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is the item's
-  own count of changes, which every placement setter and every setter of what its kind holds adds
-  one to, and for a mesh `BRep::changes()` or for a curve `Curves::changes()` as well. A setter
-  that writes what is already there counts too. Each count only goes up, so the sum moves exactly
-  when one of them does. A change of selection does not move it. A save writes an item again only
+  its name, its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is
+  the item's own count of changes, which the name's setter, every placement setter and every
+  setter of what its kind holds adds one to, and for a mesh `BRep::changes()` or for a curve
+  `Curves::changes()` as well. A setter that writes what is already there counts too. Each count
+  only goes up, so the sum moves exactly when one of them does. A change of selection does not move it. A save writes an item again only
   when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,

@@ -8,6 +8,7 @@
 #include <api/type/Transform.h>
 
 #include <cstdint>
+#include <string>
 
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/mat4x4.hpp>
@@ -50,6 +51,19 @@ const v3d::type::Transform& Item::placement() const noexcept {
  **/
 void Item::placement(const v3d::type::Transform& placement) noexcept {
     placement_ = placement;
+    changed();
+}
+
+/**
+ **/
+const std::string& Item::name() const noexcept {
+    return name_;
+}
+
+/**
+ **/
+void Item::name(const std::string& name) {
+    name_ = name;
     changed();
 }
 

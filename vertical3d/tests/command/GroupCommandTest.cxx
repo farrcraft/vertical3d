@@ -86,6 +86,7 @@ BOOST_AUTO_TEST_CASE(group_stays_put_test) {
     v3d::editor::GroupCommand command(scene, scene->selection());
     command.redo();
     const boost::shared_ptr<v3d::editor::Group> group = command.group();
+    BOOST_CHECK_EQUAL(group->name(), "Group");
 
     // the group is placed at the mean of the origins, and holds the items, which have not
     // moved in the world

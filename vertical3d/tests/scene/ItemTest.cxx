@@ -158,6 +158,18 @@ BOOST_AUTO_TEST_CASE(item_placement_revision_test) {
     BOOST_CHECK_EQUAL(group.revision(), start + 5U);
 }
 
+/**
+ * An item starts with no name, and naming it moves the revision, since a document saves it.
+ **/
+BOOST_AUTO_TEST_CASE(item_name_test) {
+    v3d::editor::Group group;
+    BOOST_CHECK(group.name().empty());
+    const std::uint64_t start = group.revision();
+    group.name("Rig");
+    BOOST_CHECK_EQUAL(group.name(), "Rig");
+    BOOST_CHECK_EQUAL(group.revision(), start + 1U);
+}
+
 BOOST_AUTO_TEST_CASE(item_selection_test) {
     const v3d::editor::Mesh mesh(boost::make_shared<v3d::brep::BRep>());
     v3d::editor::Camera camera;

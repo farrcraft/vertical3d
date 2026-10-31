@@ -170,6 +170,7 @@ content went. Numbers are never reused.
 | [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
 | [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | accepted |
 | [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
+| [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
 
 ## Build, testing and code
 

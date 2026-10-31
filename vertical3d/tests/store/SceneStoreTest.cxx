@@ -83,15 +83,18 @@ boost::shared_ptr<v3d::editor::Scene> everyKind() {
     cube->translation(glm::vec3(1.5F, -2.0F, 0.25F));
     cube->rotation(glm::angleAxis(0.7F, glm::normalize(glm::vec3(1.0F, 2.0F, 3.0F))));
     cube->scale(glm::vec3(2.0F, 0.5F, 3.0F));
+    cube->name("Crate's lid");
     scene->add(cube);
 
     const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
     camera->translation(glm::vec3(0.0F, 4.0F, -10.0F));
+    camera->name("Camera");
     camera->lens({ .projection = v3d::editor::Camera::Projection::Orthographic, .fov = 30.0F, .extent = 6.5F,
         .clipping = glm::vec2(0.5F, 250.0F) });
     scene->add(camera);
 
     const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    light->name("Camera");
     light->rotation(glm::angleAxis(-0.3F, glm::vec3(1.0F, 0.0F, 0.0F)));
     light->emission({ .type = v3d::editor::Light::Type::Spot, .colour = glm::vec3(1.0F, 0.5F, 0.25F),
         .intensity = 40.0F, .cone = 0.4F, .delta = 0.1F });
@@ -124,12 +127,13 @@ void sameGeometry(const v3d::brep::BRep& left, const v3d::brep::BRep& right) {
 }
 
 /**
- * Whether two items are the same document item: kind, document id, placement, and what the
+ * Whether two items are the same document item: kind, document id, name, placement, and what the
  * kind holds, all exactly. Their run ids differ, because a read makes new items.
  **/
 void same(const boost::shared_ptr<v3d::editor::Item>& left, const boost::shared_ptr<v3d::editor::Item>& right) {
     BOOST_REQUIRE(left->kind() == right->kind());
     BOOST_CHECK_EQUAL(left->documentId(), right->documentId());
+    BOOST_CHECK_EQUAL(left->name(), right->name());
     BOOST_CHECK(left->translation() == right->translation());
     BOOST_CHECK(left->rotation() == right->rotation());
     BOOST_CHECK(left->scale() == right->scale());
@@ -366,7 +370,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a blob that belongs to no mesh",
             "INSERT INTO buffers (item, role, count, data) SELECT id, 'extra', 0, X'' FROM items WHERE kind = 'camera'" },
         { "a next id that is not above every id", "UPDATE meta SET value = 1 WHERE key = 'next_id'" },
-        { "tables from a later build", "PRAGMA user_version = 4" },
+        { "tables from a later build", "PRAGMA user_version = 5" },
         { "a curve on a property its owner does not have",
             "INSERT INTO curves SELECT id, 'lens.fov', 1, 0, X'' FROM items WHERE kind = 'light'" },
         { "a curve with no keys", "INSERT INTO curves SELECT id, 'translation.x', 1, 0, X'' FROM items WHERE kind = 'light'" },
@@ -744,11 +748,13 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &scene));
     BOOST_REQUIRE_EQUAL(scene.count(), 1U);
     BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
+    BOOST_CHECK(scene.items()[0]->name().empty());
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
 
     // the first write to it brings its tables up to date, and can then save a parent and a
     // curve
     const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
+    group->name("Rig");
     scene.add(group);
     scene.parent(scene.items()[0]->id(), group->id());
     v3d::animation::Curve curve;
@@ -761,6 +767,8 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_REQUIRE_EQUAL(read.count(), 2U);
     BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
+    BOOST_CHECK(read.items()[0]->name().empty());
+    BOOST_CHECK_EQUAL(read.items()[1]->name(), "Rig");
     BOOST_CHECK(read.curves(read.items()[1]->id()).at("rotation.y") == curve);
 }
 

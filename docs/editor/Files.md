@@ -47,7 +47,7 @@ A scene document is a SQLite database, read and written by `v3d::editor::SceneSt
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`SceneStore::SCHEMA_VERSION`, which is 3.
+`SceneStore::SCHEMA_VERSION`, which is 4.
 
 **The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
@@ -63,6 +63,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `sx`, `sy`, `sz` | The scale |
 | | `payload` | A JSON object of what the kind adds. The table checks that it is JSON |
 | | `parent` | The document id of the item's parent, or `NULL` for an item with none. It references `items(id)`, checked when the write commits |
+| | `name` | What the item is called, which may be empty |
 | `buffers` | `item` | The item the blob belongs to. Deleting the item deletes its blobs |
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
@@ -168,10 +169,11 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-Schema version 1 has no `parent` column, and versions 1 and 2 have no `curves` table. A read
-takes an older document as it is: every item of a version 1 document is at the top of the scene,
-and nothing in either is animated. The first write to it adds what it lacks and sets the version
-to 3, in the same transaction as the rest of the write. Every kind and the curves are at version
+Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, and versions 1
+to 3 have no `name` column. A read takes an older document as it is: every item of a version 1
+document is at the top of the scene, nothing in a version 1 or 2 document is animated, and every
+item of a version 1 to 3 document has an empty name. The first write to it adds what it lacks
+and sets the version to 4, in the same transaction as the rest of the write. Every kind and the curves are at version
 1.
 
 **Reading sets the frame.** Once a document is read, its timeline's frame is the current one,
@@ -243,8 +245,7 @@ The file is read by `interchange::readGltf()` or `interchange::readUsd()`, descr
 
 - **Kinds.** Each node becomes one item: a mesh, a camera, a light or a curve when it carries
   one, in that order, and a group when it carries none. A node that carries more than one
-  becomes the first, with the others as its children. Items have no names, so a node's name is
-  not kept.
+  becomes the first, with the others as its children. Each item takes its node's name.
 - **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
   that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
   give items that share one geometry. A mesh that cannot be built, such as one with three faces

@@ -97,6 +97,11 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
     BOOST_CHECK_EQUAL(*imported.parents[1], 0U);
     BOOST_CHECK_EQUAL(*imported.parents[2], 0U);
     BOOST_CHECK(!imported.parents[3]);
+    // each item is called what its node was
+    BOOST_CHECK_EQUAL(imported.items[0]->name(), "rig");
+    BOOST_CHECK_EQUAL(imported.items[1]->name(), "box");
+    BOOST_CHECK_EQUAL(imported.items[2]->name(), "shot");
+    BOOST_CHECK_EQUAL(imported.items[3]->name(), "lamp");
     const boost::shared_ptr<v3d::editor::Mesh> mesh = v3d::editor::as<v3d::editor::Mesh>(imported.items[1]);
     BOOST_CHECK_EQUAL(mesh->geometry()->faceCount(), 1U);
     BOOST_CHECK(imported.notes.empty());

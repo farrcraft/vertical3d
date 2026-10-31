@@ -55,9 +55,10 @@ class SceneStore final {
      * by the first write to it. A read takes it as it is.
      *
      * Version 1 has no parent column, so every item it holds has no parent. Versions 1 and 2
-     * have no curves table, so nothing they hold is animated.
+     * have no curves table, so nothing they hold is animated. Versions 1 to 3 have no name
+     * column, so every item they hold has an empty name.
      **/
-    static constexpr std::int32_t SCHEMA_VERSION = 3;
+    static constexpr std::int32_t SCHEMA_VERSION = 4;
 
     /**
      * The version of a curve's keys, which a curve's row stores beside them.

@@ -73,7 +73,8 @@ const char* const SCHEMA =
 "  rx REAL NOT NULL, ry REAL NOT NULL, rz REAL NOT NULL, rw REAL NOT NULL,"
 "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
 "  payload TEXT NOT NULL CHECK (json_valid(payload)),"
-"  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED) STRICT;"
+"  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
+"  name TEXT NOT NULL DEFAULT '') STRICT;"
 "CREATE TABLE buffers ("
 "  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
 "  role TEXT NOT NULL,"
@@ -106,6 +107,11 @@ const char* const MIGRATE_FROM_2 =
 "  count INTEGER NOT NULL CHECK (count >= 0),"
 "  keys BLOB NOT NULL,"
 "  PRIMARY KEY (owner, property)) STRICT;";
+
+/**
+ * What takes a document's tables from version 3 to version 4: the name column.
+ **/
+const char* const MIGRATE_FROM_3 = "ALTER TABLE items ADD COLUMN name TEXT NOT NULL DEFAULT '';";
 
 /**
  * The size of one key of a curve: its frame, value, in slope and out slope, then its
@@ -194,6 +200,7 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
         return true;
     }
     return (version > 1 || database->execute(MIGRATE_FROM_1)) && (version > 2 || database->execute(MIGRATE_FROM_2)) &&
+        (version > 3 || database->execute(MIGRATE_FROM_3)) &&
         database->userVersion(SceneStore::SCHEMA_VERSION);
 }
 
@@ -244,6 +251,7 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
     const glm::vec3 scale = vector(&row);
     const std::string text = row.text();
     *parent = row.integer();
+    const std::string name = row.text();
 
     if (id <= 0 || *parent < 0 || !finite(translation) || !finite(axis) || !std::isfinite(w) || !finite(scale)) {
         *problem = "its id or its placement is not valid";
@@ -260,6 +268,7 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
         return nullptr;
     }
     item->documentId(id);
+    item->name(name);
     item->translation(translation);
     item->rotation(glm::quat(w, axis.x, axis.y, axis.z));
     item->scale(scale);
@@ -312,8 +321,10 @@ bool trees(const Loaded& loaded) {
 bool load(v3d::database::Database* database, std::int32_t version, Loaded* loaded, std::string* problem) {
     // a document from before items had parents has none to read
     const std::string parent = version >= 2 ? "parent" : "NULL";
+    // nor one from before items had names
+    const std::string name = version >= 4 ? "name" : "''";
     v3d::database::Statement rows = database->prepare(
-        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent +
+        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent + ", " + name +
         " FROM items ORDER BY position, id");
     v3d::database::Statement buffers = database->prepare("SELECT role, count, data FROM buffers WHERE item = ?1");
     if (!rows.valid() || !buffers.valid()) {
@@ -548,7 +559,7 @@ bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64
     if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(std::string(codec.name()))
         .integer(codec.version())
         .reals({ translation.x, translation.y, translation.z, rotation.x, rotation.y, rotation.z, rotation.w })
-        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).run()) {
+        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).text(item->name()).run()) {
         return false;
     }
     return std::ranges::all_of(codec.buffers(*item), [&](const Buffer& buffer) {
@@ -564,8 +575,8 @@ struct Writes {
     explicit Writes(v3d::database::Database* database) :
         inserts{
             .item = database->prepare(
-                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent, name) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
             .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") },
         remove(database->prepare("DELETE FROM items WHERE id = ?")),
         move(database->prepare("UPDATE items SET position = ?, parent = ? WHERE id = ?")),

@@ -8,6 +8,7 @@
 #include <api/type/Transform.h>
 
 #include <cstdint>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
@@ -19,9 +20,10 @@ namespace v3d::editor {
 /**
  * One thing the scene holds: a mesh, a camera, a light, a group or curves.
  *
- * Every kind has two ids, a placement, and an object selection flag. id() is unique within one
- * run of the editor, and a selection names an item by it. The document id is unique within one
- * document and is saved with it, so anything saved that refers to an item names it by that.
+ * Every kind has two ids, a name, a placement, and an object selection flag. id() is unique
+ * within one run of the editor, and a selection names an item by it. The document id is unique
+ * within one document and is saved with it, so anything saved that refers to an item names it by
+ * that.
  *
  * The placement is local: it is measured in the space of the item's parent, which the scene
  * holds. Where the item is in the world comes from the scene's evaluation.
@@ -74,6 +76,13 @@ class Item {
     glm::mat4 matrix() const;
 
     /**
+     * What the item is called. Any text is a name, an empty one included, and two items may
+     * share one. The setter moves revision().
+     **/
+    const std::string& name() const noexcept;
+    void name(const std::string& name);
+
+    /**
      * The item's id within its document, or 0 before the scene first assigns one. The scene
      * assigns it when the item is first added, and the item keeps it after a removal, so an
      * undone creation brings it back unchanged.
@@ -105,6 +114,7 @@ class Item {
  private:
     unsigned int id_;
     v3d::type::Transform placement_;
+    std::string name_;
     bool selected_;
     std::int64_t documentId_;
     std::uint64_t changes_ = 0;

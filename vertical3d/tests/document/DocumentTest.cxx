@@ -74,6 +74,7 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
     BOOST_CHECK(made.done);
     BOOST_CHECK_EQUAL(made.message, "created a cube - 1 item");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
+    BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "Cube");
     BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
     BOOST_CHECK(edited.dirty());
 
@@ -98,6 +99,8 @@ BOOST_AUTO_TEST_CASE(a_curve_is_created_as_one_change) {
     BOOST_CHECK(made.done);
     BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 item");
     BOOST_REQUIRE_EQUAL(edited.scene()->count(), 1U);
+    // a new item is named for its kind, each word begun in capitals
+    BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "NURBS Curve");
     const boost::shared_ptr<v3d::editor::Curve> curve = v3d::editor::as<v3d::editor::Curve>(edited.scene()->items()[0]);
     BOOST_REQUIRE(curve);
     BOOST_REQUIRE_EQUAL(curve->geometry()->size(), 1U);

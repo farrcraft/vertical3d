@@ -54,6 +54,22 @@ std::string items(std::size_t count) {
 }
 
 /**
+ * @return a kind's name with each word begun in capitals, as a new item is named: "point light"
+ *         is "Point Light"
+ **/
+std::string titled(const std::string& kind) {
+    std::string title = kind;
+    bool start = true;
+    for (char& letter : title) {
+        if (start) {
+            letter = static_cast<char>(std::toupper(static_cast<unsigned char>(letter)));
+        }
+        start = letter == ' ';
+    }
+    return title;
+}
+
+/**
  * What a modelling operation says when it changed the mesh, and when there was nothing to change.
  **/
 struct Said final {
@@ -100,6 +116,9 @@ bool Document::dirty() const noexcept {
 }
 
 Outcome Document::create(const boost::shared_ptr<Item>& item, const std::string& name) {
+    if (item->name().empty()) {
+        item->name(titled(name));
+    }
     // the command does the creating, so making an item and redoing one run the same code
     const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, item, name);
     command->redo();
