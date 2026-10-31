@@ -280,6 +280,18 @@ class AreaLayout final {
     std::optional<std::size_t> add(std::size_t area, const boost::json::object& state);
 
     /**
+     * Put a new editor in place of the one an area shows, as when the area is changed to show
+     * another kind of editor. The new editor has an id of its own, takes the old one's place
+     * among the area's tabs, and is shown.
+     *
+     * @param area an index into areas()
+     * @param state what the new editor saves of itself, which names its kind
+     * @return the new editor's id, or nothing when the area is not one or the state names no
+     *         kind
+     **/
+    std::optional<std::size_t> replace(std::size_t area, const boost::json::object& state);
+
+    /**
      * Set one entry of an editor's state, such as the camera a viewport shows. The kind is not
      * changed this way.
      *

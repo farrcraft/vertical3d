@@ -31,10 +31,10 @@ namespace v3d::editor {
  *
  * Each area has a container named "area-" and its id. Its header is a menu bar that is not
  * docked, across the top of where the area's editor draws, holding a menu named for the kind
- * of editor it shows. That menu splits, joins and swaps the area, adds and closes tabs, and
- * maximises it. A maximise button sits at the header's right end. An area holding two or more
- * editors has a strip of tabs above its editor, one toggle button for each, with the chosen one
- * checked.
+ * of editor it shows. That menu changes the kind of editor shown, splits, joins and swaps the
+ * area, adds and closes tabs, and maximises it. A maximise button sits at the header's right
+ * end. An area holding two or more editors has a strip of tabs above its editor, one toggle
+ * button for each, with the chosen one checked.
  *
  * A viewport's header has three more menus. One is named for the camera the view shows and
  * offers the fixed views and the projection switch. One is named for how the view shades the
@@ -67,6 +67,14 @@ class AreaChrome final {
     struct FixedView final {
         std::string command;
         std::string profile;
+    };
+
+    /**
+     * A kind of editor an area can show, and what the header's Editor menu calls it.
+     **/
+    struct Kind final {
+        std::string kind;
+        std::string label;
     };
 
     /**
@@ -129,6 +137,17 @@ class AreaChrome final {
      *         and what it shows
      **/
     static std::vector<std::pair<std::string, bool>> marks(const ViewPort& view);
+
+    /**
+     * @return the kinds of editor an area can be changed to show, in the Editor menu's order
+     **/
+    static const std::vector<Kind>& kinds();
+
+    /**
+     * @return each kind's command, as "area::editor::" and the kind, and whether it is the kind
+     *         of an editor
+     **/
+    static std::vector<std::pair<std::string, bool>> marks(const AreaLayout::Editor& editor);
 
     /**
      * @return each select mask's command, as "select::mask::" and its name, and whether it is

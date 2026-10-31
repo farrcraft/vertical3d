@@ -35,6 +35,7 @@ v3d_add_test(vertical3d
 	"control/CommandSearchTest.cxx"
 	"control/IconSheetTest.cxx"
 	"control/NoticesTest.cxx"
+	"control/OutlinerTest.cxx"
 	"control/StatusBarTest.cxx"
 	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"

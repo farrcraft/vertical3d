@@ -20,6 +20,7 @@
 #include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
@@ -129,6 +130,13 @@ class Controller final : public v3d::engine::Engine {
      * Give the views their regions again after a change to the areas.
      **/
     void areasChanged();
+
+    /**
+     * Draw the panel of each area that shows an editor other than a view, under the header,
+     * through the immediate layer. The layer has the mouse only while the pointer gives the
+     * panels the cursor.
+     **/
+    void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
      * @return the current project's directory, as its record in the settings is keyed
@@ -360,6 +368,7 @@ class Controller final : public v3d::engine::Engine {
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<Notices> notices_;
     boost::shared_ptr<CommandSearch> search_;
+    Outliner outliner_;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<TopBar> topBar_;
     boost::shared_ptr<Workspaces> workspaces_;

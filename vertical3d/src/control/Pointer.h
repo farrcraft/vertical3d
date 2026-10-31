@@ -27,7 +27,9 @@ namespace v3d::editor {
  * divider between areas, and to the tools of the view under the cursor.
  *
  * A press goes to the first of those that takes it, and its release goes to the same place. A
- * press outside every area, such as on a bar beside them, reaches no tool.
+ * press outside every area, such as on a bar beside them, reaches no tool. A press in an area
+ * that shows an editor other than a view, such as the outliner, reaches no tool either, and is
+ * the panels' instead, which panels() says.
  * The ui is offered the cursor only between drags, so a drag that passes over the menu bar or
  * a toolbar is not interrupted. The area under the cursor becomes the active one between drags,
  * and its view the active view, so a drag that crosses a gap keeps its area.
@@ -149,12 +151,31 @@ class Pointer final {
     const glm::vec2& cursor() const noexcept;
 
     /**
+     * Whether the panels drawn in areas without a view have the cursor this frame. They have it
+     * while a press that landed in one is held, and on the frame it is let go. Between drags,
+     * they have it while the cursor is in such an area, unless the ui, a divider or a tool has
+     * it.
+     **/
+    bool panels() const;
+
+    /**
+     * The panels have been drawn this frame, so the release of a press they held is spent.
+     **/
+    void settle() noexcept;
+
+    /**
      * @return the view the cursor was last in, or the first view shown before the cursor has
      *         moved
      **/
     const boost::shared_ptr<ViewPort>& activeView() const noexcept;
 
  private:
+    /**
+     * Offer a press to the ui, a view's controls, a divider, a panel and the tools, in that
+     * order, and remember which took it.
+     **/
+    void press(unsigned int clicks);
+
     /**
      * Make a view the active one, and tell the tools and the caller.
      **/
@@ -187,6 +208,10 @@ class Pointer final {
     bool controlGrab_ = false;
     // whether the press landed outside every area, so neither it nor its release reaches a tool
     bool missed_ = false;
+    // whether the press landed in an area without a view, whose panel has it until it is let go
+    bool panelGrab_ = false;
+    // whether that press was let go since the panels were last drawn
+    bool panelLetGo_ = false;
     Take controls_;
     // whether the ui took the last motion
     bool overUi_ = false;

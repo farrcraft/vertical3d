@@ -821,6 +821,18 @@ std::optional<std::size_t> AreaLayout::add(std::size_t area, const boost::json::
 
 /**
  **/
+std::optional<std::size_t> AreaLayout::replace(std::size_t area, const boost::json::object& state) {
+    const std::optional<std::string> kind = v3d::asset::readString(state, "kind");
+    if (area >= areas_.size() || !kind || kind->empty()) {
+        return std::nullopt;
+    }
+    Area& held = areas_[area];
+    held.editors[held.chosen] = { .id = nextEditor_++, .kind = *kind, .state = state };
+    return held.editors[held.chosen].id;
+}
+
+/**
+ **/
 bool AreaLayout::set(std::size_t editor, std::string_view key, const boost::json::value& value) {
     for (Area& area : areas_) {
         for (Editor& each : area.editors) {

@@ -448,6 +448,28 @@ BOOST_FIXTURE_TEST_CASE(an_area_holds_editors_as_tabs, Quad) {
 }
 
 /**
+ * The editor an area shows can be replaced by another kind, which has an id of its own, takes
+ * the old one's place among the tabs, and is shown.
+ **/
+BOOST_FIXTURE_TEST_CASE(an_editor_can_be_replaced_by_another_kind, Quad) {
+    const std::size_t first = layout.areas()[0].editors[0].id;
+    BOOST_REQUIRE(layout.add(0, parse(R"({"kind": "outliner"})")));
+    BOOST_REQUIRE(layout.choose(0, 0));
+
+    const std::optional<std::size_t> made = layout.replace(0, parse(R"({"kind": "console"})"));
+    BOOST_REQUIRE(made);
+    BOOST_CHECK_NE(*made, first);
+    BOOST_REQUIRE_EQUAL(layout.areas()[0].editors.size(), 2U);
+    BOOST_CHECK_EQUAL(layout.areas()[0].editors[0].id, *made);
+    BOOST_CHECK_EQUAL(layout.areas()[0].editor().id, *made);
+    BOOST_CHECK_EQUAL(layout.areas()[0].editor().kind, "console");
+    BOOST_CHECK_EQUAL(layout.areas()[0].editors[1].kind, "outliner");
+
+    BOOST_CHECK(!layout.replace(0, parse(R"({"camera": "Top"})")));
+    BOOST_CHECK(!layout.replace(9, parse(R"({"kind": "viewport"})")));
+}
+
+/**
  * An entry of an editor's state can be set by the editor's id, and is saved. Its kind cannot.
  **/
 BOOST_FIXTURE_TEST_CASE(an_editors_state_can_be_set, Quad) {

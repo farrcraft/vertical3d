@@ -17,6 +17,8 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/image/Image.h>
+#include <api/input/MouseState.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
@@ -36,6 +38,7 @@
 #include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
@@ -291,6 +294,8 @@ bool Controller::buildUi() {
     chrome_ = boost::make_shared<AreaChrome>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
+    uiKeys_->immediate(renderer_->immediate());
+    renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<CommandSearch>(vgui);
@@ -724,6 +729,21 @@ void Controller::registerAreaCommands() {
         const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
         layout_->add(area, boost::json::object{ { "kind", AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
     });
+    for (const AreaChrome::Kind& kind : AreaChrome::kinds()) {
+        const std::string named = kind.kind;
+        hold("area::editor::" + named, [this, named](const v3d::event::Event& event) {
+            const std::size_t area = areaOf(event);
+            if (area >= layout_->areas().size() || layout_->areas()[area].editor().kind == named) {
+                return;
+            }
+            // a viewport made this way starts from the perspective view
+            boost::json::object state{ { "kind", named } };
+            if (named == AreaViews::KIND) {
+                state["camera"] = "Perspective";
+            }
+            layout_->replace(area, state);
+        });
+    }
     hold("area::tab::close", [this](const v3d::event::Event& event) {
         const std::size_t area = areaOf(event);
         if (area < layout_->areas().size()) {
@@ -808,6 +828,40 @@ std::size_t Controller::areaOf(const v3d::event::Event& event) const {
         return layout_->find(static_cast<std::size_t>(std::get<int>(*data)));
     }
     return pointer_ ? pointer_->activeArea() : layout_->areas().size();
+}
+
+/**
+ **/
+void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) {
+    v3d::ui::Immediate::Input input;
+    const v3d::input::MouseState* held = mouse();
+    if (held != nullptr && pointer_ && pointer_->panels()) {
+        input.cursor = pointer_->cursor();
+        input.down = held->held("left");
+        input.pressed = held->pressed("left");
+        input.released = held->released("left");
+        input.wheel = held->wheel();
+    }
+    layer->begin(canvas, input);
+    // a panel starts under its area's header
+    const float header = renderer_->barHeight();
+    std::vector<std::size_t> outliners;
+    for (const AreaLayout::Area& area : layout_->areas()) {
+        const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
+        const AreaLayout::Editor& editor = area.editor();
+        if (region.z <= 0.0F || region.w <= 0.0F) {
+            continue;
+        }
+        if (editor.kind == Outliner::KIND) {
+            outliner_.draw(layer, document_->scene().get(), editor.id, region, selectTool_->adding());
+            outliners.push_back(editor.id);
+        }
+    }
+    layer->end();
+    outliner_.keep(outliners);
+    if (pointer_) {
+        pointer_->settle();
+    }
 }
 
 /**

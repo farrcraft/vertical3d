@@ -337,6 +337,24 @@ BOOST_FIXTURE_TEST_CASE(another_editor_has_no_view_menus, Chrome) {
 }
 
 /**
+ * The area's menu offers each kind of editor, sending its command with the area's id, and marks
+ * the kind the area shows.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_area_menu_marks_the_kind_shown, Chrome) {
+    BOOST_REQUIRE(layout.add(1, boost::json::parse(R"({"kind": "outliner"})").as_object()));
+    sync();
+    const boost::shared_ptr<v3d::ui::component::menu::Item> viewport = header(0)->find("area::editor::viewport");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> outliner = header(0)->find("area::editor::outliner");
+    BOOST_REQUIRE(viewport && outliner);
+    BOOST_CHECK(viewport->checked());
+    BOOST_CHECK(!outliner->checked());
+    BOOST_CHECK(number(viewport->event()) == static_cast<int>(layout.areas()[0].id));
+
+    BOOST_CHECK(!header(1)->find("area::editor::viewport")->checked());
+    BOOST_CHECK(header(1)->find("area::editor::outliner")->checked());
+}
+
+/**
  * A tab names a viewport's camera, and any other editor's kind with a capital.
  **/
 BOOST_AUTO_TEST_CASE(a_tab_names_its_editor) {

@@ -16,6 +16,7 @@
 #include <api/render/realtime/renderer/Line.h>
 #include <api/shell/Shell.h>
 #include <api/ui/Image.h>
+#include <api/ui/Immediate.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
@@ -143,6 +144,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
 
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
+    options.immediate = true;
     options.dress = [](v3d::ui::paint::Dressing* style, float size) {
         style->lineHeight = size * lineHeightScale;
         style->padding = size * paddingScale;
@@ -186,6 +188,18 @@ void Renderer::status(const Status& status) {
  **/
 void Renderer::notices(const boost::shared_ptr<Notices>& notices) {
     notices_ = notices;
+}
+
+/**
+ **/
+void Renderer::panels(const Panels& draw) {
+    panels_ = draw;
+}
+
+/**
+ **/
+v3d::ui::Immediate* Renderer::immediate() const noexcept {
+    return screen_->immediate();
 }
 
 /**
@@ -387,6 +401,10 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
             const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
             drawOverlay(&canvas, *view, metrics, look, measure, write, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
         }
+    }
+    // the panels fill their areas, and the frame's corners and lines go over them
+    if (panels_) {
+        panels_(screen_->immediate(), &canvas);
     }
     // the frame around the areas goes first, so a menu dropped over it covers it
     if (views_ && pointer_) {

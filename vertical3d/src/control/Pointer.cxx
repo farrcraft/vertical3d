@@ -70,34 +70,45 @@ void Pointer::motion(const glm::vec2& cursor, bool snap) {
     tools_->motion(cursor_);
 }
 
+void Pointer::press(unsigned int clicks) {
+    AreaLayout& layout = *views_->layout();
+    // the ui is drawn over every view, so it is offered the press first
+    uiGrab_ = ui_ && ui_->press(cursor_);
+    if (uiGrab_) {
+        tab_ = tabAt_ ? tabAt_(cursor_) : std::nullopt;
+        tabFrom_ = cursor_;
+        tabDragging_ = false;
+        return;
+    }
+    // a view's controls are drawn over it, so they are offered the press before its tools
+    controlGrab_ = controls_ && controls_(cursor_);
+    if (controlGrab_) {
+        return;
+    }
+    // a press on a divider between areas resizes them, and no tool sees it
+    dividerGrab_ = (clicks >= 2 && layout.even(cursor_.x, cursor_.y)) || layout.grab(cursor_.x, cursor_.y);
+    if (dividerGrab_) {
+        place();
+        return;
+    }
+    // a press on a bar beside the areas, or in the margin around them, is in no view
+    const std::size_t area = layout.areaAt(cursor_.x, cursor_.y);
+    missed_ = area >= layout.areas().size();
+    if (missed_) {
+        return;
+    }
+    // a press on a panel is the panel's, which reads the mouse as it draws
+    panelGrab_ = !views_->of(area);
+    if (panelGrab_) {
+        return;
+    }
+    tools_->button(true, cursor_);
+}
+
 void Pointer::button(bool pressed, unsigned int clicks) {
     AreaLayout& layout = *views_->layout();
     if (pressed) {
-        // the ui is drawn over every view, so it is offered the press first
-        uiGrab_ = ui_ && ui_->press(cursor_);
-        if (uiGrab_) {
-            tab_ = tabAt_ ? tabAt_(cursor_) : std::nullopt;
-            tabFrom_ = cursor_;
-            tabDragging_ = false;
-            return;
-        }
-        // a view's controls are drawn over it, so they are offered the press before its tools
-        controlGrab_ = controls_ && controls_(cursor_);
-        if (controlGrab_) {
-            return;
-        }
-        // a press on a divider between areas resizes them, and no tool sees it
-        dividerGrab_ = (clicks >= 2 && layout.even(cursor_.x, cursor_.y)) || layout.grab(cursor_.x, cursor_.y);
-        if (dividerGrab_) {
-            place();
-            return;
-        }
-        // a press on a bar beside the areas, or in the margin around them, is in no view
-        missed_ = layout.areaAt(cursor_.x, cursor_.y) >= layout.areas().size();
-        if (missed_) {
-            return;
-        }
-        tools_->button(true, cursor_);
+        press(clicks);
         return;
     }
     if (uiGrab_) {
@@ -128,7 +139,28 @@ void Pointer::button(bool pressed, unsigned int clicks) {
         missed_ = false;
         return;
     }
+    if (panelGrab_) {
+        panelGrab_ = false;
+        panelLetGo_ = true;
+        return;
+    }
     tools_->button(false, cursor_);
+}
+
+bool Pointer::panels() const {
+    if (panelGrab_ || panelLetGo_) {
+        return true;
+    }
+    const AreaLayout& layout = *views_->layout();
+    if (overUi_ || uiGrab_ || dividerGrab_ || controlGrab_ || layout.grabbed() || tools_->dragging() || lit()) {
+        return false;
+    }
+    const std::size_t area = layout.areaAt(cursor_.x, cursor_.y);
+    return area < layout.areas().size() && !views_->of(area);
+}
+
+void Pointer::settle() noexcept {
+    panelLetGo_ = false;
 }
 
 bool Pointer::cancel() {

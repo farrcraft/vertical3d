@@ -14,6 +14,7 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
 #include <api/ui/Image.h>
+#include <api/ui/Immediate.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
@@ -30,6 +31,7 @@
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -124,6 +126,22 @@ class Renderer final {
      * The ui drawn over every view, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
+
+    /**
+     * Draws the panels of the areas that show no view into the ui canvas, through the
+     * immediate layer, under the frame around the areas and the ui.
+     **/
+    typedef std::function<void(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas)> Panels;
+
+    /**
+     * What draws the panels each frame, or empty for none.
+     **/
+    void panels(const Panels& draw);
+
+    /**
+     * @return the immediate layer the panels draw through, which the keyboard offers keys to
+     **/
+    v3d::ui::Immediate* immediate() const noexcept;
 
     /**
      * How wide a run of text is at the size the ui is drawn in.
@@ -235,6 +253,7 @@ class Renderer final {
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
+    Panels panels_;
     IconSheet icons_;
     // the textures the ui's images became, by source, so a component built again reuses them
     std::map<std::string, v3d::render::realtime::TextureHandle> images_;

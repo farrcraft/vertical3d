@@ -16,6 +16,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -290,6 +291,26 @@ std::vector<std::pair<std::string, bool>> AreaChrome::marks(const ViewPort& view
 
 /**
  **/
+const std::vector<AreaChrome::Kind>& AreaChrome::kinds() {
+    static const std::vector<Kind> each{
+        { .kind = std::string(AreaViews::KIND), .label = "Viewport" },
+        { .kind = std::string(Outliner::KIND), .label = "Outliner" },
+    };
+    return each;
+}
+
+/**
+ **/
+std::vector<std::pair<std::string, bool>> AreaChrome::marks(const AreaLayout::Editor& editor) {
+    std::vector<std::pair<std::string, bool>> made;
+    for (const Kind& kind : kinds()) {
+        made.emplace_back("area::editor::" + kind.kind, kind.kind == editor.kind);
+    }
+    return made;
+}
+
+/**
+ **/
 std::vector<std::pair<std::string, bool>> AreaChrome::marks(SelectMask mask) {
     std::vector<std::pair<std::string, bool>> made;
     for (const Masked& each : MASKS) {
@@ -325,7 +346,14 @@ boost::json::object AreaChrome::document(const AreaViews& views, SelectMask mask
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
         const AreaLayout::Area& area = layout.areas()[index];
         const std::size_t id = area.id;
+        boost::json::array kinds;
+        for (const Kind& kind : AreaChrome::kinds()) {
+            kinds.emplace_back(boost::json::object{ { "label", kind.label }, { "type", "radio" }, { "context", CONTEXT },
+                { "command", "editor::" + kind.kind }, { "data", static_cast<std::int64_t>(id) } });
+        }
         boost::json::array items = {
+            boost::json::object{ { "label", "Editor" }, { "type", "submenu" }, { "items", std::move(kinds) } },
+            boost::json::object{ { "type", "separator" } },
             ways({ .label = "Split", .command = "split", .across = false }, id),
             ways({ .label = "Join", .command = "join", .across = true }, id),
             ways({ .label = "Swap", .command = "swap", .across = true }, id),
@@ -404,6 +432,9 @@ void AreaChrome::place(const AreaLayout::Area& area, const ViewPort* view, Selec
     if (const boost::shared_ptr<v3d::ui::Component> header = container->get("header")) {
         box(header.get(), glm::vec4(content.x, content.y, content.z - height, height));
         const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(header);
+        if (bar) {
+            check(bar.get(), marks(area.editor()));
+        }
         if (bar && view != nullptr) {
             check(bar.get(), marks(*view));
             check(bar.get(), marks(mask));

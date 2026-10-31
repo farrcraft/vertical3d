@@ -3,22 +3,29 @@
     {
       "name": "Modelling",
       "root": {
-        "split": "vertical",
+        "split": "horizontal",
         "children": [
           {
-            "split": "horizontal",
+            "split": "vertical",
+            "share": 4,
             "children": [
-              { "editors": [{ "kind": "viewport", "camera": "Front" }] },
-              { "editors": [{ "kind": "viewport", "camera": "Top" }] }
+              {
+                "split": "horizontal",
+                "children": [
+                  { "editors": [{ "kind": "viewport", "camera": "Front" }] },
+                  { "editors": [{ "kind": "viewport", "camera": "Top" }] }
+                ]
+              },
+              {
+                "split": "horizontal",
+                "children": [
+                  { "editors": [{ "kind": "viewport", "camera": "Left" }] },
+                  { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
+                ]
+              }
             ]
           },
-          {
-            "split": "horizontal",
-            "children": [
-              { "editors": [{ "kind": "viewport", "camera": "Left" }] },
-              { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
-            ]
-          }
+          { "editors": [{ "kind": "outliner" }] }
         ]
       }
     },

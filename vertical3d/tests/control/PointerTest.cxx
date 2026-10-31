@@ -245,6 +245,37 @@ BOOST_AUTO_TEST_CASE(a_press_outside_the_areas_reaches_no_tool) {
 }
 
 /**
+ * A press in an area that shows no view is the panel's: no tool sees it or its release, and the
+ * panels have the cursor until they have been drawn after the release.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_on_a_panel_reaches_no_tool) {
+    const Panes panes;
+    BOOST_REQUIRE(panes.layout->replace(1, boost::json::parse(R"({"kind": "outliner"})").as_object()));
+    BOOST_REQUIRE(panes.areas->sync());
+    panes.pointer->place();
+
+    panes.pointer->motion(glm::vec2(50.0F, 50.0F));
+    BOOST_CHECK(!panes.pointer->panels());
+    panes.pointer->motion(glm::vec2(150.0F, 50.0F));
+    BOOST_CHECK(panes.pointer->panels());
+
+    panes.pointer->button(true);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 0);
+    // the panel keeps the press when it is dragged out of its area
+    panes.pointer->motion(glm::vec2(50.0F, 50.0F));
+    BOOST_CHECK(panes.pointer->panels());
+    panes.pointer->button(false);
+    BOOST_CHECK(!panes.tool->held);
+    BOOST_CHECK(panes.pointer->panels());
+    panes.pointer->settle();
+    BOOST_CHECK(!panes.pointer->panels());
+
+    // near a divider the divider has the cursor, and not the panel beside it
+    panes.pointer->motion(glm::vec2(102.0F, 50.0F));
+    BOOST_CHECK(!panes.pointer->panels());
+}
+
+/**
  * With snapping, a dragged divider lands on a tenth of its split: the split runs 194 pixels
  * from 3, so a drag to 140 lands on its seventh tenth, centred at 138.8.
  **/

@@ -371,9 +371,9 @@ built as the editor runs and put before the editor's own container so its menus 
 
 - **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
   It is a menu bar that is not docked. Its first menu is named for the kind of editor shown,
-  such as Viewport, and holds Split, Join and Swap, each with Left, Right and Top or Above and
-  Bottom or Below, then New Tab, Close Tab and Maximise. A maximise button sits at the header's
-  right end.
+  such as Viewport. It holds Editor, which offers each kind of editor and marks the one shown.
+  Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom or Below,
+  and then New Tab, Close Tab and Maximise. A maximise button sits at the header's right end.
 - **A viewport's header** has three more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
     Back, Left, Right, Top, Bottom and Perspective, and Orthographic.
@@ -404,6 +404,7 @@ command sent by a key or the View menu acts on the active area.
 | `area::split::left`, `right`, `top`, `bottom` | Splits the area, putting the new half on that edge |
 | `area::join::left`, `right`, `top`, `bottom` | Joins the area with its neighbour on that edge, which goes |
 | `area::swap::left`, `right`, `top`, `bottom` | Swaps what the area holds with its neighbour on that edge |
+| `area::editor::viewport`, `outliner` | Puts an editor of that kind in place of the one shown, in its place among the tabs. A viewport shows Perspective |
 | `area::tab::new` | Adds a viewport of the camera the area shows, or of Perspective |
 | `area::tab::close` | Closes the editor shown, unless it is the only one |
 | `area::tab::choose` | Shows the editor whose id the tab carries |
@@ -429,9 +430,10 @@ An area that a tab leaves with no editor gives its room to its neighbour.
 A workspace is a named layout. `Workspaces` holds them, and the project's arrangement of each.
 
 **Where they come from.** `data/layout.json` holds the workspaces a new user starts with, as an
-array of named layouts under `workspaces`: Modelling, which is Front, Top, Left and Perspective,
-and Perspective, which is one view. A layout with no name, one that cannot be read, or a second
-of one name is left out, and the editor stops at startup when none is left.
+array of named layouts under `workspaces`. Modelling is Front, Top, Left and Perspective with an
+outliner down the right, and Perspective is one view. A layout with no name, one
+that cannot be read, or a second of one name is left out, and the editor stops at startup when
+none is left.
 
 **What the user's settings hold.** The engine's settings document, under the app's identity,
 holds three keys:
@@ -582,6 +584,38 @@ drawn, and fades in and out over 0.15 seconds of that. A new notice replaces the
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with
 a neighbour.
+
+## Panels
+
+An area can show an editor other than a viewport. Such an editor is a panel, drawn with the
+immediate layer from the scene every frame, under the area's header, so what it shows is never
+stale. The header, the tabs and a panel's menus are retained, as every area's are.
+[api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes the layer, and
+`Controller::drawPanels()` draws each panel.
+
+- A panel fills its area in the theme's `panel`, and the frame's corners and lines are drawn
+  over it.
+- A press in an area that shows a panel reaches no tool. The panels have the cursor while it is
+  in such an area, unless the ui, a divider or a tool has it. They keep it while a press that
+  landed on one is held.
+- A panel's text fields take the keyboard as the ui's do, so typing into one fires no binding.
+
+Background: [ADR-0136](../adr/0136-editor-panels-are-drawn-in-immediate-mode.md)
+
+**The outliner** (`outliner`) lists the scene's items as the tree their parents make. `Outliner`
+in `src/control/` draws it.
+
+- A row shows its item's name, or its kind when it has none, indented a line for each level.
+  Siblings come in the scene's order.
+- A row with children has a mark before its label. A click on the mark folds the row, hiding
+  everything beneath it, or opens it.
+- The field at the top filters the rows. A row is kept when its label holds every word typed,
+  in any case, and each kept row's ancestors are kept with it so it shows where it sits. A
+  filtered tree folds nothing.
+- A click on a row selects its item and nothing else. While Shift is held, as for the select
+  tool, a click selects an item that is not selected, deselects one that is, and leaves the
+  rest. The selected items' rows are highlighted.
+- Each outliner keeps its own filter and folds while the editor runs. Neither is saved.
 
 ## Shaded views
 
