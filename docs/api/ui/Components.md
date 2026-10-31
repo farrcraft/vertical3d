@@ -25,7 +25,7 @@ reads besides the common ones:
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
-| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }` | yes / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, `docked` (true) | yes / no |
 | `menu` | `menu::Menu` | a game menu, one level at a time, centred | `items` | no / no |
 
 Notes on individual components:

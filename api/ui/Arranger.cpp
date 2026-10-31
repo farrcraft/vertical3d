@@ -327,8 +327,8 @@ glm::vec2 Arranger::stack(const Container& container,
     std::vector<boost::shared_ptr<component::menu::Bar>>* bars) const {
     const float row = styles_.base().barHeight + ruleWidth;
     std::vector<boost::shared_ptr<component::Toolbar>> shown;
-    // a menu bar is drawn at the top of the canvas, so every menu bar comes first. The top
-    // strips go under them in the order they are listed. The left strips start below all of
+    // a docked menu bar is drawn at the top of the canvas, so every docked bar comes first. The
+    // top strips go under them in the order they are listed. The left strips start below all of
     // those, whatever order they are listed in
     float menus = 0.0F;
     float tops = 0.0F;
@@ -337,10 +337,14 @@ glm::vec2 Arranger::stack(const Container& container,
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
+            const boost::shared_ptr<component::menu::Bar> menuBar = boost::dynamic_pointer_cast<component::menu::Bar>(component);
             if (bars != nullptr) {
-                bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
+                bars->push_back(menuBar);
             }
-            menus += row;
+            // a bar laid out by its Layout sits over the window rather than taking a strip
+            if (menuBar->docked()) {
+                menus += row;
+            }
             continue;
         }
         const boost::shared_ptr<component::Toolbar> bar =

@@ -242,6 +242,18 @@ void Bar::delay(float seconds) noexcept {
 
 /**
  **/
+void Bar::docked(bool along) noexcept {
+    docked_ = along;
+}
+
+/**
+ **/
+bool Bar::docked() const noexcept {
+    return docked_;
+}
+
+/**
+ **/
 void Bar::settle(float now) {
     if (!pending_) {
         return;

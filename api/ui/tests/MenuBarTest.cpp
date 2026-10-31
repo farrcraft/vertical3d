@@ -9,6 +9,8 @@
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
+#include <api/ui/Layout.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
@@ -163,6 +165,35 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
     BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
     // the strip and the rule under it, and no panel
     BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), 2 * 4);
+}
+
+/**
+ * A bar that is not docked is drawn where its layout puts it, its labels are hit there, and
+ * its panel drops from its own bottom edge.
+ **/
+BOOST_AUTO_TEST_CASE(an_undocked_bar_sits_where_its_layout_puts_it) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->docked(false);
+    v3d::ui::Layout& layout = fixture.bar->layout();
+    layout.x = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    layout.y = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    layout.width = v3d::ui::Length(300.0F, v3d::ui::Length::Unit::Pixels);
+    layout.height = v3d::ui::Length(28.0F, v3d::ui::Length::Unit::Pixels);
+    fixture.draw();
+
+    BOOST_CHECK(fixture.bar->position() == glm::vec2(100.0F, 200.0F));
+    BOOST_CHECK(fixture.bar->size() == glm::vec2(300.0F, 28.0F));
+    BOOST_CHECK_GT(fixture.bar->bound(0).position().x, 100.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->bound(0).position().y, 200.0F);
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 2U);
+    BOOST_CHECK_GT(fixture.written[0].pen.y, 200.0F);
+
+    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0F, 10.0F)));
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(0)));
+    fixture.draw();
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK_GE(fixture.bar->panels()[0]->position().y, 228.0F);
 }
 
 /**

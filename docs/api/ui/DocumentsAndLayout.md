@@ -65,8 +65,8 @@ Every component entry has a `type` and a `name`. These keys apply to every compo
 | `children` | array | none | component entries held inside this one |
 
 A length is a number of pixels (`120`), a percentage string (`"50%"`), or absent for `Auto`.
-A menu and a menu bar ignore `position`, `size` and `anchor`, because the renderer places
-them.
+A menu and a docked menu bar ignore `position`, `size` and `anchor`, because the renderer
+places them.
 
 ## The box model
 
@@ -147,7 +147,9 @@ a list that are scrolled out of view are not laid out on that frame.
 Menu bars and toolbars are called strips. They are placed at the edges of the canvas rather
 than by their layout, and they stack:
 
-- Every menu bar takes the top of the canvas.
+- Every docked menu bar takes the top of the canvas. A menu bar whose `docked` is false is laid
+  out by its `position`, `size` and `anchor` instead, as a header over part of the window. It
+  takes nothing from the edges, and drops its panels from its own bottom edge.
 - Each `top` toolbar takes a band under the menu bars and the top toolbars listed before it.
 - Each `left` toolbar runs down the side, below every menu bar and top toolbar, beside the
   left toolbars listed before it.

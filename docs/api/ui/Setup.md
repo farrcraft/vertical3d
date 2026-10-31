@@ -119,6 +119,15 @@ vgui_->resolveImages(resolver);   // once the renderer exists; see Images
 the document is malformed. `container(name)` returns a loaded container, and
 `Container::get(name)` finds a component anywhere inside it.
 
+An app that builds part of its ui as it runs adds containers to a loaded ui:
+
+- `Interface::add(document)` reads a document holding only `containers` and puts them after
+  those already held, in the active theme. A document that does not read, or that names a
+  container already held, adds nothing. Run `resolveImages()` again if what was added names
+  images.
+- `Interface::remove(name)` takes a container out. A component in it that held the focus or the
+  cursor's rest stops holding it.
+
 ### The keyboard adapter
 
 `v3d::ui::shell::Keyboard` connects the ui to SDL keyboard events. Build one and pass it every

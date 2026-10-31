@@ -213,10 +213,12 @@ boost::shared_ptr<Component> ComponentReader::readComponent(const boost::json::o
     }
 
     component->name(*named);
-    // the renderer places a menu and a menu bar itself, so a layout read onto one would be
-    // ignored. Their other attributes are read as for any component
+    // the renderer places a menu and a docked menu bar itself, so a layout read onto one would
+    // be ignored. Their other attributes are read as for any component
     const component::Type type = component::parse(componentType);
-    if (type != component::Type::Menu && type != component::Type::MenuBar) {
+    const bool placed = type == component::Type::Menu ||
+        (type == component::Type::MenuBar && boost::static_pointer_cast<component::menu::Bar>(component)->docked());
+    if (!placed) {
         readLayout(entry, &component->layout());
     }
     readAttributes(entry, component);
@@ -464,6 +466,7 @@ boost::shared_ptr<component::Icon> ComponentReader::readIcon(const boost::json::
 
 boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
+    bar->docked(optionalFlag(*logger_, entry, "docked", true));
 
     const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
     if (menus == nullptr) {
@@ -552,7 +555,20 @@ v3d::event::Event ComponentReader::readCommand(const boost::json::object& entry)
     if (context.empty() || command.empty()) {
         return v3d::event::Event();
     }
-    return v3d::event::Event(command, router_->resolveContext(context));
+    v3d::event::Event event(command, router_->resolveContext(context));
+    // what the event carries for its handler, such as which of several alike components sent it
+    if (const boost::json::value* data = entry.if_contains("data")) {
+        if (data->is_int64()) {
+            event.data(static_cast<int>(data->as_int64()));
+        } else if (data->is_bool()) {
+            event.data(data->as_bool());
+        } else if (data->is_string()) {
+            event.data(std::string(data->as_string()));
+        } else {
+            logger_->get()->warn("A command's data is a whole number, a flag or a string, so it is ignored");
+        }
+    }
+    return event;
 }
 
 boost::shared_ptr<component::Toolbar> ComponentReader::readToolbar(const boost::json::object& entry) {

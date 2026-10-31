@@ -65,6 +65,26 @@ class Interface {
     bool load(const boost::json::object& config);
 
     /**
+     * Add the containers a document names, after those already held, as an app does for a part
+     * of its ui it builds as it runs. The document is a ui config's "containers" with no themes,
+     * and the containers draw in the active theme.
+     *
+     * A document that does not read, or that names a container already held, adds nothing.
+     * Images are not resolved: resolveImages() does that for every container.
+     *
+     * @return whether the containers were added
+     **/
+    bool add(const boost::json::object& document);
+
+    /**
+     * Take a container out. A component in it that held the focus or the cursor's rest stops
+     * holding it.
+     *
+     * @return whether a container of that name was held
+     **/
+    bool remove(std::string_view name);
+
+    /**
      * The dispatcher this ui sends its commands through, for something in the shell that
      * handles some of them itself.
      **/
@@ -244,6 +264,11 @@ class Interface {
      * this order.
      **/
     std::vector<boost::shared_ptr<Component>> tabOrder() const;
+
+    /**
+     * @return whether a component is in a container's tree
+     **/
+    static bool holds(const Container& container, const boost::shared_ptr<Component>& component);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Router> router_;

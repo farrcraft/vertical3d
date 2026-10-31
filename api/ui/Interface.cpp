@@ -62,6 +62,44 @@ bool Interface::load(const boost::json::object& config) {
 
 /**
  **/
+bool Interface::add(const boost::json::object& document) {
+    Loader loader(router_, dispatcher_, logger_);
+    if (!loader.loadContainers(document)) {
+        return false;
+    }
+    std::vector<boost::shared_ptr<Container>>& read = loader.containers();
+    for (const boost::shared_ptr<Container>& made : read) {
+        if (container(made->name())) {
+            logger_->get()->error("The ui already holds a container named [{}]", made->name());
+            return false;
+        }
+    }
+    containers_.insert(containers_.end(), read.begin(), read.end());
+    return true;
+}
+
+/**
+ **/
+bool Interface::remove(std::string_view name) {
+    const auto found = std::ranges::find_if(containers_,
+        [name](const boost::shared_ptr<Container>& held) { return held && held->name() == name; });
+    if (found == containers_.end()) {
+        return false;
+    }
+    const boost::shared_ptr<Container> gone = std::move(*found);
+    containers_.erase(found);
+    // something else may still hold the component, so its weak handle would not expire
+    if (holds(*gone, focused())) {
+        focus(boost::shared_ptr<Component>());
+    }
+    if (holds(*gone, hovered())) {
+        hovered(boost::shared_ptr<Component>());
+    }
+    return true;
+}
+
+/**
+ **/
 std::size_t Interface::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
@@ -247,6 +285,25 @@ bool Interface::reachable(const boost::shared_ptr<Component>& component) const {
     }
     const std::vector<boost::shared_ptr<Component>> order = tabOrder();
     return std::find(order.begin(), order.end(), component) != order.end();
+}
+
+namespace {
+
+/**
+ * @return whether a component is one of a tree's, the root included
+ **/
+bool within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component) {
+    return root == component || std::ranges::any_of(root->children(),
+        [&component](const boost::shared_ptr<Component>& child) { return child && within(child, component); });
+}
+
+};  // namespace
+
+/**
+ **/
+bool Interface::holds(const Container& container, const boost::shared_ptr<Component>& component) {
+    return component && std::ranges::any_of(container.components(),
+        [&component](const boost::shared_ptr<Component>& root) { return root && within(root, component); });
 }
 
 namespace {

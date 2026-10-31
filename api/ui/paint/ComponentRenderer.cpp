@@ -981,15 +981,23 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         bar->settle(clock_.now);
     }
 
-    const float width = static_cast<float>(canvas->width());
-    Arranger::place(*bar, {.position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(width, base().barHeight)});
+    // a docked bar runs along the top of the canvas, and any other is where its layout puts it
+    const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
+    const v3d::type::geometry::Bound2D box = bar->docked() ?
+        v3d::type::geometry::Bound2D({.position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(room.x, base().barHeight)}) :
+        bar->layout().resolve(v3d::type::geometry::Bound2D({.position = glm::vec2(0.0F, 0.0F), .size = room}),
+            glm::vec2(room.x, base().barHeight));
+    const glm::vec2 corner = box.position();
+    const float width = box.size().x;
+    const float height = box.size().y;
+    Arranger::place(*bar, {.position = corner, .size = box.size()});
 
-    canvas->rect(glm::vec2(0.0F, 0.0F), glm::vec2(width, base().barHeight), base().panel);
+    canvas->rect(corner, corner + glm::vec2(width, height), base().panel);
     // a rule along the bottom edge, so the strip reads as something over the scene rather
     // than as part of it
-    canvas->rect(glm::vec2(0.0F, base().barHeight), glm::vec2(width, base().barHeight + Arranger::ruleWidth), base().border);
+    canvas->rect(corner + glm::vec2(0.0F, height), corner + glm::vec2(width, height + Arranger::ruleWidth), base().border);
 
-    float pen = base().padding * 0.5F;
+    float pen = corner.x + (base().padding * 0.5F);
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::menu::Menu> menu = bar->menu(index);
         if (!menu) {
@@ -999,15 +1007,15 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         const float extent = measure_(label) + base().padding;
 
         // on the bar rather than on the menu, whose own bounds are the panel it drops
-        bar->place(index, glm::vec2(pen, 0.0F), glm::vec2(extent, base().barHeight));
+        bar->place(index, glm::vec2(pen, corner.y), glm::vec2(extent, height));
 
         const bool lit = bar->open() == static_cast<int>(index) || bar->hover() == static_cast<int>(index);
         Motion& motion = menu->motion();
         const glm::vec4 face = lit ? toward(&motion.face, base().highlight) : away(&motion.face);
         if (face.a > 0.0F) {
-            canvas->rect(glm::vec2(pen, 0.0F), glm::vec2(pen + extent, base().barHeight), face);
+            canvas->rect(glm::vec2(pen, corner.y), glm::vec2(pen + extent, corner.y + height), face);
         }
-        write_(label, glm::vec2(pen + (base().padding * 0.5F), base().barHeight * widgetBaseline),
+        write_(label, glm::vec2(pen + (base().padding * 0.5F), corner.y + (height * widgetBaseline)),
             toward(&motion.ink, lit ? base().activeText : base().text));
         pen += extent;
     }
@@ -1017,7 +1025,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     for (std::size_t depth = 0; depth < panels.size(); depth++) {
         glm::vec2 origin;
         if (depth == 0) {
-            origin = glm::vec2(bar->bound(static_cast<std::size_t>(bar->open())).position().x, base().barHeight);
+            origin = glm::vec2(bar->bound(static_cast<std::size_t>(bar->open())).position().x, corner.y + height);
         } else {
             // out of the right hand edge of the parent, level with the item it came from
             const v3d::type::geometry::Bound2D bounds = panels[depth - 1]->bound();

@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Length.h>
@@ -10,14 +11,18 @@
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>
 #include <string>
+#include <variant>
 #include <vector>
 
+#include <boost/json/parse.hpp>
+#include <boost/optional.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <boost/make_shared.hpp>
@@ -118,6 +123,109 @@ BOOST_AUTO_TEST_CASE(a_container_may_ask_for_a_backdrop) {
     BOOST_REQUIRE(ui->container("pause"));
     BOOST_CHECK(!ui->container("hud")->backdrop());
     BOOST_CHECK(ui->container("pause")->backdrop());
+}
+
+/**
+ * A command's data rides on the event it sends, from a button or a menu item. Data of another
+ * kind is ignored, and the command is kept.
+ **/
+BOOST_AUTO_TEST_CASE(a_command_may_carry_data) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "button", "name": "seven", "label": "7", "context": "ui", "command": "pick", "data": 7 },
+            { "type": "button", "name": "named", "label": "N", "context": "ui", "command": "pick", "data": "north" },
+            { "type": "button", "name": "odd", "label": "O", "context": "ui", "command": "pick", "data": [1] },
+            { "type": "menubar", "name": "bar", "menus": [ { "label": "Area", "items": [
+                { "label": "Split", "type": "action", "context": "ui", "command": "split", "data": true } ] } ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::Container> hud = ui->container("hud");
+    const auto data = [&hud](const char* name) {
+        return boost::dynamic_pointer_cast<v3d::ui::component::Button>(hud->get(name))->event().data();
+    };
+    BOOST_REQUIRE(data("seven"));
+    BOOST_CHECK(std::get<int>(*data("seven")) == 7);
+    BOOST_REQUIRE(data("named"));
+    BOOST_CHECK(std::get<std::string>(*data("named")) == "north");
+    BOOST_CHECK(!data("odd"));
+    BOOST_CHECK_EQUAL(boost::dynamic_pointer_cast<v3d::ui::component::Button>(hud->get("odd"))->event().str(), "ui::pick");
+
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(hud->get("bar"));
+    BOOST_REQUIRE(bar);
+    const boost::optional<v3d::event::EventData> split = (*bar->menu(0))[0]->event().data();
+    BOOST_REQUIRE(split);
+    BOOST_CHECK(std::get<bool>(*split));
+}
+
+/**
+ * A menu bar is docked unless its document says otherwise, and only one that is not docked
+ * reads a layout.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_bar_may_be_undocked) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "menubar", "name": "top", "position": [5, 6], "menus": [] },
+            { "type": "menubar", "name": "header", "docked": false, "position": [5, 6], "size": [200, 28], "menus": [] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::Container> hud = ui->container("hud");
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> top =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(hud->get("top"));
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> header =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(hud->get("header"));
+    BOOST_REQUIRE(top && header);
+    BOOST_CHECK(top->docked());
+    BOOST_CHECK(top->layout().x.unit() == v3d::ui::Length::Unit::Auto);
+    BOOST_CHECK(!header->docked());
+    BOOST_CHECK_CLOSE(header->layout().x.value(), 5.0F, 0.001F);
+    BOOST_CHECK_CLOSE(header->layout().width.value(), 200.0F, 0.001F);
+
+    // the docked bar takes a strip off the top, with the rule under it, and the other nothing
+    v3d::ui::paint::ComponentRenderer drawing = renderer();
+    BOOST_CHECK_CLOSE(drawing.insets(*ui).y, drawing.dressing().barHeight + 1.0F, 0.001F);
+}
+
+/**
+ * Containers can be added to a loaded ui and taken out again by name. A document naming a
+ * container already held adds nothing.
+ **/
+BOOST_AUTO_TEST_CASE(containers_are_added_and_removed) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+
+    BOOST_REQUIRE(ui->add(boost::json::parse(R"({ "containers": [
+        { "name": "area-1", "visible": true, "components": [
+            { "type": "button", "name": "go", "label": "Go", "context": "ui", "command": "go" } ] },
+        { "name": "area-2", "visible": true, "components": [] } ] })").as_object()));
+    BOOST_REQUIRE_EQUAL(ui->containers().size(), 3U);
+    BOOST_CHECK_EQUAL(ui->containers()[1]->name(), "area-1");
+    BOOST_CHECK_EQUAL(ui->containers()[2]->name(), "area-2");
+
+    BOOST_CHECK(!ui->add(boost::json::parse(R"({ "containers": [
+        { "name": "area-3", "visible": true, "components": [] },
+        { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
+    BOOST_CHECK(!ui->add(boost::json::parse(R"({ "containers": [ { "name": "area-4" } ] })").as_object()));
+    BOOST_CHECK_EQUAL(ui->containers().size(), 3U);
+
+    // a component of a container taken out stops holding the cursor's rest
+    const boost::shared_ptr<v3d::ui::Component> go = ui->container("area-1")->get("go");
+    ui->hovered(go);
+    BOOST_REQUIRE(ui->remove("area-1"));
+    BOOST_CHECK(!ui->container("area-1"));
+    BOOST_CHECK(!ui->hovered());
+    BOOST_CHECK(!ui->remove("area-1"));
+    BOOST_CHECK_EQUAL(ui->containers().size(), 2U);
 }
 
 /**

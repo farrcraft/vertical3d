@@ -23,7 +23,12 @@
 namespace v3d::ui::component::menu {
 
 /**
- * A row of named menus along the top of the window, driven by the cursor.
+ * A row of named menus, driven by the cursor.
+ *
+ * A docked bar, which is the default, runs along the top of the window and takes that strip
+ * from what is laid out below it. A bar that is not docked is laid out by its Layout like
+ * any other component, as a header over part of the window, and takes nothing from the rest.
+ * Either drops its panels from its own bottom edge.
  *
  * One of the menus may be open, and under it any depth of submenu the cursor has
  * descended into. panels() is that stack, outermost first. A renderer draws it, and the
@@ -127,6 +132,12 @@ class Bar : public Component {
     void delay(float seconds) noexcept;
 
     /**
+     * Whether the bar runs along the top of the window, or is laid out by its Layout.
+     **/
+    void docked(bool along) noexcept;
+    bool docked() const noexcept;
+
+    /**
      * Open the submenu the cursor has rested on for the delay. Called once a frame with the
      * ui's time. The first call after the cursor reaches an item starts its wait.
      **/
@@ -208,6 +219,7 @@ class Bar : public Component {
     int hover_;  // the menu the cursor is over, or -1
     int open_;   // the open menu, or -1
     float delay_;
+    bool docked_ = true;
     std::optional<Pending> pending_;
 };
 

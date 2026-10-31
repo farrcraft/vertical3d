@@ -105,6 +105,11 @@ A control sends a command when it is activated. In the document, a command is th
 `context` is resolved through the event router, and the command is sent on the ui's
 dispatcher as a `v3d::event::Event`. An app answers it like any other command.
 
+A command may also name `data`: a whole number, a flag or a string, which the event carries as
+its data. It tells one sender from others that send the same command, such as which of several
+headers a button is on. Data of any other kind is logged and ignored, and the command is kept.
+An input menu item's value replaces its data.
+
 What activates each control:
 
 | Component | Mouse | Keyboard |
