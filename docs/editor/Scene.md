@@ -268,25 +268,84 @@ item that holds it places it. The cylinder and the cone are open: they have no c
 A viewport is a camera, a rectangle of the window, and a set of display flags. It owns no
 device state.
 
-**Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
-camera profile. `ViewLayout` turns the tree into one region per leaf, and names each view
-after its profile. A profile shown twice names its second view "Perspective 2" and so on, so
-every view has a pass of its own. A name, camera or split
-that is not a string makes `load()` return false, and so does a split with no children. The
-default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
-along two edges of the window, and the views divide the rest.
+**Areas.** The window is divided into areas, and each area holds one or more editors and shows
+one of them. A viewport is one kind of editor. `AreaLayout` holds the division as a tree of
+vertical and horizontal splits whose leaves are areas. `data/layout.json` gives the layout the
+editor starts with, under the key `layout`:
 
-**Shares.** A split divides its area between its children by their shares. A node's `share` is
-a number above zero, a weight against the other children of its split, and a node with none
-has a share of one. A split whose children name no share divides evenly, as the default layout
-does. A share that is not a number above zero makes `load()` return false.
+```json
+{
+  "name": "Modelling",
+  "root": {
+    "split": "horizontal",
+    "children": [
+      { "editors": [{ "kind": "viewport", "camera": "Front" }], "share": 2 },
+      { "editors": [{ "kind": "viewport", "camera": "Top" }, { "kind": "viewport", "camera": "Left" }], "chosen": 1 }
+    ]
+  }
+}
+```
 
-**Dragging a divider.** A press within `ViewLayout::dividerReach` (3 pixels) of the line
-between two views takes hold of it before any tool sees the press, and the drag moves it. The
-two views beside it trade weight, so every other view stays as it was. Each keeps at least
-`ViewLayout::minimumShare` (5%) of its split. Where two dividers meet, the outer split's is
-taken. The shares last as long as the editor runs, and are not written back to
-`data/layout.json`.
+- A node is a split, with `split` and `children`, or an area, with `editors`. A split is
+  `vertical`, which stacks its children, unless it says `horizontal`, which puts them side by
+  side.
+- An area lists at least one editor. Each editor is an object that names its `kind`, and the
+  whole object is the editor's state. A viewport's state names the camera profile it starts
+  from. `chosen` is the index of the editor the area shows, and is 0 when it is missing.
+- `load()` refuses a layout without a root, a split with no children, and a node that is
+  neither. It refuses an area with no editors, an editor with no kind, and a chosen editor the
+  area does not hold. It refuses any of these of the wrong type. A refused layout leaves the one
+  held as it was.
+- `save()` writes the same form, with every share and every chosen editor.
+
+The default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
+along two edges of the window, and the areas divide the rest.
+
+**Viewports for editors.** `AreaViews` gives each viewport editor a `ViewPort`, made from the
+profile its state names, and drops the viewport when its editor goes. A viewport outlasts a
+change of tab, so it keeps its camera and display while its area shows another editor. Each
+viewport's pass is named for its profile and its editor's id, so two views of one profile draw
+apart. The views drawn are the viewports their areas show. A viewport that names no profile the
+editor holds stops the editor at startup.
+
+**Shares and gaps.** A split divides its room between its children by their shares. A node's
+`share` is a number above zero, a weight against the other children of its split, and a node with
+none has a share of one. A share that is not a number above zero is refused. Areas are 3 pixels
+apart, and the same gap runs around the edge of the region they divide. Each extent is rounded
+down to a whole pixel, and the last child of a split takes what that left, so the areas and gaps
+cover the region exactly.
+
+**Dividers.** The gap between two children of a split is a divider. A press within 4 pixels of a
+gap takes hold of its divider before any tool sees the press, and the drag moves it. Where two
+dividers meet, the outer split's is taken.
+
+- The two children beside the divider trade weight, so every other child stays as it was.
+- Neither is made smaller than its least size: 68 pixels for an area, and for a split, room for
+  what it holds. A split that runs the same way as the divider needs the sum of its children and
+  their gaps, and one that runs across needs its largest child.
+- Snapping puts the divider on the nearest tenth of its split.
+- Cancelling puts the divider back where it was taken.
+- Evening a divider gives the two children beside it the same room.
+
+The shares last as long as the editor runs, and are not written back to `data/layout.json`.
+
+**Changing the layout.** Every area and every editor has an id that lasts while the layout does.
+
+- **Split** divides an area in two. The new half is on the edge asked for and shows a copy of
+  the editor shown. A split in a direction its parent already runs joins the parent, so the tree
+  gains no level. An area with less than two least sizes and a gap is not split.
+- **Join** gives an area's room to the area beside it in the same split, and closes its editors.
+- **Swap** exchanges what two areas hold, and each area keeps its place.
+- **Maximise** gives one area the whole region, and maximising it again gives every area its
+  place back. Behind it the others have no room, and no divider can be taken.
+- **Tabs.** An editor added to an area is shown. An area's only editor cannot be closed, and
+  closing the editor shown shows the one before it. An editor moved to another area is shown
+  there. One dropped on an area's edge makes a new area on that edge. An area that an editor
+  leaves empty gives its room to the area beside it.
+
+A split, a join, a move that empties an area and a drop renumber the areas, let go of a held
+divider and give a maximised area's room back. A split left with one child becomes that child,
+and a split inside one that runs the same way gives its children to that one.
 
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 

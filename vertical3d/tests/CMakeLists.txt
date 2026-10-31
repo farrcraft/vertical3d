@@ -4,7 +4,8 @@ v3d_add_test(vertical3d
 	"TestMain.cxx"
 	"BindingsTest.cxx"
 
-	"view/ViewLayoutTest.cxx"
+	"view/AreaLayoutTest.cxx"
+	"view/AreaViewsTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
 
@@ -50,7 +51,6 @@ v3d_add_test(vertical3d
 target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_editor
 	v3dlib_animation
-	v3dlib_asset
 	v3dlib_brep
 	v3dlib_curve
 	v3dlib_database

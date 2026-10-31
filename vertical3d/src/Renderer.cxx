@@ -27,6 +27,7 @@
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -127,10 +128,8 @@ Renderer::~Renderer() {
 
 /**
  **/
-void Renderer::views(const std::vector<boost::shared_ptr<ViewPort>>& views) {
+void Renderer::views(const boost::shared_ptr<AreaViews>& views) {
     views_ = views;
-    canvases_.resize(views_.size());
-    overlays_.resize(views_.size());
 }
 
 /**
@@ -207,8 +206,12 @@ void Renderer::draw() {
     const boost::shared_ptr<Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<Manipulator>();
     const Target target = transform_ ? transform_->target() : Target();
 
-    for (std::size_t index = 0; index < views_.size(); index++) {
-        const boost::shared_ptr<ViewPort>& view = views_[index];
+    static const std::vector<boost::shared_ptr<ViewPort>> none;
+    const std::vector<boost::shared_ptr<ViewPort>>& views = views_ ? views_->shown() : none;
+    canvases_.resize(views.size());
+    overlays_.resize(views.size());
+    for (std::size_t index = 0; index < views.size(); index++) {
+        const boost::shared_ptr<ViewPort>& view = views[index];
         if (!view) {
             continue;
         }

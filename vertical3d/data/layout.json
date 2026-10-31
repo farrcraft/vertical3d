@@ -1,21 +1,21 @@
 {
   "layout": {
-    "name": "Quad Layout",
+    "name": "Modelling",
     "root": {
       "split": "vertical",
       "children": [
         {
           "split": "horizontal",
           "children": [
-            { "camera": "Front" },
-            { "camera": "Top" }
+            { "editors": [{ "kind": "viewport", "camera": "Front" }] },
+            { "editors": [{ "kind": "viewport", "camera": "Top" }] }
           ]
         },
         {
           "split": "horizontal",
           "children": [
-            { "camera": "Left" },
-            { "camera": "Perspective" }
+            { "editors": [{ "kind": "viewport", "camera": "Left" }] },
+            { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
           ]
         }
       ]

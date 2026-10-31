@@ -7,11 +7,10 @@
 
 #include <api/ui/input/Cursor.h>
 #include <vertical3d/src/tool/ToolRouter.h>
-#include <vertical3d/src/view/ViewLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <functional>
-#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -20,7 +19,7 @@
 namespace v3d::editor {
 
 /**
- * Routes the mouse: to the ui drawn over the views, to a divider between views, and to the
+ * Routes the mouse: to the ui drawn over the views, to a divider between areas, and to the
  * tools of the view under the cursor.
  *
  * A press goes to the first of those that takes it, and its release goes to the same place.
@@ -39,9 +38,8 @@ class Pointer final {
      * @param ui what is offered the cursor first, which may be null for no ui
      * @param moved what to tell when the active view changes
      **/
-    Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<ViewLayout>& layout,
-        const std::vector<boost::shared_ptr<ViewPort>>& views, const boost::shared_ptr<ToolRouter>& tools,
-        const Moved& moved);
+    Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<AreaViews>& views,
+        const boost::shared_ptr<ToolRouter>& tools, const Moved& moved);
 
     /**
      * The cursor moved, in window pixels.
@@ -54,27 +52,33 @@ class Pointer final {
     void button(bool pressed);
 
     /**
-     * Divide an area of the window between the views, and tell each one its region.
-     * @param area x, y, width and height, in window pixels
+     * Divide a region of the window between the areas, and tell each view its region.
+     * @param region x, y, width and height, in window pixels
      **/
-    void resize(const glm::vec4& area);
+    void resize(const glm::vec4& region);
+
+    /**
+     * Tell each view the region the layout gives it, after a change to the layout. A view that
+     * is no longer shown stops being the active one, and the first view shown takes its place.
+     **/
+    void place();
 
     const glm::vec2& cursor() const noexcept;
 
     /**
-     * @return the view the cursor was last in, or the first view before the cursor has moved
+     * @return the view the cursor was last in, or the first view shown before the cursor has
+     *         moved
      **/
     const boost::shared_ptr<ViewPort>& activeView() const noexcept;
 
  private:
     /**
-     * Tell each view the region the layout last gave it, as after a divider is dragged.
+     * Make a view the active one, and tell the tools and the caller.
      **/
-    void place();
+    void activate(const boost::shared_ptr<ViewPort>& view);
 
     boost::shared_ptr<v3d::ui::input::Cursor> ui_;
-    boost::shared_ptr<ViewLayout> layout_;
-    std::vector<boost::shared_ptr<ViewPort>> views_;
+    boost::shared_ptr<AreaViews> views_;
     boost::shared_ptr<ToolRouter> tools_;
     Moved moved_;
     boost::shared_ptr<ViewPort> activeView_;

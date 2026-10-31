@@ -5,6 +5,7 @@
 
 #include "Controller.h"
 
+#include <api/asset/Json.h>
 #include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
@@ -45,13 +46,15 @@
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
-#include <vertical3d/src/view/ViewLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -122,8 +125,14 @@ bool Controller::start() {
         return false;
     }
 
-    layout_ = boost::make_shared<ViewLayout>(logger());
-    if (!layout_->load(manifest()->get(ViewLayout::DOCUMENT))) {
+    layout_ = boost::make_shared<AreaLayout>(logger());
+    const boost::json::object* layouts = document(AreaLayout::DOCUMENT);
+    const boost::json::object* layout = layouts != nullptr ? v3d::asset::readObject(*layouts, "layout") : nullptr;
+    if (layout == nullptr) {
+        logger()->get()->error("The editor has no layout config, so it would have no views");
+        return false;
+    }
+    if (!layout_->load(*layout)) {
         return false;
     }
 
@@ -173,7 +182,7 @@ bool Controller::start() {
     syncUi();
     syncCaption();
 
-    logger()->get()->info("{} with {} views", layout_->name(), views_.size());
+    logger()->get()->info("{} with {} areas", layout_->name(), layout_->areas().size());
 
     // the editor starts on the default project without reading it, so an autosave a crash left
     // there is the one way back to that session's work
@@ -184,15 +193,16 @@ bool Controller::start() {
 /**
  **/
 bool Controller::buildViews() {
-    views_.clear();
-    return std::ranges::all_of(layout_->views(), [this](const ViewLayout::View& view) {
-        if (!profiles_->has(view.camera)) {
-            logger()->get()->error("The layout names a camera profile that does not exist: {}", view.camera);
-            return false;
+    views_ = boost::make_shared<AreaViews>(layout_, [this](const AreaLayout::Editor& editor) -> boost::shared_ptr<ViewPort> {
+        const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
+        if (!camera || !profiles_->has(*camera)) {
+            logger()->get()->error("A viewport in the layout names no camera profile that exists");
+            return nullptr;
         }
-        views_.push_back(boost::make_shared<ViewPort>(view.name, profiles_->get(view.camera)));
-        return true;
+        // the name is the view's pass name, so the editor's id keeps two views of a profile apart
+        return boost::make_shared<ViewPort>(*camera + " " + std::to_string(editor.id), profiles_->get(*camera));
     });
+    return views_->sync();
 }
 
 /**
@@ -213,7 +223,7 @@ bool Controller::buildUi() {
     // on the character drawn under the pointer
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
         boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
-    pointer_ = boost::make_shared<Pointer>(cursor, layout_, views_, tools_, [this](const boost::shared_ptr<ViewPort>&) {
+    pointer_ = boost::make_shared<Pointer>(cursor, views_, tools_, [this](const boost::shared_ptr<ViewPort>&) {
         // the show flags a check item draws are the active view's
         syncUi();
     });

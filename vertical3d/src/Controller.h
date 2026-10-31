@@ -25,7 +25,8 @@
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/tool/TransformTool.h>
-#include <vertical3d/src/view/ViewLayout.h>
+#include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <functional>
@@ -219,7 +220,7 @@ class Controller final : public v3d::engine::Engine {
     void cameraMode(const std::string& name, bool pressed);
 
     /**
-     * Build one viewport per leaf of the layout, with the profile it names.
+     * Give each viewport editor of the layout a viewport, from the camera profile it names.
      * @return whether every view could be built
      **/
     bool buildViews();
@@ -241,8 +242,8 @@ class Controller final : public v3d::engine::Engine {
     // what the caption was last set to
     std::string caption_;
     boost::shared_ptr<v3d::engine::CameraProfiles> profiles_;
-    boost::shared_ptr<ViewLayout> layout_;
-    std::vector<boost::shared_ptr<ViewPort>> views_;
+    boost::shared_ptr<AreaLayout> layout_;
+    boost::shared_ptr<AreaViews> views_;
 
     boost::shared_ptr<CameraControlTool> cameraTool_;
     boost::shared_ptr<SelectTool> selectTool_;

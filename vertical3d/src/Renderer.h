@@ -20,6 +20,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -69,9 +70,9 @@ class Renderer final {
     Renderer& operator=(const Renderer&) = delete;
 
     /**
-     * The views to draw, in the order their passes are recorded.
+     * The views to draw. Each frame draws the ones shown, in the order their areas are.
      **/
-    void views(const std::vector<boost::shared_ptr<ViewPort>>& views);
+    void views(const boost::shared_ptr<AreaViews>& views);
 
     /**
      * The one scene every view draws.
@@ -145,8 +146,8 @@ class Renderer final {
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<TransformTool> transform_;
     boost::shared_ptr<SelectTool> select_;
-    std::vector<boost::shared_ptr<ViewPort>> views_;
-    // one canvas per view. Each view fills its own and submits it before the next view
+    boost::shared_ptr<AreaViews> views_;
+    // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
     // one more canvas per view for the handles, which are drawn in a pass of their own

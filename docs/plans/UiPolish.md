@@ -304,13 +304,18 @@ cursor router.
 
 Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
 
-- `ViewLayout` becomes a tree of splits whose leaves are areas. An area holds one or more
-  editors, and a viewport is one kind of editor.
+- Built: `AreaLayout` replaces `ViewLayout`. It is a tree of splits whose leaves are areas, and
+  an area holds one or more editors, of which a viewport is one kind. Areas sit 3 pixels apart.
+  A divider is taken 4 pixels either side of its gap, keeps each side to its least size, snaps
+  to tenths, cancels and evens. An area splits, joins, swaps and maximises, and its editors are
+  added, chosen, closed, moved and dropped on an edge. `save()` writes what `load()` reads.
+  `AreaViews` gives each viewport editor a `ViewPort` for as long as the editor lasts.
 - Areas are drawn with the design's gaps, corners, hairlines and active outline.
-- Dividers take the design's reach, highlight, cursor, cancel, snap, reset and least size. The
-  window gains the resize cursors.
-- An area can be split, joined, swapped and maximised, from its editor-type menu and by keys.
-  A tab dropped on an area's edge splits it.
+- Dividers draw the design's highlight and cursor, and the pointer takes Escape and a right
+  click to cancel, Ctrl to snap and a double click to even. The window gains the resize
+  cursors. The metrics scale with the ui.
+- An area can be split, joined, swapped and maximised from its editor-type menu and by keys,
+  and a tab dragged onto an area's edge splits it.
 - Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a
   new user starts with. The settings record each project's workspace and arrangement by its
   path, opening a project restores them, and records for projects that no longer exist are
