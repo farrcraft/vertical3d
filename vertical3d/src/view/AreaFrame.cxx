@@ -56,7 +56,7 @@ void cover(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centr
 /**
  **/
 void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& layout, const FrameLook& look,
-    std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit) {
+    std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit, const std::optional<glm::vec4>& landing) {
     for (const glm::vec4& gap : layout.gaps()) {
         if (gap.z > 0.0F && gap.w > 0.0F) {
             canvas->rect(glm::vec2(gap.x, gap.y), glm::vec2(gap.x + gap.z, gap.y + gap.w), look.gap);
@@ -83,6 +83,10 @@ void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& 
     if (lit) {
         const glm::vec4& gap = lit->region;
         canvas->rect(glm::vec2(gap.x, gap.y), glm::vec2(gap.x + gap.z, gap.y + gap.w), look.accent);
+    }
+    if (landing) {
+        const glm::vec4& region = *landing;
+        canvas->rect(glm::vec2(region.x, region.y), glm::vec2(region.x + region.z, region.y + region.w), look.landing);
     }
 }
 

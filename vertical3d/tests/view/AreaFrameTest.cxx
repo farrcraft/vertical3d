@@ -28,8 +28,8 @@ using v3d::render::realtime::canvas::Canvas;
 
 /**
  * Two areas side by side over a 200 by 100 window: the first from 3 to 98 across, the second
- * from 101 to 197, both from 3 to 97 down. The gap is drawn red, the hairline green and the
- * accent blue.
+ * from 101 to 197, both from 3 to 97 down. The gap is drawn red, the hairline green, the accent
+ * blue and a landing a faint yellow.
  **/
 struct Pair {
     Pair() : layout(boost::make_shared<v3d::log::Logger>()) {
@@ -54,6 +54,7 @@ struct Pair {
     const glm::vec4 gap{ 1.0F, 0.0F, 0.0F, 1.0F };
     const glm::vec4 hairline{ 0.0F, 1.0F, 0.0F, 1.0F };
     const glm::vec4 accent{ 0.0F, 0.0F, 1.0F, 1.0F };
+    const glm::vec4 landing{ 1.0F, 1.0F, 0.0F, 0.25F };
     AreaLayout layout;
     Canvas canvas;
 };
@@ -107,6 +108,21 @@ BOOST_FIXTURE_TEST_CASE(a_lit_divider_takes_the_accent, Pair) {
     draw(std::nullopt, layout.divider(99.0F, 50.0F));
     BOOST_CHECK(any(accent, [](const glm::vec2& point) { return at(point, 98.0F, 3.0F); }));
     BOOST_CHECK(any(accent, [](const glm::vec2& point) { return at(point, 101.0F, 97.0F); }));
+}
+
+/**
+ * Where a dragged tab would land is covered in the landing colour, over everything else.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_landing_is_covered, Pair) {
+    v3d::editor::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent, .landing = landing },
+        std::nullopt, std::nullopt, glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
+    BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 149.0F, 3.0F); }));
+    BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 197.0F, 97.0F); }));
+    BOOST_CHECK(canvas.vertices().back().colour == landing);
+
+    canvas.clear();
+    draw();
+    BOOST_CHECK(!any(landing, [](const glm::vec2&) { return true; }));
 }
 
 /**

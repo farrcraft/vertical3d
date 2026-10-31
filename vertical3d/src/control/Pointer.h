@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <utility>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -33,6 +34,11 @@ namespace v3d::editor {
  * A divider is taken by a press near its gap. A drag moves it, snapped to tenths while Ctrl is
  * held, and cancel() puts it back. The second press of a double click on a divider evens it
  * instead of taking it.
+ *
+ * A press the ui takes on a tab, which tabs() says how to find, becomes a drag of that tab once
+ * the cursor moves far enough. Let go within a quarter of an area's edge, the tab makes a new
+ * area on that edge. Let go anywhere else in another area, it joins that area's tabs. Its own
+ * area gives its room away when the tab was its only editor.
  **/
 class Pointer final {
  public:
@@ -40,6 +46,32 @@ class Pointer final {
      * Called when the cursor moves into another view.
      **/
     typedef std::function<void(const boost::shared_ptr<ViewPort>& view)> Moved;
+
+    /**
+     * Finds the editor whose tab is at a point, or nothing.
+     **/
+    typedef std::function<std::optional<std::size_t>(const glm::vec2& point)> TabAt;
+
+    /**
+     * Where a dragged tab would land: the area, the edge it would make a new area on or nothing
+     * to join the area's tabs, and the region it would take.
+     **/
+    struct Drop final {
+        std::size_t area = 0;
+        std::optional<AreaLayout::Edge> edge;
+        glm::vec4 region{ 0.0F };
+    };
+
+    /**
+     * How far, in pixels, a press on a tab moves before it is a drag.
+     **/
+    static constexpr float TAB_DRAG = 6.0F;
+
+    /**
+     * How near an area's edge, as a share of the area's size, a tab has to be let go to make a
+     * new area on that edge.
+     **/
+    static constexpr float EDGE_BAND = 0.25F;
 
     /**
      * @param ui what is offered the cursor first, which may be null for no ui
@@ -79,6 +111,17 @@ class Pointer final {
     std::size_t activeArea() const noexcept;
 
     /**
+     * Say how to find the tab at a point, so a press on one can drag it.
+     **/
+    void tabs(const TabAt& at);
+
+    /**
+     * @return where the tab being dragged would land if let go now, or nothing when no tab is
+     *         being dragged or it would land nowhere
+     **/
+    std::optional<Drop> drop() const;
+
+    /**
      * Divide a region of the window between the areas, and tell each view its region.
      * @param region x, y, width and height, in window pixels
      **/
@@ -104,6 +147,16 @@ class Pointer final {
      **/
     void activate(const boost::shared_ptr<ViewPort>& view);
 
+    /**
+     * @return the index of the area that holds an editor, and the editor's index in it
+     **/
+    std::optional<std::pair<std::size_t, std::size_t>> holder(std::size_t editor) const;
+
+    /**
+     * Put a dragged tab where it was let go.
+     **/
+    void land(std::size_t editor, const Drop& landing);
+
     boost::shared_ptr<v3d::ui::input::Cursor> ui_;
     boost::shared_ptr<AreaViews> views_;
     boost::shared_ptr<ToolRouter> tools_;
@@ -119,6 +172,12 @@ class Pointer final {
     bool dividerGrab_ = false;
     // whether the ui took the last motion
     bool overUi_ = false;
+    TabAt tabAt_;
+    // the editor whose tab the ui took the press on, and where the press was
+    std::optional<std::size_t> tab_;
+    glm::vec2 tabFrom_{ 0.0F };
+    // whether that press has moved far enough to be a drag
+    bool tabDragging_ = false;
 };
 
 };  // namespace v3d::editor

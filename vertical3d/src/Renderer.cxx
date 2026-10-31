@@ -62,6 +62,11 @@ constexpr glm::vec4 background(0.16F, 0.17F, 0.19F, 1.0F);
 constexpr glm::vec4 bandColour(0.9F, 0.9F, 0.9F, 1.0F);
 
 /**
+ * How opaque the accent laid over where a dragged tab would land is.
+ **/
+constexpr float landingAlpha = 0.25F;
+
+/**
  * What a view's handle pass is called, on the end of the view's own name.
  **/
 const char* const handleSuffix = " handles";
@@ -310,8 +315,11 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
         const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
         const float factor = screen_->factor();
         const FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
+            .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
             .radius = FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
-        drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit());
+        const std::optional<Pointer::Drop> landing = pointer_->drop();
+        drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit(),
+            landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
     }
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw

@@ -322,7 +322,8 @@ Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
   by its layout, data on a command, containers added and removed as an app runs, and an open
   menu that takes a press
   before any container.
-- A tab dragged onto an area's edge splits it, and one dragged onto an area joins its tabs.
+- Built: a tab dragged onto an area's edge makes a new area there, and one dragged into an area
+  joins its tabs. The frame shows where it would land.
 - Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a
   new user starts with. The settings record each project's workspace and arrangement by its
   path, opening a project restores them, and records for projects that no longer exist are

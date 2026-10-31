@@ -393,6 +393,18 @@ and one sent by a key acts on the active area.
 An area's neighbour on an edge is the area across the gap from the middle of that edge. A join
 needs the two to be children of the same split.
 
+**Dragging a tab.** A press on a tab that moves more than 6 pixels is a drag of that tab, and is
+not a click on it. While it is dragged, the frame covers where it would land in the accent at a
+quarter of its opacity.
+
+- Let go within a quarter of an area's size from its nearest edge, the tab makes a new area on
+  that edge, covering half of the area it landed on.
+- Let go anywhere else in another area, the tab joins that area's tabs and is shown there.
+- Let go in the middle of its own area, or on its own area's edge when it is that area's only
+  editor, it stays where it was.
+
+An area that a tab leaves with no editor gives its room to its neighbour.
+
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 
 - the scene canvas, which `ViewPort::draw()` fills with the construction grid and every mesh

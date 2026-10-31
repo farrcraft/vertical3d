@@ -3,8 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
+#include <api/ui/Component.h>
+#include <api/ui/Container.h>
+#include <api/ui/Interface.h>
+#include <api/ui/input/Cursor.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/tool/Tool.h>
 #include <vertical3d/src/tool/ToolRouter.h>
@@ -12,6 +17,8 @@
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,6 +26,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
+#include <entt/entt.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
@@ -85,6 +93,65 @@ struct Panes final {
     boost::shared_ptr<v3d::editor::ToolRouter> tools;
     boost::shared_ptr<v3d::editor::Pointer> pointer;
     std::vector<boost::shared_ptr<v3d::editor::ViewPort>> moved;
+};
+
+/**
+ * Two areas side by side over a 200 by 100 region, the first holding Front and Left. The ui's one
+ * button stands for the first area's Left tab, from 10 to 50 across and 10 to 30 down. The areas
+ * sit 3 pixels in, the first from 3 to 98 across and the second from 101 to 197.
+ **/
+struct Tabbed {
+    Tabbed() :
+        dispatcher(boost::make_shared<entt::dispatcher>()),
+        ui(boost::make_shared<v3d::ui::Interface>(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
+            boost::make_shared<v3d::log::Logger>())),
+        layout(boost::make_shared<v3d::editor::AreaLayout>(boost::make_shared<v3d::log::Logger>())),
+        tool(boost::make_shared<Holding>()),
+        tools(boost::make_shared<v3d::editor::ToolRouter>()) {
+        BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "tabs", "visible": true, "components": [)"
+            R"({ "type": "button", "name": "tab", "label": "Left", "context": "area", "command": "tab::choose" } ] } ] })").as_object()));
+        const boost::shared_ptr<v3d::ui::Component> tab = ui->container("tabs")->get("tab");
+        tab->position(glm::vec2(10.0F, 10.0F));
+        tab->size(glm::vec2(40.0F, 20.0F));
+
+        BOOST_REQUIRE(layout->load(boost::json::parse(R"({"root": {"split": "horizontal", "children": [)"
+            R"({"editors": [{"kind": "viewport", "camera": "Front"}, {"kind": "viewport", "camera": "Left"}], "chosen": 1},)"
+            R"({"editors": [{"kind": "viewport", "camera": "Top"}]}]}})").as_object()));
+        layout->metrics({ .gap = 3.0F, .reach = 4.0F, .least = 10.0F });
+        areas = boost::make_shared<v3d::editor::AreaViews>(layout, [](const v3d::editor::AreaLayout::Editor& editor) {
+            return boost::make_shared<v3d::editor::ViewPort>(std::to_string(editor.id), v3d::type::camera::Profile("Front"));
+        });
+        BOOST_REQUIRE(areas->sync());
+        tools->add(tool);
+        pointer = boost::make_shared<v3d::editor::Pointer>(boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher), areas, tools,
+            v3d::editor::Pointer::Moved());
+        pointer->resize(glm::vec4(0.0F, 0.0F, 200.0F, 100.0F));
+        moving = layout->areas()[0].editors[1].id;
+        pointer->tabs([this](const glm::vec2& point) -> std::optional<std::size_t> {
+            if (point.x >= 10.0F && point.x < 50.0F && point.y >= 10.0F && point.y < 30.0F) {
+                return moving;
+            }
+            return std::nullopt;
+        });
+    }
+
+    /**
+     * Press on the tab, and move to a point.
+     **/
+    void drag(const glm::vec2& to) {
+        pointer->motion(glm::vec2(30.0F, 20.0F));
+        pointer->button(true);
+        pointer->motion(to);
+    }
+
+    boost::shared_ptr<entt::dispatcher> dispatcher;
+    boost::shared_ptr<v3d::ui::Interface> ui;
+    boost::shared_ptr<v3d::editor::AreaLayout> layout;
+    boost::shared_ptr<v3d::editor::AreaViews> areas;
+    boost::shared_ptr<Holding> tool;
+    boost::shared_ptr<v3d::editor::ToolRouter> tools;
+    boost::shared_ptr<v3d::editor::Pointer> pointer;
+    std::size_t moving = 0;
 };
 
 BOOST_AUTO_TEST_SUITE(pointer_test)
@@ -237,6 +304,61 @@ BOOST_AUTO_TEST_CASE(a_hidden_view_stops_being_the_active_one) {
     BOOST_CHECK(panes.pointer->activeView() == panes.views[0]);
     BOOST_CHECK(panes.tool->shown == panes.views[0]);
     BOOST_CHECK(panes.moved.back() == panes.views[0]);
+}
+
+/**
+ * A tab let go near another area's edge makes a new area on that edge, and the region it would
+ * take is the half of the area on that side.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tab_dropped_on_an_edge_makes_an_area, Tabbed) {
+    drag(glm::vec2(190.0F, 50.0F));
+    const std::optional<v3d::editor::Pointer::Drop> landing = pointer->drop();
+    BOOST_REQUIRE(landing.has_value());
+    const v3d::editor::Pointer::Drop drop = landing.value_or(v3d::editor::Pointer::Drop());
+    BOOST_CHECK_EQUAL(drop.area, 1U);
+    BOOST_CHECK(drop.edge == v3d::editor::AreaLayout::Edge::Right);
+    BOOST_CHECK(drop.region == glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
+
+    pointer->button(false);
+    BOOST_REQUIRE_EQUAL(layout->areas().size(), 3U);
+    BOOST_CHECK_EQUAL(layout->areas()[0].editors.size(), 1U);
+    BOOST_CHECK_EQUAL(layout->areas()[2].editor().id, moving);
+    BOOST_CHECK_GT(layout->areas()[2].region.x, layout->areas()[1].region.x);
+    BOOST_CHECK(!pointer->drop().has_value());
+    BOOST_CHECK_EQUAL(tool->presses, 0);
+}
+
+/**
+ * A tab let go in the middle of another area joins that area's tabs and is shown there.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tab_dropped_in_an_area_joins_its_tabs, Tabbed) {
+    drag(glm::vec2(149.0F, 50.0F));
+    const std::optional<v3d::editor::Pointer::Drop> landing = pointer->drop();
+    BOOST_REQUIRE(landing.has_value());
+    BOOST_CHECK(!landing.value_or(v3d::editor::Pointer::Drop()).edge.has_value());
+
+    pointer->button(false);
+    BOOST_REQUIRE_EQUAL(layout->areas().size(), 2U);
+    BOOST_CHECK_EQUAL(layout->areas()[1].editors.size(), 2U);
+    BOOST_CHECK_EQUAL(layout->areas()[1].editor().id, moving);
+}
+
+/**
+ * A press on a tab that hardly moves is a click and moves nothing, and a tab let go in the
+ * middle of its own area lands nowhere.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tab_that_hardly_moves_stays, Tabbed) {
+    drag(glm::vec2(33.0F, 22.0F));
+    BOOST_CHECK(!pointer->drop().has_value());
+    pointer->button(false);
+    BOOST_CHECK_EQUAL(layout->areas()[0].editors.size(), 2U);
+
+    drag(glm::vec2(50.0F, 60.0F));
+    BOOST_CHECK(!pointer->drop().has_value());
+    pointer->button(false);
+    BOOST_CHECK_EQUAL(layout->areas().size(), 2U);
+    BOOST_CHECK_EQUAL(layout->areas()[0].editors.size(), 2U);
+    BOOST_CHECK_EQUAL(tool->presses, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

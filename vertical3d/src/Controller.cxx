@@ -233,6 +233,7 @@ bool Controller::buildUi() {
         // the show flags a check item draws are the active view's
         syncUi();
     });
+    pointer_->tabs([this](const glm::vec2& point) { return chrome_ ? chrome_->tabAt(point) : std::nullopt; });
     // the areas' headers go under the editor's own container, so its menus drop over them
     chrome_ = boost::make_shared<AreaChrome>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
