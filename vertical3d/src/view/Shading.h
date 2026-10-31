@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * How a shaded view lights a mesh's surface: with each face's own normal, so the faces show,
@@ -15,4 +15,4 @@ namespace v3d::editor {
  **/
 enum class Shading : std::uint8_t { Flat, Smooth };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

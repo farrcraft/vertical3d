@@ -14,13 +14,13 @@
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/scene/Visitor.h>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, every curve through
@@ -40,7 +40,7 @@ namespace v3d::editor {
  * These are lines, drawn over the shaded pass. A selected face is drawn as its boundary, and a
  * selected vertex as a small box.
  **/
-class WireframeVisitor final : public SceneVisitor {
+class WireframeVisitor final : public scene::Visitor {
  public:
     /**
      * Which kinds of item are drawn. A kind left out is skipped.
@@ -73,24 +73,24 @@ class WireframeVisitor final : public SceneVisitor {
      * @param components which parts of each mesh and curve to draw as selected, or null for none
      **/
     WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
-        const Components* components = nullptr);
+        const scene::Components* components = nullptr);
 
     /**
      * Append one mesh's wireframe.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
 
     /**
      * Append one camera's, light's or group's glyph.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
 
     /**
      * Append one item's curves, through its world matrix.
      **/
-    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
 
  private:
     /**
@@ -134,15 +134,15 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * A selected curve's control points, its NURBS hulls and its Bezier handles, as shown.
      **/
-    void controls(const Curve& item);
+    void controls(const scene::Curve& item);
 
     v3d::render::realtime::canvas::Line* canvas_;
     Shown shown_;
-    const Components* components_;
+    const scene::Components* components_;
     glm::vec4 wire_;
     glm::vec4 glyph_;
     glm::vec4 object_;
     glm::vec4 component_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

@@ -6,8 +6,8 @@
 #include "PropertiesEditor.h"
 
 #include <api/ui/Immediate.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/EditCommand.h>
+#include <vertical3d/src/command/Edit.h>
+#include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Curve.h>
@@ -29,7 +29,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -43,21 +43,21 @@ PropertiesEditor::Field PropertiesEditor::field(const std::string& path) {
 
 /**
  **/
-PropertiesEditor::PropertiesEditor(const boost::shared_ptr<CommandStack>& history) :
+PropertiesEditor::PropertiesEditor(const boost::shared_ptr<command::Stack>& history) :
     history_(history) {
 }
 
 /**
  **/
-void PropertiesEditor::draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, const glm::vec4& region) {
+void PropertiesEditor::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t editor, const glm::vec4& region) {
     const std::string id = "properties " + std::to_string(editor);
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     ui->pushId(id);
-    const Items selected = scene->selection();
+    const scene::Items selected = scene->selection();
     if (selected.size() != 1) {
         ui->textDisabled(selected.empty() ? "Nothing is selected" : std::to_string(selected.size()) + " items are selected");
     } else {
-        const boost::shared_ptr<Item>& item = selected.front();
+        const boost::shared_ptr<scene::Item>& item = selected.front();
         ui->text(Outliner::kind(item->kind()));
         std::string name = item->name();
         if (ui->textField("Name", &name)) {
@@ -76,8 +76,8 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t ed
 
 /**
  **/
-void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<Item>& item, const Pose& shown) {
-    const Item::Kind kind = item->kind();
+void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown) {
+    const scene::Item::Kind kind = item->kind();
     // the angles shown are kept closest to the last ones, so a drag through a half turn does
     // not jump to the other set of angles that give the same rotation
     if (turned_ != item) {
@@ -102,10 +102,10 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<I
             // a rotation is set whole, so the angles not dragged are given as they are shown
             std::map<std::string, float> set{ { "rotation.x", angles_.x }, { "rotation.y", angles_.y }, { "rotation.z", angles_.z } };
             set[path] = value;
-            EditCommand::Values wanted = EditCommand::of(*item);
+            command::Edit::Values wanted = command::Edit::of(*item);
             wanted.pose = posed(kind, shown, set);
             if (valid(*item, wanted)) {
-                EditCommand::apply(item.get(), wanted);
+                command::Edit::apply(item.get(), wanted);
             }
         }
         if (ui->itemFinished()) {
@@ -117,65 +117,65 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<I
 
 /**
  **/
-void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<Item>& item) {
-    EditCommand::Values wanted = EditCommand::of(*item);
+void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item) {
+    command::Edit::Values wanted = command::Edit::of(*item);
     bool changed = false;
     std::string what;
     switch (item->kind()) {
-        case Item::Kind::Camera: {
-            int chosen = wanted.pose.lens.projection == Camera::Projection::Orthographic ? 1 : 0;
+        case scene::Item::Kind::Camera: {
+            int chosen = wanted.pose.lens.projection == scene::Camera::Projection::Orthographic ? 1 : 0;
             ui->separator();
             if (ui->combo("Projection", &chosen, { "Perspective", "Orthographic" })) {
-                wanted.pose.lens.projection = chosen == 1 ? Camera::Projection::Orthographic : Camera::Projection::Perspective;
+                wanted.pose.lens.projection = chosen == 1 ? scene::Camera::Projection::Orthographic : scene::Camera::Projection::Perspective;
                 changed = true;
                 what = "edit projection";
             }
             break;
         }
-        case Item::Kind::Light: {
+        case scene::Item::Kind::Light: {
             int chosen = static_cast<int>(wanted.pose.emission.type);
             ui->separator();
             if (ui->combo("Type", &chosen, { "Point", "Distant", "Spot" })) {
-                wanted.pose.emission.type = static_cast<Light::Type>(chosen);
+                wanted.pose.emission.type = static_cast<scene::Light::Type>(chosen);
                 changed = true;
                 what = "edit light type";
             }
             break;
         }
-        case Item::Kind::Curve: {
+        case scene::Item::Kind::Curve: {
             ui->separator();
             ui->text("Render");
             changed = ui->checkbox("Renders", &wanted.style.renders);
             what = "edit render";
             if (ui->dragFloat("Width", &wanted.style.width, WIDTH_SPEED) && valid(*item, wanted)) {
                 begin(item);
-                EditCommand::apply(item.get(), wanted);
+                command::Edit::apply(item.get(), wanted);
             }
             if (ui->itemFinished()) {
                 finish("edit width");
             }
             break;
         }
-        case Item::Kind::Mesh:
-        case Item::Kind::Group:
+        case scene::Item::Kind::Mesh:
+        case scene::Item::Kind::Group:
             break;
     }
     // a choice is a whole edit, which ends as it is made
     if (changed && valid(*item, wanted)) {
         begin(item);
-        EditCommand::apply(item.get(), wanted);
+        command::Edit::apply(item.get(), wanted);
         finish(what);
     }
 }
 
 /**
  **/
-void PropertiesEditor::begin(const boost::shared_ptr<Item>& item) {
+void PropertiesEditor::begin(const boost::shared_ptr<scene::Item>& item) {
     if (pending_ && pending_->item != item) {
         finish("edit");
     }
     if (!pending_) {
-        pending_ = Pending{ .item = item, .before = EditCommand::of(*item) };
+        pending_ = Pending{ .item = item, .before = command::Edit::of(*item) };
     }
 }
 
@@ -185,8 +185,8 @@ void PropertiesEditor::finish(const std::string& what) {
     if (!pending_) {
         return;
     }
-    if (!EditCommand::same(pending_->before, EditCommand::of(*pending_->item)) && history_) {
-        history_->push(boost::make_shared<EditCommand>(pending_->item, pending_->before, what));
+    if (!command::Edit::same(pending_->before, command::Edit::of(*pending_->item)) && history_) {
+        history_->push(boost::make_shared<command::Edit>(pending_->item, pending_->before, what));
     }
     pending_.reset();
 }
@@ -230,19 +230,19 @@ std::string PropertiesEditor::lower(const std::string& text) {
 
 /**
  **/
-bool PropertiesEditor::valid(const Item& item, const EditCommand::Values& values) {
+bool PropertiesEditor::valid(const scene::Item& item, const command::Edit::Values& values) {
     switch (item.kind()) {
-        case Item::Kind::Camera:
+        case scene::Item::Kind::Camera:
             return values.pose.lens.valid();
-        case Item::Kind::Light:
+        case scene::Item::Kind::Light:
             return values.pose.emission.valid();
-        case Item::Kind::Curve:
+        case scene::Item::Kind::Curve:
             return values.style.valid();
-        case Item::Kind::Mesh:
-        case Item::Kind::Group:
+        case scene::Item::Kind::Mesh:
+        case scene::Item::Kind::Group:
             break;
     }
     return true;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

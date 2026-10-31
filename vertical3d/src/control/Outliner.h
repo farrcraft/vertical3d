@@ -20,7 +20,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * The outliner: an editor that lists the scene's items as the tree their parents make, under a
@@ -46,7 +46,7 @@ class Outliner final {
      * One row the outliner shows.
      **/
     struct Row final {
-        boost::shared_ptr<Item> item;
+        boost::shared_ptr<scene::Item> item;
         unsigned int depth = 0;
         bool parent = false;   /**< whether it has children, so it can be folded **/
         bool open = false;     /**< whether its children are shown **/
@@ -55,12 +55,12 @@ class Outliner final {
     /**
      * @return what a row calls an item: its name, or its kind when it has none
      **/
-    static std::string label(const Item& item);
+    static std::string label(const scene::Item& item);
 
     /**
      * @return a kind of item as a person reads it, with a capital, such as "Mesh"
      **/
-    static std::string kind(Item::Kind kind);
+    static std::string kind(scene::Item::Kind kind);
 
     /**
      * The rows of a scene, in the order they are shown.
@@ -69,7 +69,7 @@ class Outliner final {
      * @param folded the document ids of the items whose children are hidden. The filter opens
      *        every row it shows
      **/
-    static std::vector<Row> rows(const Scene& scene, const std::string& filter, const std::set<std::int64_t>& folded);
+    static std::vector<Row> rows(const scene::Scene& scene, const std::string& filter, const std::set<std::int64_t>& folded);
 
     /**
      * Draw one outliner editor into a region of the window, and select what a click asks for.
@@ -77,7 +77,7 @@ class Outliner final {
      * @param editor the editor's id, which keeps its filter and folds apart from another's
      * @param adding whether a click adds to the selection
      **/
-    void draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, const glm::vec4& region, bool adding);
+    void draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t editor, const glm::vec4& region, bool adding);
 
     /**
      * Forget the filter and folds of every editor not listed, because it has gone.
@@ -97,7 +97,7 @@ class Outliner final {
      * What a walk of the tree is asked for: the filter's words, and the items folded.
      **/
     struct Walk final {
-        const Scene& scene;
+        const scene::Scene& scene;
         const std::vector<std::string>& words;
         const std::set<std::int64_t>& folded;
     };
@@ -116,9 +116,9 @@ class Outliner final {
      * Add the rows of an item and everything beneath it that is shown.
      * @return whether the item is shown
      **/
-    static bool gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int depth, std::vector<Row>* into);
+    static bool gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into);
 
     std::map<std::size_t, State> states_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

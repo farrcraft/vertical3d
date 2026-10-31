@@ -14,7 +14,7 @@
 namespace {
 
 BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
-    v3d::editor::ConstructionPlane grid;
+    v3d::editor::view::ConstructionPlane grid;
     const v3d::type::camera::Camera camera;
     v3d::render::realtime::canvas::Line canvas;
 
@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_geometry_test) {
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
-    v3d::editor::ConstructionPlane grid;
+    v3d::editor::view::ConstructionPlane grid;
     const v3d::type::camera::Camera camera;
     v3d::render::realtime::canvas::Line canvas;
 
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_extent_test) {
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
-    v3d::editor::ConstructionPlane grid;
+    v3d::editor::view::ConstructionPlane grid;
     v3d::type::camera::Camera camera;
     v3d::render::realtime::canvas::Line canvas;
 
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_perspective_plane_test) {
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
-    v3d::editor::ConstructionPlane grid;
+    v3d::editor::view::ConstructionPlane grid;
     const v3d::type::camera::Camera camera;
     v3d::render::realtime::canvas::Line canvas;
 
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(constructionplane_emphasis_test) {
 }
 
 BOOST_AUTO_TEST_CASE(constructionplane_degenerate_test) {
-    v3d::editor::ConstructionPlane grid;
+    v3d::editor::view::ConstructionPlane grid;
     const v3d::type::camera::Camera camera;
     v3d::render::realtime::canvas::Line canvas;
 

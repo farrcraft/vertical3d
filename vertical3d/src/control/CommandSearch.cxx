@@ -27,7 +27,7 @@
 #include <boost/pointer_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -282,4 +282,4 @@ void CommandSearch::gather(const boost::shared_ptr<v3d::ui::component::menu::Men
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

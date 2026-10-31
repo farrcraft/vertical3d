@@ -20,7 +20,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * Every frame of the timeline's range, rendered from each scene camera, by moya.exe.
@@ -70,7 +70,7 @@ class Batch final {
      *        a scene camera takes
      * @return the jobs, or none when a file could not be written, in which case nothing runs
      **/
-    std::vector<Job> start(const Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
+    std::vector<Job> start(const scene::Scene* scene, const v3d::type::camera::Profile& view, const scene::RenderSettings& settings,
         const boost::filesystem::path& directory);
 
     /**
@@ -96,4 +96,4 @@ class Batch final {
     std::jthread worker_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

@@ -18,7 +18,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 namespace {
 
@@ -90,4 +90,4 @@ void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& 
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

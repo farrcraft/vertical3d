@@ -5,7 +5,7 @@ made and recorded so it can be undone, and how the mouse reaches the tools.
 
 ## The document and its operations
 
-`v3d::editor::Document` is what the editor edits: the scene, its `CommandStack`, and the
+`v3d::editor::document::Document` is what the editor edits: the scene, its `command::Stack`, and the
 `Project` it is kept in, with the saved position, the autosave and the recovery that go with
 them. It is in `src/document/`.
 
@@ -31,22 +31,22 @@ the file chooser and the save prompt, is in `ProjectFiles` in `src/app/`.
 
 ## Undo
 
-`v3d::editor::Command` is a record of a change that has **already been made**. It has
-`undo()`, `redo()` and `name()`, and no `execute()`. `CommandStack::push` stores a command and
+`v3d::editor::command::Command` is a record of a change that has **already been made**. It has
+`undo()`, `redo()` and `name()`, and no `execute()`. `command::Stack::push` stores a command and
 never applies it.
 
 **One gesture is one command.** A manipulator drag changes the meshes on every motion event so
-the user sees them move. `TransformTool` records one `TransformCommand` when the drag ends,
+the user sees them move. `tool::Transform` records one `command::Transform` when the drag ends,
 holding each moved item's `Placement` (translation, rotation and scale) from the start and the
 end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
 set.
 
-A gesture on components records one `VertexCommand` instead. It holds each moved vertex's
+A gesture on components records one `command::Vertex` instead. It holds each moved vertex's
 position, and each recomputed face normal, from the start and the end of the gesture. Undo and
 redo write the stored values back rather than applying an inverse motion, so they restore the
 mesh exactly. A gesture that moved no vertex records nothing.
 
-An edit in the properties editor records one `EditCommand` when it ends: a drag of a number is
+An edit in the properties editor records one `command::Edit` when it ends: a drag of a number is
 let go, a field gives up the keyboard, or a choice is made. It holds the item's name, placement,
 lens, emission and style from the start and the end of the edit, and undo and redo write either
 end back whole. An edit that changed nothing records nothing.
@@ -54,22 +54,22 @@ end back whole. An edit that changed nothing records nothing.
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
-  `Document::create()` builds a `CreateCommand`, calls `redo()` to add the item, and then pushes
-  it. Creating and redoing use the same code. A `CreateCommand` takes an item of any kind.
+  `Document::create()` builds a `command::Create`, calls `redo()` to add the item, and then pushes
+  it. Creating and redoing use the same code. A `command::Create` takes an item of any kind.
 - **A command puts back what a removal takes.** Removing an item takes its links and its curves
-  with it. An `ImportCommand` therefore holds the imported items' parents and curves, and sets
+  with it. A `command::Import` therefore holds the imported items' parents and curves, and sets
   them again each time it is redone. Undoing it removes the items at the top of the import,
   and everything beneath them goes too.
-- **Every path out of a drag records it.** `TransformTool::commit()` runs on release and on a
+- **Every path out of a drag records it.** `tool::Transform::commit()` runs on release and on a
   mode change. It pushes only if the placement actually changed, so a handle grabbed and
   released without moving records nothing.
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
-- **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
+- **Selection is not history.** Undo does not restore what was selected. `command::Create::undo`
   clears the selection of the item it removes, its components with it, and leaves any other
   selected item selected. A topology command's undo and redo clear the component selection of
   every item that shows the mesh they restore.
-  `CreateCommand::redo` selects the new item and nothing else.
+  `command::Create::redo` selects the new item and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
   An item held by a dropped command is freed then.
 - **A new push discards the redo side.**
@@ -77,11 +77,12 @@ The rules:
   drag under way without recording it.
 
 **A topology change is undone from snapshots.** An operation that changes which parts a mesh
-holds records a `TopologyCommand`. It holds the mesh's arrays from before the operation and from
-after it, and undo and redo put one back whole, so the numbering comes back exactly. A
-`TransformCommand` or `VertexCommand` deeper in the history therefore still names the right parts
-when it is undone. Undo and redo of a topology change clear that mesh's component selection,
-because after a renumbering an old flag could name another part. The object stays selected.
+holds records a `command::Topology`. It holds the mesh's arrays from before the operation and
+from after it, and undo and redo put one back whole, so the numbering comes back exactly. A
+`command::Transform` or `command::Vertex` deeper in the history therefore still names the
+right parts when it is undone. Undo and redo of a topology change clear that mesh's component
+selection, because after a renumbering an old flag could name another part. The object stays
+selected.
 
 Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
 
@@ -89,8 +90,8 @@ Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
 
 ### The saved position
 
-`CommandStack` also records the position the history was at when the project was last saved.
-The project is dirty at any other position, and `CommandStack::dirty()` says so.
+`command::Stack` also records the position the history was at when the project was last saved.
+The project is dirty at any other position, and `command::Stack::dirty()` says so.
 
 - **Save and Save As call `markSaved()`** when the write succeeds. A failed write leaves the
   project dirty.
@@ -224,20 +225,20 @@ as a key's does.
 
 ## Tools
 
-`v3d::editor::Tool` is the interface for something that holds a gesture of the mouse open
+`v3d::editor::tool::Tool` is the interface for something that holds a gesture of the mouse open
 across events: `activate(name)` and `deactivate(name)`, `view(view)`, `takes(position)`,
-`dragging()`, `motion(position)` and `button(button, pressed, position)`. `CameraControlTool`,
-`SelectTool` and `TransformTool` implement it. `Tool` lives in the editor because no other app
+`dragging()`, `motion(position)` and `button(button, pressed, position)`. `tool::CameraControl`,
+`tool::Select` and `tool::Transform` implement it. `Tool` lives in the editor because no other app
 holds a gesture open across events.
 
-**`ToolRouter` gives the primary button to one tool at a time.** A press is offered to each tool
+**`tool::Router` gives the primary button to one tool at a time.** A press is offered to each tool
 in the order they were added, and the first whose `takes()` says yes has the gesture. The
 release goes to that tool alone. Every tool hears every motion and every change of view. The
 editor adds the camera tool, then the transform tool, then the select tool, so a new tool has a
 slot in that order. [PickingAndManipulators.md](PickingAndManipulators.md#picking) says what
 each one takes.
 
-`CommandStack` and `Tool` are in the editor rather than the api. No other app has a document
+`command::Stack` and `Tool` are in the editor rather than the api. No other app has a document
 to undo.
 
 Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md),

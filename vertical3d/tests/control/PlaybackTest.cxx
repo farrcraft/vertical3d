@@ -22,10 +22,10 @@ namespace {
  * A document whose timeline runs frames 1 to 4 at 10 frames a second. It is never saved, so
  * its project directory is never written.
  **/
-boost::shared_ptr<v3d::editor::Document> shortTimeline() {
-    const boost::shared_ptr<v3d::editor::Document> document = boost::make_shared<v3d::editor::Document>(
+boost::shared_ptr<v3d::editor::document::Document> shortTimeline() {
+    const boost::shared_ptr<v3d::editor::document::Document> document = boost::make_shared<v3d::editor::document::Document>(
         boost::make_shared<v3d::log::Logger>(), boost::filesystem::temp_directory_path() / "v3d_playback_unwritten");
-    v3d::editor::Timeline timeline;
+    v3d::editor::scene::Timeline timeline;
     timeline.rate = 10.0F;
     timeline.start = 1;
     timeline.end = 4;
@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_SUITE(playback_test)
  * not playing does not move.
  **/
 BOOST_AUTO_TEST_CASE(playing_advances_at_the_rate_and_wraps) {
-    const boost::shared_ptr<v3d::editor::Document> document = shortTimeline();
-    v3d::editor::Playback playback(document);
+    const boost::shared_ptr<v3d::editor::document::Document> document = shortTimeline();
+    v3d::editor::control::Playback playback(document);
 
     playback.simulate(0.5F);
     BOOST_CHECK_EQUAL(document->scene()->timeline().frame, 1);
@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(playing_advances_at_the_rate_and_wraps) {
  * Stepping moves a frame at a time within the range, and to either end of it.
  **/
 BOOST_AUTO_TEST_CASE(stepping_stays_in_the_range) {
-    const boost::shared_ptr<v3d::editor::Document> document = shortTimeline();
-    v3d::editor::Playback playback(document);
+    const boost::shared_ptr<v3d::editor::document::Document> document = shortTimeline();
+    v3d::editor::control::Playback playback(document);
 
     playback.step(-1);
     BOOST_CHECK_EQUAL(document->scene()->timeline().frame, 1);
@@ -83,13 +83,13 @@ BOOST_AUTO_TEST_CASE(stepping_stays_in_the_range) {
  * Stepping by keys goes to the keyed frames of the items given, or of every item when none is.
  **/
 BOOST_AUTO_TEST_CASE(stepping_by_keys_goes_to_keyed_frames) {
-    const boost::shared_ptr<v3d::editor::Document> document = shortTimeline();
-    const boost::shared_ptr<v3d::editor::Mesh> mesh =
-        boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>());
+    const boost::shared_ptr<v3d::editor::document::Document> document = shortTimeline();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh =
+        boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
     document->create(mesh, "mesh");
     document->key({ mesh }, 2);
     document->key({ mesh }, 4);
-    v3d::editor::Playback playback(document);
+    v3d::editor::control::Playback playback(document);
 
     playback.nextKey({}, true);
     BOOST_CHECK_EQUAL(document->scene()->timeline().frame, 2);

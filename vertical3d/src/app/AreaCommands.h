@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The commands that change the areas: split, join, swap, maximise, the tabs and the kind of
@@ -46,4 +46,4 @@ class AreaCommands final {
     const Context& context_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

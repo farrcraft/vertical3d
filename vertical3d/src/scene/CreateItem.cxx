@@ -24,7 +24,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -119,4 +119,4 @@ boost::shared_ptr<Curve> create_curve(CurveType type) {
     return boost::make_shared<Curve>(geometry);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

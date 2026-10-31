@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::store::internal {
 
 /**
  * Every item one document holds, read before any of it reaches the scene.
@@ -27,13 +27,13 @@ struct Loaded {
         v3d::animation::Curve curve;
     };
 
-    Items items;
+    scene::Items items;
     std::vector<Animated> curves;
-    Timeline timeline;
-    RenderSettings render;
+    scene::Timeline timeline;
+    scene::RenderSettings render;
     // each child's parent, both by document id
     std::map<std::int64_t, std::int64_t> parents;
     std::int64_t next = 1;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store::internal

@@ -28,12 +28,12 @@
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaFrame.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
@@ -82,7 +82,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     shell_->present(&engine_, options);
     screen_ = shell_->screen();
 
-    shaded_ = boost::make_shared<ShadedPass>(engine_.context());
+    shaded_ = boost::make_shared<view::ShadedPass>(engine_.context());
     if (!shaded_->nonSolid()) {
         logger_->get()->warn("the device cannot draw a triangle as its edges or its corners, so a view asked to draws it filled");
     }
@@ -95,25 +95,25 @@ Renderer::~Renderer() {
 
 /**
  **/
-void Renderer::views(const boost::shared_ptr<AreaViews>& views) {
+void Renderer::views(const boost::shared_ptr<view::AreaViews>& views) {
     views_ = views;
 }
 
 /**
  **/
-void Renderer::pointer(const boost::shared_ptr<Pointer>& pointer) {
+void Renderer::pointer(const boost::shared_ptr<control::Pointer>& pointer) {
     pointer_ = pointer;
 }
 
 /**
  **/
-void Renderer::status(const Status& status) {
+void Renderer::status(const control::Status& status) {
     status_ = status;
 }
 
 /**
  **/
-void Renderer::notices(const boost::shared_ptr<Notices>& notices) {
+void Renderer::notices(const boost::shared_ptr<control::Notices>& notices) {
     notices_ = notices;
 }
 
@@ -131,19 +131,19 @@ v3d::ui::Immediate* Renderer::immediate() const noexcept {
 
 /**
  **/
-void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
+void Renderer::scene(const boost::shared_ptr<scene::Scene>& scene) {
     scene_ = scene;
 }
 
 /**
  **/
-void Renderer::transformTool(const boost::shared_ptr<TransformTool>& transform) {
+void Renderer::transformTool(const boost::shared_ptr<tool::Transform>& transform) {
     transform_ = transform;
 }
 
 /**
  **/
-void Renderer::selectTool(const boost::shared_ptr<SelectTool>& select) {
+void Renderer::selectTool(const boost::shared_ptr<tool::Select>& select) {
     select_ = select;
 }
 
@@ -176,7 +176,7 @@ void Renderer::resolve(const boost::shared_ptr<v3d::ui::Component>& component) {
 
 /**
  **/
-void Renderer::icons(const IconSheet& sheet) {
+void Renderer::icons(const control::IconSheet& sheet) {
     icons_ = sheet;
 }
 
@@ -229,8 +229,8 @@ float Renderer::barHeight() const {
 
 /**
  **/
-OverlayMetrics Renderer::overlay() const {
-    return OverlayMetrics::scaled(screen_->factor(), barHeight());
+view::OverlayMetrics Renderer::overlay() const {
+    return view::OverlayMetrics::scaled(screen_->factor(), barHeight());
 }
 
 /**
@@ -247,30 +247,30 @@ void Renderer::draw() {
     const boost::shared_ptr<v3d::render::realtime::renderer::Line> lines = engine_.lines();
 
     // a view with no scene still draws its grid: an empty document is not an error
-    const Scene empty;
-    const Scene& scene = scene_ ? *scene_ : empty;
+    const scene::Scene empty;
+    const scene::Scene& scene = scene_ ? *scene_ : empty;
 
     // the handles sit about what the tool would move, which every view draws the same
-    const boost::shared_ptr<Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<Manipulator>();
-    const Target target = transform_ ? transform_->target() : Target();
+    const boost::shared_ptr<manipulator::Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<manipulator::Manipulator>();
+    const manipulator::Target target = transform_ ? transform_->target() : manipulator::Target();
 
-    static const std::vector<boost::shared_ptr<ViewPort>> none;
-    const std::vector<boost::shared_ptr<ViewPort>>& views = views_ ? views_->shown() : none;
+    static const std::vector<boost::shared_ptr<view::ViewPort>> none;
+    const std::vector<boost::shared_ptr<view::ViewPort>>& views = views_ ? views_->shown() : none;
     canvases_.resize(views.size());
     overlays_.resize(views.size());
     for (std::size_t index = 0; index < views.size(); index++) {
-        const boost::shared_ptr<ViewPort>& view = views[index];
+        const boost::shared_ptr<view::ViewPort>& view = views[index];
         if (!view) {
             continue;
         }
 
-        view->draw(scene, &canvases_[index], select_ ? select_->mask() : SelectMask::Object);
+        view->draw(scene, &canvases_[index], select_ ? select_->mask() : selection::SelectMask::Object);
         // the handles go to a canvas of their own because they are an overlay, drawn in a
         // second pass that does not depth test. On the scene's canvas a handle would be in
         // the depth tested pass, where the grid's axis lines lie in the same plane and hide it
         overlays_[index].clear();
-        if (manipulator && view->shows(ViewPort::SHOW_HANDLE)) {
-            manipulator->draw(target, Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
+        if (manipulator && view->shows(view::ViewPort::SHOW_HANDLE)) {
+            manipulator->draw(target, manipulator::Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
         }
 
         const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
@@ -290,7 +290,7 @@ void Renderer::draw() {
         overlay->camera(view->camera()->view(), view->camera()->projection());
 
         // the surfaces first, so the wireframe drawn after them is drawn over them
-        if (shaded_ && view->shows(ViewPort::SHOW_MESH)) {
+        if (shaded_ && view->shows(view::ViewPort::SHOW_MESH)) {
             shaded_->submit(scene, view->display(), pass.get());
         }
         if (lines) {
@@ -316,14 +316,14 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     // each view's axis marker and gizmo go under the frame, whose corners cover the views' own
     if (views_ && pointer_) {
         const float factor = screen_->factor();
-        OverlayLook look;
+        view::OverlayLook look;
         look.text *= factor;
         look.line = std::max(1.0F, std::round(look.line * factor));
-        const OverlayMetrics metrics = overlay();
+        const view::OverlayMetrics metrics = overlay();
         const v3d::ui::paint::Measure measure = screen_->text()->measure(look.text, v3d::ui::paint::Weight::SemiBold);
         const v3d::ui::paint::Write write = screen_->text()->write(&canvas, look.text, v3d::ui::paint::Weight::SemiBold);
         const glm::vec2& cursor = pointer_->cursor();
-        for (const boost::shared_ptr<ViewPort>& view : views_->shown()) {
+        for (const boost::shared_ptr<view::ViewPort>& view : views_->shown()) {
             const glm::vec4& region = view->region();
             const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
             drawOverlay(&canvas, *view, metrics, look, measure, write, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
@@ -337,10 +337,10 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     if (views_ && pointer_) {
         const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
         const float factor = screen_->factor();
-        const FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
+        const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
             .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
-            .radius = FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
-        const std::optional<Pointer::Drop> landing = pointer_->drop();
+            .radius = view::FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
+        const std::optional<control::Pointer::Drop> landing = pointer_->drop();
         drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit(),
             landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
     }
@@ -351,7 +351,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     shell_->draw();
 
     // the rubber band is drawn in window pixels, which is the space this canvas is in
-    const std::optional<SelectTool::Band> band = select_ ? select_->band() : std::nullopt;
+    const std::optional<tool::Select::Band> band = select_ ? select_->band() : std::nullopt;
     if (band) {
         const glm::vec2 low = glm::min(band->corner, band->opposite);
         const glm::vec2 high = glm::max(band->corner, band->opposite);
@@ -391,7 +391,7 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     const float baseline = top + (dress.barHeight / 2.0F) + (size * BASELINE);
     // a button's name, then what it does, then a wider gap before the next button
     float x = left + dress.padding;
-    for (const Status::Button& button : status_.buttons) {
+    for (const control::Status::Button& button : status_.buttons) {
         write(button.name, glm::vec2(x, baseline), dress.secondaryText);
         x += measure(button.name) + (size / 2.0F);
         write(button.action, glm::vec2(x, baseline), dress.text);
@@ -413,7 +413,7 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     if (!notices_ || !views_ || !pointer_ || views_->layout()->areas().empty()) {
         return;
     }
-    const std::optional<Notices::Shown> shown = notices_->shown(screen_->clock().now);
+    const std::optional<control::Notices::Shown> shown = notices_->shown(screen_->clock().now);
     const glm::vec4& content = views_->layout()->areas()[pointer_->activeArea()].content;
     if (!shown || content.z <= 0.0F || content.w <= 0.0F) {
         return;

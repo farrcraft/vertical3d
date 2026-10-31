@@ -9,7 +9,7 @@
 
 #include <string>
 
-namespace v3d::interchange {
+namespace v3d::interchange::usd {
 
 /**
  * Read a USD stage, .usd, .usda, .usdc or .usdz, as a scene.
@@ -39,6 +39,6 @@ namespace v3d::interchange {
  *
  * @return the scene, or a problem when the stage cannot be opened
  **/
-Imported readUsd(const std::string& path);
+Imported read(const std::string& path);
 
-};  // namespace v3d::interchange
+};  // namespace v3d::interchange::usd

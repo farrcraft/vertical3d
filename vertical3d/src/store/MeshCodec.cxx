@@ -30,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -84,8 +84,8 @@ bool MeshCodec::decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* p
 
 /**
  **/
-Item::Kind MeshCodec::kind() const noexcept {
-    return Item::Kind::Mesh;
+scene::Item::Kind MeshCodec::kind() const noexcept {
+    return scene::Item::Kind::Mesh;
 }
 
 /**
@@ -108,14 +108,14 @@ bool MeshCodec::buffered() const noexcept {
 
 /**
  **/
-boost::json::object MeshCodec::payload(const Item& /*item*/) const {
+boost::json::object MeshCodec::payload(const scene::Item& /*item*/) const {
     return boost::json::object();
 }
 
 /**
  **/
-std::vector<Buffer> MeshCodec::buffers(const Item& item) const {
-    const v3d::brep::BRep& mesh = *static_cast<const Mesh&>(item).geometry();
+std::vector<Buffer> MeshCodec::buffers(const scene::Item& item) const {
+    const v3d::brep::BRep& mesh = *static_cast<const scene::Mesh&>(item).geometry();
     Buffer vertices{ .role = "vertices", .count = mesh.vertexCount() };
     for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
         put(&vertices.data, mesh.vertex(id)->point());
@@ -139,7 +139,7 @@ std::vector<Buffer> MeshCodec::buffers(const Item& item) const {
 
 /**
  **/
-boost::shared_ptr<Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
+boost::shared_ptr<scene::Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
     if (!exactly(payload, {}, problem)) {
         return nullptr;
     }
@@ -147,7 +147,7 @@ boost::shared_ptr<Item> MeshCodec::read(const boost::json::object& payload, cons
     if (!decode(blobs, geometry.get(), problem)) {
         return nullptr;
     }
-    return boost::make_shared<Mesh>(geometry);
+    return boost::make_shared<scene::Mesh>(geometry);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

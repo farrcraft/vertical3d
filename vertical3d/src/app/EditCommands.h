@@ -8,7 +8,7 @@
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The commands that change the document: making items, grouping them, keying them, the
@@ -39,4 +39,4 @@ class EditCommands final {
     const Context& context_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

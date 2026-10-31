@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
 
     const v3d::editor::Controller engine("");
     std::set<std::string> offered{"view::camera::orthographic"};
-    for (const v3d::editor::AreaChrome::FixedView& view : v3d::editor::AreaChrome::fixedViews()) {
+    for (const v3d::editor::control::AreaChrome::FixedView& view : v3d::editor::control::AreaChrome::fixedViews()) {
         BOOST_TEST(profiles.has(view.profile), "no camera profile is called " << view.profile);
         offered.insert(view.command);
     }
@@ -136,16 +136,16 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
  * editor registers.
  **/
 BOOST_AUTO_TEST_CASE(every_header_command_is_handled) {
-    const boost::shared_ptr<v3d::editor::AreaLayout> layout = boost::make_shared<v3d::editor::AreaLayout>(boost::make_shared<v3d::log::Logger>());
+    const boost::shared_ptr<v3d::editor::view::AreaLayout> layout = boost::make_shared<v3d::editor::view::AreaLayout>(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(layout->load(boost::json::parse(R"({"root": {"editors": [{"kind": "viewport", "camera": "Perspective"}]}})").as_object()));
     layout->resize(glm::vec4(0.0F, 0.0F, 400.0F, 300.0F));
-    v3d::editor::AreaViews views(layout, [](const v3d::editor::AreaLayout::Editor&) {
-        return boost::make_shared<v3d::editor::ViewPort>("Perspective", v3d::type::camera::Profile("Perspective"));
+    v3d::editor::view::AreaViews views(layout, [](const v3d::editor::view::AreaLayout::Editor&) {
+        return boost::make_shared<v3d::editor::view::ViewPort>("Perspective", v3d::type::camera::Profile("Perspective"));
     });
     BOOST_REQUIRE(views.sync());
 
     std::vector<std::string> commands;
-    sent(v3d::editor::AreaChrome::document(views, v3d::editor::SelectMask::Object).at("containers"), &commands);
+    sent(v3d::editor::control::AreaChrome::document(views, v3d::editor::selection::SelectMask::Object).at("containers"), &commands);
     BOOST_TEST(commands.size() >= 30U);
     const v3d::editor::Controller engine("");
     for (const std::string& command : commands) {

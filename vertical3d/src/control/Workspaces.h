@@ -18,7 +18,7 @@
 #include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * The named workspaces, each an area layout, and what each project was last arranged as.
@@ -179,4 +179,4 @@ class Workspaces final {
     std::map<std::string, Record> projects_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

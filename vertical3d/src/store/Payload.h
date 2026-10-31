@@ -13,7 +13,7 @@
 #include <boost/json.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  * @return whether a payload has exactly these keys. A payload that does not says which key is
@@ -39,4 +39,4 @@ std::string_view word(const boost::json::value& value);
  **/
 boost::json::array vector(const glm::vec3& value);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

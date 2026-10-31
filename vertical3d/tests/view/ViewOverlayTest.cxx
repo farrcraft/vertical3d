@@ -25,9 +25,9 @@
 
 namespace {
 
-using v3d::editor::AxisEnd;
-using v3d::editor::OverlayMetrics;
-using v3d::editor::ViewPort;
+using v3d::editor::view::AxisEnd;
+using v3d::editor::view::OverlayMetrics;
+using v3d::editor::view::ViewPort;
 
 constexpr float CLOSE = 1e-4F;
 
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_SUITE(view_overlay_test)
 BOOST_AUTO_TEST_CASE(the_front_sees_x_right_and_y_up) {
     const ViewPort front = view(glm::vec3(0.0F, 0.0F, -10.0F), true);
     const glm::vec2 centre(100.0F, 100.0F);
-    const std::vector<AxisEnd> ends = v3d::editor::axisEnds(*front.camera(), centre, 20.0F, false);
+    const std::vector<AxisEnd> ends = v3d::editor::view::axisEnds(*front.camera(), centre, 20.0F, false);
     BOOST_REQUIRE_EQUAL(ends.size(), 3U);
 
     BOOST_CHECK_CLOSE(find(ends, 0, true).point.x, 120.0F, CLOSE);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(the_front_sees_x_right_and_y_up) {
  **/
 BOOST_AUTO_TEST_CASE(the_top_sees_z_up_and_y_toward_the_viewer) {
     const ViewPort top = view(glm::vec3(0.0F, 10.0F, 0.0F), true);
-    const std::vector<AxisEnd> ends = v3d::editor::axisEnds(*top.camera(), glm::vec2(0.0F), 10.0F, false);
+    const std::vector<AxisEnd> ends = v3d::editor::view::axisEnds(*top.camera(), glm::vec2(0.0F), 10.0F, false);
     BOOST_CHECK_CLOSE(find(ends, 2, true).point.y, -10.0F, CLOSE);
     BOOST_CHECK_CLOSE(find(ends, 1, true).depth, 1.0F, CLOSE);
     BOOST_CHECK_EQUAL(ends.back().axis, 1U);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(the_top_sees_z_up_and_y_toward_the_viewer) {
 BOOST_AUTO_TEST_CASE(a_negative_end_is_opposite_its_positive_one) {
     const ViewPort perspective = view(glm::vec3(4.0F, 5.0F, -20.0F), false);
     const glm::vec2 centre(50.0F, 60.0F);
-    const std::vector<AxisEnd> ends = v3d::editor::axisEnds(*perspective.camera(), centre, 30.0F, true);
+    const std::vector<AxisEnd> ends = v3d::editor::view::axisEnds(*perspective.camera(), centre, 30.0F, true);
     BOOST_REQUIRE_EQUAL(ends.size(), 6U);
     for (std::size_t axis = 0; axis < 3; axis++) {
         const AxisEnd& positive = find(ends, axis, true);
@@ -119,9 +119,9 @@ BOOST_AUTO_TEST_CASE(the_marker_and_the_gizmo_sit_in_opposite_corners) {
     BOOST_CHECK_EQUAL(metrics.top, 28.0F);
 
     const glm::vec4 region(10.0F, 20.0F, 400.0F, 300.0F);
-    BOOST_CHECK(v3d::editor::markerCentre(region, metrics) == glm::vec2(10.0F + metrics.inset, 320.0F - metrics.inset));
+    BOOST_CHECK(v3d::editor::view::markerCentre(region, metrics) == glm::vec2(10.0F + metrics.inset, 320.0F - metrics.inset));
     const float reach = metrics.gizmo + metrics.ball;
-    BOOST_CHECK(v3d::editor::gizmoCentre(region, metrics) == glm::vec2(410.0F - metrics.margin - reach, 20.0F + 28.0F + metrics.margin + reach));
+    BOOST_CHECK(v3d::editor::view::gizmoCentre(region, metrics) == glm::vec2(410.0F - metrics.margin - reach, 20.0F + 28.0F + metrics.margin + reach));
 }
 
 /**
@@ -131,25 +131,25 @@ BOOST_AUTO_TEST_CASE(the_marker_and_the_gizmo_sit_in_opposite_corners) {
 BOOST_AUTO_TEST_CASE(a_ball_of_the_gizmo_is_found_under_the_cursor) {
     const OverlayMetrics metrics;
     const ViewPort perspective = view(glm::vec3(0.0F, 0.0F, -10.0F), false);
-    BOOST_REQUIRE(v3d::editor::hasGizmo(perspective));
-    const glm::vec2 centre = v3d::editor::gizmoCentre(perspective.region(), metrics);
+    BOOST_REQUIRE(v3d::editor::view::hasGizmo(perspective));
+    const glm::vec2 centre = v3d::editor::view::gizmoCentre(perspective.region(), metrics);
 
-    const std::optional<AxisEnd> right = v3d::editor::gizmoAt(perspective, metrics, centre + glm::vec2(metrics.gizmo, 2.0F));
+    const std::optional<AxisEnd> right = v3d::editor::view::gizmoAt(perspective, metrics, centre + glm::vec2(metrics.gizmo, 2.0F));
     BOOST_REQUIRE(right.has_value());
     BOOST_CHECK_EQUAL(right.value_or(AxisEnd{ .axis = 9 }).axis, 0U);
     BOOST_CHECK(right.value_or(AxisEnd{ .positive = false }).positive);
 
     // both ends of z sit on the centre, and the negative one faces the viewer
-    const std::optional<AxisEnd> middle = v3d::editor::gizmoAt(perspective, metrics, centre);
+    const std::optional<AxisEnd> middle = v3d::editor::view::gizmoAt(perspective, metrics, centre);
     BOOST_REQUIRE(middle.has_value());
     BOOST_CHECK_EQUAL(middle.value_or(AxisEnd{ .axis = 9 }).axis, 2U);
     BOOST_CHECK(!middle.value_or(AxisEnd{ .positive = true }).positive);
 
-    BOOST_CHECK(!v3d::editor::gizmoAt(perspective, metrics, centre + glm::vec2(metrics.gizmo * 0.5F, metrics.gizmo * 0.5F)));
+    BOOST_CHECK(!v3d::editor::view::gizmoAt(perspective, metrics, centre + glm::vec2(metrics.gizmo * 0.5F, metrics.gizmo * 0.5F)));
 
     const ViewPort front = view(glm::vec3(0.0F, 0.0F, -10.0F), true);
-    BOOST_CHECK(!v3d::editor::hasGizmo(front));
-    BOOST_CHECK(!v3d::editor::gizmoAt(front, metrics, centre));
+    BOOST_CHECK(!v3d::editor::view::hasGizmo(front));
+    BOOST_CHECK(!v3d::editor::view::gizmoAt(front, metrics, centre));
 }
 
 /**
@@ -161,16 +161,16 @@ BOOST_AUTO_TEST_CASE(looking_along_an_axis_keeps_the_distance) {
     v3d::type::camera::Camera* camera = perspective.camera().get();
     const float distance = std::sqrt(425.0F);
 
-    v3d::editor::lookAlong(camera, { .axis = 0, .positive = true });
+    v3d::editor::view::lookAlong(camera, { .axis = 0, .positive = true });
     BOOST_CHECK_SMALL(glm::distance(camera->profile().eye(), glm::vec3(distance, 0.0F, 0.0F)), 1e-3F);
     BOOST_CHECK_SMALL(glm::distance(camera->profile().direction(), glm::vec3(-1.0F, 0.0F, 0.0F)), 1e-4F);
 
     // looking down y has z for up, as the Top view does
-    v3d::editor::lookAlong(camera, { .axis = 1, .positive = true });
+    v3d::editor::view::lookAlong(camera, { .axis = 1, .positive = true });
     BOOST_CHECK_SMALL(glm::distance(camera->profile().eye(), glm::vec3(0.0F, distance, 0.0F)), 1e-3F);
     BOOST_CHECK_SMALL(glm::distance(camera->profile().up(), glm::vec3(0.0F, 0.0F, 1.0F)), 1e-4F);
 
-    v3d::editor::lookAlong(camera, { .axis = 2, .positive = false });
+    v3d::editor::view::lookAlong(camera, { .axis = 2, .positive = false });
     BOOST_CHECK_SMALL(glm::distance(camera->profile().eye(), glm::vec3(0.0F, 0.0F, -distance)), 1e-3F);
     BOOST_CHECK_SMALL(glm::distance(camera->profile().direction(), glm::vec3(0.0F, 0.0F, 1.0F)), 1e-4F);
 }
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(a_camera_facing_away_turns_about_a_near_point) {
     profile.lookat(glm::vec3(0.0F, 0.0F, 10.0F));
     v3d::type::camera::Camera camera(profile);
 
-    v3d::editor::lookAlong(&camera, { .axis = 0, .positive = false });
+    v3d::editor::view::lookAlong(&camera, { .axis = 0, .positive = false });
     BOOST_CHECK_SMALL(glm::distance(camera.profile().eye(), glm::vec3(-1.0F, 0.0F, 6.0F)), 1e-4F);
     BOOST_CHECK_SMALL(glm::distance(camera.profile().direction(), glm::vec3(1.0F, 0.0F, 0.0F)), 1e-4F);
 }
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(a_camera_facing_away_turns_about_a_near_point) {
  **/
 BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     const OverlayMetrics metrics;
-    const v3d::editor::OverlayLook look;
+    const v3d::editor::view::OverlayLook look;
     std::vector<std::string> letters;
     const auto measure = [](std::string_view text) { return static_cast<float>(text.size()) * 6.0F; };
     const auto write = [&letters](std::string_view text, const glm::vec2&, const glm::vec4&) { letters.emplace_back(text); };
@@ -204,13 +204,13 @@ BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(420, 320));
     const ViewPort front = view(glm::vec3(0.0F, 0.0F, -10.0F), true);
-    v3d::editor::drawOverlay(&canvas, front, metrics, look, measure, write, std::nullopt);
+    v3d::editor::view::drawOverlay(&canvas, front, metrics, look, measure, write, std::nullopt);
     BOOST_CHECK((letters == std::vector<std::string>{ "X", "Y" }) || (letters == std::vector<std::string>{ "Y", "X" }));
 
     letters.clear();
     canvas.clear();
     const ViewPort perspective = view(glm::vec3(4.0F, 5.0F, -20.0F), false);
-    v3d::editor::drawOverlay(&canvas, perspective, metrics, look, measure, write, std::nullopt);
+    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, std::nullopt);
     BOOST_CHECK_EQUAL(letters.size(), 6U);
     const auto hovered = [&canvas, &look]() {
         return std::ranges::any_of(canvas.vertices(), [&look](const auto& vertex) { return vertex.colour == look.hover; });
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     BOOST_CHECK(!hovered());
 
     canvas.clear();
-    v3d::editor::drawOverlay(&canvas, perspective, metrics, look, measure, write, v3d::editor::gizmoCentre(perspective.region(), metrics));
+    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, v3d::editor::view::gizmoCentre(perspective.region(), metrics));
     BOOST_CHECK(hovered());
 }
 

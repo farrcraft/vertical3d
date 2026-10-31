@@ -38,7 +38,7 @@
 namespace v3d::interchange::usd::internal {
 
 /**
- * Fills a scene from a stage, as readUsd() describes. A reader reads one stage once.
+ * Fills a scene from a stage, as usd::read() describes. A reader reads one stage once.
  **/
 class Reader final {
  public:

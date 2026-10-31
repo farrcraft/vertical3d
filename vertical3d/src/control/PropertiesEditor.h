@@ -6,8 +6,8 @@
 #pragma once
 
 #include <api/ui/Immediate.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/EditCommand.h>
+#include <vertical3d/src/command/Edit.h>
+#include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -22,7 +22,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * The properties editor: an editor that shows the selected item's name, placement and settings,
@@ -62,7 +62,7 @@ class PropertiesEditor final {
     /**
      * @param history where an edit is recorded when it ends
      **/
-    explicit PropertiesEditor(const boost::shared_ptr<CommandStack>& history);
+    explicit PropertiesEditor(const boost::shared_ptr<command::Stack>& history);
 
     /**
      * Draw one properties editor into a region of the window, and write and record what it
@@ -70,7 +70,7 @@ class PropertiesEditor final {
      *
      * @param editor the editor's id, which keeps its widgets apart from another's
      **/
-    void draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, const glm::vec4& region);
+    void draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t editor, const glm::vec4& region);
 
  private:
     /**
@@ -94,43 +94,43 @@ class PropertiesEditor final {
      * @return whether values can be written into an item: a camera's lens, a light's emission and a
      *         curve item's style are each valid, and the other kinds' are not written
      **/
-    static bool valid(const Item& item, const EditCommand::Values& values);
+    static bool valid(const scene::Item& item, const command::Edit::Values& values);
 
     /**
      * An edit that has begun and not ended: the item, and its values when it began.
      **/
     struct Pending final {
-        boost::shared_ptr<Item> item;
-        EditCommand::Values before;
+        boost::shared_ptr<scene::Item> item;
+        command::Edit::Values before;
     };
 
     /**
      * Draw the numbers a curve can drive, and write what is dragged or typed.
      **/
-    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<Item>& item, const Pose& shown);
+    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown);
 
     /**
      * Draw what a kind adds that is not a number: a camera's projection, a light's type, and a
      * curve item's style.
      **/
-    void settings(v3d::ui::Immediate* ui, const boost::shared_ptr<Item>& item);
+    void settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item);
 
     /**
      * Remember an item's values before the first change of an edit. An edit of another item
      * that has not ended is recorded first.
      **/
-    void begin(const boost::shared_ptr<Item>& item);
+    void begin(const boost::shared_ptr<scene::Item>& item);
 
     /**
      * Record the edit that has ended, if it changed anything.
      **/
     void finish(const std::string& what);
 
-    boost::shared_ptr<CommandStack> history_;
+    boost::shared_ptr<command::Stack> history_;
     std::optional<Pending> pending_;
     // the item the angles were last shown for, and the angles
-    boost::shared_ptr<Item> turned_;
+    boost::shared_ptr<scene::Item> turned_;
     glm::vec3 angles_{ 0.0F };
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

@@ -20,7 +20,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 const float Manipulator::handlePixels = 90.0F;
 const float Manipulator::tolerance = 6.0F;
@@ -354,4 +354,4 @@ bool Manipulator::grab(const Target& target, const Screen& screen,
     return found;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

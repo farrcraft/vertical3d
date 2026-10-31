@@ -12,7 +12,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::command {
 
 namespace {
 
@@ -50,4 +50,4 @@ bool same(const v3d::type::Transform& first, const v3d::type::Transform& second)
         close(first.scale, second.scale);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::command

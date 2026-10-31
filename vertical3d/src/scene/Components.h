@@ -14,7 +14,7 @@
 #include <set>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * The kinds of part of an item that can be selected.
@@ -78,4 +78,4 @@ class Components final {
     std::map<unsigned int, std::array<std::set<v3d::brep::Index>, 4>> parts_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

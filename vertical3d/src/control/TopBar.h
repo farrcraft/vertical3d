@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * What sits on the menu bar's row beside its menus: a tab for each workspace, the project's name
@@ -98,4 +98,4 @@ class TopBar final {
     bool added_ = false;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

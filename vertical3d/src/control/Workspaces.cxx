@@ -21,7 +21,7 @@
 
 #include <boost/json.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -36,7 +36,7 @@ bool Workspaces::readable(const boost::json::object& layout) const {
         logger_->get()->warn("A workspace has no name, so it is left out");
         return false;
     }
-    AreaLayout trial(logger_);
+    view::AreaLayout trial(logger_);
     return trial.load(layout);
 }
 
@@ -232,4 +232,4 @@ std::string Workspaces::nameOf(const boost::json::object& layout) {
     return v3d::asset::readString(layout, "name").value_or(std::string());
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

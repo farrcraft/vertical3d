@@ -21,12 +21,12 @@
 #include "Item.h"
 #include "Mesh.h"
 #include "RenderSettings.h"
-#include "SceneVisitor.h"
 #include "Timeline.h"
+#include "Visitor.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * A set of items of any kind, in the order the scene holds them.
@@ -233,12 +233,12 @@ class Scene final {
      * evaluation of the current frame found for it. Each parent comes before its children, and
      * siblings come in insertion order.
      **/
-    void accept(SceneVisitor* visitor) const;
+    void accept(Visitor* visitor) const;
 
     /**
      * Walk the items as accept(visitor) does, with what a given evaluation of the scene found.
      **/
-    void accept(SceneVisitor* visitor, const Evaluation& evaluation) const;
+    void accept(Visitor* visitor, const Evaluation& evaluation) const;
 
     /**
      * Which parts of each mesh item are selected. Removing an item, or clearing the scene,
@@ -275,7 +275,7 @@ class Scene final {
     /**
      * Visit one item through the visit() for its kind, then everything beneath it.
      **/
-    static void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree);
+    static void walk(Visitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree);
 
     /**
      * The item of a document id, or an empty pointer.
@@ -311,4 +311,4 @@ class Scene final {
     Components components_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

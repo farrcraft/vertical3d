@@ -19,7 +19,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * How the window is divided into areas, each of which holds editors.
@@ -491,4 +491,4 @@ class AreaLayout final {
     std::vector<float> heldShares_;   // the split's shares when it was taken, for cancel()
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

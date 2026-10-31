@@ -9,9 +9,9 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
-#include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * What the status bar along the foot of the window says.
@@ -58,14 +58,14 @@ class StatusBar final {
      *
      * @param perspective whether the active view has a perspective camera
      **/
-    static std::vector<Status::Button> buttons(const CameraControlTool& camera, const TransformTool& transform, const SelectTool& select,
+    static std::vector<Status::Button> buttons(const tool::CameraControl& camera, const tool::Transform& transform, const tool::Select& select,
         bool perspective);
 
     /**
      * @return what is selected under a mask: a count of items under a mask that selects whole
      *         items, and of parts under one that selects parts, or "Nothing selected"
      **/
-    static std::string selection(const Scene& scene, SelectMask mask);
+    static std::string selection(const scene::Scene& scene, selection::SelectMask mask);
 
     /**
      * @return a count of things with its noun, singular for one: "1 face", "3 vertices"
@@ -86,18 +86,18 @@ class StatusBar final {
     /**
      * @return what a camera move is called on the status bar, or nothing for no move
      **/
-    static std::optional<std::string> cameraMove(CameraControlTool::CameraMode mode);
+    static std::optional<std::string> cameraMove(tool::CameraControl::CameraMode mode);
 
     /**
      * @return what a transform mode's handles do to the selection, or nothing for no handles
      **/
-    static std::optional<std::string> handles(TransformTool::Mode mode);
+    static std::optional<std::string> handles(tool::Transform::Mode mode);
 
     /**
      * @return how many parts of one kind are selected in an item. An edge counts once, though
      *         either of its halves or both may be selected
      **/
-    static std::size_t parts(const Scene& scene, const Item& item, Component kind);
+    static std::size_t parts(const scene::Scene& scene, const scene::Item& item, scene::Component kind);
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

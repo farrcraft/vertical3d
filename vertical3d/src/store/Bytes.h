@@ -16,7 +16,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 static_assert(std::endian::native == std::endian::little, "scene blobs are little-endian");
 
@@ -45,4 +45,4 @@ bool sized(const Blob& blob, std::size_t size, const char* role, std::string* pr
  **/
 bool finite(const glm::vec3& value);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

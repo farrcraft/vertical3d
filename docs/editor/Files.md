@@ -5,7 +5,7 @@ imported, and how a scene is exported for the offline renderer.
 
 ## Projects
 
-A project is a directory, held by `v3d::editor::Project`:
+A project is a directory, held by `v3d::editor::store::Project`:
 
 ```
 <project>/
@@ -42,12 +42,12 @@ Background: [ADR-0100](../adr/0100-editor-a-project-is-a-directory-with-a-manife
 
 ## Scene documents
 
-A scene document is a SQLite database, read and written by `v3d::editor::SceneStore` through
+A scene document is a SQLite database, read and written by `v3d::editor::store::Scene` through
 `v3dlib_database`. The extension is `.v3d`.
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`SceneStore::SCHEMA_VERSION`, which is 4.
+`store::Scene::SCHEMA_VERSION`, which is 4.
 
 **The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
@@ -70,7 +70,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `data` | The entries, as little-endian arrays |
 | `curves` | `owner` | The document id of the item the curve drives. It references `items(id)`, checked when the write commits |
 | | `property` | The path of the property it drives, such as `rotation.y` |
-| | `type_version` | The version of its keys, `SceneStore::CURVE_VERSION`, which is 1 |
+| | `type_version` | The version of its keys, `store::Scene::CURVE_VERSION`, which is 1 |
 | | `count` | How many keys it has |
 | | `keys` | 20 bytes a key: the frame, value, in slope and out slope as floats, then the interpolation (0 step, 1 linear, 2 Bezier) and whether it is automatic as a byte each, then two bytes of padding |
 
@@ -87,7 +87,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 **Each kind has a codec.** `Codec` in `src/store/Codec.h` writes and reads what a kind adds: its
 name, its version, its payload and its blobs. `MeshCodec`, `CameraCodec`, `LightCodec`,
 `GroupCodec` and `CurveCodec` are the five. `codecOf(kind)` finds one by kind, and
-`codecNamed(name)` by the name a row carries. `SceneStore` writes and reads what every item
+`codecNamed(name)` by the name a row carries. `store::Scene` writes and reads what every item
 shares, and hands the rest to the codec. A new kind of item is a new codec, returned from
 `codecOf()` and listed in `codecs()`. `codecOf()` switches on every kind, so a kind with no codec
 does not compile.
@@ -109,7 +109,7 @@ an open renumber nothing. `BRep::INVALID_ID` is stored as it is.
 - **Selection.** It describes what the user is doing, not what the document holds.
 - **A vertex's edge.** Nothing in the editor sets it.
 
-**Reading.** `SceneStore::read` replaces the whole scene, in the saved order, with the saved
+**Reading.** `store::Scene::read` replaces the whole scene, in the saved order, with the saved
 document ids and parents, and nothing comes back selected. It refuses the document, and leaves
 the scene untouched, if:
 
@@ -133,12 +133,12 @@ the scene untouched, if:
 - the timeline's rate is not a positive number, its range runs backwards, or its frame is
   outside the range
 
-**Writing.** `SceneStore::write` writes in one transaction. A write that fails at any point leaves
+**Writing.** `store::Scene::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
 database that is not a scene document, or that this build could not read, is refused rather than
 overwritten.
 
-**A save writes only what changed.** A `SceneStore` remembers the document it last wrote or read,
+**A save writes only what changed.** A `store::Scene` remembers the document it last wrote or read,
 and for each item in it the item itself, its revision, its place in the order and its parent. A
 write to that document:
 
@@ -155,7 +155,7 @@ write to that document:
 A write to any other path, a document the store has neither written nor read, is written whole:
 everything it held is deleted and every item is written. The next write after a write that
 failed is written whole too, because the document may no longer hold what the store remembers.
-`SceneStore::written()` says what the last write did.
+`store::Scene::written()` says what the last write did.
 
 An item's revision is `Item::revision()`, which [Scene.md](Scene.md#the-scene) describes. A change
 that does not move it is not saved.
@@ -239,7 +239,7 @@ the file's scene into the document as one change, which one undo takes out again
 the top of the import become the selection. `Document::importScene()` does the work, so anything
 that calls it gets the same import.
 
-The file is read by `interchange::readGltf()` or `interchange::readUsd()`, described in
+The file is read by `interchange::readGltf()` or `interchange::usd::read()`, described in
 [api/Interchange.md](../api/Interchange.md), and `editor::importScene()` in
 `src/scene/Import.h` makes the items from either:
 

@@ -7,7 +7,7 @@
 
 #include <api/database/Statement.h>
 
-namespace v3d::editor {
+namespace v3d::editor::store::internal {
 
 /**
  * The two inserts a write runs for each item.
@@ -17,4 +17,4 @@ struct Inserts {
     v3d::database::Statement buffer;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store::internal

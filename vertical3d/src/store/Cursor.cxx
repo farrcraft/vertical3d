@@ -10,7 +10,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -27,4 +27,4 @@ glm::vec3 Cursor::vector() {
     return glm::vec3(x, y, z);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

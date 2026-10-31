@@ -27,7 +27,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  **/
@@ -66,7 +66,7 @@ boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
 
 /**
  **/
-void MoyaDelegate::start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
+void MoyaDelegate::start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
     const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
     shoot(shot.get(), scene, scene.evaluate(), from, RIBExportVisitor::Output{ .settings = settings });
     {
@@ -112,4 +112,4 @@ void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const st
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

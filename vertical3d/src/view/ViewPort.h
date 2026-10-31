@@ -19,7 +19,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 
 /**
@@ -155,7 +155,7 @@ class ViewPort final {
      * @param mask the select mask in force. Under Vertex and Handle a selected curve shows its
      *        control points, and its Bezier handles while the view shows handles
      **/
-    void draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask = SelectMask::Object);
+    void draw(const scene::Scene& scene, v3d::render::realtime::canvas::Line* canvas, selection::SelectMask mask = selection::SelectMask::Object);
 
  private:
     std::string name_;
@@ -166,4 +166,4 @@ class ViewPort final {
     Display display_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

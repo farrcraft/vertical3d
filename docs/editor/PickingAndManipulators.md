@@ -9,7 +9,7 @@ A pick answers "what is under the cursor?" with a CPU ray cast against the meshe
 or readback is involved, so a pick is answered inside the click's event handler. A camera or a
 light is picked by its glyph, the lines it is drawn with.
 
-`v3d::editor::Picker` builds a `v3d::type::geometry::Ray` with `Camera::ray()`, which
+`v3d::editor::tool::Picker` builds a `v3d::type::geometry::Ray` with `Camera::ray()`, which
 unprojects the cursor at the near and far depths. It returns a `Picker::Hit`: whether anything
 was hit, the item's id, the kind of thing hit, and the component's index.
 
@@ -40,7 +40,7 @@ Rules the picker follows:
   having been drawn since the camera moved.
 
 **Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge, Face
-or Handle, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, and the
+or Handle, and `tool::Select` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, and the
 Select menu and each viewport header's mask menu set all nine. Changing the mask
 clears the component selection.
 
@@ -58,7 +58,7 @@ shows handles, it draws a line from each Bezier point to each of its handles, wi
 handle's end. `view::show::handle` therefore shows a curve's handles and a manipulator's together.
 A selected point or handle is drawn in the component colour.
 
-**What a click does.** `SelectTool` picks on the press, not the release.
+**What a click does.** `tool::Select` picks on the press, not the release.
 
 - An object must be selected before any of its parts can be. Component masks test every
   selected mesh and curve, so a component selection can span several objects.
@@ -67,7 +67,7 @@ A selected point or handle is drawn in the component colour.
 - In a component mode, a click on a part selects it and clears every other part of every mesh.
   A click on a part that is already selected clears it along with the rest. A click on nothing
   clears the components and keeps the objects selected.
-- While Left Shift is held (`select::add`, which `SelectTool::adding()` follows), a click
+- While Left Shift is held (`select::add`, which `tool::Select::adding()` follows), a click
   toggles the object or part under the cursor and leaves the rest of the selection alone. A
   click on nothing changes nothing.
 
@@ -97,12 +97,12 @@ drawn in the `ui` pass as a one-pixel outline in window pixels.
 
 1. The ui is offered the press first. If it takes it, the matching release goes to the ui too.
 2. A press on a divider between views moves the divider, and no tool sees it.
-3. Otherwise `ToolRouter` offers the press to the tools in turn, and the first that takes it has
+3. Otherwise `tool::Router` offers the press to the tools in turn, and the first that takes it has
    the gesture until the release:
-   - `CameraControlTool` takes it while a camera move is in force, held by a modifier (Alt or
+   - `tool::CameraControl` takes it while a camera move is in force, held by a modifier (Alt or
      Ctrl) or latched from the View menu's Navigate submenu.
-   - `TransformTool` takes it when the cursor is on a manipulator handle.
-   - `SelectTool` takes any press, and picks.
+   - `tool::Transform` takes it when the cursor is on a manipulator handle.
+   - `tool::Select` takes any press, and picks.
 
 A press is one tool's gesture from start to end. A modifier pressed in the middle of a handle
 drag or a rubber band does not start a camera move, and the release ends the gesture it began.
@@ -112,7 +112,7 @@ letting it go ends the drag, whatever the left button is doing.
 
 ### Driving a camera
 
-`CameraControlTool` drives the camera of the view a drag starts in. Its move is chosen two ways:
+`tool::CameraControl` drives the camera of the view a drag starts in. Its move is chosen two ways:
 
 - **Held.** `view::camera::dolly` (Left Alt), `view::camera::truck` (Left Ctrl) and
   `view::camera::pan` (the middle button) last while they are held. `view::camera::zoom` is a
@@ -171,8 +171,8 @@ Background: [ADR-0121](../adr/0121-editor-component-selection-belongs-to-the-ite
 ## Manipulators
 
 A manipulator is the set of handles that moves, turns or resizes the selected meshes.
-`TranslateManipulator`, `RotateManipulator` and `ScaleManipulator` derive from `Manipulator`.
-`TransformTool` holds all three and has four modes: none (Select), translate, rotate and scale.
+`manipulator::Translate`, `manipulator::Rotate` and `manipulator::Scale` derive from `Manipulator`.
+`tool::Transform` holds all three and has four modes: none (Select), translate, rotate and scale.
 One mode is active at a time, and the Select mode shows no handles.
 
 **What the handles move follows the select mask.** `Target` holds it. Under a mask that selects

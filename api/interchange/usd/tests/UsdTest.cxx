@@ -64,7 +64,7 @@ glm::mat4 world(const Scene& scene, std::size_t node) {
 }
 
 Scene readScene(const std::string& path) {
-    const Imported imported = v3d::interchange::readUsd(path);
+    const Imported imported = v3d::interchange::usd::read(path);
     BOOST_REQUIRE_MESSAGE(imported.scene, imported.problem);
     return *imported.scene;
 }
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(usd_turns_a_z_up_stage_in_centimetres_test) {
  * An orthographic camera's apertures are tenths of the stage's unit.
  **/
 BOOST_AUTO_TEST_CASE(usd_reads_what_it_can_of_each_prim_test) {
-    const Imported imported = v3d::interchange::readUsd("data/keyed_root.usda");
+    const Imported imported = v3d::interchange::usd::read("data/keyed_root.usda");
     BOOST_REQUIRE_MESSAGE(imported.scene, imported.problem);
     const Scene& scene = *imported.scene;
 
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(usd_reads_what_it_can_of_each_prim_test) {
 }
 
 BOOST_AUTO_TEST_CASE(usd_reports_a_stage_it_cannot_open_test) {
-    const Imported missing = v3d::interchange::readUsd("data/missing.usda");
+    const Imported missing = v3d::interchange::usd::read("data/missing.usda");
 
     BOOST_CHECK(!missing.scene);
     BOOST_CHECK_NE(missing.problem.find("missing.usda"), std::string::npos);
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(usd_reports_a_stage_it_cannot_open_test) {
  * and a curve whose points make no curve is left out. Each of those is noted.
  **/
 BOOST_AUTO_TEST_CASE(usd_reads_curves_test) {
-    const Imported imported = v3d::interchange::readUsd("data/curves.usda");
+    const Imported imported = v3d::interchange::usd::read("data/curves.usda");
     BOOST_REQUIRE_MESSAGE(imported.scene, imported.problem);
     const Scene& scene = *imported.scene;
     const auto curvesOf = [&scene](const std::string& name) -> const v3d::interchange::Curves& {

@@ -13,7 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * Curves placed in the scene.
@@ -79,4 +79,4 @@ class Curve final : public Item {
     Style style_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

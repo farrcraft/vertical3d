@@ -20,12 +20,12 @@
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/TransformTool.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewOverlay.h>
@@ -82,45 +82,45 @@ class Renderer final {
     /**
      * The views to draw. Each frame draws the ones shown, in the order their areas are.
      **/
-    void views(const boost::shared_ptr<AreaViews>& views);
+    void views(const boost::shared_ptr<view::AreaViews>& views);
 
     /**
      * What decides the frame drawn around the areas: the active area and the lit divider. The
      * frame is drawn under the ui and over the views.
      **/
-    void pointer(const boost::shared_ptr<Pointer>& pointer);
+    void pointer(const boost::shared_ptr<control::Pointer>& pointer);
 
     /**
      * What the status bar along the foot of the window says this frame.
      **/
-    void status(const Status& status);
+    void status(const control::Status& status);
 
     /**
      * The notices drawn at the foot of the active area, or null for none.
      **/
-    void notices(const boost::shared_ptr<Notices>& notices);
+    void notices(const boost::shared_ptr<control::Notices>& notices);
 
     /**
      * The one scene every view draws.
      **/
-    void scene(const boost::shared_ptr<Scene>& scene);
+    void scene(const boost::shared_ptr<scene::Scene>& scene);
 
     /**
      * The transform tool, whose manipulator every view that shows handles draws about what
      * the tool would move. It draws none in the mode that has no manipulator.
      **/
-    void transformTool(const boost::shared_ptr<TransformTool>& transform);
+    void transformTool(const boost::shared_ptr<tool::Transform>& transform);
 
     /**
      * The select tool, whose rubber band is drawn over the views while one is dragged.
      **/
-    void selectTool(const boost::shared_ptr<SelectTool>& select);
+    void selectTool(const boost::shared_ptr<tool::Select>& select);
 
     /**
      * The sheet an image source naming an icon is resolved from. Set it before the ui, whose
      * images are resolved when it arrives.
      **/
-    void icons(const IconSheet& sheet);
+    void icons(const control::IconSheet& sheet);
 
     /**
      * The ui drawn over every view, or null to draw none.
@@ -173,7 +173,7 @@ class Renderer final {
      * @return where each view's axis marker and gizmo sit, at the scale the ui is drawn and
      *         under a header
      **/
-    OverlayMetrics overlay() const;
+    view::OverlayMetrics overlay() const;
 
     /**
      * Resolve the images of a component added to the ui after it was handed over. Each image
@@ -307,15 +307,15 @@ class Renderer final {
     // context that owns the device is
     v3d::render::realtime::WindowRenderer engine_;
     // the meshes' surfaces, built once the engine has a device
-    boost::shared_ptr<ShadedPass> shaded_;
+    boost::shared_ptr<view::ShadedPass> shaded_;
 
-    boost::shared_ptr<Scene> scene_;
-    boost::shared_ptr<TransformTool> transform_;
-    boost::shared_ptr<SelectTool> select_;
-    boost::shared_ptr<AreaViews> views_;
-    boost::shared_ptr<Pointer> pointer_;
-    Status status_;
-    boost::shared_ptr<Notices> notices_;
+    boost::shared_ptr<scene::Scene> scene_;
+    boost::shared_ptr<tool::Transform> transform_;
+    boost::shared_ptr<tool::Select> select_;
+    boost::shared_ptr<view::AreaViews> views_;
+    boost::shared_ptr<control::Pointer> pointer_;
+    control::Status status_;
+    boost::shared_ptr<control::Notices> notices_;
     // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
@@ -324,7 +324,7 @@ class Renderer final {
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;
-    IconSheet icons_;
+    control::IconSheet icons_;
     // the textures the ui's images became, by source, so a component built again reuses them
     std::map<std::string, v3d::render::realtime::TextureHandle> images_;
     v3d::shell::Shell* shell_;

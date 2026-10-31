@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * A short message about what a command did, shown at the foot of the active area for a while.
@@ -50,4 +50,4 @@ class Notices final {
     std::optional<float> start_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

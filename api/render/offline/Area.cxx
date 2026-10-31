@@ -82,10 +82,10 @@ glm::vec3 Area::sample(const glm::vec2 & square) const {
     const glm::vec2 within(rest, square.y);
     if (piece < triangles_.size()) {
         const Corners & corners = triangles_[piece];
-        return uniform::triangle(corners.a, corners.b, corners.c, within);
+        return uniformTriangle(corners.a, corners.b, corners.c, within);
     }
     const Sphere & sphere = spheres_[piece - triangles_.size()];
-    return glm::vec3(sphere.placement * glm::vec4(sphere.radius * uniform::sphere(within), 1.0F));
+    return glm::vec3(sphere.placement * glm::vec4(sphere.radius * uniformSphere(within), 1.0F));
 }
 
 glm::vec3 Area::point(const glm::vec3 & shading, unsigned int index) const {

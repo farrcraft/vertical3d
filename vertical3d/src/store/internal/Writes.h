@@ -13,7 +13,7 @@
 #include <string>
 #include <utility>
 
-namespace v3d::editor {
+namespace v3d::editor::store::internal {
 
 /**
  * The statements a write runs.
@@ -52,4 +52,4 @@ struct Writes {
     v3d::database::Statement next;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store::internal

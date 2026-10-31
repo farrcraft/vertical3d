@@ -28,7 +28,7 @@
 
 #include <boost/filesystem/path.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 namespace {
 
@@ -118,4 +118,4 @@ int runProgram(const boost::filesystem::path& program, const std::vector<std::st
 
 #endif
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

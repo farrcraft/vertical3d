@@ -22,11 +22,11 @@
 #include <boost/optional/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
-void Context::report(const Outcome& outcome) const {
+void Context::report(const document::Outcome& outcome) const {
     if (!outcome.message.empty()) {
         logger->get()->info("{}", outcome.message);
         if (notices) {
@@ -43,7 +43,7 @@ void Context::refuse(const std::string& message) const {
 
 /**
  **/
-boost::shared_ptr<ViewPort> Context::activeView() const {
+boost::shared_ptr<view::ViewPort> Context::activeView() const {
     return pointer ? pointer->activeView() : nullptr;
 }
 
@@ -60,7 +60,7 @@ std::size_t Context::areaOf(const v3d::event::Event& event) const {
 /**
  **/
 void Context::atView(const std::string& what, const std::function<void(const v3d::type::camera::Profile&)>& run) const {
-    const boost::shared_ptr<ViewPort> view = activeView();
+    const boost::shared_ptr<view::ViewPort> view = activeView();
     if (!view || !view->camera()) {
         refuse(what + " at a view, and there is no active view");
         return;
@@ -70,7 +70,7 @@ void Context::atView(const std::string& what, const std::function<void(const v3d
 
 /**
  **/
-void Context::masked(SelectMask mask, const std::string& name, const std::function<Outcome()>& operation) const {
+void Context::masked(selection::SelectMask mask, const std::string& name, const std::function<document::Outcome()>& operation) const {
     if (selectTool->mask() != mask) {
         refuse(name + " needs the " + selectMaskName(mask) + " select mask");
         return;
@@ -81,7 +81,7 @@ void Context::masked(SelectMask mask, const std::string& name, const std::functi
 /**
  **/
 v3d::type::camera::Profile Context::shot() const {
-    return shotFrom(*document->scene(), pointer->activeView()->camera()->profile());
+    return render::shotFrom(*document->scene(), pointer->activeView()->camera()->profile());
 }
 
 /**
@@ -93,4 +93,4 @@ std::string Context::projectKey() const {
     return boost::filesystem::absolute(document->project()->directory()).lexically_normal().generic_string();
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

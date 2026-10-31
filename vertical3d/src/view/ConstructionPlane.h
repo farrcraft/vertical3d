@@ -11,7 +11,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * The grid a viewport measures against, drawn as lines.
@@ -103,4 +103,4 @@ class ConstructionPlane final {
     glm::vec4 origin_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

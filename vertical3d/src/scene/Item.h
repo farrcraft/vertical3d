@@ -15,7 +15,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * One thing the scene holds: a mesh, a camera, a light, a group or curves.
@@ -138,4 +138,4 @@ boost::shared_ptr<T> as(const boost::shared_ptr<Item>& item) {
     return boost::static_pointer_cast<T>(item);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

@@ -99,7 +99,11 @@ Beside the sources:
 Every source but `main.cxx` builds into the `v3dlib_editor` library, which the executable and
 both editor suites link.
 
-Everything is in the namespace `v3d::editor`. Includes are written from the repository root,
+Each directory under `src/` is a namespace under `v3d::editor`: `src/scene` is
+`v3d::editor::scene`, and `src/store/internal` is `v3d::editor::store::internal`. The files
+directly in `src/` are in `v3d::editor`. Code names what another directory holds by that
+directory, as `scene::Item` from `tool`, and a class drops its directory's name from its own:
+`tool::Select`, not `tool::SelectTool`. Includes are written from the repository root,
 for both the api and the editor's own headers: `#include <api/brep/BRep.h>`,
 `#include <vertical3d/src/scene/Scene.h>`. A header in the same directory is included by its
 bare name in quotes.

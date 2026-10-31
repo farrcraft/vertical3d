@@ -457,7 +457,7 @@ drawn in immediate mode, after weighing retained documents rebuilt on a signatur
   match's ancestors, and selects the item clicked, toggling while Shift is held.
 - The properties editor shows the one selected item's name, its numbers a curve can drive, and
   a camera's projection, a light's type or a curve's render style. An edit is written as it
-  happens and recorded as one `EditCommand` when it ends.
+  happens and recorded as one `command::Edit` when it ends.
 - The suites cover names in documents and imports, the layer's additions, and the outliner's
   rows and clicks. They cover the pointer's panels, replacing an editor, the Editor menu, the
   edit command, and the properties editor's drags, rename and refused lens. The editor was

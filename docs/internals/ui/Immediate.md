@@ -12,10 +12,10 @@ the scrolling. The widgets are written in files by subject:
 |---|---|
 | [Immediate.cpp](../../../api/ui/Immediate.cpp) | the frame, ids, text, buttons and the other single-row widgets |
 | [immediate/Context.cpp](../../../api/ui/immediate/Context.cpp) | layout, hit testing, ids and the drawing every widget shares |
-| [immediate/Windows.cpp](../../../api/ui/immediate/Windows.cpp) | windows and regions, and the scrolling a window and a table share |
-| [immediate/TextField.cpp](../../../api/ui/immediate/TextField.cpp) | the text field, the number that can be typed into, and the keys that reach them |
-| [immediate/Popups.cpp](../../../api/ui/immediate/Popups.cpp) | the combo and the list it opens |
-| [immediate/Tables.cpp](../../../api/ui/immediate/Tables.cpp) | tab strips and tables |
+| [ImmediateWindows.cpp](../../../api/ui/ImmediateWindows.cpp) | windows and regions, and the scrolling a window and a table share |
+| [ImmediateTextField.cpp](../../../api/ui/ImmediateTextField.cpp) | the text field, the number that can be typed into, and the keys that reach them |
+| [ImmediatePopups.cpp](../../../api/ui/ImmediatePopups.cpp) | the combo and the list it opens |
+| [ImmediateTables.cpp](../../../api/ui/ImmediateTables.cpp) | tab strips and tables |
 
 The layer keeps almost nothing between frames. These are members of the context:
 
@@ -64,6 +64,6 @@ table given a height always reserves the bar's width. A change to how scrolling 
 be checked in both paths.
 
 The title-bar drag uses `dragThreshold` (3 pixels) in
-[immediate/Windows.cpp](../../../api/ui/immediate/Windows.cpp). The offset is clamped every
+[ImmediateWindows.cpp](../../../api/ui/ImmediateWindows.cpp). The offset is clamped every
 frame against the current window size, so a window that grows near an edge moves under the
 cursor.

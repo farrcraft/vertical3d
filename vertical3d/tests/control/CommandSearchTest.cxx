@@ -26,7 +26,7 @@
 
 namespace {
 
-using v3d::editor::CommandSearch;
+using v3d::editor::control::CommandSearch;
 
 /**
  * A ui with a menu bar of two menus, Create and View, and the search's panel. Create holds a

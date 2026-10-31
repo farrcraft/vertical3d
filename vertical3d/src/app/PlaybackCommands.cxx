@@ -9,7 +9,7 @@
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/scene/Scene.h>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -35,4 +35,4 @@ void PlaybackCommands::registerCommands(CommandTable* table) const {
     table->press("timeline::playback::last_key", [&context]() { context.playback->lastKey(context.document->scene()->selection()); });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

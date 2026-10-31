@@ -24,7 +24,7 @@ v3d_add_test(vertical3d
 	"render/RIBExportVisitorTest.cxx"
 	"store/ProjectTest.cxx"
 	"store/CodecTest.cxx"
-	"store/SceneStoreTest.cxx"
+	"store/SceneTest.cxx"
 	"command/ModellingTest.cxx"
 
 	"document/DocumentTest.cxx"
@@ -41,20 +41,20 @@ v3d_add_test(vertical3d
 	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"
 
-	"command/CommandStackTest.cxx"
-	"command/GroupCommandTest.cxx"
-	"command/KeyCommandTest.cxx"
-	"command/SettingsCommandTest.cxx"
+	"command/StackTest.cxx"
+	"command/GroupTest.cxx"
+	"command/KeyTest.cxx"
+	"command/SettingsTest.cxx"
 
 	"render/DelegateTest.cxx"
 	"render/BatchTest.cxx"
-	"render/RenderPanelsTest.cxx"
+	"render/PanelsTest.cxx"
 
-	"tool/CameraControlToolTest.cxx"
+	"tool/CameraControlTest.cxx"
 	"tool/PickerTest.cxx"
-	"tool/SelectToolTest.cxx"
-	"tool/ToolRouterTest.cxx"
-	"tool/TransformToolTest.cxx"
+	"tool/SelectTest.cxx"
+	"tool/RouterTest.cxx"
+	"tool/TransformTest.cxx"
 
 	"manipulator/ManipulatorTest.cxx"
 	"manipulator/TargetTest.cxx")

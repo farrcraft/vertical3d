@@ -19,7 +19,7 @@
 
 #include <boost/filesystem/path.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -137,4 +137,4 @@ void ProjectFiles::exportRib() const {
     });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

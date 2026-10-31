@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -58,4 +58,4 @@ const std::vector<std::string>& CommandTable::refused() const noexcept {
     return refused_;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

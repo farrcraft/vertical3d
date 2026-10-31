@@ -11,7 +11,7 @@
 
 #include <glm/gtc/constants.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -46,4 +46,4 @@ void Light::emission(const Emission& emission) noexcept {
     changed();
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

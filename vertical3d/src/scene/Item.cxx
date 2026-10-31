@@ -15,7 +15,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -157,4 +157,4 @@ void Item::selected(bool selected) noexcept {
     selected_ = selected;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

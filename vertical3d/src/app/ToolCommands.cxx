@@ -14,7 +14,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -83,4 +83,4 @@ void ToolCommands::cameraMode(const std::string& name, bool pressed) const {
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

@@ -29,20 +29,20 @@
 
 namespace {
 
-using v3d::editor::Outliner;
+using v3d::editor::control::Outliner;
 
 /**
  * A scene of a rig holding an arm, which holds a hand, beside a cube and a lamp at the top.
  **/
 struct Rig {
     Rig() :
-        rig(named<v3d::editor::Group>("Rig")),
-        arm(named<v3d::editor::Group>("Arm")),
-        hand(named<v3d::editor::Group>("Hand")),
-        cube(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        lamp(named<v3d::editor::Light>("Lamp")) {
+        rig(named<v3d::editor::scene::Group>("Rig")),
+        arm(named<v3d::editor::scene::Group>("Arm")),
+        hand(named<v3d::editor::scene::Group>("Hand")),
+        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        lamp(named<v3d::editor::scene::Light>("Lamp")) {
         cube->name("Cube");
-        for (const boost::shared_ptr<v3d::editor::Item>& item : v3d::editor::Items{ rig, cube, arm, hand, lamp }) {
+        for (const boost::shared_ptr<v3d::editor::scene::Item>& item : v3d::editor::scene::Items{ rig, cube, arm, hand, lamp }) {
             scene.add(item);
         }
         BOOST_REQUIRE(scene.parent(arm->id(), rig->id()));
@@ -50,7 +50,7 @@ struct Rig {
     }
 
     template <typename T>
-    static boost::shared_ptr<v3d::editor::Item> named(const std::string& name) {
+    static boost::shared_ptr<v3d::editor::scene::Item> named(const std::string& name) {
         const boost::shared_ptr<T> made = boost::make_shared<T>();
         made->name(name);
         return made;
@@ -67,12 +67,12 @@ struct Rig {
         return made;
     }
 
-    v3d::editor::Scene scene;
-    boost::shared_ptr<v3d::editor::Item> rig;
-    boost::shared_ptr<v3d::editor::Item> arm;
-    boost::shared_ptr<v3d::editor::Item> hand;
-    boost::shared_ptr<v3d::editor::Mesh> cube;
-    boost::shared_ptr<v3d::editor::Item> lamp;
+    v3d::editor::scene::Scene scene;
+    boost::shared_ptr<v3d::editor::scene::Item> rig;
+    boost::shared_ptr<v3d::editor::scene::Item> arm;
+    boost::shared_ptr<v3d::editor::scene::Item> hand;
+    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::Item> lamp;
 };
 
 /**
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_SUITE(outliner_test)
  * An item is listed by its name, or by its kind when it has none.
  **/
 BOOST_AUTO_TEST_CASE(a_row_names_its_item) {
-    v3d::editor::Group group;
+    v3d::editor::scene::Group group;
     BOOST_CHECK_EQUAL(Outliner::label(group), "Group");
     group.name("Rig");
     BOOST_CHECK_EQUAL(Outliner::label(group), "Rig");

@@ -26,8 +26,8 @@
 
 namespace {
 
-boost::shared_ptr<v3d::editor::Mesh> emptyMesh() {
-    return boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::Mesh> emptyMesh() {
+    return boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
 }
 
 /**
@@ -46,32 +46,32 @@ bool sameTurn(const glm::quat& first, const glm::quat& second) {
 
 BOOST_AUTO_TEST_CASE(evaluation_origin_test) {
     // an item no evaluation saw is at the origin
-    const v3d::editor::Evaluation evaluation;
-    const v3d::editor::Placed placed = evaluation.placed(1);
+    const v3d::editor::scene::Evaluation evaluation;
+    const v3d::editor::scene::Placed placed = evaluation.placed(1);
     BOOST_CHECK(placed.parent == glm::mat4(1.0F));
     BOOST_CHECK(placed.local == glm::mat4(1.0F));
     BOOST_CHECK(placed.world == glm::mat4(1.0F));
 }
 
 BOOST_AUTO_TEST_CASE(evaluation_root_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
     mesh->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     mesh->scale(glm::vec3(2.0F, 1.0F, 1.0F));
     scene.add(mesh);
 
     // an item with no parent is where its own placement puts it
-    const v3d::editor::Placed placed = scene.evaluate().placed(mesh->id());
+    const v3d::editor::scene::Placed placed = scene.evaluate().placed(mesh->id());
     BOOST_CHECK(placed.parent == glm::mat4(1.0F));
     BOOST_CHECK(placed.local == mesh->matrix());
     BOOST_CHECK(placed.world == mesh->matrix());
 }
 
 BOOST_AUTO_TEST_CASE(evaluation_compose_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> leaf = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Group> inner = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Group> outer = boost::make_shared<v3d::editor::Group>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> leaf = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Group> inner = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Group> outer = boost::make_shared<v3d::editor::scene::Group>();
     // the children come before their parents in the scene, which the order of composing
     // must not depend on
     scene.add(leaf);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(evaluation_compose_test) {
     inner->scale(glm::vec3(2.0F));
     leaf->translation(glm::vec3(1.0F, 0.0F, 0.0F));
 
-    const v3d::editor::Evaluation evaluation = scene.evaluate();
+    const v3d::editor::scene::Evaluation evaluation = scene.evaluate();
 
     // the outer group turns +x onto +y, so the inner group is one unit up from it, and the
     // leaf two more, since the inner group doubles everything beneath it
@@ -96,22 +96,22 @@ BOOST_AUTO_TEST_CASE(evaluation_compose_test) {
         glm::vec3(10.0F, 3.0F, 0.0F)), 0.0001F);
 
     // the world matrix is the parent's times the local one
-    const v3d::editor::Placed placed = evaluation.placed(leaf->id());
+    const v3d::editor::scene::Placed placed = evaluation.placed(leaf->id());
     BOOST_CHECK(placed.local == leaf->matrix());
     BOOST_CHECK(placed.parent == evaluation.placed(inner->id()).world);
     BOOST_CHECK(placed.world == placed.parent * placed.local);
 }
 
 BOOST_AUTO_TEST_CASE(evaluation_is_a_copy_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
     scene.add(group);
     scene.add(mesh);
     scene.parent(mesh->id(), group->id());
 
     // an evaluation keeps what it found. A later edit shows only in a later evaluation
-    const v3d::editor::Evaluation before = scene.evaluate();
+    const v3d::editor::scene::Evaluation before = scene.evaluate();
     group->translation(glm::vec3(0.0F, 5.0F, 0.0F));
     BOOST_CHECK(before.placed(mesh->id()).world == glm::mat4(1.0F));
     BOOST_CHECK_SMALL(glm::distance(apply(scene.evaluate().placed(mesh->id()).world, glm::vec3(0.0F)),
@@ -124,16 +124,16 @@ BOOST_AUTO_TEST_CASE(evaluation_is_a_copy_test) {
 
 BOOST_AUTO_TEST_CASE(evaluation_orientation_test) {
     const glm::quat turn = glm::angleAxis(glm::radians(30.0F), glm::normalize(glm::vec3(1.0F, 2.0F, 3.0F)));
-    v3d::editor::Group group;
+    v3d::editor::scene::Group group;
     group.translation(glm::vec3(4.0F, 5.0F, 6.0F));
     group.rotation(turn);
     group.scale(glm::vec3(3.0F, 0.5F, 2.0F));
 
     // the rotation is recovered from a matrix that also scales unevenly
-    BOOST_CHECK(sameTurn(v3d::editor::orientation(group.matrix()), turn));
+    BOOST_CHECK(sameTurn(v3d::editor::scene::orientation(group.matrix()), turn));
 
     // and without the scale, the matrix keeps the translation and the rotation alone
-    const glm::mat4 rigid = v3d::editor::withoutScale(group.matrix());
+    const glm::mat4 rigid = v3d::editor::scene::withoutScale(group.matrix());
     BOOST_CHECK_SMALL(glm::distance(apply(rigid, glm::vec3(0.0F)), glm::vec3(4.0F, 5.0F, 6.0F)), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(glm::vec3(rigid * glm::vec4(1.0F, 0.0F, 0.0F, 0.0F)),
         turn * glm::vec3(1.0F, 0.0F, 0.0F)), 0.0001F);
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(evaluation_orientation_test) {
     // a sheared matrix still gives a rotation, with its x axis kept
     glm::mat4 sheared(1.0F);
     sheared[1] = glm::vec4(1.0F, 1.0F, 0.0F, 0.0F);
-    const glm::quat square = v3d::editor::orientation(sheared);
+    const glm::quat square = v3d::editor::scene::orientation(sheared);
     BOOST_CHECK(sameTurn(square, glm::quat(1.0F, 0.0F, 0.0F, 0.0F)));
 }
 

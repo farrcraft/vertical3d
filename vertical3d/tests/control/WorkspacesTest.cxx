@@ -17,7 +17,7 @@
 
 namespace {
 
-using v3d::editor::Workspaces;
+using v3d::editor::control::Workspaces;
 
 std::string single(const std::string& name, const std::string& camera);
 boost::json::object parse(const std::string& text);

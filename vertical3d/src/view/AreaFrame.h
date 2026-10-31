@@ -14,7 +14,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * The colours and sizes the frame around the areas is drawn in.
@@ -47,4 +47,4 @@ void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& 
     std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit,
     const std::optional<glm::vec4>& landing = std::nullopt);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

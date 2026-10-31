@@ -27,7 +27,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * The header and the tabs of each area, built as ui containers while the editor runs.
@@ -99,7 +99,7 @@ class AreaChrome final {
      * @param mask the select mask in force
      * @param height how tall a header and a tab are
      **/
-    void sync(const AreaViews& views, SelectMask mask, float height);
+    void sync(const view::AreaViews& views, selection::SelectMask mask, float height);
 
     /**
      * @return the id of the editor whose tab is at a point, or nothing when no tab is there
@@ -110,7 +110,7 @@ class AreaChrome final {
      * @return the containers the areas of the views' layout are drawn with, under a select mask,
      *         as Interface::add() reads them
      **/
-    static boost::json::object document(const AreaViews& views, SelectMask mask);
+    static boost::json::object document(const view::AreaViews& views, selection::SelectMask mask);
 
     /**
      * @return the name of an area's container
@@ -121,7 +121,7 @@ class AreaChrome final {
      * @return what an editor is called on its tab: its camera for a viewport, and otherwise its
      *         kind with a capital
      **/
-    static std::string label(const AreaLayout::Editor& editor);
+    static std::string label(const view::AreaLayout::Editor& editor);
 
     /**
      * @return the fixed views a viewport offers, each a command and the profile it shows
@@ -132,14 +132,14 @@ class AreaChrome final {
      * @return what a view's shading menu is named: Points or Wireframe when the front of each
      *         triangle is drawn so, and otherwise Flat or Smooth
      **/
-    static std::string shading(const ViewPort::Display& display);
+    static std::string shading(const view::ViewPort::Display& display);
 
     /**
      * @return each command that describes a view's state, as "view::" and its name, and whether
      *         the view holds that state: its camera and projection, its shading, fills and cull,
      *         and what it shows
      **/
-    static std::vector<std::pair<std::string, bool>> marks(const ViewPort& view);
+    static std::vector<std::pair<std::string, bool>> marks(const view::ViewPort& view);
 
     /**
      * @return the kinds of editor an area can be changed to show, in the Editor menu's order
@@ -150,13 +150,13 @@ class AreaChrome final {
      * @return each kind's command, as "area::editor::" and the kind, and whether it is the kind
      *         of an editor
      **/
-    static std::vector<std::pair<std::string, bool>> marks(const AreaLayout::Editor& editor);
+    static std::vector<std::pair<std::string, bool>> marks(const view::AreaLayout::Editor& editor);
 
     /**
      * @return each select mask's command, as "select::mask::" and its name, and whether it is
      *         the mask in force
      **/
-    static std::vector<std::pair<std::string, bool>> marks(SelectMask mask);
+    static std::vector<std::pair<std::string, bool>> marks(selection::SelectMask mask);
 
  private:
     /**
@@ -177,7 +177,7 @@ class AreaChrome final {
 
     /** The masks a mask menu offers, in its order, and where a separator goes before one. **/
     struct Masked final {
-        SelectMask mask;
+        selection::SelectMask mask;
         bool rule;
     };
 
@@ -196,17 +196,17 @@ class AreaChrome final {
     };
 
     static constexpr Choice FILLS[] = { { "points", "Points" }, { "lines", "Lines" }, { "fill", "Fill" } };
-    static constexpr ViewPort::Fill FILLED[] = { ViewPort::Fill::Points, ViewPort::Fill::Lines, ViewPort::Fill::Fill };
+    static constexpr view::ViewPort::Fill FILLED[] = { view::ViewPort::Fill::Points, view::ViewPort::Fill::Lines, view::ViewPort::Fill::Fill };
 
     static constexpr Choice CULLS[] = { { "none", "None" }, { "front", "Front" }, { "back", "Back" }, { "both", "Both" } };
-    static constexpr ViewPort::Cull CULLED[] = { ViewPort::Cull::None, ViewPort::Cull::Front, ViewPort::Cull::Back, ViewPort::Cull::Both };
+    static constexpr view::ViewPort::Cull CULLED[] = { view::ViewPort::Cull::None, view::ViewPort::Cull::Front, view::ViewPort::Cull::Back, view::ViewPort::Cull::Both };
 
     static constexpr Masked MASKS[] = {
-        { .mask = SelectMask::Object, .rule = false }, { .mask = SelectMask::Mesh, .rule = false },
-        { .mask = SelectMask::Curve, .rule = false }, { .mask = SelectMask::Camera, .rule = false },
-        { .mask = SelectMask::Light, .rule = false }, { .mask = SelectMask::Vertex, .rule = true },
-        { .mask = SelectMask::Edge, .rule = false }, { .mask = SelectMask::Face, .rule = false },
-        { .mask = SelectMask::Handle, .rule = false },
+        { .mask = selection::SelectMask::Object, .rule = false }, { .mask = selection::SelectMask::Mesh, .rule = false },
+        { .mask = selection::SelectMask::Curve, .rule = false }, { .mask = selection::SelectMask::Camera, .rule = false },
+        { .mask = selection::SelectMask::Light, .rule = false }, { .mask = selection::SelectMask::Vertex, .rule = true },
+        { .mask = selection::SelectMask::Edge, .rule = false }, { .mask = selection::SelectMask::Face, .rule = false },
+        { .mask = selection::SelectMask::Handle, .rule = false },
     };
 
     /**
@@ -232,12 +232,12 @@ class AreaChrome final {
     /**
      * @return a viewport's mask menu, named for the mask in force
      **/
-    static boost::json::object maskMenu(SelectMask mask, std::size_t area);
+    static boost::json::object maskMenu(selection::SelectMask mask, std::size_t area);
 
     /**
      * @return a viewport's camera menu and its shading menu, named for what the view shows
      **/
-    static boost::json::array viewMenus(const ViewPort& view, std::size_t area);
+    static boost::json::array viewMenus(const view::ViewPort& view, std::size_t area);
 
     /**
      * @return the submenu, its items sending the command for one area
@@ -259,7 +259,7 @@ class AreaChrome final {
      *         kind of editor it shows, its editors' ids and labels, and the names of its view's
      *         menus and of the mask
      **/
-    static std::string signature(const AreaViews& views, SelectMask mask);
+    static std::string signature(const view::AreaViews& views, selection::SelectMask mask);
 
     /**
      * Put one area's header, button and tabs where the area is, and mark what its view holds
@@ -267,7 +267,7 @@ class AreaChrome final {
      *
      * @param view the view the area shows, or null when it shows another kind of editor
      **/
-    void place(const AreaLayout::Area& area, const ViewPort* view, SelectMask mask, float height) const;
+    void place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height) const;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;
@@ -277,4 +277,4 @@ class AreaChrome final {
     std::vector<std::string> held_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

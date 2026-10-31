@@ -17,14 +17,14 @@
 #include <string>
 #include <vector>
 
-#include "SceneStore.h"
+#include "Scene.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -122,7 +122,7 @@ Project::Project(const boost::shared_ptr<v3d::log::Logger>& logger, const boost:
 
 /**
  **/
-bool Project::open(const boost::filesystem::path& manifest, const boost::shared_ptr<Scene>& scene) {
+bool Project::open(const boost::filesystem::path& manifest, const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -143,7 +143,7 @@ bool Project::open(const boost::filesystem::path& manifest, const boost::shared_
 
 /**
  **/
-bool Project::save(const boost::shared_ptr<Scene>& scene) {
+bool Project::save(const boost::shared_ptr<scene::Scene>& scene) {
     if (!write(directory_, scene)) {
         return false;
     }
@@ -154,7 +154,7 @@ bool Project::save(const boost::shared_ptr<Scene>& scene) {
 
 /**
  **/
-bool Project::saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) {
+bool Project::saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<scene::Scene>& scene) {
     boost::system::error_code error;
     if (boost::filesystem::exists(directory, error)) {
         logger_->get()->error("A new project cannot go at {}, which is already there", directory.string());
@@ -170,7 +170,7 @@ bool Project::saveAs(const boost::filesystem::path& directory, const boost::shar
 
 /**
  **/
-bool Project::autosave(const boost::shared_ptr<Scene>& scene) {
+bool Project::autosave(const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -207,7 +207,7 @@ bool Project::recoverable() const {
 
 /**
  **/
-bool Project::recover(const boost::shared_ptr<Scene>& scene) {
+bool Project::recover(const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -228,7 +228,7 @@ void Project::discardRecovery() {
 
 /**
  **/
-const SceneStore::Written& Project::autosaved() const noexcept {
+const Scene::Written& Project::autosaved() const noexcept {
     return recoveryStore_.written();
 }
 
@@ -246,7 +246,7 @@ boost::filesystem::path Project::scene() const {
 
 /**
  **/
-const SceneStore::Written& Project::written() const noexcept {
+const Scene::Written& Project::written() const noexcept {
     return store_.written();
 }
 
@@ -264,7 +264,7 @@ void Project::name(const std::string& title) {
 
 /**
  **/
-bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) {
+bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -300,4 +300,4 @@ bool Project::write(const boost::filesystem::path& directory, const boost::share
     return true;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

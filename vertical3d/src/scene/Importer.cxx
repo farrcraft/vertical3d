@@ -41,7 +41,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -182,13 +182,13 @@ std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, 
 
 /**
  **/
-boost::shared_ptr<v3d::editor::Curve> Importer::curves(const interchange::Curves& read) {
+boost::shared_ptr<v3d::editor::scene::Curve> Importer::curves(const interchange::Curves& read) {
     const boost::shared_ptr<v3d::curve::Curves> geometry = boost::make_shared<v3d::curve::Curves>();
     for (const v3d::curve::Curve& each : read.curves) {
         geometry->add(each);
     }
-    const boost::shared_ptr<v3d::editor::Curve> item = boost::make_shared<v3d::editor::Curve>(geometry);
-    v3d::editor::Curve::Style style{ .renders = true };
+    const boost::shared_ptr<v3d::editor::scene::Curve> item = boost::make_shared<v3d::editor::scene::Curve>(geometry);
+    v3d::editor::scene::Curve::Style style{ .renders = true };
     if (std::isfinite(read.width) && read.width > 0.0F) {
         style.width = read.width;
     }
@@ -319,4 +319,4 @@ v3d::animation::Curve::Key Importer::key(const interchange::Channel& channel, v3
     return made;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

@@ -19,7 +19,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 namespace {
 
@@ -162,4 +162,4 @@ std::vector<std::pair<v3d::brep::Index, glm::vec3>> handlePoints(const v3d::curv
     return handles;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

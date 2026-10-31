@@ -26,7 +26,7 @@
 #include <boost/json.hpp>
 #include <boost/optional/optional.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -58,9 +58,9 @@ void AreaCommands::change(CommandTable* table, const std::string& name, const v3
 /**
  **/
 void AreaCommands::registerEdges(CommandTable* table) const {
-    const std::pair<const char*, AreaLayout::Edge> edges[] = {
-        { "left", AreaLayout::Edge::Left }, { "right", AreaLayout::Edge::Right },
-        { "top", AreaLayout::Edge::Top }, { "bottom", AreaLayout::Edge::Bottom },
+    const std::pair<const char*, view::AreaLayout::Edge> edges[] = {
+        { "left", view::AreaLayout::Edge::Left }, { "right", view::AreaLayout::Edge::Right },
+        { "top", view::AreaLayout::Edge::Top }, { "bottom", view::AreaLayout::Edge::Bottom },
     };
     for (const auto& [word, edge] : edges) {
         change(table, std::string("area::split::") + word, [this, edge](const v3d::event::Event& event) {
@@ -87,11 +87,11 @@ void AreaCommands::registerTabs(CommandTable* table) const {
             return;
         }
         // a new tab shows the camera the area shows, or the perspective view
-        const AreaLayout::Editor& shown = context.layout->areas()[area].editor();
+        const view::AreaLayout::Editor& shown = context.layout->areas()[area].editor();
         const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
-        context.layout->add(area, boost::json::object{ { "kind", AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
+        context.layout->add(area, boost::json::object{ { "kind", view::AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
     });
-    for (const AreaChrome::Kind& kind : AreaChrome::kinds()) {
+    for (const control::AreaChrome::Kind& kind : control::AreaChrome::kinds()) {
         const std::string named = kind.kind;
         change(table, "area::editor::" + named, [&context, named](const v3d::event::Event& event) {
             const std::size_t area = context.areaOf(event);
@@ -100,7 +100,7 @@ void AreaCommands::registerTabs(CommandTable* table) const {
             }
             // a viewport made this way starts from the perspective view
             boost::json::object state{ { "kind", named } };
-            if (named == AreaViews::KIND) {
+            if (named == view::AreaViews::KIND) {
                 state["camera"] = "Perspective";
             }
             context.layout->replace(area, state);
@@ -119,8 +119,8 @@ void AreaCommands::registerTabs(CommandTable* table) const {
         }
         const std::size_t editor = static_cast<std::size_t>(std::get<int>(*data));
         for (std::size_t area = 0; area < context.layout->areas().size(); area++) {
-            const std::vector<AreaLayout::Editor>& editors = context.layout->areas()[area].editors;
-            const auto found = std::ranges::find(editors, editor, &AreaLayout::Editor::id);
+            const std::vector<view::AreaLayout::Editor>& editors = context.layout->areas()[area].editors;
+            const auto found = std::ranges::find(editors, editor, &view::AreaLayout::Editor::id);
             if (found != editors.end()) {
                 context.layout->choose(area, static_cast<std::size_t>(found - editors.begin()));
                 return;
@@ -129,4 +129,4 @@ void AreaCommands::registerTabs(CommandTable* table) const {
     });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

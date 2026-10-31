@@ -14,7 +14,7 @@
 
 #include <boost/json.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * The editor's icons, as cells of one image, so every icon the ui draws shares a texture.
@@ -65,4 +65,4 @@ class IconSheet final {
     std::vector<std::string> names_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

@@ -14,9 +14,9 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
-#include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
 
 #include <cmath>
 #include <cstddef>
@@ -28,11 +28,11 @@
 #include <boost/pointer_cast.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
-std::vector<Status::Button> StatusBar::buttons(const CameraControlTool& camera, const TransformTool& transform, const SelectTool& select,
+std::vector<Status::Button> StatusBar::buttons(const tool::CameraControl& camera, const tool::Transform& transform, const tool::Select& select,
     bool perspective) {
     std::vector<Status::Button> made;
     if (const std::optional<std::string> driven = cameraMove(camera.mode())) {
@@ -58,27 +58,27 @@ std::string StatusBar::count(std::size_t number, const std::string& one, const s
 
 /**
  **/
-std::string StatusBar::selection(const Scene& scene, SelectMask mask) {
-    const std::optional<Component> kind = componentOf(mask);
+std::string StatusBar::selection(const scene::Scene& scene, selection::SelectMask mask) {
+    const std::optional<scene::Component> kind = componentOf(mask);
     if (!kind) {
         const std::size_t items = scene.selection().size();
         return items == 0 ? "Nothing selected" : count(items, "item", "items");
     }
     std::size_t number = 0;
-    for (const boost::shared_ptr<Item>& item : scene.items()) {
+    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
         number += parts(scene, *item, *kind);
     }
     if (number == 0) {
         return "Nothing selected";
     }
     switch (*kind) {
-        case Component::Vertex:
+        case scene::Component::Vertex:
             return count(number, "vertex", "vertices");
-        case Component::Edge:
+        case scene::Component::Edge:
             return count(number, "edge", "edges");
-        case Component::Face:
+        case scene::Component::Face:
             return count(number, "face", "faces");
-        case Component::Handle:
+        case scene::Component::Handle:
             break;
     }
     return count(number, "handle", "handles");
@@ -95,19 +95,19 @@ std::string StatusBar::rate(std::uint64_t nanoseconds) {
 
 /**
  **/
-std::optional<std::string> StatusBar::cameraMove(CameraControlTool::CameraMode mode) {
+std::optional<std::string> StatusBar::cameraMove(tool::CameraControl::CameraMode mode) {
     switch (mode) {
-        case CameraControlTool::CAMERA_MODE_ZOOM:
+        case tool::CameraControl::CAMERA_MODE_ZOOM:
             return "Zoom";
-        case CameraControlTool::CAMERA_MODE_TRUCK:
+        case tool::CameraControl::CAMERA_MODE_TRUCK:
             return "Truck";
-        case CameraControlTool::CAMERA_MODE_PAN:
+        case tool::CameraControl::CAMERA_MODE_PAN:
             return "Orbit";
-        case CameraControlTool::CAMERA_MODE_DOLLY:
+        case tool::CameraControl::CAMERA_MODE_DOLLY:
             return "Dolly";
-        case CameraControlTool::CAMERA_MODE_PITCH:
+        case tool::CameraControl::CAMERA_MODE_PITCH:
             return "Pitch";
-        case CameraControlTool::CAMERA_MODE_NONE:
+        case tool::CameraControl::CAMERA_MODE_NONE:
             break;
     }
     return std::nullopt;
@@ -115,15 +115,15 @@ std::optional<std::string> StatusBar::cameraMove(CameraControlTool::CameraMode m
 
 /**
  **/
-std::optional<std::string> StatusBar::handles(TransformTool::Mode mode) {
+std::optional<std::string> StatusBar::handles(tool::Transform::Mode mode) {
     switch (mode) {
-        case TransformTool::Mode::Translate:
+        case tool::Transform::Mode::Translate:
             return "move";
-        case TransformTool::Mode::Rotate:
+        case tool::Transform::Mode::Rotate:
             return "rotate";
-        case TransformTool::Mode::Scale:
+        case tool::Transform::Mode::Scale:
             return "scale";
-        case TransformTool::Mode::None:
+        case tool::Transform::Mode::None:
             break;
     }
     return std::nullopt;
@@ -131,10 +131,10 @@ std::optional<std::string> StatusBar::handles(TransformTool::Mode mode) {
 
 /**
  **/
-std::size_t StatusBar::parts(const Scene& scene, const Item& item, Component kind) {
+std::size_t StatusBar::parts(const scene::Scene& scene, const scene::Item& item, scene::Component kind) {
     const std::vector<v3d::brep::Index> chosen = scene.components().of(item.id(), kind);
-    const boost::shared_ptr<Mesh> mesh = scene.mesh(item.id());
-    if (kind != Component::Edge || !mesh) {
+    const boost::shared_ptr<scene::Mesh> mesh = scene.mesh(item.id());
+    if (kind != scene::Component::Edge || !mesh) {
         return chosen.size();
     }
     const v3d::brep::BRep& geometry = *mesh->geometry();
@@ -143,7 +143,7 @@ std::size_t StatusBar::parts(const Scene& scene, const Item& item, Component kin
         // the half that owns its edge stands for it, and the other only when that one is not chosen
         const v3d::brep::HalfEdge* edge = geometry.edge(half);
         const bool alone = edge == nullptr || edge->pair() == v3d::brep::INVALID_ID ||
-            !scene.components().selected(item.id(), Component::Edge, edge->pair());
+            !scene.components().selected(item.id(), scene::Component::Edge, edge->pair());
         if (v3d::brep::ownsEdge(geometry, half) || alone) {
             edges++;
         }
@@ -151,4 +151,4 @@ std::size_t StatusBar::parts(const Scene& scene, const Item& item, Component kin
     return edges;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

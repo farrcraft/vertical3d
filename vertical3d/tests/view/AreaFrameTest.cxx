@@ -23,7 +23,7 @@
 
 namespace {
 
-using v3d::editor::AreaLayout;
+using v3d::editor::view::AreaLayout;
 using v3d::render::realtime::canvas::Canvas;
 
 /**
@@ -40,7 +40,7 @@ struct Pair {
     }
 
     void draw(std::optional<std::size_t> active = std::nullopt, const std::optional<AreaLayout::Divider>& lit = std::nullopt) {
-        v3d::editor::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, active, lit);
+        v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent }, active, lit);
     }
 
     /**
@@ -114,7 +114,7 @@ BOOST_FIXTURE_TEST_CASE(a_lit_divider_takes_the_accent, Pair) {
  * Where a dragged tab would land is covered in the landing colour, over everything else.
  **/
 BOOST_FIXTURE_TEST_CASE(a_landing_is_covered, Pair) {
-    v3d::editor::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent, .landing = landing },
+    v3d::editor::view::drawFrame(&canvas, layout, { .gap = gap, .hairline = hairline, .accent = accent, .landing = landing },
         std::nullopt, std::nullopt, glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
     BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 149.0F, 3.0F); }));
     BOOST_CHECK(any(landing, [](const glm::vec2& point) { return at(point, 197.0F, 97.0F); }));

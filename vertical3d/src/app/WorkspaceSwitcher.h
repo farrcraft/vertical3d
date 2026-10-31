@@ -12,7 +12,7 @@
 
 #include <boost/json.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * Which workspace the editor shows, and each project's own arrangement of it. The workspaces
@@ -93,4 +93,4 @@ class WorkspaceSwitcher final {
     std::string shown_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

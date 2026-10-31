@@ -12,14 +12,14 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Command.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/CreateCommand.h>
-#include <vertical3d/src/command/GroupCommand.h>
-#include <vertical3d/src/command/ImportCommand.h>
-#include <vertical3d/src/command/KeyCommand.h>
+#include <vertical3d/src/command/Create.h>
+#include <vertical3d/src/command/Group.h>
+#include <vertical3d/src/command/Import.h>
+#include <vertical3d/src/command/Key.h>
 #include <vertical3d/src/command/Modelling.h>
-#include <vertical3d/src/command/SettingsCommand.h>
-#include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/command/Settings.h>
+#include <vertical3d/src/command/Stack.h>
+#include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/Camera.h>
@@ -42,25 +42,25 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::document {
 
 Document::Document(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& project) :
     logger_(logger),
-    scene_(boost::make_shared<Scene>()),
-    history_(boost::make_shared<CommandStack>()),
-    project_(boost::make_shared<Project>(logger, project)),
+    scene_(boost::make_shared<scene::Scene>()),
+    history_(boost::make_shared<command::Stack>()),
+    project_(boost::make_shared<store::Project>(logger, project)),
     sinceAutosave_(0) {
 }
 
-const boost::shared_ptr<Scene>& Document::scene() const noexcept {
+const boost::shared_ptr<scene::Scene>& Document::scene() const noexcept {
     return scene_;
 }
 
-const boost::shared_ptr<CommandStack>& Document::history() const noexcept {
+const boost::shared_ptr<command::Stack>& Document::history() const noexcept {
     return history_;
 }
 
-const boost::shared_ptr<Project>& Document::project() const noexcept {
+const boost::shared_ptr<store::Project>& Document::project() const noexcept {
     return project_;
 }
 
@@ -68,12 +68,12 @@ bool Document::dirty() const noexcept {
     return history_->dirty();
 }
 
-Outcome Document::create(const boost::shared_ptr<Item>& item, const std::string& name) {
+Outcome Document::create(const boost::shared_ptr<scene::Item>& item, const std::string& name) {
     if (item->name().empty()) {
         item->name(titled(name));
     }
     // the command does the creating, so making an item and redoing one run the same code
-    const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, item, name);
+    const boost::shared_ptr<command::Create> command = boost::make_shared<command::Create>(scene_, item, name);
     command->redo();
     history_->push(command);
     return { .done = true, .message = "created a " + name + " - " + items(scene_->count()) };
@@ -82,46 +82,46 @@ Outcome Document::create(const boost::shared_ptr<Item>& item, const std::string&
 Outcome Document::createPrimitive(Primitive primitive) {
     switch (primitive) {
         case Primitive::Cube:
-            return create(boost::make_shared<Mesh>(v3d::brep::cube()), "cube");
+            return create(boost::make_shared<scene::Mesh>(v3d::brep::cube()), "cube");
         case Primitive::Plane:
-            return create(boost::make_shared<Mesh>(v3d::brep::plane()), "plane");
+            return create(boost::make_shared<scene::Mesh>(v3d::brep::plane()), "plane");
         case Primitive::Cylinder:
-            return create(boost::make_shared<Mesh>(v3d::brep::cylinder()), "cylinder");
+            return create(boost::make_shared<scene::Mesh>(v3d::brep::cylinder()), "cylinder");
         case Primitive::Cone:
-            return create(boost::make_shared<Mesh>(v3d::brep::cone()), "cone");
+            return create(boost::make_shared<scene::Mesh>(v3d::brep::cone()), "cone");
     }
     return {};
 }
 
-Outcome Document::createCamera(const v3d::type::camera::Profile& at, Camera::Projection projection) {
-    const char* name = projection == Camera::Projection::Orthographic ? "orthographic camera" : "perspective camera";
+Outcome Document::createCamera(const v3d::type::camera::Profile& at, scene::Camera::Projection projection) {
+    const char* name = projection == scene::Camera::Projection::Orthographic ? "orthographic camera" : "perspective camera";
     return create(create_camera(at, projection), name);
 }
 
-Outcome Document::createLight(const v3d::type::camera::Profile& at, Light::Type type) {
+Outcome Document::createLight(const v3d::type::camera::Profile& at, scene::Light::Type type) {
     const char* name = "point light";
-    if (type == Light::Type::Distant) {
+    if (type == scene::Light::Type::Distant) {
         name = "distant light";
-    } else if (type == Light::Type::Spot) {
+    } else if (type == scene::Light::Type::Spot) {
         name = "spot light";
     }
     return create(create_light(at, type), name);
 }
 
-Outcome Document::createCurve(CurveType type) {
+Outcome Document::createCurve(scene::CurveType type) {
     const char* name = "poly curve";
-    if (type == CurveType::Bezier) {
+    if (type == scene::CurveType::Bezier) {
         name = "Bezier curve";
-    } else if (type == CurveType::CatmullRom) {
+    } else if (type == scene::CurveType::CatmullRom) {
         name = "Catmull-Rom curve";
-    } else if (type == CurveType::Nurbs) {
+    } else if (type == scene::CurveType::Nurbs) {
         name = "NURBS curve";
     }
     return create(create_curve(type), name);
 }
 
-Outcome Document::group(const Items& items) {
-    const boost::shared_ptr<GroupCommand> command = boost::make_shared<GroupCommand>(scene_, items);
+Outcome Document::group(const scene::Items& items) {
+    const boost::shared_ptr<command::Group> command = boost::make_shared<command::Group>(scene_, items);
     if (command->empty()) {
         return { .done = false, .message = "a group gathers items, and none was given" };
     }
@@ -139,14 +139,14 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     if (extension == ".gltf" || extension == ".glb") {
         read = v3d::interchange::readGltf(file.string());
     } else if (extension == ".usd" || extension == ".usda" || extension == ".usdc" || extension == ".usdz") {
-        read = v3d::interchange::readUsd(file.string());
+        read = v3d::interchange::usd::read(file.string());
     } else {
         return { .done = false, .message = "import: " + name + " is neither glTF nor USD" };
     }
     if (!read.scene) {
         return { .done = false, .message = "import: " + read.problem };
     }
-    const Import imported = editor::importScene(*read.scene, scene_->timeline().rate);
+    const scene::Import imported = scene::importScene(*read.scene, scene_->timeline().rate);
     for (const std::string& note : read.notes) {
         logger_->get()->warn("import {}: {}", name, note);
     }
@@ -156,7 +156,7 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     if (imported.items.empty()) {
         return { .done = false, .message = "import: " + name + " holds nothing to import" };
     }
-    const boost::shared_ptr<ImportCommand> command = boost::make_shared<ImportCommand>(scene_, imported, name);
+    const boost::shared_ptr<command::Import> command = boost::make_shared<command::Import>(scene_, imported, name);
     command->redo();
     history_->push(command);
     std::string message = "imported " + items(imported.items.size()) + " from " + name;
@@ -167,8 +167,8 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     return { .done = true, .message = message };
 }
 
-Outcome Document::key(const Items& items, int frame) {
-    const boost::shared_ptr<KeyCommand> command = boost::make_shared<KeyCommand>(scene_, items, static_cast<float>(frame));
+Outcome Document::key(const scene::Items& items, int frame) {
+    const boost::shared_ptr<command::Key> command = boost::make_shared<command::Key>(scene_, items, static_cast<float>(frame));
     if (command->empty()) {
         return { .done = false, .message = "a key is set on items, and none was given" };
     }
@@ -177,45 +177,45 @@ Outcome Document::key(const Items& items, int frame) {
     return { .done = true, .message = "set a key at frame " + std::to_string(frame) };
 }
 
-Outcome Document::settings(const RenderSettings& settings) {
+Outcome Document::settings(const scene::RenderSettings& settings) {
     if (settings == scene_->renderSettings()) {
         return { .done = false, .message = "the render settings are unchanged" };
     }
-    const boost::shared_ptr<SettingsCommand> command = boost::make_shared<SettingsCommand>(scene_, settings);
+    const boost::shared_ptr<command::Settings> command = boost::make_shared<command::Settings>(scene_, settings);
     command->redo();
     history_->push(command);
     return { .done = true, .message = "changed the render settings" };
 }
 
 Outcome Document::splitEdges() {
-    return record(history_.get(), editor::splitEdges(scene_),
+    return record(history_.get(), command::splitEdges(scene_),
         {.done = "split the selected edges", .refused = "split edge: no edge is selected"});
 }
 
 Outcome Document::splitFace() {
     std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = editor::splitFace(scene_, &problem);
+    const boost::shared_ptr<command::Topology> command = command::splitFace(scene_, &problem);
     return record(history_.get(), command, {.done = "split a face between the selected vertices", .refused = "split face: " + problem});
 }
 
 Outcome Document::mergeVertices() {
     std::string problem;
-    const boost::shared_ptr<TopologyCommand> command = editor::mergeVertices(scene_, &problem);
+    const boost::shared_ptr<command::Topology> command = command::mergeVertices(scene_, &problem);
     return record(history_.get(), command, {.done = "merged the selected vertices", .refused = "merge vertices: " + problem});
 }
 
 Outcome Document::extrudeFaces() {
-    return record(history_.get(), editor::extrudeFaces(scene_),
+    return record(history_.get(), command::extrudeFaces(scene_),
         {.done = "extruded the selected faces", .refused = "extrude face: no face is selected"});
 }
 
 Outcome Document::insetFaces() {
-    return record(history_.get(), editor::insetFaces(scene_),
+    return record(history_.get(), command::insetFaces(scene_),
         {.done = "inset the selected faces", .refused = "inset face: no face is selected"});
 }
 
 Outcome Document::undo() {
-    const boost::shared_ptr<Command> command = history_->undo();
+    const boost::shared_ptr<command::Command> command = history_->undo();
     if (!command) {
         return { .done = false, .message = "nothing to undo" };
     }
@@ -223,7 +223,7 @@ Outcome Document::undo() {
 }
 
 Outcome Document::redo() {
-    const boost::shared_ptr<Command> command = history_->redo();
+    const boost::shared_ptr<command::Command> command = history_->redo();
     if (!command) {
         return { .done = false, .message = "nothing to redo" };
     }
@@ -231,7 +231,7 @@ Outcome Document::redo() {
 }
 
 void Document::goTo(int frame) {
-    const Timeline& timeline = scene_->timeline();
+    const scene::Timeline& timeline = scene_->timeline();
     scene_->frame(std::clamp(frame, timeline.start, timeline.end));
 }
 
@@ -303,7 +303,7 @@ Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type
     if (!stream.is_open()) {
         return { .done = false, .message = "could not write " + file.string() };
     }
-    writeShot(&stream, *scene_, scene_->evaluate(), from, RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
+    writeShot(&stream, *scene_, scene_->evaluate(), from, render::RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
     return { .done = true, .message = "exported " + items(scene_->count()) + " to " + file.string() };
 }
 
@@ -323,7 +323,7 @@ std::string Document::titled(const std::string& kind) {
     return title;
 }
 
-Outcome Document::record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said) {
+Outcome Document::record(command::Stack* history, const boost::shared_ptr<command::Topology>& command, const Said& said) {
     if (!command) {
         return { .done = false, .message = said.refused };
     }
@@ -331,4 +331,4 @@ Outcome Document::record(CommandStack* history, const boost::shared_ptr<Topology
     return { .done = true, .message = said.done };
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::document

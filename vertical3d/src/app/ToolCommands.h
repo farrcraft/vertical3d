@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The commands that choose what the tools do: the select mask, the camera move latched or held,
@@ -41,4 +41,4 @@ class ToolCommands final {
     const Context& context_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

@@ -12,7 +12,7 @@
 
 namespace {
 
-using v3d::editor::Notices;
+using v3d::editor::control::Notices;
 
 constexpr float CLOSE = 1e-3F;
 

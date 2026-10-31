@@ -19,7 +19,7 @@
 #include <boost/json.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -69,4 +69,4 @@ std::optional<v3d::ui::Image::Corners> IconSheet::corners(std::string_view sourc
     return v3d::ui::Image::Corners{ .min = min, .max = min + cell };
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

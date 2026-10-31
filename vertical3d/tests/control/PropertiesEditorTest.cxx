@@ -6,8 +6,8 @@
 #include <api/brep/Primitives.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/EditCommand.h>
+#include <vertical3d/src/command/Edit.h>
+#include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -27,8 +27,8 @@
 
 namespace {
 
-using v3d::editor::EditCommand;
-using v3d::editor::PropertiesEditor;
+using v3d::editor::command::Edit;
+using v3d::editor::control::PropertiesEditor;
 
 /**
  * What the editor wrote, and where.
@@ -44,9 +44,9 @@ struct Written final {
  **/
 struct Panel {
     Panel() :
-        history(boost::make_shared<v3d::editor::CommandStack>()),
-        cube(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        camera(boost::make_shared<v3d::editor::Camera>()),
+        history(boost::make_shared<v3d::editor::command::Stack>()),
+        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        camera(boost::make_shared<v3d::editor::scene::Camera>()),
         layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
             [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }),
         editor(history) {
@@ -103,10 +103,10 @@ struct Panel {
         frame(input(from + glm::vec2(2.0F + across, 0.0F), false, false, true));
     }
 
-    boost::shared_ptr<v3d::editor::CommandStack> history;
-    v3d::editor::Scene scene;
-    boost::shared_ptr<v3d::editor::Mesh> cube;
-    boost::shared_ptr<v3d::editor::Camera> camera;
+    boost::shared_ptr<v3d::editor::command::Stack> history;
+    v3d::editor::scene::Scene scene;
+    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::Camera> camera;
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     v3d::ui::Immediate layer;
@@ -134,18 +134,18 @@ BOOST_AUTO_TEST_CASE(a_path_is_shown_under_its_heading) {
  * only in the last bits of a placement are the same.
  **/
 BOOST_AUTO_TEST_CASE(an_edit_command_puts_either_end_back) {
-    const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
-    const EditCommand::Values before = EditCommand::of(*camera);
-    EditCommand::Values after = before;
+    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const Edit::Values before = Edit::of(*camera);
+    Edit::Values after = before;
     after.name = "Shot";
     after.pose.placement.position = glm::vec3(1.0F, 2.0F, 3.0F);
     after.pose.lens.fov = 30.0F;
-    EditCommand::apply(camera.get(), after);
-    BOOST_CHECK(EditCommand::same(EditCommand::of(*camera), after));
-    BOOST_CHECK(!EditCommand::same(before, after));
+    Edit::apply(camera.get(), after);
+    BOOST_CHECK(Edit::same(Edit::of(*camera), after));
+    BOOST_CHECK(!Edit::same(before, after));
 
     // the command reads where the edit ended from the item
-    EditCommand command(camera, before, "edit lens");
+    Edit command(camera, before, "edit lens");
     command.undo();
     BOOST_CHECK(camera->name().empty());
     BOOST_CHECK_EQUAL(camera->lens().fov, before.pose.lens.fov);
@@ -154,9 +154,9 @@ BOOST_AUTO_TEST_CASE(an_edit_command_puts_either_end_back) {
     BOOST_CHECK_EQUAL(camera->name(), "Shot");
     BOOST_CHECK_EQUAL(command.name(), "edit lens");
 
-    EditCommand::Values nudged = before;
+    Edit::Values nudged = before;
     nudged.pose.placement.position.x += 1e-8F;
-    BOOST_CHECK(EditCommand::same(before, nudged));
+    BOOST_CHECK(Edit::same(before, nudged));
 }
 
 /**
@@ -248,7 +248,7 @@ BOOST_FIXTURE_TEST_CASE(a_rename_is_one_change, Panel) {
     frame(input(*name, false, false, false));
     BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
 
-    const boost::shared_ptr<v3d::editor::Command> undone = history->undo();
+    const boost::shared_ptr<v3d::editor::command::Command> undone = history->undo();
     BOOST_CHECK_EQUAL(undone->name(), "rename");
     undone->undo();
     BOOST_CHECK_EQUAL(cube->name(), "Cube");

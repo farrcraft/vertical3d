@@ -8,7 +8,7 @@
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The Render menu's commands: a render of the shot, a batch of every frame, and the render
@@ -27,4 +27,4 @@ class RenderCommands final {
     const Context& context_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

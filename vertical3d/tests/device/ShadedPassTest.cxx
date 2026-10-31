@@ -86,8 +86,8 @@ boost::shared_ptr<v3d::brep::BRep> facing() {
  * Draw a scene through the shaded pass into a fresh target, as a view of that display would,
  * and read back the pixel at the middle.
  **/
-glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::ShadedPass* shaded, const v3d::editor::Scene& scene,
-    const v3d::editor::ViewPort::Display& display, const std::string& name) {
+glm::vec4 middle(v3d::test::Headless* headless, v3d::editor::view::ShadedPass* shaded, const v3d::editor::scene::Scene& scene,
+    const v3d::editor::view::ViewPort::Display& display, const std::string& name) {
     using v3d::render::realtime::vulkan::frame::Capture;
     using v3d::render::realtime::Recorder;
     using v3d::render::realtime::RenderTarget;
@@ -147,25 +147,25 @@ BOOST_AUTO_TEST_SUITE(shaded_pass_test)
  **/
 BOOST_AUTO_TEST_CASE(a_face_toward_the_view_is_its_front) {
     v3d::test::Headless headless(colourFormat, size, size);
-    v3d::editor::ShadedPass shaded(headless.context);
-    v3d::editor::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::Mesh>(facing()));
+    v3d::editor::view::ShadedPass shaded(headless.context);
+    v3d::editor::scene::Scene scene;
+    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(facing()));
 
-    v3d::editor::ViewPort::Display display;
-    display.cull = v3d::editor::ViewPort::Cull::Back;
+    v3d::editor::view::ViewPort::Display display;
+    display.cull = v3d::editor::view::ViewPort::Cull::Back;
     const glm::vec4 front = middle(&headless, &shaded, scene, display, "shaded_cull_back");
     BOOST_CHECK(lit(front));
 
     // lit head on by the light at the eye, so the surface comes out at its own colour
-    BOOST_CHECK_CLOSE(front.r, v3d::editor::ShadedPass::surface.r, 2.0F);
+    BOOST_CHECK_CLOSE(front.r, v3d::editor::view::ShadedPass::surface.r, 2.0F);
 
-    display.cull = v3d::editor::ViewPort::Cull::Front;
+    display.cull = v3d::editor::view::ViewPort::Cull::Front;
     BOOST_CHECK(!lit(middle(&headless, &shaded, scene, display, "shaded_cull_front")));
 
-    display.cull = v3d::editor::ViewPort::Cull::None;
+    display.cull = v3d::editor::view::ViewPort::Cull::None;
     BOOST_CHECK(lit(middle(&headless, &shaded, scene, display, "shaded_cull_none")));
 
-    display.cull = v3d::editor::ViewPort::Cull::Both;
+    display.cull = v3d::editor::view::ViewPort::Cull::Both;
     BOOST_CHECK(!lit(middle(&headless, &shaded, scene, display, "shaded_cull_both")));
 }
 
@@ -175,20 +175,20 @@ BOOST_AUTO_TEST_CASE(a_face_toward_the_view_is_its_front) {
  **/
 BOOST_AUTO_TEST_CASE(every_fill_and_shading_draws_cleanly) {
     v3d::test::Headless headless(colourFormat, size, size);
-    v3d::editor::ShadedPass shaded(headless.context);
-    v3d::editor::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::Mesh>(facing()));
+    v3d::editor::view::ShadedPass shaded(headless.context);
+    v3d::editor::scene::Scene scene;
+    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(facing()));
 
-    for (const v3d::editor::Shading shading : { v3d::editor::Shading::Flat, v3d::editor::Shading::Smooth }) {
-        for (const v3d::editor::ViewPort::Fill fill :
-            { v3d::editor::ViewPort::Fill::Points, v3d::editor::ViewPort::Fill::Lines, v3d::editor::ViewPort::Fill::Fill }) {
-            v3d::editor::ViewPort::Display display;
+    for (const v3d::editor::view::Shading shading : { v3d::editor::view::Shading::Flat, v3d::editor::view::Shading::Smooth }) {
+        for (const v3d::editor::view::ViewPort::Fill fill :
+            { v3d::editor::view::ViewPort::Fill::Points, v3d::editor::view::ViewPort::Fill::Lines, v3d::editor::view::ViewPort::Fill::Fill }) {
+            v3d::editor::view::ViewPort::Display display;
             display.shading = shading;
-            display.cull = v3d::editor::ViewPort::Cull::None;
+            display.cull = v3d::editor::view::ViewPort::Cull::None;
             display.front = fill;
             display.back = fill;
             const glm::vec4 centre = middle(&headless, &shaded, scene, display, "shaded_fill");
-            if (fill == v3d::editor::ViewPort::Fill::Fill || !shaded.nonSolid()) {
+            if (fill == v3d::editor::view::ViewPort::Fill::Fill || !shaded.nonSolid()) {
                 BOOST_CHECK(lit(centre));
             } else {
                 BOOST_CHECK(!lit(centre));
@@ -203,11 +203,11 @@ BOOST_AUTO_TEST_CASE(every_fill_and_shading_draws_cleanly) {
  **/
 BOOST_AUTO_TEST_CASE(a_mesh_is_uploaded_again_only_when_it_changes) {
     v3d::test::Headless headless(colourFormat, size, size);
-    v3d::editor::ShadedPass shaded(headless.context);
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> item = boost::make_shared<v3d::editor::Mesh>(facing());
+    v3d::editor::view::ShadedPass shaded(headless.context);
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> item = boost::make_shared<v3d::editor::scene::Mesh>(facing());
     scene.add(item);
-    const v3d::editor::ViewPort::Display display;
+    const v3d::editor::view::ViewPort::Display display;
 
     middle(&headless, &shaded, scene, display, "shaded_upload");
     middle(&headless, &shaded, scene, display, "shaded_upload");
@@ -223,8 +223,8 @@ BOOST_AUTO_TEST_CASE(a_mesh_is_uploaded_again_only_when_it_changes) {
     item->geometry()->touch();
     middle(&headless, &shaded, scene, display, "shaded_upload");
     BOOST_CHECK_EQUAL(shaded.built(), 2U);
-    v3d::editor::ViewPort::Display smooth;
-    smooth.shading = v3d::editor::Shading::Smooth;
+    v3d::editor::view::ViewPort::Display smooth;
+    smooth.shading = v3d::editor::view::Shading::Smooth;
     middle(&headless, &shaded, scene, smooth, "shaded_upload");
     BOOST_CHECK_EQUAL(shaded.built(), 3U);
 

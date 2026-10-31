@@ -7,8 +7,8 @@
 
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/command/CommandStack.h>
-#include <vertical3d/src/command/TopologyCommand.h>
+#include <vertical3d/src/command/Stack.h>
+#include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/Item.h>
@@ -25,7 +25,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::document {
 
 /**
  * What an operation did, for whoever asked for it to say.
@@ -57,9 +57,9 @@ class Document final {
      **/
     Document(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& project);
 
-    const boost::shared_ptr<Scene>& scene() const noexcept;
-    const boost::shared_ptr<CommandStack>& history() const noexcept;
-    const boost::shared_ptr<Project>& project() const noexcept;
+    const boost::shared_ptr<scene::Scene>& scene() const noexcept;
+    const boost::shared_ptr<command::Stack>& history() const noexcept;
+    const boost::shared_ptr<store::Project>& project() const noexcept;
 
     /**
      * @return whether the document has changes no save kept
@@ -70,24 +70,24 @@ class Document final {
      * Put a new item into the scene.
      * @param name what the history calls the change
      **/
-    Outcome create(const boost::shared_ptr<Item>& item, const std::string& name);
+    Outcome create(const boost::shared_ptr<scene::Item>& item, const std::string& name);
     Outcome createPrimitive(Primitive primitive);
 
     /**
      * Make a camera or a light where a view is, facing the way it looks.
      **/
-    Outcome createCamera(const v3d::type::camera::Profile& at, Camera::Projection projection);
-    Outcome createLight(const v3d::type::camera::Profile& at, Light::Type type);
+    Outcome createCamera(const v3d::type::camera::Profile& at, scene::Camera::Projection projection);
+    Outcome createLight(const v3d::type::camera::Profile& at, scene::Light::Type type);
 
     /**
      * Make one curve of a type at the origin.
      **/
-    Outcome createCurve(CurveType type);
+    Outcome createCurve(scene::CurveType type);
 
     /**
      * Gather items beneath a new group.
      **/
-    Outcome group(const Items& items);
+    Outcome group(const scene::Items& items);
 
     /**
      * Read a glTF file (.gltf, .glb) or a USD stage (.usd, .usda, .usdc, .usdz), and put its
@@ -100,12 +100,12 @@ class Document final {
     /**
      * Key every property of each item at a frame.
      **/
-    Outcome key(const Items& items, int frame);
+    Outcome key(const scene::Items& items, int frame);
 
     /**
      * Take new render settings. The same settings change nothing.
      **/
-    Outcome settings(const RenderSettings& settings);
+    Outcome settings(const scene::RenderSettings& settings);
 
     /**
      * The modelling operations, on the scene's selected parts: split the selected edges at their
@@ -209,14 +209,14 @@ class Document final {
      * Record a modelling operation's change, or say why there was none. A modelling operation has
      * changed the mesh by the time it hands its record back.
      **/
-    static Outcome record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said);
+    static Outcome record(command::Stack* history, const boost::shared_ptr<command::Topology>& command, const Said& said);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
-    boost::shared_ptr<Scene> scene_;
-    boost::shared_ptr<CommandStack> history_;
-    boost::shared_ptr<Project> project_;
+    boost::shared_ptr<scene::Scene> scene_;
+    boost::shared_ptr<command::Stack> history_;
+    boost::shared_ptr<store::Project> project_;
     // milliseconds since the last autosave
     unsigned int sinceAutosave_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::document

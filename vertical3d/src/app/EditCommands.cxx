@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -45,34 +45,34 @@ void EditCommands::registerCommands(CommandTable* table) const {
  **/
 void EditCommands::registerCreate(CommandTable* table) const {
     const Context& context = context_;
-    for (const auto& [name, primitive] : std::vector<std::pair<const char*, Document::Primitive>>{
-        { "cube", Document::Primitive::Cube }, { "plane", Document::Primitive::Plane },
-        { "cylinder", Document::Primitive::Cylinder }, { "cone", Document::Primitive::Cone } }) {
+    for (const auto& [name, primitive] : std::vector<std::pair<const char*, document::Document::Primitive>>{
+        { "cube", document::Document::Primitive::Cube }, { "plane", document::Document::Primitive::Plane },
+        { "cylinder", document::Document::Primitive::Cylinder }, { "cone", document::Document::Primitive::Cone } }) {
         table->press(std::string("create::poly::") + name, [&context, primitive]() {
             context.report(context.document->createPrimitive(primitive));
         });
     }
-    for (const auto& [name, projection] : std::vector<std::pair<const char*, Camera::Projection>>{
-        { "create::perspective::camera", Camera::Projection::Perspective },
-        { "create::ortho::camera", Camera::Projection::Orthographic } }) {
+    for (const auto& [name, projection] : std::vector<std::pair<const char*, scene::Camera::Projection>>{
+        { "create::perspective::camera", scene::Camera::Projection::Perspective },
+        { "create::ortho::camera", scene::Camera::Projection::Orthographic } }) {
         table->press(name, [&context, projection]() {
             context.atView("a camera is made", [&context, projection](const v3d::type::camera::Profile& at) {
                 context.report(context.document->createCamera(at, projection));
             });
         });
     }
-    for (const auto& [name, type] : std::vector<std::pair<const char*, Light::Type>>{
-        { "create::light::point", Light::Type::Point }, { "create::light::distant", Light::Type::Distant },
-        { "create::light::spot", Light::Type::Spot } }) {
+    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::Light::Type>>{
+        { "create::light::point", scene::Light::Type::Point }, { "create::light::distant", scene::Light::Type::Distant },
+        { "create::light::spot", scene::Light::Type::Spot } }) {
         table->press(name, [&context, type]() {
             context.atView("a light is made", [&context, type](const v3d::type::camera::Profile& at) {
                 context.report(context.document->createLight(at, type));
             });
         });
     }
-    for (const auto& [name, type] : std::vector<std::pair<const char*, CurveType>>{
-        { "create::curve::poly", CurveType::Poly }, { "create::curve::bezier", CurveType::Bezier },
-        { "create::curve::catmull_rom", CurveType::CatmullRom }, { "create::curve::nurbs", CurveType::Nurbs } }) {
+    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::CurveType>>{
+        { "create::curve::poly", scene::CurveType::Poly }, { "create::curve::bezier", scene::CurveType::Bezier },
+        { "create::curve::catmull_rom", scene::CurveType::CatmullRom }, { "create::curve::nurbs", scene::CurveType::Nurbs } }) {
         table->press(name, [&context, type]() { context.report(context.document->createCurve(type)); });
     }
     table->press("create::group", [&context]() { context.report(context.document->group(context.document->scene()->selection())); });
@@ -83,20 +83,20 @@ void EditCommands::registerCreate(CommandTable* table) const {
 void EditCommands::registerModelling(CommandTable* table) const {
     const Context& context = context_;
     table->press("transform::poly::split_edge", [&context]() {
-        context.masked(SelectMask::Edge, "split edge", [&context]() { return context.document->splitEdges(); });
+        context.masked(selection::SelectMask::Edge, "split edge", [&context]() { return context.document->splitEdges(); });
     });
     table->press("transform::poly::split_face", [&context]() {
-        context.masked(SelectMask::Vertex, "split face", [&context]() { return context.document->splitFace(); });
+        context.masked(selection::SelectMask::Vertex, "split face", [&context]() { return context.document->splitFace(); });
     });
     table->press("transform::poly::extrude_face", [&context]() {
-        context.masked(SelectMask::Face, "extrude face", [&context]() { return context.document->extrudeFaces(); });
+        context.masked(selection::SelectMask::Face, "extrude face", [&context]() { return context.document->extrudeFaces(); });
     });
     table->press("transform::poly::inset_face", [&context]() {
-        context.masked(SelectMask::Face, "inset face", [&context]() { return context.document->insetFaces(); });
+        context.masked(selection::SelectMask::Face, "inset face", [&context]() { return context.document->insetFaces(); });
     });
     table->press("transform::poly::merge_vertices", [&context]() {
-        context.masked(SelectMask::Vertex, "merge vertices", [&context]() { return context.document->mergeVertices(); });
+        context.masked(selection::SelectMask::Vertex, "merge vertices", [&context]() { return context.document->mergeVertices(); });
     });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

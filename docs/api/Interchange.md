@@ -95,7 +95,7 @@ for (const std::string& note : imported.notes) {
 
 ## Reading USD
 
-`interchange::readUsd(path)` ([api/interchange/usd/Usd.h](../../api/interchange/usd/Usd.h)) opens
+`interchange::usd::read(path)` ([api/interchange/usd/Usd.h](../../api/interchange/usd/Usd.h)) opens
 a `.usd`, `.usda`, `.usdc` or `.usdz` stage, and returns an `Imported` as `readGltf()` does.
 
 What it reads:

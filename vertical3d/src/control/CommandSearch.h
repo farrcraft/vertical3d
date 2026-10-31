@@ -18,7 +18,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * A search over the commands on the editor's menus, in a panel the ui config lays out.
@@ -164,4 +164,4 @@ class CommandSearch final {
     bool visible_ = false;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

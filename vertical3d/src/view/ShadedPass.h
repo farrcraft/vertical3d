@@ -27,7 +27,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * The scene's meshes as shaded triangles, drawn into a view's pass before its lines.
@@ -66,7 +66,7 @@ class ShadedPass final {
      * display says. The pass gets the depth bias the surfaces are drawn at. Anything submitted
      * to the pass after this draws over the surfaces.
      **/
-    void submit(const Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass);
+    void submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass);
 
     /**
      * Let go of every upload no submit has drawn since the last call, so a mesh that has left
@@ -152,4 +152,4 @@ class ShadedPass final {
     std::map<std::pair<const v3d::brep::BRep*, Shading>, Upload> uploads_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

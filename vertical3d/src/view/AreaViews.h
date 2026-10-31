@@ -16,7 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * The viewports of an area layout: one for each viewport editor the layout holds, made when the
@@ -74,4 +74,4 @@ class AreaViews final {
     std::vector<boost::shared_ptr<ViewPort>> shown_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

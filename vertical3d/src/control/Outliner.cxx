@@ -22,27 +22,27 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
-std::string Outliner::label(const Item& item) {
+std::string Outliner::label(const scene::Item& item) {
     return item.name().empty() ? kind(item.kind()) : item.name();
 }
 
 /**
  **/
-std::string Outliner::kind(Item::Kind kind) {
+std::string Outliner::kind(scene::Item::Kind kind) {
     switch (kind) {
-        case Item::Kind::Mesh:
+        case scene::Item::Kind::Mesh:
             return "Mesh";
-        case Item::Kind::Camera:
+        case scene::Item::Kind::Camera:
             return "Camera";
-        case Item::Kind::Light:
+        case scene::Item::Kind::Light:
             return "Light";
-        case Item::Kind::Group:
+        case scene::Item::Kind::Group:
             return "Group";
-        case Item::Kind::Curve:
+        case scene::Item::Kind::Curve:
             return "Curve";
     }
     return std::string();
@@ -50,11 +50,11 @@ std::string Outliner::kind(Item::Kind kind) {
 
 /**
  **/
-std::vector<Outliner::Row> Outliner::rows(const Scene& scene, const std::string& filter, const std::set<std::int64_t>& folded) {
+std::vector<Outliner::Row> Outliner::rows(const scene::Scene& scene, const std::string& filter, const std::set<std::int64_t>& folded) {
     const std::vector<std::string> wanted = words(filter);
     const Walk walk{ .scene = scene, .words = wanted, .folded = folded };
     std::vector<Row> made;
-    for (const boost::shared_ptr<Item>& item : scene.children(0)) {
+    for (const boost::shared_ptr<scene::Item>& item : scene.children(0)) {
         gather(walk, item, 0, &made);
     }
     return made;
@@ -62,7 +62,7 @@ std::vector<Outliner::Row> Outliner::rows(const Scene& scene, const std::string&
 
 /**
  **/
-void Outliner::draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, const glm::vec4& region, bool adding) {
+void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t editor, const glm::vec4& region, bool adding) {
     State& state = states_[editor];
     const std::string id = "outliner " + std::to_string(editor);
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
@@ -123,11 +123,11 @@ std::vector<std::string> Outliner::words(const std::string& filter) {
 
 /**
  **/
-bool Outliner::gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int depth, std::vector<Row>* into) {
-    const Items children = walk.scene.children(item->id());
+bool Outliner::gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into) {
+    const scene::Items children = walk.scene.children(item->id());
     std::vector<Row> below;
     bool any = false;
-    for (const boost::shared_ptr<Item>& child : children) {
+    for (const boost::shared_ptr<scene::Item>& child : children) {
         any = gather(walk, child, depth + 1, &below) || any;
     }
     const std::string named = lower(label(*item));
@@ -148,4 +148,4 @@ bool Outliner::gather(const Walk& walk, const boost::shared_ptr<Item>& item, uns
     return true;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

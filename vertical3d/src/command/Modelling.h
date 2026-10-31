@@ -10,11 +10,11 @@
 
 #include <string>
 
-#include "TopologyCommand.h"
+#include "Topology.h"
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::command {
 
 /**
  * Split every selected edge of every selected mesh at its middle.
@@ -23,7 +23,7 @@ namespace v3d::editor {
  *
  * @return the change, already made, or an empty pointer when no edge is selected
  **/
-boost::shared_ptr<TopologyCommand> splitEdges(const boost::shared_ptr<Scene>& scene);
+boost::shared_ptr<Topology> splitEdges(const boost::shared_ptr<scene::Scene>& scene);
 
 /**
  * Split a face in two with a new edge between the two selected vertices.
@@ -34,7 +34,7 @@ boost::shared_ptr<TopologyCommand> splitEdges(const boost::shared_ptr<Scene>& sc
  * @param problem why nothing was split, when nothing was
  * @return the change, already made, or an empty pointer when nothing was split
  **/
-boost::shared_ptr<TopologyCommand> splitFace(const boost::shared_ptr<Scene>& scene, std::string* problem);
+boost::shared_ptr<Topology> splitFace(const boost::shared_ptr<scene::Scene>& scene, std::string* problem);
 
 /**
  * Extrude the selected faces of every selected mesh. Faces that share an edge extrude as one
@@ -44,7 +44,7 @@ boost::shared_ptr<TopologyCommand> splitFace(const boost::shared_ptr<Scene>& sce
  *
  * @return the change, already made, or an empty pointer when no face is selected
  **/
-boost::shared_ptr<TopologyCommand> extrudeFaces(const boost::shared_ptr<Scene>& scene);
+boost::shared_ptr<Topology> extrudeFaces(const boost::shared_ptr<scene::Scene>& scene);
 
 /**
  * How far an inset moves each corner of a face toward the face's centre.
@@ -59,7 +59,7 @@ constexpr float insetFraction = 0.25F;
  *
  * @return the change, already made, or an empty pointer when no face is selected
  **/
-boost::shared_ptr<TopologyCommand> insetFaces(const boost::shared_ptr<Scene>& scene);
+boost::shared_ptr<Topology> insetFaces(const boost::shared_ptr<scene::Scene>& scene);
 
 /**
  * Merge the selected vertices into one at their centre.
@@ -71,6 +71,6 @@ boost::shared_ptr<TopologyCommand> insetFaces(const boost::shared_ptr<Scene>& sc
  * @param problem why nothing was merged, when nothing was
  * @return the change, already made, or an empty pointer when nothing was merged
  **/
-boost::shared_ptr<TopologyCommand> mergeVertices(const boost::shared_ptr<Scene>& scene, std::string* problem);
+boost::shared_ptr<Topology> mergeVertices(const boost::shared_ptr<scene::Scene>& scene, std::string* problem);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::command

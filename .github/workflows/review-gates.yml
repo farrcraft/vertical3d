@@ -71,6 +71,10 @@ jobs:
     - name: File length
       if: ${{ !cancelled() }}
       run: node scripts/filelength.ts
+    # each C++ file under api/, moya/ and vertical3d/src/ is in its directory's namespace
+    - name: Namespaces
+      if: ${{ !cancelled() }}
+      run: node scripts/namespaces.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

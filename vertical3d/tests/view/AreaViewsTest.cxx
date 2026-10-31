@@ -19,8 +19,8 @@
 
 namespace {
 
-using v3d::editor::AreaLayout;
-using v3d::editor::AreaViews;
+using v3d::editor::view::AreaLayout;
+using v3d::editor::view::AreaViews;
 
 /**
  * Three areas in a row: a viewport, an outliner, and a viewport of a camera with no profile.
@@ -35,13 +35,13 @@ struct Row {
             + R"({"editors": [{"kind": "viewport", "camera": ")" + third + R"("}]}]}})";
         BOOST_REQUIRE(layout->load(boost::json::parse(text).as_object()));
         layout->resize(glm::vec4(0.0F, 0.0F, 600.0F, 400.0F));
-        views = boost::make_shared<AreaViews>(layout, [this](const AreaLayout::Editor& editor) -> boost::shared_ptr<v3d::editor::ViewPort> {
+        views = boost::make_shared<AreaViews>(layout, [this](const AreaLayout::Editor& editor) -> boost::shared_ptr<v3d::editor::view::ViewPort> {
             made++;
             const std::string camera(editor.state.at("camera").as_string());
             if (camera == "Missing") {
                 return nullptr;
             }
-            return boost::make_shared<v3d::editor::ViewPort>(camera, v3d::type::camera::Profile(camera));
+            return boost::make_shared<v3d::editor::view::ViewPort>(camera, v3d::type::camera::Profile(camera));
         });
     }
 
@@ -73,7 +73,7 @@ BOOST_FIXTURE_TEST_CASE(each_viewport_editor_has_a_view, Row) {
  **/
 BOOST_FIXTURE_TEST_CASE(a_view_lasts_as_long_as_its_editor, Row) {
     BOOST_REQUIRE(views->sync());
-    const boost::shared_ptr<v3d::editor::ViewPort> front = views->of(0);
+    const boost::shared_ptr<v3d::editor::view::ViewPort> front = views->of(0);
     BOOST_REQUIRE(views->sync());
     BOOST_CHECK_EQUAL(made, 2);
 

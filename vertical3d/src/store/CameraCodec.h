@@ -16,7 +16,7 @@
 #include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  * A camera's payload is its lens: its projection, its angle of view, its orthographic extent and
@@ -26,11 +26,11 @@ class CameraCodec final : public Codec {
  public:
     static constexpr std::int64_t VERSION = 1;
 
-    Item::Kind kind() const noexcept override;
+    scene::Item::Kind kind() const noexcept override;
     std::string_view name() const noexcept override;
     std::int64_t version() const noexcept override;
-    boost::json::object payload(const Item& item) const override;
-    boost::shared_ptr<Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const override;
+    boost::json::object payload(const scene::Item& item) const override;
+    boost::shared_ptr<scene::Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const override;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

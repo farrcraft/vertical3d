@@ -8,7 +8,7 @@
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The timeline's playback commands: play and stop, a step either way, the first and last
@@ -27,4 +27,4 @@ class PlaybackCommands final {
     const Context& context_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

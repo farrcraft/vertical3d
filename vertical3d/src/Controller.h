@@ -29,7 +29,7 @@
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/control/TopBar.h>
-#include <vertical3d/src/tool/ToolRouter.h>
+#include <vertical3d/src/tool/Router.h>
 
 #include <string>
 #include <vector>
@@ -238,7 +238,7 @@ class Controller final : public v3d::engine::Engine {
      * @return what the top bar shows: the workspaces, the one shown, and the project's name and
      *         whether it has unsaved changes
      **/
-    TopBar::State topState() const;
+    control::TopBar::State topState() const;
 
     /**
      * Put the command search up over every command on the editor's menu bar and an area's
@@ -254,7 +254,7 @@ class Controller final : public v3d::engine::Engine {
     /**
      * @return what the status bar says this frame
      **/
-    Status status() const;
+    control::Status status() const;
 
     /**
      * Divide the window, less the ui's strips, between the views.
@@ -262,18 +262,18 @@ class Controller final : public v3d::engine::Engine {
     void layoutViews(int width, int height);
 
     // what the commands act on, which start() fills in
-    Context context_;
+    app::Context context_;
     // the ui, the screen and the statistics overlay. The editor's menu is its own menu bar
     v3d::shell::Shell shell_;
-    CommandTable table_;
-    EditCommands edits_;
-    ToolCommands toolCommands_;
-    ViewCommands viewCommands_;
-    AreaCommands areaCommands_;
-    WorkspaceSwitcher workspaces_;
-    ProjectFiles files_;
-    PlaybackCommands playbackCommands_;
-    RenderCommands renderCommands_;
+    app::CommandTable table_;
+    app::EditCommands edits_;
+    app::ToolCommands toolCommands_;
+    app::ViewCommands viewCommands_;
+    app::AreaCommands areaCommands_;
+    app::WorkspaceSwitcher workspaces_;
+    app::ProjectFiles files_;
+    app::PlaybackCommands playbackCommands_;
+    app::RenderCommands renderCommands_;
 
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
@@ -281,13 +281,13 @@ class Controller final : public v3d::engine::Engine {
     // what the caption was last set to
     std::string caption_;
     // each area's header and tabs
-    boost::shared_ptr<AreaChrome> chrome_;
-    boost::shared_ptr<CommandSearch> search_;
-    Outliner outliner_;
-    boost::shared_ptr<PropertiesEditor> properties_;
+    boost::shared_ptr<control::AreaChrome> chrome_;
+    boost::shared_ptr<control::CommandSearch> search_;
+    control::Outliner outliner_;
+    boost::shared_ptr<control::PropertiesEditor> properties_;
     // the workspaces, the project and the search, beside the menus
-    boost::shared_ptr<TopBar> topBar_;
-    boost::shared_ptr<ToolRouter> tools_;
+    boost::shared_ptr<control::TopBar> topBar_;
+    boost::shared_ptr<tool::Router> tools_;
     boost::shared_ptr<Renderer> renderer_;
 
     // the dispatcher holds delegates to this object. These disconnect them when it is destroyed

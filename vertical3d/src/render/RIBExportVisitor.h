@@ -15,7 +15,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/scene/Visitor.h>
 
 #include <string>
 #include <vector>
@@ -24,7 +24,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * Sends a scene to a RIB handler, one request at a time. A rib::Writer makes a RIB file of it,
@@ -58,7 +58,7 @@ namespace v3d::editor {
  * convex, and does no checking. moya dices a polygon's first four vertices and drops the
  * rest, so a face with more than four vertices renders as a quad.
  **/
-class RIBExportVisitor final : public SceneVisitor {
+class RIBExportVisitor final : public scene::Visitor {
  public:
     /**
      * @param handler where the requests go, which outlives the export
@@ -69,7 +69,7 @@ class RIBExportVisitor final : public SceneVisitor {
      * What a render of the export makes: its settings, and where its picture goes.
      **/
     struct Output {
-        RenderSettings settings;
+        scene::RenderSettings settings;
         /** The file the picture is written to, or empty to keep it in the renderer. **/
         std::string file;
     };
@@ -94,22 +94,22 @@ class RIBExportVisitor final : public SceneVisitor {
      * One mesh: its block with its local matrix, then a Polygon per face. It is held until
      * end(), so that it comes after every light.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
 
     /**
      * A camera is not written. A light is written at once, as a LightSource with "from"
      * where it is and, for a distant or spot light, "to" one unit along its +z axis. A group
      * has only its block.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
 
     /**
      * Close the item's block, if a mesh inside it opened it.
      **/
-    void leave(const boost::shared_ptr<Item>& item) override;
+    void leave(const boost::shared_ptr<scene::Item>& item) override;
 
  private:
     /** The version of RIB the export is written in. **/
@@ -156,4 +156,4 @@ class RIBExportVisitor final : public SceneVisitor {
     glm::vec3 looks_{ 0.0F, 0.0F, 1.0F };
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

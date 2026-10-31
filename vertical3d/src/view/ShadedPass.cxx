@@ -38,7 +38,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 namespace {
 
@@ -106,7 +106,7 @@ ShadedPass::~ShadedPass() {
 
 /**
  **/
-void ShadedPass::submit(const Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass) {
+void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass) {
     if (pass == nullptr) {
         return;
     }
@@ -117,9 +117,9 @@ void ShadedPass::submit(const Scene& scene, const ViewPort::Display& display, v3
     }
     pass->depthBias(BIAS_CONSTANT, BIAS_SLOPE);
 
-    const Evaluation evaluation = scene.evaluate();
-    for (const boost::shared_ptr<Item>& item : scene.items()) {
-        const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
+    const scene::Evaluation evaluation = scene.evaluate();
+    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+        const boost::shared_ptr<scene::Mesh> mesh = as<scene::Mesh>(item);
         if (!mesh) {
             continue;
         }
@@ -219,4 +219,4 @@ void ShadedPass::retire(Upload* upload) {
     context_->ring()->retire([mesh]() mutable { mesh.reset(); });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

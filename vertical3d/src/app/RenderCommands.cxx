@@ -10,7 +10,7 @@
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/scene/Scene.h>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -39,4 +39,4 @@ void RenderCommands::registerCommands(CommandTable* table) const {
     });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * Where each part of the editor registers its commands. A command registered through press()
@@ -55,4 +55,4 @@ class CommandTable final {
     std::vector<std::string> refused_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

@@ -31,7 +31,7 @@
 #include <boost/optional/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  **/
@@ -93,7 +93,7 @@ void WorkspaceSwitcher::registerCommands(CommandTable* table) {
 /**
  **/
 bool WorkspaceSwitcher::start(const boost::json::object* shipped) {
-    context_->workspaces = boost::make_shared<Workspaces>(context_->logger);
+    context_->workspaces = boost::make_shared<control::Workspaces>(context_->logger);
     if (shipped == nullptr || !context_->workspaces->load(*shipped)) {
         context_->logger->get()->error("The editor has no workspace it can read, so it would have no views");
         return false;
@@ -101,36 +101,36 @@ bool WorkspaceSwitcher::start(const boost::json::object* shipped) {
     const std::string front = nameOf(context_->workspaces->all().front());
     std::string first = front;
     if (const boost::shared_ptr<v3d::engine::Settings>& store = context_->settings) {
-        context_->workspaces->restore({ .saved = store->value(std::string(Workspaces::SAVED)),
-            .projects = store->value(std::string(Workspaces::PROJECTS)) });
+        context_->workspaces->restore({ .saved = store->value(std::string(control::Workspaces::SAVED)),
+            .projects = store->value(std::string(control::Workspaces::PROJECTS)) });
         const std::size_t pruned = context_->workspaces->prune([](const std::string& project) { return boost::filesystem::is_directory(project); });
         if (pruned > 0) {
             context_->logger->get()->info("Forgot the arrangements of projects that no longer exist: {}", pruned);
         }
-        first = store->text(std::string(Workspaces::LAST)).value_or(first);
+        first = store->text(std::string(control::Workspaces::LAST)).value_or(first);
     }
     // the project's own record wins over the workspace last shown
-    if (const std::optional<Workspaces::Record> kept = context_->workspaces->recall(context_->projectKey())) {
+    if (const std::optional<control::Workspaces::Record> kept = context_->workspaces->recall(context_->projectKey())) {
         first = kept->workspace;
     }
-    context_->layout = boost::make_shared<AreaLayout>(context_->logger);
+    context_->layout = boost::make_shared<view::AreaLayout>(context_->logger);
     return show(first) || show(front);
 }
 
 /**
  **/
 bool WorkspaceSwitcher::show(const std::string& name) {
-    const Workspaces& workspaces = *context_->workspaces;
+    const control::Workspaces& workspaces = *context_->workspaces;
     const std::size_t index = workspaces.find(name);
     if (index >= workspaces.all().size()) {
         return false;
     }
     // the project's own arrangement of the workspace, when it has one, and the workspace as it
     // is kept otherwise
-    const std::optional<Workspaces::Record> kept = workspaces.recall(context_->projectKey());
+    const std::optional<control::Workspaces::Record> kept = workspaces.recall(context_->projectKey());
     const auto arranged = kept ? kept->layouts.find(name) : decltype(kept->layouts.find(name))();
     const bool own = kept && arranged != kept->layouts.end();
-    AreaLayout& layout = *context_->layout;
+    view::AreaLayout& layout = *context_->layout;
     if (!layout.load(own ? arranged->second : workspaces.all()[index]) && (!own || !layout.load(workspaces.all()[index]))) {
         return false;
     }
@@ -154,7 +154,7 @@ void WorkspaceSwitcher::record() {
 /**
  **/
 void WorkspaceSwitcher::projectChanged() {
-    const std::optional<Workspaces::Record> kept = context_->workspaces->recall(context_->projectKey());
+    const std::optional<control::Workspaces::Record> kept = context_->workspaces->recall(context_->projectKey());
     if (kept && show(kept->workspace)) {
         return;
     }
@@ -181,11 +181,11 @@ void WorkspaceSwitcher::saveSettings() {
     if (!store) {
         return;
     }
-    store->set(std::string(Workspaces::PROJECTS), context_->workspaces->projects());
+    store->set(std::string(control::Workspaces::PROJECTS), context_->workspaces->projects());
     if (const std::optional<boost::json::value> own = context_->workspaces->saved()) {
-        store->set(std::string(Workspaces::SAVED), *own);
+        store->set(std::string(control::Workspaces::SAVED), *own);
     }
-    store->set(std::string(Workspaces::LAST), shown_);
+    store->set(std::string(control::Workspaces::LAST), shown_);
     store->save();
 }
 
@@ -217,7 +217,7 @@ void WorkspaceSwitcher::exportShown() {
             if (file.extension() != ".json") {
                 file += ".json";
             }
-            if (!v3d::asset::writeDocument(file, boost::json::value(Workspaces::exported(layout)))) {
+            if (!v3d::asset::writeDocument(file, boost::json::value(control::Workspaces::exported(layout)))) {
                 context_->logger->get()->error("The workspace could not be written to {}", file.generic_string());
                 return;
             }
@@ -246,4 +246,4 @@ void WorkspaceSwitcher::importChosen() {
         });
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

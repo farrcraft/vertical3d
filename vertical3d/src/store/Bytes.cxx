@@ -17,7 +17,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -44,4 +44,4 @@ bool finite(const glm::vec3& value) {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

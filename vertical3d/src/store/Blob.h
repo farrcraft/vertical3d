@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  * One blob as a row of the buffers table holds it: how many entries the row says it holds, and
@@ -20,4 +20,4 @@ struct Blob {
     std::vector<std::byte> data;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

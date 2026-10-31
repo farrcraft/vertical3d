@@ -22,7 +22,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * Builds a scene's items, its meshes once each, as importScene() describes. An importer runs
@@ -61,7 +61,7 @@ class Importer final {
      * A curve item holding a node's curves. Curves a file holds are ones its tool draws, so the
      * item renders, at the file's width when it gives one that is valid.
      **/
-    static boost::shared_ptr<v3d::editor::Curve> curves(const v3d::interchange::Curves& read);
+    static boost::shared_ptr<v3d::editor::scene::Curve> curves(const v3d::interchange::Curves& read);
 
     static bool turned(const Item& item);
 
@@ -89,4 +89,4 @@ class Importer final {
     Import import_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

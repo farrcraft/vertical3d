@@ -25,7 +25,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -114,4 +114,4 @@ void TopBar::box(v3d::ui::Component* component, const glm::vec4& region) {
     layout.height = v3d::ui::Length(std::max(0.0F, region.w), v3d::ui::Length::Unit::Pixels);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

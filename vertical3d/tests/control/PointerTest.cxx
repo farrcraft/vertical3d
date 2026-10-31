@@ -11,8 +11,8 @@
 #include <api/ui/Interface.h>
 #include <api/ui/input/Cursor.h>
 #include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/tool/Tool.h>
-#include <vertical3d/src/tool/ToolRouter.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -35,13 +35,13 @@ namespace {
 /**
  * A tool that takes every press, and remembers the view it was given and whether it is held.
  **/
-class Holding final : public v3d::editor::Tool {
+class Holding final : public v3d::editor::tool::Tool {
  public:
     void activate(const std::string& /* name */) override {
     }
     void deactivate(const std::string& /* name */) override {
     }
-    void view(const boost::shared_ptr<v3d::editor::ViewPort>& view) override {
+    void view(const boost::shared_ptr<v3d::editor::view::ViewPort>& view) override {
         shown = view;
     }
     bool takes(const glm::vec2& /* position */) const override {
@@ -57,7 +57,7 @@ class Holding final : public v3d::editor::Tool {
         presses += pressed ? 1 : 0;
     }
 
-    boost::shared_ptr<v3d::editor::ViewPort> shown;
+    boost::shared_ptr<v3d::editor::view::ViewPort> shown;
     bool held = false;
     int presses = 0;
 };
@@ -68,31 +68,31 @@ class Holding final : public v3d::editor::Tool {
  **/
 struct Panes final {
     Panes() :
-        layout(boost::make_shared<v3d::editor::AreaLayout>(boost::make_shared<v3d::log::Logger>())),
+        layout(boost::make_shared<v3d::editor::view::AreaLayout>(boost::make_shared<v3d::log::Logger>())),
         tool(boost::make_shared<Holding>()),
-        tools(boost::make_shared<v3d::editor::ToolRouter>()) {
+        tools(boost::make_shared<v3d::editor::tool::Router>()) {
         const boost::json::value parsed = boost::json::parse(R"({"name": "Pair", "root": {"split": "horizontal", "children": [)"
             R"({"editors": [{"kind": "viewport", "camera": "Front"}]}, {"editors": [{"kind": "viewport", "camera": "Top"}]}]}})");
         BOOST_REQUIRE(layout->load(parsed.as_object()));
         layout->metrics({ .gap = 3.0F, .reach = 4.0F, .least = 10.0F });
-        areas = boost::make_shared<v3d::editor::AreaViews>(layout, [](const v3d::editor::AreaLayout::Editor& editor) {
-            return boost::make_shared<v3d::editor::ViewPort>(std::to_string(editor.id), v3d::type::camera::Profile("Front"));
+        areas = boost::make_shared<v3d::editor::view::AreaViews>(layout, [](const v3d::editor::view::AreaLayout::Editor& editor) {
+            return boost::make_shared<v3d::editor::view::ViewPort>(std::to_string(editor.id), v3d::type::camera::Profile("Front"));
         });
         BOOST_REQUIRE(areas->sync());
         views = { areas->of(0), areas->of(1) };
         tools->add(tool);
-        pointer = boost::make_shared<v3d::editor::Pointer>(nullptr, areas, tools,
-            [this](const boost::shared_ptr<v3d::editor::ViewPort>& view) { moved.push_back(view); });
+        pointer = boost::make_shared<v3d::editor::control::Pointer>(nullptr, areas, tools,
+            [this](const boost::shared_ptr<v3d::editor::view::ViewPort>& view) { moved.push_back(view); });
         pointer->resize(glm::vec4(0.0F, 0.0F, 200.0F, 100.0F));
     }
 
-    boost::shared_ptr<v3d::editor::AreaLayout> layout;
-    boost::shared_ptr<v3d::editor::AreaViews> areas;
-    std::vector<boost::shared_ptr<v3d::editor::ViewPort>> views;
+    boost::shared_ptr<v3d::editor::view::AreaLayout> layout;
+    boost::shared_ptr<v3d::editor::view::AreaViews> areas;
+    std::vector<boost::shared_ptr<v3d::editor::view::ViewPort>> views;
     boost::shared_ptr<Holding> tool;
-    boost::shared_ptr<v3d::editor::ToolRouter> tools;
-    boost::shared_ptr<v3d::editor::Pointer> pointer;
-    std::vector<boost::shared_ptr<v3d::editor::ViewPort>> moved;
+    boost::shared_ptr<v3d::editor::tool::Router> tools;
+    boost::shared_ptr<v3d::editor::control::Pointer> pointer;
+    std::vector<boost::shared_ptr<v3d::editor::view::ViewPort>> moved;
 };
 
 /**
@@ -105,9 +105,9 @@ struct Tabbed {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         ui(boost::make_shared<v3d::ui::Interface>(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>())),
-        layout(boost::make_shared<v3d::editor::AreaLayout>(boost::make_shared<v3d::log::Logger>())),
+        layout(boost::make_shared<v3d::editor::view::AreaLayout>(boost::make_shared<v3d::log::Logger>())),
         tool(boost::make_shared<Holding>()),
-        tools(boost::make_shared<v3d::editor::ToolRouter>()) {
+        tools(boost::make_shared<v3d::editor::tool::Router>()) {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "tabs", "visible": true, "components": [)"
             R"({ "type": "button", "name": "tab", "label": "Left", "context": "area", "command": "tab::choose" } ] } ] })").as_object()));
         const boost::shared_ptr<v3d::ui::Component> tab = ui->container("tabs")->get("tab");
@@ -118,13 +118,13 @@ struct Tabbed {
             R"({"editors": [{"kind": "viewport", "camera": "Front"}, {"kind": "viewport", "camera": "Left"}], "chosen": 1},)"
             R"({"editors": [{"kind": "viewport", "camera": "Top"}]}]}})").as_object()));
         layout->metrics({ .gap = 3.0F, .reach = 4.0F, .least = 10.0F });
-        areas = boost::make_shared<v3d::editor::AreaViews>(layout, [](const v3d::editor::AreaLayout::Editor& editor) {
-            return boost::make_shared<v3d::editor::ViewPort>(std::to_string(editor.id), v3d::type::camera::Profile("Front"));
+        areas = boost::make_shared<v3d::editor::view::AreaViews>(layout, [](const v3d::editor::view::AreaLayout::Editor& editor) {
+            return boost::make_shared<v3d::editor::view::ViewPort>(std::to_string(editor.id), v3d::type::camera::Profile("Front"));
         });
         BOOST_REQUIRE(areas->sync());
         tools->add(tool);
-        pointer = boost::make_shared<v3d::editor::Pointer>(boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher), areas, tools,
-            v3d::editor::Pointer::Moved());
+        pointer = boost::make_shared<v3d::editor::control::Pointer>(boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher), areas, tools,
+            v3d::editor::control::Pointer::Moved());
         pointer->resize(glm::vec4(0.0F, 0.0F, 200.0F, 100.0F));
         moving = layout->areas()[0].editors[1].id;
         pointer->tabs([this](const glm::vec2& point) -> std::optional<std::size_t> {
@@ -146,11 +146,11 @@ struct Tabbed {
 
     boost::shared_ptr<entt::dispatcher> dispatcher;
     boost::shared_ptr<v3d::ui::Interface> ui;
-    boost::shared_ptr<v3d::editor::AreaLayout> layout;
-    boost::shared_ptr<v3d::editor::AreaViews> areas;
+    boost::shared_ptr<v3d::editor::view::AreaLayout> layout;
+    boost::shared_ptr<v3d::editor::view::AreaViews> areas;
     boost::shared_ptr<Holding> tool;
-    boost::shared_ptr<v3d::editor::ToolRouter> tools;
-    boost::shared_ptr<v3d::editor::Pointer> pointer;
+    boost::shared_ptr<v3d::editor::tool::Router> tools;
+    boost::shared_ptr<v3d::editor::control::Pointer> pointer;
     std::size_t moving = 0;
 };
 
@@ -336,14 +336,14 @@ BOOST_AUTO_TEST_CASE(the_divider_under_the_cursor_is_lit) {
     const Panes panes;
     panes.pointer->motion(glm::vec2(99.0F, 50.0F));
     BOOST_REQUIRE(panes.pointer->lit().has_value());
-    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::AreaLayout::Divider()).region.x, 98.0F);
+    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::view::AreaLayout::Divider()).region.x, 98.0F);
     panes.pointer->motion(glm::vec2(50.0F, 50.0F));
     BOOST_CHECK(!panes.pointer->lit().has_value());
 
     panes.pointer->motion(glm::vec2(99.0F, 50.0F));
     panes.pointer->button(true);
     panes.pointer->motion(glm::vec2(140.0F, 50.0F));
-    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::AreaLayout::Divider()).region.x, 138.0F);
+    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::view::AreaLayout::Divider()).region.x, 138.0F);
     panes.pointer->button(false);
 
     // a tool's drag passes over the divider without lighting it
@@ -388,11 +388,11 @@ BOOST_AUTO_TEST_CASE(a_hidden_view_stops_being_the_active_one) {
  **/
 BOOST_FIXTURE_TEST_CASE(a_tab_dropped_on_an_edge_makes_an_area, Tabbed) {
     drag(glm::vec2(190.0F, 50.0F));
-    const std::optional<v3d::editor::Pointer::Drop> landing = pointer->drop();
+    const std::optional<v3d::editor::control::Pointer::Drop> landing = pointer->drop();
     BOOST_REQUIRE(landing.has_value());
-    const v3d::editor::Pointer::Drop drop = landing.value_or(v3d::editor::Pointer::Drop());
+    const v3d::editor::control::Pointer::Drop drop = landing.value_or(v3d::editor::control::Pointer::Drop());
     BOOST_CHECK_EQUAL(drop.area, 1U);
-    BOOST_CHECK(drop.edge == v3d::editor::AreaLayout::Edge::Right);
+    BOOST_CHECK(drop.edge == v3d::editor::view::AreaLayout::Edge::Right);
     BOOST_CHECK(drop.region == glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
 
     pointer->button(false);
@@ -409,9 +409,9 @@ BOOST_FIXTURE_TEST_CASE(a_tab_dropped_on_an_edge_makes_an_area, Tabbed) {
  **/
 BOOST_FIXTURE_TEST_CASE(a_tab_dropped_in_an_area_joins_its_tabs, Tabbed) {
     drag(glm::vec2(149.0F, 50.0F));
-    const std::optional<v3d::editor::Pointer::Drop> landing = pointer->drop();
+    const std::optional<v3d::editor::control::Pointer::Drop> landing = pointer->drop();
     BOOST_REQUIRE(landing.has_value());
-    BOOST_CHECK(!landing.value_or(v3d::editor::Pointer::Drop()).edge.has_value());
+    BOOST_CHECK(!landing.value_or(v3d::editor::control::Pointer::Drop()).edge.has_value());
 
     pointer->button(false);
     BOOST_REQUIRE_EQUAL(layout->areas().size(), 2U);

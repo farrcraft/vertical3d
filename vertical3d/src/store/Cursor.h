@@ -13,7 +13,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  * Reads a blob's numbers in the order they were written. The caller has checked that the blob
@@ -38,4 +38,4 @@ class Cursor final {
     std::size_t offset_ = 0;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

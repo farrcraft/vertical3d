@@ -126,7 +126,7 @@ fixture and helper before the first case. A fixture that two test files share ge
 
 | Breaks the rules | Follows them |
 |---|---|
-| A `Reader` class defined in `Usd.cxx`, which only `readUsd()` uses | `Reader` declared in `internal/Reader.h`, and constructed by `readUsd()` |
+| A `Reader` class defined in `Usd.cxx`, which only `usd::read()` uses | `Reader` declared in `internal/Reader.h`, and constructed by `usd::read()` |
 | `struct Form` defined between two functions | `Reader::Form`, nested in the class that uses it |
 | `std::map<std::string, Font> loaded;` at namespace scope | A member of the object that loads the fonts, passed to what reads them |
 | `constexpr float SPHERE` used only by `Reader`'s methods | `static constexpr float SPHERE` in `Reader` |
@@ -163,9 +163,14 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 
 ## Language
 
-- **Namespaces mirror the path under `api/`:** `v3d::asset`, `v3d::render::realtime`,
-  `v3d::render::realtime::vulkan`. Close a namespace with `};  // namespace <full name>`,
-  including the semicolon.
+- **A namespace mirrors its file's directory.** Under `api/` it is `v3d` followed by the path:
+  `v3d::asset`, `v3d::render::realtime::vulkan::device`. The editor's `vertical3d/src/` is
+  `v3d::editor` and moya's `moya/libmoya/` is `v3d::moya`, each followed by the path below it,
+  so `vertical3d/src/scene` is `v3d::editor::scene`. An `internal/` directory adds `internal`.
+  A file opens another directory's namespace only to forward-declare what that directory
+  defines. `scripts/namespaces.ts` reports a file that never opens its own directory's
+  namespace, and a namespace under `v3d` that no directory gives. Close a namespace with
+  `};  // namespace <full name>`, including the semicolon.
 - **Indent with 4 spaces.** Indent access specifiers one space into the class body
   (` public:`, ` private:`).
 - **Do not indent a namespace body.** A continuation line at namespace scope also starts at

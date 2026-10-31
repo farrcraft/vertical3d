@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/ui/input/Cursor.h>
-#include <vertical3d/src/tool/ToolRouter.h>
+#include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -20,7 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * Routes the mouse: to the ui drawn over the views, to a control a view draws over itself, to a
@@ -48,7 +48,7 @@ class Pointer final {
     /**
      * Called when the cursor moves into another view.
      **/
-    typedef std::function<void(const boost::shared_ptr<ViewPort>& view)> Moved;
+    typedef std::function<void(const boost::shared_ptr<view::ViewPort>& view)> Moved;
 
     /**
      * Finds the editor whose tab is at a point, or nothing.
@@ -67,7 +67,7 @@ class Pointer final {
      **/
     struct Drop final {
         std::size_t area = 0;
-        std::optional<AreaLayout::Edge> edge;
+        std::optional<view::AreaLayout::Edge> edge;
         glm::vec4 region{ 0.0F };
     };
 
@@ -86,8 +86,8 @@ class Pointer final {
      * @param ui what is offered the cursor first, which may be null for no ui
      * @param moved what to tell when the active view changes
      **/
-    Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<AreaViews>& views,
-        const boost::shared_ptr<ToolRouter>& tools, const Moved& moved);
+    Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<view::AreaViews>& views,
+        const boost::shared_ptr<tool::Router>& tools, const Moved& moved);
 
     /**
      * The cursor moved, in window pixels.
@@ -111,7 +111,7 @@ class Pointer final {
      * @return the divider to light: the one held, or else the one a press would take, unless
      *         the ui has the cursor or a tool is dragging
      **/
-    std::optional<AreaLayout::Divider> lit() const;
+    std::optional<view::AreaLayout::Divider> lit() const;
 
     /**
      * @return the index of the area the cursor was last in, or of the first area before the
@@ -167,7 +167,7 @@ class Pointer final {
      * @return the view the cursor was last in, or the first view shown before the cursor has
      *         moved
      **/
-    const boost::shared_ptr<ViewPort>& activeView() const noexcept;
+    const boost::shared_ptr<view::ViewPort>& activeView() const noexcept;
 
  private:
     /**
@@ -179,7 +179,7 @@ class Pointer final {
     /**
      * Make a view the active one, and tell the tools and the caller.
      **/
-    void activate(const boost::shared_ptr<ViewPort>& view);
+    void activate(const boost::shared_ptr<view::ViewPort>& view);
 
     /**
      * @return the index of the area that holds an editor, and the editor's index in it
@@ -192,10 +192,10 @@ class Pointer final {
     void land(std::size_t editor, const Drop& landing);
 
     boost::shared_ptr<v3d::ui::input::Cursor> ui_;
-    boost::shared_ptr<AreaViews> views_;
-    boost::shared_ptr<ToolRouter> tools_;
+    boost::shared_ptr<view::AreaViews> views_;
+    boost::shared_ptr<tool::Router> tools_;
     Moved moved_;
-    boost::shared_ptr<ViewPort> activeView_;
+    boost::shared_ptr<view::ViewPort> activeView_;
     // the id of the area the cursor was last in
     std::optional<std::size_t> activeArea_;
     glm::vec2 cursor_;
@@ -223,4 +223,4 @@ class Pointer final {
     bool tabDragging_ = false;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

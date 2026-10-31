@@ -10,7 +10,7 @@
 #include <optional>
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  **/
@@ -43,4 +43,4 @@ std::optional<Notices::Shown> Notices::shown(float now) {
     return Shown{ .text = text_, .alpha = std::clamp(std::min(in, out), 0.0F, 1.0F) };
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

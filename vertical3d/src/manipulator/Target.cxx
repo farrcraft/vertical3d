@@ -39,7 +39,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 /**
  **/
@@ -56,17 +56,17 @@ bool Target::startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::br
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedVertices(const Mesh& item, SelectMask kind, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedVertices(const scene::Mesh& item, selection::SelectMask kind, const scene::Components& components) {
     const v3d::brep::BRep& mesh = *item.geometry();
     std::vector<v3d::brep::Index> vertices;
-    if (kind == SelectMask::Vertex) {
-        for (const v3d::brep::Index id : components.of(item.id(), Component::Vertex)) {
+    if (kind == selection::SelectMask::Vertex) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Vertex)) {
             if (id < mesh.vertexCount()) {
                 vertices.push_back(id);
             }
         }
-    } else if (kind == SelectMask::Edge) {
-        for (const v3d::brep::Index id : components.of(item.id(), Component::Edge)) {
+    } else if (kind == selection::SelectMask::Edge) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Edge)) {
             if (id >= mesh.edgeCount()) {
                 continue;
             }
@@ -76,8 +76,8 @@ std::vector<v3d::brep::Index> Target::selectedVertices(const Mesh& item, SelectM
                 vertices.push_back(start);
             }
         }
-    } else if (kind == SelectMask::Face) {
-        for (const v3d::brep::Index id : components.of(item.id(), Component::Face)) {
+    } else if (kind == selection::SelectMask::Face) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Face)) {
             if (id >= mesh.faceCount()) {
                 continue;
             }
@@ -106,10 +106,10 @@ std::vector<v3d::brep::Index> Target::facesAround(const v3d::brep::BRep& mesh, c
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedPoints(const Curve& item, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedPoints(const scene::Curve& item, const scene::Components& components) {
     std::vector<v3d::brep::Index> points;
-    for (const v3d::brep::Index point : components.of(item.id(), Component::Vertex)) {
-        if (pointAt(*item.geometry(), point)) {
+    for (const v3d::brep::Index point : components.of(item.id(), scene::Component::Vertex)) {
+        if (scene::pointAt(*item.geometry(), point)) {
             points.push_back(point);
         }
     }
@@ -118,10 +118,10 @@ std::vector<v3d::brep::Index> Target::selectedPoints(const Curve& item, const Co
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedHandles(const Curve& item, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedHandles(const scene::Curve& item, const scene::Components& components) {
     std::vector<v3d::brep::Index> handles;
-    for (const v3d::brep::Index handle : components.of(item.id(), Component::Handle)) {
-        if (handleAt(*item.geometry(), handle)) {
+    for (const v3d::brep::Index handle : components.of(item.id(), scene::Component::Handle)) {
+        if (scene::handleAt(*item.geometry(), handle)) {
             handles.push_back(handle);
         }
     }
@@ -136,9 +136,9 @@ Target::Target() :
 
 /**
  **/
-Target Target::objects(const Items& items, const Evaluation& evaluation) {
+Target Target::objects(const scene::Items& items, const scene::Evaluation& evaluation) {
     Target target;
-    for (const boost::shared_ptr<Item>& item : items) {
+    for (const boost::shared_ptr<scene::Item>& item : items) {
         if (item) {
             target.items_.push_back(item);
             target.parents_.push_back(evaluation.placed(item->id()).parent);
@@ -150,15 +150,15 @@ Target Target::objects(const Items& items, const Evaluation& evaluation) {
 
 /**
  **/
-Target Target::components(const Items& items, SelectMask kind, const Components& components,
-    const Evaluation& evaluation) {
+Target Target::components(const scene::Items& items, selection::SelectMask kind, const scene::Components& components,
+    const scene::Evaluation& evaluation) {
     Target target;
     target.components_ = true;
-    Items curves;
-    for (const boost::shared_ptr<Item>& item : items) {
-        const boost::shared_ptr<Mesh> mesh = as<Mesh>(item);
+    scene::Items curves;
+    for (const boost::shared_ptr<scene::Item>& item : items) {
+        const boost::shared_ptr<scene::Mesh> mesh = as<scene::Mesh>(item);
         if (!mesh) {
-            if (as<Curve>(item)) {
+            if (as<scene::Curve>(item)) {
                 curves.push_back(item);
             }
             continue;
@@ -174,13 +174,13 @@ Target Target::components(const Items& items, SelectMask kind, const Components&
     }
 
     // only the Vertex and Handle masks name parts of a curve
-    if (kind != SelectMask::Vertex && kind != SelectMask::Handle) {
+    if (kind != selection::SelectMask::Vertex && kind != selection::SelectMask::Handle) {
         return target;
     }
-    for (const boost::shared_ptr<Item>& item : curves) {
-        const boost::shared_ptr<Curve> curve = as<Curve>(item);
+    for (const boost::shared_ptr<scene::Item>& item : curves) {
+        const boost::shared_ptr<scene::Curve> curve = as<scene::Curve>(item);
         CurvePart part{ .curve = curve, .points = {}, .handles = {}, .world = evaluation.placed(curve->id()).world };
-        if (kind == SelectMask::Vertex) {
+        if (kind == selection::SelectMask::Vertex) {
             part.points = selectedPoints(*curve, components);
         } else {
             part.handles = selectedHandles(*curve, components);
@@ -196,12 +196,12 @@ Target Target::components(const Items& items, SelectMask kind, const Components&
 
 /**
  **/
-Target Target::selected(const Scene& scene, SelectMask mask) {
-    const Evaluation evaluation = scene.evaluate();
+Target Target::selected(const scene::Scene& scene, selection::SelectMask mask) {
+    const scene::Evaluation evaluation = scene.evaluate();
     if (selectsItems(mask)) {
         // a mask that takes one kind moves only that kind, though others may be selected
-        Items taken;
-        for (const boost::shared_ptr<Item>& item : scene.selection()) {
+        scene::Items taken;
+        for (const boost::shared_ptr<scene::Item>& item : scene.selection()) {
             if (takes(mask, item->kind())) {
                 taken.push_back(item);
             }
@@ -226,7 +226,7 @@ bool Target::components() const noexcept {
 
 /**
  **/
-const Items& Target::items() const noexcept {
+const scene::Items& Target::items() const noexcept {
     return items_;
 }
 
@@ -262,12 +262,12 @@ glm::vec3 Target::pivot() const {
         for (const CurvePart& part : curves_) {
             const v3d::curve::Curves& geometry = *part.curve->geometry();
             for (const v3d::brep::Index point : part.points) {
-                const CurvePoint at = *pointAt(geometry, point);
-                sum += glm::vec3(part.world * glm::vec4(controlPoint(geometry.curve(at.curve), at.point), 1.0F));
+                const scene::CurvePoint at = *scene::pointAt(geometry, point);
+                sum += glm::vec3(part.world * glm::vec4(scene::controlPoint(geometry.curve(at.curve), at.point), 1.0F));
                 count++;
             }
             for (const v3d::brep::Index handle : part.handles) {
-                sum += glm::vec3(part.world * glm::vec4(handlePosition(geometry, *handleAt(geometry, handle)), 1.0F));
+                sum += glm::vec3(part.world * glm::vec4(scene::handlePosition(geometry, *scene::handleAt(geometry, handle)), 1.0F));
                 count++;
             }
         }
@@ -285,9 +285,9 @@ glm::quat Target::axes() const {
         return glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
     }
     if (components_) {
-        return orientation(parts_.empty() ? curves_.front().world : parts_.front().world);
+        return scene::orientation(parts_.empty() ? curves_.front().world : parts_.front().world);
     }
-    return glm::normalize(orientation(parents_.front()) * placements_.front().rotation);
+    return glm::normalize(scene::orientation(parents_.front()) * placements_.front().rotation);
 }
 
 /**
@@ -309,7 +309,7 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
         for (std::size_t index = 0; index < items_.size(); index++) {
             v3d::type::Transform& placement = placements_[index];
             const glm::mat4& parent = parents_[index];
-            const glm::quat axes = orientation(parent);
+            const glm::quat axes = scene::orientation(parent);
             const glm::quat turn = glm::inverse(axes) * motion.turn * axes;
             placement.rotation = glm::normalize(turn * placement.rotation);
             placement.scale = glm::max(placement.scale * motion.stretch, glm::vec3(minimum));
@@ -352,12 +352,12 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
         // automatic handles again
         std::map<std::size_t, v3d::curve::Curve> changed;
         for (const v3d::brep::Index point : part.points) {
-            const CurvePoint at = *pointAt(geometry, point);
+            const scene::CurvePoint at = *scene::pointAt(geometry, point);
             v3d::curve::Curve& curve = changed.try_emplace(at.curve, geometry.curve(at.curve)).first->second;
-            moveControl(&curve, at.point, local);
+            scene::moveControl(&curve, at.point, local);
         }
         for (const v3d::brep::Index handle : part.handles) {
-            const CurveHandle at = *handleAt(geometry, handle);
+            const scene::CurveHandle at = *scene::handleAt(geometry, handle);
             v3d::curve::Curve& curve = changed.try_emplace(at.at.curve, geometry.curve(at.at.curve)).first->second;
             auto& bezier = std::get<v3d::curve::Bezier>(curve.shape);
             const v3d::curve::BezierPoint& held = bezier.points[at.at.point];
@@ -372,4 +372,4 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

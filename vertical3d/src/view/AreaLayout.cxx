@@ -20,7 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  **/
@@ -900,4 +900,4 @@ bool AreaLayout::drop(std::size_t from, std::size_t editor, std::size_t to, Edge
     return true;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

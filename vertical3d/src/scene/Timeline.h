@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * A document's time: how many frames play in a second, the range of frames that plays, and the
@@ -36,4 +36,4 @@ struct Timeline final {
     bool operator==(const Timeline& other) const = default;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

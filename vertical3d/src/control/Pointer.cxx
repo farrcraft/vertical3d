@@ -6,7 +6,7 @@
 #include "Pointer.h"
 
 #include <api/ui/input/Cursor.h>
-#include <vertical3d/src/tool/ToolRouter.h>
+#include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -21,10 +21,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
-Pointer::Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<AreaViews>& views,
-    const boost::shared_ptr<ToolRouter>& tools, const Moved& moved) :
+Pointer::Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boost::shared_ptr<view::AreaViews>& views,
+    const boost::shared_ptr<tool::Router>& tools, const Moved& moved) :
     ui_(ui),
     views_(views),
     tools_(tools),
@@ -40,7 +40,7 @@ Pointer::Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boos
 void Pointer::motion(const glm::vec2& cursor, bool snap) {
     cursor_ = cursor;
 
-    AreaLayout& layout = *views_->layout();
+    view::AreaLayout& layout = *views_->layout();
     if (layout.grabbed()) {
         layout.drag(cursor_.x, cursor_.y, snap);
         place();
@@ -62,7 +62,7 @@ void Pointer::motion(const glm::vec2& cursor, bool snap) {
         if (area < layout.areas().size()) {
             activeArea_ = layout.areas()[area].id;
         }
-        const boost::shared_ptr<ViewPort> view = views_->of(area);
+        const boost::shared_ptr<view::ViewPort> view = views_->of(area);
         if (view && view != activeView_) {
             activate(view);
         }
@@ -71,7 +71,7 @@ void Pointer::motion(const glm::vec2& cursor, bool snap) {
 }
 
 void Pointer::press(unsigned int clicks) {
-    AreaLayout& layout = *views_->layout();
+    view::AreaLayout& layout = *views_->layout();
     // the ui is drawn over every view, so it is offered the press first
     uiGrab_ = ui_ && ui_->press(cursor_);
     if (uiGrab_) {
@@ -106,7 +106,7 @@ void Pointer::press(unsigned int clicks) {
 }
 
 void Pointer::button(bool pressed, unsigned int clicks) {
-    AreaLayout& layout = *views_->layout();
+    view::AreaLayout& layout = *views_->layout();
     if (pressed) {
         press(clicks);
         return;
@@ -151,7 +151,7 @@ bool Pointer::panels() const {
     if (panelGrab_ || panelLetGo_) {
         return true;
     }
-    const AreaLayout& layout = *views_->layout();
+    const view::AreaLayout& layout = *views_->layout();
     if (overUi_ || uiGrab_ || dividerGrab_ || controlGrab_ || layout.grabbed() || tools_->dragging() || lit()) {
         return false;
     }
@@ -164,7 +164,7 @@ void Pointer::settle() noexcept {
 }
 
 bool Pointer::cancel() {
-    AreaLayout& layout = *views_->layout();
+    view::AreaLayout& layout = *views_->layout();
     if (!layout.grabbed()) {
         return false;
     }
@@ -173,8 +173,8 @@ bool Pointer::cancel() {
     return true;
 }
 
-std::optional<AreaLayout::Divider> Pointer::lit() const {
-    const AreaLayout& layout = *views_->layout();
+std::optional<view::AreaLayout::Divider> Pointer::lit() const {
+    const view::AreaLayout& layout = *views_->layout();
     if (layout.grabbed()) {
         return layout.held();
     }
@@ -196,7 +196,7 @@ std::optional<Pointer::Drop> Pointer::drop() const {
     if (!tab_ || !tabDragging_) {
         return std::nullopt;
     }
-    const AreaLayout& layout = *views_->layout();
+    const view::AreaLayout& layout = *views_->layout();
     const std::size_t area = layout.areaAt(cursor_.x, cursor_.y);
     const std::optional<std::pair<std::size_t, std::size_t>> from = holder(*tab_);
     if (area >= layout.areas().size() || !from) {
@@ -208,11 +208,11 @@ std::optional<Pointer::Drop> Pointer::drop() const {
     // the edge nearest the cursor, as a share of the area's size
     const float left = (cursor_.x - region.x) / region.z;
     const float top = (cursor_.y - region.y) / region.w;
-    const std::pair<float, AreaLayout::Edge> edges[] = {
-        { left, AreaLayout::Edge::Left }, { 1.0F - left, AreaLayout::Edge::Right },
-        { top, AreaLayout::Edge::Top }, { 1.0F - top, AreaLayout::Edge::Bottom },
+    const std::pair<float, view::AreaLayout::Edge> edges[] = {
+        { left, view::AreaLayout::Edge::Left }, { 1.0F - left, view::AreaLayout::Edge::Right },
+        { top, view::AreaLayout::Edge::Top }, { 1.0F - top, view::AreaLayout::Edge::Bottom },
     };
-    const auto* const nearest = std::ranges::min_element(edges, {}, &std::pair<float, AreaLayout::Edge>::first);
+    const auto* const nearest = std::ranges::min_element(edges, {}, &std::pair<float, view::AreaLayout::Edge>::first);
     if (nearest->first >= EDGE_BAND) {
         // joining its own tabs moves nothing
         if (area == from->first) {
@@ -226,17 +226,17 @@ std::optional<Pointer::Drop> Pointer::drop() const {
     }
     glm::vec4 half = region;
     switch (nearest->second) {
-        case AreaLayout::Edge::Left:
+        case view::AreaLayout::Edge::Left:
             half.z = region.z / 2.0F;
             break;
-        case AreaLayout::Edge::Right:
+        case view::AreaLayout::Edge::Right:
             half.z = region.z / 2.0F;
             half.x = region.x + half.z;
             break;
-        case AreaLayout::Edge::Top:
+        case view::AreaLayout::Edge::Top:
             half.w = region.w / 2.0F;
             break;
-        case AreaLayout::Edge::Bottom:
+        case view::AreaLayout::Edge::Bottom:
             half.w = region.w / 2.0F;
             half.y = region.y + half.w;
             break;
@@ -245,10 +245,10 @@ std::optional<Pointer::Drop> Pointer::drop() const {
 }
 
 std::optional<std::pair<std::size_t, std::size_t>> Pointer::holder(std::size_t editor) const {
-    const AreaLayout& layout = *views_->layout();
+    const view::AreaLayout& layout = *views_->layout();
     for (std::size_t area = 0; area < layout.areas().size(); area++) {
-        const std::vector<AreaLayout::Editor>& editors = layout.areas()[area].editors;
-        const auto found = std::ranges::find(editors, editor, &AreaLayout::Editor::id);
+        const std::vector<view::AreaLayout::Editor>& editors = layout.areas()[area].editors;
+        const auto found = std::ranges::find(editors, editor, &view::AreaLayout::Editor::id);
         if (found != editors.end()) {
             return std::make_pair(area, static_cast<std::size_t>(found - editors.begin()));
         }
@@ -261,7 +261,7 @@ void Pointer::land(std::size_t editor, const Drop& landing) {
     if (!from) {
         return;
     }
-    AreaLayout& layout = *views_->layout();
+    view::AreaLayout& layout = *views_->layout();
     if (landing.edge) {
         layout.drop(from->first, from->second, landing.area, *landing.edge);
     } else {
@@ -271,7 +271,7 @@ void Pointer::land(std::size_t editor, const Drop& landing) {
 }
 
 std::size_t Pointer::activeArea() const noexcept {
-    const AreaLayout& layout = *views_->layout();
+    const view::AreaLayout& layout = *views_->layout();
     const std::size_t found = activeArea_ ? layout.find(*activeArea_) : layout.areas().size();
     return found < layout.areas().size() ? found : 0;
 }
@@ -285,13 +285,13 @@ const glm::vec2& Pointer::cursor() const noexcept {
     return cursor_;
 }
 
-const boost::shared_ptr<ViewPort>& Pointer::activeView() const noexcept {
+const boost::shared_ptr<view::ViewPort>& Pointer::activeView() const noexcept {
     return activeView_;
 }
 
 void Pointer::place() {
     views_->sync();
-    const std::vector<boost::shared_ptr<ViewPort>>& shown = views_->shown();
+    const std::vector<boost::shared_ptr<view::ViewPort>>& shown = views_->shown();
     if (std::ranges::find(shown, activeView_) == shown.end()) {
         // the first view shown is where the pointer starts, which is not a move
         if (!activeView_ && !shown.empty()) {
@@ -308,7 +308,7 @@ void Pointer::place() {
     }
 }
 
-void Pointer::activate(const boost::shared_ptr<ViewPort>& view) {
+void Pointer::activate(const boost::shared_ptr<view::ViewPort>& view) {
     activeView_ = view;
     tools_->view(activeView_);
     if (moved_) {
@@ -316,4 +316,4 @@ void Pointer::activate(const boost::shared_ptr<ViewPort>& view) {
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

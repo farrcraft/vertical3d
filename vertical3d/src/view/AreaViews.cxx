@@ -13,7 +13,7 @@
 #include "AreaLayout.h"
 #include "ViewPort.h"
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  **/
@@ -87,4 +87,4 @@ const boost::shared_ptr<AreaLayout>& AreaViews::layout() const noexcept {
     return layout_;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

@@ -11,7 +11,7 @@
 
 #include <boost/filesystem/path.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * Run a program and wait for it to end, ending it early if a stop is asked for meanwhile.
@@ -25,4 +25,4 @@ namespace v3d::editor {
 int runProgram(const boost::filesystem::path& program, const std::vector<std::string>& arguments,
     const std::stop_token& stop);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

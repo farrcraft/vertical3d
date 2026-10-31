@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  **/
@@ -31,7 +31,7 @@ Delegate::~Delegate() {
 
 /**
  **/
-void Delegate::render(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
+void Delegate::render(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
     cancel();
     last_ = Signature::of(scene, from, settings);
     rendered_ = true;
@@ -40,7 +40,7 @@ void Delegate::render(const Scene& scene, const v3d::type::camera::Profile& from
 
 /**
  **/
-bool Delegate::update(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
+bool Delegate::update(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
     if (!rendered_ || Signature::of(scene, from, settings) == last_) {
         return false;
     }
@@ -50,12 +50,12 @@ bool Delegate::update(const Scene& scene, const v3d::type::camera::Profile& from
 
 /**
  **/
-Delegate::Signature Delegate::Signature::of(const Scene& scene, const v3d::type::camera::Profile& from,
-    const RenderSettings& settings) {
+Delegate::Signature Delegate::Signature::of(const scene::Scene& scene, const v3d::type::camera::Profile& from,
+    const scene::RenderSettings& settings) {
     Signature signature;
-    const Evaluation evaluation = scene.evaluate();
-    for (const boost::shared_ptr<Item>& item : scene.items()) {
-        const boost::shared_ptr<Item> parent = scene.parent(item->id());
+    const scene::Evaluation evaluation = scene.evaluate();
+    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+        const boost::shared_ptr<scene::Item> parent = scene.parent(item->id());
         signature.items.emplace_back(item->documentId(), item->revision(), parent ? parent->documentId() : 0);
         signature.poses.push_back(values(item->kind(), evaluation.pose(*item), glm::vec3(0.0F)));
     }
@@ -70,4 +70,4 @@ Delegate::Signature Delegate::Signature::of(const Scene& scene, const v3d::type:
     return signature;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

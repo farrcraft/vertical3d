@@ -31,7 +31,7 @@
 
 namespace {
 
-using v3d::editor::TopBar;
+using v3d::editor::control::TopBar;
 
 /**
  * A ui holding the editor's own container and a dialog's after it, with text 10 pixels a

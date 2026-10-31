@@ -19,7 +19,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 /**
  * The handles that move, turn and resize the selection.
@@ -269,4 +269,4 @@ class Manipulator {
     Space space_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

@@ -119,7 +119,7 @@ where it lives.
 
 ## Modelling operations
 
-The Transform menu's Poly items act on the selection. Each records one `TopologyCommand`, and
+The Transform menu's Poly items act on the selection. Each records one `command::Topology`, and
 does nothing, with a log line, on a selection it cannot use.
 
 - **Split Edge** (`transform::poly::split_edge`) works under the edge mask. It splits every
@@ -146,11 +146,11 @@ can be tested without it.
 
 ## The scene
 
-`v3d::editor::Scene` is the document being edited. It belongs to the editor, not to the api.
+`v3d::editor::scene::Scene` is the document being edited. It belongs to the editor, not to the api.
 It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
 order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
-**Items.** A scene item is a `v3d::editor::Item`. It has an id unique within one run of the
+**Items.** A scene item is a `v3d::editor::scene::Item`. It has an id unique within one run of the
 editor, a placement that is a `type::Transform`, and the object selection flag. There are five
 kinds:
 
@@ -198,7 +198,7 @@ kinds:
   `selected<Mesh>()` gives the `Meshes` an operation on components works through. Component
   selection lives inside those meshes and may span several of them. A modelling operation runs
   once on a `BRep` that two selected items share.
-- **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
+- **Visitors.** Code that reads the whole scene implements `scene::Visitor` and is passed to
   `Scene::accept()`, which calls the `visit` for each item's kind with where one evaluation of
   the scene puts it. Every `visit` is pure, so a new kind does not compile until each visitor
   handles it. The walk is depth first: an item, then everything beneath it, then `leave()` for
@@ -210,12 +210,12 @@ kinds:
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
 - **Making a camera or a light.** The Create menu's Camera and Light items make one at the
-  active view's eye, facing the way the view looks, through a `CreateCommand`, so the new item
+  active view's eye, facing the way the view looks, through a `command::Create`, so the new item
   is the selection and one undo removes it. `create_camera()` and `create_light()` in
   `src/scene/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
   when the view's would not be valid. A light takes RI's default emission for its type.
 - **Making a curve.** The Create menu's Curve items make one curve of a type, poly, Bezier,
-  Catmull-Rom or NURBS, at the origin through a `CreateCommand`, as a primitive is made.
+  Catmull-Rom or NURBS, at the origin through a `command::Create`, as a primitive is made.
   `create_curve()` in `src/scene/CreateItem.h` makes an S on the ground through four points from
   -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
   clamped knots.
@@ -256,7 +256,7 @@ share one `BRep`.
 - **Removing.** `Scene::remove` takes the item and everything beneath it, at every depth. The
   links among them go too, so adding the items back does not restore the hierarchy.
 - **Grouping.** Create > Group (`create::group`) gathers the uppermost of the selection beneath
-  a new group, through a `GroupCommand`, and the group becomes the selection. The group goes at
+  a new group, through a `command::Group`, and the group becomes the selection. The group goes at
   the mean of the items' origins, with no rotation or scale. When the items all have the same
   parent the group goes beneath it, and has no parent otherwise. Each item's placement changes so
   that it stays where it was in the world. That is exact for an item that keeps its parent's

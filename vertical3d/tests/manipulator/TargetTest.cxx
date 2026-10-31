@@ -13,7 +13,7 @@
 #include <api/brep/Vertex.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
-#include <vertical3d/src/command/VertexCommand.h>
+#include <vertical3d/src/command/Vertex.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Curve.h>
@@ -42,12 +42,16 @@
 
 namespace {
 
+using v3d::editor::manipulator::Target;
+using v3d::editor::scene::Mesh;
+using v3d::editor::selection::SelectMask;
+
 /**
  * Where items with no parent are, as the scene's evaluation would place them.
  **/
 template <typename T>
-v3d::editor::Evaluation unparented(const std::vector<boost::shared_ptr<T>>& items) {
-    v3d::editor::Evaluation evaluation;
+v3d::editor::scene::Evaluation unparented(const std::vector<boost::shared_ptr<T>>& items) {
+    v3d::editor::scene::Evaluation evaluation;
     for (const boost::shared_ptr<T>& item : items) {
         evaluation.place(item->id(), { .local = item->matrix(), .world = item->matrix() });
     }
@@ -102,7 +106,7 @@ v3d::brep::Index edgeBetween(const v3d::brep::BRep& mesh, v3d::brep::Index from,
  * One item holding one open Bezier curve of three points along x, each with handles a quarter
  * unit to either side along x as well. The handles have the types given.
  **/
-boost::shared_ptr<v3d::editor::Curve> bezierItem(v3d::curve::Handle type) {
+boost::shared_ptr<v3d::editor::scene::Curve> bezierItem(v3d::curve::Handle type) {
     v3d::curve::Bezier bezier;
     for (const float x : { 0.0F, 1.0F, 2.0F }) {
         bezier.points.push_back({ .position = { x, 0.0F, 0.0F }, .left = { x - 0.25F, 0.0F, 0.0F },
@@ -110,44 +114,44 @@ boost::shared_ptr<v3d::editor::Curve> bezierItem(v3d::curve::Handle type) {
     }
     const boost::shared_ptr<v3d::curve::Curves> curves = boost::make_shared<v3d::curve::Curves>();
     BOOST_REQUIRE(curves->add({ .shape = bezier }).empty());
-    return boost::make_shared<v3d::editor::Curve>(curves);
+    return boost::make_shared<v3d::editor::scene::Curve>(curves);
 }
 
 /**
  * The points of the item's first curve, which bezierItem() made.
  **/
-const std::vector<v3d::curve::BezierPoint>& bezierPoints(const v3d::editor::Curve& item) {
+const std::vector<v3d::curve::BezierPoint>& bezierPoints(const v3d::editor::scene::Curve& item) {
     return std::get<v3d::curve::Bezier>(item.geometry()->curve(0).shape).points;
 }
 
 BOOST_AUTO_TEST_CASE(target_objects_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<Mesh> first = boost::make_shared<Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<Mesh> second = boost::make_shared<Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
 
-    const v3d::editor::Target target = v3d::editor::Target::objects({first, boost::shared_ptr<v3d::editor::Item>(), second},
-        unparented<v3d::editor::Item>({first, second}));
+    const Target target = Target::objects({first, boost::shared_ptr<v3d::editor::scene::Item>(), second},
+        unparented<v3d::editor::scene::Item>({first, second}));
     BOOST_CHECK_EQUAL(target.components(), false);
     BOOST_CHECK_EQUAL(target.items().size(), 2U);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(2.0F, 1.0F, 0.0F)), 0.0001F);
 
-    BOOST_CHECK(v3d::editor::Target().empty());
-    BOOST_CHECK_SMALL(glm::length(v3d::editor::Target().pivot()), 0.0001F);
+    BOOST_CHECK(Target().empty());
+    BOOST_CHECK_SMALL(glm::length(Target().pivot()), 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(target_components_test) {
-    v3d::editor::Components picked;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    v3d::editor::scene::Components picked;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
 
     // nothing selected is nothing to move
-    BOOST_CHECK(v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube})).empty());
+    BOOST_CHECK(Target::components({cube}, SelectMask::Face, picked, unparented<Mesh>({cube})).empty());
 
     // a face brings its four corners, and every face but the opposite one touches them
     const v3d::brep::Index face = frontFace(*cube->geometry());
     BOOST_REQUIRE(face != v3d::brep::INVALID_ID);
-    picked.select(cube->id(), v3d::editor::Component::Face, face, true);
-    const v3d::editor::Target faces = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube}));
+    picked.select(cube->id(), v3d::editor::scene::Component::Face, face, true);
+    const Target faces = Target::components({cube}, SelectMask::Face, picked, unparented<Mesh>({cube}));
     BOOST_REQUIRE_EQUAL(faces.parts().size(), 1U);
     BOOST_CHECK_EQUAL(faces.parts()[0].vertices.size(), 4U);
     BOOST_CHECK_EQUAL(faces.parts()[0].faces.size(), 5U);
@@ -162,9 +166,9 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
     const v3d::brep::Index across = edgeBetween(*cube->geometry(), up, low);
     BOOST_REQUIRE(along != v3d::brep::INVALID_ID);
     BOOST_REQUIRE(across != v3d::brep::INVALID_ID);
-    picked.select(cube->id(), v3d::editor::Component::Edge, along, true);
-    picked.select(cube->id(), v3d::editor::Component::Edge, across, true);
-    const v3d::editor::Target edges = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, picked, unparented<v3d::editor::Mesh>({cube}));
+    picked.select(cube->id(), v3d::editor::scene::Component::Edge, along, true);
+    picked.select(cube->id(), v3d::editor::scene::Component::Edge, across, true);
+    const Target edges = Target::components({cube}, SelectMask::Edge, picked, unparented<Mesh>({cube}));
     const std::vector<v3d::brep::Index> expected = {low, right, up};
     std::vector<v3d::brep::Index> sorted = expected;
     std::sort(sorted.begin(), sorted.end());
@@ -173,43 +177,43 @@ BOOST_AUTO_TEST_CASE(target_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_components_span_objects_test) {
-    v3d::editor::Components picked;
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::Mesh> second = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    v3d::editor::scene::Components picked;
+    const boost::shared_ptr<Mesh> first = boost::make_shared<Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<Mesh> second = boost::make_shared<Mesh>(v3d::brep::cube());
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    picked.select(first->id(), v3d::editor::Component::Vertex, corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
-    picked.select(second->id(), v3d::editor::Component::Vertex, corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
+    picked.select(first->id(), v3d::editor::scene::Component::Vertex, corner(*first->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
+    picked.select(second->id(), v3d::editor::scene::Component::Vertex, corner(*second->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
 
     // the pivot is the mean of the vertices in world space, across both objects
-    const v3d::editor::Target target = v3d::editor::Target::components({first, second}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Mesh>({first, second}));
+    const Target target = Target::components({first, second}, SelectMask::Vertex, picked, unparented<Mesh>({first, second}));
     BOOST_CHECK_EQUAL(target.parts().size(), 2U);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(2.5F, 0.5F, 0.5F)), 0.0001F);
 
     // the scene's selection makes the same target under the mask, and objects in object mode
-    v3d::editor::Scene scene;
+    v3d::editor::scene::Scene scene;
     first->selected(true);
     second->selected(true);
     scene.add(first);
     scene.add(second);
     scene.components() = picked;
-    BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Vertex).components(), true);
-    BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Vertex).parts().size(), 2U);
-    BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object).components(), false);
+    BOOST_CHECK_EQUAL(Target::selected(scene, SelectMask::Vertex).components(), true);
+    BOOST_CHECK_EQUAL(Target::selected(scene, SelectMask::Vertex).parts().size(), 2U);
+    BOOST_CHECK_EQUAL(Target::selected(scene, SelectMask::Object).components(), false);
 }
 
 BOOST_AUTO_TEST_CASE(target_move_components_test) {
-    v3d::editor::Components picked;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    v3d::editor::scene::Components picked;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
     // the object is stretched along x, so a world offset is half as far in its own space
     cube->scale(glm::vec3(2.0F, 1.0F, 1.0F));
     const v3d::brep::Index low = corner(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
     const v3d::brep::Index far = corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, 0.5F));
-    picked.select(cube->id(), v3d::editor::Component::Edge, edgeBetween(*cube->geometry(), low, right), true);
-    picked.select(cube->id(), v3d::editor::Component::Edge, edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))), true);
+    picked.select(cube->id(), v3d::editor::scene::Component::Edge, edgeBetween(*cube->geometry(), low, right), true);
+    picked.select(cube->id(), v3d::editor::scene::Component::Edge, edgeBetween(*cube->geometry(), right, corner(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F))), true);
 
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Edge, picked, unparented<v3d::editor::Mesh>({cube}));
-    v3d::editor::Motion motion;
+    Target target = Target::components({cube}, SelectMask::Edge, picked, unparented<Mesh>({cube}));
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
 
@@ -227,17 +231,17 @@ BOOST_AUTO_TEST_CASE(target_move_components_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_turn_components_test) {
-    v3d::editor::Components picked;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    v3d::editor::scene::Components picked;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
     const v3d::brep::Index face = frontFace(*cube->geometry());
-    picked.select(cube->id(), v3d::editor::Component::Face, face, true);
+    picked.select(cube->id(), v3d::editor::scene::Component::Face, face, true);
     const v3d::brep::Index right = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F));
     const v3d::brep::Index back = corner(*cube->geometry(), glm::vec3(0.5F, -0.5F, 0.5F));
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Face, picked, unparented<v3d::editor::Mesh>({cube}));
+    Target target = Target::components({cube}, SelectMask::Face, picked, unparented<Mesh>({cube}));
 
     // a quarter turn about z turns the face about its own middle, so it stays in its plane
     // and each corner moves round to the next
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.turn = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F));
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_SMALL(glm::distance(cube->geometry()->vertex(right)->point(), glm::vec3(0.5F, 0.5F, -0.5F)), 0.0001F);
@@ -245,16 +249,16 @@ BOOST_AUTO_TEST_CASE(target_turn_components_test) {
     BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
 
     // a stretch past zero stops at the floor rather than turning the face inside out
-    motion = v3d::editor::Motion();
+    motion = v3d::editor::manipulator::Motion();
     motion.stretch = glm::vec3(-3.0F, 1.0F, 1.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_SMALL(glm::distance(cube->geometry()->face(face)->normal(), glm::vec3(0.0F, 0.0F, -1.0F)), 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     light->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     cube->selected(true);
     light->selected(true);
@@ -262,37 +266,37 @@ BOOST_AUTO_TEST_CASE(target_mask_kinds_test) {
     scene.add(light);
 
     // the object mask moves both, and the light mask the light alone, at its own pivot
-    BOOST_CHECK_EQUAL(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object).items().size(), 2U);
-    const v3d::editor::Target lights = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    BOOST_CHECK_EQUAL(Target::selected(scene, SelectMask::Object).items().size(), 2U);
+    const Target lights = Target::selected(scene, SelectMask::Light);
     BOOST_REQUIRE_EQUAL(lights.items().size(), 1U);
     BOOST_CHECK(lights.items()[0] == light);
     BOOST_CHECK_SMALL(glm::distance(lights.pivot(), glm::vec3(4.0F, 0.0F, 0.0F)), 0.0001F);
-    BOOST_CHECK(v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Camera).empty());
+    BOOST_CHECK(Target::selected(scene, SelectMask::Camera).empty());
 }
 
 BOOST_AUTO_TEST_CASE(target_move_counts_a_change_test) {
-    v3d::editor::Components picked;
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    picked.select(cube->id(), v3d::editor::Component::Vertex, 0, true);
-    v3d::editor::Target target = v3d::editor::Target::components({cube}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Mesh>({cube}));
+    v3d::editor::scene::Components picked;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
+    picked.select(cube->id(), v3d::editor::scene::Component::Vertex, 0, true);
+    Target target = Target::components({cube}, SelectMask::Vertex, picked, unparented<Mesh>({cube}));
 
     // a component move changes the mesh's parts in place, and counts it, so a save sees it
     const std::uint64_t before = cube->revision();
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_GT(cube->revision(), before);
     // so does putting a shape back, which a vertex command's undo and redo do
-    const v3d::editor::VertexCommand::Shape shape = v3d::editor::VertexCommand::Shape::of(target.parts()[0]);
+    const v3d::editor::command::Vertex::Shape shape = v3d::editor::command::Vertex::Shape::of(target.parts()[0]);
     const std::uint64_t moved = cube->revision();
     shape.applyTo(target.parts()[0]);
     BOOST_CHECK_GT(cube->revision(), moved);
 }
 
 BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     group->translation(glm::vec3(0.0F, 2.0F, 0.0F));
     group->rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F)));
     group->scale(glm::vec3(2.0F));
@@ -303,13 +307,13 @@ BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
     light->selected(true);
 
     // the pivot and the handles' axes are where the light is in the world
-    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    Target target = Target::selected(scene, SelectMask::Light);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(0.0F, 4.0F, 0.0F)), 0.0001F);
     BOOST_CHECK_SMALL(glm::distance(target.axes() * glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)), 0.0001F);
 
     // a move along world x moves the light that far in the world, which is half as far
     // along the group's turned y axis
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(1.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     const glm::vec3 moved(scene.evaluate().placed(light->id()).world[3]);
@@ -317,9 +321,9 @@ BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
     BOOST_CHECK_SMALL(glm::distance(light->translation(), glm::vec3(1.0F, -0.5F, 0.0F)), 0.0001F);
 
     // a turn about world z turns the light about world z too
-    motion = v3d::editor::Motion();
+    motion = v3d::editor::manipulator::Motion();
     motion.turn = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0F, 0.0F, 1.0F));
-    v3d::editor::Target again = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    Target again = Target::selected(scene, SelectMask::Light);
     again.move(motion, again.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     const glm::mat4 world = scene.evaluate().placed(light->id()).world;
     BOOST_CHECK_SMALL(glm::distance(glm::vec3(world[3]), glm::vec3(1.0F, 4.0F, 0.0F)), 0.0001F);
@@ -327,8 +331,8 @@ BOOST_AUTO_TEST_CASE(target_beneath_a_parent_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_starts_where_shown_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(light);
     v3d::animation::Curve curve;
     curve.set(1.0F, 4.0F);
@@ -337,11 +341,11 @@ BOOST_AUTO_TEST_CASE(target_starts_where_shown_test) {
     light->selected(true);
 
     // a curve puts the light at x 4, though it holds 0, and the handles are where it is shown
-    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Light);
+    Target target = Target::selected(scene, SelectMask::Light);
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(4.0F, 0.0F, 0.0F)), 0.0001F);
 
     // a drag moves it on from there, and the edit shows over the curve until the frame is set
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(0.0F, 1.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(4.0F, 1.0F, 0.0F)), 0.0001F);
@@ -351,9 +355,9 @@ BOOST_AUTO_TEST_CASE(target_starts_where_shown_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
     scene.add(group);
     scene.add(cube);
     scene.parent(cube->id(), group->id());
@@ -361,36 +365,36 @@ BOOST_AUTO_TEST_CASE(target_moves_the_top_once_test) {
     cube->selected(true);
 
     // an item selected with its parent moves with the parent, and not again by itself
-    v3d::editor::Target target = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Object);
+    Target target = Target::selected(scene, SelectMask::Object);
     BOOST_REQUIRE_EQUAL(target.items().size(), 1U);
     BOOST_CHECK(target.items()[0] == group);
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(2.0F, 0.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK(cube->translation() == glm::vec3(0.0F));
     BOOST_CHECK_SMALL(glm::distance(glm::vec3(scene.evaluate().placed(cube->id()).world[3]), glm::vec3(2.0F, 0.0F, 0.0F)), 0.0001F);
 
     // a mask that takes only meshes moves the cube, its parent not being one it takes
-    const v3d::editor::Target meshes = v3d::editor::Target::selected(scene, v3d::editor::SelectMask::Mesh);
+    const Target meshes = Target::selected(scene, SelectMask::Mesh);
     BOOST_REQUIRE_EQUAL(meshes.items().size(), 1U);
     BOOST_CHECK(meshes.items()[0] == cube);
 }
 
 BOOST_AUTO_TEST_CASE(target_curve_points_test) {
-    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Free);
+    const boost::shared_ptr<v3d::editor::scene::Curve> item = bezierItem(v3d::curve::Handle::Free);
     item->translation(glm::vec3(0.0F, 0.0F, 3.0F));
-    v3d::editor::Components picked;
-    picked.select(item->id(), v3d::editor::Component::Vertex, 1, true);
+    v3d::editor::scene::Components picked;
+    picked.select(item->id(), v3d::editor::scene::Component::Vertex, 1, true);
 
     // the handle mask does not move a selected point, and the vertex mask does
-    BOOST_CHECK(v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item})).empty());
-    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Vertex, picked, unparented<v3d::editor::Curve>({item}));
+    BOOST_CHECK(Target::components({item}, SelectMask::Handle, picked, unparented<v3d::editor::scene::Curve>({item})).empty());
+    Target target = Target::components({item}, SelectMask::Vertex, picked, unparented<v3d::editor::scene::Curve>({item}));
     BOOST_REQUIRE_EQUAL(target.curves().size(), 1U);
     BOOST_CHECK(target.components());
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(1.0F, 0.0F, 3.0F)), 0.0001F);
 
     // a point carries its handles with it, and the curve's placement is left alone
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(0.0F, 1.0F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     const v3d::curve::BezierPoint& moved = bezierPoints(*item)[1];
@@ -401,23 +405,23 @@ BOOST_AUTO_TEST_CASE(target_curve_points_test) {
     BOOST_CHECK(item->translation() == glm::vec3(0.0F, 0.0F, 3.0F));
 
     // a turn about the point turns its handles round it
-    motion = v3d::editor::Motion();
+    motion = v3d::editor::manipulator::Motion();
     motion.turn = glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK_SMALL(glm::distance(bezierPoints(*item)[1].right, glm::vec3(1.0F, 1.25F, 0.0F)), 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(target_curve_handles_test) {
-    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Aligned);
-    v3d::editor::Components picked;
+    const boost::shared_ptr<v3d::editor::scene::Curve> item = bezierItem(v3d::curve::Handle::Aligned);
+    v3d::editor::scene::Components picked;
     // the middle point's right handle
-    picked.select(item->id(), v3d::editor::Component::Handle, 3, true);
-    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item}));
+    picked.select(item->id(), v3d::editor::scene::Component::Handle, 3, true);
+    Target target = Target::components({item}, SelectMask::Handle, picked, unparented<v3d::editor::scene::Curve>({item}));
     BOOST_REQUIRE(!target.empty());
     BOOST_CHECK_SMALL(glm::distance(target.pivot(), glm::vec3(1.25F, 0.0F, 0.0F)), 0.0001F);
 
     // the handle moves alone, and the point's other aligned handle turns to stay in line
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(-0.25F, 0.25F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     const v3d::curve::BezierPoint& point = bezierPoints(*item)[1];
@@ -427,13 +431,13 @@ BOOST_AUTO_TEST_CASE(target_curve_handles_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_curve_retypes_a_handle_test) {
-    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Automatic);
-    v3d::editor::Components picked;
-    picked.select(item->id(), v3d::editor::Component::Handle, 3, true);
-    v3d::editor::Target target = v3d::editor::Target::components({item}, v3d::editor::SelectMask::Handle, picked, unparented<v3d::editor::Curve>({item}));
+    const boost::shared_ptr<v3d::editor::scene::Curve> item = bezierItem(v3d::curve::Handle::Automatic);
+    v3d::editor::scene::Components picked;
+    picked.select(item->id(), v3d::editor::scene::Component::Handle, 3, true);
+    Target target = Target::components({item}, SelectMask::Handle, picked, unparented<v3d::editor::scene::Curve>({item}));
 
     // a moved automatic handle stays where it is put, and so does its partner
-    v3d::editor::Motion motion;
+    v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(0.0F, 0.5F, 0.0F);
     target.move(motion, target.pivot(), glm::quat(1.0F, 0.0F, 0.0F, 0.0F));
     BOOST_CHECK(bezierPoints(*item)[1].rightType == v3d::curve::Handle::Aligned);
@@ -442,17 +446,17 @@ BOOST_AUTO_TEST_CASE(target_curve_retypes_a_handle_test) {
 }
 
 BOOST_AUTO_TEST_CASE(target_meshes_and_curves_test) {
-    const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::Curve> item = bezierItem(v3d::curve::Handle::Free);
-    v3d::editor::Components picked;
-    picked.select(cube->id(), v3d::editor::Component::Vertex, 0, true);
-    picked.select(item->id(), v3d::editor::Component::Vertex, 0, true);
-    v3d::editor::Evaluation evaluation;
+    const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::Curve> item = bezierItem(v3d::curve::Handle::Free);
+    v3d::editor::scene::Components picked;
+    picked.select(cube->id(), v3d::editor::scene::Component::Vertex, 0, true);
+    picked.select(item->id(), v3d::editor::scene::Component::Vertex, 0, true);
+    v3d::editor::scene::Evaluation evaluation;
     evaluation.place(cube->id(), { .local = cube->matrix(), .world = cube->matrix() });
     evaluation.place(item->id(), { .local = item->matrix(), .world = item->matrix() });
 
     // one target moves the parts of both, and lists the mesh first
-    const v3d::editor::Target target = v3d::editor::Target::components({item, cube}, v3d::editor::SelectMask::Vertex, picked, evaluation);
+    const Target target = Target::components({item, cube}, SelectMask::Vertex, picked, evaluation);
     BOOST_REQUIRE_EQUAL(target.items().size(), 2U);
     BOOST_CHECK(target.items()[0] == cube);
     BOOST_CHECK_EQUAL(target.parts().size(), 1U);

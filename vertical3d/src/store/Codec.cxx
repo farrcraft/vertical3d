@@ -17,7 +17,7 @@
 #include "LightCodec.h"
 #include "MeshCodec.h"
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -27,28 +27,28 @@ bool Codec::buffered() const noexcept {
 
 /**
  **/
-std::vector<Buffer> Codec::buffers(const Item& /*item*/) const {
+std::vector<Buffer> Codec::buffers(const scene::Item& /*item*/) const {
     return {};
 }
 
 /**
  **/
-const Codec& codecOf(Item::Kind kind) {
+const Codec& codecOf(scene::Item::Kind kind) {
     static const MeshCodec mesh;
     static const CameraCodec camera;
     static const LightCodec light;
     static const GroupCodec group;
     static const CurveCodec curve;
     switch (kind) {
-        case Item::Kind::Mesh:
+        case scene::Item::Kind::Mesh:
             return mesh;
-        case Item::Kind::Camera:
+        case scene::Item::Kind::Camera:
             return camera;
-        case Item::Kind::Light:
+        case scene::Item::Kind::Light:
             return light;
-        case Item::Kind::Curve:
+        case scene::Item::Kind::Curve:
             return curve;
-        case Item::Kind::Group:
+        case scene::Item::Kind::Group:
             break;
     }
     return group;
@@ -57,8 +57,8 @@ const Codec& codecOf(Item::Kind kind) {
 /**
  **/
 const std::vector<const Codec*>& codecs() {
-    static const std::vector<const Codec*> all{ &codecOf(Item::Kind::Mesh), &codecOf(Item::Kind::Camera),
-        &codecOf(Item::Kind::Light), &codecOf(Item::Kind::Group), &codecOf(Item::Kind::Curve) };
+    static const std::vector<const Codec*> all{ &codecOf(scene::Item::Kind::Mesh), &codecOf(scene::Item::Kind::Camera),
+        &codecOf(scene::Item::Kind::Light), &codecOf(scene::Item::Kind::Group), &codecOf(scene::Item::Kind::Curve) };
     return all;
 }
 
@@ -70,4 +70,4 @@ const Codec* codecNamed(std::string_view name) {
     return found == all.end() ? nullptr : *found;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

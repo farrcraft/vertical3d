@@ -12,16 +12,16 @@
 
 #include <string>
 
-namespace v3d::interchange {
+namespace v3d::interchange::usd {
 
-Imported readUsd(const std::string& path) {
+Imported read(const std::string& path) {
     Imported imported;
     const pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(path);
     if (!stage) {
         imported.problem = "could not open " + path + " as USD";
         return imported;
     }
-    return usd::internal::Reader(stage).read();
+    return internal::Reader(stage).read();
 }
 
-};  // namespace v3d::interchange
+};  // namespace v3d::interchange::usd

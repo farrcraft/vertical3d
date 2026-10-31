@@ -20,7 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * What renders the scene while the user works: the render window now, and later a live render
@@ -56,7 +56,7 @@ class Delegate {
     /**
      * Start rendering the scene from a camera, cancelling any render already running.
      **/
-    void render(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings);
+    void render(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings);
 
     /**
      * Render again if the scene, the camera or the settings differ from those the last render
@@ -64,7 +64,7 @@ class Delegate {
      *
      * @return whether a render was started
      **/
-    bool update(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings);
+    bool update(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings);
 
     /**
      * Stop a running render. Its picture so far is not kept, and the last finished one stays.
@@ -82,7 +82,7 @@ class Delegate {
     /**
      * Begin one render. A running render has already been cancelled.
      **/
-    virtual void start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) = 0;
+    virtual void start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) = 0;
 
  private:
     /**
@@ -100,9 +100,9 @@ class Delegate {
         float fov = 0.0F;
         float zoom = 0.0F;
         glm::vec2 clipping{ 0.0F };
-        RenderSettings settings;
+        scene::RenderSettings settings;
 
-        static Signature of(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings);
+        static Signature of(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings);
         bool operator==(const Signature& other) const = default;
     };
 
@@ -110,4 +110,4 @@ class Delegate {
     Signature last_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

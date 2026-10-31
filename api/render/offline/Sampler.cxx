@@ -67,7 +67,7 @@ std::vector<Sampler::Sample> Sampler::pixel(unsigned int column, unsigned int ro
         const glm::vec2 square(
             (static_cast<float>(across) + jitter(nx, &random)) / static_cast<float>(nx),
             (static_cast<float>(down) + jitter(ny, &random)) / static_cast<float>(ny));
-        samples[k].lens = uniform::disc(square);
+        samples[k].lens = uniformDisc(square);
     }
     return samples;
 }

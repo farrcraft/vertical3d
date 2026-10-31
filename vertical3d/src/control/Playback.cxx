@@ -13,9 +13,9 @@
 #include <cmath>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
-Playback::Playback(const boost::shared_ptr<Document>& document) :
+Playback::Playback(const boost::shared_ptr<document::Document>& document) :
     document_(document),
     playing_(false),
     played_(0.0F) {
@@ -38,7 +38,7 @@ void Playback::simulate(float step) {
     if (!playing_) {
         return;
     }
-    const Timeline& timeline = document_->scene()->timeline();
+    const scene::Timeline& timeline = document_->scene()->timeline();
     played_ += step;
     const float length = 1.0F / timeline.rate;
     if (played_ < length) {
@@ -62,13 +62,13 @@ void Playback::last() {
     document_->goTo(document_->scene()->timeline().end);
 }
 
-std::vector<float> Playback::keyed(const Items& items) const {
-    const Scene& scene = *document_->scene();
+std::vector<float> Playback::keyed(const scene::Items& items) const {
+    const scene::Scene& scene = *document_->scene();
     return scene.keyedFrames(items.empty() ? scene.items() : items);
 }
 
-void Playback::nextKey(const Items& items, bool forwards) {
-    const Timeline& timeline = document_->scene()->timeline();
+void Playback::nextKey(const scene::Items& items, bool forwards) {
+    const scene::Timeline& timeline = document_->scene()->timeline();
     const float frame = static_cast<float>(timeline.frame);
     const std::vector<float> frames = keyed(items);
     if (forwards) {
@@ -84,14 +84,14 @@ void Playback::nextKey(const Items& items, bool forwards) {
     }
 }
 
-void Playback::firstKey(const Items& items) {
+void Playback::firstKey(const scene::Items& items) {
     const std::vector<float> frames = keyed(items);
     if (!frames.empty()) {
         document_->goTo(wholeFrame(frames.front(), document_->scene()->timeline(), true));
     }
 }
 
-void Playback::lastKey(const Items& items) {
+void Playback::lastKey(const scene::Items& items) {
     const std::vector<float> frames = keyed(items);
     if (!frames.empty()) {
         document_->goTo(wholeFrame(frames.back(), document_->scene()->timeline(), false));
@@ -100,9 +100,9 @@ void Playback::lastKey(const Items& items) {
 
 /**
  **/
-int Playback::wholeFrame(float frame, const Timeline& timeline, bool up) {
+int Playback::wholeFrame(float frame, const scene::Timeline& timeline, bool up) {
     const float held = std::clamp(frame, static_cast<float>(timeline.start), static_cast<float>(timeline.end));
     return static_cast<int>(up ? std::ceil(held) : std::floor(held));  // checked: a key's frame is finite, and the clamp holds it in the range
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

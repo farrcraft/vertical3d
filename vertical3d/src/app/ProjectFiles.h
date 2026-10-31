@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::app {
 
 /**
  * The project's files: opening a project, saving it under a new name, importing a scene into
@@ -65,4 +65,4 @@ class ProjectFiles final {
     WorkspaceSwitcher* workspaces_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::app

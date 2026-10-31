@@ -18,8 +18,8 @@
 #include "Mesh.h"
 #include "Properties.h"
 #include "RenderSettings.h"
-#include "SceneVisitor.h"
 #include "Timeline.h"
+#include "Visitor.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -36,11 +36,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
-void Scene::walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree) {
+void Scene::walk(Visitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree) {
     const Placed placed = evaluation.placed(item->id());
     switch (item->kind()) {
         case Item::Kind::Mesh:
@@ -308,7 +308,7 @@ Evaluation Scene::evaluated(float frame, bool pending) const {
     std::unordered_map<std::int64_t, const Item*> documents;
     for (const boost::shared_ptr<Item>& each : items_) {
         documents[each->documentId()] = each.get();
-        Pose pose = editor::pose(*each);
+        Pose pose = scene::pose(*each);
         const auto owned = curves_.find(each->documentId());
         if (owned != curves_.end()) {
             const std::set<std::string> kept = pending ? edited(*each) : std::set<std::string>();
@@ -414,13 +414,13 @@ const Items& Scene::items() const noexcept {
 
 /**
  **/
-void Scene::accept(SceneVisitor* visitor) const {
+void Scene::accept(Visitor* visitor) const {
     accept(visitor, evaluate());
 }
 
 /**
  **/
-void Scene::accept(SceneVisitor* visitor, const Evaluation& evaluation) const {
+void Scene::accept(Visitor* visitor, const Evaluation& evaluation) const {
     if (visitor == nullptr) {
         return;
     }
@@ -516,4 +516,4 @@ const Components& Scene::components() const noexcept {
     return components_;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

@@ -11,7 +11,7 @@
 #include <optional>
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::selection {
 
 /**
  **/
@@ -91,18 +91,18 @@ bool selectsItems(SelectMask mask) {
 
 /**
  **/
-bool takes(SelectMask mask, Item::Kind kind) {
+bool takes(SelectMask mask, scene::Item::Kind kind) {
     switch (mask) {
     case SelectMask::Object:
         return true;
     case SelectMask::Mesh:
-        return kind == Item::Kind::Mesh;
+        return kind == scene::Item::Kind::Mesh;
     case SelectMask::Light:
-        return kind == Item::Kind::Light;
+        return kind == scene::Item::Kind::Light;
     case SelectMask::Camera:
-        return kind == Item::Kind::Camera;
+        return kind == scene::Item::Kind::Camera;
     case SelectMask::Curve:
-        return kind == Item::Kind::Curve;
+        return kind == scene::Item::Kind::Curve;
     case SelectMask::Vertex:
     case SelectMask::Edge:
     case SelectMask::Face:
@@ -114,16 +114,16 @@ bool takes(SelectMask mask, Item::Kind kind) {
 
 /**
  **/
-std::optional<Component> componentOf(SelectMask mask) {
+std::optional<scene::Component> componentOf(SelectMask mask) {
     switch (mask) {
         case SelectMask::Vertex:
-            return Component::Vertex;
+            return scene::Component::Vertex;
         case SelectMask::Edge:
-            return Component::Edge;
+            return scene::Component::Edge;
         case SelectMask::Face:
-            return Component::Face;
+            return scene::Component::Face;
         case SelectMask::Handle:
-            return Component::Handle;
+            return scene::Component::Handle;
         case SelectMask::Object:
         case SelectMask::Mesh:
         case SelectMask::Camera:
@@ -134,4 +134,4 @@ std::optional<Component> componentOf(SelectMask mask) {
     return std::nullopt;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::selection

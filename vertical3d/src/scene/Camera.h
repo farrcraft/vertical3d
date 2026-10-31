@@ -11,7 +11,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * A camera placed in the scene, which a render can be made from.
@@ -71,4 +71,4 @@ class Camera final : public Item {
     Lens lens_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

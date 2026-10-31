@@ -45,14 +45,14 @@
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/render/RenderPanels.h>
+#include <vertical3d/src/render/Panels.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
-#include <vertical3d/src/tool/CameraControlTool.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/ToolRouter.h>
-#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/Router.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewOverlay.h>
@@ -136,7 +136,7 @@ bool Controller::start() {
     }
     context_.logger = logger();
     context_.settings = settings();
-    if (!buildDocument() || !workspaces_.start(document(AreaLayout::DOCUMENT)) || !buildViews()) {
+    if (!buildDocument() || !workspaces_.start(document(view::AreaLayout::DOCUMENT)) || !buildViews()) {
         return false;
     }
     buildTools();
@@ -165,8 +165,8 @@ bool Controller::start() {
 /**
  **/
 bool Controller::buildDocument() {
-    context_.document = boost::make_shared<Document>(logger(), boost::filesystem::path(context_.path) / "project");
-    context_.playback = boost::make_shared<Playback>(context_.document);
+    context_.document = boost::make_shared<document::Document>(logger(), boost::filesystem::path(context_.path) / "project");
+    context_.playback = boost::make_shared<control::Playback>(context_.document);
     context_.profiles = boost::make_shared<v3d::engine::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::engine::CameraProfiles::DOCUMENT);
     if (cameras == nullptr) {
@@ -179,14 +179,14 @@ bool Controller::buildDocument() {
 /**
  **/
 bool Controller::buildViews() {
-    context_.views = boost::make_shared<AreaViews>(context_.layout, [this](const AreaLayout::Editor& editor) -> boost::shared_ptr<ViewPort> {
+    context_.views = boost::make_shared<view::AreaViews>(context_.layout, [this](const view::AreaLayout::Editor& editor) -> boost::shared_ptr<view::ViewPort> {
         const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
         if (!camera || !context_.profiles->has(*camera)) {
             logger()->get()->error("A viewport in the layout names no camera profile that exists");
             return nullptr;
         }
         // the name is the view's pass name, so the editor's id keeps two views of a profile apart
-        return boost::make_shared<ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
+        return boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
     });
     return context_.views->sync();
 }
@@ -194,12 +194,12 @@ bool Controller::buildViews() {
 /**
  **/
 void Controller::buildTools() {
-    const boost::shared_ptr<Scene>& scene = context_.document->scene();
-    context_.cameraTool = boost::make_shared<CameraControlTool>();
-    context_.selectTool = boost::make_shared<SelectTool>(scene, logger());
-    context_.transformTool = boost::make_shared<TransformTool>(scene, logger());
+    const boost::shared_ptr<scene::Scene>& scene = context_.document->scene();
+    context_.cameraTool = boost::make_shared<tool::CameraControl>();
+    context_.selectTool = boost::make_shared<tool::Select>(scene, logger());
+    context_.transformTool = boost::make_shared<tool::Transform>(scene, logger());
     context_.transformTool->commands(context_.document->history());
-    tools_ = boost::make_shared<ToolRouter>();
+    tools_ = boost::make_shared<tool::Router>();
     tools_->add(context_.cameraTool);
     tools_->add(context_.transformTool);
     tools_->add(context_.selectTool);
@@ -209,8 +209,8 @@ void Controller::buildTools() {
  **/
 void Controller::buildRenderer() {
     renderer_ = boost::make_shared<Renderer>(window(), logger(), assets(), &shell_);
-    IconSheet icons;
-    const boost::json::object* sheet = document(IconSheet::DOCUMENT);
+    control::IconSheet icons;
+    const boost::json::object* sheet = document(control::IconSheet::DOCUMENT);
     if (sheet == nullptr || !icons.load(*sheet)) {
         logger()->get()->error("The editor has no icon sheet it can read, so its toolbar shows labels");
     }
@@ -219,7 +219,7 @@ void Controller::buildRenderer() {
     renderer_->scene(context_.document->scene());
     renderer_->transformTool(context_.transformTool);
     renderer_->selectTool(context_.selectTool);
-    context_.notices = boost::make_shared<Notices>();
+    context_.notices = boost::make_shared<control::Notices>();
     renderer_->notices(context_.notices);
 }
 
@@ -237,19 +237,19 @@ bool Controller::buildUi() {
     const boost::shared_ptr<v3d::ui::Interface>& vgui = shell_.ui();
     buildPointer(vgui);
     // the areas' headers go under the editor's own container, so its menus drop over them
-    chrome_ = boost::make_shared<AreaChrome>(vgui, uiContainer,
+    chrome_ = boost::make_shared<control::AreaChrome>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     uiKeys_->immediate(renderer_->immediate());
-    properties_ = boost::make_shared<PropertiesEditor>(context_.document->history());
+    properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
-    search_ = boost::make_shared<CommandSearch>(vgui);
-    topBar_ = boost::make_shared<TopBar>(vgui, firstDialog, renderer_->measure());
+    search_ = boost::make_shared<control::CommandSearch>(vgui);
+    topBar_ = boost::make_shared<control::TopBar>(vgui, firstDialog, renderer_->measure());
     // moya.exe is built beside the editor
-    context_.renderWindow = boost::make_shared<RenderWindow>(boost::make_shared<RenderPanels>(vgui),
-        boost::make_shared<MoyaDelegate>(logger()), boost::make_shared<Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
+    context_.renderWindow = boost::make_shared<control::RenderWindow>(boost::make_shared<render::Panels>(vgui),
+        boost::make_shared<render::MoyaDelegate>(logger()), boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
         [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
     return findBars(vgui);
 }
@@ -262,15 +262,15 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
     // on the character drawn under the pointer
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
         boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
-    context_.pointer = boost::make_shared<Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<ViewPort>&) {
+    context_.pointer = boost::make_shared<control::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
         // the show flags a check item draws are the active view's
         syncUi();
     });
     context_.pointer->tabs([this](const glm::vec2& point) { return chrome_ ? chrome_->tabAt(point) : std::nullopt; });
     // a press on a ball of a view's gizmo turns its camera to look down that axis
     context_.pointer->controls([this](const glm::vec2& point) {
-        const boost::shared_ptr<ViewPort> view = context_.views->of(context_.layout->areaAt(point.x, point.y));
-        const std::optional<AxisEnd> end = view ? gizmoAt(*view, renderer_->overlay(), point) : std::nullopt;
+        const boost::shared_ptr<view::ViewPort> view = context_.views->of(context_.layout->areaAt(point.x, point.y));
+        const std::optional<view::AxisEnd> end = view ? gizmoAt(*view, renderer_->overlay(), point) : std::nullopt;
         if (!end) {
             return false;
         }
@@ -343,27 +343,27 @@ void Controller::syncUi() {
     };
 
     // the View menu marks the active view's state, as each header marks its own view's
-    if (const boost::shared_ptr<ViewPort> activeView = context_.activeView()) {
-        for (const auto& [command, on] : AreaChrome::marks(*activeView)) {
+    if (const boost::shared_ptr<view::ViewPort> activeView = context_.activeView()) {
+        for (const auto& [command, on] : control::AreaChrome::marks(*activeView)) {
             mark(command, on);
         }
     }
 
-    for (const auto& [command, on] : AreaChrome::marks(context_.selectTool->mask())) {
+    for (const auto& [command, on] : control::AreaChrome::marks(context_.selectTool->mask())) {
         mark(command, on);
     }
-    const CameraControlTool::CameraMode latched = context_.cameraTool->latched();
-    mark("camera::truck", latched == CameraControlTool::CAMERA_MODE_TRUCK);
-    mark("camera::dolly", latched == CameraControlTool::CAMERA_MODE_DOLLY);
-    mark("camera::zoom", latched == CameraControlTool::CAMERA_MODE_ZOOM);
-    mark("camera::pan", latched == CameraControlTool::CAMERA_MODE_PAN);
-    mark("camera::pitch", latched == CameraControlTool::CAMERA_MODE_PITCH);
+    const tool::CameraControl::CameraMode latched = context_.cameraTool->latched();
+    mark("camera::truck", latched == tool::CameraControl::CAMERA_MODE_TRUCK);
+    mark("camera::dolly", latched == tool::CameraControl::CAMERA_MODE_DOLLY);
+    mark("camera::zoom", latched == tool::CameraControl::CAMERA_MODE_ZOOM);
+    mark("camera::pan", latched == tool::CameraControl::CAMERA_MODE_PAN);
+    mark("camera::pitch", latched == tool::CameraControl::CAMERA_MODE_PITCH);
 
-    const TransformTool::Mode mode = context_.transformTool->mode();
-    mark("transform::select", mode == TransformTool::Mode::None);
-    mark("transform::translate", mode == TransformTool::Mode::Translate);
-    mark("transform::rotate", mode == TransformTool::Mode::Rotate);
-    mark("transform::scale", mode == TransformTool::Mode::Scale);
+    const tool::Transform::Mode mode = context_.transformTool->mode();
+    mark("transform::select", mode == tool::Transform::Mode::None);
+    mark("transform::translate", mode == tool::Transform::Mode::Translate);
+    mark("transform::rotate", mode == tool::Transform::Mode::Rotate);
+    mark("transform::scale", mode == tool::Transform::Mode::Scale);
 }
 
 /**
@@ -376,13 +376,13 @@ void Controller::commandRan() {
 /**
  **/
 void Controller::syncCaption() {
-    const boost::shared_ptr<Document>& document = context_.document;
+    const boost::shared_ptr<document::Document>& document = context_.document;
     if (!document) {
         return;
     }
     std::string caption = "Vertical|3D - " + document->project()->directory().filename().string() +
         (document->dirty() ? " *" : "") + " - frame " + std::to_string(document->scene()->timeline().frame);
-    const Batch::Status batch = context_.renderWindow ? context_.renderWindow->batchStatus() : Batch::Status();
+    const render::Batch::Status batch = context_.renderWindow ? context_.renderWindow->batchStatus() : render::Batch::Status();
     if (batch.running) {
         caption += " - rendering " + std::to_string(batch.done + 1) + " of " + std::to_string(batch.total);
     }
@@ -396,7 +396,7 @@ void Controller::syncCaption() {
 /**
  **/
 void Controller::syncPointerShape() {
-    const std::optional<AreaLayout::Divider> lit = context_.pointer ? context_.pointer->lit() : std::nullopt;
+    const std::optional<view::AreaLayout::Divider> lit = context_.pointer ? context_.pointer->lit() : std::nullopt;
     if (!lit) {
         window()->pointer(v3d::window::Window::Pointer::Arrow);
         return;
@@ -417,7 +417,7 @@ void Controller::areasChanged() {
 /**
  **/
 void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) {
-    const boost::shared_ptr<Pointer>& pointer = context_.pointer;
+    const boost::shared_ptr<control::Pointer>& pointer = context_.pointer;
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
     if (held != nullptr && pointer && pointer->panels()) {
@@ -431,16 +431,16 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
     // a panel starts under its area's header
     const float header = renderer_->barHeight();
     std::vector<std::size_t> outliners;
-    for (const AreaLayout::Area& area : context_.layout->areas()) {
+    for (const view::AreaLayout::Area& area : context_.layout->areas()) {
         const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
-        const AreaLayout::Editor& editor = area.editor();
+        const view::AreaLayout::Editor& editor = area.editor();
         if (region.z <= 0.0F || region.w <= 0.0F) {
             continue;
         }
-        if (editor.kind == Outliner::KIND) {
+        if (editor.kind == control::Outliner::KIND) {
             outliner_.draw(layer, context_.document->scene().get(), editor.id, region, context_.selectTool->adding());
             outliners.push_back(editor.id);
-        } else if (editor.kind == PropertiesEditor::KIND) {
+        } else if (editor.kind == control::PropertiesEditor::KIND) {
             properties_->draw(layer, context_.document->scene().get(), editor.id, region);
         }
     }
@@ -453,8 +453,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
 
 /**
  **/
-TopBar::State Controller::topState() const {
-    TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
+control::TopBar::State Controller::topState() const {
+    control::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
         .project = context_.document->project()->directory().filename().string(), .dirty = context_.document->dirty() };
     for (const boost::json::object& workspace : context_.workspaces->all()) {
         state.workspaces.emplace_back(v3d::asset::readString(workspace, "name").value_or(std::string()));
@@ -468,13 +468,13 @@ void Controller::openSearch() {
     std::vector<boost::shared_ptr<v3d::ui::component::menu::Bar>> bars{ menu_ };
     // an area's commands are on its header, and run from the search they act on the active area
     if (!context_.layout->areas().empty()) {
-        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(AreaChrome::name(context_.layout->areas().front().id));
+        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::AreaChrome::name(context_.layout->areas().front().id));
         if (area) {
             bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
         }
     }
-    std::vector<CommandSearch::Entry> entries = CommandSearch::catalogue(bars);
-    for (CommandSearch::Entry& entry : entries) {
+    std::vector<control::CommandSearch::Entry> entries = control::CommandSearch::catalogue(bars);
+    for (control::CommandSearch::Entry& entry : entries) {
         entry.shortcut = shell_.screen()->shortcut(v3d::event::Event(entry.command));
     }
     search_->open(entries);
@@ -492,14 +492,14 @@ void Controller::runSearch() {
 
 /**
  **/
-Status Controller::status() const {
-    Status made;
-    const boost::shared_ptr<ViewPort> view = context_.activeView();
+control::Status Controller::status() const {
+    control::Status made;
+    const boost::shared_ptr<view::ViewPort> view = context_.activeView();
     const bool perspective = view && view->camera() && !view->camera()->orthographic();
-    made.buttons = StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
-    made.selection = StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
+    made.buttons = control::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
+    made.selection = control::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
     made.frame = "Frame " + std::to_string(context_.document->scene()->timeline().frame);
-    made.rate = StatusBar::rate(statistics().mean());
+    made.rate = control::StatusBar::rate(statistics().mean());
     return made;
 }
 
@@ -563,8 +563,8 @@ bool Controller::render() {
     const float scale = renderer_->scale();
     if (scale != metricsScale_) {
         metricsScale_ = scale;
-        context_.layout->metrics({ .gap = std::max(1.0F, std::round(AreaLayout::Metrics::GAP * scale)),
-            .reach = AreaLayout::Metrics::REACH * scale, .least = AreaLayout::Metrics::LEAST * scale,
+        context_.layout->metrics({ .gap = std::max(1.0F, std::round(view::AreaLayout::Metrics::GAP * scale)),
+            .reach = view::AreaLayout::Metrics::REACH * scale, .least = view::AreaLayout::Metrics::LEAST * scale,
             .strip = renderer_->barHeight() });
         layoutViews(window()->width(), window()->height());
     }

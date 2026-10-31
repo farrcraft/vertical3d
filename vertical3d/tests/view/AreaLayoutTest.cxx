@@ -21,7 +21,7 @@
 
 namespace {
 
-using v3d::editor::AreaLayout;
+using v3d::editor::view::AreaLayout;
 
 boost::json::object parse(const std::string& text);
 boost::shared_ptr<v3d::log::Logger> logger();

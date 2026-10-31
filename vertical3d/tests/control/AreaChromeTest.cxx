@@ -39,10 +39,10 @@
 
 namespace {
 
-using v3d::editor::AreaChrome;
-using v3d::editor::AreaLayout;
-using v3d::editor::AreaViews;
-using v3d::editor::ViewPort;
+using v3d::editor::control::AreaChrome;
+using v3d::editor::view::AreaLayout;
+using v3d::editor::view::AreaViews;
+using v3d::editor::view::ViewPort;
 
 /**
  * Two areas side by side over an 800 by 600 window, under a ui whose own container is "editor".
@@ -109,7 +109,7 @@ struct Chrome {
     AreaLayout& layout;
     boost::shared_ptr<AreaViews> views;
     AreaChrome chrome;
-    v3d::editor::SelectMask mask = v3d::editor::SelectMask::Object;
+    v3d::editor::selection::SelectMask mask = v3d::editor::selection::SelectMask::Object;
     v3d::render::realtime::canvas::Canvas canvas;
     v3d::ui::paint::ComponentRenderer renderer;
 };
@@ -248,7 +248,7 @@ BOOST_FIXTURE_TEST_CASE(a_change_to_the_areas_builds_again, Chrome) {
  * commands with the area's id, and mark what the view holds.
  **/
 BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_its_camera_and_shading, Chrome) {
-    views->of(1)->display().shading = v3d::editor::Shading::Smooth;
+    views->of(1)->display().shading = v3d::editor::view::Shading::Smooth;
     sync();
     const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
     BOOST_REQUIRE_EQUAL(bar->count(), 4U);
@@ -290,7 +290,7 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_the_mask, Chrome) {
     BOOST_CHECK(!face->checked());
     BOOST_CHECK(header(0)->find("select::mask::object")->checked());
 
-    mask = v3d::editor::SelectMask::Face;
+    mask = v3d::editor::selection::SelectMask::Face;
     sync();
     BOOST_CHECK_EQUAL(header(0)->label(3), "Face");
     BOOST_CHECK(header(0)->find("select::mask::face")->checked());
@@ -318,7 +318,7 @@ BOOST_FIXTURE_TEST_CASE(a_new_camera_renames_the_header, Chrome) {
 BOOST_AUTO_TEST_CASE(the_shading_menu_names_the_front_fill_or_the_shading) {
     ViewPort::Display display;
     BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Flat");
-    display.shading = v3d::editor::Shading::Smooth;
+    display.shading = v3d::editor::view::Shading::Smooth;
     BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Smooth");
     display.front = ViewPort::Fill::Lines;
     BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Wireframe");

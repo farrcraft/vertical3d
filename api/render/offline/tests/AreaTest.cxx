@@ -113,16 +113,16 @@ BOOST_AUTO_TEST_CASE(area_empty_and_keyed_test) {
  * its middle at the centre, a triangle's points inside it, and a sphere's on its surface.
  **/
 BOOST_AUTO_TEST_CASE(uniform_maps_test) {
-    BOOST_CHECK_SMALL(glm::length(v3d::render::offline::uniform::disc(glm::vec2(0.5F))), 1.0e-6F);
-    BOOST_CHECK_CLOSE(glm::length(v3d::render::offline::uniform::disc(glm::vec2(1.0F, 0.5F))), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(glm::length(v3d::render::offline::uniformDisc(glm::vec2(0.5F))), 1.0e-6F);
+    BOOST_CHECK_CLOSE(glm::length(v3d::render::offline::uniformDisc(glm::vec2(1.0F, 0.5F))), 1.0F, 0.01F);
     const glm::vec3 first(0.0F);
     const glm::vec3 second(1.0F, 0.0F, 0.0F);
     const glm::vec3 third(0.0F, 1.0F, 0.0F);
     // the first number at zero is the first corner, and at one is the opposite edge
-    BOOST_CHECK_SMALL(glm::length(v3d::render::offline::uniform::triangle(first, second, third, glm::vec2(0.0F, 0.3F))), 1.0e-6F);
-    const glm::vec3 edge = v3d::render::offline::uniform::triangle(first, second, third, glm::vec2(1.0F, 0.3F));
+    BOOST_CHECK_SMALL(glm::length(v3d::render::offline::uniformTriangle(first, second, third, glm::vec2(0.0F, 0.3F))), 1.0e-6F);
+    const glm::vec3 edge = v3d::render::offline::uniformTriangle(first, second, third, glm::vec2(1.0F, 0.3F));
     BOOST_CHECK_CLOSE(edge.x + edge.y, 1.0F, 0.01F);
-    BOOST_CHECK_CLOSE(glm::length(v3d::render::offline::uniform::sphere(glm::vec2(0.3F, 0.7F))), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(glm::length(v3d::render::offline::uniformSphere(glm::vec2(0.3F, 0.7F))), 1.0F, 0.01F);
 }
 
 };  // namespace

@@ -19,7 +19,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * Where a view's axis marker and navigation gizmo sit, and how large they are, in pixels.
@@ -139,4 +139,4 @@ void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& 
     const OverlayLook& look, const v3d::ui::paint::Measure& measure, const v3d::ui::paint::Write& write,
     const std::optional<glm::vec2>& cursor);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

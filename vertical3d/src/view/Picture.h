@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * A camera glyph's picture: a rectangle about the +z axis, at a distance along it.
@@ -16,4 +16,4 @@ struct Picture {
     float depth = 0.0F;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

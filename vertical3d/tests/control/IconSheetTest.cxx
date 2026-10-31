@@ -18,7 +18,7 @@
 
 namespace {
 
-using v3d::editor::IconSheet;
+using v3d::editor::control::IconSheet;
 
 BOOST_AUTO_TEST_SUITE(icon_sheet_test)
 
