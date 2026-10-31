@@ -80,6 +80,17 @@ class Interface {
     bool add(const boost::json::object& document, std::string_view before = {});
 
     /**
+     * Put the themes a document names beneath every loaded theme, as style::Theme::beneath()
+     * does, the first of them nearest. A ui with no theme loaded takes the document's themes as
+     * its own, and the first of them is active. The document's containers are not read.
+     *
+     * Called after load(), which replaces every theme.
+     *
+     * @return false when the document does not read, leaving the themes as they were
+     **/
+    bool beneath(const boost::json::object& document);
+
+    /**
      * Take a container out. A component in it that held the focus or the cursor's rest stops
      * holding it.
      *

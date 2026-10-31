@@ -163,6 +163,13 @@ std::string ComponentRenderer::shortcut(const v3d::event::Event& command) const 
 
 /**
  **/
+void ComponentRenderer::emphasis(const Emphasis& sets) {
+    arranger_.emphasis(sets);
+    menus_->emphasis(sets);
+}
+
+/**
+ **/
 void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
     const v3d::type::geometry::Bound2D& below, bool beside) const {
     if (canvas == nullptr || (text.empty() && keys.empty())) {

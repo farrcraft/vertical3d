@@ -26,6 +26,9 @@ menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [this](bool suspended) 
 
 - It shows and hides a container, `game-menu` by default, and drives the `Menu` inside it,
   `main-menu` by default. Both names can be passed to the constructor.
+- The container dims the game behind it with the theme's `backdrop`, whatever its document
+  says. The menu is drawn as a centred menu, in the safe area under its title, with the chosen
+  item's three cues ([Components.md](Components.md#notes-on-individual-components)).
 - `GameMenu::declare(commands, menu)` registers its commands in the `ui` context:
   `showGameMenu` toggles it, and `menuPrevious`, `menuNext` and `selectMenu` navigate it
   while it is up. An app calls it from its constructor, before the menu exists, and passes the

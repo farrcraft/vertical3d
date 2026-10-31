@@ -50,7 +50,23 @@ class Shell final {
         bool menu { true };
         /** The command that shows and hides the statistics overlay, or empty for none. **/
         std::string statistics;
+        /**
+         * The document whose themes go beneath the ui document's own, so the ui document names
+         * only what it changes. Defaults to the game theme, and empty puts nothing beneath.
+         **/
+        std::string theme { gameTheme };
     };
+
+    /**
+     * The theme every game's shell is drawn in, which a game's own theme is put over.
+     **/
+    static const char* const gameTheme;
+
+    /**
+     * The screen a game's shell is drawn on: body text 26 pixels high in a window 1080 high,
+     * scaled with the window's height.
+     **/
+    static v3d::ui::shell::Screen::Options game();
 
     /**
      * @param engine the app the shell serves, which outlives it
@@ -64,12 +80,13 @@ class Shell final {
     ~Shell() = default;
 
     /**
-     * Build the ui, load the "ui" config document into it, and build the menu. An app with no
-     * ui document has a ui with nothing in it.
+     * Build the ui, load the "ui" config document into it with Options::theme beneath it, and
+     * build the menu. An app with no ui document has a ui with nothing in it but that theme.
      *
      * @param suspend what the menu does to the game as it opens and closes. Unused without the
      *        menu
-     * @return false when the ui document does not load, which the ui logs
+     * @return false when the ui document or the theme beneath it does not load, which is
+     *         logged
      **/
     bool start(const v3d::ui::shell::GameMenu::Suspend& suspend = v3d::ui::shell::GameMenu::Suspend());
 
@@ -120,6 +137,11 @@ class Shell final {
      * Give the screen the monitor's new scale.
      **/
     void rescale(const v3d::event::kind::DisplayScale& event);
+
+    /**
+     * The height of a game's body text in a window Screen::referenceHeight high.
+     **/
+    static constexpr float bodySize = 26.0F;
 
     v3d::engine::Engine* engine_;
     Options options_;

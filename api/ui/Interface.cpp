@@ -82,6 +82,27 @@ bool Interface::add(const boost::json::object& document, std::string_view before
 
 /**
  **/
+bool Interface::beneath(const boost::json::object& document) {
+    Loader loader(router_, dispatcher_, logger_);
+    if (!loader.loadThemes(document)) {
+        return false;
+    }
+    std::vector<boost::shared_ptr<style::Theme>>& read = loader.themes();
+    if (themes_.empty()) {
+        themes_ = std::move(read);
+        activeTheme_ = themes_.empty() ? nullptr : themes_.front();
+        return true;
+    }
+    for (const boost::shared_ptr<style::Theme>& theme : themes_) {
+        for (const boost::shared_ptr<style::Theme>& lower : read) {
+            theme->beneath(*lower);
+        }
+    }
+    return true;
+}
+
+/**
+ **/
 bool Interface::remove(std::string_view name) {
     const auto found = std::ranges::find_if(containers_,
         [name](const boost::shared_ptr<Container>& held) { return held && held->name() == name; });

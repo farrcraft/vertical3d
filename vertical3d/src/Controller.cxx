@@ -102,6 +102,8 @@ v3d::shell::Shell::Options Controller::shellOptions() {
     v3d::shell::Shell::Options options;
     options.menu = false;
     options.statistics = "view::show::statistics";
+    // the editor keeps a theme of its own, not the games'
+    options.theme.clear();
     return options;
 }
 

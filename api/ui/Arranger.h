@@ -179,9 +179,34 @@ class Arranger final {
     void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room, float shortcuts = 0.0F) const;
 
     /**
-     * Place a game menu's level and its items, centred in the room.
+     * Place a game menu's level and its items, centred in the room's safe area. A level too
+     * large for the safe area keeps its top left corner inside it.
+     *
+     * The level's title goes above its items, and the level is as wide as the wider of its
+     * title and its widest item. An item is as wide as the wider of its label in the body text
+     * and in the chosen item's setting, so the level does not change width as the choice moves.
      **/
     void centred(component::menu::Menu& level, const glm::vec2& room) const;
+
+    /**
+     * Set a centred menu's title and its chosen item apart from the body text.
+     **/
+    void emphasis(const paint::Emphasis& sets);
+
+    /**
+     * @return how tall a centred menu's title is, with the gap under it, or zero for a level
+     *         with no title
+     **/
+    float heading(const component::menu::Menu& level) const;
+
+    /**
+     * The part of a window everything a game shows stays inside, clear of the edges a
+     * television can cut off. It is a share of the width in from each side, and a share of the
+     * height in from the top and the bottom.
+     **/
+    static v3d::type::geometry::Bound2D safe(const glm::vec2& room) noexcept;
+    static constexpr float safeSides = 0.05F;
+    static constexpr float safeEnds = 0.04F;
 
     /**
      * How wide a flyout panel's mark column is, as a fraction of a line - the room on each
@@ -264,7 +289,14 @@ class Arranger final {
     float wrapped(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
         std::vector<v3d::type::geometry::Bound2D>* boxes) const;
 
+    /**
+     * @return how wide a centred menu's item is, in the wider of the body text and the chosen
+     *         item's setting
+     **/
+    float choice(const component::menu::Item* item) const;
+
     paint::Measure measure_;
+    paint::Emphasis emphasis_;
     const style::Resolver& styles_;
     /**
      * Which arranger this is, unique for the life of the program. A list caches its widest

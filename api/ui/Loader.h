@@ -60,6 +60,12 @@ class Loader final {
     bool loadContainers(const boost::json::object& doc);
 
     /**
+     * Read only the themes a document names, from a document that need carry no containers.
+     * @return false when the document is refused, leaving what was read incomplete
+     **/
+    bool loadThemes(const boost::json::object& doc);
+
+    /**
      * @return the containers, in the order the document listed them
      **/
     std::vector<boost::shared_ptr<Container>>& containers() noexcept;

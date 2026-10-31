@@ -109,7 +109,8 @@ Strips are placed separately. `Arranger::stack()` returns each toolbar with its 
 container's menu bars, and the total insets. Both `ComponentRenderer::draw()` and
 `ComponentRenderer::insets()` call it, so the strips are drawn where the app was told they
 would be. `Arranger::strip()`, `panel()` and `centred()` place a toolbar, a dropped menu panel
-and a game menu level.
+and a game menu level. `centred()` and the menu renderer share `Arranger::heading()`, the height
+of a level's title band, so the title is written where the items were moved down to leave room.
 
 `Arranger::place()` takes a `Component&`, because `Menu::size()` is its item count and hides
 the base class's box size.

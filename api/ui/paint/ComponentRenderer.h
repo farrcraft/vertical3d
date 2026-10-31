@@ -168,6 +168,12 @@ class ComponentRenderer {
     std::string shortcut(const v3d::event::Event& command) const;
 
     /**
+     * Set a centred menu's title and its chosen item apart from the body text. Without this,
+     * both are set as the body text is, and a title takes one line.
+     **/
+    void emphasis(const Emphasis& sets);
+
+    /**
      * Draw a tooltip: a plate holding a line of text, and the shortcut after it in secondary
      * text, with a shadow under it. It hangs just below a box, or beside it, as wide as it needs,
      * and is moved back onto the canvas where it would leave it. Draw it last, over everything

@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <string>
 
 namespace v3d::ui::component::menu {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
@@ -166,6 +167,14 @@ bool Menu::down() {
         return true;
     }
     return false;
+}
+
+void Menu::title(const std::string& words) {
+    title_ = words;
+}
+
+const std::string& Menu::title() const noexcept {
+    return title_;
 }
 
 size_t Menu::count() const {

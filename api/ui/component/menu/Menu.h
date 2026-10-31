@@ -7,6 +7,7 @@
 
 #include <api/ui/Component.h>
 
+#include <string>
 #include <vector>
 
 #include "Item.h"
@@ -141,6 +142,13 @@ class Menu : public Component {
      **/
     bool hasParent() const;
 
+    /**
+     * The words shown above a centred menu's items, or empty for none. A dropped panel shows
+     * no title.
+     **/
+    void title(const std::string& words);
+    const std::string& title() const noexcept;
+
  private:
     /**
      * Move the active item on past any separators, in the direction of a step of 1 or -1,
@@ -158,6 +166,7 @@ class Menu : public Component {
     // the item being captured into. Like level_, it is held on the root menu, not on the
     // level the item belongs to
     boost::shared_ptr<Item> capture_;
+    std::string title_;
 };
 
 };  // namespace v3d::ui::component::menu

@@ -72,6 +72,11 @@ class Screen final {
      **/
     static constexpr float referenceHeight = 1080.0F;
 
+    /**
+     * How large a centred menu's title is against the body text.
+     **/
+    static constexpr float titleScale = 1.75F;
+
     struct Options final {
         float size { paint::TextRenderer::baseSize };  /**< the font's size at a scale of one **/
         Dress dress;              /**< fills the dressing. When empty, sets only the line height, to 1.4 sizes **/

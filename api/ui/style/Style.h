@@ -71,6 +71,14 @@ class Style {
      */
     std::vector< boost::shared_ptr<Property>  > getPropertySet(const std::string& name, const std::string& class_name) const;
 
+    /**
+     * Take each property this style does not name from another, so that this style's own
+     * values win and the other fills in the rest. The properties taken are shared, not copied.
+     *
+     * @param lower the style beneath this one
+     **/
+    void under(const Style& lower);
+
  protected:
     void className(const std::string& str);
 

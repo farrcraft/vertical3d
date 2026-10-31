@@ -65,6 +65,9 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
 - `Options::dress` is a function `void(paint::Dressing*, float size)` that fills in the
   dressing (colours and metrics, see [Themes and styles](Themes.md#themes-and-styles)) for a text
   size. When it is empty, the line height is set to 1.4 times the size.
+- A centred menu's title is set semibold at `Screen::titleScale`, 1.75 times the text size, and
+  its chosen item semibold at the text size, through `ComponentRenderer::emphasis()`. A
+  component renderer built without a screen sets both as its body text.
 - `scale(factor)` draws the ui larger or smaller, as a user's preference does. It multiplies the
   scale the screen follows, described below.
 

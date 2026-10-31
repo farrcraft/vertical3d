@@ -74,16 +74,25 @@ class MenuRenderer final {
     void shortcuts(const Shortcut& lookup);
 
     /**
+     * Set a centred menu's title and its chosen item apart from the body text.
+     **/
+    void emphasis(const Emphasis& sets);
+
+    /**
      * @return the shortcut of the command a component sends, or empty when it sends none or
      *         nothing binds it
      **/
     std::string shortcut(const v3d::event::Event& command) const;
 
     /**
-     * Draw the active level of a menu, centred on the canvas.
+     * Draw the active level of a menu, centred in the canvas's safe area, under its title.
      *
      * It is the active level rather than the menu itself that is drawn: descending into
      * a submenu replaces what is on screen, and the parent stays where it was.
+     *
+     * The chosen item is shown three ways, so that it reads without colour alone: the
+     * highlight behind it, its label in the active text and the chosen item's setting, and the
+     * focus ring around it.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu) const;
 
@@ -158,6 +167,7 @@ class MenuRenderer final {
     const Arranger& arranger_;
     const Easing& easing_;
     Shortcut shortcut_;
+    Emphasis emphasis_;
 };
 
 };  // namespace v3d::ui::paint::internal

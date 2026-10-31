@@ -466,13 +466,28 @@ drawn in immediate mode, after weighing retained documents rebuilt on a signatur
 
 ### Step 14 — The games' shell
 
-Open. ADR-0130 decided it.
+**Closed.** ADR-0130 decided it.
 
-- `api/ui` ships a game theme, and `Shell` loads it beneath a game's own document. A game's
-  document names its title and accent.
-- The game menu is drawn with a title, over the dimmed backdrop, inside the safe area, sized
-  from the window's height. The game's simulation stays paused while the menu is open.
-- Menus wrap, and the focused item shows the design's three cues.
+- The game theme is `data/ui/game.json`, in the shared data every game copies. `Shell` puts it
+  beneath the ui document's themes through `Interface::beneath()`, where a style fills in what
+  it does not name from the style of the same class and name. `Shell::Options::theme` names it,
+  and the editor sets it empty.
+- The theme gains `panel-opacity`, which multiplies the panel's alpha whether it was derived or
+  named, so a game's own base still gives a 90% panel. The game theme also sets 8 pixel
+  corners, a 2 pixel focus ring, a 24 pixel shadow and a 0.18 s opening.
+- A menu may name a `title`, and a submenu is titled by its item's label. A centred menu writes
+  it above its items, semibold at 1.75 times the body size, through `ComponentRenderer::emphasis()`,
+  which `Screen` fills. The chosen item is written semibold, ringed in `focus` and filled with the
+  highlight, and the menu is as wide as its widest label set semibold.
+- A centred menu is placed in the safe area, `Arranger::safe()`. `GameMenu` dims the game with
+  the backdrop as it opens.
+- `Shell::game()` is a game's screen: 26 pixel body text at 1080 pixels, following the window's
+  height. Each game adopts it in step 17. Every game already paused its simulation through the
+  suspend callback, and menus already wrapped, so neither changed.
+- The theme, document, arranger, renderer, game menu and shell suites cover the merge, the
+  opacity, the title, the chosen setting, the ring, the safe area, the backdrop and the shell's
+  theme. pong was photographed with its menu up, and with a title added to its built copy of the
+  document, over a clean validation log.
 
 ### Step 15 — Settings that show their values
 

@@ -77,6 +77,13 @@ void Screen::build() {
     components_->dressing() = paint::Dressing().scaled(built_);
     components_->scale(built_);
     components_->shortcuts(options_.shortcut);
+    // a menu's title and its chosen item are set semibold, and the title larger
+    const float titled = drawn * titleScale;
+    components_->emphasis({
+        .title = {.measure = text_->measure(titled, paint::Weight::SemiBold),
+            .write = text_->write(&canvas_, titled, paint::Weight::SemiBold), .scale = titleScale},
+        .chosen = {.measure = text_->measure(drawn, paint::Weight::SemiBold),
+            .write = text_->write(&canvas_, drawn, paint::Weight::SemiBold)}});
     options_.dress(&components_->dressing(), drawn);
 
     if (options_.immediate) {

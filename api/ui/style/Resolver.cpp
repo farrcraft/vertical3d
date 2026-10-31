@@ -9,6 +9,7 @@
 #include <api/ui/paint/Palette.h>
 #include <api/ui/style/Style.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <map>
@@ -119,6 +120,14 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->colour(style, "focus", dressing, &paint::Dressing::focus);
     overlay->colour(style, "shadow", dressing, &paint::Dressing::shadow);
     overlay->colour(style, "backdrop", dressing, &paint::Dressing::backdrop);
+    // over whatever the panel came to, derived or named, so a translucent panel follows the base
+    if (style->property("panel-opacity", "number")) {
+        float opacity = 1.0F;
+        readMetric(style, "panel-opacity", &opacity);
+        glm::vec4 panel = dressing->panel;
+        panel.a *= std::clamp(opacity, 0.0F, 1.0F);
+        overlay->set(dressing, &paint::Dressing::panel, panel);
+    }
 
     overlay->metric(style, "line-height", dressing, &paint::Dressing::lineHeight, scale);
     overlay->metric(style, "padding", dressing, &paint::Dressing::padding, scale);

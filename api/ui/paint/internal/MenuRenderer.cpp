@@ -51,6 +51,10 @@ void MenuRenderer::shortcuts(const Shortcut& lookup) {
     shortcut_ = lookup;
 }
 
+void MenuRenderer::emphasis(const Emphasis& sets) {
+    emphasis_ = sets;
+}
+
 std::string MenuRenderer::shortcut(const v3d::event::Event& command) const {
     if (!shortcut_ || !command.context()) {
         return std::string();
@@ -97,6 +101,13 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
     plateBox(canvas, origin - rim, origin + glm::vec2(width, height) + rim, base().radius, base().borderWidth,
         {.inside = base().panel, .outline = base().border});
 
+    if (!level->title().empty()) {
+        const float line = arranger_.heading(*level) - (base().padding * 0.5F);
+        const Write& titled = emphasis_.title.write ? emphasis_.title.write : write_;
+        titled(level->title(), glm::vec2(origin.x + base().padding, origin.y + base().padding + (line * LINE_BASELINE)),
+            base().text);
+    }
+
     const boost::shared_ptr<component::menu::Item> active = level->active();
 
     for (std::size_t index = 0; index < count; index++) {
@@ -112,17 +123,23 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
         const bool selected = active && item == active;
 
         const glm::vec4 lit = selected ? easing_.toward(&item->motion().face, base().highlight) : easing_.away(&item->motion().face);
+        const glm::vec2 min(origin.x + (base().padding * 0.5F), top);
+        const glm::vec2 max(origin.x + width - (base().padding * 0.5F), top + base().lineHeight);
         if (lit.a > 0.0F) {
-            fillBox(canvas,
-                glm::vec2(origin.x + (base().padding * 0.5F), top),
-                glm::vec2(origin.x + width - (base().padding * 0.5F), top + base().lineHeight),
-                base().radius, lit);
+            fillBox(canvas, min, max, base().radius, lit);
+            // the ring comes and goes with the highlight it surrounds
+            if (selected && base().highlight.a > 0.0F) {
+                glm::vec4 ring = base().focus;
+                ring.a *= std::min(lit.a / base().highlight.a, 1.0F);
+                strokeBox(canvas, min, max, base().radius, base().focusWidth, ring);
+            }
         }
 
         // the pen sits on the baseline, most of the way down the line box. Descenders go in
         // the space below it
         const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * LINE_BASELINE));
-        write_(item->text(), pen, easing_.toward(&item->motion().ink, itemInk(item, base(), selected)));
+        const Write& inked = selected && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
+        inked(item->text(), pen, easing_.toward(&item->motion().ink, itemInk(item, base(), selected)));
     }
     end(canvas);
 }

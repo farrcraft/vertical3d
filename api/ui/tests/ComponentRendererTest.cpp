@@ -5,6 +5,8 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Arranger.h>
+#include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
@@ -15,6 +17,8 @@
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -69,9 +73,10 @@ boost::shared_ptr<v3d::ui::component::menu::Menu> buildMenu(const std::vector<st
 BOOST_AUTO_TEST_SUITE(component_renderer_test)
 
 /**
- * A menu is a panel, a highlight behind the active item, and one label per item. With square
- * corners the panel is five quads - four edges traced around it and the background inside them -
- * so a three item menu is six rectangles, all untextured and so all one batch.
+ * A menu is a panel, a highlight and a ring around the active item, and one label per item.
+ * With square corners the panel is five quads: four edges traced around it and the background
+ * inside them. The ring is four more, so a three item menu is ten rectangles. All of them are
+ * untextured, so they are one batch.
  **/
 BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     std::vector<Written> written;
@@ -95,8 +100,8 @@ BOOST_AUTO_TEST_CASE(a_menu_draws_a_panel_a_highlight_and_a_label_per_item) {
     BOOST_REQUIRE_EQUAL(written.size(), 3);
     BOOST_CHECK_EQUAL(written[0].text, "One");
     BOOST_CHECK_EQUAL(written[2].text, "Three");
-    // four edges, the panel and the highlight behind the active item
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 6 * 4);
+    // four edges, the panel, the highlight behind the active item and the ring's four edges
+    BOOST_CHECK_EQUAL(canvas.vertices().size(), 10 * 4);
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
 }
 
@@ -476,6 +481,121 @@ BOOST_AUTO_TEST_CASE(the_panel_is_sized_to_the_widest_label_and_centred) {
 
     BOOST_CHECK_CLOSE(right - left, expectedWidth, 0.01F);
     BOOST_CHECK_CLOSE((left + right) * 0.5F, 400.0F, 0.01F);
+}
+
+/**
+ * A titled menu writes its title in the title's setting above its items, which move down to
+ * make room for it, and is wide enough for a title wider than any item.
+ **/
+BOOST_AUTO_TEST_CASE(a_centred_menu_writes_its_title_above_its_items) {
+    std::vector<Written> body;
+    std::vector<Written> titles;
+    const auto record = [](std::vector<Written>* into) {
+        return [into](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            into->push_back({.text = std::string(text), .pen = pen, .colour = colour});
+        };
+    };
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; }, record(&body));
+    renderer.dressing().shadow = glm::vec4(0.0F);
+
+    v3d::render::realtime::canvas::Canvas untitled;
+    untitled.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> plain = buildMenu({"One", "Two"});
+    renderer.draw(&untitled, plain);
+    const float plainTop = plain->position().y;
+    BOOST_REQUIRE_EQUAL(body.size(), 2U);
+    const float firstPen = body[0].pen.y;
+    body.clear();
+
+    renderer.emphasis({.title = {
+        .measure = [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth * 2.0F; },
+        .write = record(&titles), .scale = 2.0F}});
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two"});
+    menu->title("Paused");
+    renderer.draw(&canvas, menu);
+
+    BOOST_REQUIRE_EQUAL(titles.size(), 1U);
+    BOOST_CHECK_EQUAL(titles[0].text, "Paused");
+    BOOST_REQUIRE_EQUAL(body.size(), 2U);
+    BOOST_CHECK_LT(titles[0].pen.y, body[0].pen.y);
+    const v3d::ui::paint::Dressing& dress = renderer.dressing();
+    const float band = (dress.lineHeight * 2.0F) + (dress.padding * 0.5F);
+    // the menu grows by the band and stays centred, so its items move down by half of it
+    BOOST_CHECK_CLOSE(menu->position().y, plainTop - (band * 0.5F), 0.01F);
+    BOOST_CHECK_CLOSE(body[0].pen.y, firstPen + (band * 0.5F), 0.01F);
+    const float width = static_cast<const v3d::ui::Component&>(*menu).size().x;
+    BOOST_CHECK_CLOSE(width, (6.0F * characterWidth * 2.0F) + (dress.padding * 2.0F), 0.01F);
+}
+
+/**
+ * The chosen item's label is written in the chosen item's setting and the others in the body
+ * text, and the menu is as wide as the chosen setting makes its widest label.
+ **/
+BOOST_AUTO_TEST_CASE(the_chosen_item_is_written_in_its_own_setting) {
+    std::vector<std::string> body;
+    std::vector<std::string> chosen;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&body](std::string_view text, const glm::vec2&, const glm::vec4&) { body.emplace_back(text); });
+    renderer.emphasis({.chosen = {
+        .measure = [](std::string_view text) { return static_cast<float>(text.size()) * (characterWidth + 1.0F); },
+        .write = [&chosen](std::string_view text, const glm::vec2&, const glm::vec4&) { chosen.emplace_back(text); }}});
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Three"});
+    menu->active(1);
+    renderer.draw(&canvas, menu);
+
+    BOOST_CHECK(chosen == std::vector<std::string>({"Three"}));
+    BOOST_CHECK(body == std::vector<std::string>({"One"}));
+    const float width = static_cast<const v3d::ui::Component&>(*menu).size().x;
+    BOOST_CHECK_CLOSE(width, (5.0F * (characterWidth + 1.0F)) + (renderer.dressing().padding * 2.0F), 0.01F);
+}
+
+/**
+ * The focus ring is drawn around the chosen item only, so a menu with nothing chosen draws
+ * none.
+ **/
+BOOST_AUTO_TEST_CASE(the_chosen_item_is_ringed_in_the_focus_colour) {
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const glm::vec4 focus(0.0F, 1.0F, 0.0F, 1.0F);
+    renderer.dressing().focus = focus;
+    const auto ringed = [&focus](const v3d::render::realtime::canvas::Canvas& canvas) {
+        return std::ranges::count_if(canvas.vertices(),
+            [&focus](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) { return vertex.colour == focus; });
+    };
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    renderer.draw(&canvas, buildMenu({"One", "Two"}));
+    BOOST_CHECK_EQUAL(ringed(canvas), 4 * 4);
+
+    v3d::render::realtime::canvas::Canvas none;
+    none.resize(glm::uvec2(800, 600));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> unchosen = buildMenu({"One", "Two"});
+    unchosen->active(-1);
+    renderer.draw(&none, unchosen);
+    BOOST_CHECK_EQUAL(ringed(none), 0);
+}
+
+/**
+ * A menu too tall for the safe area starts at the safe area's top, rather than above it.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_too_tall_for_the_safe_area_starts_at_its_top) {
+    const v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 100));
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three", "Four"});
+    renderer.draw(&canvas, menu);
+    BOOST_CHECK_CLOSE(menu->position().y, 100.0F * v3d::ui::Arranger::safeEnds, 0.01F);
 }
 
 /**

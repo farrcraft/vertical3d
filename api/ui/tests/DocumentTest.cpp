@@ -162,6 +162,40 @@ BOOST_AUTO_TEST_CASE(a_command_may_carry_data) {
 }
 
 /**
+ * A menu may name its title. A submenu is titled by the item that opens it unless it names a
+ * title of its own, and a menu naming none has none.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_names_its_title_and_a_submenu_takes_its_items) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "game-menu", "visible": false, "components": [
+            { "type": "menu", "name": "main-menu", "title": "Pong", "items": [
+                { "label": "Options", "type": "submenu", "items": [
+                    { "label": "Rounds: ", "type": "numeric_input", "command": "rounds", "context": "ui" } ] },
+                { "label": "Keys", "type": "submenu", "title": "Controls", "items": [
+                    { "label": "Up: ", "type": "key_input", "command": "up", "context": "ui" } ] }
+            ] },
+            { "type": "menu", "name": "plain", "items": [
+                { "label": "Quit", "type": "action", "command": "quit", "context": "ui" } ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::Container> holder = ui->container("game-menu");
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(holder->get("main-menu"));
+    BOOST_REQUIRE(menu);
+    BOOST_CHECK_EQUAL(menu->title(), "Pong");
+    BOOST_REQUIRE((*menu)[0]->submenu() && (*menu)[1]->submenu());
+    BOOST_CHECK_EQUAL((*menu)[0]->submenu()->title(), "Options");
+    BOOST_CHECK_EQUAL((*menu)[1]->submenu()->title(), "Controls");
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> plain =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(holder->get("plain"));
+    BOOST_REQUIRE(plain);
+    BOOST_CHECK(plain->title().empty());
+}
+
+/**
  * A menu bar is docked unless its document says otherwise, and only one that is not docked
  * reads a layout.
  **/

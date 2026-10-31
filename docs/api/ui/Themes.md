@@ -126,6 +126,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `focus` | the ring around the component that has the keyboard, or the outline of the field that has it | both |
 | `shadow` | the shadow a menu casts, at its darkest | retained |
 | `backdrop` | what is laid over everything behind a container that dims it | retained |
+| `panel-opacity` | how opaque `panel` is, from 0 to 1, multiplying its alpha whether it was derived or named. Defaults to 1 | both |
 | `line-height` | the height of one line of text | both |
 | `padding` | the gap between text and the panel or widget around it | both |
 | `spacing` | the gap between one widget and the next | immediate |
@@ -165,6 +166,23 @@ from the first frame. In the immediate layer a widget's fill eases, and its text
 An app can also set these values in code, through `ComponentRenderer::dressing()`,
 `Immediate::dressing()` or `Screen::Options::dress`. Where the theme names a value, the theme
 wins.
+
+### A theme beneath another
+
+`Interface::beneath(document)` puts the themes a document names beneath every theme the ui has
+loaded, so the ui's own document names only what it changes. The shell puts the game theme
+beneath every game's document this way.
+
+- **A style fills in what it does not name** from the style beneath of the same class and name,
+  and of the same `state` for a button. Its own values win.
+- **A style beneath with no match is added** after the theme's own styles, so the theme's own
+  first style of a class still dresses a component that names none.
+- **A game overrides the game theme by naming its style.** The game theme's base style is
+  `{ "class": "ui", "name": "default" }`, so a game's `ui` style named `default` is filled in
+  from it. A `ui` style under another name comes first and is read alone, and the game theme's
+  base style is not read at all.
+- **A ui with no theme takes the document's themes** as its own, and the first is active.
+- It runs after `load()`, which replaces every theme.
 
 ### Per-component classes
 

@@ -511,8 +511,15 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
             if (!submenu) {  // a submenu that fails to read fails the whole menu
                 return nullptr;
             }
+            // a submenu is titled by the item that opens it, unless it names a title of its own
+            if (submenu->title().empty()) {
+                submenu->title(*label);
+            }
             menuItem->submenu(submenu);
         }
+    }
+    if (const std::optional<std::string> title = optionalString(*logger_, entry, "title")) {
+        menu->title(*title);
     }
     menu->active(0);
     return menu;

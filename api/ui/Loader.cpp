@@ -31,6 +31,10 @@ bool Loader::loadContainers(const boost::json::object& doc) {
     return components_.read(doc);
 }
 
+bool Loader::loadThemes(const boost::json::object& doc) {
+    return themes_.read(doc);
+}
+
 std::vector<boost::shared_ptr<Container>>& Loader::containers() noexcept {
     return components_.containers();
 }

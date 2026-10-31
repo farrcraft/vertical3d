@@ -55,6 +55,24 @@ typedef std::function<float(std::string_view)> Measure;
 typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)> Write;
 
 /**
+ * Text set in another weight or at another size than the body text.
+ **/
+struct Setting final {
+    Measure measure;       /**< how wide a string is in it. Empty sets the text as the body text is set **/
+    Write write;
+    float scale { 1.0F };  /**< how large it is against the body text **/
+};
+
+/**
+ * What a centred menu sets apart from the text of its items: its title, and the label of the
+ * chosen item. A setting left empty is set as the body text is.
+ **/
+struct Emphasis final {
+    Setting title;
+    Setting chosen;
+};
+
+/**
  * Break a line at the spaces that do not fit a width.
  *
  * Greedy: a word goes on the current line if it fits, and starts a new one if it does not.

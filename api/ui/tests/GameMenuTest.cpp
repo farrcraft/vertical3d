@@ -9,6 +9,7 @@
 #include <api/event/State.h>
 #include <api/event/Type.h>
 #include <api/log/Logger.h>
+#include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/shell/GameMenu.h>
@@ -109,7 +110,7 @@ BOOST_AUTO_TEST_SUITE(game_menu_test)
 
 /**
  * The container is what is shown and hidden, and the game is suspended for exactly as long
- * as it is up.
+ * as it is up. The container dims the game behind it, though its document does not ask.
  **/
 BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
     const boost::shared_ptr<v3d::ui::Interface> ui = load(document);
@@ -117,10 +118,12 @@ BOOST_AUTO_TEST_CASE(a_toggle_shows_the_container_and_suspends_the_game) {
     v3d::ui::shell::GameMenu menu(ui, [&suspended](bool state) { suspended.push_back(state); });
 
     BOOST_TEST(!menu.visible());
+    BOOST_TEST(!ui->container("game-menu")->backdrop());
 
     menu.toggle();
     BOOST_TEST(menu.visible());
     BOOST_TEST(ui->container("game-menu")->visible());
+    BOOST_TEST(ui->container("game-menu")->backdrop());
     BOOST_REQUIRE_EQUAL(suspended.size(), 1U);
     BOOST_TEST(suspended[0]);
 

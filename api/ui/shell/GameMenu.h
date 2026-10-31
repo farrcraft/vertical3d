@@ -23,7 +23,8 @@ namespace v3d::ui::shell {
  * The menu a game puts up over itself, and the commands that drive it.
  *
  * The container is shown and hidden, not the menu. A component is visible from the moment
- * it is built, so the menu's own visible() does not say whether the menu is up.
+ * it is built, so the menu's own visible() does not say whether the menu is up. The container
+ * dims the game behind it with the theme's backdrop, whatever its document says.
  *
  * Both names come from the app's ui config. When the container is not found, every call
  * here does nothing, so a game whose config names no menu still runs, without one.

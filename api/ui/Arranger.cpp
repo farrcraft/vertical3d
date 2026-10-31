@@ -31,6 +31,9 @@
 #include <utility>
 #include <vector>
 
+#include <glm/common.hpp>
+#include <glm/vec2.hpp>
+
 #include "Component.h"
 #include "Container.h"
 #include "Length.h"
@@ -501,6 +504,41 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
 
 /**
  **/
+void Arranger::emphasis(const paint::Emphasis& sets) {
+    emphasis_ = sets;
+}
+
+/**
+ **/
+v3d::type::geometry::Bound2D Arranger::safe(const glm::vec2& room) noexcept {
+    const glm::vec2 inset(room.x * safeSides, room.y * safeEnds);
+    return v3d::type::geometry::Bound2D({.position = inset, .size = room - (inset * 2.0F)});
+}
+
+/**
+ **/
+float Arranger::heading(const component::menu::Menu& level) const {
+    if (level.title().empty()) {
+        return 0.0F;
+    }
+    const paint::Dressing& base = styles_.base();
+    const float scale = emphasis_.title.measure ? emphasis_.title.scale : 1.0F;
+    return (base.lineHeight * scale) + (base.padding * 0.5F);
+}
+
+/**
+ **/
+float Arranger::choice(const component::menu::Item* item) const {
+    if (item == nullptr) {
+        return 0.0F;
+    }
+    const std::string text = item->text();
+    const float body = measure_(text);
+    return emphasis_.chosen.measure ? std::max(body, emphasis_.chosen.measure(text)) : body;
+}
+
+/**
+ **/
 void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) const {
     const std::size_t count = level.count();
     if (count == 0) {
@@ -510,15 +548,21 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
     float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
-        widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        widest = std::max(widest, choice(item.get()));
         rows += row(item.get());
     }
+    if (!level.title().empty()) {
+        const paint::Measure& titled = emphasis_.title.measure ? emphasis_.title.measure : measure_;
+        widest = std::max(widest, titled(level.title()));
+    }
     const paint::Dressing& base = styles_.base();
-    const glm::vec2 size(widest + (base.padding * 2.0F), rows + (base.padding * 2.0F));
-    const glm::vec2 corner((room - size) * 0.5F);
+    const float band = heading(level);
+    const glm::vec2 size(widest + (base.padding * 2.0F), band + rows + (base.padding * 2.0F));
+    const v3d::type::geometry::Bound2D area = safe(room);
+    const glm::vec2 corner = glm::max(area.position() + ((area.size() - size) * 0.5F), area.position());
     place(level, {.position = corner, .size = size});
 
-    float top = corner.y + base.padding;
+    float top = corner.y + base.padding + band;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
         const float height = row(item.get());

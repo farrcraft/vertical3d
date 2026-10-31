@@ -26,7 +26,7 @@ reads besides the common ones:
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
 | `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, `docked` (true) | yes / no |
-| `menu` | `menu::Menu` | a game menu, one level at a time, centred | `items` | no / no |
+| `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
 Notes on individual components:
 
@@ -66,6 +66,16 @@ Notes on individual components:
   `check`, `radio`, `input`, `numeric_input`, `key_input` and `separator`. A check and a radio
   item are marked by the app, the same as a check box. Radio items are drawn with the same
   square mark as check items.
+- **A centred menu** is drawn one level at a time in the middle of the canvas's safe area. The
+  safe area is 5% of the width in from each side and 4% of the height in from the top and the
+  bottom. A level too large for the safe area keeps its top left corner inside it.
+  - Its `title` is written above its items, semibold and 1.75 times the size of their text when
+    the menu is drawn on a `Screen`. A submenu is titled by the label of the item that opens it,
+    unless it names a `title` of its own.
+  - The chosen item shows three cues: the `highlight` behind it, its label in `active-text` and
+    semibold, and a ring in `focus` at `focus-width` around it. The menu is as wide as its widest
+    label set semibold, so it does not change width as the choice moves.
+  - The down and up arrows wrap from the last item to the first and back.
 - **A separator** is a rule between two groups of items, half a row tall. It needs no label and
   sends nothing. The keys step over it and the cursor passes over it, so nothing chooses it.
 - **A menu item's icon** is drawn in the column a check mark takes, when the item is not

@@ -92,6 +92,7 @@ void GameMenu::toggle() {
         if (suspend_) {
             suspend_(true);
         }
+        holder->backdrop(true);
         holder->visible(true);
         return;
     }
