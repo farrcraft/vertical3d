@@ -310,10 +310,11 @@ Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
   to tenths, cancels and evens. An area splits, joins, swaps and maximises, and its editors are
   added, chosen, closed, moved and dropped on an edge. `save()` writes what `load()` reads.
   `AreaViews` gives each viewport editor a `ViewPort` for as long as the editor lasts.
-- Areas are drawn with the design's gaps, corners, hairlines and active outline.
-- Dividers draw the design's highlight and cursor, and the pointer takes Escape and a right
-  click to cancel, Ctrl to snap and a double click to even. The window gains the resize
-  cursors. The metrics scale with the ui.
+- Built: the renderer draws the gaps, rounded corners, hairlines and the active area's accent
+  line under the ui, and lights the divider under the cursor or held. The window shows resize
+  cursors over it. Escape and a right click cancel a drag, Ctrl snaps it and a double click
+  evens it. `MouseButton` carries the platform's click count and `MouseMotion` the modifiers
+  held. The metrics scale with the ui.
 - An area can be split, joined, swapped and maximised from its editor-type menu and by keys,
   and a tab dragged onto an area's edge splits it.
 - Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a

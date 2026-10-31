@@ -12,6 +12,7 @@ add_library("v3dlib_editor"
 
 	"src/view/AreaLayout.h" "src/view/AreaLayout.cxx"
 	"src/view/AreaViews.h" "src/view/AreaViews.cxx"
+	"src/view/AreaFrame.h" "src/view/AreaFrame.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
 	"src/view/Shading.h"

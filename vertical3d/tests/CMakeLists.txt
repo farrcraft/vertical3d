@@ -6,6 +6,7 @@ v3d_add_test(vertical3d
 
 	"view/AreaLayoutTest.cxx"
 	"view/AreaViewsTest.cxx"
+	"view/AreaFrameTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
 

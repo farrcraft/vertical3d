@@ -27,13 +27,18 @@
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/view/AreaFrame.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -134,6 +139,12 @@ void Renderer::views(const boost::shared_ptr<AreaViews>& views) {
 
 /**
  **/
+void Renderer::pointer(const boost::shared_ptr<Pointer>& pointer) {
+    pointer_ = pointer;
+}
+
+/**
+ **/
 void Renderer::scene(const boost::shared_ptr<Scene>& scene) {
     scene_ = scene;
 }
@@ -183,6 +194,12 @@ glm::vec2 Renderer::insets() const {
         return glm::vec2(0.0F, 0.0F);
     }
     return screen_->components().insets(*ui_);
+}
+
+/**
+ **/
+float Renderer::scale() const noexcept {
+    return screen_->factor();
 }
 
 /**
@@ -264,10 +281,18 @@ void Renderer::draw() {
 /**
  **/
 void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame) {
+    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+    // the frame around the areas goes first, so a menu dropped over it covers it
+    if (views_ && pointer_) {
+        const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+        const float factor = screen_->factor();
+        const FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
+            .radius = FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
+        drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit());
+    }
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
     shell_->draw();
-    v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
 
     // the rubber band is drawn in window pixels, which is the space this canvas is in
     const std::optional<SelectTool::Band> band = select_ ? select_->band() : std::nullopt;

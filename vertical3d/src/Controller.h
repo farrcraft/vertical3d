@@ -7,6 +7,7 @@
 
 #include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
+#include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/shell/Shell.h>
@@ -81,9 +82,20 @@ class Controller final : public v3d::engine::Engine {
 
     /**
      * The cursor moved. The pointer routes it to the ui or the tools, and chooses the active
-     * view.
+     * view. Ctrl snaps a held divider to tenths.
      **/
     void handleMotion(const v3d::event::kind::MouseMotion& event);
+
+    /**
+     * A mouse button changed. A right press puts a held divider back, and a left press's clicks
+     * are kept for the drag command that follows it.
+     **/
+    void handleButton(const v3d::event::kind::MouseButton& event);
+
+    /**
+     * Show the pointer as a resize cursor over a divider that is lit, and as an arrow elsewhere.
+     **/
+    void syncPointerShape();
 
     /**
      * The window changed size, so the layout divides a different area between the views.
@@ -259,7 +271,12 @@ class Controller final : public v3d::engine::Engine {
     std::vector<std::string> refused_;
     // the dispatcher holds delegates to this object. These disconnect them when it is destroyed
     entt::scoped_connection motion_;
+    entt::scoped_connection button_;
     entt::scoped_connection resize_;
+    // how many clicks in succession the last left press was, which view::drag hands the pointer
+    unsigned int clicks_ = 1;
+    // the ui scale the layout's metrics were last set for
+    float metricsScale_ = 0.0F;
 };
 
 };  // namespace v3d::editor

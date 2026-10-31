@@ -72,14 +72,16 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         const glm::vec2 position(event.button.x, event.button.y);
         state_(position);
         dispatcher()->trigger<v3d::event::kind::MouseButton>(
-            v3d::event::kind::MouseButton(buttonName, position, context(), pressed));
+            v3d::event::kind::MouseButton(buttonName, position, context(), pressed, event.button.clicks));
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         const glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
+        // a motion event carries no modifiers of its own, so they are read as they stand now
         dispatcher()->trigger<v3d::event::kind::MouseMotion>(
-            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context()));
+            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel),
+                .modifiers = modifiers(SDL_GetModState())}, context()));
         return true;  // motion has no discrete name, so it is not a bindable source event
     }
     case SDL_EVENT_MOUSE_WHEEL: {

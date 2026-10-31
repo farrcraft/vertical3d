@@ -20,6 +20,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -75,6 +76,12 @@ class Renderer final {
     void views(const boost::shared_ptr<AreaViews>& views);
 
     /**
+     * What decides the frame drawn around the areas: the active area and the lit divider. The
+     * frame is drawn under the ui and over the views.
+     **/
+    void pointer(const boost::shared_ptr<Pointer>& pointer);
+
+    /**
      * The one scene every view draws.
      **/
     void scene(const boost::shared_ptr<Scene>& scene);
@@ -109,6 +116,11 @@ class Renderer final {
      * laid out in the rest. Left in x and top in y.
      **/
     glm::vec2 insets() const;
+
+    /**
+     * @return how much larger than its logical size the ui is drawn
+     **/
+    float scale() const noexcept;
 
     /**
      * Draw one frame: two passes per view, then the ui pass.
@@ -147,6 +159,7 @@ class Renderer final {
     boost::shared_ptr<TransformTool> transform_;
     boost::shared_ptr<SelectTool> select_;
     boost::shared_ptr<AreaViews> views_;
+    boost::shared_ptr<Pointer> pointer_;
     // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;

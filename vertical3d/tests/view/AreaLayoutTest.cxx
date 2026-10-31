@@ -6,11 +6,13 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/view/AreaLayout.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -497,6 +499,25 @@ BOOST_FIXTURE_TEST_CASE(a_change_to_the_tree_restores_the_layout, Quad) {
     BOOST_CHECK(!layout.maximised());
     BOOST_CHECK_EQUAL(region(0).x, 3.0F);
     BOOST_CHECK_GT(region(1).z, 0.0F);
+}
+
+/**
+ * The gaps are the margin's four sides and each divider, and the margin alone while an area is
+ * maximised.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_gaps_are_the_margin_and_the_dividers, Quad) {
+    const std::vector<glm::vec4> gaps = layout.gaps();
+    BOOST_REQUIRE_EQUAL(gaps.size(), 7U);
+    BOOST_CHECK(gaps[0] == glm::vec4(0.0F, 0.0F, 1024.0F, 3.0F));
+    BOOST_CHECK(gaps[1] == glm::vec4(0.0F, 765.0F, 1024.0F, 3.0F));
+    BOOST_CHECK(gaps[2] == glm::vec4(0.0F, 3.0F, 3.0F, 762.0F));
+    BOOST_CHECK(gaps[3] == glm::vec4(1021.0F, 3.0F, 3.0F, 762.0F));
+    BOOST_CHECK(std::ranges::find(gaps, glm::vec4(3.0F, 382.0F, 1018.0F, 3.0F)) != gaps.end());
+    BOOST_CHECK(std::ranges::find(gaps, glm::vec4(510.0F, 3.0F, 3.0F, 379.0F)) != gaps.end());
+    BOOST_CHECK(std::ranges::find(gaps, glm::vec4(510.0F, 385.0F, 3.0F, 380.0F)) != gaps.end());
+
+    layout.maximise(2);
+    BOOST_CHECK_EQUAL(layout.gaps().size(), 4U);
 }
 
 /**

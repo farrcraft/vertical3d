@@ -27,6 +27,7 @@ loads the Vulkan loader when it creates one, so a machine with no Vulkan driver 
 | `textInput(on)` | Starts or stops the platform composing text. `ui::shell::Keyboard` calls it as focus moves |
 | `relativeMouse(on)` | Hides the cursor and holds it in the window, for mouselook |
 | `cursor(on)`, `warpCursor(x, y)` | Shows or hides the cursor, and moves it |
+| `pointer(shape)` | Shows the pointer as an arrow, or as a cursor for resizing columns or rows. The shape lasts until another is asked for |
 | `sdl()` | The `SDL_Window`, for a renderer to present to |
 
 ## Presenting to it

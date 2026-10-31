@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/event/Chord.h>
 #include <api/event/Event.h>
 
 #include <glm/glm.hpp>
@@ -17,10 +18,11 @@ namespace v3d::event::kind {
  **/
 class MouseMotion final : public Event {
  public:
-    /** Where the cursor is, and how far it moved. **/
+    /** Where the cursor is, how far it moved, and the modifier keys held as it did. **/
     struct Moved {
         glm::vec2 position{0.0F};
         glm::vec2 motion{0.0F};
+        Modifiers modifiers;
     };
 
     // not noexcept: the base takes the event name as a std::string, which allocates
@@ -36,8 +38,14 @@ class MouseMotion final : public Event {
      **/
     glm::vec2 motion() const noexcept;
 
+    /**
+     * @return the modifier keys held as the cursor moved
+     **/
+    const Modifiers& modifiers() const noexcept;
+
  private:
     glm::vec2 position_;
     glm::vec2 motion_;
+    Modifiers modifiers_;
 };
 };  // namespace v3d::event::kind

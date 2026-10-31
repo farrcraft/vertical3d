@@ -60,6 +60,11 @@ A device also publishes typed events on the dispatcher for every input:
 app can listen to these directly and use no binding document at all. voxel and the editor do
 this for mouse motion and resize.
 
+- `MouseButton::clicks()` is how many presses in quick succession an edge belongs to, as the
+  platform counts them: 1 for a single click, and 2 for the second press of a double click.
+- `MouseMotion::modifiers()` is the Ctrl, Shift and Alt held as the cursor moved, so a drag can
+  change while one is held.
+
 `event::publish()` sends a source event in two stages:
 
 1. Every listener on `sink<event::Source>` hears it.

@@ -10,6 +10,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
+#include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/image/Image.h>
@@ -52,6 +53,7 @@
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -154,6 +156,7 @@ bool Controller::start() {
     tools_->add(selectTool_);
 
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
+    button_ = dispatcher()->sink<v3d::event::kind::MouseButton>().connect<&Controller::handleButton>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
     renderer_ = boost::make_shared<Renderer>(window(), logger(), assets(), &shell_);
@@ -166,6 +169,7 @@ bool Controller::start() {
         return false;
     }
     renderer_->ui(shell_.ui());
+    renderer_->pointer(pointer_);
 
     for (const std::string& name : refused_) {
         logger()->get()->error("{} is registered twice", name);
@@ -539,7 +543,8 @@ void Controller::registerCommands() {
 
     hold("view::drag", [this](const v3d::event::Event& event) {
         if (pointer_) {
-            pointer_->button(event.state() == v3d::event::State::Pressed);
+            pointer_->button(event.state() == v3d::event::State::Pressed, clicks_);
+            syncPointerShape();
         }
     });
 
@@ -627,6 +632,11 @@ void Controller::askBeforeDiscarding(const std::function<void()>& proceed) {
 /**
  **/
 bool Controller::quitRequested() {
+    // Escape while a divider is held puts the divider back rather than quitting
+    if (pointer_ && pointer_->cancel()) {
+        syncPointerShape();
+        return false;
+    }
     if (!document_ || !document_->dirty()) {
         return true;
     }
@@ -737,6 +747,14 @@ void Controller::layoutViews(int width, int height) {
 /**
  **/
 bool Controller::render() {
+    // the gaps and the reach follow the ui's scale, so a change of scale divides the window again
+    const float scale = renderer_->scale();
+    if (scale != metricsScale_) {
+        metricsScale_ = scale;
+        layout_->metrics({ .gap = std::max(1.0F, std::round(AreaLayout::Metrics::GAP * scale)),
+            .reach = AreaLayout::Metrics::REACH * scale, .least = AreaLayout::Metrics::LEAST * scale });
+        layoutViews(window()->width(), window()->height());
+    }
     renderer_->draw();
     return true;
 }
@@ -813,8 +831,31 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
     if (pointer_) {
-        pointer_->motion(event.position());
+        pointer_->motion(event.position(), event.modifiers().ctrl);
+        syncPointerShape();
     }
+}
+
+/**
+ **/
+void Controller::handleButton(const v3d::event::kind::MouseButton& event) {
+    if (event.button() == "left") {
+        clicks_ = event.clicks();
+    } else if (event.button() == "right" && event.pressed() && pointer_ && pointer_->cancel()) {
+        syncPointerShape();
+    }
+}
+
+/**
+ **/
+void Controller::syncPointerShape() {
+    const std::optional<AreaLayout::Divider> lit = pointer_ ? pointer_->lit() : std::nullopt;
+    if (!lit) {
+        window()->pointer(v3d::window::Window::Pointer::Arrow);
+        return;
+    }
+    // a divider between stacked areas moves up and down
+    window()->pointer(lit->across ? v3d::window::Window::Pointer::Rows : v3d::window::Window::Pointer::Columns);
 }
 
 };  // namespace v3d::editor

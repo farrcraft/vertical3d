@@ -165,6 +165,12 @@ class AreaLayout final {
     std::size_t areaAt(float x, float y) const noexcept;
 
     /**
+     * @return every gap: each divider, and the margin around the edge of the region. While an
+     *         area is maximised, the margin alone
+     **/
+    std::vector<glm::vec4> gaps() const;
+
+    /**
      * The divider a press at a point would take: one within the metrics' reach of its gap, along
      * the length of its split. Where the dividers of two splits meet, the outer split's is found.
      * No divider is found while an area is maximised.
@@ -360,6 +366,11 @@ class AreaLayout final {
      * @param path the path to the node, which the search extends and restores
      **/
     std::optional<Found> dividerIn(const Node& node, float x, float y, std::vector<std::size_t>* path) const;
+
+    /**
+     * Add the dividers of a node and of every split below it.
+     **/
+    static void gapsIn(const Node& node, std::vector<glm::vec4>* into);
 
     /**
      * Find the divider at a point, unless an area is maximised.

@@ -133,6 +133,97 @@ BOOST_AUTO_TEST_CASE(a_press_on_a_divider_reaches_no_tool) {
 }
 
 /**
+ * With snapping, a dragged divider lands on a tenth of its split: the split runs 194 pixels
+ * from 3, so a drag to 140 lands on its seventh tenth, centred at 138.8.
+ **/
+BOOST_AUTO_TEST_CASE(a_snapped_drag_lands_on_a_tenth) {
+    const Panes panes;
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    panes.pointer->button(true);
+    panes.pointer->motion(glm::vec2(140.0F, 50.0F), true);
+    panes.pointer->button(false);
+    BOOST_CHECK_EQUAL(panes.layout->areas()[0].region.z, 134.0F);
+}
+
+/**
+ * The second press of a double click on a divider evens it, and no tool sees either press or
+ * either release.
+ **/
+BOOST_AUTO_TEST_CASE(a_double_click_evens_a_divider) {
+    Panes panes;
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    panes.pointer->button(true);
+    panes.pointer->motion(glm::vec2(140.0F, 50.0F));
+    panes.pointer->button(false);
+    BOOST_REQUIRE_EQUAL(panes.layout->areas()[0].region.z, 135.0F);
+
+    panes.pointer->button(true, 1);
+    panes.pointer->button(false);
+    panes.pointer->button(true, 2);
+    panes.pointer->button(false);
+    BOOST_CHECK_EQUAL(panes.layout->areas()[0].region.z, 95.0F);
+    BOOST_CHECK_EQUAL(panes.views[1]->region().x, 101.0F);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 0);
+}
+
+/**
+ * Cancelling puts a held divider back, and the release that follows reaches no tool.
+ **/
+BOOST_AUTO_TEST_CASE(a_cancelled_drag_puts_the_divider_back) {
+    Panes panes;
+    BOOST_CHECK(!panes.pointer->cancel());
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    panes.pointer->button(true);
+    panes.pointer->motion(glm::vec2(140.0F, 50.0F));
+    BOOST_REQUIRE(panes.pointer->cancel());
+    BOOST_CHECK_EQUAL(panes.layout->areas()[0].region.z, 95.0F);
+    BOOST_CHECK_EQUAL(panes.views[1]->region().x, 101.0F);
+    BOOST_CHECK(!panes.pointer->cancel());
+
+    panes.pointer->motion(glm::vec2(150.0F, 50.0F));
+    panes.pointer->button(false);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 0);
+    BOOST_CHECK(!panes.tool->held);
+}
+
+/**
+ * The divider lit is the one under the cursor or the one held, and none while a tool drags.
+ **/
+BOOST_AUTO_TEST_CASE(the_divider_under_the_cursor_is_lit) {
+    const Panes panes;
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    BOOST_REQUIRE(panes.pointer->lit().has_value());
+    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::AreaLayout::Divider()).region.x, 98.0F);
+    panes.pointer->motion(glm::vec2(50.0F, 50.0F));
+    BOOST_CHECK(!panes.pointer->lit().has_value());
+
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    panes.pointer->button(true);
+    panes.pointer->motion(glm::vec2(140.0F, 50.0F));
+    BOOST_CHECK_EQUAL(panes.pointer->lit().value_or(v3d::editor::AreaLayout::Divider()).region.x, 138.0F);
+    panes.pointer->button(false);
+
+    // a tool's drag passes over the divider without lighting it
+    panes.pointer->motion(glm::vec2(20.0F, 50.0F));
+    panes.pointer->button(true);
+    panes.pointer->motion(glm::vec2(139.0F, 50.0F));
+    BOOST_CHECK(!panes.pointer->lit().has_value());
+    panes.pointer->button(false);
+}
+
+/**
+ * The active area follows the cursor, and a gap leaves it where it was.
+ **/
+BOOST_AUTO_TEST_CASE(the_active_area_follows_the_cursor) {
+    const Panes panes;
+    BOOST_CHECK_EQUAL(panes.pointer->activeArea(), 0U);
+    panes.pointer->motion(glm::vec2(150.0F, 50.0F));
+    BOOST_CHECK_EQUAL(panes.pointer->activeArea(), 1U);
+    panes.pointer->motion(glm::vec2(99.0F, 50.0F));
+    BOOST_CHECK_EQUAL(panes.pointer->activeArea(), 1U);
+}
+
+/**
  * A change to the layout that hides the active view makes the first view shown the active one,
  * and the tools are given it.
  **/

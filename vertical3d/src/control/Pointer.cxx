@@ -12,6 +12,8 @@
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <optional>
 #include <vector>
 
 #include <glm/vec2.hpp>
@@ -33,23 +35,28 @@ Pointer::Pointer(const boost::shared_ptr<v3d::ui::input::Cursor>& ui, const boos
     }
 }
 
-void Pointer::motion(const glm::vec2& cursor) {
+void Pointer::motion(const glm::vec2& cursor, bool snap) {
     cursor_ = cursor;
 
     AreaLayout& layout = *views_->layout();
     if (layout.grabbed()) {
-        layout.drag(cursor_.x, cursor_.y);
+        layout.drag(cursor_.x, cursor_.y, snap);
         place();
         return;
     }
 
     const bool dragging = tools_->dragging();
-    if (!dragging && ui_ && ui_->motion(cursor_)) {
+    overUi_ = !dragging && ui_ && ui_->motion(cursor_);
+    if (overUi_) {
         return;
     }
 
     if (!dragging) {
-        const boost::shared_ptr<ViewPort> view = views_->of(layout.areaAt(cursor_.x, cursor_.y));
+        const std::size_t area = layout.areaAt(cursor_.x, cursor_.y);
+        if (area < layout.areas().size()) {
+            activeArea_ = layout.areas()[area].id;
+        }
+        const boost::shared_ptr<ViewPort> view = views_->of(area);
         if (view && view != activeView_) {
             activate(view);
         }
@@ -57,7 +64,7 @@ void Pointer::motion(const glm::vec2& cursor) {
     tools_->motion(cursor_);
 }
 
-void Pointer::button(bool pressed) {
+void Pointer::button(bool pressed, unsigned int clicks) {
     AreaLayout& layout = *views_->layout();
     if (pressed) {
         // the ui is drawn over every view, so it is offered the press first
@@ -66,7 +73,9 @@ void Pointer::button(bool pressed) {
             return;
         }
         // a press on a divider between areas resizes them, and no tool sees it
-        if (layout.grab(cursor_.x, cursor_.y)) {
+        dividerGrab_ = (clicks >= 2 && layout.even(cursor_.x, cursor_.y)) || layout.grab(cursor_.x, cursor_.y);
+        if (dividerGrab_) {
+            place();
             return;
         }
         tools_->button(true, cursor_);
@@ -77,11 +86,39 @@ void Pointer::button(bool pressed) {
         ui_->release(cursor_);
         return;
     }
-    if (layout.grabbed()) {
+    if (dividerGrab_) {
+        dividerGrab_ = false;
         layout.release();
         return;
     }
     tools_->button(false, cursor_);
+}
+
+bool Pointer::cancel() {
+    AreaLayout& layout = *views_->layout();
+    if (!layout.grabbed()) {
+        return false;
+    }
+    layout.cancel();
+    place();
+    return true;
+}
+
+std::optional<AreaLayout::Divider> Pointer::lit() const {
+    const AreaLayout& layout = *views_->layout();
+    if (layout.grabbed()) {
+        return layout.held();
+    }
+    if (overUi_ || uiGrab_ || tools_->dragging()) {
+        return std::nullopt;
+    }
+    return layout.divider(cursor_.x, cursor_.y);
+}
+
+std::size_t Pointer::activeArea() const noexcept {
+    const AreaLayout& layout = *views_->layout();
+    const std::size_t found = activeArea_ ? layout.find(*activeArea_) : layout.areas().size();
+    return found < layout.areas().size() ? found : 0;
 }
 
 void Pointer::resize(const glm::vec4& region) {

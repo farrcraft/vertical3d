@@ -318,6 +318,35 @@ std::size_t AreaLayout::areaAt(float x, float y) const noexcept {
 
 /**
  **/
+std::vector<glm::vec4> AreaLayout::gaps() const {
+    const glm::vec4 room = inset(region_, metrics_.gap);
+    const float right = room.x + room.z;
+    const float bottom = room.y + room.w;
+    std::vector<glm::vec4> found = {
+        glm::vec4(region_.x, region_.y, region_.z, room.y - region_.y),
+        glm::vec4(region_.x, bottom, region_.z, region_.y + region_.w - bottom),
+        glm::vec4(region_.x, room.y, room.x - region_.x, room.w),
+        glm::vec4(right, room.y, region_.x + region_.z - right, room.w),
+    };
+    if (!maximised_) {
+        gapsIn(root_, &found);
+    }
+    return found;
+}
+
+/**
+ **/
+void AreaLayout::gapsIn(const Node& node, std::vector<glm::vec4>* into) {
+    for (std::size_t index = 0; index + 1 < node.children.size(); index++) {
+        into->push_back(gapAfter(node, index).region);
+    }
+    for (const Node& child : node.children) {
+        gapsIn(child, into);
+    }
+}
+
+/**
+ **/
 float AreaLayout::least(const Node& node, bool vertical) const {
     if (node.children.empty()) {
         return metrics_.least;

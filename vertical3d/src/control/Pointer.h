@@ -7,10 +7,13 @@
 
 #include <api/ui/input/Cursor.h>
 #include <vertical3d/src/tool/ToolRouter.h>
+#include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
 #include <functional>
+#include <optional>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -24,8 +27,12 @@ namespace v3d::editor {
  *
  * A press goes to the first of those that takes it, and its release goes to the same place.
  * The ui is offered the cursor only between drags, so a drag that passes over the menu bar or
- * a toolbar is not interrupted. The view under the cursor becomes the active one between drags,
- * so a drag that crosses a border between views keeps its view.
+ * a toolbar is not interrupted. The area under the cursor becomes the active one between drags,
+ * and its view the active view, so a drag that crosses a gap keeps its area.
+ *
+ * A divider is taken by a press near its gap. A drag moves it, snapped to tenths while Ctrl is
+ * held, and cancel() puts it back. The second press of a double click on a divider evens it
+ * instead of taking it.
  **/
 class Pointer final {
  public:
@@ -43,13 +50,33 @@ class Pointer final {
 
     /**
      * The cursor moved, in window pixels.
+     * @param snap whether a held divider snaps to tenths of its split
      **/
-    void motion(const glm::vec2& cursor);
+    void motion(const glm::vec2& cursor, bool snap = false);
 
     /**
      * The primary button went down or up, where the cursor is.
+     * @param clicks how many presses in quick succession this one is
      **/
-    void button(bool pressed);
+    void button(bool pressed, unsigned int clicks = 1);
+
+    /**
+     * Put a held divider back where it was taken, and let go of it.
+     * @return whether a divider was held
+     **/
+    bool cancel();
+
+    /**
+     * @return the divider to light: the one held, or else the one a press would take, unless
+     *         the ui has the cursor or a tool is dragging
+     **/
+    std::optional<AreaLayout::Divider> lit() const;
+
+    /**
+     * @return the index of the area the cursor was last in, or of the first area before the
+     *         cursor has been in one
+     **/
+    std::size_t activeArea() const noexcept;
 
     /**
      * Divide a region of the window between the areas, and tell each view its region.
@@ -82,10 +109,16 @@ class Pointer final {
     boost::shared_ptr<ToolRouter> tools_;
     Moved moved_;
     boost::shared_ptr<ViewPort> activeView_;
+    // the id of the area the cursor was last in
+    std::optional<std::size_t> activeArea_;
     glm::vec2 cursor_;
     // whether the ui took the press, so that the release that ends it does not reach the tools
     // that never saw the press
     bool uiGrab_;
+    // whether a divider took the press, for the same reason
+    bool dividerGrab_ = false;
+    // whether the ui took the last motion
+    bool overUi_ = false;
 };
 
 };  // namespace v3d::editor

@@ -313,7 +313,20 @@ editor holds stops the editor at startup.
 none has a share of one. A share that is not a number above zero is refused. Areas are 3 pixels
 apart, and the same gap runs around the edge of the region they divide. Each extent is rounded
 down to a whole pixel, and the last child of a split takes what that left, so the areas and gaps
-cover the region exactly.
+cover the region exactly. Every size in this section is at a ui scale of 1, and is multiplied by
+the ui's scale. The gap is rounded to a whole pixel and is never less than one.
+
+**The frame.** The renderer draws a frame around the areas, over the views and under the ui:
+
+- the gaps, in the theme's `gap`
+- each area's corners, rounded by 4 pixels by covering what lies outside the rounding in `gap`
+- a line just inside each area's edge, in `hairline`, or in the accent, the theme's `focus`, for
+  the active area
+- the lit divider, filled with the accent
+
+The active area is the one the cursor was last in, between drags. The lit divider is the one
+held, or else the one a press would take, unless the ui has the cursor or a tool is dragging.
+Over a lit divider the pointer is a resize cursor, for rows or for columns.
 
 **Dividers.** The gap between two children of a split is a divider. A press within 4 pixels of a
 gap takes hold of its divider before any tool sees the press, and the drag moves it. Where two
@@ -323,9 +336,10 @@ dividers meet, the outer split's is taken.
 - Neither is made smaller than its least size: 68 pixels for an area, and for a split, room for
   what it holds. A split that runs the same way as the divider needs the sum of its children and
   their gaps, and one that runs across needs its largest child.
-- Snapping puts the divider on the nearest tenth of its split.
-- Cancelling puts the divider back where it was taken.
-- Evening a divider gives the two children beside it the same room.
+- Holding Ctrl snaps the divider to the nearest tenth of its split.
+- Escape or a right click puts the divider back where it was taken.
+- The second press of a double click on a divider gives the two children beside it the same
+  room.
 
 The shares last as long as the editor runs, and are not written back to `data/layout.json`.
 

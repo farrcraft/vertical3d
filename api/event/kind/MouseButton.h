@@ -26,9 +26,12 @@ class MouseButton : public Event {
  public:
     /**
      * @param button the button's name, one of the names a binding config uses
+     * @param clicks how many presses in quick succession this edge belongs to, as the platform
+     *        counts them: 1 for a single click, 2 for the second of a double click
      **/
     // not noexcept: the base takes the event name as a std::string, which allocates
-    MouseButton(const std::string& button, const glm::vec2& position, const boost::shared_ptr<Context>& context, bool pressed);
+    MouseButton(const std::string& button, const glm::vec2& position, const boost::shared_ptr<Context>& context, bool pressed,
+        unsigned int clicks = 1);
 
     /**
      * @return the button's name
@@ -44,8 +47,14 @@ class MouseButton : public Event {
      **/
     bool pressed() const noexcept;
 
+    /**
+     * @return how many presses in quick succession this edge belongs to
+     **/
+    unsigned int clicks() const noexcept;
+
  private:
     glm::vec2 position_;
     bool pressed_;
+    unsigned int clicks_;
 };
 };  // namespace v3d::event::kind
