@@ -361,6 +361,38 @@ A split, a join, a move that empties an area and a drop renumber the areas, let 
 divider and give a maximised area's room back. A split left with one child becomes that child,
 and a split inside one that runs the same way gives its children to that one.
 
+**Headers and tabs.** `AreaChrome` gives each area a ui container, `area-` and the area's id,
+built as the editor runs and put before the editor's own container so its menus drop over them.
+
+- **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
+  It is a menu bar that is not docked, holding one menu named for the kind of editor shown, such
+  as Viewport. The menu holds Split, Join and Swap, each with Left, Right and Top or Above and
+  Bottom or Below, then New Tab, Close Tab and Maximise. A maximise button sits at the header's
+  right end.
+- **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
+  across its top. The editor draws under the strip and the header sits at the top of the
+  editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
+  chosen one is checked.
+- The containers are built again when the areas, the kind of editor each shows, or their
+  editors change, and are otherwise moved each frame to where the areas are. A container whose
+  area has no room is hidden.
+
+Every command is in the `area` context. A header's command carries its area's id as its data,
+and one sent by a key acts on the active area.
+
+| Command | Effect |
+|---|---|
+| `area::split::left`, `right`, `top`, `bottom` | Splits the area, putting the new half on that edge |
+| `area::join::left`, `right`, `top`, `bottom` | Joins the area with its neighbour on that edge, which goes |
+| `area::swap::left`, `right`, `top`, `bottom` | Swaps what the area holds with its neighbour on that edge |
+| `area::tab::new` | Adds a viewport of the camera the area shows, or of Perspective |
+| `area::tab::close` | Closes the editor shown, unless it is the only one |
+| `area::tab::choose` | Shows the editor whose id the tab carries |
+| `area::maximise` (Ctrl+Space) | Maximises the area, or gives every area its place back |
+
+An area's neighbour on an edge is the area across the gap from the middle of that edge. A join
+needs the two to be children of the same split.
+
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 
 - the scene canvas, which `ViewPort::draw()` fills with the construction grid and every mesh

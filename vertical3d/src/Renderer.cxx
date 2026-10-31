@@ -177,14 +177,31 @@ void Renderer::ui(const boost::shared_ptr<v3d::ui::Interface>& ui) {
 
     // a theme names its images but does not load them. The app loads each one as an
     // asset, and the device context's texture service owns the texture it becomes
-    ui_->resolveImages([this](const std::string& source) -> v3d::render::realtime::TextureHandle {
-        const boost::shared_ptr<v3d::asset::media::kind::Image> asset =
-            assetManager_->load<v3d::asset::media::kind::Image>(source);
-        if (!asset || !asset->image()) {
-            return v3d::render::realtime::TextureHandle();
-        }
-        return engine_.textures()->texture(asset->image());
-    });
+    ui_->resolveImages([this](const std::string& source) { return image(source); });
+}
+
+/**
+ **/
+void Renderer::resolve(const boost::shared_ptr<v3d::ui::Component>& component) {
+    if (ui_) {
+        ui_->resolveComponentImages([this](const std::string& source) { return image(source); }, component);
+    }
+}
+
+/**
+ **/
+v3d::render::realtime::TextureHandle Renderer::image(const std::string& source) {
+    const auto found = images_.find(source);
+    if (found != images_.end()) {
+        return found->second;
+    }
+    const boost::shared_ptr<v3d::asset::media::kind::Image> asset = assetManager_->load<v3d::asset::media::kind::Image>(source);
+    if (!asset || !asset->image()) {
+        return v3d::render::realtime::TextureHandle();
+    }
+    const v3d::render::realtime::TextureHandle made = engine_.textures()->texture(asset->image());
+    images_[source] = made;
+    return made;
 }
 
 /**
@@ -200,6 +217,12 @@ glm::vec2 Renderer::insets() const {
  **/
 float Renderer::scale() const noexcept {
     return screen_->factor();
+}
+
+/**
+ **/
+float Renderer::barHeight() const {
+    return std::as_const(screen_->components()).dressing().barHeight;
 }
 
 /**

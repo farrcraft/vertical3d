@@ -50,10 +50,10 @@ bool AreaViews::sync() {
     for (const AreaLayout::Area& area : layout_->areas()) {
         const auto found = views_.find(area.editor().id);
         // an area hidden behind a maximised one has no room to draw in
-        if (found == views_.end() || area.region.z <= 0.0F || area.region.w <= 0.0F) {
+        if (found == views_.end() || area.content.z <= 0.0F || area.content.w <= 0.0F) {
             continue;
         }
-        found->second->resize(area.region);
+        found->second->resize(area.content);
         shown_.push_back(found->second);
     }
     return made;

@@ -28,6 +28,7 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <api/window/Window.h>
+#include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
@@ -58,6 +59,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <variant>
 #include <utility>
 #include <vector>
 
@@ -231,6 +233,9 @@ bool Controller::buildUi() {
         // the show flags a check item draws are the active view's
         syncUi();
     });
+    // the areas' headers go under the editor's own container, so its menus drop over them
+    chrome_ = boost::make_shared<AreaChrome>(vgui, uiContainer,
+        [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
@@ -564,6 +569,94 @@ void Controller::registerCommands() {
 
     press("edit::undo", [this]() { report(document_->undo()); });
     press("edit::redo", [this]() { report(document_->redo()); });
+
+    registerAreaCommands();
+}
+
+/**
+ **/
+void Controller::registerAreaCommands() {
+    auto hold = [this](const std::string& name, const v3d::event::Commands::Handler& handler) {
+        if (!commands().add(name, [this, handler](const v3d::event::Event& event) {
+            handler(event);
+            areasChanged();
+        })) {
+            refused_.push_back(name);
+        }
+    };
+    // a header's command names its area by id, and one sent by a key acts on the active area
+    const std::pair<const char*, AreaLayout::Edge> edges[] = {
+        { "left", AreaLayout::Edge::Left }, { "right", AreaLayout::Edge::Right },
+        { "top", AreaLayout::Edge::Top }, { "bottom", AreaLayout::Edge::Bottom },
+    };
+    for (const auto& [word, edge] : edges) {
+        hold(std::string("area::split::") + word, [this, edge](const v3d::event::Event& event) {
+            layout_->split(areaOf(event), edge);
+        });
+        hold(std::string("area::join::") + word, [this, edge](const v3d::event::Event& event) {
+            const std::size_t area = areaOf(event);
+            layout_->join(area, layout_->neighbour(area, edge));
+        });
+        hold(std::string("area::swap::") + word, [this, edge](const v3d::event::Event& event) {
+            const std::size_t area = areaOf(event);
+            layout_->swap(area, layout_->neighbour(area, edge));
+        });
+    }
+    hold("area::maximise", [this](const v3d::event::Event& event) {
+        if (event.state() != v3d::event::State::Released) {
+            layout_->maximise(areaOf(event));
+        }
+    });
+    hold("area::tab::new", [this](const v3d::event::Event& event) {
+        const std::size_t area = areaOf(event);
+        if (area >= layout_->areas().size()) {
+            return;
+        }
+        // a new tab shows the camera the area shows, or the perspective view
+        const AreaLayout::Editor& shown = layout_->areas()[area].editor();
+        const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
+        layout_->add(area, boost::json::object{ { "kind", AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
+    });
+    hold("area::tab::close", [this](const v3d::event::Event& event) {
+        const std::size_t area = areaOf(event);
+        if (area < layout_->areas().size()) {
+            layout_->close(area, layout_->areas()[area].chosen);
+        }
+    });
+    hold("area::tab::choose", [this](const v3d::event::Event& event) {
+        const boost::optional<v3d::event::EventData> data = event.data();
+        if (!data || !std::holds_alternative<int>(*data)) {
+            return;
+        }
+        const std::size_t editor = static_cast<std::size_t>(std::get<int>(*data));
+        for (std::size_t area = 0; area < layout_->areas().size(); area++) {
+            const std::vector<AreaLayout::Editor>& editors = layout_->areas()[area].editors;
+            const auto found = std::ranges::find(editors, editor, &AreaLayout::Editor::id);
+            if (found != editors.end()) {
+                layout_->choose(area, static_cast<std::size_t>(found - editors.begin()));
+                return;
+            }
+        }
+    });
+}
+
+/**
+ **/
+std::size_t Controller::areaOf(const v3d::event::Event& event) const {
+    const boost::optional<v3d::event::EventData> data = event.data();
+    if (data && std::holds_alternative<int>(*data)) {
+        return layout_->find(static_cast<std::size_t>(std::get<int>(*data)));
+    }
+    return pointer_ ? pointer_->activeArea() : layout_->areas().size();
+}
+
+/**
+ **/
+void Controller::areasChanged() {
+    if (pointer_) {
+        pointer_->place();
+    }
+    syncPointerShape();
 }
 
 /**
@@ -752,8 +845,13 @@ bool Controller::render() {
     if (scale != metricsScale_) {
         metricsScale_ = scale;
         layout_->metrics({ .gap = std::max(1.0F, std::round(AreaLayout::Metrics::GAP * scale)),
-            .reach = AreaLayout::Metrics::REACH * scale, .least = AreaLayout::Metrics::LEAST * scale });
+            .reach = AreaLayout::Metrics::REACH * scale, .least = AreaLayout::Metrics::LEAST * scale,
+            .strip = renderer_->barHeight() });
         layoutViews(window()->width(), window()->height());
+    }
+    // between frames, so a header is never built again while a press on it is being handled
+    if (chrome_) {
+        chrome_->sync(*layout_, renderer_->barHeight());
     }
     renderer_->draw();
     return true;

@@ -315,8 +315,14 @@ Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
   cursors over it. Escape and a right click cancel a drag, Ctrl snaps it and a double click
   evens it. `MouseButton` carries the platform's click count and `MouseMotion` the modifiers
   held. The metrics scale with the ui.
-- An area can be split, joined, swapped and maximised from its editor-type menu and by keys,
-  and a tab dragged onto an area's edge splits it.
+- Built: `AreaChrome` gives each area a header and a maximise button. The header is a menu bar
+  that is not docked, with one menu named for the editor's kind. It splits, joins and swaps the
+  area, adds and closes tabs, and maximises it. An area with two or more editors has a strip
+  of tabs. Ctrl+Space maximises the area under the cursor. `api/ui` gained a menu bar laid out
+  by its layout, data on a command, containers added and removed as an app runs, and an open
+  menu that takes a press
+  before any container.
+- A tab dragged onto an area's edge splits it, and one dragged onto an area joins its tabs.
 - Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a
   new user starts with. The settings record each project's workspace and arrangement by its
   path, opening a project restores them, and records for projects that no longer exist are

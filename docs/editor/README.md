@@ -3,9 +3,10 @@
 These pages are for someone working on the 3D modelling editor in `vertical3d/` or on the mesh
 library in `api/brep`.
 
-The editor shows four viewports of one scene over a construction grid. It creates primitive
-meshes, picks objects and their parts, moves them with manipulators, undoes changes, and saves
-projects. Menus, two toolbars and a file chooser are drawn with `api/ui`.
+The editor shows four viewports of one scene over a construction grid, in areas that can be
+split, joined, swapped and maximised. It creates primitive meshes, picks objects and their
+parts, moves them with manipulators, undoes changes, and saves projects. Menus, two toolbars,
+each area's header and a file chooser are drawn with `api/ui`.
 
 | Page | Read it to |
 |---|---|
@@ -45,6 +46,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | F3 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
 | Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
+| Ctrl+Space | `area::maximise` | Maximise the area under the cursor, or give every area its place back (see [Viewports](Scene.md#viewports)) |
 | Project > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 

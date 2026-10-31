@@ -24,7 +24,7 @@ namespace v3d::editor {
  *
  * A viewport lasts as long as its editor, whether or not its area shows it, so a view keeps its
  * camera and its display while another tab is chosen. The views shown are the viewports their
- * areas show, each given its area's region.
+ * areas show, each given where its area's editor draws, under any strip of tabs.
  **/
 class AreaViews final {
  public:
@@ -42,7 +42,8 @@ class AreaViews final {
 
     /**
      * Make a viewport for each viewport editor that has none, drop those of editors that are
-     * gone, and give each view shown its area's region. Call it after any change to the layout.
+     * gone, and give each view shown where its area's editor draws. Call it after any change to
+     * the layout.
      *
      * @return whether every viewport editor has a viewport
      **/

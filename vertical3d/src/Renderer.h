@@ -25,6 +25,7 @@
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -123,6 +124,17 @@ class Renderer final {
     float scale() const noexcept;
 
     /**
+     * @return how tall a menu bar, a toolbar or a tab is, at the scale the ui is drawn
+     **/
+    float barHeight() const;
+
+    /**
+     * Resolve the images of a component added to the ui after it was handed over. Each image
+     * is uploaded once, however often it is asked for.
+     **/
+    void resolve(const boost::shared_ptr<v3d::ui::Component>& component);
+
+    /**
      * Draw one frame: two passes per view, then the ui pass.
      **/
     void draw();
@@ -140,6 +152,12 @@ class Renderer final {
     void shutdown();
 
  private:
+    /**
+     * @return the texture a ui image becomes, uploading it the first time it is asked for, or an
+     *         unset handle when the image cannot be loaded
+     **/
+    v3d::render::realtime::TextureHandle image(const std::string& source);
+
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
@@ -167,6 +185,8 @@ class Renderer final {
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
+    // the textures the ui's images became, by source, so a component built again reuses them
+    std::map<std::string, v3d::render::realtime::TextureHandle> images_;
     v3d::shell::Shell* shell_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;

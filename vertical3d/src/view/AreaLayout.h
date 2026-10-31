@@ -66,6 +66,11 @@ class AreaLayout final {
         std::vector<Editor> editors;   /**< never empty **/
         std::size_t chosen = 0;        /**< the editor the area shows **/
         glm::vec4 region{ 0.0F };      /**< x, y, width, height in pixels; empty while another area is maximised **/
+        /**
+         * Where the chosen editor draws: the region, less the strip of tabs when the area holds
+         * two or more editors.
+         **/
+        glm::vec4 content{ 0.0F };
 
         /**
          * @return the editor the area shows
@@ -85,6 +90,7 @@ class AreaLayout final {
         float gap = GAP;       /**< between two areas, and around the edge **/
         float reach = REACH;   /**< how far either side of a gap a press takes the divider **/
         float least = LEAST;   /**< the least width or height an area is dragged to **/
+        float strip = 0.0F;    /**< how tall an area's strip of tabs is **/
     };
 
     /**
@@ -157,6 +163,12 @@ class AreaLayout final {
      * @return the index in areas() of the area with an id, or areas().size() when there is none
      **/
     std::size_t find(std::size_t id) const noexcept;
+
+    /**
+     * The area across the gap from the middle of one edge of an area.
+     * @return an index into areas(), or areas().size() when the edge is on the window's
+     **/
+    std::size_t neighbour(std::size_t area, Edge edge) const noexcept;
 
     /**
      * Which area a point of the window falls in. A point in a gap falls in none.

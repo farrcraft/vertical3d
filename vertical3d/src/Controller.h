@@ -17,6 +17,7 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
+#include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
@@ -96,6 +97,21 @@ class Controller final : public v3d::engine::Engine {
      * Show the pointer as a resize cursor over a divider that is lit, and as an arrow elsewhere.
      **/
     void syncPointerShape();
+
+    /**
+     * Register the commands that change the areas: split, join, swap, maximise and the tabs.
+     **/
+    void registerAreaCommands();
+
+    /**
+     * @return the area a command acts on: the one whose id it carries, or the active area
+     **/
+    std::size_t areaOf(const v3d::event::Event& event) const;
+
+    /**
+     * Give the views their regions again after a change to the areas.
+     **/
+    void areasChanged();
 
     /**
      * The window changed size, so the layout divides a different area between the views.
@@ -256,6 +272,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<v3d::engine::CameraProfiles> profiles_;
     boost::shared_ptr<AreaLayout> layout_;
     boost::shared_ptr<AreaViews> views_;
+    // each area's header and tabs
+    boost::shared_ptr<AreaChrome> chrome_;
 
     boost::shared_ptr<CameraControlTool> cameraTool_;
     boost::shared_ptr<SelectTool> selectTool_;

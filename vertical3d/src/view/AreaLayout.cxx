@@ -16,6 +16,9 @@
 #include <utility>
 #include <vector>
 
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+
 namespace v3d::editor {
 
 namespace {
@@ -248,11 +251,14 @@ void AreaLayout::resize(const glm::vec4& region) {
 void AreaLayout::place() {
     const glm::vec4 room = inset(region_, metrics_.gap);
     place(&root_, room);
-    if (!maximised_) {
-        return;
+    if (maximised_) {
+        for (Area& area : areas_) {
+            area.region = area.id == *maximised_ ? room : glm::vec4(0.0F);
+        }
     }
     for (Area& area : areas_) {
-        area.region = area.id == *maximised_ ? room : glm::vec4(0.0F);
+        const float strip = area.editors.size() >= 2 ? std::min(metrics_.strip, area.region.w) : 0.0F;
+        area.content = glm::vec4(area.region.x, area.region.y + strip, area.region.z, area.region.w - strip);
     }
 }
 
@@ -307,6 +313,32 @@ const std::vector<AreaLayout::Area>& AreaLayout::areas() const noexcept {
 std::size_t AreaLayout::find(std::size_t id) const noexcept {
     const auto found = std::ranges::find(areas_, id, &Area::id);
     return static_cast<std::size_t>(found - areas_.begin());
+}
+
+/**
+ **/
+std::size_t AreaLayout::neighbour(std::size_t area, Edge edge) const noexcept {
+    if (area >= areas_.size()) {
+        return areas_.size();
+    }
+    const glm::vec4& region = areas_[area].region;
+    const float across = metrics_.gap + 1.0F;
+    glm::vec2 point(region.x + (region.z / 2.0F), region.y + (region.w / 2.0F));
+    switch (edge) {
+        case Edge::Left:
+            point.x = region.x - across;
+            break;
+        case Edge::Right:
+            point.x = region.x + region.z + across;
+            break;
+        case Edge::Top:
+            point.y = region.y - across;
+            break;
+        case Edge::Bottom:
+            point.y = region.y + region.w + across;
+            break;
+    }
+    return areaAt(point.x, point.y);
 }
 
 /**
@@ -768,6 +800,7 @@ bool AreaLayout::swap(std::size_t first, std::size_t second) {
     }
     std::swap(areas_[first].editors, areas_[second].editors);
     std::swap(areas_[first].chosen, areas_[second].chosen);
+    place();
     return true;
 }
 
@@ -781,6 +814,7 @@ std::optional<std::size_t> AreaLayout::add(std::size_t area, const boost::json::
     const std::size_t id = nextEditor_++;
     areas_[area].editors.push_back({ .id = id, .kind = *kind, .state = state });
     areas_[area].chosen = areas_[area].editors.size() - 1;
+    place();
     return id;
 }
 
@@ -801,6 +835,7 @@ bool AreaLayout::close(std::size_t area, std::size_t editor) {
         return false;
     }
     take(&areas_[area], editor);
+    place();
     return true;
 }
 
@@ -817,7 +852,9 @@ bool AreaLayout::move(std::size_t from, std::size_t editor, std::size_t to) {
         restore();
         remove(from);
         rebuild();
+        return true;
     }
+    place();
     return true;
 }
 

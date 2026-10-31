@@ -521,6 +521,39 @@ BOOST_FIXTURE_TEST_CASE(the_gaps_are_the_margin_and_the_dividers, Quad) {
 }
 
 /**
+ * The neighbour on an edge is the area across the gap from that edge's middle, and there is
+ * none on the window's edge.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_neighbour_is_across_the_gap, Quad) {
+    BOOST_CHECK_EQUAL(layout.neighbour(0, AreaLayout::Edge::Right), 1U);
+    BOOST_CHECK_EQUAL(layout.neighbour(0, AreaLayout::Edge::Bottom), 2U);
+    BOOST_CHECK_EQUAL(layout.neighbour(3, AreaLayout::Edge::Left), 2U);
+    BOOST_CHECK_EQUAL(layout.neighbour(3, AreaLayout::Edge::Top), 1U);
+    BOOST_CHECK_EQUAL(layout.neighbour(0, AreaLayout::Edge::Left), 4U);
+    BOOST_CHECK_EQUAL(layout.neighbour(1, AreaLayout::Edge::Top), 4U);
+    BOOST_CHECK_EQUAL(layout.neighbour(9, AreaLayout::Edge::Top), 4U);
+}
+
+/**
+ * An area's editor draws under a strip of tabs while the area holds two or more editors, and
+ * in the whole area otherwise.
+ **/
+BOOST_FIXTURE_TEST_CASE(tabs_take_a_strip_off_the_top, Quad) {
+    layout.metrics({ .strip = 28.0F });
+    BOOST_CHECK(layout.areas()[0].content == region(0));
+    BOOST_REQUIRE(layout.add(0, parse(R"({"kind": "outliner"})")));
+    BOOST_CHECK(layout.areas()[0].content == glm::vec4(3.0F, 31.0F, 507.0F, 351.0F));
+    BOOST_REQUIRE(layout.close(0, 1));
+    BOOST_CHECK(layout.areas()[0].content == region(0));
+
+    // a swap carries the strip with the editors
+    BOOST_REQUIRE(layout.add(0, parse(R"({"kind": "outliner"})")));
+    BOOST_REQUIRE(layout.swap(0, 3));
+    BOOST_CHECK(layout.areas()[0].content == region(0));
+    BOOST_CHECK_EQUAL(layout.areas()[3].content.y, region(3).y + 28.0F);
+}
+
+/**
  * The metrics set the gap, the reach and the least size.
  **/
 BOOST_AUTO_TEST_CASE(the_metrics_set_the_gap) {

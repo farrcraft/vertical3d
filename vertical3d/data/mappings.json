@@ -284,6 +284,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "ctrl+space",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "maximise"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+z",
         "state": "pressed"
       },
