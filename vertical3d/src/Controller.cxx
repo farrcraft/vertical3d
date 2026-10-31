@@ -5,9 +5,12 @@
 
 #include "Controller.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Json.h>
+#include <api/asset/Writer.h>
 #include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
+#include <api/engine/Settings.h>
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/event/kind/MouseButton.h>
@@ -32,6 +35,7 @@
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
@@ -129,14 +133,28 @@ bool Controller::start() {
         return false;
     }
 
-    layout_ = boost::make_shared<AreaLayout>(logger());
-    const boost::json::object* layouts = document(AreaLayout::DOCUMENT);
-    const boost::json::object* layout = layouts != nullptr ? v3d::asset::readObject(*layouts, "layout") : nullptr;
-    if (layout == nullptr) {
-        logger()->get()->error("The editor has no layout config, so it would have no views");
+    workspaces_ = boost::make_shared<Workspaces>(logger());
+    const boost::json::object* shipped = document(AreaLayout::DOCUMENT);
+    if (shipped == nullptr || !workspaces_->load(*shipped)) {
+        logger()->get()->error("The editor has no workspace it can read, so it would have no views");
         return false;
     }
-    if (!layout_->load(*layout)) {
+    std::string first = std::string(v3d::asset::readString(workspaces_->all().front(), "name").value_or(std::string()));
+    if (const boost::shared_ptr<v3d::engine::Settings>& store = settings()) {
+        workspaces_->restore({ .saved = store->value(std::string(Workspaces::SAVED)),
+            .projects = store->value(std::string(Workspaces::PROJECTS)) });
+        const std::size_t pruned = workspaces_->prune([](const std::string& project) { return boost::filesystem::is_directory(project); });
+        if (pruned > 0) {
+            logger()->get()->info("Forgot the arrangements of projects that no longer exist: {}", pruned);
+        }
+        first = store->text(std::string(Workspaces::LAST)).value_or(first);
+    }
+    // the project's own record wins over the workspace last shown
+    if (const std::optional<Workspaces::Record> record = workspaces_->recall(projectKey())) {
+        first = record->workspace;
+    }
+    layout_ = boost::make_shared<AreaLayout>(logger());
+    if (!showWorkspace(first) && !showWorkspace(std::string(v3d::asset::readString(workspaces_->all().front(), "name").value_or(std::string())))) {
         return false;
     }
 
@@ -624,6 +642,30 @@ void Controller::registerAreaCommands() {
             layout_->close(area, layout_->areas()[area].chosen);
         }
     });
+    hold("workspace::next", [this](const v3d::event::Event& event) {
+        if (event.state() != v3d::event::State::Released) {
+            switchWorkspace(1);
+        }
+    });
+    hold("workspace::previous", [this](const v3d::event::Event& event) {
+        if (event.state() != v3d::event::State::Released) {
+            switchWorkspace(-1);
+        }
+    });
+    hold("workspace::save", [this](const v3d::event::Event&) {
+        boost::json::object layout = layout_->save();
+        layout["name"] = workspace_;
+        workspaces_->keep(layout);
+        recordProject();
+    });
+    hold("workspace::reset", [this](const v3d::event::Event&) {
+        workspaces_->reset(workspace_);
+        workspaces_->forget({ .project = projectKey(), .workspace = workspace_ });
+        showWorkspace(workspace_);
+        recordProject();
+    });
+    hold("workspace::export", [this](const v3d::event::Event&) { exportWorkspace(); });
+    hold("workspace::import", [this](const v3d::event::Event&) { importWorkspace(); });
     hold("area::tab::choose", [this](const v3d::event::Event& event) {
         const boost::optional<v3d::event::EventData> data = event.data();
         if (!data || !std::holds_alternative<int>(*data)) {
@@ -693,7 +735,9 @@ void Controller::openProject() {
                 // a gesture under way is holding the mesh it started on, which the read is
                 // about to take out of the scene
                 transformTool_->cancel();
+                recordProject();
                 if (document_->open(chosen)) {
+                    projectChanged();
                     offerRecovery();
                 }
             });
@@ -748,7 +792,135 @@ bool Controller::quitRequested() {
 void Controller::saveProjectAs() {
     // the name typed is the new project's directory, so no extension is added to it
     chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, document_->project()->directory().parent_path(), {},
-        [this](const boost::filesystem::path& chosen) { document_->saveAs(chosen); });
+        [this](const boost::filesystem::path& chosen) {
+            if (document_->saveAs(chosen)) {
+                projectChanged();
+            }
+        });
+}
+
+/**
+ **/
+std::string Controller::projectKey() const {
+    if (!document_) {
+        return {};
+    }
+    return boost::filesystem::absolute(document_->project()->directory()).lexically_normal().generic_string();
+}
+
+/**
+ **/
+bool Controller::showWorkspace(const std::string& name) {
+    const std::size_t index = workspaces_->find(name);
+    if (index >= workspaces_->all().size()) {
+        return false;
+    }
+    // the project's own arrangement of the workspace, when it has one, and the workspace as it
+    // is kept otherwise
+    const std::optional<Workspaces::Record> record = workspaces_->recall(projectKey());
+    const auto arranged = record ? record->layouts.find(name) : decltype(record->layouts.find(name))();
+    const bool own = record && arranged != record->layouts.end();
+    if (!layout_->load(own ? arranged->second : workspaces_->all()[index]) && (!own || !layout_->load(workspaces_->all()[index]))) {
+        return false;
+    }
+    workspace_ = name;
+    if (views_) {
+        areasChanged();
+    }
+    return true;
+}
+
+/**
+ **/
+void Controller::recordProject() {
+    if (!workspaces_ || !layout_ || workspace_.empty()) {
+        return;
+    }
+    workspaces_->remember({ .project = projectKey(), .workspace = workspace_ }, layout_->save());
+    saveSettings();
+}
+
+/**
+ **/
+void Controller::projectChanged() {
+    const std::optional<Workspaces::Record> record = workspaces_->recall(projectKey());
+    if (record && showWorkspace(record->workspace)) {
+        return;
+    }
+    // a project with no record keeps the arrangement it was opened or saved in
+    recordProject();
+}
+
+/**
+ **/
+void Controller::saveSettings() {
+    const boost::shared_ptr<v3d::engine::Settings>& store = settings();
+    if (!store) {
+        return;
+    }
+    store->set(std::string(Workspaces::PROJECTS), workspaces_->projects());
+    if (const std::optional<boost::json::value> own = workspaces_->saved()) {
+        store->set(std::string(Workspaces::SAVED), *own);
+    }
+    store->set(std::string(Workspaces::LAST), workspace_);
+    store->save();
+}
+
+/**
+ **/
+void Controller::switchWorkspace(int step) {
+    const std::size_t count = workspaces_->all().size();
+    if (count < 2) {
+        return;
+    }
+    // the arrangement left behind is kept, so coming back to the workspace finds it
+    recordProject();
+    const std::size_t at = workspaces_->find(workspace_);
+    const std::size_t from = at < count ? at : 0;
+    const std::size_t next = (from + count + static_cast<std::size_t>(step + static_cast<int>(count))) % count;
+    showWorkspace(std::string(v3d::asset::readString(workspaces_->all()[next], "name").value_or(std::string())));
+    recordProject();
+    logger()->get()->info("Showing the {} workspace", workspace_);
+}
+
+/**
+ **/
+void Controller::exportWorkspace() {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Save, document_->project()->directory().parent_path(), { ".json" },
+        [this](const boost::filesystem::path& chosen) {
+            boost::json::object layout = layout_->save();
+            layout["name"] = workspace_;
+            boost::filesystem::path file = chosen;
+            if (file.extension() != ".json") {
+                file += ".json";
+            }
+            if (!v3d::asset::writeDocument(file, boost::json::value(Workspaces::exported(layout)))) {
+                logger()->get()->error("The workspace could not be written to {}", file.generic_string());
+                return;
+            }
+            logger()->get()->info("Exported the {} workspace to {}", workspace_, file.generic_string());
+        });
+}
+
+/**
+ **/
+void Controller::importWorkspace() {
+    chooser_->open(v3d::ui::shell::FileChooser::Mode::Open, document_->project()->directory().parent_path(), { ".json" },
+        [this](const boost::filesystem::path& chosen) {
+            const std::optional<std::string> text = v3d::asset::readFile(chosen.string());
+            boost::system::error_code error;
+            const boost::json::value file = text ? boost::json::parse(*text, error) : boost::json::value();
+            const std::vector<std::string> names = !error && file.is_object() ? workspaces_->imported(file.as_object()) : std::vector<std::string>();
+            if (names.empty()) {
+                logger()->get()->error("{} holds no workspace the editor can read", chosen.generic_string());
+                return;
+            }
+            recordProject();
+            // an imported workspace is shown as it was exported
+            workspaces_->forget({ .project = projectKey(), .workspace = names.front() });
+            showWorkspace(names.front());
+            recordProject();
+        });
 }
 
 /**
@@ -861,6 +1033,7 @@ bool Controller::render() {
 /**
  **/
 bool Controller::release() {
+    recordProject();
     if (document_) {
         document_->close();
     }

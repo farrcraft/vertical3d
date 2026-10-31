@@ -295,6 +295,28 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "ctrl+pagedown",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "workspace",
+        "name": "next"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "ctrl+pageup",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "workspace",
+        "name": "previous"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+z",
         "state": "pressed"
       },

@@ -270,8 +270,7 @@ device state.
 
 **Areas.** The window is divided into areas, and each area holds one or more editors and shows
 one of them. A viewport is one kind of editor. `AreaLayout` holds the division as a tree of
-vertical and horizontal splits whose leaves are areas. `data/layout.json` gives the layout the
-editor starts with, under the key `layout`:
+vertical and horizontal splits whose leaves are areas. A layout reads like this:
 
 ```json
 {
@@ -298,8 +297,8 @@ editor starts with, under the key `layout`:
   held as it was.
 - `save()` writes the same form, with every share and every chosen editor.
 
-The default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
-along two edges of the window, and the areas divide the rest.
+The menu bar and the toolbars take strips along two edges of the window, and the areas divide
+the rest.
 
 **Viewports for editors.** `AreaViews` gives each viewport editor a `ViewPort`, made from the
 profile its state names, and drops the viewport when its editor goes. A viewport outlasts a
@@ -341,7 +340,7 @@ dividers meet, the outer split's is taken.
 - The second press of a double click on a divider gives the two children beside it the same
   room.
 
-The shares last as long as the editor runs, and are not written back to `data/layout.json`.
+The shares are saved with the rest of the layout, as [Workspaces](#workspaces) describes.
 
 **Changing the layout.** Every area and every editor has an id that lasts while the layout does.
 
@@ -404,6 +403,50 @@ quarter of its opacity.
   editor, it stays where it was.
 
 An area that a tab leaves with no editor gives its room to its neighbour.
+
+### Workspaces
+
+A workspace is a named layout. `Workspaces` holds them, and the project's arrangement of each.
+
+**Where they come from.** `data/layout.json` holds the workspaces a new user starts with, as an
+array of named layouts under `workspaces`: Modelling, which is Front, Top, Left and Perspective,
+and Perspective, which is one view. A layout with no name, one that cannot be read, or a second
+of one name is left out, and the editor stops at startup when none is left.
+
+**What the user's settings hold.** The engine's settings document, under the app's identity,
+holds three keys:
+
+| Key | Holds |
+|---|---|
+| `workspaces` | the user's own set, once they keep or import a workspace. It replaces the shipped set from then on |
+| `projects` | each project's record, keyed by the absolute path of its directory: the `workspace` it was last shown in, and under `layouts` its arrangement in each workspace it was shown in |
+| `workspace` | the workspace last shown |
+
+A project's arrangement is kept in the user's settings rather than in the project, so arranging
+areas never marks a project unsaved, and the project's files hold only content.
+
+**When they are read and written.**
+
+- At startup, the record of each project whose directory no longer exists is dropped. The
+  editor then shows the current project's last workspace, or else the workspace last shown, or
+  else the first.
+- Showing a workspace shows the project's own arrangement of it, or the workspace as it is kept
+  when the project has none.
+- The current project's arrangement is recorded and the settings saved when the editor closes,
+  before another project is opened, and around each change of workspace. A project opened or
+  saved under a new name shows its own last workspace, or keeps the arrangement it has.
+
+**Commands**, in the Workspace menu:
+
+| Command | Effect |
+|---|---|
+| `workspace::next`, `previous` (Ctrl+Page Down, Ctrl+Page Up) | Show the workspace after or before the one shown, wrapping at either end |
+| `workspace::save` | Keep the arrangement shown as the workspace's definition |
+| `workspace::reset` | Put the workspace back as the editor ships it, when it ships one of that name, and show it so |
+| `workspace::export` | Write the workspace shown, as arranged, to a file in the form `data/layout.json` takes |
+| `workspace::import` | Keep each workspace a file holds, replacing any of the same name, and show the first |
+
+Background: [ADR-0134](../adr/0134-editor-workspaces-and-layouts-live-in-user-settings.md)
 
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 

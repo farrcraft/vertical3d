@@ -47,6 +47,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
 | Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
 | Ctrl+Space | `area::maximise` | Maximise the area under the cursor, or give every area its place back (see [Viewports](Scene.md#viewports)) |
+| Ctrl+Page Down, Ctrl+Page Up | `workspace::next`, `previous` | Show the next or the previous workspace (see [Workspaces](Scene.md#workspaces)) |
 | Project > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 

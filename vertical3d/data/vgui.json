@@ -585,6 +585,53 @@
               ]
             },
             {
+              "label": "Workspace",
+              "items": [
+                {
+                  "label": "Next",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "next"
+                },
+                {
+                  "label": "Previous",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "previous"
+                },
+                {
+                  "type": "separator"
+                },
+                {
+                  "label": "Save",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "save"
+                },
+                {
+                  "label": "Reset",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "reset"
+                },
+                {
+                  "type": "separator"
+                },
+                {
+                  "label": "Export",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "export"
+                },
+                {
+                  "label": "Import",
+                  "type": "action",
+                  "context": "workspace",
+                  "command": "import"
+                }
+              ]
+            },
+            {
               "label": "Timeline",
               "items": [
                 {

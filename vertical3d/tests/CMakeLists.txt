@@ -31,6 +31,7 @@ v3d_add_test(vertical3d
 	"control/PlaybackTest.cxx"
 	"control/PointerTest.cxx"
 	"control/AreaChromeTest.cxx"
+	"control/WorkspacesTest.cxx"
 
 	"command/CommandStackTest.cxx"
 	"command/GroupCommandTest.cxx"

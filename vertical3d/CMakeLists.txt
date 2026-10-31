@@ -10,6 +10,7 @@ add_library("v3dlib_editor"
 	"src/control/AreaChrome.h" "src/control/AreaChrome.cxx"
 	"src/control/Pointer.h" "src/control/Pointer.cxx"
 	"src/control/RenderWindow.h" "src/control/RenderWindow.cxx"
+	"src/control/Workspaces.h" "src/control/Workspaces.cxx"
 
 	"src/view/AreaLayout.h" "src/view/AreaLayout.cxx"
 	"src/view/AreaViews.h" "src/view/AreaViews.cxx"

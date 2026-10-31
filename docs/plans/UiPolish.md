@@ -302,32 +302,34 @@ cursor router.
 
 ### Step 7 — Areas
 
-Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
+**Closed.** ADR-0127 decided the areas, and ADR-0134 where a layout is saved, after weighing
+saving it with the project, in the user's settings alone, and in each project's directory.
 
-- Built: `AreaLayout` replaces `ViewLayout`. It is a tree of splits whose leaves are areas, and
-  an area holds one or more editors, of which a viewport is one kind. Areas sit 3 pixels apart.
-  A divider is taken 4 pixels either side of its gap, keeps each side to its least size, snaps
-  to tenths, cancels and evens. An area splits, joins, swaps and maximises, and its editors are
-  added, chosen, closed, moved and dropped on an edge. `save()` writes what `load()` reads.
-  `AreaViews` gives each viewport editor a `ViewPort` for as long as the editor lasts.
-- Built: the renderer draws the gaps, rounded corners, hairlines and the active area's accent
-  line under the ui, and lights the divider under the cursor or held. The window shows resize
-  cursors over it. Escape and a right click cancel a drag, Ctrl snaps it and a double click
-  evens it. `MouseButton` carries the platform's click count and `MouseMotion` the modifiers
-  held. The metrics scale with the ui.
-- Built: `AreaChrome` gives each area a header and a maximise button. The header is a menu bar
-  that is not docked, with one menu named for the editor's kind. It splits, joins and swaps the
-  area, adds and closes tabs, and maximises it. An area with two or more editors has a strip
-  of tabs. Ctrl+Space maximises the area under the cursor. `api/ui` gained a menu bar laid out
-  by its layout, data on a command, containers added and removed as an app runs, and an open
-  menu that takes a press
-  before any container.
-- Built: a tab dragged onto an area's edge makes a new area there, and one dragged into an area
-  joins its tabs. The frame shows where it would land.
-- Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a
-  new user starts with. The settings record each project's workspace and arrangement by its
-  path, opening a project restores them, and records for projects that no longer exist are
-  pruned. A workspace can be exported to a file and imported from one.
+- `AreaLayout` replaces `ViewLayout`. It is a tree of splits whose leaves are areas, and an area
+  holds one or more editors, of which a viewport is one kind. `save()` writes what `load()`
+  reads. `AreaViews` gives each viewport editor a `ViewPort` for as long as the editor lasts.
+- Areas sit 3 pixels apart. The renderer draws the gaps, rounded corners, hairlines and the
+  active area's accent line under the ui, and lights the divider under the cursor or held.
+- A divider is taken 4 pixels either side of its gap and keeps each side to its least size.
+  Escape and a right click cancel a drag, Ctrl snaps it to tenths and a double click evens it.
+  The window shows resize cursors over it. `MouseButton` carries the platform's click count and
+  `MouseMotion` the modifiers held. The metrics scale with the ui.
+- `AreaChrome` gives each area a header and a maximise button. The header is a menu bar that is
+  not docked, with one menu named for the editor's kind. It splits, joins and swaps the area,
+  adds and closes tabs, and maximises it. An area with two or more editors has a strip of tabs.
+  Ctrl+Space maximises the area under the cursor.
+- A tab dragged onto an area's edge makes a new area there, and one dragged into an area joins
+  its tabs. The frame shows where it would land.
+- `api/ui` gained a menu bar laid out by its layout, data on a command, containers added and
+  removed as an app runs, and an open menu that takes a press before any container.
+- `Workspaces` reads the shipped set from `data/layout.json`, Modelling and Perspective, and
+  keeps the user's own set and each project's arrangements in the engine's settings. Records of
+  projects that no longer exist are pruned at startup. Ctrl+Page Down and Ctrl+Page Up step
+  through the workspaces, and the Workspace menu saves, resets, exports and imports them.
+- The suites cover the layout, the views, the frame, the pointer's dividers and tab drags, the
+  chrome, the workspaces, the mouse's clicks and modifiers, and the ui's additions. Each area's
+  header was photographed. The header's menus and the keys could not be driven in the running
+  editor, because SDL does not take posted mouse messages, so they rest on their tests.
 
 ### Step 8 — Viewport headers and overlays
 

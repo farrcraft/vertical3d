@@ -2,7 +2,7 @@
 
 **Status**: accepted
 **Date**: 2026-10-30
-**Documented in**: [editor/Scene.md](../editor/Scene.md#viewports)
+**Documented in**: [editor/Scene.md](../editor/Scene.md#workspaces)
 
 ## Context
 

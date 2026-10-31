@@ -18,6 +18,7 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
@@ -112,6 +113,50 @@ class Controller final : public v3d::engine::Engine {
      * Give the views their regions again after a change to the areas.
      **/
     void areasChanged();
+
+    /**
+     * @return the current project's directory, as its record in the settings is keyed
+     **/
+    std::string projectKey() const;
+
+    /**
+     * Show a workspace: the current project's own arrangement of it, or the workspace as it is
+     * kept when the project has none.
+     *
+     * @return whether there is a workspace of that name that could be shown
+     **/
+    bool showWorkspace(const std::string& name);
+
+    /**
+     * Record the current project's arrangement in the workspace shown, and save the settings.
+     **/
+    void recordProject();
+
+    /**
+     * Show the workspace a project that was just opened or saved under a new name was last shown
+     * in, or record the arrangement it has now when it has no record.
+     **/
+    void projectChanged();
+
+    /**
+     * Write the workspaces and the projects' records to the settings.
+     **/
+    void saveSettings();
+
+    /**
+     * Show the workspace a step after the one shown, wrapping at either end.
+     **/
+    void switchWorkspace(int step);
+
+    /**
+     * Write the workspace shown, as it is arranged, to a file the user chooses.
+     **/
+    void exportWorkspace();
+
+    /**
+     * Keep the workspaces a file the user chooses holds, and show the first of them.
+     **/
+    void importWorkspace();
 
     /**
      * The window changed size, so the layout divides a different area between the views.
@@ -274,6 +319,9 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<AreaViews> views_;
     // each area's header and tabs
     boost::shared_ptr<AreaChrome> chrome_;
+    boost::shared_ptr<Workspaces> workspaces_;
+    // the name of the workspace shown
+    std::string workspace_;
 
     boost::shared_ptr<CameraControlTool> cameraTool_;
     boost::shared_ptr<SelectTool> selectTool_;

@@ -1,24 +1,30 @@
 {
-  "layout": {
-    "name": "Modelling",
-    "root": {
-      "split": "vertical",
-      "children": [
-        {
-          "split": "horizontal",
-          "children": [
-            { "editors": [{ "kind": "viewport", "camera": "Front" }] },
-            { "editors": [{ "kind": "viewport", "camera": "Top" }] }
-          ]
-        },
-        {
-          "split": "horizontal",
-          "children": [
-            { "editors": [{ "kind": "viewport", "camera": "Left" }] },
-            { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
-          ]
-        }
-      ]
+  "workspaces": [
+    {
+      "name": "Modelling",
+      "root": {
+        "split": "vertical",
+        "children": [
+          {
+            "split": "horizontal",
+            "children": [
+              { "editors": [{ "kind": "viewport", "camera": "Front" }] },
+              { "editors": [{ "kind": "viewport", "camera": "Top" }] }
+            ]
+          },
+          {
+            "split": "horizontal",
+            "children": [
+              { "editors": [{ "kind": "viewport", "camera": "Left" }] },
+              { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Perspective",
+      "root": { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
     }
-  }
+  ]
 }
