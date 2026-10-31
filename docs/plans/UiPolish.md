@@ -491,10 +491,26 @@ drawn in immediate mode, after weighing retained documents rebuilt on a signatur
 
 ### Step 15 — Settings that show their values
 
-Open. Needs step 14.
+**Closed.**
 
-- A numeric item shows its value, a key item the key bound to it, and a slider its value.
-- pong's Options menu shows its rounds and its four bindings.
+- A centred menu's row puts its label on the left and its value right-aligned, in secondary
+  text unless the row is chosen, and the menu makes room for the widest value.
+- A numeric or text input shows the value it holds. A key input that `binds` a command shows
+  the key bound to it through the screen's shortcut lookup, so the row stays true after a
+  rebinding. It shows an ellipsis while it waits on a key.
+- A `slider` item holds a whole number in a range. `ui::menuLess` and `ui::menuMore`, which
+  `GameMenu` declares, step it and send its command with the new value. It shows its value
+  between the arrows that step it.
+- `GameMenu::item()` finds an item by its command, so a game gives a setting the value it holds.
+- pong's Rounds is a slider from 1 to 21, set from the game's state at start, and stepped with
+  left and right. Its numeric input sent the key's name as a string, which the handler
+  ignored, so the rounds could not be changed before. Its four key items bind the paddle
+  commands, and the labels lose their trailing colons.
+- The game menu suite covers stepping, the ends of the range, an item that is not a slider and
+  finding an item. The document suite covers reading a range and a binding, and the renderer
+  suite a row's value, colour, column and capture. pong was run: the Options menu showed 5 and
+  the four keys, the right arrow stepped the rounds to 7, and a key item showed the ellipsis
+  while capturing.
 
 ### Step 16 — HUD text and statistics
 

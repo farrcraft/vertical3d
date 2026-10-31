@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 namespace v3d::ui::component::menu {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
@@ -210,6 +211,49 @@ bool Menu::capturing() const {
  **/
 void Menu::cancel() {
     capture_.reset();
+}
+
+/**
+ **/
+boost::shared_ptr<Item> Menu::captured() const {
+    return capture_;
+}
+
+/**
+ **/
+bool Menu::step(int direction) {
+    if (capture_) {
+        return false;
+    }
+    const boost::shared_ptr<Menu> lvl = level();
+    if (!lvl) {
+        return false;
+    }
+    const boost::shared_ptr<Item> item = lvl->active();
+    if (!item || !usable(*item) || !item->step(direction)) {
+        return false;
+    }
+    dispatch(item);
+    return true;
+}
+
+/**
+ **/
+boost::shared_ptr<Item> Menu::find(std::string_view command) const {
+    for (const boost::shared_ptr<Item>& item : items_) {
+        if (!item) {
+            continue;
+        }
+        if (item->event().context() && item->event().name() == command) {
+            return item;
+        }
+        if (const boost::shared_ptr<Menu> sub = item->submenu()) {
+            if (boost::shared_ptr<Item> found = sub->find(command)) {
+                return found;
+            }
+        }
+    }
+    return nullptr;
 }
 
 /**

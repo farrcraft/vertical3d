@@ -19,34 +19,40 @@
               "type": "submenu",
               "items": [
                 {
-                  "label": "Rounds: ",
+                  "label": "Rounds",
                   "command": "setMaxScore",
                   "context": "ui",
-                  "type": "numeric_input"
+                  "type": "slider",
+                  "minimum": 1,
+                  "maximum": 21
                 },
                 {
-                  "label": "Player 1 Up: ",
+                  "label": "Player 1 Up",
                   "command": "setLeftPaddleUpKey",
                   "context": "ui",
-                  "type": "key_input"
+                  "type": "key_input",
+                  "binds": "pong::leftPaddleUp"
                 },
                 {
-                  "label": "Player 1 Down: ",
+                  "label": "Player 1 Down",
                   "command": "setLeftPaddleDownKey",
                   "context": "ui",
-                  "type": "key_input"
+                  "type": "key_input",
+                  "binds": "pong::leftPaddleDown"
                 },
                 {
-                  "label": "Player 2 Up: ",
+                  "label": "Player 2 Up",
                   "command": "setRightPaddleUpKey",
                   "context": "ui",
-                  "type": "key_input"
+                  "type": "key_input",
+                  "binds": "pong::rightPaddleUp"
                 },
                 {
-                  "label": "Player 2 Down: ",
+                  "label": "Player 2 Down",
                   "command": "setRightPaddleDownKey",
                   "context": "ui",
-                  "type": "key_input"
+                  "type": "key_input",
+                  "binds": "pong::rightPaddleDown"
                 }
               ]
             },

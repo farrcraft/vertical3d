@@ -63,9 +63,9 @@ Notes on individual components:
   drawn and takes no press, and the buttons after it close up.
 - **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
   `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
-  `check`, `radio`, `input`, `numeric_input`, `key_input` and `separator`. A check and a radio
-  item are marked by the app, the same as a check box. Radio items are drawn with the same
-  square mark as check items.
+  `check`, `radio`, `input`, `numeric_input`, `key_input`, `slider` and `separator`. A check and
+  a radio item are marked by the app, the same as a check box. Radio items are drawn with the
+  same square mark as check items.
 - **A centred menu** is drawn one level at a time in the middle of the canvas's safe area. The
   safe area is 5% of the width in from each side and 4% of the height in from the top and the
   bottom. A level too large for the safe area keeps its top left corner inside it.
@@ -76,6 +76,18 @@ Notes on individual components:
     semibold, and a ring in `focus` at `focus-width` around it. The menu is as wide as its widest
     label set semibold, so it does not change width as the choice moves.
   - The down and up arrows wrap from the last item to the first and back.
+  - Each row is a settings row: its label on the left and its value right-aligned, in
+    `secondary-text` unless the row is chosen. The menu makes room for the widest value. A row
+    shows an ellipsis while a capture waits on it, the key bound to the command it `binds`, a
+    slider's value between the arrows that step it, or the value it holds. A row with none
+    shows its label alone.
+- **A slider item** holds a whole number between its `minimum` and `maximum`, which default to
+  0 and 10, and moves by its `step`, 1 by default. Its `value` starts it, clamped to the range,
+  and without one it starts at the minimum. `Menu::step()`, which `menuLess` and `menuMore` send,
+  moves it and sends its command carrying the new value. A step past an end sends nothing.
+- **An item's `binds`** names a command whole, as a binding document writes it, such as
+  `pong::leftPaddleUp`. The row shows the key that command is bound to, through the screen's
+  shortcut lookup, so it stays true after a rebinding.
 - **A separator** is a rule between two groups of items, half a row tall. It needs no label and
   sends nothing. The keys step over it and the cursor passes over it, so nothing chooses it.
 - **A menu item's icon** is drawn in the column a check mark takes, when the item is not

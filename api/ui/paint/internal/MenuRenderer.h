@@ -93,6 +93,8 @@ class MenuRenderer final {
      * The chosen item is shown three ways, so that it reads without colour alone: the
      * highlight behind it, its label in the active text and the chosen item's setting, and the
      * focus ring around it.
+     *
+     * Each row puts its label on the left and its value, as setting() gives it, on the right.
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu) const;
 
@@ -116,6 +118,24 @@ class MenuRenderer final {
      * disabled colour even while it is the active one, because navigation does not activate it.
      **/
     static glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected);
+    /**
+     * What a centred menu's row shows on its right. That is an ellipsis while a capture waits
+     * on it, the key bound to the command it binds, a slider's value between the arrows that
+     * step it, or the value it holds. Empty when it shows none.
+     *
+     * @param root the menu the level belongs to, which holds the capture
+     **/
+    std::string setting(const component::menu::Item& item, const component::menu::Menu& root) const;
+
+    /**
+     * Draw one row of a centred menu in the box the arranger gave it: its highlight and ring
+     * when it is chosen, its label on the left and its value on the right.
+     *
+     * @param span the left and right edges of the menu's panel
+     **/
+    void settingRow(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
+        const glm::vec2& span, bool selected, const std::string& value) const;
+
     /**
      * The half side of the square that marks a checked menu item, as a fraction of a line.
      **/

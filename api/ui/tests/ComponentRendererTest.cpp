@@ -3,6 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
+#include <api/event/Event.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
@@ -596,6 +598,72 @@ BOOST_AUTO_TEST_CASE(a_menu_too_tall_for_the_safe_area_starts_at_its_top) {
     const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = buildMenu({"One", "Two", "Three", "Four"});
     renderer.draw(&canvas, menu);
     BOOST_CHECK_CLOSE(menu->position().y, 100.0F * v3d::ui::Arranger::safeEnds, 0.01F);
+}
+
+/**
+ * A settings row writes its label on the left and its value right-aligned, in secondary text
+ * when the row is not the chosen one. The menu makes room for a column of values. A slider
+ * shows its value between the arrows that step it, and a key input the key bound to the
+ * command it binds, or an ellipsis while it waits on a key.
+ **/
+BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
+    std::vector<Written> written;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
+        });
+    renderer.shortcuts([](const v3d::event::Event& command) {
+        return command.name() == "up" ? std::string("W") : std::string();
+    });
+
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = boost::make_shared<v3d::ui::component::menu::Menu>(dispatcher);
+    const boost::shared_ptr<v3d::ui::component::menu::Item> quit =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, "Quit");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> rounds =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Slider, "Rounds");
+    rounds->value(5);
+    const boost::shared_ptr<v3d::ui::component::menu::Item> up =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::KeyInput, "Up");
+    const boost::shared_ptr<v3d::event::Context> ui = boost::make_shared<v3d::event::Context>("ui");
+    up->event(v3d::event::Event("setUp", ui));
+    up->binds(v3d::event::Event("up", boost::make_shared<v3d::event::Context>("pong")));
+    menu->addItem(quit);
+    menu->addItem(rounds);
+    menu->addItem(up);
+    menu->level(menu);
+    menu->active(0);
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    renderer.draw(&canvas, menu);
+
+    const v3d::ui::paint::Dressing& dress = renderer.dressing();
+    const float right = menu->position().x + static_cast<const v3d::ui::Component&>(*menu).size().x - dress.padding;
+    const auto find = [&written](const std::string& text) {
+        return std::ranges::find_if(written, [&text](const Written& line) { return line.text == text; });
+    };
+    const auto slider = find("< 5 >");
+    BOOST_REQUIRE(slider != written.end());
+    BOOST_CHECK_CLOSE(slider->pen.x + (5.0F * characterWidth), right, 0.01F);
+    BOOST_CHECK(slider->colour == dress.secondaryText);
+    const auto key = find("W");
+    BOOST_REQUIRE(key != written.end());
+    BOOST_CHECK_CLOSE(key->pen.x + characterWidth, right, 0.01F);
+    BOOST_CHECK(find("Rounds") != written.end());
+    // the widest label, a column's gap and the widest value, inside the padding
+    const float width = static_cast<const v3d::ui::Component&>(*menu).size().x;
+    BOOST_CHECK_CLOSE(width, (6.0F * characterWidth) + (dress.padding * 2.0F) + (5.0F * characterWidth) + (dress.padding * 2.0F), 0.01F);
+
+    // a capture on the key shows that it waits
+    menu->active(2);
+    menu->activate();
+    BOOST_REQUIRE(menu->capturing());
+    written.clear();
+    renderer.draw(&canvas, menu);
+    BOOST_CHECK(find("...") != written.end());
+    BOOST_CHECK(find("W") == written.end());
 }
 
 /**

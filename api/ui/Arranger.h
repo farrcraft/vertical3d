@@ -183,10 +183,14 @@ class Arranger final {
      * large for the safe area keeps its top left corner inside it.
      *
      * The level's title goes above its items, and the level is as wide as the wider of its
-     * title and its widest item. An item is as wide as the wider of its label in the body text
-     * and in the chosen item's setting, so the level does not change width as the choice moves.
+     * title and its widest row. A row is its label and a column for the values. A label is as
+     * wide as the wider of the body text and the chosen item's setting, so the level does not
+     * change width as the choice moves.
+     *
+     * @param values how wide the level's widest value is, which a column right of the labels
+     *        makes room for. Zero leaves no column
      **/
-    void centred(component::menu::Menu& level, const glm::vec2& room) const;
+    void centred(component::menu::Menu& level, const glm::vec2& room, float values = 0.0F) const;
 
     /**
      * Set a centred menu's title and its chosen item apart from the body text.
@@ -290,7 +294,7 @@ class Arranger final {
         std::vector<v3d::type::geometry::Bound2D>* boxes) const;
 
     /**
-     * @return how wide a centred menu's item is, in the wider of the body text and the chosen
+     * @return how wide a centred menu's label is, in the wider of the body text and the chosen
      *         item's setting
      **/
     float choice(const component::menu::Item* item) const;

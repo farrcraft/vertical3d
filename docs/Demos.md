@@ -61,6 +61,7 @@ Sources are in `demos/pong/src/`.
 | Up, Down | `pong::rightPaddleUp`, `pong::rightPaddleDown` | Move player 2's paddle while held (co-op only) |
 | Escape | `ui::showGameMenu` | Show or hide the menu, which pauses the game |
 | Up, Down, Return | `ui::menuPrevious`, `ui::menuNext`, `ui::selectMenu` | Navigate the menu |
+| Left, Right | `ui::menuLess`, `ui::menuMore` | Step the chosen setting, such as Rounds |
 | F3 | `pong::toggleStatistics` | Show or hide the frame statistics |
 | F1 | `ui::fullscreen` | Switch between full screen and a window |
 
@@ -73,9 +74,10 @@ up to fifty degrees off either end. A paddle that is moving also turns the retur
 going. A return always leaves at the speed the ball arrived at, so no number of returns speeds
 the ball up.
 
-**The Options menu** sets the number of points that wins a match ("Rounds", 5 by default) and
-lets the player rebind each of the four paddle keys. A key item captures the next key pressed.
-Escape is never captured; it leaves the menu.
+**The Options menu** sets the number of points that wins a match ("Rounds", 5 by default, from
+1 to 21) and lets the player rebind each of the four paddle keys. Each row shows its value: the
+rounds, or the key bound to the paddle command. Left and right step the rounds. A key item
+captures the next key pressed. Escape is never captured; it leaves the menu.
 
 **Data files** (`demos/pong/data/`):
 

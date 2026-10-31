@@ -44,6 +44,7 @@ class Toolbar;
 
 namespace v3d::ui::component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace v3d::ui::component::menu
 
@@ -174,6 +175,12 @@ class ComponentReader final {
      * @return the event, or one with no context when the entry omits either of the two
      **/
     v3d::event::Event readCommand(const boost::json::object& entry);
+
+    /**
+     * Read what a settings item shows: a slider's range and starting value, and the command
+     * an item binds, whose key it shows.
+     **/
+    void readSetting(const boost::json::object& entry, component::menu::Item* item);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Router> router_;

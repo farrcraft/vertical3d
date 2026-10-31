@@ -11,6 +11,7 @@
 #include <api/event/Event.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/shell/GameMenu.h>
 #include <demos/pong/src/component/Position1D.h>
 #include <demos/pong/src/component/Position2D.h>
@@ -85,6 +86,12 @@ bool PongEngine::start() {
     renderer_ = boost::make_shared<PongRenderer>(win, logger(), &shell_);
     scene_ = boost::make_shared<PongScene>(&registry(), dispatcher());
     renderer_->scene(scene_);
+    // the Options menu shows the rounds played to from the start, not only after a change
+    const boost::shared_ptr<v3d::ui::component::menu::Item> rounds =
+        shell_.menu() ? shell_.menu()->item("setMaxScore") : nullptr;
+    if (rounds) {
+        rounds->value(scene_->state().maxScore());
+    }
 
     // a key captured for a rebinding is taken before it reaches the bindings
     sources_ = dispatcher()->sink<v3d::event::Source>().connect<&PongEngine::handleSource>(*this);

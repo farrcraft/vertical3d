@@ -532,14 +532,14 @@ float Arranger::choice(const component::menu::Item* item) const {
     if (item == nullptr) {
         return 0.0F;
     }
-    const std::string text = item->text();
+    const std::string_view text = item->label();
     const float body = measure_(text);
     return emphasis_.chosen.measure ? std::max(body, emphasis_.chosen.measure(text)) : body;
 }
 
 /**
  **/
-void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) const {
+void Arranger::centred(component::menu::Menu& level, const glm::vec2& room, float values) const {
     const std::size_t count = level.count();
     if (count == 0) {
         return;
@@ -551,11 +551,15 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
         widest = std::max(widest, choice(item.get()));
         rows += row(item.get());
     }
+    const paint::Dressing& base = styles_.base();
+    // a value sits two paddings clear of the longest label, so a row reads as two columns
+    if (values > 0.0F) {
+        widest += (base.padding * 2.0F) + values;
+    }
     if (!level.title().empty()) {
         const paint::Measure& titled = emphasis_.title.measure ? emphasis_.title.measure : measure_;
         widest = std::max(widest, titled(level.title()));
     }
-    const paint::Dressing& base = styles_.base();
     const float band = heading(level);
     const glm::vec2 size(widest + (base.padding * 2.0F), band + rows + (base.padding * 2.0F));
     const v3d::type::geometry::Bound2D area = safe(room);

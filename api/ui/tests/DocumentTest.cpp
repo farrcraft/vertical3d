@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Context.h>
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
@@ -193,6 +194,40 @@ BOOST_AUTO_TEST_CASE(a_menu_names_its_title_and_a_submenu_takes_its_items) {
         boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(holder->get("plain"));
     BOOST_REQUIRE(plain);
     BOOST_CHECK(plain->title().empty());
+}
+
+/**
+ * A slider reads its range and its starting value, clamped to the range, and an item reads
+ * the command it binds as a context and a command. A binding that names no context is ignored.
+ **/
+BOOST_AUTO_TEST_CASE(a_settings_item_reads_its_range_and_what_it_binds) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "game-menu", "visible": false, "components": [
+            { "type": "menu", "name": "main-menu", "items": [
+                { "label": "Rounds", "type": "slider", "command": "rounds", "context": "ui",
+                  "minimum": 1, "maximum": 9, "step": 2, "value": 12 },
+                { "label": "Up", "type": "key_input", "command": "setUp", "context": "ui", "binds": "pong::up" },
+                { "label": "Down", "type": "key_input", "command": "setDown", "context": "ui", "binds": "down" }
+            ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("game-menu")->get("main-menu"));
+    BOOST_REQUIRE(menu);
+    const v3d::ui::component::menu::Item::Range& span = (*menu)[0]->range();
+    BOOST_CHECK_EQUAL(span.minimum, 1);
+    BOOST_CHECK_EQUAL(span.maximum, 9);
+    BOOST_CHECK_EQUAL(span.step, 2);
+    BOOST_CHECK_EQUAL((*menu)[0]->shown(), "9");
+
+    const v3d::event::Event& binds = (*menu)[1]->binds();
+    BOOST_REQUIRE(binds.context());
+    BOOST_CHECK_EQUAL(binds.context()->name(), "pong");
+    BOOST_CHECK_EQUAL(binds.name(), "up");
+    BOOST_CHECK(!(*menu)[2]->binds().context());
 }
 
 /**

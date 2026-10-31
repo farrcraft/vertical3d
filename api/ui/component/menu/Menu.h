@@ -8,6 +8,7 @@
 #include <api/ui/Component.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Item.h"
@@ -112,6 +113,28 @@ class Menu : public Component {
      * Abandon a capture without sending anything, leaving the item's value as it was.
      **/
     void cancel();
+
+    /**
+     * @return the item a capture is open on, or null when none is
+     **/
+    boost::shared_ptr<Item> captured() const;
+
+    /**
+     * Step the active item of the current level, when it is a slider, and send its event
+     * carrying the new value. Nothing moves while a capture is open, or on an item that cannot
+     * be used.
+     *
+     * @param direction above zero toward the slider's maximum, below zero toward its minimum
+     * @return whether the value changed. The event is sent only then
+     **/
+    bool step(int direction);
+
+    /**
+     * @return the first item, in this menu or any submenu under it, whose event is the named
+     *         command, or null when none is. An app finds an item this way to show the value
+     *         it holds for it
+     **/
+    boost::shared_ptr<Item> find(std::string_view command) const;
 
     void addItem(const boost::shared_ptr<Item>& item);
 

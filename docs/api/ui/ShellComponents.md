@@ -30,16 +30,18 @@ menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [this](bool suspended) 
   says. The menu is drawn as a centred menu, in the safe area under its title, with the chosen
   item's three cues ([Components.md](Components.md#notes-on-individual-components)).
 - `GameMenu::declare(commands, menu)` registers its commands in the `ui` context:
-  `showGameMenu` toggles it, and `menuPrevious`, `menuNext` and `selectMenu` navigate it
-  while it is up. An app calls it from its constructor, before the menu exists, and passes the
-  member it will hold the menu in. Each command does nothing while that member is empty. An app
-  binds these in its mappings, for example `escape` to `showGameMenu`. These command names
-  cannot be changed.
+  `showGameMenu` toggles it, `menuPrevious`, `menuNext` and `selectMenu` navigate it
+  while it is up, and `menuLess` and `menuMore` step the chosen slider. An app calls it from
+  its constructor, before the menu exists, and passes the member it will hold the menu in.
+  Each command does nothing while that member is empty. An app binds these in its mappings,
+  for example `escape` to `showGameMenu`. These command names cannot be changed.
 - `toggle()` opens the menu, or steps back out of a submenu. Closing the top level resumes
   the game.
 - The `Suspend` callback runs with `true` as the menu opens and `false` as it closes. Do
   only small things in it, such as setting a flag. Tearing something down inside it can
   break the toggle that called it.
+- `item(command)` finds the item that sends a command, in any submenu. An app gives a
+  setting's item the value the game holds, so the row shows it before the player changes it.
 - `capturing()` is true while an input item is waiting for a value. The app sends the next
   key to `capture(value)` instead of acting on it. This is how a rebinding screen works.
 - If the document names no such container, every call does nothing and the game runs without

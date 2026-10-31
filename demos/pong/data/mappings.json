@@ -87,6 +87,28 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "arrow_left",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuLess"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_right",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "ui",
+        "name": "menuMore"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "f1",
         "state": "pressed"
       },

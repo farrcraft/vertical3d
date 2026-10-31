@@ -18,7 +18,8 @@ enum class ItemType : std::uint8_t {
     Input,
     NumericInput,
     KeyInput,
-    Separator
+    Separator,
+    Slider
 };
 
 constexpr ItemType stringToType(const std::string_view& typeName) {
@@ -45,6 +46,9 @@ constexpr ItemType stringToType(const std::string_view& typeName) {
     }
     if (typeName == "separator") {
         return ItemType::Separator;
+    }
+    if (typeName == "slider") {
+        return ItemType::Slider;
     }
     return  ItemType::Unknown;
 }

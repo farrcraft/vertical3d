@@ -11,18 +11,31 @@
 #include <api/log/Logger.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/shell/GameMenu.h>
 
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
+#include <entt/entt.hpp>
 
 namespace {
+
+/**
+ * Every command the ui sends, in order.
+ **/
+struct Sent final {
+    std::vector<v3d::event::Event> events;
+    void receive(const v3d::event::Event& event) {
+        events.push_back(event);
+    }
+};
 
 /**
  * A menu of two items inside a submenu, which a toggle has to step back out of one
@@ -71,6 +84,36 @@ const char* const bindings = R"({
           "items": [
             { "label": "Player 1 Up: ", "command": "setLeftPaddleUpKey", "context": "ui", "type": "key_input" },
             { "label": "Resume", "command": "showGameMenu", "context": "ui", "type": "action" }
+          ]
+        }
+      ]
+    }
+  ]
+})";
+
+/**
+ * A settings screen: a slider for the rounds inside a submenu, and an action.
+ **/
+const char* const settings = R"({
+  "themes": [ { "name": "default" } ],
+  "containers": [
+    {
+      "name": "game-menu",
+      "visible": false,
+      "components": [
+        {
+          "name": "main-menu",
+          "type": "menu",
+          "items": [
+            {
+              "label": "Options",
+              "type": "submenu",
+              "items": [
+                { "label": "Rounds", "command": "setRounds", "context": "ui", "type": "slider",
+                  "minimum": 1, "maximum": 3, "value": 2 }
+              ]
+            },
+            { "label": "Quit", "command": "quit", "context": "ui", "type": "action" }
           ]
         }
       ]
@@ -351,6 +394,57 @@ BOOST_AUTO_TEST_CASE(the_menu_declares_its_own_commands) {
     // a held key's repeats do not flick the menu shut
     BOOST_TEST(send("ui", v3d::ui::shell::GameMenu::toggleCommand, true));
     BOOST_TEST(menu->visible());
+}
+
+/**
+ * The left and right commands step the chosen slider within its range, and each step that
+ * moves it sends the item's command carrying the new value. A step past an end sends nothing.
+ **/
+BOOST_AUTO_TEST_CASE(less_and_more_step_the_chosen_slider) {
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(settings);
+    Sent sent;
+    ui->dispatcher()->sink<v3d::event::Event>().connect<&Sent::receive>(sent);
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
+    menu.toggle();
+    BOOST_TEST(menu.navigate("selectMenu"));
+    BOOST_TEST(active(ui) == "Rounds");
+
+    BOOST_TEST(menu.navigate("menuMore"));
+    BOOST_TEST(menu.navigate("menuMore"));
+    BOOST_TEST(menu.navigate("menuLess"));
+    BOOST_REQUIRE_EQUAL(sent.events.size(), 2U);
+    BOOST_TEST(sent.events[0].name() == "setRounds");
+    BOOST_TEST(std::get<int>(sent.events[0].data().get()) == 3);
+    BOOST_TEST(std::get<int>(sent.events[1].data().get()) == 2);
+}
+
+/**
+ * Left and right on an item that is not a slider move nothing and send nothing.
+ **/
+BOOST_AUTO_TEST_CASE(less_and_more_leave_any_other_item_alone) {
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(settings);
+    Sent sent;
+    ui->dispatcher()->sink<v3d::event::Event>().connect<&Sent::receive>(sent);
+    v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
+    menu.toggle();
+    BOOST_TEST(menu.navigate("menuMore"));
+    BOOST_TEST(active(ui) == "Options");
+    BOOST_TEST(sent.events.empty());
+}
+
+/**
+ * An app finds a setting's item by the command it sends, inside a submenu too, to give it
+ * the value the game holds.
+ **/
+BOOST_AUTO_TEST_CASE(an_item_is_found_by_its_command) {
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(settings);
+    const v3d::ui::shell::GameMenu menu(ui, v3d::ui::shell::GameMenu::Suspend());
+    const boost::shared_ptr<v3d::ui::component::menu::Item> rounds = menu.item("setRounds");
+    BOOST_REQUIRE(rounds);
+    BOOST_TEST(rounds->label() == "Rounds");
+    BOOST_TEST(std::get<int>(rounds->value().get()) == 2);
+    BOOST_TEST(menu.item("quit"));
+    BOOST_TEST(!menu.item("nothing"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

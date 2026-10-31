@@ -89,7 +89,16 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
         return;
     }
 
-    arranger_.centred(*level, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    std::vector<std::string> values(count);
+    float widest = 0.0F;
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
+        if (item) {
+            values[index] = setting(*item, *menu);
+            widest = std::max(widest, measure_(values[index]));
+        }
+    }
+    arranger_.centred(*level, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())), widest);
     const glm::vec2 origin = level->position();
     const float width = static_cast<const Component&>(*level).size().x;
     const float height = static_cast<const Component&>(*level).size().y;
@@ -120,28 +129,60 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
             rule(canvas, origin.x + base().padding, origin.x + width - base().padding, top + (item->size().y * 0.5F));
             continue;
         }
-        const bool selected = active && item == active;
-
-        const glm::vec4 lit = selected ? easing_.toward(&item->motion().face, base().highlight) : easing_.away(&item->motion().face);
-        const glm::vec2 min(origin.x + (base().padding * 0.5F), top);
-        const glm::vec2 max(origin.x + width - (base().padding * 0.5F), top + base().lineHeight);
-        if (lit.a > 0.0F) {
-            fillBox(canvas, min, max, base().radius, lit);
-            // the ring comes and goes with the highlight it surrounds
-            if (selected && base().highlight.a > 0.0F) {
-                glm::vec4 ring = base().focus;
-                ring.a *= std::min(lit.a / base().highlight.a, 1.0F);
-                strokeBox(canvas, min, max, base().radius, base().focusWidth, ring);
-            }
-        }
-
-        // the pen sits on the baseline, most of the way down the line box. Descenders go in
-        // the space below it
-        const glm::vec2 pen(origin.x + base().padding, top + (base().lineHeight * LINE_BASELINE));
-        const Write& inked = selected && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
-        inked(item->text(), pen, easing_.toward(&item->motion().ink, itemInk(item, base(), selected)));
+        settingRow(canvas, item, glm::vec2(origin.x, origin.x + width), active && item == active, values[index]);
     }
     end(canvas);
+}
+
+/**
+ **/
+void MenuRenderer::settingRow(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
+    const glm::vec2& span, bool selected, const std::string& value) const {
+    const float top = item->position().y;
+    const glm::vec4 lit = selected ? easing_.toward(&item->motion().face, base().highlight) : easing_.away(&item->motion().face);
+    const glm::vec2 min(span.x + (base().padding * 0.5F), top);
+    const glm::vec2 max(span.y - (base().padding * 0.5F), top + base().lineHeight);
+    if (lit.a > 0.0F) {
+        fillBox(canvas, min, max, base().radius, lit);
+        // the ring comes and goes with the highlight it surrounds
+        if (selected && base().highlight.a > 0.0F) {
+            glm::vec4 ring = base().focus;
+            ring.a *= std::min(lit.a / base().highlight.a, 1.0F);
+            strokeBox(canvas, min, max, base().radius, base().focusWidth, ring);
+        }
+    }
+
+    // the pen sits on the baseline, most of the way down the line box. Descenders go in
+    // the space below it
+    const glm::vec2 pen(span.x + base().padding, top + (base().lineHeight * LINE_BASELINE));
+    const Write& inked = selected && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
+    const glm::vec4 ink = easing_.toward(&item->motion().ink, itemInk(item, base(), selected));
+    inked(item->label(), pen, ink);
+    if (!value.empty()) {
+        // a value says less than its label, unless its row is the chosen one, where
+        // secondary text would not read against the highlight
+        const glm::vec4 quiet = selected || !usable(*item) ? ink : base().secondaryText;
+        write_(value, glm::vec2(span.y - base().padding - measure_(value), pen.y), quiet);
+    }
+}
+
+/**
+ **/
+std::string MenuRenderer::setting(const component::menu::Item& item, const component::menu::Menu& root) const {
+    if (root.captured().get() == &item) {
+        return "...";
+    }
+    if (item.binds().context()) {
+        const std::string bound = shortcut(item.binds());
+        if (!bound.empty()) {
+            return bound;
+        }
+    }
+    if (item.itemType() == component::menu::ItemType::Slider) {
+        const std::string held = item.shown();
+        return "< " + (held.empty() ? std::to_string(item.range().minimum) : held) + " >";
+    }
+    return item.shown();
 }
 
 /**

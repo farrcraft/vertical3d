@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <exception>
 #include <optional>
 #include <string>
@@ -503,6 +504,7 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
         if (const std::optional<std::string> icon = optionalString(*logger_, *itemEntry, "icon")) {
             menuItem->icon(*icon);
         }
+        readSetting(*itemEntry, menuItem.get());
 
         menu->addItem(menuItem);
 
@@ -523,6 +525,31 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
     }
     menu->active(0);
     return menu;
+}
+
+void ComponentReader::readSetting(const boost::json::object& entry, component::menu::Item* item) {
+    if (item->itemType() == component::menu::ItemType::Slider) {
+        constexpr int lowest = std::numeric_limits<int>::min();
+        component::menu::Item::Range span;
+        span.minimum = optionalInt(*logger_, entry, "minimum", lowest).value_or(span.minimum);
+        span.maximum = optionalInt(*logger_, entry, "maximum", lowest).value_or(span.maximum);
+        span.step = optionalInt(*logger_, entry, "step", 1).value_or(span.step);
+        item->range(span);
+        if (const std::optional<int> value = optionalInt(*logger_, entry, "value", lowest)) {
+            item->value(*value);
+            // clamped to the range it was given
+            item->range(span);
+        }
+    }
+    // the command is written whole, as a binding document writes it: its context, "::" and its name
+    if (const std::optional<std::string> binds = optionalString(*logger_, entry, "binds")) {
+        const std::size_t split = binds->rfind("::");
+        if (split == std::string::npos || split == 0 || split + 2 >= binds->size()) {
+            logger_->get()->warn("A menu item binds [{}], which is not a context and a command", *binds);
+        } else {
+            item->binds(v3d::event::Event(binds->substr(split + 2), router_->resolveContext(binds->substr(0, split))));
+        }
+    }
 }
 
 v3d::event::Event ComponentReader::readCommand(const boost::json::object& entry) {
