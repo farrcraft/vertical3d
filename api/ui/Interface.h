@@ -65,16 +65,19 @@ class Interface {
     bool load(const boost::json::object& config);
 
     /**
-     * Add the containers a document names, after those already held, as an app does for a part
-     * of its ui it builds as it runs. The document is a ui config's "containers" with no themes,
-     * and the containers draw in the active theme.
+     * Add the containers a document names, as an app does for a part of its ui it builds as it
+     * runs. The document is a ui config's "containers" with no themes, and the containers draw
+     * in the active theme.
      *
-     * A document that does not read, or that names a container already held, adds nothing.
-     * Images are not resolved: resolveImages() does that for every container.
+     * Containers draw in the order they are held, so what is added before a container draws
+     * under it. A document that does not read, or that names a container already held, adds
+     * nothing. Images are not resolved: resolveComponentImages() resolves what was added.
      *
+     * @param before the container to put them before, or empty or a name not held to put them
+     *        after every container
      * @return whether the containers were added
      **/
-    bool add(const boost::json::object& document);
+    bool add(const boost::json::object& document, std::string_view before = {});
 
     /**
      * Take a container out. A component in it that held the focus or the cursor's rest stops

@@ -169,6 +169,21 @@ bool Cursor::press(const glm::vec2& point) {
     ui_->focus(boost::shared_ptr<Component>());
     // a press puts away any tooltip, until the cursor moves again
     ui_->hovered(boost::shared_ptr<Component>());
+    // an open menu bar takes every press, whichever container holds it, so a panel dropped over
+    // a container listed before its own still gets the press that lands on it
+    for (const boost::shared_ptr<Container>& container : ui_->containers()) {
+        if (!container || !container->visible()) {
+            continue;
+        }
+        std::vector<boost::shared_ptr<component::menu::Bar>> bars;
+        std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
+        strips(container, &bars, &toolbars);
+        for (const boost::shared_ptr<component::menu::Bar>& bar : bars) {
+            if (bar && bar->active()) {
+                return bar->press(point);
+            }
+        }
+    }
     // any_of stops at the first container that takes the press, so a press never reaches
     // more than one container
     return std::ranges::any_of(ui_->containers(),

@@ -121,10 +121,12 @@ the document is malformed. `container(name)` returns a loaded container, and
 
 An app that builds part of its ui as it runs adds containers to a loaded ui:
 
-- `Interface::add(document)` reads a document holding only `containers` and puts them after
-  those already held, in the active theme. A document that does not read, or that names a
-  container already held, adds nothing. Run `resolveImages()` again if what was added names
-  images.
+- `Interface::add(document, before)` reads a document holding only `containers`, and puts them
+  before the container named `before`, or after every container when `before` is empty or not
+  held. Containers draw in the order they are held, so what is added before a container draws
+  under it. They draw in the active theme. A document that does not read, or that names a
+  container already held, adds nothing. Resolve the images of what was added with
+  `resolveComponentImages()`.
 - `Interface::remove(name)` takes a container out. A component in it that held the focus or the
   cursor's rest stops holding it.
 

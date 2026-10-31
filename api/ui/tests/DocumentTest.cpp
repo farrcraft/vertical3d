@@ -218,6 +218,12 @@ BOOST_AUTO_TEST_CASE(containers_are_added_and_removed) {
     BOOST_CHECK(!ui->add(boost::json::parse(R"({ "containers": [ { "name": "area-4" } ] })").as_object()));
     BOOST_CHECK_EQUAL(ui->containers().size(), 3U);
 
+    // what is added before a container is held, and drawn, before it
+    BOOST_REQUIRE(ui->add(boost::json::parse(R"({ "containers": [ { "name": "under", "visible": true, "components": [] } ] })").as_object(), "hud"));
+    BOOST_CHECK_EQUAL(ui->containers()[0]->name(), "under");
+    BOOST_CHECK_EQUAL(ui->containers()[1]->name(), "hud");
+    BOOST_REQUIRE(ui->remove("under"));
+
     // a component of a container taken out stops holding the cursor's rest
     const boost::shared_ptr<v3d::ui::Component> go = ui->container("area-1")->get("go");
     ui->hovered(go);

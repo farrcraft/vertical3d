@@ -22,6 +22,10 @@
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -533,6 +537,44 @@ BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
     BOOST_CHECK(strip->pickable());
     BOOST_CHECK(fixture.cursor->press(glm::vec2(700.0F, 4.0F)));
     BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * An open menu bar takes a press before any container, so a panel it drops over a container
+ * listed before its own still gets the press that lands on it.
+ **/
+BOOST_AUTO_TEST_CASE(an_open_menu_takes_a_press_before_any_container) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = boost::make_shared<v3d::ui::component::menu::Menu>(fixture.dispatcher);
+    const boost::shared_ptr<v3d::ui::component::menu::Item> open =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, "Open");
+    open->event(v3d::event::Event("open", fixture.context));
+    file->addItem(open);
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::make_shared<v3d::ui::component::menu::Bar>();
+    bar->add("File", file);
+    fixture.container->add(bar);
+
+    // a container listed first, whose button covers everything under the bar
+    BOOST_REQUIRE(fixture.ui->add(boost::json::parse(R"({ "containers": [ { "name": "under", "visible": true, "components": [] } ] })").as_object(), "hud"));
+    BOOST_REQUIRE_EQUAL(fixture.ui->containers().front()->name(), "under");
+    const boost::shared_ptr<v3d::ui::Container> under = fixture.ui->containers().front();
+    const boost::shared_ptr<v3d::ui::component::Button> cover = boost::make_shared<v3d::ui::component::Button>();
+    cover->event(v3d::event::Event("cover", fixture.context));
+    const float below = fixture.renderer.dressing().barHeight + 1.0F;
+    cover->layout().y = v3d::ui::Length(below, v3d::ui::Length::Unit::Pixels);
+    cover->layout().width = v3d::ui::Length(800.0F, v3d::ui::Length::Unit::Pixels);
+    cover->layout().height = v3d::ui::Length(600.0F - below, v3d::ui::Length::Unit::Pixels);
+    under->add(cover);
+
+    bar->open(0);
+    fixture.canvas.clear();
+    fixture.renderer.draw(&fixture.canvas, *under);
+    fixture.draw();
+    BOOST_REQUIRE(open->position().y >= below);
+
+    BOOST_CHECK(fixture.cursor->press(open->position() + (open->size() * 0.5F)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::open");
 }
 
 /**

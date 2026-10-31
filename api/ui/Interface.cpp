@@ -62,7 +62,7 @@ bool Interface::load(const boost::json::object& config) {
 
 /**
  **/
-bool Interface::add(const boost::json::object& document) {
+bool Interface::add(const boost::json::object& document, std::string_view before) {
     Loader loader(router_, dispatcher_, logger_);
     if (!loader.loadContainers(document)) {
         return false;
@@ -74,7 +74,9 @@ bool Interface::add(const boost::json::object& document) {
             return false;
         }
     }
-    containers_.insert(containers_.end(), read.begin(), read.end());
+    const auto at = std::ranges::find_if(containers_,
+        [before](const boost::shared_ptr<Container>& held) { return !before.empty() && held && held->name() == before; });
+    containers_.insert(at, read.begin(), read.end());
     return true;
 }
 

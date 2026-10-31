@@ -35,7 +35,9 @@ any press the ui did not take.
 
 How a point is routed:
 
-- Each visible container is offered the point, in the order the document lists them. The
+- A press goes first to an open menu bar, in whichever container holds it. An open menu takes
+  every press, including one that lands on a container listed before its own.
+- Otherwise each visible container is offered the point, in the order the ui holds them. The
   first container that takes it ends the search.
 - Within a container, the menu bars are offered the point first, then the toolbars, then the
   component tree. This is the reverse of the draw order.
