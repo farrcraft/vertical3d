@@ -110,12 +110,12 @@ class Toolbar : public Component {
      **/
     boost::shared_ptr<Button> find(const std::string& command) const;
 
- private:
     /**
      * @return the button the cursor is on, or null
      **/
     boost::shared_ptr<Button> buttonAt(const glm::vec2& cursor) const;
 
+ private:
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Button>> buttons_;
     Edge edge_;

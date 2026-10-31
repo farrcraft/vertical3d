@@ -87,6 +87,7 @@ class Opening final {
 struct Motion final {
     Transition face;  /**< the fill behind it **/
     Transition ink;   /**< its text **/
+    Transition shortcut;  /**< the shortcut a menu item shows beside its text **/
     Opening opening;  /**< how far it has opened, for what drops or pops up **/
 };
 

@@ -6,6 +6,7 @@
 #include "ComponentRenderer.h"
 
 #include <api/type/Checked.h>
+#include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
@@ -169,6 +170,11 @@ constexpr float checkMarkScale = 0.15F;
 constexpr float submenuArrowScale = 0.18F;
 
 /**
+ * How far a tooltip's text sits in from its edges, as a fraction of a line.
+ **/
+constexpr float tooltipInset = 0.4F;
+
+/**
  * @return what a style's image property was resolved to, unset when the style names no
  *      such image or nothing has resolved it
  **/
@@ -226,6 +232,57 @@ void ComponentRenderer::scale(float factor) noexcept {
 void ComponentRenderer::clock(const Clock& now) noexcept {
     clock_ = now;
     timed_ = true;
+}
+
+/**
+ **/
+const Dressing& ComponentRenderer::dressing() const noexcept {
+    return base();
+}
+
+/**
+ **/
+void ComponentRenderer::shortcuts(const Shortcut& lookup) {
+    shortcut_ = lookup;
+}
+
+/**
+ **/
+std::string ComponentRenderer::shortcut(const v3d::event::Event& command) const {
+    if (!shortcut_ || !command.context()) {
+        return std::string();
+    }
+    return shortcut_(command);
+}
+
+/**
+ **/
+void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
+    const v3d::type::geometry::Bound2D& below) const {
+    if (canvas == nullptr || (text.empty() && keys.empty())) {
+        return;
+    }
+    const float line = base().lineHeight;
+    const float inset = line * tooltipInset;
+    const float gap = keys.empty() || text.empty() ? 0.0F : inset;
+    const glm::vec2 size(measure_(text) + gap + measure_(keys) + (inset * 2.0F), line);
+    const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
+
+    // just under the box, and back onto the canvas where it would leave it. Below the bottom
+    // edge it goes above the box instead
+    glm::vec2 corner(below.position().x, below.position().y + below.size().y + base().spacing);
+    if (corner.y + size.y > room.y) {
+        corner.y = below.position().y - base().spacing - size.y;
+    }
+    corner = glm::vec2(std::clamp(corner.x, 0.0F, std::max(0.0F, room.x - size.x)), std::max(corner.y, 0.0F));
+
+    cast(canvas, corner, corner + size);
+    plateBox(canvas, corner, corner + size, base().radius, base().borderWidth, {.inside = base().panel, .outline = base().border});
+    const float baseline = corner.y + (line * lineBaseline);
+    write_(text, glm::vec2(corner.x + inset, baseline), base().text);
+    if (!keys.empty()) {
+        write_(keys, glm::vec2(corner.x + size.x - inset - measure_(keys), baseline), base().secondaryText);
+    }
 }
 
 /**
@@ -885,9 +942,13 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const boost::shared_ptr<component::menu::Item> active = level->active();
 
     for (std::size_t index = 0; index < count; index++) {
-        const float top = origin.y + base().padding + (base().lineHeight * static_cast<float>(index));
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         if (!item) {
+            continue;
+        }
+        const float top = item->position().y;
+        if (item->separator()) {
+            rule(canvas, origin.x + base().padding, origin.x + width - base().padding, top + (item->size().y * 0.5F));
             continue;
         }
         const bool selected = active && item == active;
@@ -913,6 +974,11 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Bar>& bar) const {
     if (canvas == nullptr || !bar) {
         return;
+    }
+    // a submenu waits for the cursor to rest on its item only when there is a clock to wait on
+    if (timed_) {
+        bar->delay(base().submenuDelay);
+        bar->settle(clock_.now);
     }
 
     const float width = static_cast<float>(canvas->width());
@@ -1008,7 +1074,18 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
         return;
     }
 
-    arranger_.panel(*menu, origin, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())));
+    // each item's shortcut, worked out once for both the panel's width and its drawing
+    std::vector<std::string> keys(count);
+    float widest = 0.0F;
+    for (std::size_t index = 0; index < count; index++) {
+        const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
+        if (item && item->itemType() != component::menu::ItemType::Submenu && !item->separator()) {
+            keys[index] = shortcut(item->event());
+            widest = std::max(widest, measure_(keys[index]));
+        }
+    }
+
+    arranger_.panel(*menu, origin, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())), widest);
     const glm::vec2 corner = menu->position();
     const glm::vec2 size = static_cast<const Component&>(*menu).size();
     const float column = base().lineHeight * Arranger::markColumn;
@@ -1024,35 +1101,70 @@ void ComponentRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, con
 
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
-        const float top = corner.y + base().panelPadding + (base().lineHeight * static_cast<float>(index));
-        const bool selected = active && item == active;
-
-        if (item) {
-            const glm::vec4 lit = selected ? toward(&item->motion().face, base().highlight) : away(&item->motion().face);
-            if (lit.a > 0.0F) {
-                canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + base().lineHeight), lit);
-            }
+        if (!item) {
+            continue;
         }
-
-        if (item && item->checked()) {
-            const glm::vec2 centre(corner.x + (column * 0.5F), top + (base().lineHeight * 0.5F));
-            const float mark = base().lineHeight * checkMarkScale;
-            canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
+        if (item->separator()) {
+            rule(canvas, corner.x + (column * 0.5F), corner.x + size.x - (column * 0.5F), item->position().y + (item->size().y * 0.5F));
+            continue;
         }
-
-        if (item && item->itemType() == component::menu::ItemType::Submenu) {
-            // a three sided circle is a triangle with a vertex at zero degrees, which
-            // points along +x
-            canvas->circle(glm::vec2(corner.x + size.x - (column * 0.5F), top + (base().lineHeight * 0.5F)),
-                base().lineHeight * submenuArrowScale, 3, selected ? base().activeText : base().text);
-        }
-
-        const glm::vec2 pen(corner.x + column, top + (base().lineHeight * lineBaseline));
-        if (item) {
-            write_(item->text(), pen, toward(&item->motion().ink, itemInk(item, base(), selected)));
-        }
+        entry(canvas, item, menu->bound(), active && item == active, keys[index]);
     }
     end(canvas);
+}
+
+/**
+ **/
+void ComponentRenderer::entry(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
+    const v3d::type::geometry::Bound2D& panel, bool selected, const std::string& keys) const {
+    const glm::vec2 corner = panel.position();
+    const glm::vec2 size = panel.size();
+    const float column = base().lineHeight * Arranger::markColumn;
+    const float top = item->position().y;
+
+    const glm::vec4 lit = selected ? toward(&item->motion().face, base().highlight) : away(&item->motion().face);
+    if (lit.a > 0.0F) {
+        canvas->rect(glm::vec2(corner.x, top), glm::vec2(corner.x + size.x, top + base().lineHeight), lit);
+    }
+
+    const glm::vec2 centre(corner.x + (column * 0.5F), top + (base().lineHeight * 0.5F));
+    const v3d::ui::Image& picture = item->image();
+    if (item->checked()) {
+        const float mark = base().lineHeight * checkMarkScale;
+        canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
+    } else if (picture.valid()) {
+        // a check mark takes the column before an icon does, so a checked item shows its state
+        const float half = std::min(base().iconSize, column) * 0.5F;
+        canvas->rect(centre - glm::vec2(half, half), centre + glm::vec2(half, half), picture.uv0, picture.uv1,
+            ink(*item, base(), glm::vec4(1.0F, 1.0F, 1.0F, 1.0F)), picture.texture);
+    }
+
+    if (item->itemType() == component::menu::ItemType::Submenu) {
+        // a three sided circle is a triangle with a vertex at zero degrees, which
+        // points along +x
+        canvas->circle(glm::vec2(corner.x + size.x - (column * 0.5F), top + (base().lineHeight * 0.5F)),
+            base().lineHeight * submenuArrowScale, 3, selected ? base().activeText : base().text);
+    }
+
+    const float baseline = top + (base().lineHeight * lineBaseline);
+    write_(item->text(), glm::vec2(corner.x + column, baseline), toward(&item->motion().ink, itemInk(item, base(), selected)));
+    if (!keys.empty()) {
+        // right-aligned against the arrow column, and quieter than the label except on the
+        // chosen row, where only active text reads against the highlight
+        const glm::vec2 pen(corner.x + size.x - column - measure_(keys), baseline);
+        glm::vec4 colour = usable(*item) ? base().secondaryText : base().disabledText;
+        if (selected && usable(*item)) {
+            colour = base().activeText;
+        }
+        write_(keys, pen, toward(&item->motion().shortcut, colour));
+    }
+}
+
+/**
+ **/
+void ComponentRenderer::rule(v3d::render::realtime::canvas::Canvas* canvas, float left, float right, float middle) const {
+    const float half = Arranger::ruleWidth * 0.5F;
+    canvas->rect(glm::vec2(left, middle - half), glm::vec2(right, middle + half), base().rule);
 }
 
 };  // namespace v3d::ui::paint

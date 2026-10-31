@@ -137,6 +137,9 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->metric(style, "open-distance", dressing, &paint::Dressing::openDistance, scale);
     overlay->metric(style, "hover-duration", dressing, &paint::Dressing::hoverDuration);
     overlay->metric(style, "open-duration", dressing, &paint::Dressing::openDuration);
+    overlay->metric(style, "submenu-delay", dressing, &paint::Dressing::submenuDelay);
+    overlay->metric(style, "tooltip-delay", dressing, &paint::Dressing::tooltipDelay);
+    overlay->metric(style, "tooltip-quick-delay", dressing, &paint::Dressing::tooltipQuickDelay);
     overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
 }
 

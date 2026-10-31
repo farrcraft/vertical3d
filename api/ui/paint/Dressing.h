@@ -71,6 +71,9 @@ struct Dressing final {
     float openDistance;    /**< how far above its place a menu starts as it opens, sliding down into it **/
     float hoverDuration;   /**< how long a change of fill or text colour eases over, in seconds. 0 changes at once **/
     float openDuration;    /**< how long a menu takes to open, in seconds. 0 opens at once **/
+    float submenuDelay;    /**< how long the cursor rests on a submenu's item before it opens, in seconds **/
+    float tooltipDelay;    /**< how long the cursor rests on a component before its tooltip shows, in seconds **/
+    float tooltipQuickDelay;  /**< the same, when the cursor has just moved on from a tooltip showing **/
     glm::vec4 gap;           /**< what shows between two areas that tile a window **/
     glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/

@@ -456,23 +456,31 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
 
 /**
  **/
-void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const {
+float Arranger::row(const component::menu::Item* item) const {
+    const float line = styles_.base().lineHeight;
+    return item != nullptr && item->separator() ? line * separatorShare : line;
+}
+
+void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room, float shortcuts) const {
     const std::size_t count = menu.count();
     if (count == 0) {
         return;
     }
     float widest = 0.0F;
+    float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
         widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        rows += row(item.get());
     }
     const paint::Dressing& base = styles_.base();
     // a column either side of the labels: the mark on the left and the submenu arrow on the
     // right. Both are there whether or not this menu uses them, so that every label in one
-    // panel starts at the same place
+    // panel starts at the same place. Shortcuts take a column of their own, a padding clear
+    // of the labels
     const float column = base.lineHeight * markColumn;
-    const glm::vec2 size(widest + (column * 2.0F) + (base.padding * 0.5F),
-        (base.lineHeight * static_cast<float>(count)) + (base.panelPadding * 2.0F));
+    const float keys = shortcuts > 0.0F ? shortcuts + base.padding : 0.0F;
+    const glm::vec2 size(widest + keys + (column * 2.0F) + (base.padding * 0.5F), rows + (base.panelPadding * 2.0F));
 
     // a panel that would hang off an edge is moved back onto the canvas rather than clipped,
     // so the flyouts of a bar's last menu stay inside the window
@@ -480,12 +488,14 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     corner = glm::vec2(std::max(corner.x, 0.0F), std::max(corner.y, 0.0F));
     place(menu, {.position = corner, .size = size});
 
+    float top = corner.y + base.panelPadding;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
+        const float height = row(item.get());
         if (item) {
-            const float top = corner.y + base.panelPadding + (base.lineHeight * static_cast<float>(index));
-            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, height)});
         }
+        top += height;
     }
 }
 
@@ -497,22 +507,25 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) cons
         return;
     }
     float widest = 0.0F;
+    float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
         widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        rows += row(item.get());
     }
     const paint::Dressing& base = styles_.base();
-    const glm::vec2 size(widest + (base.padding * 2.0F),
-        (base.lineHeight * static_cast<float>(count)) + (base.padding * 2.0F));
+    const glm::vec2 size(widest + (base.padding * 2.0F), rows + (base.padding * 2.0F));
     const glm::vec2 corner((room - size) * 0.5F);
     place(level, {.position = corner, .size = size});
 
+    float top = corner.y + base.padding;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
+        const float height = row(item.get());
         if (item) {
-            const float top = corner.y + base.padding + (base.lineHeight * static_cast<float>(index));
-            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, height)});
         }
+        top += height;
     }
 }
 

@@ -143,6 +143,9 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `open-distance` | how far above its place a menu starts as it opens, sliding down into it. Defaults to 4 | retained |
 | `hover-duration` | how long a change of fill or text colour eases over, in seconds. Defaults to 0.1, and 0 changes at once | both |
 | `open-duration` | how long a menu takes to open, in seconds. Defaults to 0.12, and 0 opens at once | retained |
+| `submenu-delay` | how long the cursor rests on a dropped panel's submenu item before it opens, in seconds. Defaults to 0.2 | retained |
+| `tooltip-delay` | how long the cursor rests on a component before its tooltip shows, in seconds. Defaults to 0.5 | retained |
+| `tooltip-quick-delay` | the same, when a tooltip was showing a moment before. Defaults to 0.1 | retained |
 | `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu

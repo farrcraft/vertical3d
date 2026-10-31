@@ -56,6 +56,19 @@ BOOST_AUTO_TEST_CASE(modifiers_are_within_those_held) {
     BOOST_TEST(both.count() == 2);
 }
 
+/**
+ * A chord prints as a person reads it: modifiers in a fixed order, each word capitalised, and
+ * underscores as spaces.
+ **/
+BOOST_AUTO_TEST_CASE(a_chord_prints_for_a_person) {
+    BOOST_TEST(v3d::event::printed("ctrl+z") == "Ctrl+Z");
+    BOOST_TEST(v3d::event::printed("shift+ctrl+z") == "Ctrl+Shift+Z");
+    BOOST_TEST(v3d::event::printed("alt+f4") == "Alt+F4");
+    BOOST_TEST(v3d::event::printed("arrow_up") == "Arrow Up");
+    BOOST_TEST(v3d::event::printed("escape") == "Escape");
+    BOOST_TEST(v3d::event::printed("1") == "1");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

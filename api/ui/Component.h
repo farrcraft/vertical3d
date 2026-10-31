@@ -104,6 +104,13 @@ class Component {
     void name(const std::string& str);
 
     /**
+     * What the component says of itself when the cursor rests on it, shown with the shortcut of
+     * the command it sends. Empty, the default, shows nothing.
+     **/
+    std::string_view tooltip() const noexcept;
+    void tooltip(const std::string& text);
+
+    /**
      * Get the component type
      * @return the component type
      **/
@@ -224,6 +231,7 @@ class Component {
     unsigned int id_;
     std::string style_;
     std::string name_;
+    std::string tooltip_;
     bool visible_;
     bool enabled_;
     bool pickable_;

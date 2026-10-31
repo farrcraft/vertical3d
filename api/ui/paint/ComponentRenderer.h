@@ -5,11 +5,13 @@
 
 #pragma once
 
+#include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Transition.h>
 #include <api/ui/style/Resolver.h>
 
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -105,6 +107,12 @@ class ComponentRenderer {
     Dressing& dressing() noexcept;
 
     /**
+     * @return the colours and metrics the ui is drawn with, read without changing them, which
+     *      keeps what the resolver has worked out
+     **/
+    const Dressing& dressing() const noexcept;
+
+    /**
      * Draw with a theme: read its "ui" style into dressing(), and keep it for the images a
      * button is drawn from.
      *
@@ -132,6 +140,33 @@ class ComponentRenderer {
      * this clock. A renderer that is never given a clock draws every change at once.
      **/
     void clock(const Clock& now) noexcept;
+
+    /**
+     * How a command's shortcut is shown, such as "Ctrl+Z", or empty when nothing binds it.
+     **/
+    typedef std::function<std::string(const v3d::event::Event& command)> Shortcut;
+
+    /**
+     * Look up the shortcut a menu item shows beside its label, and a tooltip after its text.
+     * Without one, nothing shows a shortcut.
+     **/
+    void shortcuts(const Shortcut& lookup);
+
+    /**
+     * @return the shortcut of the command a component sends, or empty when it sends none or
+     *         nothing binds it
+     **/
+    std::string shortcut(const v3d::event::Event& command) const;
+
+    /**
+     * Draw a tooltip: a plate holding a line of text, and the shortcut after it in secondary
+     * text, with a shadow under it. It hangs just below a box, as wide as it needs, and is moved
+     * back onto the canvas where it would leave it. Draw it last, over everything else.
+     *
+     * @param below the box it hangs under, which is the component it describes
+     **/
+    void tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
+        const v3d::type::geometry::Bound2D& below) const;
 
     /**
      * Draw a label - one line of text at the position it holds.
@@ -257,6 +292,21 @@ class ComponentRenderer {
 
  private:
     /**
+     * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark
+     * or icon, its submenu arrow, its label and its shortcut.
+     *
+     * @param panel the panel's box, which the row spans
+     * @param keys the item's shortcut, or empty for none
+     **/
+    void entry(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
+        const v3d::type::geometry::Bound2D& panel, bool selected, const std::string& keys) const;
+
+    /**
+     * Draw a separator: a rule across a menu at a height, between two edges.
+     **/
+    void rule(v3d::render::realtime::canvas::Canvas* canvas, float left, float right, float middle) const;
+
+    /**
      * Draw the shadow a menu's box casts, moved down by the dressing's offset.
      **/
     void cast(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max) const;
@@ -326,6 +376,7 @@ class ComponentRenderer {
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;
     Clock clock_;
+    Shortcut shortcut_;
     // whether clock() has been called, without which nothing eases
     bool timed_;
 };

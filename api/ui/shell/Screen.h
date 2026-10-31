@@ -15,6 +15,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/ui/shell/Tooltip.h>
 
 #include <chrono>
 #include <cstdint>
@@ -76,6 +77,7 @@ class Screen final {
         bool immediate { false }; /**< build an immediate layer over the same text **/
         Scaling scaling { Scaling::Display };  /**< what the ui's size follows **/
         float reference { referenceHeight };  /**< the window height Scaling::Height draws at a scale of one **/
+        paint::ComponentRenderer::Shortcut shortcut;  /**< the shortcut a command shows in a menu and a tooltip. Empty shows none **/
     };
 
     /**
@@ -142,7 +144,12 @@ class Screen final {
     float size() const noexcept;
 
     /**
-     * Draw a ui, then the statistics over it, into the canvas. Either may be missing.
+     * Draw a ui, then the statistics over it, then the tooltip of what the cursor rests on
+     * over both, into the canvas. Either may be missing.
+     *
+     * A component shows its tooltip once the cursor has rested on it for the dressing's
+     * tooltip delay, or for the quick delay when a tooltip was showing a moment before, so
+     * moving along a row of buttons shows each one's at once. A press puts it away.
      *
      * @param ui what to draw, or null for nothing but the statistics
      **/
@@ -164,6 +171,11 @@ class Screen final {
 
  private:
     /**
+     * Draw the tooltip of what the cursor rests on, once it has rested long enough.
+     **/
+    void tip(const Interface& ui);
+
+    /**
      * Build what closes over the size, at factor().
      **/
     void build();
@@ -183,6 +195,7 @@ class Screen final {
     // the ui's clock, which transitions are measured on, and when it was last moved on
     Clock clock_;
     std::chrono::steady_clock::time_point last_;
+    Tooltip tooltip_;
     v3d::render::realtime::canvas::Canvas canvas_;
     boost::shared_ptr<paint::TextRenderer> text_;
     boost::shared_ptr<paint::ComponentRenderer> components_;

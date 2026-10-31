@@ -92,6 +92,11 @@ boost::shared_ptr<Component> Cursor::hovered() const {
 }
 
 void Cursor::hover(const boost::shared_ptr<Component>& component) {
+    // written every time, so a component the cursor still rests on after a press is hovered
+    // again by the next motion
+    if (ui_) {
+        ui_->hovered(component);
+    }
     const boost::shared_ptr<Component> was = hovered_.lock();
     if (was == component) {
         return;
@@ -115,6 +120,8 @@ bool Cursor::motion(const glm::vec2& point) {
     }
     bool taken = false;
     boost::shared_ptr<Component> over;
+    // a toolbar's button is not in the tree, but it is what the cursor rests on for a tooltip
+    boost::shared_ptr<Component> button;
     for (const boost::shared_ptr<Container>& container : ui_->containers()) {
         if (!container || !container->visible()) {
             continue;
@@ -134,8 +141,9 @@ bool Cursor::motion(const glm::vec2& point) {
             // that an open panel now covers, stops drawing its hover
             if (taken) {
                 bar->leave();
-            } else {
-                taken = bar->motion(point) || taken;
+            } else if (bar->motion(point)) {
+                taken = true;
+                button = bar->buttonAt(point);
             }
         }
         if (!taken) {
@@ -146,6 +154,9 @@ bool Cursor::motion(const glm::vec2& point) {
     // a strip that took the point covers whatever is under it, so nothing in the tree is
     // hovered
     hover(over);
+    if (!over && button) {
+        ui_->hovered(button);
+    }
     return taken;
 }
 
@@ -156,6 +167,8 @@ bool Cursor::press(const glm::vec2& point) {
     // a press moves the focus wherever it lands: onto a focusable component, and otherwise
     // off whatever had it
     ui_->focus(boost::shared_ptr<Component>());
+    // a press puts away any tooltip, until the cursor moves again
+    ui_->hovered(boost::shared_ptr<Component>());
     // any_of stops at the first container that takes the press, so a press never reaches
     // more than one container
     return std::ranges::any_of(ui_->containers(),

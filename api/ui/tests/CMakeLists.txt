@@ -35,6 +35,7 @@ v3d_add_test(ui
 	"TextRendererTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp"
+	"TooltipTest.cpp"
 	"TransitionTest.cpp"
 	"TypeTest.cpp")
 

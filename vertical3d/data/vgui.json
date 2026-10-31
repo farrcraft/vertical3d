@@ -521,6 +521,7 @@
                   "context": "project",
                   "command": "saveAs"
                 },
+                { "type": "separator" },
                 {
                   "label": "Export",
                   "type": "submenu",
@@ -551,6 +552,7 @@
                     }
                   ]
                 },
+                { "type": "separator" },
                 {
                   "label": "Quit",
                   "type": "action",
@@ -699,6 +701,7 @@
           "buttons": [
             {
               "label": "Select",
+              "tooltip": "Select",
               "icon": "icons/select.png",
               "toggle": true,
               "context": "transform",
@@ -706,6 +709,7 @@
             },
             {
               "label": "Translate",
+              "tooltip": "Translate",
               "icon": "icons/translate.png",
               "toggle": true,
               "context": "transform",
@@ -713,6 +717,7 @@
             },
             {
               "label": "Rotate",
+              "tooltip": "Rotate",
               "icon": "icons/rotate.png",
               "toggle": true,
               "context": "transform",
@@ -720,6 +725,7 @@
             },
             {
               "label": "Scale",
+              "tooltip": "Scale",
               "icon": "icons/scale.png",
               "toggle": true,
               "context": "transform",

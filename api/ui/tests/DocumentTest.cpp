@@ -10,6 +10,8 @@
 #include <api/ui/component/Label.h>
 #include <api/ui/component/Bar.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
 #include <cstddef>
@@ -68,6 +70,35 @@ BOOST_AUTO_TEST_CASE(a_container_holds_buttons_labels_and_icons) {
     // visible is read for a component the same way it is for a container
     BOOST_REQUIRE(container->get("logo"));
     BOOST_CHECK(!container->get("logo")->visible());
+}
+
+/**
+ * Any component may carry a tooltip. A menu item may name an icon, and a separator needs no
+ * label.
+ **/
+BOOST_AUTO_TEST_CASE(tooltips_separators_and_item_icons_load) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "button", "name": "go", "label": "Go", "tooltip": "Start the game" },
+            { "type": "menu", "name": "main", "items": [
+                { "label": "Open", "type": "action", "icon": "icons/open.png" },
+                { "type": "separator" },
+                { "label": "Quit", "type": "action" }
+            ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    BOOST_CHECK_EQUAL(ui->container("hud")->get("go")->tooltip(), "Start the game");
+
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Menu>(ui->container("hud")->get("main"));
+    BOOST_REQUIRE(menu);
+    BOOST_REQUIRE_EQUAL(menu->count(), 3U);
+    BOOST_CHECK_EQUAL((*menu)[0]->icon(), "icons/open.png");
+    BOOST_CHECK((*menu)[1]->separator());
+    BOOST_CHECK((*menu)[1]->label().empty());
 }
 
 /**

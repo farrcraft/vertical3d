@@ -258,6 +258,9 @@ void ComponentReader::readAttributes(const boost::json::object& entry, const boo
     component->pickable(optionalFlag(*logger_, entry, "pickable", component->pickable()));
     component->focusable(optionalFlag(*logger_, entry, "focusable", component->focusable()));
     component->clip(optionalFlag(*logger_, entry, "clip", component->clip()));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "tooltip")) {
+        component->tooltip(*value);
+    }
     if (const std::optional<int> depth = optionalInt(*logger_, entry, "depth", 0)) {
         component->depth(static_cast<unsigned int>(*depth));
     }
@@ -500,14 +503,20 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
         if (itemEntry == nullptr) {
             return nullptr;
         }
-        const std::optional<std::string> label = requiredString(*logger_, *itemEntry, "label", "A menu item");
         const std::optional<std::string> typeName = requiredString(*logger_, *itemEntry, "type", "A menu item");
-        if (!label || !typeName) {
+        if (!typeName) {
             return nullptr;
         }
         const component::menu::ItemType itemType = component::menu::stringToType(*typeName);
         if (itemType == component::menu::ItemType::Unknown) {
             logger_->get()->error("A menu item has no type [{}]", *typeName);
+            return nullptr;
+        }
+        // a separator shows no text, so it is the one item that needs no label
+        const std::optional<std::string> label = itemType == component::menu::ItemType::Separator
+            ? std::optional<std::string>(optionalString(*logger_, *itemEntry, "label").value_or(std::string()))
+            : requiredString(*logger_, *itemEntry, "label", "A menu item");
+        if (!label) {
             return nullptr;
         }
 
@@ -518,6 +527,9 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
         menuItem->menu(menu);
         if (command.context()) {
             menuItem->event(command);
+        }
+        if (const std::optional<std::string> icon = optionalString(*logger_, *itemEntry, "icon")) {
+            menuItem->icon(*icon);
         }
 
         menu->addItem(menuItem);

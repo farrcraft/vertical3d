@@ -4,6 +4,7 @@
  **/
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
@@ -270,6 +271,39 @@ BOOST_AUTO_TEST_CASE(a_menu_opens_faded_and_lifted) {
     renderer.clock({.now = 2.0F, .frame = 4});
     renderer.draw(&canvas, menu);
     BOOST_CHECK_SMALL(fill().colour.a, 0.001F);
+}
+
+/**
+ * A tooltip hangs just under the box it describes, its text at the left and the shortcut at
+ * the right, and goes above the box where below would leave the canvas.
+ **/
+BOOST_AUTO_TEST_CASE(a_tooltip_hangs_under_its_box) {
+    std::vector<Written> written;
+    const v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
+        });
+    const v3d::ui::paint::Dressing& dress = renderer.dressing();
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+
+    const v3d::type::geometry::Bound2D box({.position = glm::vec2(100.0F, 100.0F), .size = glm::vec2(30.0F, 30.0F)});
+    renderer.tooltip(&canvas, "Move", "W", box);
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "Move");
+    BOOST_CHECK(written[0].colour == dress.text);
+    BOOST_CHECK_EQUAL(written[1].text, "W");
+    BOOST_CHECK(written[1].colour == dress.secondaryText);
+    BOOST_CHECK_GT(written[1].pen.x, written[0].pen.x + (4.0F * characterWidth));
+    BOOST_CHECK_GT(written[0].pen.y, 130.0F);
+    BOOST_CHECK_LT(written[0].pen.y, 130.0F + dress.spacing + dress.lineHeight);
+
+    written.clear();
+    const v3d::type::geometry::Bound2D low({.position = glm::vec2(100.0F, 580.0F), .size = glm::vec2(30.0F, 20.0F)});
+    renderer.tooltip(&canvas, "Move", "", low);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_LT(written[0].pen.y, 580.0F);
 }
 
 /**

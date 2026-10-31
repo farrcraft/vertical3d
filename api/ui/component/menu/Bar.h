@@ -9,6 +9,7 @@
 #include <api/ui/Component.h>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "Item.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::ui::component::menu {
@@ -117,6 +119,20 @@ class Bar : public Component {
     bool motion(const glm::vec2& cursor);
 
     /**
+     * How long the cursor has to rest on a submenu's item before the submenu opens, in
+     * seconds. A press on the item opens it at once, and moving onto an item with no submenu
+     * closes any deeper panel at once. Zero, the default, opens a submenu as soon as the
+     * cursor reaches its item.
+     **/
+    void delay(float seconds) noexcept;
+
+    /**
+     * Open the submenu the cursor has rested on for the delay. Called once a frame with the
+     * ui's time. The first call after the cursor reaches an item starts its wait.
+     **/
+    void settle(float now);
+
+    /**
      * The primary button went down.
      *
      * A press on a menu opens or closes it, one on a submenu item descends, and one on
@@ -138,6 +154,22 @@ class Bar : public Component {
     boost::shared_ptr<Item> find(const std::string& command) const;
 
  private:
+    /**
+     * A submenu's item the cursor has reached, waiting out the delay before it opens.
+     **/
+    struct Pending final {
+        std::size_t depth = 0;            /**< the panel the item belongs to **/
+        boost::weak_ptr<Item> item;
+        float since = 0.0F;               /**< when the wait began, once settle() has seen it **/
+        bool started = false;
+    };
+
+    /**
+     * The cursor reached an item of a panel: open its submenu, or wait to, or close what is
+     * under the panel when it has none.
+     **/
+    void reach(std::size_t depth, const boost::shared_ptr<Item>& item);
+
     /**
      * @return the index of the menu whose label the cursor is on, or -1
      **/
@@ -175,6 +207,8 @@ class Bar : public Component {
     std::vector<boost::shared_ptr<Menu>> panels_;
     int hover_;  // the menu the cursor is over, or -1
     int open_;   // the open menu, or -1
+    float delay_;
+    std::optional<Pending> pending_;
 };
 
 };  // namespace v3d::ui::component::menu

@@ -26,6 +26,10 @@ namespace v3d::ui {
 class Component;
 class Container;
 
+namespace component::menu {
+class Menu;
+};  // namespace component::menu
+
 namespace style {
 class Theme;
 };  // namespace style
@@ -102,6 +106,16 @@ class Interface {
      *      the focus off, and does not move it onto the panel
      **/
     void focus(const boost::shared_ptr<Component>& component);
+
+    /**
+     * What the cursor rests on, which a tooltip is shown for. input::Cursor writes it as the
+     * cursor moves, and clears it when a press lands, so a tooltip goes as soon as the
+     * component is used.
+     *
+     * @param component what is under the cursor, or null for nothing
+     **/
+    void hovered(const boost::shared_ptr<Component>& component);
+    boost::shared_ptr<Component> hovered() const;
 
     /**
      * @return the component the keyboard is on, or null
@@ -219,6 +233,13 @@ class Interface {
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
 
     /**
+     * Resolve the icons of a menu's items, and of every submenu under them.
+     *
+     * @return how many images were set
+     **/
+    std::size_t resolveMenuImages(const Resolve& resolve, const boost::shared_ptr<component::menu::Menu>& menu);
+
+    /**
      * What can be focused, in draw order. focusFirst() and focusNext() both move through
      * this order.
      **/
@@ -233,6 +254,7 @@ class Interface {
     // weak, because the component belongs to its container. The focus must not keep alive a
     // component whose container was unloaded
     boost::weak_ptr<Component> focused_;
+    boost::weak_ptr<Component> hovered_;
     Focused moved_;
 };
 

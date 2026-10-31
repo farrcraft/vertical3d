@@ -568,6 +568,32 @@ BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
 }
 
 /**
+ * What the cursor rests on is written on the ui for a tooltip: a component in the tree, or a
+ * toolbar's button. A press clears it until the cursor moves again.
+ **/
+BOOST_AUTO_TEST_CASE(the_cursor_says_what_it_rests_on) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under = boost::make_shared<v3d::ui::component::Button>();
+    fixture.place(under, glm::vec2(0.0F, 200.0F), glm::vec2(100.0F, 100.0F));
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    strip->add(go);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    fixture.cursor->motion(glm::vec2(50.0F, 250.0F));
+    BOOST_CHECK(fixture.ui->hovered() == under);
+    fixture.cursor->motion(go->position() + go->size() * 0.5F);
+    BOOST_CHECK(fixture.ui->hovered() == go);
+    fixture.cursor->press(go->position() + go->size() * 0.5F);
+    BOOST_CHECK(!fixture.ui->hovered());
+    fixture.cursor->motion(glm::vec2(700.0F, 500.0F));
+    BOOST_CHECK(!fixture.ui->hovered());
+}
+
+/**
  * A disabled strip is skipped the way a disabled subtree is, so a press on it takes nothing
  * when nothing is under it.
  **/

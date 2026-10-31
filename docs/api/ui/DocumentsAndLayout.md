@@ -39,7 +39,8 @@ out of the load.
 The required members are these, and every other member is optional:
 
 - a container's `name`, `visible` and `components`, and a component's `type` and `name`
-- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`
+- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`. A
+  separator needs no `label`
 - a toolbar's `buttons` and an icon's `source`
 - a theme's `name`, and a style's `class` and `name`
 - a style property's `name`, with a colour's or a number's `value` and an image's `source`
@@ -60,6 +61,7 @@ Every component entry has a `type` and a `name`. These keys apply to every compo
 | `focusable` | bool | per type | whether it can take the keyboard |
 | `clip` | bool | false | whether its children are cut off at its box |
 | `depth` | number | 0 | draw order among siblings; higher draws later |
+| `tooltip` | string | none | what the component says of itself when the cursor rests on it. See [Tooltips](Components.md#tooltips) |
 | `children` | array | none | component entries held inside this one |
 
 A length is a number of pixels (`120`), a percentage string (`"50%"`), or absent for `Auto`.

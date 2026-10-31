@@ -48,6 +48,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `immediate::Context` | [immediate/Context.h](../../../api/ui/immediate/Context.h) | everything an `Immediate` holds, and the layout, hit testing and drawing its widgets share |
 | `shell::Screen` | [shell/Screen.h](../../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `WindowRenderer` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
+| `shell::Tooltip` | [shell/Tooltip.h](../../../api/ui/shell/Tooltip.h) | when the tooltip of what the cursor rests on is due; the screen draws it |
 | `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../../api/ui/shell) | shared game shell pieces |
 
 Boundaries the split keeps:
@@ -335,6 +336,11 @@ Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
   line length. It runs per click, not per frame.
 - **Selected text keeps its colour.** The selection is a highlight behind a line drawn whole.
 - **Radio menu items use the same square mark as check items.**
+- **A tooltip hangs under its component**, so on a vertical toolbar it covers the next button.
+- **The immediate layer has no tooltips.** `Immediate::itemHovered()` says when one would be due,
+  and nothing draws it.
+- **A menu bar's panels take no keys.** Nothing walks a dropped panel from the keyboard, so a
+  submenu there opens on the cursor only.
 - **A button in the tree has a hover state, but no other tree component does.**
 - **`Immediate` stores one `Retained` per id**, so ids built from changing text churn the
   map until `retention` ages them out.

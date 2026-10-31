@@ -277,14 +277,28 @@ cursor router.
 
 ### Step 6 — Tooltips and menus
 
-Open. The shortcut column needs step 10.
+**Closed.**
 
-- A component may carry a tooltip. The design's delays apply, and a tooltip shows a control's
-  name and its shortcut.
-- A menu item may carry an icon and a shortcut. The shortcut is filled in from the bindings,
-  not written in the ui document, and is drawn right-aligned in secondary text.
-- A menu may hold separators. A submenu opens after its delay, or at once on a click or the
-  right arrow key.
+- Any component may carry a `tooltip`. `shell::Tooltip` decides when it is due: after 500 ms of
+  rest, or 100 ms when another was showing a moment before. The screen draws it last, under its
+  component, with the shortcut of the command the component sends. The cursor writes what it
+  rests on as `Interface::hovered()`, a toolbar's button included, and a press clears it.
+- A dropped panel shows each item's shortcut right-aligned in secondary text, and widens for it.
+  The screen's `Options::shortcut` looks it up from the bindings as the panel is drawn, and the
+  shell fills it with a command's first keyboard binding, printed by `event::printed()`.
+  `Engine::bindings()` is public so the shell can read them.
+- A menu item may name an `icon`, drawn in the mark column and resolved with the ui's images. A
+  `separator` item is a rule half a row tall that needs no label, and that neither the keys
+  nor the cursor choose.
+- A submenu in a dropped panel opens after 200 ms of rest on its item, and at once on a press.
+  The renderer settles a waiting submenu with the ui's clock.
+- The editor's tools carry tooltips, and its Project menu separators.
+- The right arrow was to open a submenu at once, but a menu bar's panels take no keys at all.
+  Walking them from the keyboard moves to step 12.
+- The chord, menu bar, renderer, tooltip, cursor, document and shell suites cover the printed
+  chord, the delay, a press opening at once, separators to the cursor and the keys, the
+  shortcut column, the tooltip's plate and timing, what the cursor rests on, the document's
+  keys and the shell's lookup.
 
 ### Step 7 — Areas
 
@@ -354,7 +368,10 @@ Open. Needs step 7.
 - The menus are regrouped as File, Edit, Create, Select, Modify, View, Animate, Render, Window and
   Help.
 - The tool shelf has 18-pixel icons with tooltips, and covers the modelling operations as well as
-  the transform tools. The icons come from one sheet.
+  the transform tools. The icons come from one sheet. A tooltip on the shelf hangs beside its
+  button rather than under it, where it would cover the next tool.
+- A menu bar's panels can be walked with the arrow keys, and the right arrow opens a submenu at
+  once.
 - The select mask moves into the viewport header.
 - The top bar shows the workspaces, the project's name with a mark for unsaved changes, and the
   command search.

@@ -10,6 +10,7 @@
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/shell/Shell.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
@@ -114,6 +115,25 @@ BOOST_AUTO_TEST_CASE(shell_shows_the_statistics_on_its_command) {
     BOOST_TEST(!shell.screen());
     BOOST_TEST(!shell.ui());
     BOOST_TEST(engine.commands().invoke(press("game", "statistics")));
+}
+
+/**
+ * The screen the shell builds shows a command's keyboard binding as its shortcut, printed for a
+ * person, and nothing for a command bound only to the mouse.
+ **/
+BOOST_AUTO_TEST_CASE(shell_shows_a_commands_keyboard_shortcut) {
+    TestEngine engine(game);
+    v3d::shell::Shell shell(&engine, { .menu = false, .statistics = "" });
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_REQUIRE(shell.start());
+    shell.present(nullptr, v3d::ui::shell::Screen::Options());
+    BOOST_REQUIRE(shell.screen());
+
+    const v3d::ui::paint::ComponentRenderer& renderer = shell.screen()->components();
+    BOOST_TEST(renderer.shortcut(press("game", "save")) == "Ctrl+S");
+    BOOST_TEST(renderer.shortcut(press("game", "shoot")).empty());
+    BOOST_TEST(renderer.shortcut(press("game", "nothing")).empty());
+    shell.release();
 }
 
 /**

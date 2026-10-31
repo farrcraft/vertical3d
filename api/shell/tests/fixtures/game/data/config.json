@@ -3,6 +3,10 @@
 		{
 			"type": "ui",
 			"file": "ui.json"
+		},
+		{
+			"type": "binding",
+			"file": "mappings.json"
 		}
 	]
 }

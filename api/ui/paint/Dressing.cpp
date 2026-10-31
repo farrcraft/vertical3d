@@ -34,6 +34,10 @@ constexpr float OPEN_DISTANCE = 4.0F;
 // how long a hover and an opening menu take, in seconds
 constexpr float HOVER_DURATION = 0.1F;
 constexpr float OPEN_DURATION = 0.12F;
+// how long the cursor rests before a submenu opens and before a tooltip shows, in seconds
+constexpr float SUBMENU_DELAY = 0.2F;
+constexpr float TOOLTIP_DELAY = 0.5F;
+constexpr float TOOLTIP_QUICK_DELAY = 0.1F;
 
 // the sizes the immediate layer starts with where they differ, in pixels
 constexpr float TOOLS_LINE_HEIGHT = 18.0F;
@@ -68,6 +72,9 @@ shadowOffset(SHADOW_OFFSET),
 openDistance(OPEN_DISTANCE),
 hoverDuration(HOVER_DURATION),
 openDuration(OPEN_DURATION),
+submenuDelay(SUBMENU_DELAY),
+tooltipDelay(TOOLTIP_DELAY),
+tooltipQuickDelay(TOOLTIP_QUICK_DELAY),
 gap(),
 bar(),
 panel(),
@@ -116,6 +123,9 @@ void Dressing::resize(const Dressing& from) noexcept {
     titleWeight = from.titleWeight;
     hoverDuration = from.hoverDuration;
     openDuration = from.openDuration;
+    submenuDelay = from.submenuDelay;
+    tooltipDelay = from.tooltipDelay;
+    tooltipQuickDelay = from.tooltipQuickDelay;
 }
 
 float Dressing::outline(float width, float factor) noexcept {

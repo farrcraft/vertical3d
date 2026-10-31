@@ -142,6 +142,14 @@ class Menu : public Component {
     bool hasParent() const;
 
  private:
+    /**
+     * Move the active item on past any separators, in the direction of a step of 1 or -1,
+     * wrapping at either end.
+     *
+     * @return false when it wrapped
+     **/
+    bool skip(int step);
+
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector< boost::shared_ptr<Item> > items_;
     int active_;  // the active item in this menu, or -1 when there is none

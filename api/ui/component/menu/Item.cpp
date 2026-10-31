@@ -125,4 +125,28 @@ bool Item::checked() const {
     return (type_ == menu::ItemType::Check || type_ == menu::ItemType::Radio) && checked_;
 }
 
+void Item::icon(const std::string& source) {
+    if (source == icon_) {
+        return;
+    }
+    icon_ = source;
+    image_ = v3d::ui::Image();
+}
+
+std::string_view Item::icon() const {
+    return icon_;
+}
+
+const v3d::ui::Image& Item::image() const noexcept {
+    return image_;
+}
+
+void Item::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
+}
+
+bool Item::separator() const noexcept {
+    return type_ == menu::ItemType::Separator;
+}
+
 };  // namespace v3d::ui::component::menu

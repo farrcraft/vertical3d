@@ -1,0 +1,12 @@
+{
+	"mappings": [
+		{
+			"source": { "context": "keyboard", "name": "ctrl+s", "state": "pressed" },
+			"destination": { "context": "game", "name": "save" }
+		},
+		{
+			"source": { "context": "mouse", "name": "left" },
+			"destination": { "context": "game", "name": "shoot" }
+		}
+	]
+}

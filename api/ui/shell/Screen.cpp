@@ -9,8 +9,10 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
+#include <api/ui/Component.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Transition.h>
+#include <api/ui/input/Command.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -20,6 +22,8 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 #include <boost/make_shared.hpp>
 #include <glm/vec2.hpp>
@@ -87,6 +91,7 @@ void Screen::build() {
     // and a theme's sizes at the same scale
     components_->dressing() = paint::Dressing().scaled(built_);
     components_->scale(built_);
+    components_->shortcuts(options_.shortcut);
     options_.dress(&components_->dressing(), drawn);
 
     if (options_.immediate) {
@@ -219,6 +224,22 @@ void Screen::draw(const Interface* ui, const StatisticsOverlay::Sample& statisti
     if (statistics_) {
         statistics_->draw(&canvas_, statistics);
     }
+    // and a tooltip over everything, since it is about whatever is under it
+    if (ui != nullptr) {
+        tip(*ui);
+    }
+}
+
+/**
+ **/
+void Screen::tip(const Interface& ui) {
+    const boost::shared_ptr<Component> under = ui.hovered();
+    // read without writing, which would drop what the renderer has resolved
+    const paint::Dressing& dress = std::as_const(*components_).dressing();
+    if (!tooltip_.due(under, clock_.now, {.first = dress.tooltipDelay, .following = dress.tooltipQuickDelay})) {
+        return;
+    }
+    components_->tooltip(&canvas_, std::string(under->tooltip()), components_->shortcut(input::command(under)), under->bound());
 }
 
 /**

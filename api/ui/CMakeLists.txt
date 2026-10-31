@@ -56,6 +56,7 @@ v3d_add_api_library(ui
 	"shell/Prompt.h" "shell/Prompt.cpp"
 	"shell/Screen.h" "shell/Screen.cpp"
 	"shell/StatisticsOverlay.h" "shell/StatisticsOverlay.cpp"
+	"shell/Tooltip.h" "shell/Tooltip.cpp"
 	"style/Button.h" "style/Button.cpp"
 	"style/Menu.h" "style/Menu.cpp"
 	"style/Property.h" "style/Property.cpp"

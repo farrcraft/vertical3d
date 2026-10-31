@@ -12,6 +12,9 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Image.h>
@@ -94,6 +97,9 @@ std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boos
     // a toolbar's buttons are not its children, so the loop over children below does not
     // reach them
     const boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
+    // nor are a menu bar's menus, or a menu's items
+    const boost::shared_ptr<component::menu::Bar> menus = boost::dynamic_pointer_cast<component::menu::Bar>(component);
+    const boost::shared_ptr<component::menu::Menu> menu = boost::dynamic_pointer_cast<component::menu::Menu>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
             resolved++;
@@ -109,12 +115,36 @@ std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boos
                 resolved++;
             }
         }
+    } else if (menus) {
+        for (std::size_t index = 0; index < menus->count(); index++) {
+            resolved += resolveMenuImages(resolve, menus->menu(index));
+        }
+    } else if (menu) {
+        resolved += resolveMenuImages(resolve, menu);
     }
 
     // Loader adds a nested component to its parent, not to the container, so an icon inside a
     // panel or a box is reached only through this loop
     for (const boost::shared_ptr<Component>& child : component->children()) {
         resolved += resolveComponentImages(resolve, child);
+    }
+    return resolved;
+}
+
+std::size_t Interface::resolveMenuImages(const Resolve& resolve, const boost::shared_ptr<component::menu::Menu>& menu) {
+    if (!menu) {
+        return 0;
+    }
+    std::size_t resolved = 0;
+    for (std::size_t index = 0; index < menu->count(); index++) {
+        const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
+        if (!item) {
+            continue;
+        }
+        if (resolveIcon(resolve, std::string(item->icon()), item)) {
+            resolved++;
+        }
+        resolved += resolveMenuImages(resolve, item->submenu());
     }
     return resolved;
 }
@@ -197,6 +227,14 @@ void Interface::onFocus(const Focused& moved) {
 
 /**
  **/
+void Interface::hovered(const boost::shared_ptr<Component>& component) {
+    hovered_ = component;
+}
+
+boost::shared_ptr<Component> Interface::hovered() const {
+    return hovered_.lock();
+}
+
 boost::shared_ptr<Component> Interface::focused() const {
     return focused_.lock();
 }

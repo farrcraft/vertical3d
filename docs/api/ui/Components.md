@@ -60,13 +60,44 @@ Notes on individual components:
   with an `icon` is sized to the icon; otherwise to its label. A toolbar button falls back to
   its label when its icon is not resolved. A hidden button takes no room in its strip, is not
   drawn and takes no press, and the buttons after it close up.
-- **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command` and
-  `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
-  `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by
-  the app, the same as a check box. Radio items are drawn with the same square mark as check
-  items.
+- **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
+  `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
+  `check`, `radio`, `input`, `numeric_input`, `key_input` and `separator`. A check and a radio
+  item are marked by the app, the same as a check box. Radio items are drawn with the same
+  square mark as check items.
+- **A separator** is a rule between two groups of items, half a row tall. It needs no label and
+  sends nothing. The keys step over it and the cursor passes over it, so nothing chooses it.
+- **A menu item's icon** is drawn in the column a check mark takes, when the item is not
+  checked. It is resolved with the rest of the ui's images.
+- **A dropped panel shows each item's shortcut**, the key its command is bound to, right-aligned
+  in `secondary-text`, and in `active-text` on the chosen row, where secondary text would not
+  read against the highlight. The panel widens to fit the widest. Nothing writes the shortcut in the
+  document: the screen asks the bindings as the panel is drawn, so a rebinding shows at once.
+  A command is looked up by its name, so two items sending one command with different values
+  show the same shortcut. A centred game menu shows none.
+- **A submenu in a dropped panel opens after the cursor rests on its item** for the theme's
+  `submenu-delay`, and at once on a press. Moving onto an item with no submenu closes any
+  deeper panel at once. A menu bar drawn without a clock opens a submenu as soon as the cursor
+  reaches it.
 - **An open menu bar takes every press.** While a menu is open, a press anywhere on screen
   closes it and is consumed. A click meant for the scene under an open menu does nothing.
+
+## Tooltips
+
+Any component may carry a `tooltip`. Once the cursor has rested on it for the theme's
+`tooltip-delay`, the screen draws the text in a small plate just under the component, with the
+shortcut of the command the component sends after it in `secondary-text`.
+
+- A tooltip shows after `tooltip-quick-delay` instead when another was showing a moment
+  before, so moving along a row of buttons shows each one's almost at once. A cursor that has
+  been off every tooltip for longer than `tooltip-delay` waits the full delay again.
+- A press puts the tooltip away until the cursor moves again.
+- A tooltip is drawn last, over every container and the statistics. Where it would leave the
+  canvas below its component, it is drawn above it.
+- A toolbar's buttons and the components of the tree show tooltips. A menu item shows its
+  shortcut beside its label instead.
+- `shell::Screen` draws them, from what `input::Cursor` writes as `Interface::hovered()`. An app
+  that draws a `ComponentRenderer` itself calls `tooltip()` with the text it wants shown.
 
 ## Enabled and disabled
 

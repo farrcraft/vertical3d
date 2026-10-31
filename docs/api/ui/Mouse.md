@@ -58,6 +58,9 @@ Hover:
 - Hover is a button state only. No other component has a hover look.
 - A press on a button, on a strip or in the tree, draws it in the `pressed` colour until the
   press comes up. It is then hovered if the cursor is still on it, and normal if not.
+- `motion()` writes what the cursor rests on as `Interface::hovered()`: the component in the
+  tree, or the toolbar button. A press clears it. The screen shows that component's
+  [tooltip](Components.md#tooltips).
 
 Everything is tested against the boxes left by the last draw. **Draw before routing input,**
 or an app sees a dead ui for one frame. Nothing can be picked before the first frame is

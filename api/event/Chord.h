@@ -49,4 +49,11 @@ struct Chord final {
  **/
 Chord chord(std::string_view name);
 
+/**
+ * A source name as a menu or a tooltip shows it: each modifier and the key capitalised and
+ * joined by "+", with underscores read as spaces. "ctrl+shift+z" is "Ctrl+Shift+Z", and
+ * "arrow_up" is "Arrow Up".
+ **/
+std::string printed(std::string_view name);
+
 };  // namespace v3d::event

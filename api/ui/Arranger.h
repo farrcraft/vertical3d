@@ -38,6 +38,7 @@ class Toolbar;
 
 namespace component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace component::menu
 
@@ -168,8 +169,11 @@ class Arranger final {
     /**
      * Place a menu bar's open panel and its items, hanging from an origin and moved back into
      * the room where it would hang off an edge.
+     *
+     * @param shortcuts how wide the panel's widest shortcut is, which a column right of the
+     *        labels makes room for. Zero leaves no column
      **/
-    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
+    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room, float shortcuts = 0.0F) const;
 
     /**
      * Place a game menu's level and its items, centred in the room.
@@ -181,6 +185,16 @@ class Arranger final {
      * side of its labels for a check mark and a submenu arrow.
      **/
     static constexpr float markColumn = 0.9F;
+
+    /**
+     * How tall a separator's row is, as a fraction of a line.
+     **/
+    static constexpr float separatorShare = 0.5F;
+
+    /**
+     * @return how tall an item's row is: a line, or a separator's share of one
+     **/
+    float row(const component::menu::Item* item) const;
 
  private:
     /**

@@ -210,6 +210,16 @@ class Engine {
     bool held(std::string_view command) const;
 
     /**
+     * The bindings the binding config installed, for an app's controls screen: what a command
+     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
+     * the overrides. A change made through them is saved as rebind() saves one. The shell reads
+     * them for the shortcuts its menus show.
+     *
+     * @return null when the app has no binding config
+     **/
+    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
+
+    /**
      * Every command the app handles, by "context::name". The engine handles a command event
      * only by running the handler registered here under its name.
      *
@@ -309,15 +319,6 @@ class Engine {
      * @return whether the bindings were rebuilt, which is false with no binding config
      **/
     bool rebind(const std::string& command, const std::string& key);
-
-    /**
-     * The bindings the binding config installed, for an app's controls screen: what a command
-     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
-     * the overrides. A change made through them is saved as rebind() saves one.
-     *
-     * @return null when the app has no binding config
-     **/
-    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
 
     /**
      * What the player changed, in the document kept under the app's identity. The engine

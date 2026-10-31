@@ -17,7 +17,8 @@ enum class ItemType : std::uint8_t {
     Radio,
     Input,
     NumericInput,
-    KeyInput
+    KeyInput,
+    Separator
 };
 
 constexpr ItemType stringToType(const std::string_view& typeName) {
@@ -41,6 +42,9 @@ constexpr ItemType stringToType(const std::string_view& typeName) {
     }
     if (typeName == "key_input") {
         return ItemType::KeyInput;
+    }
+    if (typeName == "separator") {
+        return ItemType::Separator;
     }
     return  ItemType::Unknown;
 }

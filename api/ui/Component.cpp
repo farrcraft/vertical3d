@@ -230,4 +230,12 @@ Motion& Component::motion() noexcept {
     return motion_;
 }
 
+std::string_view Component::tooltip() const noexcept {
+    return tooltip_;
+}
+
+void Component::tooltip(const std::string& text) {
+    tooltip_ = text;
+}
+
 };  // end namespace v3d::ui

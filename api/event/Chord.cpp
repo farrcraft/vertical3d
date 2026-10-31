@@ -48,4 +48,43 @@ Chord chord(std::string_view name) {
     }
 }
 
+namespace {
+
+/**
+ * A word with its first letter, and each letter after a space, in capitals.
+ **/
+std::string capitalised(std::string_view word) {
+    std::string out(word);
+    bool start = true;
+    for (char& letter : out) {
+        if (letter == '_') {
+            letter = ' ';
+            start = true;
+        } else if (start) {
+            if (letter >= 'a' && letter <= 'z') {
+                letter = static_cast<char>(letter - 'a' + 'A');
+            }
+            start = false;
+        }
+    }
+    return out;
+}
+
+};  // namespace
+
+std::string printed(std::string_view name) {
+    const Chord split = chord(name);
+    std::string out;
+    if (split.modifiers.ctrl) {
+        out += "Ctrl+";
+    }
+    if (split.modifiers.shift) {
+        out += "Shift+";
+    }
+    if (split.modifiers.alt) {
+        out += "Alt+";
+    }
+    return out + capitalised(split.key);
+}
+
 };  // namespace v3d::event

@@ -44,6 +44,12 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   canvas to the frame, and clears it. It returns false when the window is minimised or there is
   no renderer. A null ui keeps the theme drawn with. The theme is applied before anything draws,
   so a theme change shows in full on the next frame.
+- `draw(ui, statistics)` draws the ui, then the statistics, then the tooltip of what the cursor
+  rests on over both. See [Tooltips](Components.md#tooltips).
+- `Options::shortcut` is how a command's shortcut is shown, as `"Ctrl+Z"`, in a dropped panel
+  and a tooltip. `shell::Shell::present()` fills it when it is empty, with the command's first
+  keyboard binding printed by `event::printed()`. Left empty without a shell, nothing shows a
+  shortcut.
 - `begin(ui)` also moves the ui's clock on by the real time since the last frame began, and
   hands it to the component renderer and the immediate layer. Transitions are measured on it.
   It follows real time rather than the simulation, so a menu eases open over a paused game. An
