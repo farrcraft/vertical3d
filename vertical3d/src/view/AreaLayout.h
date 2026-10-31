@@ -280,6 +280,15 @@ class AreaLayout final {
     std::optional<std::size_t> add(std::size_t area, const boost::json::object& state);
 
     /**
+     * Set one entry of an editor's state, such as the camera a viewport shows. The kind is not
+     * changed this way.
+     *
+     * @param editor the editor's id
+     * @return whether the layout holds that editor and the key is not "kind"
+     **/
+    bool set(std::size_t editor, std::string_view key, const boost::json::value& value);
+
+    /**
      * Show one of an area's editors.
      * @return whether the area holds that editor
      **/

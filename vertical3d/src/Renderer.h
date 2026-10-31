@@ -23,6 +23,7 @@
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <map>
@@ -50,7 +51,7 @@ namespace v3d::editor {
  * because the manipulator is an overlay.
  *
  * One more pass follows all of them. It covers the whole window, not one view, and draws
- * the ui. It draws quads, not lines, because panels and glyphs both go through the batched
+ * each view's axis marker and gizmo, the frame around the areas, and the ui. It draws quads, not lines, because panels and glyphs both go through the batched
  * quad pipeline.
  */
 class Renderer final {
@@ -127,6 +128,12 @@ class Renderer final {
      * @return how tall a menu bar, a toolbar or a tab is, at the scale the ui is drawn
      **/
     float barHeight() const;
+
+    /**
+     * @return where each view's axis marker and gizmo sit, at the scale the ui is drawn and
+     *         under a header
+     **/
+    OverlayMetrics overlay() const;
 
     /**
      * Resolve the images of a component added to the ui after it was handed over. Each image

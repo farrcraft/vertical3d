@@ -364,20 +364,32 @@ and a split inside one that runs the same way gives its children to that one.
 built as the editor runs and put before the editor's own container so its menus drop over them.
 
 - **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
-  It is a menu bar that is not docked, holding one menu named for the kind of editor shown, such
-  as Viewport. The menu holds Split, Join and Swap, each with Left, Right and Top or Above and
+  It is a menu bar that is not docked. Its first menu is named for the kind of editor shown,
+  such as Viewport, and holds Split, Join and Swap, each with Left, Right and Top or Above and
   Bottom or Below, then New Tab, Close Tab and Maximise. A maximise button sits at the header's
   right end.
+- **A viewport's header** has two more menus, drawn over the scene:
+  - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
+    Back, Left, Right, Top, Bottom and Perspective, and Orthographic.
+  - one named for how the view shades the scene: Points or Wireframe when the front of each
+    triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
+    and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,
+    with None, Front, Back and Both.
+
+  Each item marks what its own view holds, whichever view is active. These are the View menu's
+  `view::camera::`, `view::shade::`, `view::rendermode::` and `view::cull::` commands, which
+  `AreaChrome::marks()` reads for both.
 - **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
   across its top. The editor draws under the strip and the header sits at the top of the
   editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
   chosen one is checked.
-- The containers are built again when the areas, the kind of editor each shows, or their
-  editors change, and are otherwise moved each frame to where the areas are. A container whose
-  area has no room is hidden.
+- The containers are built again when the areas, the kind of editor each shows, their editors,
+  or what a view's menus are named for change, and are otherwise moved each frame to where the
+  areas are. A container whose area has no room is hidden.
 
-Every command is in the `area` context. A header's command carries its area's id as its data,
-and one sent by a key acts on the active area.
+The area menu's commands are in the `area` context, and a viewport's camera and shading menus'
+in the `view` context. A header's command carries its area's id as its data, and the same
+command sent by a key or the View menu acts on the active area.
 
 | Command | Effect |
 |---|---|
@@ -462,7 +474,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 |---|---|---|---|
 | Scene pass, named after the view, which no other view shares. It draws the meshes' shaded surfaces first and the scene canvas over them | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
-| `ui` | The whole window | Not tested | Nothing; it also draws the rubber band |
+| `ui` | The whole window | Not tested | Nothing; it also draws each view's overlays, the frame and the rubber band |
 
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
@@ -498,15 +510,38 @@ change while a drag is under way, so a drag that crosses a border keeps its came
 select and transform tools all work in the active view. The cursor over the menu bar or a
 toolbar does not change it, so a menu item acts on the view the cursor was last over.
 
-**Cameras.** The View menu's Camera items show a fixed view in the active view: Front, Back,
-Left, Right, Top, Bottom and Perspective, each a profile in `data/cameras.json`. The view keeps
-its region and its camera object, so the camera tools keep driving it. The menu marks the item
-for the profile the active view shows. A view laid out from a profile the menu does not offer
-marks none. `Controller::fixedViews()` lists each command and its profile.
+**Cameras.** The View menu's Camera items, and a viewport header's camera menu, show a fixed
+view: Front, Back, Left, Right, Top, Bottom and Perspective, each a profile in
+`data/cameras.json`. The View menu acts on the active view and a header on its own. The view
+keeps its region and its camera object, so the camera tools keep driving it. Its editor's state
+names the new camera, so its tab and a saved layout show it. A menu marks the item for the
+profile its view shows. A view laid out from a profile no fixed view is marks none.
+`AreaChrome::fixedViews()` lists each command and its profile.
 
-**Orthographic** (`view::camera::orthographic`, the P key) switches the active view's camera
-between an orthographic and a perspective projection, and leaves the camera where it is. The
-menu item is checked while the camera is orthographic.
+**Orthographic** (`view::camera::orthographic`, the P key) switches a view's camera between an
+orthographic and a perspective projection, and leaves the camera where it is. The menu item is
+checked while the camera is orthographic.
+
+**Overlays.** Each view draws two things over itself, in window pixels, in the ui pass:
+
+- **An axis marker**, 36 pixels in from its lower left corner: a 20 pixel line along each world
+  axis as the view's camera sees it, in the axis's colour, with the axis's letter beyond its
+  end. An axis seen end on, whose line is shorter than a quarter of its length, has no letter.
+- **A navigation gizmo**, in a perspective view only, 8 pixels in from the upper right corner
+  and below the header. A ball 9 pixels in radius sits 30 pixels from its centre at each end of
+  each axis: filled with the axis's letter at a positive end, with a line back to the centre,
+  and a ring at a negative end. A faint disc lies behind it while the cursor is over it, and a
+  ring around the ball under the cursor.
+
+The axes are drawn as an orthographic camera would show them, so perspective does not bend
+them. X is `#d9595f`, Y `#72b052` and Z `#5590e8`. The sizes are multiplied by the ui's scale.
+
+A press on a gizmo's ball is taken before the dividers and the tools, and turns the camera to
+look down that axis from its end, at the point the camera looked at: where its line of sight
+passes nearest the origin, or a unit in front of the eye when that is behind it. The eye keeps
+its distance. Looking down y has z for up, as Top and Bottom do, and any other axis y. Where two
+balls overlap, the one nearer the viewer is taken. `src/view/ViewOverlay.h` holds the geometry
+and the drawing.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with

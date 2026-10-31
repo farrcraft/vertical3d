@@ -100,6 +100,12 @@ class Controller final : public v3d::engine::Engine {
     void syncPointerShape();
 
     /**
+     * Register the commands that change how a view draws: its camera, its projection, its
+     * shading, fills and cull, and what it shows.
+     **/
+    void registerViewCommands();
+
+    /**
      * Register the commands that change the areas: split, join, swap, maximise and the tabs.
      **/
     void registerAreaCommands();
@@ -162,17 +168,6 @@ class Controller final : public v3d::engine::Engine {
      * The window changed size, so the layout divides a different area between the views.
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
-
-    /** A command that shows a fixed view, and the camera profile that view is. **/
-    struct FixedView {
-        std::string command;
-        std::string profile;
-    };
-
-    /**
-     * The fixed views the View menu offers. Each command shows its profile in the active view.
-     **/
-    static const std::vector<FixedView>& fixedViews();
 
  protected:
     /**
@@ -274,11 +269,17 @@ class Controller final : public v3d::engine::Engine {
     void exportProject();
 
     /**
-     * Show a camera profile in the active view, keeping the view's region, or switch the
-     * active view between perspective and orthographic.
+     * Show a camera profile in an area's view, keeping the view's region.
+     *
+     * @param area an index into the layout's areas
+     * @param view the view the area shows
      **/
-    void look(const std::string& profile);
-    void toggleProjection();
+    void look(std::size_t area, ViewPort* view, const std::string& profile);
+
+    /**
+     * Switch a view between perspective and orthographic.
+     **/
+    void toggleProjection(ViewPort* view);
 
     /**
      * Choose the transform tool's mode, or the select mask the select tool picks under and the

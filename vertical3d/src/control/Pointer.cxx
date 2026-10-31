@@ -81,6 +81,11 @@ void Pointer::button(bool pressed, unsigned int clicks) {
             tabDragging_ = false;
             return;
         }
+        // a view's controls are drawn over it, so they are offered the press before its tools
+        controlGrab_ = controls_ && controls_(cursor_);
+        if (controlGrab_) {
+            return;
+        }
         // a press on a divider between areas resizes them, and no tool sees it
         dividerGrab_ = (clicks >= 2 && layout.even(cursor_.x, cursor_.y)) || layout.grab(cursor_.x, cursor_.y);
         if (dividerGrab_) {
@@ -113,6 +118,10 @@ void Pointer::button(bool pressed, unsigned int clicks) {
         layout.release();
         return;
     }
+    if (controlGrab_) {
+        controlGrab_ = false;
+        return;
+    }
     tools_->button(false, cursor_);
 }
 
@@ -139,6 +148,10 @@ std::optional<AreaLayout::Divider> Pointer::lit() const {
 
 void Pointer::tabs(const TabAt& at) {
     tabAt_ = at;
+}
+
+void Pointer::controls(const Take& take) {
+    controls_ = take;
 }
 
 std::optional<Pointer::Drop> Pointer::drop() const {

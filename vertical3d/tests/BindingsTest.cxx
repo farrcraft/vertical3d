@@ -5,7 +5,12 @@
 
 #include <api/engine/CameraProfiles.h>
 #include <api/log/Logger.h>
+#include <api/type/camera/Profile.h>
 #include <vertical3d/src/Controller.h>
+#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <fstream>
 #include <initializer_list>
@@ -18,6 +23,7 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
+#include <glm/vec4.hpp>
 
 namespace {
 
@@ -100,7 +106,7 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
 
     const v3d::editor::Controller engine("");
     std::set<std::string> offered{"view::camera::orthographic"};
-    for (const v3d::editor::Controller::FixedView& view : v3d::editor::Controller::fixedViews()) {
+    for (const v3d::editor::AreaChrome::FixedView& view : v3d::editor::AreaChrome::fixedViews()) {
         BOOST_TEST(profiles.has(view.profile), "no camera profile is called " << view.profile);
         offered.insert(view.command);
     }
@@ -121,6 +127,28 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
         }
     }
     BOOST_TEST((onMenu == offered));
+}
+
+/**
+ * Every command a viewport's header sends, from its area menu and its view menus, is one the
+ * editor registers.
+ **/
+BOOST_AUTO_TEST_CASE(every_header_command_is_handled) {
+    const boost::shared_ptr<v3d::editor::AreaLayout> layout = boost::make_shared<v3d::editor::AreaLayout>(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(layout->load(boost::json::parse(R"({"root": {"editors": [{"kind": "viewport", "camera": "Perspective"}]}})").as_object()));
+    layout->resize(glm::vec4(0.0F, 0.0F, 400.0F, 300.0F));
+    v3d::editor::AreaViews views(layout, [](const v3d::editor::AreaLayout::Editor&) {
+        return boost::make_shared<v3d::editor::ViewPort>("Perspective", v3d::type::camera::Profile("Perspective"));
+    });
+    BOOST_REQUIRE(views.sync());
+
+    std::vector<std::string> commands;
+    sent(v3d::editor::AreaChrome::document(views).at("containers"), &commands);
+    BOOST_TEST(commands.size() >= 30U);
+    const v3d::editor::Controller engine("");
+    for (const std::string& command : commands) {
+        BOOST_TEST(engine.commands().has(command), "nothing handles " << command);
+    }
 }
 
 };  // namespace

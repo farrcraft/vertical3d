@@ -55,6 +55,7 @@
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
+#include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
@@ -252,6 +253,17 @@ bool Controller::buildUi() {
         syncUi();
     });
     pointer_->tabs([this](const glm::vec2& point) { return chrome_ ? chrome_->tabAt(point) : std::nullopt; });
+    // a press on a ball of a view's gizmo turns its camera to look down that axis
+    pointer_->controls([this](const glm::vec2& point) {
+        const boost::shared_ptr<ViewPort> view = views_->of(layout_->areaAt(point.x, point.y));
+        const std::optional<AxisEnd> end = view ? gizmoAt(*view, renderer_->overlay(), point) : std::nullopt;
+        if (!end) {
+            return false;
+        }
+        lookAlong(view->camera().get(), *end);
+        syncUi();
+        return true;
+    });
     // the areas' headers go under the editor's own container, so its menus drop over them
     chrome_ = boost::make_shared<AreaChrome>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
@@ -306,33 +318,12 @@ void Controller::syncUi() {
         }
     };
 
+    // the View menu marks the active view's state, as each header marks its own view's
     const boost::shared_ptr<ViewPort> activeView = pointer_ ? pointer_->activeView() : nullptr;
     if (activeView) {
-        mark("view::show::mesh", activeView->shows(ViewPort::SHOW_MESH));
-        mark("view::show::camera", activeView->shows(ViewPort::SHOW_CAMERA));
-        mark("view::show::light", activeView->shows(ViewPort::SHOW_LIGHT));
-        mark("view::show::handle", activeView->shows(ViewPort::SHOW_HANDLE));
-        mark("view::show::grid", activeView->shows(ViewPort::SHOW_GRID));
-        const ViewPort::Display& shown = activeView->display();
-        mark("view::shade::flat", shown.shading == Shading::Flat);
-        mark("view::shade::smooth", shown.shading == Shading::Smooth);
-        mark("view::cull::none", shown.cull == ViewPort::Cull::None);
-        mark("view::cull::front", shown.cull == ViewPort::Cull::Front);
-        mark("view::cull::back", shown.cull == ViewPort::Cull::Back);
-        mark("view::cull::both", shown.cull == ViewPort::Cull::Both);
-        for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
-            { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
-            mark(std::string("view::rendermode::front::") + name, shown.front == fill);
-            mark(std::string("view::rendermode::back::") + name, shown.back == fill);
+        for (const auto& [command, on] : AreaChrome::marks(*activeView)) {
+            mark(command, on);
         }
-
-        // a view laid out from a profile the menu does not offer, such as a second
-        // perspective, marks none of the fixed views
-        const v3d::type::camera::Camera& camera = *activeView->camera();
-        for (const FixedView& view : fixedViews()) {
-            mark(view.command, camera.profile().name() == view.profile);
-        }
-        mark("view::camera::orthographic", camera.orthographic());
     }
 
     const SelectMask mask = selectTool_->mask();
@@ -513,39 +504,6 @@ void Controller::registerCommands() {
         press(std::string("transform::") + mode, [this, mode]() { transformMode(mode); });
     }
 
-    // how the active view draws. Each view keeps its own
-    const auto display = [this](const std::function<void(ViewPort*)>& change) {
-        if (pointer_ && pointer_->activeView()) {
-            change(pointer_->activeView().get());
-        }
-    };
-    press("view::shade::flat", [display]() { display([](ViewPort* view) { view->display().shading = Shading::Flat; }); });
-    press("view::shade::smooth", [display]() { display([](ViewPort* view) { view->display().shading = Shading::Smooth; }); });
-    for (const auto& [name, cull] : std::vector<std::pair<const char*, ViewPort::Cull>>{ { "none", ViewPort::Cull::None },
-        { "front", ViewPort::Cull::Front }, { "back", ViewPort::Cull::Back }, { "both", ViewPort::Cull::Both } }) {
-        press(std::string("view::cull::") + name, [display, cull]() { display([cull](ViewPort* view) { view->display().cull = cull; }); });
-    }
-    for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
-        { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
-        press(std::string("view::rendermode::front::") + name,
-            [display, fill]() { display([fill](ViewPort* view) { view->display().front = fill; }); });
-        press(std::string("view::rendermode::back::") + name,
-            [display, fill]() { display([fill](ViewPort* view) { view->display().back = fill; }); });
-    }
-    for (const auto& [name, filter] : std::vector<std::pair<const char*, ViewPort::VisibleFilter>>{
-        { "grid", ViewPort::SHOW_GRID }, { "mesh", ViewPort::SHOW_MESH }, { "camera", ViewPort::SHOW_CAMERA },
-        { "light", ViewPort::SHOW_LIGHT }, { "handle", ViewPort::SHOW_HANDLE } }) {
-        press(std::string("view::show::") + name,
-            [display, filter]() { display([filter](ViewPort* view) { view->show(filter, !view->shows(filter)); }); });
-    }
-    for (const FixedView& view : fixedViews()) {
-        const std::string profile = view.profile;
-        press(view.command, [this, profile]() { look(profile); });
-    }
-    press("view::camera::orthographic", [this]() { toggleProjection(); });
-    // view::show::statistics is not a view flag: the readout covers the window rather than one
-    // pane, so the shell shows it and nothing here reads it back
-
     // these are held: the modifier going down chooses what a drag of the primary button
     // performs, and it coming up puts the tool back to whatever is latched
     for (const char* move : { "zoom", "dolly", "truck" }) {
@@ -589,7 +547,54 @@ void Controller::registerCommands() {
     press("edit::undo", [this]() { report(document_->undo()); });
     press("edit::redo", [this]() { report(document_->redo()); });
 
+    registerViewCommands();
     registerAreaCommands();
+}
+
+/**
+ **/
+void Controller::registerViewCommands() {
+    // how a view draws. Each view keeps its own. A header's command names its area by id, and
+    // one from the View menu or a key acts on the active area
+    auto display = [this](const std::string& name, const std::function<void(std::size_t area, ViewPort* view)>& change) {
+        const bool added = commands().add(name, [this, change](const v3d::event::Event& event) {
+            if (event.state() == v3d::event::State::Released || event.repeat()) {
+                return;
+            }
+            const std::size_t area = areaOf(event);
+            if (const boost::shared_ptr<ViewPort> view = views_ ? views_->of(area) : nullptr) {
+                change(area, view.get());
+            }
+            syncUi();
+            syncCaption();
+        });
+        if (!added) {
+            refused_.push_back(name);
+        }
+    };
+    display("view::shade::flat", [](std::size_t, ViewPort* view) { view->display().shading = Shading::Flat; });
+    display("view::shade::smooth", [](std::size_t, ViewPort* view) { view->display().shading = Shading::Smooth; });
+    for (const auto& [name, cull] : std::vector<std::pair<const char*, ViewPort::Cull>>{ { "none", ViewPort::Cull::None },
+        { "front", ViewPort::Cull::Front }, { "back", ViewPort::Cull::Back }, { "both", ViewPort::Cull::Both } }) {
+        display(std::string("view::cull::") + name, [cull](std::size_t, ViewPort* view) { view->display().cull = cull; });
+    }
+    for (const auto& [name, fill] : std::vector<std::pair<const char*, ViewPort::Fill>>{ { "points", ViewPort::Fill::Points },
+        { "lines", ViewPort::Fill::Lines }, { "fill", ViewPort::Fill::Fill } }) {
+        display(std::string("view::rendermode::front::") + name, [fill](std::size_t, ViewPort* view) { view->display().front = fill; });
+        display(std::string("view::rendermode::back::") + name, [fill](std::size_t, ViewPort* view) { view->display().back = fill; });
+    }
+    for (const auto& [name, filter] : std::vector<std::pair<const char*, ViewPort::VisibleFilter>>{
+        { "grid", ViewPort::SHOW_GRID }, { "mesh", ViewPort::SHOW_MESH }, { "camera", ViewPort::SHOW_CAMERA },
+        { "light", ViewPort::SHOW_LIGHT }, { "handle", ViewPort::SHOW_HANDLE } }) {
+        display(std::string("view::show::") + name, [filter](std::size_t, ViewPort* view) { view->show(filter, !view->shows(filter)); });
+    }
+    for (const AreaChrome::FixedView& fixed : AreaChrome::fixedViews()) {
+        const std::string profile = fixed.profile;
+        display(fixed.command, [this, profile](std::size_t area, ViewPort* view) { look(area, view, profile); });
+    }
+    display("view::camera::orthographic", [this](std::size_t, ViewPort* view) { toggleProjection(view); });
+    // view::show::statistics is not a view flag: the readout covers the window rather than one
+    // pane, so the shell shows it and nothing here reads it back
 }
 
 /**
@@ -925,41 +930,20 @@ void Controller::importWorkspace() {
 
 /**
  **/
-const std::vector<Controller::FixedView>& Controller::fixedViews() {
-    static const std::vector<FixedView> views{
-        {.command = "view::camera::front", .profile = "Front"},
-        {.command = "view::camera::back", .profile = "Back"},
-        {.command = "view::camera::left", .profile = "Left"},
-        {.command = "view::camera::right", .profile = "Right"},
-        {.command = "view::camera::top", .profile = "Top"},
-        {.command = "view::camera::bottom", .profile = "Bottom"},
-        {.command = "view::camera::perspective", .profile = "Perspective"},
-    };
-    return views;
-}
-
-/**
- **/
-void Controller::look(const std::string& profile) {
-    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
-    if (!view) {
-        return;
-    }
+void Controller::look(std::size_t area, ViewPort* view, const std::string& profile) {
     if (!profiles_->has(profile)) {
         logger()->get()->error("There is no camera profile called {}", profile);
         return;
     }
     view->look(profiles_->get(profile));
+    // the editor's state names the camera, so its tab and a saved layout show the new one
+    layout_->set(layout_->areas()[area].editor().id, "camera", boost::json::string(profile));
     logger()->get()->info("{} shows the {} camera", view->name(), profile);
 }
 
 /**
  **/
-void Controller::toggleProjection() {
-    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
-    if (!view) {
-        return;
-    }
+void Controller::toggleProjection(ViewPort* view) {
     const boost::shared_ptr<v3d::type::camera::Camera> camera = view->camera();
     camera->orthographic(!camera->orthographic());
     logger()->get()->info("{} is {}", view->name(), camera->orthographic() ? "orthographic" : "perspective");
@@ -1024,7 +1008,7 @@ bool Controller::render() {
     }
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
-        chrome_->sync(*layout_, renderer_->barHeight());
+        chrome_->sync(*views_, renderer_->barHeight());
     }
     renderer_->draw();
     return true;

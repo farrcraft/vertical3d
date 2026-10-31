@@ -31,6 +31,7 @@
 #include <vertical3d/src/view/AreaFrame.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
@@ -232,6 +233,12 @@ float Renderer::barHeight() const {
 
 /**
  **/
+OverlayMetrics Renderer::overlay() const {
+    return OverlayMetrics::scaled(screen_->factor(), barHeight());
+}
+
+/**
+ **/
 void Renderer::draw() {
     if (!screen_->begin(shell_->ui().get())) {
         return;
@@ -310,6 +317,22 @@ void Renderer::draw() {
  **/
 void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame) {
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
+    // each view's axis marker and gizmo go under the frame, whose corners cover the views' own
+    if (views_ && pointer_) {
+        const float factor = screen_->factor();
+        OverlayLook look;
+        look.text *= factor;
+        look.line = std::max(1.0F, std::round(look.line * factor));
+        const OverlayMetrics metrics = overlay();
+        const v3d::ui::paint::Measure measure = screen_->text()->measure(look.text, v3d::ui::paint::Weight::SemiBold);
+        const v3d::ui::paint::Write write = screen_->text()->write(&canvas, look.text, v3d::ui::paint::Weight::SemiBold);
+        const glm::vec2& cursor = pointer_->cursor();
+        for (const boost::shared_ptr<ViewPort>& view : views_->shown()) {
+            const glm::vec4& region = view->region();
+            const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
+            drawOverlay(&canvas, *view, metrics, look, measure, write, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
+        }
+    }
     // the frame around the areas goes first, so a menu dropped over it covers it
     if (views_ && pointer_) {
         const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();

@@ -333,12 +333,27 @@ saving it with the project, in the user's settings alone, and in each project's 
 
 ### Step 8 — Viewport headers and overlays
 
-Open. Needs step 7.
+**Closed.**
 
-- A viewport's header names its view as a menu of the fixed cameras, and its shading as a menu
-  of the display modes. The View menu's camera and render-mode items stay.
-- Each view draws an axis marker, and a perspective view a navigation gizmo that turns the camera
-  to look down an axis when clicked.
+- A viewport's header has a menu named for its camera, holding the fixed views and
+  Orthographic, and one named for its shading, holding the shading, each side's fill and the
+  cull. Each marks its own view. Their commands carry the area's id, and the same commands from
+  a key or the View menu act on the active area, so the View menu's items stay as they were.
+- `AreaChrome::marks()` lists what a view holds for both the View menu and the headers, and
+  `AreaChrome::fixedViews()` replaces `Controller::fixedViews()`. A header is built again when
+  its camera or its shading's name changes.
+- Showing a fixed view writes the camera into its editor's state through `AreaLayout::set()`,
+  so its tab and a saved layout name it.
+- `ViewOverlay` draws each view's axis marker at its lower left, and a perspective view's
+  navigation gizmo under its header at its upper right. A press on a ball turns the camera to
+  look down that axis, through the pointer's new `controls()` hook, which takes a press before
+  the dividers and the tools.
+- The overlay suite covers the axes from the front and the top, the negative ends, both
+  positions, finding a ball, turning the camera and drawing. The chrome suite covers the view
+  menus, their marks and the rebuild, the pointer suite a control taking a press, the layout
+  suite setting an editor's state, and the bindings suite every command a header sends. The
+  editor was photographed. A click on the gizmo or a header's menus could not be driven in the
+  running editor, so those rest on their tests.
 
 ### Step 9 — The status bar and notices
 

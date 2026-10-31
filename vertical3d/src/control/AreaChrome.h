@@ -8,12 +8,15 @@
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
 #include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
 #include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <boost/json.hpp>
@@ -26,18 +29,24 @@ namespace v3d::editor {
  * The header and the tabs of each area, built as ui containers while the editor runs.
  *
  * Each area has a container named "area-" and its id. Its header is a menu bar that is not
- * docked, across the top of where the area's editor draws, holding one menu named for the kind
- * of editor it shows. The menu splits, joins and swaps the area, adds and closes tabs, and
+ * docked, across the top of where the area's editor draws, holding a menu named for the kind
+ * of editor it shows. That menu splits, joins and swaps the area, adds and closes tabs, and
  * maximises it. A maximise button sits at the header's right end. An area holding two or more
  * editors has a strip of tabs above its editor, one toggle button for each, with the chosen one
  * checked.
  *
- * Every command is in the "area" context. A header's commands carry the area's id as their
- * data, and a tab carries its editor's id.
+ * A viewport's header has two more menus. One is named for the camera the view shows and
+ * offers the fixed views and the projection switch. The other is named for how the view shades
+ * the scene and offers the shading, the fill of each side and the cull. Each marks what its
+ * view holds.
  *
- * sync() builds the containers again when the areas or their editors change, and otherwise
- * moves them to where the areas are. They are put before the container that holds the
- * editor's menu bar, so a menu it drops is drawn over them.
+ * The area menu's commands are in the "area" context and a viewport's in the "view" context.
+ * Every command a header sends carries the area's id as its data, and a tab carries its
+ * editor's id.
+ *
+ * sync() builds the containers again when the areas, their editors, or what a menu is named
+ * for change, and otherwise moves them to where the areas are. They are put before the
+ * container that holds the editor's menu bar, so a menu it drops is drawn over them.
  **/
 class AreaChrome final {
  public:
@@ -45,6 +54,19 @@ class AreaChrome final {
      * The command context every header and tab sends in.
      **/
     static constexpr std::string_view CONTEXT = "area";
+
+    /**
+     * The context a viewport's camera and shading commands are in.
+     **/
+    static constexpr std::string_view VIEW_CONTEXT = "view";
+
+    /**
+     * A command that shows a fixed view, and the camera profile that view is.
+     **/
+    struct FixedView final {
+        std::string command;
+        std::string profile;
+    };
 
     /**
      * Resolves the images of a component that was just added.
@@ -58,12 +80,13 @@ class AreaChrome final {
     AreaChrome(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve);
 
     /**
-     * Build the containers again if the areas or their editors changed, and put each where its
-     * area is. An area with no room hides its container.
+     * Build the containers again if the areas, their editors or the names of their menus
+     * changed, put each where its area is, and mark what each viewport holds on its header's
+     * menus. An area with no room hides its container.
      *
      * @param height how tall a header and a tab are
      **/
-    void sync(const AreaLayout& layout, float height);
+    void sync(const AreaViews& views, float height);
 
     /**
      * @return the id of the editor whose tab is at a point, or nothing when no tab is there
@@ -71,9 +94,10 @@ class AreaChrome final {
     std::optional<std::size_t> tabAt(const glm::vec2& point) const;
 
     /**
-     * @return the containers one layout's areas are drawn with, as Interface::add() reads them
+     * @return the containers the areas of the views' layout are drawn with, as Interface::add()
+     *         reads them
      **/
-    static boost::json::object document(const AreaLayout& layout);
+    static boost::json::object document(const AreaViews& views);
 
     /**
      * @return the name of an area's container
@@ -86,17 +110,38 @@ class AreaChrome final {
      **/
     static std::string label(const AreaLayout::Editor& editor);
 
+    /**
+     * @return the fixed views a viewport offers, each a command and the profile it shows
+     **/
+    static const std::vector<FixedView>& fixedViews();
+
+    /**
+     * @return what a view's shading menu is named: Points or Wireframe when the front of each
+     *         triangle is drawn so, and otherwise Flat or Smooth
+     **/
+    static std::string shading(const ViewPort::Display& display);
+
+    /**
+     * @return each command that describes a view's state, as "view::" and its name, and whether
+     *         the view holds that state: its camera and projection, its shading, fills and cull,
+     *         and what it shows
+     **/
+    static std::vector<std::pair<std::string, bool>> marks(const ViewPort& view);
+
  private:
     /**
      * @return what decides whether the containers have to be built again: each area's id, the
-     *         kind of editor it shows, and its editors' ids and labels
+     *         kind of editor it shows, its editors' ids and labels, and the names of its view's
+     *         menus
      **/
-    static std::string signature(const AreaLayout& layout);
+    static std::string signature(const AreaViews& views);
 
     /**
-     * Put one area's header, button and tabs where the area is.
+     * Put one area's header, button and tabs where the area is, and mark what its view holds.
+     *
+     * @param view the view the area shows, or null when it shows another kind of editor
      **/
-    void place(const AreaLayout::Area& area, float height) const;
+    void place(const AreaLayout::Area& area, const ViewPort* view, float height) const;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;

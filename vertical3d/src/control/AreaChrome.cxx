@@ -12,14 +12,22 @@
 #include <api/ui/Interface.h>
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
+#include <api/type/camera/Camera.h>
 #include <api/ui/component/Button.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
 #include <vertical3d/src/view/AreaLayout.h>
+#include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/Shading.h>
+#include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <variant>
@@ -56,6 +64,63 @@ constexpr Way WAYS[] = {
 boost::json::object item(const std::string& label, const std::string& command, std::size_t area) {
     return boost::json::object{ { "label", label }, { "type", "action" }, { "context", AreaChrome::CONTEXT },
         { "command", command }, { "data", static_cast<std::int64_t>(area) } };
+}
+
+/**
+ * @return a check or radio item that sends a view's command for an area
+ **/
+boost::json::object mark(const std::string& label, const char* type, const std::string& command, std::size_t area) {
+    return boost::json::object{ { "label", label }, { "type", type }, { "context", AreaChrome::VIEW_CONTEXT },
+        { "command", command }, { "data", static_cast<std::int64_t>(area) } };
+}
+
+/** A choice on a view's menu: the end of its command, and what the menu names it. **/
+struct Choice final {
+    const char* command;
+    const char* label;
+};
+
+constexpr Choice FILLS[] = { { "points", "Points" }, { "lines", "Lines" }, { "fill", "Fill" } };
+constexpr ViewPort::Fill FILLED[] = { ViewPort::Fill::Points, ViewPort::Fill::Lines, ViewPort::Fill::Fill };
+
+constexpr Choice CULLS[] = { { "none", "None" }, { "front", "Front" }, { "back", "Back" }, { "both", "Both" } };
+constexpr ViewPort::Cull CULLED[] = { ViewPort::Cull::None, ViewPort::Cull::Front, ViewPort::Cull::Back, ViewPort::Cull::Both };
+
+/**
+ * @return a submenu of radio items, one for each choice, sending a view's command for an area
+ **/
+boost::json::object choices(const char* label, const std::string& prefix, std::span<const Choice> each, std::size_t area) {
+    boost::json::array items;
+    for (const Choice& choice : each) {
+        items.emplace_back(mark(choice.label, "radio", prefix + choice.command, area));
+    }
+    return boost::json::object{ { "label", label }, { "type", "submenu" }, { "items", std::move(items) } };
+}
+
+/**
+ * @return a viewport's camera menu and its shading menu, named for what the view shows
+ **/
+boost::json::array viewMenus(const ViewPort& view, std::size_t area) {
+    boost::json::array cameras;
+    for (const AreaChrome::FixedView& fixed : AreaChrome::fixedViews()) {
+        // an item names its command without its context
+        cameras.emplace_back(mark(fixed.profile, "radio", fixed.command.substr(AreaChrome::VIEW_CONTEXT.size() + 2), area));
+    }
+    cameras.emplace_back(boost::json::object{ { "type", "separator" } });
+    cameras.emplace_back(mark("Orthographic", "check", "camera::orthographic", area));
+
+    boost::json::array shading = {
+        mark("Flat", "radio", "shade::flat", area),
+        mark("Smooth", "radio", "shade::smooth", area),
+        boost::json::object{ { "type", "separator" } },
+        choices("Front Facing", "rendermode::front::", FILLS, area),
+        choices("Back Facing", "rendermode::back::", FILLS, area),
+        choices("Cull", "cull::", CULLS, area),
+    };
+    return boost::json::array{
+        boost::json::object{ { "label", view.camera()->profile().name() }, { "items", std::move(cameras) } },
+        boost::json::object{ { "label", AreaChrome::shading(view.display()) }, { "items", std::move(shading) } },
+    };
 }
 
 /**
@@ -125,12 +190,75 @@ std::string AreaChrome::label(const AreaLayout::Editor& editor) {
 
 /**
  **/
-std::string AreaChrome::signature(const AreaLayout& layout) {
+const std::vector<AreaChrome::FixedView>& AreaChrome::fixedViews() {
+    static const std::vector<FixedView> views{
+        { .command = "view::camera::front", .profile = "Front" },
+        { .command = "view::camera::back", .profile = "Back" },
+        { .command = "view::camera::left", .profile = "Left" },
+        { .command = "view::camera::right", .profile = "Right" },
+        { .command = "view::camera::top", .profile = "Top" },
+        { .command = "view::camera::bottom", .profile = "Bottom" },
+        { .command = "view::camera::perspective", .profile = "Perspective" },
+    };
+    return views;
+}
+
+/**
+ **/
+std::string AreaChrome::shading(const ViewPort::Display& display) {
+    switch (display.front) {
+        case ViewPort::Fill::Points:
+            return "Points";
+        case ViewPort::Fill::Lines:
+            return "Wireframe";
+        case ViewPort::Fill::Fill:
+            break;
+    }
+    return display.shading == Shading::Smooth ? "Smooth" : "Flat";
+}
+
+/**
+ **/
+std::vector<std::pair<std::string, bool>> AreaChrome::marks(const ViewPort& view) {
+    std::vector<std::pair<std::string, bool>> made{
+        { "view::show::mesh", view.shows(ViewPort::SHOW_MESH) },
+        { "view::show::camera", view.shows(ViewPort::SHOW_CAMERA) },
+        { "view::show::light", view.shows(ViewPort::SHOW_LIGHT) },
+        { "view::show::handle", view.shows(ViewPort::SHOW_HANDLE) },
+        { "view::show::grid", view.shows(ViewPort::SHOW_GRID) },
+    };
+    const ViewPort::Display& shown = view.display();
+    made.emplace_back("view::shade::flat", shown.shading == Shading::Flat);
+    made.emplace_back("view::shade::smooth", shown.shading == Shading::Smooth);
+    for (std::size_t index = 0; index < std::size(CULLS); index++) {
+        made.emplace_back(std::string("view::cull::") + CULLS[index].command, shown.cull == CULLED[index]);
+    }
+    for (std::size_t index = 0; index < std::size(FILLS); index++) {
+        made.emplace_back(std::string("view::rendermode::front::") + FILLS[index].command, shown.front == FILLED[index]);
+        made.emplace_back(std::string("view::rendermode::back::") + FILLS[index].command, shown.back == FILLED[index]);
+    }
+    // a view laid out from a profile no fixed view is, such as a second perspective, marks none
+    const v3d::type::camera::Camera& camera = *view.camera();
+    for (const FixedView& fixed : fixedViews()) {
+        made.emplace_back(fixed.command, camera.profile().name() == fixed.profile);
+    }
+    made.emplace_back("view::camera::orthographic", camera.orthographic());
+    return made;
+}
+
+/**
+ **/
+std::string AreaChrome::signature(const AreaViews& views) {
+    const AreaLayout& layout = *views.layout();
     std::string made;
-    for (const AreaLayout::Area& area : layout.areas()) {
+    for (std::size_t index = 0; index < layout.areas().size(); index++) {
+        const AreaLayout::Area& area = layout.areas()[index];
         made += std::to_string(area.id) + ":" + area.editor().kind + ":";
         for (const AreaLayout::Editor& editor : area.editors) {
             made += std::to_string(editor.id) + "=" + label(editor) + ",";
+        }
+        if (const boost::shared_ptr<ViewPort> view = views.of(index)) {
+            made += view->camera()->profile().name() + "/" + shading(view->display());
         }
         made += ";";
     }
@@ -139,9 +267,11 @@ std::string AreaChrome::signature(const AreaLayout& layout) {
 
 /**
  **/
-boost::json::object AreaChrome::document(const AreaLayout& layout) {
+boost::json::object AreaChrome::document(const AreaViews& views) {
+    const AreaLayout& layout = *views.layout();
     boost::json::array containers;
-    for (const AreaLayout::Area& area : layout.areas()) {
+    for (std::size_t index = 0; index < layout.areas().size(); index++) {
+        const AreaLayout::Area& area = layout.areas()[index];
         const std::size_t id = area.id;
         boost::json::array items = {
             ways({ .label = "Split", .command = "split", .across = false }, id),
@@ -154,6 +284,11 @@ boost::json::object AreaChrome::document(const AreaLayout& layout) {
             item("Maximise", "maximise", id),
         };
         boost::json::array menus = { boost::json::object{ { "label", capital(area.editor().kind) }, { "items", std::move(items) } } };
+        if (const boost::shared_ptr<ViewPort> view = views.of(index)) {
+            for (boost::json::value& menu : viewMenus(*view, id)) {
+                menus.emplace_back(std::move(menu));
+            }
+        }
         boost::json::array components = {
             boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false }, { "menus", std::move(menus) } },
             boost::json::object{ { "type", "button" }, { "name", "maximise" }, { "icon", "icons/maximise.png" },
@@ -175,15 +310,16 @@ boost::json::object AreaChrome::document(const AreaLayout& layout) {
 
 /**
  **/
-void AreaChrome::sync(const AreaLayout& layout, float height) {
-    const std::string now = signature(layout);
+void AreaChrome::sync(const AreaViews& views, float height) {
+    const AreaLayout& layout = *views.layout();
+    const std::string now = signature(views);
     if (now != signature_) {
         for (const std::string& held : held_) {
             ui_->remove(held);
         }
         held_.clear();
         signature_ = now;
-        if (ui_->add(document(layout), before_)) {
+        if (ui_->add(document(views), before_)) {
             for (const AreaLayout::Area& area : layout.areas()) {
                 held_.push_back(name(area.id));
                 if (resolve_) {
@@ -194,14 +330,14 @@ void AreaChrome::sync(const AreaLayout& layout, float height) {
             }
         }
     }
-    for (const AreaLayout::Area& area : layout.areas()) {
-        place(area, height);
+    for (std::size_t index = 0; index < layout.areas().size(); index++) {
+        place(layout.areas()[index], views.of(index).get(), height);
     }
 }
 
 /**
  **/
-void AreaChrome::place(const AreaLayout::Area& area, float height) const {
+void AreaChrome::place(const AreaLayout::Area& area, const ViewPort* view, float height) const {
     const boost::shared_ptr<v3d::ui::Container> container = ui_->container(name(area.id));
     if (!container) {
         return;
@@ -214,6 +350,14 @@ void AreaChrome::place(const AreaLayout::Area& area, float height) const {
     }
     if (const boost::shared_ptr<v3d::ui::Component> header = container->get("header")) {
         box(header.get(), glm::vec4(content.x, content.y, content.z - height, height));
+        const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(header);
+        if (bar && view != nullptr) {
+            for (const auto& [command, on] : marks(*view)) {
+                if (const boost::shared_ptr<v3d::ui::component::menu::Item> found = bar->find(command)) {
+                    found->checked(on);
+                }
+            }
+        }
     }
     if (const boost::shared_ptr<v3d::ui::Component> maximise = container->get("maximise")) {
         box(maximise.get(), glm::vec4(content.x + content.z - height, content.y, height, height));

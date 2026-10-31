@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -816,6 +817,20 @@ std::optional<std::size_t> AreaLayout::add(std::size_t area, const boost::json::
     areas_[area].chosen = areas_[area].editors.size() - 1;
     place();
     return id;
+}
+
+/**
+ **/
+bool AreaLayout::set(std::size_t editor, std::string_view key, const boost::json::value& value) {
+    for (Area& area : areas_) {
+        for (Editor& each : area.editors) {
+            if (each.id == editor && key != "kind") {
+                each.state[key] = value;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**

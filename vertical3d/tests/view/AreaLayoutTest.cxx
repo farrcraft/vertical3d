@@ -448,6 +448,22 @@ BOOST_FIXTURE_TEST_CASE(an_area_holds_editors_as_tabs, Quad) {
 }
 
 /**
+ * An entry of an editor's state can be set by the editor's id, and is saved. Its kind cannot.
+ **/
+BOOST_FIXTURE_TEST_CASE(an_editors_state_can_be_set, Quad) {
+    const std::size_t id = layout.areas()[1].editor().id;
+    BOOST_REQUIRE(layout.set(id, "camera", "Bottom"));
+    BOOST_CHECK_EQUAL(camera(1), "Bottom");
+    BOOST_CHECK(!layout.set(id, "kind", "outliner"));
+    BOOST_CHECK_EQUAL(layout.areas()[1].editor().kind, "viewport");
+    BOOST_CHECK(!layout.set(9999, "camera", "Top"));
+
+    AreaLayout again(logger());
+    BOOST_REQUIRE(again.load(layout.save()));
+    BOOST_CHECK_EQUAL(std::string(again.areas()[1].editor().state.at("camera").as_string()), "Bottom");
+}
+
+/**
  * A moved editor is shown in its new area, and an area it leaves empty goes.
  **/
 BOOST_FIXTURE_TEST_CASE(a_moved_editor_takes_its_area_with_it_when_alone, Quad) {

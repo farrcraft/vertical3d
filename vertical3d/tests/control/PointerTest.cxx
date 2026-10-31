@@ -200,6 +200,33 @@ BOOST_AUTO_TEST_CASE(a_press_on_a_divider_reaches_no_tool) {
 }
 
 /**
+ * A view's control that takes a press keeps it and its release from the dividers and the tools.
+ * One that turns a press down leaves it to them.
+ **/
+BOOST_AUTO_TEST_CASE(a_views_control_takes_a_press_before_the_tools) {
+    const Panes panes;
+    std::vector<glm::vec2> offered;
+    panes.pointer->controls([&offered](const glm::vec2& point) {
+        offered.push_back(point);
+        return point.x > 150.0F;
+    });
+
+    panes.pointer->motion(glm::vec2(160.0F, 20.0F));
+    panes.pointer->button(true);
+    panes.pointer->button(false);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 0);
+    BOOST_CHECK(!panes.tool->held);
+
+    panes.pointer->motion(glm::vec2(120.0F, 20.0F));
+    panes.pointer->button(true);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 1);
+    panes.pointer->button(false);
+    BOOST_CHECK(!panes.tool->held);
+    BOOST_REQUIRE_EQUAL(offered.size(), 2U);
+    BOOST_CHECK(offered[0] == glm::vec2(160.0F, 20.0F));
+}
+
+/**
  * With snapping, a dragged divider lands on a tenth of its split: the split runs 194 pixels
  * from 3, so a drag to 140 lands on its seventh tenth, centred at 138.8.
  **/

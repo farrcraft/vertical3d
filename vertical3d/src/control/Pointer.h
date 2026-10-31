@@ -23,8 +23,8 @@
 namespace v3d::editor {
 
 /**
- * Routes the mouse: to the ui drawn over the views, to a divider between areas, and to the
- * tools of the view under the cursor.
+ * Routes the mouse: to the ui drawn over the views, to a control a view draws over itself, to a
+ * divider between areas, and to the tools of the view under the cursor.
  *
  * A press goes to the first of those that takes it, and its release goes to the same place.
  * The ui is offered the cursor only between drags, so a drag that passes over the menu bar or
@@ -51,6 +51,12 @@ class Pointer final {
      * Finds the editor whose tab is at a point, or nothing.
      **/
     typedef std::function<std::optional<std::size_t>(const glm::vec2& point)> TabAt;
+
+    /**
+     * Offered a press at a point, before the dividers and the tools. Returns whether it took
+     * the press.
+     **/
+    typedef std::function<bool(const glm::vec2& point)> Take;
 
     /**
      * Where a dragged tab would land: the area, the edge it would make a new area on or nothing
@@ -116,6 +122,12 @@ class Pointer final {
     void tabs(const TabAt& at);
 
     /**
+     * Say what a view draws over itself that takes a press, such as a gizmo. The release of a
+     * press it took goes nowhere.
+     **/
+    void controls(const Take& take);
+
+    /**
      * @return where the tab being dragged would land if let go now, or nothing when no tab is
      *         being dragged or it would land nowhere
      **/
@@ -170,6 +182,9 @@ class Pointer final {
     bool uiGrab_;
     // whether a divider took the press, for the same reason
     bool dividerGrab_ = false;
+    // whether a view's control took the press, for the same reason
+    bool controlGrab_ = false;
+    Take controls_;
     // whether the ui took the last motion
     bool overUi_ = false;
     TabAt tabAt_;
