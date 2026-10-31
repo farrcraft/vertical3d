@@ -364,7 +364,7 @@ std::optional<std::size_t> Reader::addCurves(const pxr::UsdGeomCurves& source, c
     const pxr::VtArray<pxr::GfVec3f> points = valueOf(source.GetPointsAttr(), rest_, pxr::VtArray<pxr::GfVec3f>());
     const pxr::VtArray<int> counts = valueOf(source.GetCurveVertexCountsAttr(), rest_, pxr::VtArray<int>());
     const pxr::VtArray<float> widths = valueOf(source.GetWidthsAttr(), rest_, pxr::VtArray<float>());
-    Curves curves{ .name = name };
+    Curves curves{ .name = name, .curves = {} };
     std::size_t first = 0;
     std::size_t skipped = 0;
     for (std::size_t curve = 0; curve < counts.size(); curve++) {
