@@ -289,17 +289,10 @@ bool Interface::reachable(const boost::shared_ptr<Component>& component) const {
     return std::find(order.begin(), order.end(), component) != order.end();
 }
 
-namespace {
-
-/**
- * @return whether a component is one of a tree's, the root included
- **/
-bool within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component) {
+bool Interface::within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component) {
     return root == component || std::ranges::any_of(root->children(),
         [&component](const boost::shared_ptr<Component>& child) { return child && within(child, component); });
 }
-
-};  // namespace
 
 /**
  **/
@@ -308,13 +301,7 @@ bool Interface::holds(const Container& container, const boost::shared_ptr<Compon
         [&component](const boost::shared_ptr<Component>& root) { return root && within(root, component); });
 }
 
-namespace {
-
-/**
- * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
- * chosen, so a control on one is left out.
- **/
-void focusable(const boost::shared_ptr<Component>& component,
+void Interface::focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
     if (!component || !component->visible() || !component->enabled()) {
         return;  // a hidden or disabled subtree is skipped whole, not just its root
@@ -324,8 +311,6 @@ void focusable(const boost::shared_ptr<Component>& component,
     }
     forEachDrawn(*component, [found](const boost::shared_ptr<Component>& child) { focusable(child, found); });
 }
-
-};  // namespace
 
 /**
  **/

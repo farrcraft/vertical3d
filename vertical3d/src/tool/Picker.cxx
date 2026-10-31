@@ -41,13 +41,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * Where along a segment the closest point to a target is, as a fraction of it,
- * clamped to the segment's ends. A degenerate segment returns zero, its start.
  **/
-float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
+float Picker::closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
     const float length = glm::dot(along, along);
     if (length <= 0.0F) {
@@ -62,8 +58,6 @@ float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& targe
     }
     return u;
 }
-
-};  // namespace
 
 /**
  **/

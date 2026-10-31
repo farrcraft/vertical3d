@@ -15,11 +15,14 @@
 #include <demos/odyssey/src/tile/Map.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace odyssey::tile {
@@ -226,6 +229,30 @@ class World final {
      *         and zero for a tile inside it
      **/
     static int distance(const Region& region, v3d::grid::TileCoord tile);
+
+    /**
+     * The largest corner or size a world document may give, in tiles. Each number is converted
+     * through a float, which holds every whole number up to 2^24 exactly.
+     **/
+    static constexpr int32_t largest = 1 << 20;
+
+    /**
+     * Read an "x" and "y" pair of whole numbers from a member of an object.
+     *
+     * @return the pair, or nothing when the member is absent, either number is missing, not a
+     *         whole number, or outside [minimum, largest]
+     **/
+    static std::optional<v3d::grid::TileCoord> readPair(const boost::json::object& object, std::string_view key, int32_t minimum);
+
+    /**
+     * @return whether two rectangles of tiles share a tile
+     **/
+    static bool overlap(v3d::grid::TileCoord cornerA, v3d::grid::TileCoord sizeA, v3d::grid::TileCoord cornerB, v3d::grid::TileCoord sizeB);
+
+    /**
+     * Log an exception a region's load threw, with the region's file.
+     **/
+    static void logFailure(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& file, const std::exception_ptr& thrown);
 
     void request(std::size_t index);
     void release(std::size_t index);

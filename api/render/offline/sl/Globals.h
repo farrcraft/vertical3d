@@ -114,6 +114,10 @@ class Globals final {
         bool* ambient, const std::vector<glm::vec3>* from = nullptr) const;
 
  private:
+    static void put(runtime::Machine* machine, int reg, unsigned int lane, const glm::vec3 & value);
+
+    static void put(runtime::Machine* machine, int reg, unsigned int lane, float value);
+
     int position_ = -1;
     int normal_ = -1;
     int geometric_ = -1;

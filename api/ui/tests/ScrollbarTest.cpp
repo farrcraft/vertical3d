@@ -20,6 +20,12 @@
 
 namespace {
 
+/** How many rows a list holds, and how tall each is drawn. **/
+struct Rows {
+    std::size_t count = 0;
+    float height = 0.0F;
+};
+
 /**
  * A vertical bar of a given box, already placed the way a draw would leave it.
  **/
@@ -36,12 +42,6 @@ boost::shared_ptr<v3d::ui::component::Scrollbar> bar(const v3d::type::geometry::
  * A list of numbered rows, already placed and told how tall a row is drawn - both of which
  * a draw leaves on it.
  **/
-/** How many rows a list holds, and how tall each is drawn. **/
-struct Rows {
-    std::size_t count = 0;
-    float height = 0.0F;
-};
-
 boost::shared_ptr<v3d::ui::component::SelectList> list(const Rows& shape, const v3d::type::geometry::Bound2D::Area& box) {
     const std::size_t rows = shape.count;
     const float rowHeight = shape.height;

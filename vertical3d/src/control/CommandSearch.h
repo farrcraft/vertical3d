@@ -7,9 +7,11 @@
 
 #include <api/ui/Interface.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Menu.h>
 
 #include <cstddef>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -121,6 +123,33 @@ class CommandSearch final {
     std::optional<std::string> chosen() const;
 
  private:
+    /**
+     * What separates a row's path from its shortcut.
+     **/
+    static constexpr std::string_view SHORTCUT_GAP = "      ";
+
+    /**
+     * @return a string with every letter in lower case
+     **/
+    static std::string lower(std::string_view text);
+
+    /**
+     * @return the words of a query, in lower case
+     **/
+    static std::vector<std::string> words(std::string_view query);
+
+    /**
+     * @return whether a word of a text, as letters and digits after anything else, begins with a
+     *         prefix
+     **/
+    static bool beginsWord(const std::string& text, const std::string& prefix);
+
+    /**
+     * Add the items of a menu that send a command, under the path that leads to it.
+     **/
+    static void gather(const boost::shared_ptr<v3d::ui::component::menu::Menu>& menu, const std::string& path,
+        std::vector<Entry>* into, std::set<std::string>* seen);
+
     /**
      * Write the matches into the list, and choose the chosen row in it.
      **/

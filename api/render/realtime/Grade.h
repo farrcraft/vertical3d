@@ -15,6 +15,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <vector>
@@ -134,6 +135,17 @@ class Grade final {
     static std::vector<uint8_t> identity();
 
  private:
+    /**
+     * The number of texels in a table.
+     **/
+    static constexpr std::size_t TEXELS = static_cast<std::size_t>(SIZE) * SIZE * SIZE;
+
+    /**
+     * @return a compiled shader's words, as a pipeline spec takes them
+     **/
+    template <std::size_t N>
+    static std::vector<uint32_t> words(const uint32_t (&code)[N]);
+
     /**
      * A scene being graded: its registration, and the material that pairs it with the current
      * table. The material changes when the table is replaced. The handle the caller holds is

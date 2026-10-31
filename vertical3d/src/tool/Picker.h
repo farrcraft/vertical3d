@@ -125,6 +125,12 @@ class Picker final : public SceneVisitor {
 
  private:
     /**
+     * Where along a segment the closest point to a target is, as a fraction of it,
+     * clamped to the segment's ends. A degenerate segment returns zero, its start.
+     **/
+    static float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target);
+
+    /**
      * An item drawn in lines in its own space and placed by a model matrix: a curve, or a
      * camera's, a light's or a group's glyph. It is hit when a segment is within tolerance of
      * the cursor, and inside a rectangle when every point of it is.

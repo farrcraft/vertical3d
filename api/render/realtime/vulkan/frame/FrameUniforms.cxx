@@ -18,16 +18,6 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
-namespace {
-
-/**
- * How many sets each descriptor pool holds. Each pass of each frame in flight takes one set,
- * and DescriptorPool adds another pool when one fills.
- **/
-const uint32_t poolSize = 32;
-
-};  // namespace
-
 /**
  **/
 FrameUniforms::Camera::Camera() noexcept :

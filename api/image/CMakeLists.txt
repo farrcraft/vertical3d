@@ -4,6 +4,9 @@ v3d_add_api_library(image
 	"TextureAtlas.h" "TextureAtlas.cxx" "reader/Bmp.h" "reader/Bmp.cxx" "reader/Jpeg.h" "reader/Jpeg.cxx"
 	"reader/Png.h" "reader/Png.cxx" "reader/Tga.h" "reader/Tga.cxx" "writer/Bmp.h" "writer/Bmp.cxx"
 	"writer/Jpeg.h" "writer/Jpeg.cxx" "writer/Png.h" "writer/Png.cxx" "writer/Tga.h" "writer/Tga.cxx"
+	"reader/internal/Cursor.h"
+	"writer/internal/Destination.h" "writer/internal/Picture.h" "writer/internal/Reporting.h"
+	"writer/internal/TgaFooter.h" "writer/internal/TgaHeader.h"
 )
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
@@ -16,7 +19,8 @@ target_link_libraries(v3dlib_image PRIVATE Boost::filesystem)
 target_link_libraries(v3dlib_image PUBLIC glm::glm)
 
 # PRIVATE: the codecs are reached only from reader/ and writer/. format/JpegError.h includes
-# the jpeg header, and only the two jpeg sources include it, so no consumer needs it.
+# the jpeg header, and only the two jpeg sources and writer/internal/ include it, so no consumer
+# needs it. writer/internal/Picture.h includes the png header, and only writer/Png.cxx includes it.
 target_link_libraries(v3dlib_image PRIVATE PNG::PNG JPEG::JPEG)
 
 if(V3D_BUILD_TESTS)

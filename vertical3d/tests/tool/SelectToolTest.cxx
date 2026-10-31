@@ -34,6 +34,56 @@
 namespace {
 
 /**
+ * Two cubes side by side, 0.75 world units either side of the middle of the front view.
+ **/
+struct TwoCubes {
+    TwoCubes() :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        leftCube(50.0F, 200.0F),
+        rightCube(350.0F, 200.0F),
+        nowhere(200.0F, 10.0F) {
+        left->translation(glm::vec3(-0.75F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.75F, 0.0F, 0.0F));
+        scene->add(left);
+        scene->add(right);
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
+    // at two hundred pixels to the unit, the middle of each cube's front face, and a point
+    // on neither cube
+    glm::vec2 leftCube;
+    glm::vec2 rightCube;
+    glm::vec2 nowhere;
+};
+
+/**
+ * Two half size cubes side by side, a quarter of the view either side of its middle. Each
+ * covers fifty to a hundred and fifty pixels from the middle, and the band tests drag around
+ * them from the empty space above and below.
+ **/
+struct TwoSmallCubes {
+    TwoSmallCubes() :
+        scene(boost::make_shared<v3d::editor::Scene>()),
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
+        left->scale(glm::vec3(0.5F, 0.5F, 0.5F));
+        right->scale(glm::vec3(0.5F, 0.5F, 0.5F));
+        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
+        scene->add(left);
+        scene->add(right);
+    }
+
+    boost::shared_ptr<v3d::editor::Scene> scene;
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
+};
+
+/**
  * The same square front view the picker's own tests use: a world unit is two hundred
  * pixels and the middle of the view is the middle of a unit primitive.
  **/
@@ -65,6 +115,15 @@ std::size_t selectedComponents(const v3d::editor::Scene& scene, const boost::sha
         count += scene.components().of(item->id(), kind).size();
     }
     return count;
+}
+
+/**
+ * Press on one point, move to another and release there.
+ **/
+void drag(v3d::editor::SelectTool* select, const glm::vec2& from, const glm::vec2& to) {
+    select->button(1, true, from);
+    select->motion(to);
+    select->button(1, false, to);
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_object_test) {
@@ -113,33 +172,6 @@ BOOST_AUTO_TEST_CASE(select_tool_one_object_test) {
     BOOST_CHECK_EQUAL(first->selected(), false);
     BOOST_CHECK_EQUAL(second->selected(), true);
 }
-
-/**
- * Two cubes side by side, 0.75 world units either side of the middle of the front view.
- **/
-struct TwoCubes {
-    TwoCubes() :
-        scene(boost::make_shared<v3d::editor::Scene>()),
-        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        leftCube(50.0F, 200.0F),
-        rightCube(350.0F, 200.0F),
-        nowhere(200.0F, 10.0F) {
-        left->translation(glm::vec3(-0.75F, 0.0F, 0.0F));
-        right->translation(glm::vec3(0.75F, 0.0F, 0.0F));
-        scene->add(left);
-        scene->add(right);
-    }
-
-    boost::shared_ptr<v3d::editor::Scene> scene;
-    boost::shared_ptr<v3d::editor::Mesh> left;
-    boost::shared_ptr<v3d::editor::Mesh> right;
-    // at two hundred pixels to the unit, the middle of each cube's front face, and a point
-    // on neither cube
-    glm::vec2 leftCube;
-    glm::vec2 rightCube;
-    glm::vec2 nowhere;
-};
 
 BOOST_AUTO_TEST_CASE(select_tool_add_object_test) {
     const TwoCubes cubes;
@@ -214,38 +246,6 @@ BOOST_AUTO_TEST_CASE(select_tool_add_component_test) {
     BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.left), 0U);
     BOOST_CHECK_EQUAL(selectedComponents(*cubes.scene, cubes.right), 0U);
     BOOST_CHECK_EQUAL(cubes.scene->selection().size(), 2U);
-}
-
-/**
- * Two half size cubes side by side, a quarter of the view either side of its middle. Each
- * covers fifty to a hundred and fifty pixels from the middle, and the band tests drag around
- * them from the empty space above and below.
- **/
-struct TwoSmallCubes {
-    TwoSmallCubes() :
-        scene(boost::make_shared<v3d::editor::Scene>()),
-        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
-        left->scale(glm::vec3(0.5F, 0.5F, 0.5F));
-        right->scale(glm::vec3(0.5F, 0.5F, 0.5F));
-        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
-        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
-        scene->add(left);
-        scene->add(right);
-    }
-
-    boost::shared_ptr<v3d::editor::Scene> scene;
-    boost::shared_ptr<v3d::editor::Mesh> left;
-    boost::shared_ptr<v3d::editor::Mesh> right;
-};
-
-/**
- * Press on one point, move to another and release there.
- **/
-void drag(v3d::editor::SelectTool* select, const glm::vec2& from, const glm::vec2& to) {
-    select->button(1, true, from);
-    select->motion(to);
-    select->button(1, false, to);
 }
 
 BOOST_AUTO_TEST_CASE(select_tool_band_object_test) {

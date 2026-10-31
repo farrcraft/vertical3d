@@ -25,34 +25,15 @@
 
 namespace v3d::render::realtime::vulkan::device {
 
-namespace {
 /**
- * The device extensions the renderer cannot do without. Both the check against a candidate
- * device and the list the logical device is created with come from here, so a device is
- * created with exactly the extensions it was selected for.
- *
- * @param presenting whether the device presents, which is all the swapchain extension is for.
- *        A headless device needs nothing beyond 1.3 core
  **/
-std::vector<const char*> deviceExtensions(bool presenting) {
+std::vector<const char*> Device::deviceExtensions(bool presenting) {
     std::vector<const char*> extensions;
     if (presenting) {
         extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
     return extensions;
 }
-
-/**
- * The extension a portability driver offers, and a device that offers it must be created with.
- * Its name is spelled here because the header that names it is vulkan's beta one.
- **/
-const char* const portabilitySubset = "VK_KHR_portability_subset";
-
-/**
- * The vulkan version the renderer is written against.
- **/
-const uint32_t requiredApiVersion = VK_API_VERSION_1_3;
-};  // namespace
 
 /**
  **/

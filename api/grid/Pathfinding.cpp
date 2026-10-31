@@ -12,6 +12,9 @@
 #include "TileFilter.h"
 #include "TileGrid.h"
 
+#include <api/grid/internal/Frontier.h>
+#include <api/grid/internal/Walk.h>
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -43,73 +46,6 @@ int stepCost(TileCoord step) {
 }
 
 /**
- * One tile in the priority queue, ordered by estimated total cost. flood() uses the same type
- * with a heuristic of zero, which makes it Dijkstra's algorithm.
- **/
-struct Frontier {
-    int estimate{0};
-    std::size_t index{0};
-
-    friend bool operator>(const Frontier& lhs, const Frontier& rhs) {
-        return lhs.estimate > rhs.estimate;
-    }
-};
-
-typedef std::priority_queue<Frontier, std::vector<Frontier>, std::greater<>> Queue;
-
-/**
- * The grids plus the caller's filter, and the movement rules that read both.
- **/
-class Walk {
- public:
-    Walk(const GridSet& grids, const TileFilter& enterable) :
-        grids_(grids),
-        enterable_(enterable) {
-    }
-
-    std::size_t count() const {
-        return grids_.count();
-    }
-
-    std::size_t index(TileCoord tile) const {
-        return grids_.index(tile);
-    }
-
-    TileCoord coord(std::size_t index) const {
-        return grids_.tile(index);
-    }
-
-    /**
-     * Whether a tile may be entered at all. A tile in no grid is impassable, so this needs no
-     * separate bounds test.
-     **/
-    bool open(TileCoord tile) const {
-        return grids_.passable(tile) && (!enterable_ || enterable_(tile));
-    }
-
-    /**
-     * Whether a step may be taken from a tile.
-     *
-     * A diagonal additionally requires one of the two tiles it passes between to be open,
-     * so a wall laid corner to corner cannot be squeezed through. One blocked corner still
-     * allows the step, so a mover can round the end of a wall.
-     **/
-    bool allowed(TileCoord from, TileCoord step) const {
-        if (!open(TileCoord{ from.x + step.x, from.y + step.y })) {
-            return false;
-        }
-        if (step.x == 0 || step.y == 0) {
-            return true;
-        }
-        return open(TileCoord{ from.x + step.x, from.y }) || open(TileCoord{ from.x, from.y + step.y });
-    }
-
- private:
-    const GridSet& grids_;
-    const TileFilter& enterable_;
-};
-
-/**
  * Finds every tile reachable from seed, and the cost of reaching it. This is Dijkstra's
  * algorithm: the A* search of findPath() with a heuristic of zero. A step that would take the
  * cost past budget is not taken.
@@ -118,16 +54,16 @@ class Walk {
  *        empty
  * @return each tile's cost by grid index, or UNREACHED where the flood did not reach
  **/
-std::vector<int> flood(const Walk& walk, TileCoord seed, int budget, const std::function<void(TileCoord, int)>& settled) {
+std::vector<int> flood(const internal::Walk& walk, TileCoord seed, int budget, const std::function<void(TileCoord, int)>& settled) {
     std::vector<int> best(walk.count(), UNREACHED);
     const std::size_t seedIndex = walk.index(seed);
     best[seedIndex] = 0;
 
-    Queue frontier;
-    frontier.push(Frontier{ 0, seedIndex });
+    internal::Queue frontier;
+    frontier.push(internal::Frontier{ 0, seedIndex });
 
     while (!frontier.empty()) {
-        const Frontier current = frontier.top();
+        const internal::Frontier current = frontier.top();
         frontier.pop();
 
         // stale: this tile was queued again more cheaply after this entry was pushed
@@ -153,7 +89,7 @@ std::vector<int> flood(const Walk& walk, TileCoord seed, int budget, const std::
                 continue;
             }
             best[nextIndex] = cost;
-            frontier.push(Frontier{ cost, nextIndex });
+            frontier.push(internal::Frontier{ cost, nextIndex });
         }
     }
     return best;
@@ -177,7 +113,7 @@ std::vector<TileCoord> findPath(const GridSet& grids, TileCoord start, TileCoord
         return { start };
     }
 
-    const Walk walk(grids, enterable);
+    const internal::Walk walk(grids, enterable);
     if (!walk.open(goal)) {
         return {};
     }
@@ -188,11 +124,11 @@ std::vector<TileCoord> findPath(const GridSet& grids, TileCoord start, TileCoord
     const std::size_t startIndex = walk.index(start);
     best[startIndex] = 0;
 
-    Queue frontier;
-    frontier.push(Frontier{ tileDistance(start, goal), startIndex });
+    internal::Queue frontier;
+    frontier.push(internal::Frontier{ tileDistance(start, goal), startIndex });
 
     while (!frontier.empty()) {
-        const Frontier current = frontier.top();
+        const internal::Frontier current = frontier.top();
         frontier.pop();
 
         const TileCoord tile = walk.coord(current.index);
@@ -224,7 +160,7 @@ std::vector<TileCoord> findPath(const GridSet& grids, TileCoord start, TileCoord
             }
             best[nextIndex] = cost;
             from[nextIndex] = current.index;
-            frontier.push(Frontier{ cost + tileDistance(next, goal), nextIndex });
+            frontier.push(internal::Frontier{ cost + tileDistance(next, goal), nextIndex });
         }
     }
 
@@ -246,7 +182,7 @@ std::vector<ReachableTile> reachableTiles(const GridSet& grids, TileCoord start,
     }
 
     std::vector<ReachableTile> reached;
-    flood(Walk(grids, enterable), start, budget,
+    flood(internal::Walk(grids, enterable), start, budget,
         [&reached](TileCoord tile, int cost) { reached.push_back(ReachableTile{ tile, cost }); });
     return reached;
 }
@@ -265,7 +201,7 @@ DistanceField::DistanceField(const GridSet& grids, TileCoord goal, const TileFil
     // That is also the cost of the route back, because a step costs the same in both
     // directions, and a diagonal passes between the same two tiles from either end. A budget
     // of UNREACHED sets no limit. UNREACHED and UNREACHABLE are the same value
-    costs_ = flood(Walk(grids, enterable), goal, UNREACHED, {});
+    costs_ = flood(internal::Walk(grids, enterable), goal, UNREACHED, {});
 }
 
 int DistanceField::cost(TileCoord tile) const {

@@ -13,6 +13,7 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -72,6 +73,29 @@ class PropertiesEditor final {
     void draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, const glm::vec4& region);
 
  private:
+    /**
+     * How far a pixel of drag moves a number with no speed of its own, and a curve item's width.
+     **/
+    static constexpr float DEFAULT_SPEED = 0.01F;
+    static constexpr float WIDTH_SPEED = 0.001F;
+
+    /**
+     * How each property path is shown, and how far a pixel of drag moves it. A placement moves a
+     * hundredth of a unit, and an angle half a degree.
+     **/
+    static const std::map<std::string, Field>& fields();
+
+    /**
+     * @return a heading in lower case, as the name of the change an edit under it makes
+     **/
+    static std::string lower(const std::string& text);
+
+    /**
+     * @return whether values can be written into an item: a camera's lens, a light's emission and a
+     *         curve item's style are each valid, and the other kinds' are not written
+     **/
+    static bool valid(const Item& item, const EditCommand::Values& values);
+
     /**
      * An edit that has begun and not ended: the item, and its values when it began.
      **/

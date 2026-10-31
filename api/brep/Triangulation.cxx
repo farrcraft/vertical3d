@@ -5,6 +5,7 @@
 
 #include "Triangulation.h"
 
+#include <api/brep/internal/Outline.h>
 
 #include <algorithm>
 #include <array>
@@ -67,17 +68,8 @@ glm::vec3 faceNormal(const BRep& mesh, Index face) {
     return glm::vec3(0.0F, 0.0F, 1.0F);
 }
 
-/**
- * A face's corners counter-clockwise seen from outside, and where each lands in the face's own
- * plane.
- **/
-struct Outline {
-    std::vector<Index> corners;
-    std::vector<glm::vec2> flat;
-};
-
-Outline outline(const BRep& mesh, Index face) {
-    Outline result;
+internal::Outline outline(const BRep& mesh, Index face) {
+    internal::Outline result;
     // a half edge ends at a vertex, so the loop's ends are its corners in loop order. The loop
     // runs clockwise seen from outside, so the reverse is counter-clockwise
     for (const Index edge : faceLoop(mesh, face)) {
@@ -100,7 +92,7 @@ Outline outline(const BRep& mesh, Index face) {
  * Where an ear is among the corners left: one that turns the right way and holds no other
  * corner inside the triangle it makes with its neighbours.
  **/
-std::optional<std::size_t> ear(const Outline& shape, const std::vector<std::size_t>& left) {
+std::optional<std::size_t> ear(const internal::Outline& shape, const std::vector<std::size_t>& left) {
     for (std::size_t index = 0; index < left.size(); index++) {
         const std::size_t before = left[(index + left.size() - 1) % left.size()];
         const std::size_t at = left[index];
@@ -184,7 +176,7 @@ Triangles flat(const BRep& mesh) {
  **/
 std::vector<std::array<Index, 3>> triangulateFace(const BRep& mesh, Index face) {
     std::vector<std::array<Index, 3>> triangles;
-    const Outline shape = outline(mesh, face);
+    const internal::Outline shape = outline(mesh, face);
     if (shape.corners.size() < 3) {
         return triangles;
     }

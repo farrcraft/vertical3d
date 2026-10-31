@@ -163,6 +163,17 @@ class LineEdit final {
 
  private:
     /**
+     * The top two bits of a utf-8 byte, which say whether it is a continuation, and the value
+     * they hold in one.
+     **/
+    static constexpr unsigned int CONTINUATION_MASK = 0xC0U;
+    static constexpr unsigned int CONTINUATION_TAG = 0x80U;
+    /**
+     * Whether a byte is a utf-8 continuation - the ones a character boundary is never on.
+     **/
+    static bool continuation(char byte) noexcept;
+
+    /**
      * The character boundary at or before an offset, so a caret never lands inside a
      * multi-byte character however it was asked to move.
      **/

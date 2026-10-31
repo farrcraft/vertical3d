@@ -71,6 +71,25 @@ class PongScene {
     GameState & state();
 
  private:
+    // court units per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
+    // its whole run in a little under six seconds.
+    static constexpr float PADDLE_SPEED = 90.0F;
+
+    // the vertical velocity a travelling paddle adds to the return, in court units per second,
+    // before the return is scaled back to the ball's incoming speed. It is a third of the
+    // paddle's own speed, enough to steer a return without overriding where it was struck
+    static constexpr float PADDLE_ENGLISH = 30.0F;
+
+    // the steepest return, off either end of a paddle, in radians: fifty degrees from the
+    // horizontal. A ball struck by the paddle's centre goes back flat
+    static constexpr float MAX_RETURN_ANGLE = 0.8727F;
+
+    /**
+     * The pan of a point on the court: -1 at the left edge, 1 at the right. The court is drawn
+     * with x running left to right across the window, so left on the court is left on screen.
+     **/
+    static float across(float x);
+
     /**
      * The phases of one tick, in the order tick() runs them. Each phase that takes a position
      * is given the one tick() read before the first phase. A bounce changes only the ball's

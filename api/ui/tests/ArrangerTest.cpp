@@ -33,15 +33,21 @@ namespace {
 
 const float characterWidth = 10.0F;
 
-v3d::ui::paint::Measure measure() {
-    return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
-}
-
 /** A label's name, and the text it shows. **/
 struct Labelled {
     std::string name;
     std::string text;
 };
+
+/** How wide a wrapping row is, and how many cells it holds. **/
+struct Row {
+    float width = 0.0F;
+    std::size_t cells = 0;
+};
+
+v3d::ui::paint::Measure measure() {
+    return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
+}
 
 boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
     boost::shared_ptr<v3d::ui::component::Label> made =
@@ -68,12 +74,6 @@ boost::shared_ptr<v3d::ui::component::Panel> cell(const glm::vec2& size) {
 /**
  * A row that wraps, at a width, holding a number of 48 pixel cells 8 pixels apart.
  **/
-/** How wide a wrapping row is, and how many cells it holds. **/
-struct Row {
-    float width = 0.0F;
-    std::size_t cells = 0;
-};
-
 boost::shared_ptr<v3d::ui::component::HorizontalBox> grid(const Row& row,
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>>* made) {
     const float width = row.width;

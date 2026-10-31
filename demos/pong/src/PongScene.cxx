@@ -17,19 +17,6 @@
 
 namespace {
 
-// court units per second. The court is 800x600 and a paddle runs 40 to 560, so a paddle crosses
-// its whole run in a little under six seconds.
-constexpr float PADDLE_SPEED = 90.0F;
-
-// the vertical velocity a travelling paddle adds to the return, in court units per second, before
-// the return is scaled back to the ball's incoming speed. It is a third of the paddle's own
-// speed, enough to steer a return without overriding where it was struck
-constexpr float PADDLE_ENGLISH = 30.0F;
-
-// the steepest return, off either end of a paddle, in radians: fifty degrees from the
-// horizontal. A ball struck by the paddle's centre goes back flat
-constexpr float MAX_RETURN_ANGLE = 0.8727F;
-
 /**
  * The area a paddle returns the ball from: its own length vertically, and from left to right
  * horizontally, which the caller sets from the paddle's face to beyond the court's edge.
@@ -39,15 +26,11 @@ v3d::type::geometry::Bound2D paddleReach(Paddle& paddle, float left, float right
     return v3d::type::geometry::Bound2D({.position = glm::vec2(left, top), .size = glm::vec2(right - left, paddle.length())});
 }
 
-/**
- * The pan of a point on the court: -1 at the left edge, 1 at the right. The court is drawn
- * with x running left to right across the window, so left on the court is left on screen.
- **/
-float across(float x) {
+};  // namespace
+
+float PongScene::across(float x) {
     return (x / PongScene::width * 2.0F) - 1.0F;
 }
-
-};  // namespace
 
 PongScene::PongScene(entt::registry* registry, const boost::shared_ptr<entt::dispatcher>& dispatcher) :
     dispatcher_(dispatcher),

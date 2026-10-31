@@ -11,6 +11,10 @@
 
 #include <glm/vec2.hpp>
 
+namespace v3d::type {
+class Random;
+};  // namespace v3d::type
+
 namespace v3d::render::offline {
 
 /**
@@ -48,6 +52,12 @@ class Sampler final {
     std::vector<Sample> pixel(unsigned int column, unsigned int row, unsigned int pass = 0) const;
 
  private:
+    /**
+     * Where in a stratum a sample falls: its centre when the axis has one stratum, and anywhere
+     * in it otherwise.
+     **/
+    static float jitter(unsigned int strata, v3d::type::Random * random);
+
     Sampling sampling_;
 };
 

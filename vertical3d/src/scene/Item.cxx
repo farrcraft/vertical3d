@@ -7,6 +7,7 @@
 
 #include <api/type/Transform.h>
 
+#include <atomic>
 #include <cstdint>
 #include <string>
 
@@ -16,16 +17,10 @@
 
 namespace v3d::editor {
 
-namespace {
-
-unsigned int lastId = 0;
-
-};  // namespace
-
 /**
  **/
 Item::Item() :
-    id_(++lastId),
+    id_(nextId()),
     selected_(false),
     documentId_(0) {
 }
@@ -33,6 +28,13 @@ Item::Item() :
 /**
  **/
 Item::~Item() {
+}
+
+/**
+ **/
+unsigned int Item::nextId() noexcept {
+    static std::atomic<unsigned int> last{ 0 };  // process-wide: a run-unique id counter, so ids stay unique whichever scene holds an item
+    return ++last;
 }
 
 /**

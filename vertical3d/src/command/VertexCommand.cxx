@@ -24,51 +24,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * How far apart two points may be and still be the same point. A vertex is moved through
- * its object's matrix and back, so a gesture that measured nothing still changes the last
- * bits of it.
- **/
-constexpr float tolerance = 1e-5F;
-
-/**
- * Whether two curves are of one type and closed alike, with their points, handles and handle
- * types the same, to within the tolerance. A gesture moves no NURBS weight or knot, so those
- * are not compared.
- **/
-bool sameCurve(const v3d::curve::Curve& one, const v3d::curve::Curve& other) {
-    if (one.shape.index() != other.shape.index() || one.closed != other.closed) {
-        return false;
-    }
-    const std::size_t count = controlCount(one);
-    if (count != controlCount(other)) {
-        return false;
-    }
-    for (std::size_t point = 0; point < count; point++) {
-        if (glm::distance(controlPoint(one, point), controlPoint(other, point)) > tolerance) {
-            return false;
-        }
-    }
-    const auto* bezier = std::get_if<v3d::curve::Bezier>(&one.shape);
-    if (bezier == nullptr) {
-        return true;
-    }
-    const std::vector<v3d::curve::BezierPoint>& others = std::get<v3d::curve::Bezier>(other.shape).points;
-    for (std::size_t point = 0; point < count; point++) {
-        const v3d::curve::BezierPoint& mine = bezier->points[point];
-        const v3d::curve::BezierPoint& theirs = others[point];
-        if (mine.leftType != theirs.leftType || mine.rightType != theirs.rightType ||
-            glm::distance(mine.left, theirs.left) > tolerance || glm::distance(mine.right, theirs.right) > tolerance) {
-            return false;
-        }
-    }
-    return true;
-}
-
-};  // namespace
-
 /**
  **/
 VertexCommand::Shape VertexCommand::Shape::of(const Target::Part& part) {
@@ -193,6 +148,37 @@ void VertexCommand::redo() {
  **/
 std::string VertexCommand::name() const {
     return mode_;
+}
+
+/**
+ **/
+bool VertexCommand::sameCurve(const v3d::curve::Curve& one, const v3d::curve::Curve& other) {
+    if (one.shape.index() != other.shape.index() || one.closed != other.closed) {
+        return false;
+    }
+    const std::size_t count = controlCount(one);
+    if (count != controlCount(other)) {
+        return false;
+    }
+    for (std::size_t point = 0; point < count; point++) {
+        if (glm::distance(controlPoint(one, point), controlPoint(other, point)) > tolerance) {
+            return false;
+        }
+    }
+    const auto* bezier = std::get_if<v3d::curve::Bezier>(&one.shape);
+    if (bezier == nullptr) {
+        return true;
+    }
+    const std::vector<v3d::curve::BezierPoint>& others = std::get<v3d::curve::Bezier>(other.shape).points;
+    for (std::size_t point = 0; point < count; point++) {
+        const v3d::curve::BezierPoint& mine = bezier->points[point];
+        const v3d::curve::BezierPoint& theirs = others[point];
+        if (mine.leftType != theirs.leftType || mine.rightType != theirs.rightType ||
+            glm::distance(mine.left, theirs.left) > tolerance || glm::distance(mine.right, theirs.right) > tolerance) {
+            return false;
+        }
+    }
+    return true;
 }
 
 };  // namespace v3d::editor

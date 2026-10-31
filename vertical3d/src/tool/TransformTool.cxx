@@ -32,12 +32,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * What a mode is called, for the log.
  **/
-const char* modeName(TransformTool::Mode mode) {
+const char* TransformTool::modeName(TransformTool::Mode mode) {
     switch (mode) {
     case TransformTool::Mode::Translate:
         return "translate";
@@ -50,8 +47,6 @@ const char* modeName(TransformTool::Mode mode) {
         return "select";
     }
 }
-
-};  // namespace
 
 /**
  **/

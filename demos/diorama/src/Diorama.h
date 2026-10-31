@@ -15,6 +15,7 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace diorama {
 
@@ -55,6 +56,18 @@ class Diorama final : public v3d::engine::Engine {
     bool release() override;
 
  private:
+    /** The clip the well plays, as sounds.json files it. **/
+    static constexpr const char* WELL_CLIP = "well";
+
+    /** Where the voice sits above the well's base: at the water. **/
+    static constexpr glm::vec3 WATER{0.0F, 0.6F, 0.0F};
+
+    /** How long the well's voice takes to fade up, in milliseconds. **/
+    static constexpr int FADE_IN = 1000;
+
+    /** The orthographic half height the camera starts at, which shows the whole village. **/
+    static constexpr float START_ZOOM = 8.0F;
+
     // the ui, the menu, the screen and the statistics overlay
     v3d::shell::Shell shell_;
     boost::shared_ptr<v3d::audio::Player> sound_;

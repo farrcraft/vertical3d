@@ -21,10 +21,11 @@
 #include <api/render/offline/Units.h>
 #include <api/render/offline/sl/Builtins.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/internal/Range.h>
+#include <api/render/offline/sl/runtime/internal/Site.h>
 
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -48,17 +49,11 @@ float sign(float value) {
     return value > 0.0F ? 1.0F : 0.0F;
 }
 
-/** The bounds a value is clamped to. **/
-struct Range {
-    float low = 0.0F;
-    float high = 1.0F;
-};
-
 /**
  * A value held to a range. Unlike std::clamp, a range whose low end is above its high end is
  * not an error: a shader may pass one, and the low end wins.
  **/
-float clamp(float value, const Range & range) {
+float clamp(float value, const internal::Range & range) {
     if (value < range.low) {
         return range.low;
     }
@@ -154,75 +149,40 @@ float number(Body body, const float* given, std::size_t count) {
     }
 }
 
-glm::vec3 unit(const glm::vec3 & value) {
+/** Whether the body differences neighbouring shading points. **/
+bool derivative(Body body) {
+    return body == Body::DU || body == Body::DV || body == Body::DERIV || body == Body::AREA ||
+        body == Body::CALCULATENORMAL;
+}
+
+/** Whether the body works through the matrix of a named coordinate space. **/
+bool transforming(Body body) {
+    return body == Body::PTRANSFORM || body == Body::VTRANSFORM ||
+        body == Body::NTRANSFORM || body == Body::MTRANSFORM;
+}
+
+};  // namespace
+
+glm::vec3 Machine::unit(const glm::vec3 & value) {
     // glm::normalize of a zero direction is not a number, and a shader that normalized one
     // should render black rather than render nothing at all
     const float length = glm::length(value);
     return length == 0.0F ? value : value / length;
 }
 
-/**
- * A direction turned to lie on the same side of the surface as the reference does, so a
- * shader can handle a surface facing away without knowing which way it faces.
- **/
-glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
+glm::vec3 Machine::faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
     const glm::vec3 & reference) {
     return glm::dot(-incident, reference) < 0.0F ? -normal : normal;
 }
 
-glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta) {
+glm::vec3 Machine::refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta) {
     const float cosine = glm::dot(incident, normal);
     const float discriminant = 1.0F - (eta * eta * (1.0F - (cosine * cosine)));
     // a negative discriminant is total internal reflection, where nothing is refracted
     return discriminant < 0.0F ? glm::vec3(0.0F) : eta * incident - ((eta * cosine) + std::sqrt(discriminant)) * normal;
 }
 
-/**
- * Everything one call needs, gathered once for the batch. Only the point index changes from
- * one shading point to the next.
- **/
-class Site final {
- public:
-    Body body = Body::STUB;
-    /** Where the result goes. **/
-    Value* target = nullptr;
-    /**
-     * The value written: the result for every body but a setter. `setxcomp` writes the
-     * argument it was given and returns nothing.
-     **/
-    Value* written = nullptr;
-    const std::vector<const Value*>* given = nullptr;
-    /** The arguments a body returns results through, for one that writes more than one. **/
-    const std::vector<Value*>* outputs = nullptr;
-    /** The matrix of a named coordinate space, for the bodies that take one. **/
-    glm::mat4x4 matrix = glm::mat4x4(1.0F);
-    /** Whether a point through the matrix is divided by w: a space it names is projected. **/
-    bool projected = false;
-    /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
-    const Texture* texture = nullptr;
-    const Value* s = nullptr;
-    const Value* t = nullptr;
-    /** How the batch lies on the surface, for the derivatives. **/
-    Renderer::Shape shape;
-
-    const Value & argument(std::size_t which) const {
-        return *(*given)[which];
-    }
-
-    std::size_t count() const {
-        return given->size();
-    }
-};
-
-/**
- * The unpolarised reflectance of a dielectric, the mean of its two polarisations, and the
- * reflected and refracted directions with it.
- *
- * The incident direction and the normal are normalised first, and the normal is taken to
- * face against the incident direction, as refract() takes it. Past the critical angle
- * everything is reflected and the refracted direction is zero, as refract() returns it.
- **/
-void fresnel(const Site & site, unsigned int point) {
+void Machine::fresnel(const internal::Site & site, unsigned int point) {
     const glm::vec3 incident = unit(site.argument(0).triple(point));
     const glm::vec3 normal = unit(site.argument(1).triple(point));
     const float eta = site.argument(2).number(point);
@@ -244,15 +204,7 @@ void fresnel(const Site & site, unsigned int point) {
     }
 }
 
-/**
- * The offsets each of three noise components is read at, so that a colour of noise is three
- * patterns and not one grey one. The offsets are far apart and off the lattice.
- **/
-const float STREAMS[3][3] = {
-    { 0.0F, 0.0F, 0.0F }, { 31.416F, 47.853F, 12.793F }, { -73.218F, 9.631F, 58.437F }
-};
-
-void pattern(const Site & site, unsigned int point) {
+void Machine::pattern(const internal::Site & site, unsigned int point) {
     if (site.body == Body::TEXTURE) {
         const float s = site.s == nullptr ? 0.0F : site.s->number(point);
         const float t = site.t == nullptr ? 0.0F : site.t->number(point);
@@ -278,7 +230,7 @@ void pattern(const Site & site, unsigned int point) {
     }
 }
 
-void geometry(const Site & site, unsigned int point) {
+void Machine::geometry(const internal::Site & site, unsigned int point) {
     switch (site.body) {
         case Body::LENGTH:
             site.target->number(point, glm::length(site.argument(0).triple(point)));
@@ -308,7 +260,7 @@ void geometry(const Site & site, unsigned int point) {
     }
 }
 
-void component(const Site & site, unsigned int point) {
+void Machine::component(const internal::Site & site, unsigned int point) {
     // xcomp, ycomp and zcomp are consecutive and so are their setters, so the offset from
     // the first gives the component index
     switch (site.body) {
@@ -337,11 +289,7 @@ void component(const Site & site, unsigned int point) {
     }
 }
 
-/**
- * The built-ins that work through a named space. A cast to a space compiles to the TRANSFORM
- * instruction instead, which Machine::transform() runs.
- **/
-void spaces(const Site & site, unsigned int point) {
+void Machine::spaces(const internal::Site & site, unsigned int point) {
     // the value is the last argument in every form: a space name or two comes first
     const Value & value = site.argument(site.count() - 1);
     switch (site.body) {
@@ -368,7 +316,7 @@ void spaces(const Site & site, unsigned int point) {
     }
 }
 
-void matrices(const Site & site, unsigned int point) {
+void Machine::matrices(const internal::Site & site, unsigned int point) {
     switch (site.body) {
         case Body::DETERMINANT:
             site.target->number(point, glm::determinant(site.argument(0).matrix(point)));
@@ -391,12 +339,7 @@ void matrices(const Site & site, unsigned int point) {
     }
 }
 
-/**
- * The built-ins where each component of the result is the same function of that component of
- * each argument. A one-component argument is read for every component, as RI promotes a
- * float. The missing components are not read as zero.
- **/
-void componentwise(const Site & site, unsigned int point) {
+void Machine::componentwise(const internal::Site & site, unsigned int point) {
     float given[3] = { 0.0F, 0.0F, 0.0F };
     const std::size_t count = site.count() < 3 ? site.count() : 3;
     for (unsigned int i = 0; i < site.target->components(); i++) {
@@ -408,14 +351,7 @@ void componentwise(const Site & site, unsigned int point) {
     }
 }
 
-/** Along u or along v, for a derivative. **/
-enum class Direction : std::uint8_t { U, V };
-
-/**
- * The step in u or v from a point to its neighbour: its stencil group's own, or the shape's
- * du or dv.
- **/
-float stride(const Renderer::Shape & shape, unsigned int point, Direction direction) {
+float Machine::stride(const Renderer::Shape & shape, unsigned int point, Direction direction) {
     const bool alongU = direction == Direction::U;
     if (shape.layout == Renderer::Shape::Layout::STENCIL && shape.steps != nullptr) {
         const std::size_t group = point / 3U;
@@ -428,12 +364,7 @@ float stride(const Renderer::Shape & shape, unsigned int point, Direction direct
     return alongU ? shape.du : shape.dv;
 }
 
-/**
- * The two points a derivative at a point differences, and the step between them, or false
- * where the shape gives the point no neighbour that way. On a grid the neighbour is the next
- * point, or the previous one on the last row or column.
- **/
-bool neighbours(const Renderer::Shape & shape, unsigned int point, Direction direction,
+bool Machine::neighbours(const Renderer::Shape & shape, unsigned int point, Direction direction,
     unsigned int* from, unsigned int* to, float* step) {
     const bool alongU = direction == Direction::U;
     *step = stride(shape, point, direction);
@@ -468,11 +399,7 @@ bool neighbours(const Renderer::Shape & shape, unsigned int point, Direction dir
     return false;
 }
 
-/**
- * One component of a value's derivative along u or v at a point. A uniform value is the same
- * at every point, so its derivative is zero.
- **/
-float slope(const Value & value, unsigned int component, const Renderer::Shape & shape, unsigned int point,
+float Machine::slope(const Value & value, unsigned int component, const Renderer::Shape & shape, unsigned int point,
     Direction direction) {
     unsigned int from = 0;
     unsigned int to = 0;
@@ -483,21 +410,12 @@ float slope(const Value & value, unsigned int component, const Renderer::Shape &
     return (value.component(to, component) - value.component(from, component)) / step;
 }
 
-/** A position's derivative along u or v at a point. **/
-glm::vec3 slope(const Value & value, const Renderer::Shape & shape, unsigned int point, Direction direction) {
+glm::vec3 Machine::slope(const Value & value, const Renderer::Shape & shape, unsigned int point, Direction direction) {
     return { slope(value, 0, shape, point, direction), slope(value, 1, shape, point, direction),
         slope(value, 2, shape, point, direction) };
 }
 
-/**
- * Du, Dv, Deriv, area and calculatenormal.
- *
- * Deriv(num, den) is RI's Du(num) / Du(den) + Dv(num) / Dv(den), with a term dropped where
- * den does not change in that direction. area(P) is the area of the patch a step along u and
- * a step along v span. calculatenormal(P) is Du(P) ^ Dv(P), which on a diced polygon points
- * the way its Ng does.
- **/
-void derivatives(const Site & site, unsigned int point) {
+void Machine::derivatives(const internal::Site & site, unsigned int point) {
     const Value & value = site.argument(0);
     switch (site.body) {
         case Body::DU:
@@ -536,7 +454,7 @@ void derivatives(const Site & site, unsigned int point) {
     }
 }
 
-void apply(const Site & site, unsigned int point) {
+void Machine::apply(const internal::Site & site, unsigned int point) {
     switch (site.body) {
         case Body::DU:
         case Body::DV:
@@ -590,11 +508,7 @@ void apply(const Site & site, unsigned int point) {
     }
 }
 
-/**
- * How a printf conversion prints its value. SL's conversions name types, not C's formats: %c
- * is a colour, %p a point, %v a vector, %n a normal and %m a matrix.
- **/
-std::string printed(char conversion, const Value & value, unsigned int point) {
+std::string Machine::printed(char conversion, const Value & value, unsigned int point) {
     if (conversion == 's') {
         return value.text();
     }
@@ -614,7 +528,7 @@ std::string printed(char conversion, const Value & value, unsigned int point) {
     return wide == 1 ? text : "(" + text + ")";
 }
 
-std::string format(const std::vector<const Value*> & given, unsigned int point) {
+std::string Machine::format(const std::vector<const Value*> & given, unsigned int point) {
     const std::string & text = given[0]->text();
     std::string line;
     std::size_t next = 1;
@@ -636,20 +550,6 @@ std::string format(const std::vector<const Value*> & given, unsigned int point) 
     }
     return line;
 }
-
-/** Whether the body differences neighbouring shading points. **/
-bool derivative(Body body) {
-    return body == Body::DU || body == Body::DV || body == Body::DERIV || body == Body::AREA ||
-        body == Body::CALCULATENORMAL;
-}
-
-/** Whether the body works through the matrix of a named coordinate space. **/
-bool transforming(Body body) {
-    return body == Body::PTRANSFORM || body == Body::VTRANSFORM ||
-        body == Body::NTRANSFORM || body == Body::MTRANSFORM;
-}
-
-};  // namespace
 
 glm::mat4x4 Machine::between(const std::vector<const Value*> & given, bool* divided) {
     glm::mat4x4 matrix = space(given[0]->text());
@@ -695,7 +595,7 @@ void Machine::builtin(const Instruction & instruction) {
         return;
     }
 
-    Site site;
+    internal::Site site;
     site.body = body;
     std::vector<const Value*> given;
     given.reserve(instruction.arguments.size());

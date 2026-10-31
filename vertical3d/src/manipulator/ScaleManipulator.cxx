@@ -21,23 +21,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * The box at the tip of a handle, and the one at the centre, as a fraction of a
- * handle's length.
- **/
-constexpr float tipSize = 0.07F;
-constexpr float centreSize = 0.06F;
-
-/**
- * The smallest a scale factor is allowed to become. A drag that ran past zero would
- * turn the object inside out and could never be dragged back, the handle having no
- * length left to grab.
- **/
-
-};  // namespace
-
 /**
  **/
 ScaleManipulator::ScaleManipulator() {

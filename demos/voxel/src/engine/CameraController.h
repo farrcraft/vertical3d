@@ -103,6 +103,31 @@ class CameraController final {
     const glm::vec3& velocity() const noexcept;
 
  private:
+    /** Degrees below or above the horizon the view stops at: straight down or straight up. **/
+    static constexpr float PITCH_LIMIT = 90.0F;
+
+    static constexpr glm::vec3 WORLD_UP{0.0F, 1.0F, 0.0F};
+
+    /**
+     * One axis's velocity, which way it is driven, how fast it changes, its limit, and the time.
+     **/
+    struct Axis {
+        float current = 0.0F;
+        float direction = 0.0F;
+        float acceleration = 0.0F;
+        float limit = 0.0F;
+        float elapsed = 0.0F;
+    };
+
+    /**
+     * One axis of the velocity, after one update.
+     *
+     * A driven axis accelerates toward its limit and is clamped there. An axis that is not
+     * driven decelerates toward zero and stops there, without crossing it. The deceleration
+     * therefore takes the sign that moves the velocity toward zero.
+     **/
+    static float axisVelocity(const Axis& axis);
+
     /**
      * Write the eye and the orientation into the camera, and rebuild its view.
      **/

@@ -57,6 +57,21 @@ struct Click {
     uint8_t clicks = 1;
 };
 
+/** How far the wheel turned, and where the cursor was. **/
+struct Wheel {
+    float notches = 0.0F;
+    float x = 0.0F;
+    float y = 0.0F;
+};
+
+/** Where the cursor is, and how far it moved. **/
+struct Motion {
+    float x = 0.0F;
+    float y = 0.0F;
+    float dx = 0.0F;
+    float dy = 0.0F;
+};
+
 SDL_Event buttonEvent(const Click& spec) {
     SDL_Event event{};
     event.type = spec.type;
@@ -67,13 +82,6 @@ SDL_Event buttonEvent(const Click& spec) {
     return event;
 }
 
-/** How far the wheel turned, and where the cursor was. **/
-struct Wheel {
-    float notches = 0.0F;
-    float x = 0.0F;
-    float y = 0.0F;
-};
-
 SDL_Event wheelEvent(const Wheel& spec) {
     SDL_Event event{};
     event.type = SDL_EVENT_MOUSE_WHEEL;
@@ -83,14 +91,6 @@ SDL_Event wheelEvent(const Wheel& spec) {
     event.wheel.mouse_y = spec.y;
     return event;
 }
-
-/** Where the cursor is, and how far it moved. **/
-struct Motion {
-    float x = 0.0F;
-    float y = 0.0F;
-    float dx = 0.0F;
-    float dy = 0.0F;
-};
 
 SDL_Event motionEvent(const Motion& spec) {
     SDL_Event event{};

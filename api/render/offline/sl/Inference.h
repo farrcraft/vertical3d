@@ -45,6 +45,8 @@ class Inference final {
     std::string run();
 
  private:
+    static Storage join(Storage left, Storage right);
+
     void inferBlock(const syntax::BlockPtr & block, bool varyingContext);
     void inferStatement(const syntax::StatementPtr & statement, bool varyingContext);
     void inferDeclaration(const syntax::StatementPtr & statement, bool varyingContext);

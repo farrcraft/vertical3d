@@ -49,7 +49,7 @@ class TextureAtlas {
      *
      * @param stride how many bytes apart the rows of the data are
      **/
-    void region(const glm::ivec4 & area, unsigned char * data, unsigned int stride);
+    void region(const glm::ivec4 & area, const unsigned char * data, unsigned int stride);
 
  protected:
     glm::ivec4 allocate(unsigned int width, unsigned int height);
@@ -57,6 +57,13 @@ class TextureAtlas {
     void merge();
 
  private:
+    /**
+     * Texels held empty around every region, so that a sampler reading a region's edge texel
+     * cannot reach into whatever was packed beside it. One texel is enough for bilinear
+     * filtering. A mipmapped atlas would need a gutter that grows with the mip chain.
+     **/
+    static constexpr unsigned int gutter = 1;
+
     std::vector<glm::ivec3> nodes_;
     unsigned int width_;
     unsigned int height_;

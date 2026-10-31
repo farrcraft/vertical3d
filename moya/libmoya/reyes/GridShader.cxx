@@ -10,7 +10,6 @@
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
-#include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Line.h>
 #include <moya/libmoya/Vertex.h>
@@ -28,12 +27,6 @@
 #include <glm/vec3.hpp>
 
 namespace v3d::moya::reyes {
-
-namespace {
-
-typedef v3d::render::offline::sl::runtime::Value Value;
-
-};  // namespace
 
 GridShader::GridShader(state::RenderContext* context) :
     context_(context), tracer_(&context->traced(), &context->textures()) {

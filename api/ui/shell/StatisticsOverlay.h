@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui::shell {
 
@@ -122,6 +123,27 @@ class StatisticsOverlay final {
     std::vector<std::string> content(const Sample& sample) const;
 
  private:
+    /**
+     * The gap from the corner of the canvas to the box, and from the box to the text inside it.
+     **/
+    static constexpr float margin = 8.0F;
+    static constexpr float padding = 6.0F;
+    /**
+     * A line's height as a multiple of the size the readout is drawn at.
+     **/
+    static constexpr float lineSpacing = 1.3F;
+    /**
+     * The background is translucent, so that the scene stays visible under the numbers.
+     **/
+    static constexpr glm::vec4 background{0.0F, 0.0F, 0.0F, 0.6F};
+    static constexpr glm::vec4 foreground{0.9F, 0.9F, 0.9F, 1.0F};
+    static constexpr double nanosecondsPerMillisecond = 1000000.0;
+    static constexpr double nanosecondsPerSecond = 1000000000.0;
+    /**
+     * A duration in nanoseconds, as milliseconds to one decimal place.
+     **/
+    static std::string milliseconds(std::uint64_t nanoseconds);
+
     boost::shared_ptr<paint::TextRenderer> text_;
     float size_;
     bool visible_;

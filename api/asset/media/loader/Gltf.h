@@ -9,6 +9,7 @@
 #include <api/image/Image.h>
 
 #include <string>
+#include <string_view>
 
 struct cgltf_image;
 
@@ -60,6 +61,20 @@ class Gltf final : public Loader {
     boost::shared_ptr<Asset> load(std::string_view name) override;
 
  private:
+    // the marker that ends the header of a base64 data uri
+    static constexpr std::string_view BASE64_MARKER = ";base64";
+
+    /**
+     * Which reader decodes an embedded image, from the mime type the file gave it or, when it gave
+     * none, from the type a data uri states.
+     *
+     * glTF allows only png and jpeg for an embedded image. Any other type is outside the
+     * specification, and the bytes are not inspected to guess a format.
+     *
+     * @return the key api/image registers its readers under, or nothing
+     **/
+    static std::string readerFor(const cgltf_image& image);
+
     /**
      * Decode an image stored inside the file.
      *

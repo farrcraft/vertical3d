@@ -78,44 +78,6 @@ const uint32_t albedoShader[] =
 ;  // NOLINT(whitespace/semicolon)
 
 /**
- * A registry loading from the asset suite's fixtures. The build passes their directory in
- * V3D_ASSET_FIXTURES instead of copying them.
- **/
-boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
-    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
-    v3d::asset::media::registerLoaders(*assets, headless->logger);
-    return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets);
-}
-
-/**
- * A registry like registry(), which requests through a worker.
- **/
-boost::shared_ptr<MeshRegistry> requesting(v3d::test::Headless* headless, Worker* worker) {
-    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
-    v3d::asset::media::registerLoaders(*assets, headless->logger);
-    // the registry shares the worker without owning it, and each case outlives both
-    const boost::shared_ptr<Worker> shared(worker, [](Worker*) {});
-    return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets, shared);
-}
-
-/**
- * Poll a worker until every job's completion has run, or ten seconds pass.
- *
- * @return whether everything completed
- **/
-bool drain(Worker* worker) {
-    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
-    while (worker->outstanding() > 0) {
-        if (std::chrono::steady_clock::now() > deadline) {
-            return false;
-        }
-        worker->poll();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-    return true;
-}
-
-/**
  * A PNG loader that counts its loads, so a case can see whether a picture was decoded.
  **/
 class CountingPng final : public v3d::asset::Loader {
@@ -156,6 +118,44 @@ class Partless final : public v3d::asset::Loader {
             std::vector<boost::shared_ptr<v3d::image::Image>>());
     }
 };
+
+/**
+ * A registry loading from the asset suite's fixtures. The build passes their directory in
+ * V3D_ASSET_FIXTURES instead of copying them.
+ **/
+boost::shared_ptr<MeshRegistry> registry(v3d::test::Headless* headless) {
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
+    return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets);
+}
+
+/**
+ * A registry like registry(), which requests through a worker.
+ **/
+boost::shared_ptr<MeshRegistry> requesting(v3d::test::Headless* headless, Worker* worker) {
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger);
+    v3d::asset::media::registerLoaders(*assets, headless->logger);
+    // the registry shares the worker without owning it, and each case outlives both
+    const boost::shared_ptr<Worker> shared(worker, [](Worker*) {});
+    return boost::make_shared<MeshRegistry>(headless->logger, headless->context, assets, shared);
+}
+
+/**
+ * Poll a worker until every job's completion has run, or ten seconds pass.
+ *
+ * @return whether everything completed
+ **/
+bool drain(Worker* worker) {
+    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (worker->outstanding() > 0) {
+        if (std::chrono::steady_clock::now() > deadline) {
+            return false;
+        }
+        worker->poll();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return true;
+}
 
 /**
  * Two triangles in code, a part each, naming a texture apiece - empty for none.

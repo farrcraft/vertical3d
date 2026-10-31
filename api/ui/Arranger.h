@@ -198,6 +198,12 @@ class Arranger final {
 
  private:
     /**
+     * @return the serial the next arranger takes. It starts at one because a list that has never
+     *      been measured holds zero
+     **/
+    static std::uint64_t nextSerial() noexcept;
+
+    /**
      * The room a flow box offers each child: none along the line it lays out, the whole of
      * it across.
      **/

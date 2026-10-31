@@ -14,6 +14,11 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstddef>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
 namespace v3d::render::realtime {
 
 /**
@@ -92,6 +97,38 @@ class Recorder final {
     static void check(const Pass& pass, const vulkan::pipeline::Pipeline& pipeline, const Target& into = Target());
 
  private:
+    /**
+     * Whether the pass at an index is the first of the frame to draw into the target it
+     * names, or the last.
+     *
+     * A target is moved into its attachment layout once, before the first pass that writes it,
+     * and left readable after the last one. Two passes that draw into one target then cost one
+     * pair of barriers, not two. The passes are scanned each time, not counted into a map,
+     * because a frame has few passes.
+     **/
+    static bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index);
+    static bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index);
+
+    /**
+     * Whether any pass that writes the same target as passes[index] uses its depth. A target is
+     * opened and closed once a frame, so its depth image is moved if any of its passes needs it.
+     **/
+    static bool depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index);
+
+    /**
+     * Where a pass actually draws: a target of its own, or what the frame was given.
+     **/
+    static Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame);
+
+    /**
+     * Write the pass's camera into the frame's uniform buffer and return the set it is bound
+     * from, or null for a frame whose pipelines declare nothing at set 0.
+     *
+     * A viewport width or height of zero means the whole extent of what the pass draws into. For
+     * a pass into its own target, that is the target's extent, not the frame's.
+     **/
+    static VkDescriptorSet writeCamera(vulkan::frame::FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into);
+
     /**
      * What the last item recorded left bound, so the next one can skip rebinding it.
      **/

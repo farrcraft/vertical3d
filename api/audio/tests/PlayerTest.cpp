@@ -30,16 +30,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::audio::Player> engine() {
-    return boost::make_shared<v3d::audio::Player>(
-        boost::make_shared<v3d::log::Logger>(),
-        boost::make_shared<entt::dispatcher>());
-}
-
-boost::json::object config(const std::string& text) {
-    return boost::json::parse(text).as_object();
-}
-
 /**
  * Stands in for the app's asset manager: records what it was asked for and reads the file
  * the way the Wav loader does, so a source that resolves to nothing comes back as no clip.
@@ -57,6 +47,78 @@ struct Resolver {
 
     std::vector<std::string> asked_;
 };
+
+/**
+ * Opens SDL's dummy audio driver, which plays into nothing and needs no sound card. The mixer
+ * then gives out real tracks, so the volume each one is set to can be read back.
+ **/
+struct DummyDevice {
+    DummyDevice() {
+        SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "dummy");
+        v3dtest::writeWav("bed.wav", 44100);
+        clip = boost::make_shared<v3d::audio::AudioClip>();
+        clip->load("bed.wav");
+    }
+    ~DummyDevice() {
+        SDL_ResetHint(SDL_HINT_AUDIO_DRIVER);
+    }
+    DummyDevice(const DummyDevice&) = delete;
+    DummyDevice& operator=(const DummyDevice&) = delete;
+
+    /**
+     * A bed that loops until stopped, so it is still playing when its volume is read.
+     **/
+    static v3d::audio::Play bed(const std::string& bus, float gain) {
+        v3d::audio::Play how;
+        how.bus = bus;
+        how.loops = -1;
+        how.gain = gain;
+        return how;
+    }
+
+    boost::shared_ptr<v3d::audio::AudioClip> clip;
+};
+
+/**
+ * Records the listener an event backend is handed, and nothing else.
+ **/
+class Recorder final : public v3d::audio::Events {
+ public:
+    bool bank(const std::string& /* path */) override { return false; }
+    bool play(std::string_view /* event */) override { return false; }
+    v3d::audio::Instance start(std::string_view /* event */) override { return v3d::audio::Instance::None; }
+    bool play(std::string_view /* event */, const glm::vec3& /* position */) override { return false; }
+    v3d::audio::Instance start(std::string_view /* event */, const glm::vec3& /* position */) override {
+        return v3d::audio::Instance::None;
+    }
+    bool position(v3d::audio::Instance /* instance */, const glm::vec3& /* position */) override { return false; }
+    std::optional<glm::vec3> position(v3d::audio::Instance /* instance */) const override { return std::nullopt; }
+    bool listener(const v3d::audio::Listener& listener) override {
+        heard.push_back(listener);
+        return true;
+    }
+    bool stop(v3d::audio::Instance /* instance */, v3d::audio::Stop /* how */) override { return false; }
+    bool playing(v3d::audio::Instance /* instance */) const override { return false; }
+    bool parameter(std::string_view /* name */, float /* value */) override { return false; }
+    bool volume(std::string_view /* path */, float /* level */) override { return false; }
+    std::optional<float> volume(std::string_view /* path */) const override { return std::nullopt; }
+    bool paused(std::string_view /* bus */, bool /* paused */) override { return false; }
+    std::optional<bool> paused(std::string_view /* bus */) const override { return std::nullopt; }
+    void update() override {}
+    std::string_view name() const noexcept override { return "recorder"; }
+
+    std::vector<v3d::audio::Listener> heard;
+};
+
+boost::shared_ptr<v3d::audio::Player> engine() {
+    return boost::make_shared<v3d::audio::Player>(
+        boost::make_shared<v3d::log::Logger>(),
+        boost::make_shared<entt::dispatcher>());
+}
+
+boost::json::object config(const std::string& text) {
+    return boost::json::parse(text).as_object();
+}
 
 /**
  * The document lists a clip id and a source for each clip. The engine passes each source to
@@ -261,37 +323,6 @@ BOOST_AUTO_TEST_CASE(audio_engine_bus_level_is_kept_without_a_device_test) {
 }
 
 /**
- * Opens SDL's dummy audio driver, which plays into nothing and needs no sound card. The mixer
- * then gives out real tracks, so the volume each one is set to can be read back.
- **/
-struct DummyDevice {
-    DummyDevice() {
-        SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "dummy");
-        v3dtest::writeWav("bed.wav", 44100);
-        clip = boost::make_shared<v3d::audio::AudioClip>();
-        clip->load("bed.wav");
-    }
-    ~DummyDevice() {
-        SDL_ResetHint(SDL_HINT_AUDIO_DRIVER);
-    }
-    DummyDevice(const DummyDevice&) = delete;
-    DummyDevice& operator=(const DummyDevice&) = delete;
-
-    /**
-     * A bed that loops until stopped, so it is still playing when its volume is read.
-     **/
-    static v3d::audio::Play bed(const std::string& bus, float gain) {
-        v3d::audio::Play how;
-        how.bus = bus;
-        how.loops = -1;
-        how.gain = gain;
-        return how;
-    }
-
-    boost::shared_ptr<v3d::audio::AudioClip> clip;
-};
-
-/**
  * A sound plays at its own gain times its bus's level: whether the level was set before it
  * started or while it played, and after its own gain changes.
  **/
@@ -386,37 +417,6 @@ BOOST_AUTO_TEST_CASE(audio_engine_lets_the_dispatcher_go_test) {
     sound.shutdown();
     BOOST_CHECK(dispatcher->sink<v3d::event::kind::Sound>().empty());
 }
-
-/**
- * Records the listener an event backend is handed, and nothing else.
- **/
-class Recorder final : public v3d::audio::Events {
- public:
-    bool bank(const std::string& /* path */) override { return false; }
-    bool play(std::string_view /* event */) override { return false; }
-    v3d::audio::Instance start(std::string_view /* event */) override { return v3d::audio::Instance::None; }
-    bool play(std::string_view /* event */, const glm::vec3& /* position */) override { return false; }
-    v3d::audio::Instance start(std::string_view /* event */, const glm::vec3& /* position */) override {
-        return v3d::audio::Instance::None;
-    }
-    bool position(v3d::audio::Instance /* instance */, const glm::vec3& /* position */) override { return false; }
-    std::optional<glm::vec3> position(v3d::audio::Instance /* instance */) const override { return std::nullopt; }
-    bool listener(const v3d::audio::Listener& listener) override {
-        heard.push_back(listener);
-        return true;
-    }
-    bool stop(v3d::audio::Instance /* instance */, v3d::audio::Stop /* how */) override { return false; }
-    bool playing(v3d::audio::Instance /* instance */) const override { return false; }
-    bool parameter(std::string_view /* name */, float /* value */) override { return false; }
-    bool volume(std::string_view /* path */, float /* level */) override { return false; }
-    std::optional<float> volume(std::string_view /* path */) const override { return std::nullopt; }
-    bool paused(std::string_view /* bus */, bool /* paused */) override { return false; }
-    std::optional<bool> paused(std::string_view /* bus */) const override { return std::nullopt; }
-    void update() override {}
-    std::string_view name() const noexcept override { return "recorder"; }
-
-    std::vector<v3d::audio::Listener> heard;
-};
 
 void checkVector(const std::optional<glm::vec3>& actual, const glm::vec3& expected) {
     BOOST_REQUIRE(actual.has_value());

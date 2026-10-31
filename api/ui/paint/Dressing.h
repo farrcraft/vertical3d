@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <glm/vec4.hpp>
 
 namespace v3d::ui::paint {
@@ -100,6 +102,46 @@ struct Dressing final {
     glm::vec4 focus;         /**< the ring around whatever the keyboard is on **/
     glm::vec4 shadow;        /**< the shadow a menu casts, at its darkest **/
     glm::vec4 backdrop;      /**< what is laid over everything behind a container that dims it **/
+
+ private:
+    // the sizes the retained ui starts with, in pixels
+    static constexpr float LINE_HEIGHT = 34.0F;
+    static constexpr float PADDING = 24.0F;
+    static constexpr float SPACING = 4.0F;
+    static constexpr float BAR_HEIGHT = 28.0F;
+    static constexpr float ICON_SIZE = 22.0F;
+    static constexpr float PANEL_PADDING = 4.0F;
+    static constexpr float SCROLLBAR_WIDTH = 12.0F;
+    static constexpr float MARK_SIZE = 16.0F;
+    static constexpr float FOCUS_WIDTH = 2.0F;
+    static constexpr float INDENT = 14.0F;
+    /** semibold, as CSS numbers it **/
+    static constexpr float TITLE_WEIGHT = 600.0F;
+    static constexpr float SHADOW_SIZE = 12.0F;
+    static constexpr float SHADOW_OFFSET = 4.0F;
+    static constexpr float OPEN_DISTANCE = 4.0F;
+    // how long a hover and an opening menu take, in seconds
+    static constexpr float HOVER_DURATION = 0.1F;
+    static constexpr float OPEN_DURATION = 0.12F;
+    // how long the cursor rests before a submenu opens and before a tooltip shows, in seconds
+    static constexpr float SUBMENU_DELAY = 0.2F;
+    static constexpr float TOOLTIP_DELAY = 0.5F;
+    static constexpr float TOOLTIP_QUICK_DELAY = 0.1F;
+
+    // the sizes the immediate layer starts with where they differ, in pixels
+    static constexpr float TOOLS_LINE_HEIGHT = 18.0F;
+    static constexpr float TOOLS_PADDING = 6.0F;
+    static constexpr float TOOLS_BAR_HEIGHT = 22.0F;
+    static constexpr float TOOLS_SCROLLBAR_WIDTH = 10.0F;
+    static constexpr float TOOLS_RADIUS = 3.0F;
+
+    /**
+     * every size a scale multiplies, which leaves out the outlines, the durations and the title
+     * weight
+     **/
+    static constexpr std::array SIZES{&Dressing::lineHeight, &Dressing::padding, &Dressing::spacing, &Dressing::barHeight,
+        &Dressing::iconSize, &Dressing::panelPadding, &Dressing::scrollbarWidth, &Dressing::markSize, &Dressing::radius,
+        &Dressing::indent, &Dressing::shadowSize, &Dressing::shadowOffset, &Dressing::openDistance};
 };
 
 };  // namespace v3d::ui::paint

@@ -24,15 +24,7 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-/**
- * The SL type a RIB declaration says the value is.
- *
- * RIB's integer is SL's float, because SL has no integer type. RIB's hpoint has no SL type,
- * so a parameter declared as one will not coerce.
- **/
-Type declared(rib::Declaration::Type type) {
+Type Instance::declared(rib::Declaration::Type type) {
     switch (type) {
         case rib::Declaration::Type::FLOAT:
         case rib::Declaration::Type::INTEGER:
@@ -55,13 +47,7 @@ Type declared(rib::Declaration::Type type) {
     return Type::VOID;
 }
 
-/**
- * A position or a direction out of the space it was stated in and into the machine's.
- *
- * Each point-like type takes its own transform. Giving a normal a vector's transform is
- * invisible under a uniform scale, so the mistake is easy to miss.
- **/
-glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given) {
+glm::vec3 Instance::moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given) {
     switch (type) {
         case Type::POINT:
             return ptransform(placement, given);
@@ -80,8 +66,6 @@ glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & give
     }
     return given;
 }
-
-};  // namespace
 
 Instance::Instance(const ProgramPtr & program, const boost::shared_ptr<v3d::log::Logger> & logger) :
     program_(program),

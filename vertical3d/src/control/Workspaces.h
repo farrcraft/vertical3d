@@ -158,6 +158,11 @@ class Workspaces final {
 
  private:
     /**
+     * @return a layout's name, or an empty string when it has none
+     **/
+    static std::string nameOf(const boost::json::object& layout);
+
+    /**
      * @return the workspaces a set holds that can be read and have names of their own
      **/
     std::vector<boost::json::object> read(const boost::json::value& set) const;

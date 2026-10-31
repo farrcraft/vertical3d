@@ -16,15 +16,6 @@
 namespace {
 
 /**
- * @return how many rows the table of the test holds
- **/
-std::int64_t rows(v3d::database::Database* database) {
-    v3d::database::Statement count = database->prepare("SELECT count(*) FROM things");
-    BOOST_REQUIRE(count.step() == v3d::database::Statement::Step::Row);
-    return count.integer(0);
-}
-
-/**
  * A connection to a new database in memory, with one table.
  **/
 struct Things {
@@ -35,6 +26,15 @@ struct Things {
 
     v3d::database::Database database;
 };
+
+/**
+ * @return how many rows the table of the test holds
+ **/
+std::int64_t rows(v3d::database::Database* database) {
+    v3d::database::Statement count = database->prepare("SELECT count(*) FROM things");
+    BOOST_REQUIRE(count.step() == v3d::database::Statement::Step::Row);
+    return count.integer(0);
+}
 
 BOOST_FIXTURE_TEST_CASE(transaction_commit_test, Things) {
     {

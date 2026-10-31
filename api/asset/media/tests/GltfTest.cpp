@@ -38,24 +38,58 @@ namespace {
 
 // three primitives, the third of them not indexed and all three sharing one material -
 // api/asset/tests/data/make_model_fixture.ts generates it and says why it is shaped that way
-const char* FIXTURE = "three_primitives.glb";
+const char* const FIXTURE = "three_primitives.glb";
 
 // one triangle whose base colour texture is a bufferView holding pixel.png, which is the
 // case the named-texture fixture cannot cover - api/asset/tests/data/make_embedded_fixture.ts
-const char* EMBEDDED = "embedded_texture.glb";
+const char* const EMBEDDED = "embedded_texture.glb";
 
 // two meshes under a turned parent, with three primitives over two materials -
 // api/asset/tests/data/make_parts_fixture.ts, which also writes the same file with no scene
-const char* PARTS = "two_surfaces.glb";
-const char* SCENELESS = "two_surfaces_no_scene.glb";
+const char* const PARTS = "two_surfaces.glb";
+const char* const SCENELESS = "two_surfaces_no_scene.glb";
 
 // a strip bound to a chain of three joints, and the same skin listed child first -
 // api/asset/tests/data/make_skin_fixture.ts
-const char* SKINNED = "bending_strip.glb";
-const char* SHUFFLED = "bending_strip_shuffled.glb";
+const char* const SKINNED = "bending_strip.glb";
+const char* const SHUFFLED = "bending_strip_shuffled.glb";
 
 // the strip built and exported by Blender - api/asset/tests/data/make_blender_fixture.py
-const char* BLENDER = "blender_strip.glb";
+const char* const BLENDER = "blender_strip.glb";
+
+/**
+ * A model loaded through loaders that log to a ring buffer, and what they logged.
+ **/
+class Heard final {
+ public:
+    explicit Heard(const char* name) :
+        logger_(boost::make_shared<v3d::log::Logger>()),
+        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(32)) {
+        logger_->get()->sinks().push_back(sink_);
+        v3d::asset::Manager manager("data", logger_);
+        v3d::asset::media::registerLoaders(manager, logger_);
+        asset_ = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
+            manager.load<v3d::asset::media::kind::Model>(name));
+        logger_->get()->sinks().pop_back();
+    }
+
+    const boost::shared_ptr<v3d::asset::media::kind::Model> & asset() const {
+        return asset_;
+    }
+
+    /** Whether a line logged while loading holds the text. **/
+    bool said(const std::string & text) const {
+        const std::vector<std::string> lines = sink_->last_formatted();
+        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
+            return line.find(text) != std::string::npos;
+        });
+    }
+
+ private:
+    boost::shared_ptr<v3d::log::Logger> logger_;
+    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
+    boost::shared_ptr<v3d::asset::media::kind::Model> asset_;
+};
 
 /**
  * The strip's skeleton, which both skin fixtures share once read: root, middle and top in a
@@ -634,40 +668,6 @@ BOOST_AUTO_TEST_CASE(gltf_a_data_uri_states_its_own_type_test) {
     const v3d::image::Difference difference = v3d::image::compare(*embedded, *onDisk, 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
-
-/**
- * A model loaded through loaders that log to a ring buffer, and what they logged.
- **/
-class Heard final {
- public:
-    explicit Heard(const char* name) :
-        logger_(boost::make_shared<v3d::log::Logger>()),
-        sink_(std::make_shared<spdlog::sinks::ringbuffer_sink_mt>(32)) {
-        logger_->get()->sinks().push_back(sink_);
-        v3d::asset::Manager manager("data", logger_);
-        v3d::asset::media::registerLoaders(manager, logger_);
-        asset_ = boost::dynamic_pointer_cast<v3d::asset::media::kind::Model>(
-            manager.load<v3d::asset::media::kind::Model>(name));
-        logger_->get()->sinks().pop_back();
-    }
-
-    const boost::shared_ptr<v3d::asset::media::kind::Model> & asset() const {
-        return asset_;
-    }
-
-    /** Whether a line logged while loading holds the text. **/
-    bool said(const std::string & text) const {
-        const std::vector<std::string> lines = sink_->last_formatted();
-        return std::any_of(lines.begin(), lines.end(), [&text](const std::string & line) {
-            return line.find(text) != std::string::npos;
-        });
-    }
-
- private:
-    boost::shared_ptr<v3d::log::Logger> logger_;
-    std::shared_ptr<spdlog::sinks::ringbuffer_sink_mt> sink_;
-    boost::shared_ptr<v3d::asset::media::kind::Model> asset_;
-};
 
 /**
  * A weight given to a joint the skin does not have is left out, the vertex's other weights are

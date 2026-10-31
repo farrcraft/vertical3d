@@ -13,7 +13,7 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/store/Bytes.h>
+#include <vertical3d/src/store/Blob.h>
 #include <vertical3d/src/store/Codec.h>
 
 #include <cstddef>

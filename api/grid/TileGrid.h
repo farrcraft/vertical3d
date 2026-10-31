@@ -167,6 +167,8 @@ class TileGrid {
     std::size_t index(TileCoord tile) const;
 
  private:
+    static std::string describe(TileCoord tile, int width, int height);
+
     int width_{0};
     int height_{0};
     float tileSize_{DEFAULT_TILE_SIZE};

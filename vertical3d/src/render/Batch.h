@@ -81,6 +81,12 @@ class Batch final {
     Status status() const;
 
  private:
+    /**
+     * A frame's file name: the camera's name and the frame, four digits wide so that the files
+     * sort in frame order.
+     **/
+    static std::string frameName(const std::string& camera, int frame, const char* extension);
+
     void run(const std::vector<Job>& jobs, const std::stop_token& stop);
 
     boost::shared_ptr<v3d::log::Logger> logger_;

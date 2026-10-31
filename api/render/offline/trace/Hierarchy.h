@@ -57,6 +57,21 @@ class Hierarchy final {
     void walk(const v3d::type::geometry::Ray & ray, float from, const float* limit, Test test) const;
 
  private:
+    /** How many bins the centres along the split axis are sorted into. **/
+    static constexpr std::size_t BINS = 16;
+
+    /** A node of this many items or fewer is a leaf. **/
+    static constexpr std::uint32_t SMALLEST_SPLIT = 2;
+
+    /** A node of this many items or fewer is a leaf when splitting it would cost more. **/
+    static constexpr std::uint32_t LARGEST_LEAF = 8;
+
+    /** How much a box grows, as a fraction of the largest coordinate it holds. **/
+    static constexpr float GROWTH = 1.0e-5F;
+
+    /** Which bin a centre falls in along an axis of the centres' range. **/
+    static std::size_t bin(float centre, float low, float scale);
+
     /**
      * A node is a leaf when count is not zero, holding items order_[first] onward. An inner
      * node's first child follows it, and its second is at `second`.

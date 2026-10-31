@@ -27,25 +27,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
-namespace {
-
-/**
- * Each menu item that captures a key, paired with the paddle command it rebinds.
- **/
-// an array of views rather than a map of strings, because a map with static storage
-// duration allocates during static initialization and can throw where nothing can catch it
-constexpr std::array<std::pair<std::string_view, std::string_view>, 4> PADDLE_COMMANDS = {{
-    {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
-    {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
-    {"setRightPaddleUpKey", "pong::rightPaddleUp"},
-    {"setRightPaddleDownKey", "pong::rightPaddleDown"}
-}};
-
-/**
- * @return the command the named menu item drives, or an empty view for an item that drives
- *         no paddle
- **/
-std::string_view paddleCommand(std::string_view item) {
+std::string_view PongEngine::paddleCommand(std::string_view item) {
     for (const auto& binding : PADDLE_COMMANDS) {
         if (binding.first == item) {
             return binding.second;
@@ -53,9 +35,6 @@ std::string_view paddleCommand(std::string_view item) {
     }
     return std::string_view();
 }
-
-};  // namespace
-
 
 PongEngine::PongEngine(const std::string & path) :
     v3d::engine::Engine(path),

@@ -26,56 +26,6 @@
 
 namespace v3d::ui::input {
 
-namespace {
-
-/**
- * Collect a container's menu bars and toolbars. The cursor offers a point to the menu bars
- * before the toolbars, the reverse of the draw order, because an open menu drops a panel
- * over a toolbar.
- *
- * A strip that is hidden, disabled or not pickable is left out, as Container::pick() leaves
- * out such a component.
- **/
-void strips(const boost::shared_ptr<Container>& container,
-    std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
-    std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
-    for (const boost::shared_ptr<Component>& component : container->components()) {
-        if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
-            continue;
-        }
-        if (!component::traits(component->type()).strip) {
-            continue;
-        }
-        if (component->type() == component::Type::MenuBar) {
-            bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
-        } else {
-            toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
-        }
-    }
-}
-
-/**
- * Set a component's hover state on or off.
- *
- * A button is the only component with a hover state. A Toolbar writes the same state onto
- * its buttons, so a button in the tree is highlighted the same way as one on a toolbar.
- *
- * A button that cannot be used is left alone in both directions, so a transient hover never
- * overwrites its disabled look.
- **/
-void lit(const boost::shared_ptr<Component>& component, bool on) {
-    if (!component || component->type() != component::Type::Button || !usable(*component)) {
-        return;
-    }
-    const boost::shared_ptr<component::Button> button =
-        boost::dynamic_pointer_cast<component::Button>(component);
-    if (button) {
-        button->state(on ? component::Button::STATE_HOVER : component::Button::STATE_NORMAL);
-    }
-}
-
-};  // namespace
-
 Cursor::Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const paint::Measure& measure) :
     ui_(ui),
@@ -371,6 +321,35 @@ void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
     // nothing, and whatever handles the command sets checked(). input::command() decides
     // which components carry a command, for a key and a click alike
     send(dispatcher_.get(), command(component));
+}
+
+void Cursor::strips(const boost::shared_ptr<Container>& container,
+    std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
+    std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
+    for (const boost::shared_ptr<Component>& component : container->components()) {
+        if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
+            continue;
+        }
+        if (!component::traits(component->type()).strip) {
+            continue;
+        }
+        if (component->type() == component::Type::MenuBar) {
+            bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
+        } else {
+            toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
+        }
+    }
+}
+
+void Cursor::lit(const boost::shared_ptr<Component>& component, bool on) {
+    if (!component || component->type() != component::Type::Button || !usable(*component)) {
+        return;
+    }
+    const boost::shared_ptr<component::Button> button =
+        boost::dynamic_pointer_cast<component::Button>(component);
+    if (button) {
+        button->state(on ? component::Button::STATE_HOVER : component::Button::STATE_NORMAL);
+    }
 }
 
 };  // namespace v3d::ui::input

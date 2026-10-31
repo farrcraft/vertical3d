@@ -31,18 +31,6 @@ namespace v3d::audio {
 
 namespace {
 
-/**
- * How many event instances FMOD may have playing at once, across every bank.
- **/
-const int maximumChannels = 512;
-
-/**
- * Whether a mixer path names a VCA rather than a bus.
- **/
-bool isVca(std::string_view path) noexcept {
-    return path.starts_with("vca:/");
-}
-
 FMOD_VECTOR vector(const glm::vec3& v) noexcept {
     return FMOD_VECTOR{v.x, v.y, v.z};
 }
@@ -269,6 +257,10 @@ bool FmodEvents::parameter(std::string_view name, float value) {
         return false;
     }
     return true;
+}
+
+bool FmodEvents::isVca(std::string_view path) noexcept {
+    return path.starts_with("vca:/");
 }
 
 /**

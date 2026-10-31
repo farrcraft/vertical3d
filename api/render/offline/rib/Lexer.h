@@ -54,6 +54,21 @@ class Lexer final {
     const std::string & error() const;
 
  private:
+    /** The three bytes of a UTF-8 byte order mark. **/
+    static constexpr unsigned char UTF8_BOM1 = 0xef;
+
+    static constexpr unsigned char UTF8_BOM2 = 0xbb;
+
+    static constexpr unsigned char UTF8_BOM3 = 0xbf;
+
+    /** The two bytes a gzip stream opens with. **/
+    static constexpr unsigned char GZIP_ID1 = 0x1f;
+
+    static constexpr unsigned char GZIP_ID2 = 0x8b;
+
+    /** The least byte that begins an encoded request in binary RIB. **/
+    static constexpr unsigned char FIRST_ENCODED_BYTE = 0x80;
+
     Token scan();
     Token scanString(unsigned int line, unsigned int column);
     Token scanNumber(unsigned int line, unsigned int column);

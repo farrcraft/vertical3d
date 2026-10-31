@@ -46,16 +46,7 @@
 
 namespace v3d::engine {
 
-namespace {
-
-/** The settings key the player's key bindings are kept under. **/
-const char* const BINDINGS = "bindings";
-
-/**
- * The player's key bindings as the settings keep them: a list of overrides, each the command,
- * the source it replaces, and the name it binds instead.
- **/
-boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overrides) {
+boost::json::array Engine::saveBindings(const std::vector<v3d::event::Bindings::Override>& overrides) {
     boost::json::array saved;
     for (const v3d::event::Bindings::Override& made : overrides) {
         saved.push_back(boost::json::object{ { "command", made.command }, { "source", made.source }, { "name", made.name } });
@@ -63,11 +54,7 @@ boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overr
     return saved;
 }
 
-/**
- * The overrides a settings document holds. An entry of another shape, from a hand edit, is
- * left out.
- **/
-std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved) {
+std::vector<v3d::event::Bindings::Override> Engine::readBindings(const boost::json::value& saved) {
     std::vector<v3d::event::Bindings::Override> overrides;
     if (!saved.is_array()) {
         return overrides;
@@ -89,8 +76,6 @@ std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved
     }
     return overrides;
 }
-
-};  // namespace
 
 /**
  **/
@@ -166,12 +151,12 @@ void Engine::loadSettings() {
     }
     const boost::json::value* saved = settings_->value(BINDINGS);
     if (saved != nullptr) {
-        bindings_->restore(read(*saved));
+        bindings_->restore(readBindings(*saved));
     }
     // each change is saved as it is made. No exit path is certain to run, and a crash should
     // not lose a rebinding
     bindings_->changed([this]() {
-        settings_->set(BINDINGS, boost::json::value(save(bindings_->overrides())));
+        settings_->set(BINDINGS, boost::json::value(saveBindings(bindings_->overrides())));
         settings_->save();
     });
 }

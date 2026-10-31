@@ -31,75 +31,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * How far a pixel of drag moves a number with no speed of its own, and a curve item's width.
- **/
-constexpr float DEFAULT_SPEED = 0.01F;
-constexpr float WIDTH_SPEED = 0.001F;
-
-/**
- * How each property path is shown, and how far a pixel of drag moves it. A placement moves a
- * hundredth of a unit, and an angle half a degree.
- **/
-const std::map<std::string, PropertiesEditor::Field>& fields() {
-    static const std::map<std::string, PropertiesEditor::Field> each{
-        { "translation.x", { "Translation", "X", 0.01F } },
-        { "translation.y", { "Translation", "Y", 0.01F } },
-        { "translation.z", { "Translation", "Z", 0.01F } },
-        { "rotation.x", { "Rotation", "X", 0.5F } },
-        { "rotation.y", { "Rotation", "Y", 0.5F } },
-        { "rotation.z", { "Rotation", "Z", 0.5F } },
-        { "scale.x", { "Scale", "X", 0.01F } },
-        { "scale.y", { "Scale", "Y", 0.01F } },
-        { "scale.z", { "Scale", "Z", 0.01F } },
-        { "lens.fov", { "Lens", "Field of View", 0.1F } },
-        { "lens.extent", { "Lens", "Extent", 0.01F } },
-        { "lens.near", { "Lens", "Near", 0.01F } },
-        { "lens.far", { "Lens", "Far", 1.0F } },
-        { "emission.intensity", { "Emission", "Intensity", 0.05F } },
-        { "emission.red", { "Emission", "Red", 0.005F } },
-        { "emission.green", { "Emission", "Green", 0.005F } },
-        { "emission.blue", { "Emission", "Blue", 0.005F } },
-        { "emission.cone", { "Emission", "Cone", 0.005F } },
-        { "emission.delta", { "Emission", "Soft Edge", 0.005F } },
-    };
-    return each;
-}
-
-/**
- * @return a heading in lower case, as the name of the change an edit under it makes
- **/
-std::string lower(const std::string& text) {
-    std::string made = text;
-    for (char& letter : made) {
-        letter = static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
-    }
-    return made;
-}
-
-/**
- * @return whether values can be written into an item: a camera's lens, a light's emission and a
- *         curve item's style are each valid, and the other kinds' are not written
- **/
-bool valid(const Item& item, const EditCommand::Values& values) {
-    switch (item.kind()) {
-        case Item::Kind::Camera:
-            return values.pose.lens.valid();
-        case Item::Kind::Light:
-            return values.pose.emission.valid();
-        case Item::Kind::Curve:
-            return values.style.valid();
-        case Item::Kind::Mesh:
-        case Item::Kind::Group:
-            break;
-    }
-    return true;
-}
-
-};  // namespace
-
 /**
  **/
 PropertiesEditor::Field PropertiesEditor::field(const std::string& path) {
@@ -258,6 +189,60 @@ void PropertiesEditor::finish(const std::string& what) {
         history_->push(boost::make_shared<EditCommand>(pending_->item, pending_->before, what));
     }
     pending_.reset();
+}
+
+/**
+ **/
+const std::map<std::string, PropertiesEditor::Field>& PropertiesEditor::fields() {
+    static const std::map<std::string, PropertiesEditor::Field> each{
+        { "translation.x", { "Translation", "X", 0.01F } },
+        { "translation.y", { "Translation", "Y", 0.01F } },
+        { "translation.z", { "Translation", "Z", 0.01F } },
+        { "rotation.x", { "Rotation", "X", 0.5F } },
+        { "rotation.y", { "Rotation", "Y", 0.5F } },
+        { "rotation.z", { "Rotation", "Z", 0.5F } },
+        { "scale.x", { "Scale", "X", 0.01F } },
+        { "scale.y", { "Scale", "Y", 0.01F } },
+        { "scale.z", { "Scale", "Z", 0.01F } },
+        { "lens.fov", { "Lens", "Field of View", 0.1F } },
+        { "lens.extent", { "Lens", "Extent", 0.01F } },
+        { "lens.near", { "Lens", "Near", 0.01F } },
+        { "lens.far", { "Lens", "Far", 1.0F } },
+        { "emission.intensity", { "Emission", "Intensity", 0.05F } },
+        { "emission.red", { "Emission", "Red", 0.005F } },
+        { "emission.green", { "Emission", "Green", 0.005F } },
+        { "emission.blue", { "Emission", "Blue", 0.005F } },
+        { "emission.cone", { "Emission", "Cone", 0.005F } },
+        { "emission.delta", { "Emission", "Soft Edge", 0.005F } },
+    };
+    return each;
+}
+
+/**
+ **/
+std::string PropertiesEditor::lower(const std::string& text) {
+    std::string made = text;
+    for (char& letter : made) {
+        letter = static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
+    }
+    return made;
+}
+
+/**
+ **/
+bool PropertiesEditor::valid(const Item& item, const EditCommand::Values& values) {
+    switch (item.kind()) {
+        case Item::Kind::Camera:
+            return values.pose.lens.valid();
+        case Item::Kind::Light:
+            return values.pose.emission.valid();
+        case Item::Kind::Curve:
+            return values.style.valid();
+        case Item::Kind::Mesh:
+        case Item::Kind::Group:
+            break;
+    }
+    return true;
 }
 
 };  // namespace v3d::editor

@@ -23,6 +23,32 @@ namespace {
 
 using v3d::editor::AreaLayout;
 
+boost::json::object parse(const std::string& text);
+boost::shared_ptr<v3d::log::Logger> logger();
+std::string quad();
+
+/**
+ * The quad over a 1024 by 768 window. With a 3 pixel gap the areas cover 3 to 1021 across and 3
+ * to 765 down. The rows take 379 and 380 of the 759 left between them, and the columns 507 and
+ * 508 of 1015.
+ **/
+struct Quad {
+    Quad() : layout(logger()) {
+        BOOST_REQUIRE(layout.load(parse(quad())));
+        layout.resize(glm::vec4(0.0F, 0.0F, 1024.0F, 768.0F));
+    }
+
+    const glm::vec4& region(std::size_t area) const {
+        return layout.areas()[area].region;
+    }
+
+    std::string camera(std::size_t area) const {
+        return std::string(layout.areas()[area].editor().state.at("camera").as_string());
+    }
+
+    AreaLayout layout;
+};
+
 boost::json::object parse(const std::string& text) {
     return boost::json::parse(text).as_object();
 }
@@ -53,28 +79,6 @@ std::string quad() {
 std::string pair() {
     return R"({"root": {"split": "horizontal", "children": [)" + view("Front") + "," + view("Top") + "]}}";
 }
-
-/**
- * The quad over a 1024 by 768 window. With a 3 pixel gap the areas cover 3 to 1021 across and 3
- * to 765 down. The rows take 379 and 380 of the 759 left between them, and the columns 507 and
- * 508 of 1015.
- **/
-struct Quad {
-    Quad() : layout(logger()) {
-        BOOST_REQUIRE(layout.load(parse(quad())));
-        layout.resize(glm::vec4(0.0F, 0.0F, 1024.0F, 768.0F));
-    }
-
-    const glm::vec4& region(std::size_t area) const {
-        return layout.areas()[area].region;
-    }
-
-    std::string camera(std::size_t area) const {
-        return std::string(layout.areas()[area].editor().state.at("camera").as_string());
-    }
-
-    AreaLayout layout;
-};
 
 BOOST_AUTO_TEST_SUITE(area_layout_test)
 

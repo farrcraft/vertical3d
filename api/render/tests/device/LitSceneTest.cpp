@@ -75,17 +75,6 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t width = 128;
 const uint32_t height = 128;
 
-entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale,
-    bool castsShadow) {
-    const entt::entity entity = registry->create();
-    Transform transform;
-    transform.position = position;
-    transform.scale = scale;
-    registry->emplace<Transform>(entity, transform);
-    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
-    return entity;
-}
-
 /**
  * How the shadow changed a picture: the pixels that are white ground without it and grey with
  * it, and the pixels that changed in any other way. A white surface in shadow drops from the lit
@@ -101,6 +90,68 @@ struct Drawn {
     boost::shared_ptr<v3d::image::Image> without;
     boost::shared_ptr<v3d::image::Image> with;
 };
+
+/**
+ * Add an entity carrying a transform and a mesh. Declared here because Stage places its cube and
+ * ground with it.
+ **/
+entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale,
+    bool castsShadow);
+
+/**
+ * A cube that casts on a ground that does not, and a camera looking down on them, for the lit
+ * scene cases. The output is a target of the headless context's format, which is the format a
+ * window's colour pass draws into.
+ **/
+struct Stage final {
+    explicit Stage(v3d::test::Headless* headless) :
+        assets(boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger)),
+        meshes(headless->logger, headless->context, assets),
+        output(boost::make_shared<RenderTarget>(*headless->context,
+            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat})) {
+        v3d::asset::media::registerLoaders(*assets, headless->logger);
+        place(&registry, meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F))), glm::vec3(0.0F, 0.5F, 0.0F),
+            glm::vec3(1.0F), true);
+        place(&registry, meshes.add("ground", cube(glm::vec4(1.0F))), glm::vec3(0.0F, -0.05F, 0.0F),
+            glm::vec3(6.0F, 0.1F, 6.0F), false);
+        v3d::type::camera::Isometric orbit;
+        orbit.target(glm::vec3(0.0F));
+        orbit.zoom(3.0F);
+        camera.profile().clipping(glm::vec2(0.1F, 100.0F));
+        orbit.apply(&camera);
+        camera.createProjection();
+        camera.createView();
+    }
+
+    /** A shot through the camera, with the given shadows. **/
+    LitScene::Shot shot(const LitScene::Shadows& shadows) const {
+        return LitScene::Shot{.view = camera.view(), .projection = camera.projection(), .shadows = shadows};
+    }
+
+    /** The light matrix of one map fitted to the casters. **/
+    glm::mat4 light() const {
+        const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0F});
+        BOOST_REQUIRE(bounds);
+        return lighting::shadowLight(lighting::Settings().light, *bounds);
+    }
+
+    boost::shared_ptr<v3d::asset::Manager> assets;
+    MeshRegistry meshes;
+    entt::registry registry;
+    v3d::type::camera::Camera camera;
+    boost::shared_ptr<RenderTarget> output;
+};
+
+entt::entity place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale,
+    bool castsShadow) {
+    const entt::entity entity = registry->create();
+    Transform transform;
+    transform.position = position;
+    transform.scale = scale;
+    registry->emplace<Transform>(entity, transform);
+    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
+    return entity;
+}
 
 Shading compare(const Drawn& drawn) {
     const boost::shared_ptr<v3d::image::Image>& without = drawn.without;
@@ -369,50 +420,6 @@ void checkCasterDepths(v3d::type::camera::Profile::Hand hand, VkFrontFace front)
     BOOST_CHECK_EQUAL(at(8, 8), 1.0F);
     BOOST_CHECK_EQUAL(at(0, 0), 1.0F);
 }
-
-/**
- * A cube that casts on a ground that does not, and a camera looking down on them, for the lit
- * scene cases. The output is a target of the headless context's format, which is the format a
- * window's colour pass draws into.
- **/
-struct Stage final {
-    explicit Stage(v3d::test::Headless* headless) :
-        assets(boost::make_shared<v3d::asset::Manager>(V3D_ASSET_FIXTURES, headless->logger)),
-        meshes(headless->logger, headless->context, assets),
-        output(boost::make_shared<RenderTarget>(*headless->context,
-            RenderTarget::Spec{.width = width, .height = height, .colour = colourFormat})) {
-        v3d::asset::media::registerLoaders(*assets, headless->logger);
-        place(&registry, meshes.add("crate", cube(glm::vec4(1.0F, 0.0F, 0.0F, 1.0F))), glm::vec3(0.0F, 0.5F, 0.0F),
-            glm::vec3(1.0F), true);
-        place(&registry, meshes.add("ground", cube(glm::vec4(1.0F))), glm::vec3(0.0F, -0.05F, 0.0F),
-            glm::vec3(6.0F, 0.1F, 6.0F), false);
-        v3d::type::camera::Isometric orbit;
-        orbit.target(glm::vec3(0.0F));
-        orbit.zoom(3.0F);
-        camera.profile().clipping(glm::vec2(0.1F, 100.0F));
-        orbit.apply(&camera);
-        camera.createProjection();
-        camera.createView();
-    }
-
-    /** A shot through the camera, with the given shadows. **/
-    LitScene::Shot shot(const LitScene::Shadows& shadows) const {
-        return LitScene::Shot{.view = camera.view(), .projection = camera.projection(), .shadows = shadows};
-    }
-
-    /** The light matrix of one map fitted to the casters. **/
-    glm::mat4 light() const {
-        const std::optional<lighting::ShadowBounds> bounds = lighting::fitShadow(registry, {}, {.margin = 2.0F});
-        BOOST_REQUIRE(bounds);
-        return lighting::shadowLight(lighting::Settings().light, *bounds);
-    }
-
-    boost::shared_ptr<v3d::asset::Manager> assets;
-    MeshRegistry meshes;
-    entt::registry registry;
-    v3d::type::camera::Camera camera;
-    boost::shared_ptr<RenderTarget> output;
-};
 
 /**
  * @return the names of a frame's passes, in the order the frame records them

@@ -32,23 +32,6 @@
 
 namespace v3d::ui::shell {
 
-namespace {
-
-/**
- * The height of a line of text, as a multiple of the text's size.
- **/
-constexpr float LINE_SPACING = 1.4F;
-
-/**
- * The Dress used when an app passes none. It sets only the line height, which covers a line
- * of text and the gap after it.
- **/
-void lineHeight(paint::Dressing* dressing, float size) {
-    dressing->lineHeight = size * LINE_SPACING;
-}
-
-};  // namespace
-
 /**
  **/
 Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
@@ -287,6 +270,10 @@ const boost::shared_ptr<StatisticsOverlay>& Screen::statistics() const noexcept 
  **/
 Immediate* Screen::immediate() noexcept {
     return immediate_.get();
+}
+
+void Screen::lineHeight(paint::Dressing* dressing, float size) {
+    dressing->lineHeight = size * LINE_SPACING;
 }
 
 };  // namespace v3d::ui::shell

@@ -43,6 +43,14 @@ const uint32_t width = 64;
 const uint32_t height = 32;
 
 /**
+ * What a case draws twice at the same depth.
+ **/
+enum class Drawn : std::uint8_t {
+    Lines,
+    WorldQuads
+};
+
+/**
  * A projection that measures the world in pixels of the target: x right over [0, width), y
  * down over [0, height), and z into the screen over [0, 1].
  **/
@@ -54,14 +62,6 @@ glm::mat4x4 pixels() {
     projection[3][1] = -1.0F;
     return projection;
 }
-
-/**
- * What a case draws twice at the same depth.
- **/
-enum class Drawn : std::uint8_t {
-    Lines,
-    WorldQuads
-};
 
 /**
  * A red shape and then a green one over the same pixels at the same depth, drawn into a depth

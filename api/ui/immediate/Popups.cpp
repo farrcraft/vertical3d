@@ -16,15 +16,6 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * How wide the mark at the right end of a combo is, as a fraction of a row.
- **/
-const float comboMark = 0.4F;
-
-};  // namespace
-
 bool Immediate::combo(const std::string& label, int* selected, const std::vector<std::string>& items) {
     if (context_->canvas == nullptr || selected == nullptr) {
         return false;

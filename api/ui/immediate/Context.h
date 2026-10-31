@@ -15,7 +15,9 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <glm/vec2.hpp>
@@ -399,6 +401,28 @@ class Context final {
     bool itemFinished;  /**< whether an edit of that item ended this frame **/
 
     Popup popup;
+
+ private:
+    /**
+     * How far one notch of the wheel scrolls a window, as a multiple of a row. Three rows is
+     * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
+     **/
+    static constexpr float wheelRows = 3.0F;
+    /**
+     * How far a press on a number has to travel across it before it drags the value instead of
+     * typing into it, as a window's title bar decides between a move and a fold.
+     **/
+    static constexpr float dragThreshold = 3.0F;
+    /**
+     * @return a typed number, or nothing when the text is not a whole finite number
+     **/
+    static std::optional<float> number(std::string_view text);
+    /**
+     * The seed and the multiplier of FNV-1a, which hashes a label into an id.
+     * Any hash would do; this one is four lines and needs no table.
+     **/
+    static constexpr std::uint64_t hashSeed = 1469598103934665603ULL;
+    static constexpr std::uint64_t hashPrime = 1099511628211ULL;
 };
 
 };  // namespace v3d::ui::immediate

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 
 #include <glm/glm.hpp>
 
@@ -77,6 +78,16 @@ class AABBox final {
     // void bound(const Polygon & poly);
 
  private:
+    // where vertices() puts each corner of the box
+    static constexpr std::size_t MIN_X_MAX_Y_MAX_Z = 0;
+    static constexpr std::size_t MAX_X_MIN_Y_MIN_Z = 1;
+    static constexpr std::size_t MAX_X_MAX_Y_MIN_Z = 2;
+    static constexpr std::size_t MIN_X_MAX_Y_MIN_Z = 3;
+    static constexpr std::size_t MAX_X_MIN_Y_MAX_Z = 4;
+    static constexpr std::size_t MIN_X_MIN_Y_MAX_Z = 5;
+    static constexpr std::size_t MIN_X_MIN_Y_MIN_Z = 6;
+    static constexpr std::size_t MAX_X_MAX_Y_MAX_Z = 7;
+
     glm::vec3 min_;
     glm::vec3 max_;
 };

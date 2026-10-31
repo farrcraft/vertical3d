@@ -11,26 +11,6 @@
 
 namespace v3d::image {
 
-namespace {
-
-/**
- * @return the format of that many bits per pixel, or RGB for a depth no format describes.
- *         RGB is then a defined value but not necessarily a correct one, so a writer checks
- *         the format it receives rather than assuming one
- **/
-Image::Format formatOf(uint8_t bpp) {
-    switch (bpp / 8) {
-    case 1:
-        return Image::Format::Grey;
-    case 4:
-        return Image::Format::RGBA;
-    default:
-        return Image::Format::RGB;
-    }
-}
-
-};  // namespace
-
 Image::Image() : data_(0), bpp_(24), width_(0), height_(0), format_(Format::RGB) {
 }
 
@@ -75,6 +55,17 @@ unsigned char Image::operator[] (unsigned int index) const {
     assert(index < (width_* height_* (bpp_ / 8)));
     assert(data_ != 0);
     return data_[index];
+}
+
+Image::Format Image::formatOf(uint8_t bpp) {
+    switch (bpp / 8) {
+    case 1:
+        return Image::Format::Grey;
+    case 4:
+        return Image::Format::RGBA;
+    default:
+        return Image::Format::RGB;
+    }
 }
 
 };  // namespace v3d::image

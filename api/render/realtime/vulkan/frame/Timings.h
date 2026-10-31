@@ -77,6 +77,9 @@ class Timings final {
     const std::vector<Timing>& last() const noexcept;
 
  private:
+    // the timestamp period is in nanoseconds, and a timing is reported in milliseconds
+    static constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
+
     struct Slot final {
         VkQueryPool pool { VK_NULL_HANDLE };
         std::vector<std::string> names;

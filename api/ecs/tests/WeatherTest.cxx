@@ -25,6 +25,14 @@ namespace {
 const float sixtieth = 1.0F / 60.0F;
 
 /**
+ * A region four by four on the ground and ten high, its corner at x.
+ **/
+struct Steps {
+    int count = 1;     /**< how many steps to run **/
+    float x = 0.0F;    /**< where the region's corner is on x **/
+};
+
+/**
  * Rain falling straight down at five a second, living longer than any case runs.
  **/
 Emitter rain() {
@@ -48,14 +56,6 @@ Weather shower() {
     weather.target = 1.0F;
     return weather;
 }
-
-/**
- * A region four by four on the ground and ten high, its corner at x.
- **/
-struct Steps {
-    int count = 1;     /**< how many steps to run **/
-    float x = 0.0F;    /**< where the region's corner is on x **/
-};
 
 void run(const Emitter& emitter, Weather* weather, State* state, const Steps& steps) {
     const float x = steps.x;

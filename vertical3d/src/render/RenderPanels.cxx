@@ -27,23 +27,16 @@
 
 namespace v3d::editor {
 
-namespace {
-
-const char* const VIEW = "render-view";
-const char* const SETTINGS = "render-settings";
-
 /**
- * One of a container's components, as its type, or an empty pointer.
  **/
 template <typename T>
-boost::shared_ptr<T> find(const boost::shared_ptr<v3d::ui::Container>& container, const char* name) {
+boost::shared_ptr<T> RenderPanels::find(const boost::shared_ptr<v3d::ui::Container>& container, const char* name) {
     return container ? boost::dynamic_pointer_cast<T>(container->get(name)) : boost::shared_ptr<T>();
 }
 
 /**
- * A text box's text as a whole number, or nothing.
  **/
-std::optional<unsigned int> number(const boost::shared_ptr<v3d::ui::Container>& container, const char* name) {
+std::optional<unsigned int> RenderPanels::number(const boost::shared_ptr<v3d::ui::Container>& container, const char* name) {
     const boost::shared_ptr<v3d::ui::component::TextBox> field = find<v3d::ui::component::TextBox>(container, name);
     if (!field) {
         return std::nullopt;
@@ -56,8 +49,6 @@ std::optional<unsigned int> number(const boost::shared_ptr<v3d::ui::Container>& 
     }
     return value;
 }
-
-};  // namespace
 
 /**
  **/

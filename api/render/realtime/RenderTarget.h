@@ -224,6 +224,26 @@ class RenderTarget final {
     vulkan::pipeline::Texture texture(uint32_t slot = 0) const;
 
  private:
+    /** The colour and depth attachments of a target, either of which may be null. **/
+    struct Views {
+        VkImageView colour = VK_NULL_HANDLE;
+        VkImageView depth = VK_NULL_HANDLE;
+    };
+
+    /**
+     * Clear what is attached to transparent black and the far plane, with no draws.
+     **/
+    static void clear(VkCommandBuffer commands, const Views& views, const VkExtent2D& extent);
+
+    /**
+     * Clear a slot's images. Each goes from undefined into the layout a pass draws in, and then
+     * into the layout the recorder leaves a target in after its last pass. A slot no pass has
+     * drawn into then looks like one a pass has. A null image is one the slot does not have, and
+     * each depth view is one layer of the depth image.
+     **/
+    static void readied(VkCommandBuffer commands, VkImage colour, VkImageView colourView, VkImage depth,
+        const std::vector<VkImageView>& depthViews, const VkExtent2D& extent);
+
     /**
      * One frame's images: the colour, and the depth when the target has one.
      **/

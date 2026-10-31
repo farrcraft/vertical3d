@@ -27,12 +27,9 @@
 
 namespace v3d::render::realtime {
 
-namespace {
-
 /**
- * The scene target, after the checks every other member is built on.
  **/
-boost::shared_ptr<RenderTarget> sceneTarget(const DeviceContext& context, const LitScene::Spec& spec) {
+boost::shared_ptr<RenderTarget> LitScene::sceneTarget(const DeviceContext& context, const LitScene::Spec& spec) {
     if (spec.output == VK_FORMAT_UNDEFINED) {
         throw std::runtime_error("The lit scene " + spec.name + " names no format for its grade to draw into");
     }
@@ -45,9 +42,8 @@ boost::shared_ptr<RenderTarget> sceneTarget(const DeviceContext& context, const 
 }
 
 /**
- * The shadow map: a sampled depth layer per cascade, or nothing for a scene with no shadow.
  **/
-boost::shared_ptr<RenderTarget> shadowMap(const DeviceContext& context, const LitScene::Spec& spec) {
+boost::shared_ptr<RenderTarget> LitScene::shadowMap(const DeviceContext& context, const LitScene::Spec& spec) {
     if (spec.shadowTexels == 0) {
         return boost::shared_ptr<RenderTarget>();
     }
@@ -56,14 +52,11 @@ boost::shared_ptr<RenderTarget> shadowMap(const DeviceContext& context, const Li
 }
 
 /**
- * The lit pipelines, built against the scene target and the shadow map, if there is one.
  **/
-renderer::Lit::Spec litSpec(const LitScene::Spec& spec, const RenderTarget& scene, const boost::shared_ptr<RenderTarget>& map) {
+renderer::Lit::Spec LitScene::litSpec(const LitScene::Spec& spec, const RenderTarget& scene, const boost::shared_ptr<RenderTarget>& map) {
     return renderer::Lit::Spec{.colour = scene.format(), .depth = scene.depthFormat(),
         .shadow = map ? map->depthFormat() : VK_FORMAT_UNDEFINED, .shaders = spec.shaders, .front = spec.front};
 }
-
-};  // namespace
 
 /**
  **/

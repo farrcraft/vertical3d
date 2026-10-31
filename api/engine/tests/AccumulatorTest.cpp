@@ -36,10 +36,6 @@ Result run(Accumulator* accumulator, const std::vector<std::uint64_t>& frames) {
     return result;
 }
 
-}  // namespace
-
-namespace {
-
 /**
  * A frame shorter than a step makes no step due, but its time is kept rather than discarded,
  * unlike a millisecond delta that rounds to zero.

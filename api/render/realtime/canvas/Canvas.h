@@ -339,6 +339,12 @@ class Canvas final {
     bool empty() const noexcept;
 
  private:
+    // two triangles
+    static constexpr uint32_t QUAD_INDICES = 6;
+
+    // the sweep of a whole circle, in radians
+    static constexpr float FULL_TURN = 6.283185307179586F;
+
     /**
      * Start a batch, or extend the open one when it already draws the same way.
      *

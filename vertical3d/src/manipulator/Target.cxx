@@ -41,13 +41,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * The vertex a half edge starts at, which is the vertex the half edge before it in its
- * loop ends at. A half edge names only its end, so this scans for the one whose next it is.
  **/
-bool startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Index* vertex) {
+bool Target::startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Index* vertex) {
     const std::size_t count = mesh.edgeCount();
     for (v3d::brep::Index id = 0; id < count; id++) {
         if (mesh.edge(id)->next() == edge) {
@@ -59,10 +55,8 @@ bool startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Inde
 }
 
 /**
- * The vertices the selected components of one kind of a mesh item bring, each once, in index
- * order. A part the geometry does not hold brings nothing.
  **/
-std::vector<v3d::brep::Index> selectedVertices(const Mesh& item, SelectMask kind, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedVertices(const Mesh& item, SelectMask kind, const Components& components) {
     const v3d::brep::BRep& mesh = *item.geometry();
     std::vector<v3d::brep::Index> vertices;
     if (kind == SelectMask::Vertex) {
@@ -98,9 +92,8 @@ std::vector<v3d::brep::Index> selectedVertices(const Mesh& item, SelectMask kind
 }
 
 /**
- * The faces any of the vertices is a corner of, each once, in index order.
  **/
-std::vector<v3d::brep::Index> facesAround(const v3d::brep::BRep& mesh, const std::vector<v3d::brep::Index>& vertices) {
+std::vector<v3d::brep::Index> Target::facesAround(const v3d::brep::BRep& mesh, const std::vector<v3d::brep::Index>& vertices) {
     std::vector<v3d::brep::Index> faces;
     for (const v3d::brep::Index vertex : vertices) {
         const std::vector<v3d::brep::Index> around = v3d::brep::facesAround(mesh, vertex);
@@ -112,10 +105,8 @@ std::vector<v3d::brep::Index> facesAround(const v3d::brep::BRep& mesh, const std
 }
 
 /**
- * The selected control points of a curve item, by part number, rising. A part the geometry does
- * not hold is left out.
  **/
-std::vector<v3d::brep::Index> selectedPoints(const Curve& item, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedPoints(const Curve& item, const Components& components) {
     std::vector<v3d::brep::Index> points;
     for (const v3d::brep::Index point : components.of(item.id(), Component::Vertex)) {
         if (pointAt(*item.geometry(), point)) {
@@ -126,10 +117,8 @@ std::vector<v3d::brep::Index> selectedPoints(const Curve& item, const Components
 }
 
 /**
- * The selected Bezier handles of a curve item, by part number, rising. A part that names no
- * handle the geometry holds is left out.
  **/
-std::vector<v3d::brep::Index> selectedHandles(const Curve& item, const Components& components) {
+std::vector<v3d::brep::Index> Target::selectedHandles(const Curve& item, const Components& components) {
     std::vector<v3d::brep::Index> handles;
     for (const v3d::brep::Index handle : components.of(item.id(), Component::Handle)) {
         if (handleAt(*item.geometry(), handle)) {
@@ -138,8 +127,6 @@ std::vector<v3d::brep::Index> selectedHandles(const Curve& item, const Component
     }
     return handles;
 }
-
-};  // namespace
 
 /**
  **/

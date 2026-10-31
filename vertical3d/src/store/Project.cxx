@@ -26,23 +26,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * What the manifest's "format" says, so a JSON file that is not a manifest is refused.
  **/
-const char* const FORMAT = "v3d-project";
-
-/**
- * The scene a new project has.
- **/
-const char* const FIRST_SCENE = "scenes/main.v3d";
-
-/**
- * Whether a path in the manifest names a file inside the project. An absolute path, or one
- * that climbs out with "..", would let a manifest write a scene anywhere.
- **/
-bool inside(const std::string& entry) {
+bool Project::inside(const std::string& entry) {
     const boost::filesystem::path path(entry);
     if (path.empty() || !path.is_relative() || path.has_root_name() || !path.has_filename()) {
         return false;
@@ -52,18 +38,8 @@ bool inside(const std::string& entry) {
 }
 
 /**
- * What a manifest holds.
  **/
-struct Manifest {
-    std::string name;
-    std::vector<std::string> scenes;
-};
-
-/**
- * Read a manifest.
- * @return nothing when it is not a manifest this build can read, with the problem logged
- **/
-std::optional<Manifest> readManifest(const boost::filesystem::path& path, const boost::shared_ptr<v3d::log::Logger>& logger) {
+std::optional<Project::Manifest> Project::readManifest(const boost::filesystem::path& path, const boost::shared_ptr<v3d::log::Logger>& logger) {
     const std::optional<std::string> text = v3d::asset::readFile(path.string());
     if (!text || text->empty()) {
         logger->get()->error("No project manifest to read at {}", path.string());
@@ -117,8 +93,6 @@ std::optional<Manifest> readManifest(const boost::filesystem::path& path, const 
     }
     return manifest;
 }
-
-};  // namespace
 
 /**
  **/

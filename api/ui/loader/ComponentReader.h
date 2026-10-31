@@ -11,10 +11,12 @@
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/json/object.hpp>
+#include <boost/json/value.hpp>
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
@@ -78,6 +80,12 @@ class ComponentReader final {
     std::vector<boost::shared_ptr<Container>>& containers() noexcept;
 
  private:
+    /**
+     * Read one length: a number is pixels, and a string ending in % is a fraction of the parent.
+     * @return the length, or nothing when the value is neither
+     **/
+    static std::optional<Length> length(const boost::json::value& value);
+
     /**
      * Read one container and the components in it.
      **/

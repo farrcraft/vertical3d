@@ -16,6 +16,12 @@
 #include <api/animation/Skeleton.h>
 #include <api/animation/Channel.h>
 #include <api/animation/Clip.h>
+#include <api/asset/media/internal/Attributes.h>
+#include <api/asset/media/internal/Bucket.h>
+#include <api/asset/media/internal/Dropped.h>
+#include <api/asset/media/internal/Placed.h>
+#include <api/asset/media/internal/Rig.h>
+#include <api/asset/media/internal/Span.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -44,25 +50,11 @@ namespace v3d::asset::media::loader {
 
 namespace {
 
-// the scheme that starts a data uri, and the marker that ends the header of a base64 one
+// the scheme that starts a data uri
 constexpr std::string_view DATA_SCHEME = "data:";
-constexpr std::string_view BASE64_MARKER = ";base64";
 
-/**
- * The accessors one primitive draws from. Only position is required. Without it there is no
- * geometry, and the other attributes default to zero.
- **/
-struct Attributes final {
-    const cgltf_accessor* position{ nullptr };
-    const cgltf_accessor* normal{ nullptr };
-    const cgltf_accessor* uv{ nullptr };
-    const cgltf_accessor* joints{ nullptr };
-    const cgltf_accessor* weights{ nullptr };
-    bool moreInfluences{ false };  /**< a second set of joints, which four influences cannot hold **/
-};
-
-Attributes attributesOf(const cgltf_primitive& primitive) {
-    Attributes found;
+internal::Attributes attributesOf(const cgltf_primitive& primitive) {
+    internal::Attributes found;
     for (cgltf_size index = 0; index < primitive.attributes_count; ++index) {
         const cgltf_attribute& attribute = primitive.attributes[index];
         switch (attribute.type) {
@@ -97,49 +89,6 @@ Attributes attributesOf(const cgltf_primitive& primitive) {
     }
     return found;
 }
-
-/**
- * The skin a model keeps, and how to reach its joints in the skeleton's order.
- **/
-struct Rig final {
-    const cgltf_skin* skin{ nullptr };
-    std::vector<std::uint16_t> order;                     /**< a skin joint's index to the skeleton's **/
-    std::map<const cgltf_node*, std::uint16_t> joints;    /**< a joint's node to the skeleton's index **/
-    std::vector<glm::mat4> bound;                         /**< by skeleton index: the joint at rest, times its inverse bind **/
-};
-
-/**
- * What the traversal found that a model cannot hold, for the loader to report.
- **/
-struct Dropped final {
-    bool skins{ false };       /**< a mesh bound to a skin other than the one kept **/
-    bool influences{ false };  /**< a second set of joints and weights **/
-    bool unweighted{ false };  /**< a skinned primitive with no joints, or none that weigh anything **/
-    bool channels{ false };    /**< a channel animating a node that is not one of the skeleton's joints **/
-    bool lines{ false };       /**< a primitive of points or lines, which a model of triangles cannot hold **/
-    bool joints{ false };      /**< a weight given to a joint the skin does not have **/
-};
-
-/**
- * A primitive the traversal reached, and where its node puts it. In a model with a skeleton, a
- * skinned primitive is placed by its joints and an unskinned one follows one joint rigidly.
- **/
-struct Placed final {
-    const cgltf_primitive* primitive{ nullptr };
-    Attributes attributes;
-    glm::mat4 world{ 1.0F };
-    bool skinned{ false };
-    std::uint16_t joint{ 0 };  /**< the joint an unskinned primitive follows **/
-};
-
-/**
- * The primitives drawn with one material, which become one part. The material is null for
- * primitives that name none.
- **/
-struct Bucket final {
-    const cgltf_material* material{ nullptr };
-    std::vector<Placed> primitives;
-};
 
 /**
  * The nodes the traversal starts from: the scene the file names, or its first, or every root
@@ -240,7 +189,7 @@ std::vector<int32_t> skinParents(const cgltf_skin& skin) {
  * Read a skin into a skeleton whose parents precede their children, keeping the skin's own
  * order wherever it already does, and record how the rest of the traversal reaches its joints.
  **/
-v3d::animation::Skeleton readSkeleton(const cgltf_skin& skin, Rig* rig) {
+v3d::animation::Skeleton readSkeleton(const cgltf_skin& skin, internal::Rig* rig) {
     const std::vector<int32_t> parents = skinParents(skin);
     rig->skin = &skin;
     rig->order.assign(skin.joints_count, 0);
@@ -297,7 +246,7 @@ bool bindsEveryJoint(const cgltf_skin& skin) {
  * The joint an unskinned mesh in a skinned model follows: its own node or nearest ancestor that
  * is a joint, or the first root when it is under none.
  **/
-std::uint16_t followed(const cgltf_node& node, const Rig& rig) {
+std::uint16_t followed(const cgltf_node& node, const internal::Rig& rig) {
     for (const cgltf_node* at = &node; at != nullptr; at = at->parent) {
         const std::map<const cgltf_node*, std::uint16_t>::const_iterator found = rig.joints.find(at);
         if (found != rig.joints.end()) {
@@ -314,8 +263,8 @@ std::uint16_t followed(const cgltf_node& node, const Rig& rig) {
  * joint's skinning matrix expects, so it stands where the file put it while the joint is at
  * rest.
  **/
-Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
-    Placed placed;
+internal::Placed placement(const cgltf_node& node, const internal::Rig& rig, internal::Dropped* dropped) {
+    internal::Placed placed;
     if (rig.skin == nullptr) {
         placed.world = worldOf(node);
         return placed;
@@ -337,13 +286,13 @@ Placed placement(const cgltf_node& node, const Rig& rig, Dropped* dropped) {
  * material. A bucket is opened the first time its material is reached. Meshes are reached
  * through the node hierarchy, not the file's mesh list, so each is placed by its node.
  **/
-void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* buckets, Dropped* dropped) {
+void collect(const cgltf_node& node, const internal::Rig& rig, std::vector<internal::Bucket>* buckets, internal::Dropped* dropped) {
     if (node.mesh != nullptr) {
-        const Placed where = placement(node, rig, dropped);
+        const internal::Placed where = placement(node, rig, dropped);
 
         for (cgltf_size index = 0; index < node.mesh->primitives_count; ++index) {
             const cgltf_primitive& primitive = node.mesh->primitives[index];
-            const Attributes attributes = attributesOf(primitive);
+            const internal::Attributes attributes = attributesOf(primitive);
             if (attributes.position == nullptr) {
                 continue;
             }
@@ -354,15 +303,15 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
                 dropped->lines = true;
                 continue;
             }
-            std::vector<Bucket>::iterator bucket = buckets->begin();
+            std::vector<internal::Bucket>::iterator bucket = buckets->begin();
             while (bucket != buckets->end() && bucket->material != primitive.material) {
                 ++bucket;
             }
             if (bucket == buckets->end()) {
-                buckets->push_back(Bucket{ primitive.material, {} });
+                buckets->push_back(internal::Bucket{ primitive.material, {} });
                 bucket = buckets->end() - 1;
             }
-            Placed placed = where;
+            internal::Placed placed = where;
             placed.primitive = &primitive;
             placed.attributes = attributes;
             bucket->primitives.push_back(placed);
@@ -376,7 +325,7 @@ void collect(const cgltf_node& node, const Rig& rig, std::vector<Bucket>* bucket
 /**
  * Log each kind of data the traversal found that the model cannot hold.
  **/
-void report(v3d::log::Logger& logger, const Dropped& dropped, std::string_view name) {
+void report(v3d::log::Logger& logger, const internal::Dropped& dropped, std::string_view name) {
     if (dropped.skins) {
         logger.get()->warn("{} binds meshes to more than one skin. The first is kept, and a mesh bound to another "
             "follows a joint of it rigidly", name);
@@ -429,7 +378,7 @@ void releaseRead(const cgltf_memory_options* /* memory */, const cgltf_file_opti
  * one. A weight given to a joint the skin does not have is left out. A vertex whose weights
  * then sum to zero or less follows the first root.
  **/
-v3d::model::Model::Influence influenceOf(const Attributes& attributes, cgltf_size index, const Rig& rig, Dropped* dropped) {
+v3d::model::Model::Influence influenceOf(const internal::Attributes& attributes, cgltf_size index, const internal::Rig& rig, internal::Dropped* dropped) {
     v3d::model::Model::Influence influence;
     influence.weights = glm::vec4(1.0F, 0.0F, 0.0F, 0.0F);
     if (attributes.joints == nullptr || attributes.weights == nullptr) {
@@ -459,12 +408,6 @@ v3d::model::Model::Influence influenceOf(const Attributes& attributes, cgltf_siz
     return influence;
 }
 
-/** Where a primitive's vertices start in the model, and how many it has. **/
-struct Span {
-    std::size_t baseVertex = 0;
-    cgltf_size count = 0;
-};
-
 /**
  * Append a primitive's triangles to the merged index list. They are appended as a list,
  * whatever mode the primitive was drawn in.
@@ -477,7 +420,7 @@ struct Span {
  * swaps its first two corners, so that all of them face the same way. Every triangle of a fan
  * shares the fan's first vertex.
  **/
-void appendIndices(const cgltf_primitive& primitive, const Span& span, std::vector<std::uint32_t>* indices) {
+void appendIndices(const cgltf_primitive& primitive, const internal::Span& span, std::vector<std::uint32_t>* indices) {
     const std::size_t baseVertex = span.baseVertex;
     const cgltf_size count = span.count;
     std::vector<std::uint32_t> order;
@@ -514,9 +457,9 @@ void appendIndices(const cgltf_primitive& primitive, const Span& span, std::vect
  * Append one primitive's vertices to the merged array, placed by its node and with its
  * indices rebased onto the array.
  **/
-void appendPrimitive(const Placed& placed, const Rig& rig, v3d::model::Model* model, Dropped* dropped) {
+void appendPrimitive(const internal::Placed& placed, const internal::Rig& rig, v3d::model::Model* model, internal::Dropped* dropped) {
     const cgltf_primitive& primitive = *placed.primitive;
-    const Attributes& attributes = placed.attributes;
+    const internal::Attributes& attributes = placed.attributes;
     // a normal is turned by the inverse transpose, so it stays perpendicular to its surface
     // under an uneven scale. It is then renormalised, because a scale changes its length
     const glm::mat3 normals = glm::transpose(glm::inverse(glm::mat3(placed.world)));
@@ -558,8 +501,8 @@ void appendPrimitive(const Placed& placed, const Rig& rig, v3d::model::Model* mo
  * joint, or a path other than translation, rotation and scale. Morph target weights are
  * dropped without a report, because a model has no morph targets.
  **/
-bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::animation::Channel* channel,
-    Dropped* dropped) {
+bool readChannel(const cgltf_animation_channel& source, const internal::Rig& rig, v3d::animation::Channel* channel,
+    internal::Dropped* dropped) {
     using v3d::animation::Channel;
     if (source.sampler == nullptr || source.target_node == nullptr) {
         return false;
@@ -614,7 +557,7 @@ bool readChannel(const cgltf_animation_channel& source, const Rig& rig, v3d::ani
 /**
  * Every animation in the file as a clip of the skeleton's joints, named as the file named it.
  **/
-std::vector<v3d::animation::Clip> readClips(const cgltf_data& data, const Rig& rig, Dropped* dropped) {
+std::vector<v3d::animation::Clip> readClips(const cgltf_data& data, const internal::Rig& rig, internal::Dropped* dropped) {
     std::vector<v3d::animation::Clip> clips;
     for (cgltf_size index = 0; index < data.animations_count; ++index) {
         const cgltf_animation& animation = data.animations[index];
@@ -667,34 +610,6 @@ v3d::model::Model::Material readMaterial(const cgltf_material& source, const cgl
     return material;
 }
 
-/**
- * Which reader decodes an embedded image, from the mime type the file gave it or, when it gave
- * none, from the type a data uri states.
- *
- * glTF allows only png and jpeg for an embedded image. Any other type is outside the
- * specification, and the bytes are not inspected to guess a format.
- *
- * @return the key api/image registers its readers under, or nothing
- **/
-std::string readerFor(const cgltf_image& image) {
-    // the mime type is optional for a data uri image, because the uri states its own type
-    std::string mime = image.mime_type != nullptr ? std::string(image.mime_type) : std::string();
-    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, DATA_SCHEME.data(), DATA_SCHEME.size()) == 0) {
-        const char* type = image.uri + DATA_SCHEME.size();
-        const char* end = std::strpbrk(type, ";,");
-        if (end != nullptr) {
-            mime.assign(type, static_cast<std::size_t>(end - type));
-        }
-    }
-    if (mime == "image/png") {
-        return "png";
-    }
-    if (mime == "image/jpeg") {
-        return "jpg";
-    }
-    return std::string();
-}
-
 };  // namespace
 
 /**
@@ -739,7 +654,7 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     const boost::shared_ptr<v3d::model::Model> model = boost::make_shared<v3d::model::Model>();
 
     // a model has one skeleton, read from the first skin a mesh is bound to
-    Rig rig;
+    internal::Rig rig;
     for (const cgltf_node* start : starts) {
         const cgltf_skin* skin = firstSkin(*start);
         if (skin != nullptr && skin->joints_count > 0) {
@@ -754,23 +669,23 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
         }
     }
 
-    Dropped dropped;
+    internal::Dropped dropped;
     if (rig.skin != nullptr) {
         model->clips() = readClips(*data, rig, &dropped);
     }
 
-    std::vector<Bucket> buckets;
+    std::vector<internal::Bucket> buckets;
     for (const cgltf_node* start : starts) {
         collect(*start, rig, &buckets, &dropped);
     }
 
     std::vector<boost::shared_ptr<v3d::image::Image>> baseColours;
 
-    for (const Bucket& bucket : buckets) {
+    for (const internal::Bucket& bucket : buckets) {
         v3d::model::Model::Part part;
         part.firstIndex = static_cast<std::uint32_t>(model->indices().size());
         part.material = static_cast<std::uint32_t>(model->materials().size());
-        for (const Placed& placed : bucket.primitives) {
+        for (const internal::Placed& placed : bucket.primitives) {
             appendPrimitive(placed, rig, model.get(), &dropped);
         }
         part.indexCount = static_cast<std::uint32_t>(model->indices().size()) - part.firstIndex;
@@ -792,6 +707,25 @@ boost::shared_ptr<Asset> Gltf::load(std::string_view name) {
     }
 
     return boost::make_shared<kind::Model>(std::string(name), model, baseColours);
+}
+
+std::string Gltf::readerFor(const cgltf_image& image) {
+    // the mime type is optional for a data uri image, because the uri states its own type
+    std::string mime = image.mime_type != nullptr ? std::string(image.mime_type) : std::string();
+    if (mime.empty() && image.uri != nullptr && std::strncmp(image.uri, DATA_SCHEME.data(), DATA_SCHEME.size()) == 0) {
+        const char* type = image.uri + DATA_SCHEME.size();
+        const char* end = std::strpbrk(type, ";,");
+        if (end != nullptr) {
+            mime.assign(type, static_cast<std::size_t>(end - type));
+        }
+    }
+    if (mime == "image/png") {
+        return "png";
+    }
+    if (mime == "image/jpeg") {
+        return "jpg";
+    }
+    return std::string();
 }
 
 /**

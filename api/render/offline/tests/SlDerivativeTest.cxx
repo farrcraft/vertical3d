@@ -49,20 +49,6 @@ class Shaped final : public Renderer {
 };
 
 /**
- * A square grid of `size` points a side, spaced as a hider dices: u and v run over [0, 1], so
- * the step between neighbours is 1 / (size - 1).
- **/
-Renderer::Shape grid(unsigned int size) {
-    Renderer::Shape shape;
-    shape.layout = Renderer::Shape::Layout::GRID;
-    shape.along = size;
-    shape.across = size;
-    shape.du = 1.0F / static_cast<float>(size - 1);
-    shape.dv = shape.du;
-    return shape;
-}
-
-/**
  * A shader body run over one point for each lane, with P, s, t, u and v where `at` puts them,
  * and its symbols readable afterwards.
  **/
@@ -111,6 +97,20 @@ class Run final {
     v3d::render::offline::sl::runtime::Machine machine_;
 };
 
+/**
+ * A square grid of `size` points a side, spaced as a hider dices: u and v run over [0, 1], so
+ * the step between neighbours is 1 / (size - 1).
+ **/
+Renderer::Shape grid(unsigned int size) {
+    Renderer::Shape shape;
+    shape.layout = Renderer::Shape::Layout::GRID;
+    shape.along = size;
+    shape.across = size;
+    shape.du = 1.0F / static_cast<float>(size - 1);
+    shape.dv = shape.du;
+    return shape;
+}
+
 /** A point at a grid index of a grid of a given span, with u and v and s and t from it. **/
 v3d::render::offline::sl::Point parameters(const glm::uvec2 & index, float span) {
     v3d::render::offline::sl::Point point;
@@ -129,6 +129,23 @@ glm::vec3 acrossU() {
 /** The same plane's edge across the whole of v. **/
 glm::vec3 acrossV() {
     return {-0.5F, 3.0F, 0.25F};
+}
+
+/**
+ * The program a shader body compiles to, for a case that reads what the emitter recorded
+ * about it rather than running it.
+ **/
+v3d::render::offline::sl::runtime::Program emitted(const std::string & source) {
+    std::istringstream stream(source);
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
+    BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + source);
+    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + source);
+    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::runtime::Program program;
+    BOOST_REQUIRE_MESSAGE(emitter.emit(&program), emitter.error() + " in: " + source);
+    return program;
 }
 
 /**
@@ -295,23 +312,6 @@ BOOST_AUTO_TEST_CASE(sl_derivatives_over_a_stencil_of_groups_test) {
             BOOST_CHECK_CLOSE(run.number("patch", point), spanned, 0.1F);
         }
     }
-}
-
-/**
- * The program a shader body compiles to, for a case that reads what the emitter recorded
- * about it rather than running it.
- **/
-v3d::render::offline::sl::runtime::Program emitted(const std::string & source) {
-    std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + source);
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
-    BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + source);
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
-    v3d::render::offline::sl::runtime::Program program;
-    BOOST_REQUIRE_MESSAGE(emitter.emit(&program), emitter.error() + " in: " + source);
-    return program;
 }
 
 /**

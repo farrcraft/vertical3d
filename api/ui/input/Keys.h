@@ -103,6 +103,26 @@ class Keys final {
     bool text(std::string_view utf8);
 
  private:
+    /** The key that steps towards the end, and the one that steps towards the start. **/
+    struct Arrows {
+        std::string_view along;
+        std::string_view back;
+    };
+    /**
+     * Where a key moves a cursor through count things, starting from where.
+     *
+     * A list and a tab bar step through what they hold the same way. They differ only in which
+     * arrows step: down and up for rows stacked vertically, right and left for tabs laid out
+     * across. Neither wraps, so holding an arrow stops at the last item.
+     *
+     * @return where to move to, or `where` when the key moves nothing
+     **/
+    static int step(std::string_view key, int where, int count, const Arrows& arrows);
+    /**
+     * @return whether a key is the one that activates whatever holds the focus
+     **/
+    static bool activates(std::string_view key) noexcept;
+
     /**
      * Act on a key that reached a focused component: move the caret, take a character
      * out, step through what the component holds, or send whatever command it carries.

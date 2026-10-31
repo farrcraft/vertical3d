@@ -56,27 +56,6 @@ namespace v3d::ui::paint {
 namespace {
 
 /**
- * The colour a component's own text is drawn in: the given colour, or the theme's disabled
- * colour when the component, or anything holding it, cannot be used. An icon is tinted with
- * the same colour, so disabling a box greys both a label and the picture beside it.
- **/
-glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour) {
-    return usable(component) ? colour : dress.disabledText;
-}
-
-/**
- * The colour a menu item's label is written in, in a centred menu and in a dropped panel
- * alike. An item that cannot be used, or one in a menu that cannot be, is written in the
- * disabled colour even while it is the active one, because navigation does not activate it.
- **/
-glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected) {
-    if (!item || !usable(*item)) {
-        return dress.disabledText;
-    }
-    return selected ? dress.activeText : dress.text;
-}
-
-/**
  * Which of a theme's button styles a button is drawn with. A button that cannot be used
  * takes the disabled one, whatever state the cursor last wrote on it.
  **/
@@ -128,51 +107,6 @@ std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
     }
     return std::nullopt;
 }
-
-/**
- * How many segments a radio button's disc is drawn with. Small enough to cost little at
- * the size a mark is drawn, large enough that the rim does not read as a polygon.
- **/
-const unsigned int markSides = 16;
-
-/**
- * How much of the box, or of the disc, a mark fills. The rest is the gap that makes it
- * read as a mark inside something rather than as a filled box.
- **/
-const float markFill = 0.5F;
-
-/**
- * How far in from the edge of a skinned button the corner images reach, when the
- * style names no corner of its own. A texture carries no size a handle can be asked
- * for, so this is a number rather than something measured.
- **/
-const float defaultCorner = 8.0F;
-
-/**
- * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
- **/
-constexpr float widgetBaseline = 0.7F;
-
-/**
- * How far down a line of text its baseline sits, as a fraction of the line height. The rest
- * is room for descenders.
- **/
-constexpr float lineBaseline = 0.75F;
-
-/**
- * The half side of the square that marks a checked menu item, as a fraction of a line.
- **/
-constexpr float checkMarkScale = 0.15F;
-
-/**
- * The radius of the arrow that marks a submenu, as a fraction of a line.
- **/
-constexpr float submenuArrowScale = 0.18F;
-
-/**
- * How far a tooltip's text sits in from its edges, as a fraction of a line.
- **/
-constexpr float tooltipInset = 0.4F;
 
 /**
  * @return what a style's image property was resolved to, unset when the style names no
@@ -1178,6 +1112,17 @@ void ComponentRenderer::entry(v3d::render::realtime::canvas::Canvas* canvas, con
 void ComponentRenderer::rule(v3d::render::realtime::canvas::Canvas* canvas, float left, float right, float middle) const {
     const float half = Arranger::ruleWidth * 0.5F;
     canvas->rect(glm::vec2(left, middle - half), glm::vec2(right, middle + half), base().rule);
+}
+
+glm::vec4 ComponentRenderer::ink(const Component& component, const Dressing& dress, const glm::vec4& colour) {
+    return usable(component) ? colour : dress.disabledText;
+}
+
+glm::vec4 ComponentRenderer::itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected) {
+    if (!item || !usable(*item)) {
+        return dress.disabledText;
+    }
+    return selected ? dress.activeText : dress.text;
 }
 
 };  // namespace v3d::ui::paint

@@ -41,4 +41,13 @@ RIBHandler & Renderer::active() {
     return *handlers_.back();
 }
 
+const std::string & Renderer::keep(const std::string & handle) {
+    handles_.push_back(handle);
+    return handles_.back();
+}
+
+unsigned int Renderer::nextLight() {
+    return made_++;
+}
+
 };  // namespace v3d::moya::ri

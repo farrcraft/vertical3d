@@ -37,13 +37,9 @@ Samples::Samples(const glm::uvec2 & size, const v3d::render::offline::Sampling &
     }
 }
 
-namespace {
-
-bool solid(const glm::vec3 & opacity) {
+bool Samples::Layers::solid(const glm::vec3 & opacity) {
     return opacity.r >= 1.0F && opacity.g >= 1.0F && opacity.b >= 1.0F;
 }
-
-};  // namespace
 
 void Samples::Layers::add(const Layer & layer) {
     if (layer.depth >= opaque_) {

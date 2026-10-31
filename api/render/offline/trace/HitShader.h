@@ -107,6 +107,8 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     Shape shape() const override;
 
  private:
+    typedef v3d::render::offline::sl::runtime::Value Value;
+
     /** The lights on the batch: its primitives', or the scene's. **/
     const std::vector<v3d::render::offline::sl::Placed> & shining() const;
 

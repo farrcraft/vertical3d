@@ -19,14 +19,9 @@
 
 namespace v3d::render::realtime::vulkan::memory {
 
-namespace {
-
 /**
- * Allocate for a resource whose requirements have already been read, and write what was
- * allocated. Buffers and images differ only in which call reports the requirements, so
- * everything after that is shared.
  **/
-VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
+VkResult Allocator::allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
     VkMemoryPropertyFlags properties, Allocation* allocation) {
     // returned as an error, as the suballocator reports it, so a caller that made a buffer or
     // an image destroys it on the way out with either kind of allocator
@@ -50,8 +45,6 @@ VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequ
     allocation->size = requirements.size;
     return VK_SUCCESS;
 }
-
-};  // namespace
 
 /**
  **/

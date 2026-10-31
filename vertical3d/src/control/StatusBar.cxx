@@ -30,77 +30,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * How many nanoseconds there are in a second.
- **/
-constexpr double SECOND = 1e9;
-
-/**
- * @return what a camera move is called on the status bar, or nothing for no move
- **/
-std::optional<std::string> cameraMove(CameraControlTool::CameraMode mode) {
-    switch (mode) {
-        case CameraControlTool::CAMERA_MODE_ZOOM:
-            return "Zoom";
-        case CameraControlTool::CAMERA_MODE_TRUCK:
-            return "Truck";
-        case CameraControlTool::CAMERA_MODE_PAN:
-            return "Orbit";
-        case CameraControlTool::CAMERA_MODE_DOLLY:
-            return "Dolly";
-        case CameraControlTool::CAMERA_MODE_PITCH:
-            return "Pitch";
-        case CameraControlTool::CAMERA_MODE_NONE:
-            break;
-    }
-    return std::nullopt;
-}
-
-/**
- * @return what a transform mode's handles do to the selection, or nothing for no handles
- **/
-std::optional<std::string> handles(TransformTool::Mode mode) {
-    switch (mode) {
-        case TransformTool::Mode::Translate:
-            return "move";
-        case TransformTool::Mode::Rotate:
-            return "rotate";
-        case TransformTool::Mode::Scale:
-            return "scale";
-        case TransformTool::Mode::None:
-            break;
-    }
-    return std::nullopt;
-}
-
-/**
- * @return how many parts of one kind are selected in an item. An edge counts once, though
- *         either of its halves or both may be selected
- **/
-std::size_t parts(const Scene& scene, const Item& item, Component kind) {
-    const std::vector<v3d::brep::Index> chosen = scene.components().of(item.id(), kind);
-    const boost::shared_ptr<Mesh> mesh = scene.mesh(item.id());
-    if (kind != Component::Edge || !mesh) {
-        return chosen.size();
-    }
-    const v3d::brep::BRep& geometry = *mesh->geometry();
-    std::size_t edges = 0;
-    for (const v3d::brep::Index half : chosen) {
-        // the half that owns its edge stands for it, and the other only when that one is not chosen
-        const v3d::brep::HalfEdge* edge = geometry.edge(half);
-        const bool alone = edge == nullptr || edge->pair() == v3d::brep::INVALID_ID ||
-            !scene.components().selected(item.id(), Component::Edge, edge->pair());
-        if (v3d::brep::ownsEdge(geometry, half) || alone) {
-            edges++;
-        }
-    }
-    return edges;
-}
-
-};  // namespace
-
 /**
  **/
 std::vector<Status::Button> StatusBar::buttons(const CameraControlTool& camera, const TransformTool& transform, const SelectTool& select,
@@ -162,6 +91,64 @@ std::string StatusBar::rate(std::uint64_t nanoseconds) {
         return {};
     }
     return std::to_string(static_cast<std::int64_t>(std::lround(SECOND / static_cast<double>(nanoseconds)))) + " fps";
+}
+
+/**
+ **/
+std::optional<std::string> StatusBar::cameraMove(CameraControlTool::CameraMode mode) {
+    switch (mode) {
+        case CameraControlTool::CAMERA_MODE_ZOOM:
+            return "Zoom";
+        case CameraControlTool::CAMERA_MODE_TRUCK:
+            return "Truck";
+        case CameraControlTool::CAMERA_MODE_PAN:
+            return "Orbit";
+        case CameraControlTool::CAMERA_MODE_DOLLY:
+            return "Dolly";
+        case CameraControlTool::CAMERA_MODE_PITCH:
+            return "Pitch";
+        case CameraControlTool::CAMERA_MODE_NONE:
+            break;
+    }
+    return std::nullopt;
+}
+
+/**
+ **/
+std::optional<std::string> StatusBar::handles(TransformTool::Mode mode) {
+    switch (mode) {
+        case TransformTool::Mode::Translate:
+            return "move";
+        case TransformTool::Mode::Rotate:
+            return "rotate";
+        case TransformTool::Mode::Scale:
+            return "scale";
+        case TransformTool::Mode::None:
+            break;
+    }
+    return std::nullopt;
+}
+
+/**
+ **/
+std::size_t StatusBar::parts(const Scene& scene, const Item& item, Component kind) {
+    const std::vector<v3d::brep::Index> chosen = scene.components().of(item.id(), kind);
+    const boost::shared_ptr<Mesh> mesh = scene.mesh(item.id());
+    if (kind != Component::Edge || !mesh) {
+        return chosen.size();
+    }
+    const v3d::brep::BRep& geometry = *mesh->geometry();
+    std::size_t edges = 0;
+    for (const v3d::brep::Index half : chosen) {
+        // the half that owns its edge stands for it, and the other only when that one is not chosen
+        const v3d::brep::HalfEdge* edge = geometry.edge(half);
+        const bool alone = edge == nullptr || edge->pair() == v3d::brep::INVALID_ID ||
+            !scene.components().selected(item.id(), Component::Edge, edge->pair());
+        if (v3d::brep::ownsEdge(geometry, half) || alone) {
+            edges++;
+        }
+    }
+    return edges;
 }
 
 };  // namespace v3d::editor

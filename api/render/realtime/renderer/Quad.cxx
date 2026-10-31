@@ -49,26 +49,6 @@ const uint32_t linearFragmentShader[] =
 #include "shaders/linear_quad.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
-/**
- * What each geometry buffer starts at, in bytes. A screen of quads fits without
- * growing, and the buffers double from here when something does not.
- **/
-const VkDeviceSize initialVertexBytes = 64ULL * 1024;
-const VkDeviceSize initialIndexBytes = 32ULL * 1024;
-
-/**
- * The push constant block, laid out as quad.vert and quad.frag declare it.
- *
- * One range covers both stages: the projection is the vertex stage's, and text and the
- * texture's slot are the fragment stage's. A batch is one texture, and text or not, for all of
- * its fragments.
- **/
-struct Push final {
-    glm::mat4 projection;
-    uint32_t text;
-    uint32_t texture;
-};
-
 };  // namespace
 
 /**

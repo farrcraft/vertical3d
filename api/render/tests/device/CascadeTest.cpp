@@ -68,28 +68,11 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t size = 256;
 const uint32_t mapSize = 512;
 
-void place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale, bool castsShadow) {
-    const entt::entity entity = registry->create();
-    Transform transform;
-    transform.position = position;
-    transform.scale = scale;
-    registry->emplace<Transform>(entity, transform);
-    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
-}
-
 /** A cube standing on the ground, the near, middle and far one each in a cascade of its own. **/
 struct Standing final {
     glm::vec3 position;
     float scale;
 };
-
-std::array<Standing, 3> standing() {
-    return {{
-        {.position = glm::vec3(0.0F, 0.5F, -7.0F), .scale = 1.0F},
-        {.position = glm::vec3(-3.0F, 1.0F, -22.0F), .scale = 2.0F},
-        {.position = glm::vec3(4.0F, 2.0F, -60.0F), .scale = 4.0F},
-    }};
-}
 
 /** Where each cascade ends, from the camera's near plane. **/
 const std::array<float, 3> splits = {18.0F, 40.0F, 100.0F};
@@ -103,6 +86,29 @@ struct Drawn final {
     std::vector<bool> layered;
     std::vector<Timings::Timing> spans;
 };
+
+/** The same frame drawn with its shadow ignored and with it. **/
+struct Pictures final {
+    boost::shared_ptr<v3d::image::Image> without;
+    boost::shared_ptr<v3d::image::Image> with;
+};
+
+void place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale, bool castsShadow) {
+    const entt::entity entity = registry->create();
+    Transform transform;
+    transform.position = position;
+    transform.scale = scale;
+    registry->emplace<Transform>(entity, transform);
+    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
+}
+
+std::array<Standing, 3> standing() {
+    return {{
+        {.position = glm::vec3(0.0F, 0.5F, -7.0F), .scale = 1.0F},
+        {.position = glm::vec3(-3.0F, 1.0F, -22.0F), .scale = 2.0F},
+        {.position = glm::vec3(4.0F, 2.0F, -60.0F), .scale = 4.0F},
+    }};
+}
 
 /**
  * A long white ground and three red cubes down it, seen from above one end, after a shadow pass
@@ -237,12 +243,6 @@ v3d::type::camera::Camera longView() {
     camera.createView();
     return camera;
 }
-
-/** The same frame drawn with its shadow ignored and with it. **/
-struct Pictures final {
-    boost::shared_ptr<v3d::image::Image> without;
-    boost::shared_ptr<v3d::image::Image> with;
-};
 
 /**
  * Whether the ground went from white to grey anywhere within a few pixels of a point.

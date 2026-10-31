@@ -25,37 +25,6 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * How far a press on a number has to travel across it before it drags the value instead of
- * typing into it, as a window's title bar decides between a move and a fold.
- **/
-const float dragThreshold = 3.0F;
-
-/**
- * @return a typed number, or nothing when the text is not a whole finite number
- **/
-std::optional<float> number(std::string_view text) {
-    while (!text.empty() && text.front() == ' ') {
-        text.remove_prefix(1);
-    }
-    while (!text.empty() && text.back() == ' ') {
-        text.remove_suffix(1);
-    }
-    if (!text.empty() && text.front() == '+') {
-        text.remove_prefix(1);
-    }
-    float parsed = 0.0F;
-    const std::from_chars_result read = std::from_chars(text.data(), text.data() + text.size(), parsed);
-    if (text.empty() || read.ec != std::errc() || read.ptr != text.data() + text.size() || !std::isfinite(parsed)) {
-        return std::nullopt;
-    }
-    return parsed;
-}
-
-};  // namespace
-
 bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
     if (!typing() || key.empty()) {
         return false;
@@ -275,6 +244,24 @@ void immediate::Context::drawEdit(const glm::vec2& low, const glm::vec2& high) {
     label(std::string(line), glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), ink(dressing.text));
     const float stem = std::max(dressing.borderWidth, 1.0F);
     canvas->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing.caret);
+}
+
+std::optional<float> immediate::Context::number(std::string_view text) {
+    while (!text.empty() && text.front() == ' ') {
+        text.remove_prefix(1);
+    }
+    while (!text.empty() && text.back() == ' ') {
+        text.remove_suffix(1);
+    }
+    if (!text.empty() && text.front() == '+') {
+        text.remove_prefix(1);
+    }
+    float parsed = 0.0F;
+    const std::from_chars_result read = std::from_chars(text.data(), text.data() + text.size(), parsed);
+    if (text.empty() || read.ec != std::errc() || read.ptr != text.data() + text.size() || !std::isfinite(parsed)) {
+        return std::nullopt;
+    }
+    return parsed;
 }
 
 };  // namespace v3d::ui

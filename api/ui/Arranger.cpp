@@ -37,22 +37,12 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * The serial the next arranger takes. It starts at one because a list that has never been
- * measured holds zero.
- **/
-std::atomic<std::uint64_t> nextSerial(1);
-
-};  // namespace
-
 const float Arranger::ruleWidth = 1.0F;
 
 Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
     styles_(styles),
-    serial_(nextSerial++) {
+    serial_(nextSerial()) {
 }
 
 /**
@@ -551,6 +541,11 @@ glm::vec2 Arranger::childSize(Component& child, const v3d::type::geometry::Bound
     const glm::vec2 own = natural(child, room);
     const Layout& layout = child.layout();
     return glm::vec2(layout.width.resolve({.extent = extent.x, .own = own.x}), layout.height.resolve({.extent = extent.y, .own = own.y}));
+}
+
+std::uint64_t Arranger::nextSerial() noexcept {
+    static std::atomic<std::uint64_t> next{1};  // process-wide: a counter of serials unique across the run
+    return next++;
 }
 
 };  // namespace v3d::ui

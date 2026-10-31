@@ -38,18 +38,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * The items beneath each parent, named by its document id, in the scene's order. The items
- * with no parent are under 0.
  **/
-using Tree = std::unordered_map<std::int64_t, Items>;
-
-/**
- * Visit one item through the visit() for its kind, then everything beneath it.
- **/
-void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree) {
+void Scene::walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree) {
     const Placed placed = evaluation.placed(item->id());
     switch (item->kind()) {
         case Item::Kind::Mesh:
@@ -76,8 +67,6 @@ void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Eval
     }
     visitor->leave(item);
 }
-
-};  // namespace
 
 /**
  **/

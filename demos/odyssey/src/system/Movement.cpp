@@ -10,17 +10,6 @@
 
 namespace odyssey::system {
 
-namespace {
-
-/**
- * How long an entity spends crossing one tile, in seconds. On the grid a diagonal step
- * costs the same as an orthogonal one, so it takes the same time. A walk therefore keeps a
- * steady pace rather than slowing down around corners.
- **/
-constexpr float secondsPerTile = 0.15F;
-
-};  // namespace
-
 /**
  **/
 bool Movement::simulate(float step) {

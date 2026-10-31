@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/ui/Component.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/Text.h>
 
@@ -74,6 +75,21 @@ class TopBar final {
     static std::string title(const std::string& project, bool dirty);
 
  private:
+    /**
+     * What the search button says.
+     **/
+    static constexpr const char* SEARCH = "Search";
+
+    /**
+     * What follows a project's name while it has unsaved changes.
+     **/
+    static constexpr const char* UNSAVED = " *";
+
+    /**
+     * Set a component's box in window pixels.
+     **/
+    static void box(v3d::ui::Component* component, const glm::vec4& region);
+
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;
     v3d::ui::paint::Measure measure_;

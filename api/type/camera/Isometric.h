@@ -164,6 +164,19 @@ class Isometric {
     void apply(Camera* camera) const;
 
  private:
+    static constexpr glm::vec3 UP{0.0F, 1.0F, 0.0F};
+
+    /**
+     * A quarter turn per azimuth step.
+     **/
+    static constexpr float QUARTER_TURN = 1.57079632679489661923F;
+
+    /**
+     * The step index reduced into [0, AZIMUTHS), for a negative index as well as a positive
+     * one. The built in remainder keeps the sign of its left operand.
+     **/
+    static int wrap(int index);
+
     /**
      * The angle of the current azimuth around the vertical, measured from +X towards +Z.
      **/

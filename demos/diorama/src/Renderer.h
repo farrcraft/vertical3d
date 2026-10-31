@@ -25,7 +25,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace diorama {
 
@@ -79,6 +81,24 @@ class Renderer final {
     void shutdown();
 
  private:
+    /** What the lit pass clears to, a pale blue sky, in linear light. **/
+    static constexpr glm::vec4 SKY{0.45F, 0.62F, 0.85F, 1.0F};
+
+    /** The width of the shadow map, in texels. **/
+    static constexpr uint32_t SHADOW_TEXELS = 2048;
+
+    /**
+     * How far past the casters the shadow map reaches, for the height of a tree and the length of
+     * its shadow, in world units.
+     **/
+    static constexpr float SHADOW_MARGIN = 3.0F;
+
+    /**
+     * The camera's near and far planes. The orbit's eye is 30 units from the target, so the far
+     * plane takes in the whole ground from any azimuth.
+     **/
+    static constexpr glm::vec2 CLIPPING{0.1F, 100.0F};
+
     /**
      * Build the lit scene at a size, or replace its target with one of a new size, and give the
      * camera the window's aspect.

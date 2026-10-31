@@ -78,6 +78,23 @@ boost::shared_ptr<v3d::editor::Mesh> emptyMesh() {
     return boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>());
 }
 
+/**
+ * A curve of two keys, with the values given at frames 1 and 11.
+ **/
+v3d::animation::Curve between(float first, float second) {
+    v3d::animation::Curve curve;
+    curve.set(1.0F, first);
+    curve.set(11.0F, second);
+    return curve;
+}
+
+/**
+ * Where an evaluation puts an item, in its parent's space.
+ **/
+glm::vec3 position(const v3d::editor::Evaluation& evaluation, const v3d::editor::Item& item) {
+    return evaluation.pose(item).placement.position;
+}
+
 BOOST_AUTO_TEST_CASE(scene_empty_test) {
     v3d::editor::Scene scene;
 
@@ -367,16 +384,6 @@ BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
     BOOST_CHECK(visitor.left == left);
 }
 
-/**
- * A curve of two keys, with the values given at frames 1 and 11.
- **/
-v3d::animation::Curve between(float first, float second) {
-    v3d::animation::Curve curve;
-    curve.set(1.0F, first);
-    curve.set(11.0F, second);
-    return curve;
-}
-
 BOOST_AUTO_TEST_CASE(scene_curves_test) {
     v3d::editor::Scene scene;
     const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
@@ -406,13 +413,6 @@ BOOST_AUTO_TEST_CASE(scene_curves_test) {
     scene.remove(light->id());
     scene.add(light);
     BOOST_CHECK(scene.curves(light->id()).empty());
-}
-
-/**
- * Where an evaluation puts an item, in its parent's space.
- **/
-glm::vec3 position(const v3d::editor::Evaluation& evaluation, const v3d::editor::Item& item) {
-    return evaluation.pose(item).placement.position;
 }
 
 BOOST_AUTO_TEST_CASE(scene_evaluate_frame_test) {

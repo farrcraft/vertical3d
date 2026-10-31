@@ -210,6 +210,30 @@ class Controller final : public v3d::engine::Engine {
 
  private:
     /**
+     * What the ui config calls the container the editor's own components are in, and the
+     * menu bar within it. Every other component of that container is a toolbar.
+     **/
+    static constexpr const char* uiContainer = "editor";
+    static constexpr const char* menuBar = "menu-bar";
+
+    /**
+     * The first container the ui config lists after the editor's own. The top bar goes before it,
+     * so it is drawn over the menu bar and under every dialog.
+     **/
+    static constexpr const char* firstDialog = "chooser";
+
+#ifdef _WIN32
+    static constexpr const char* MOYA = "moya.exe";
+#else
+    static constexpr const char* MOYA = "moya";
+#endif
+
+    /**
+     * The editor's shell. It has no game menu, because the editor's menu is its menu bar.
+     **/
+    static v3d::shell::Shell::Options shellOptions();
+
+    /**
      * Read the ui tree and find the menu bar and the toolbars in it.
      * @return whether there is a ui to draw
      **/

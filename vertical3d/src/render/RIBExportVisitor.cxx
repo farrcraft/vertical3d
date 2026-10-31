@@ -48,20 +48,13 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 const Declaration UNIFORM_FLOAT(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1);
 const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type::POINT, 1);
 
-/** The version of RIB the export is written in. **/
-const float RIB_VERSION = 3.03F;
+};  // namespace
 
 /**
- * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
- * approximated by. Four keep a circle within 0.05% of its radius.
  **/
-constexpr unsigned int APPROXIMATION_PIECES = 4;
-
-std::vector<float> floats(const glm::vec3& value) {
+std::vector<float> RIBExportVisitor::floats(const glm::vec3& value) {
     return { value.x, value.y, value.z };
 }
-
-};  // namespace
 
 RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) : handler_(handler) {
 }

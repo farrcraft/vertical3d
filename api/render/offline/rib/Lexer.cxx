@@ -17,22 +17,6 @@
 
 namespace v3d::render::offline::rib {
 
-namespace {
-
-/** The three bytes of a UTF-8 byte order mark. **/
-constexpr unsigned char UTF8_BOM1 = 0xef;
-constexpr unsigned char UTF8_BOM2 = 0xbb;
-constexpr unsigned char UTF8_BOM3 = 0xbf;
-
-/** The two bytes a gzip stream opens with. **/
-constexpr unsigned char GZIP_ID1 = 0x1f;
-constexpr unsigned char GZIP_ID2 = 0x8b;
-
-/** The least byte that begins an encoded request in binary RIB. **/
-constexpr unsigned char FIRST_ENCODED_BYTE = 0x80;
-
-};  // namespace
-
 Lexer::Lexer(std::istream & stream) : in_(stream) {
     // the stream is read from where it stands, which is not always its beginning
     std::streampos start = stream.tellg();

@@ -24,11 +24,36 @@
 namespace {
 
 /**
+ * A quad that covers an 8 by 6 picture, coloured red at every corner through "Cs", at one
+ * sample a pixel. Only the colour a polygon's own parameter gives can make the picture red,
+ * because the colour in force is white.
+ **/
+const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
+
+const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
+
+/**
  * The context the C entry points write to. RiGetContext is RI's own query for it, and the
  * handle it returns is the handler that holds the context.
  **/
 v3d::moya::state::RenderContext & context() {
     return static_cast<v3d::moya::ri::RIBHandler*>(RiGetContext())->context();
+}
+
+void beginCovered() {
+    RiBegin(RI_NULL);
+    RiFormat(8, 6, 1.0F);
+    RiPixelSamples(1.0F, 1.0F);
+    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+}
+
+void checkRed() {
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
+    BOOST_REQUIRE(planes);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 4, 3), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 4, 3), 0.001F);
 }
 
 /**
@@ -218,30 +243,6 @@ BOOST_AUTO_TEST_CASE(renderman_a_displacement_reaches_the_context_test) {
     BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
     RiWorldEnd();
     RiEnd();
-}
-
-/**
- * A quad that covers an 8 by 6 picture, coloured red at every corner through "Cs", at one
- * sample a pixel. Only the colour a polygon's own parameter gives can make the picture red,
- * because the colour in force is white.
- **/
-const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
-const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
-
-void beginCovered() {
-    RiBegin(RI_NULL);
-    RiFormat(8, 6, 1.0F);
-    RiPixelSamples(1.0F, 1.0F);
-    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
-    RiClipping(1.0F, 100.0F);
-    RiWorldBegin();
-}
-
-void checkRed() {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
-    BOOST_REQUIRE(planes);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 4, 3), 1.0F, 0.01F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 4, 3), 0.001F);
 }
 
 /**

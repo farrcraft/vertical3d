@@ -19,12 +19,7 @@
 
 namespace v3d::curve {
 
-namespace {
-
-/**
- * Check a curve, and settle a Bezier curve's handles, before it is stored.
- **/
-std::string prepare(Curve* curve) {
+std::string Curves::prepare(Curve* curve) {
     std::string refused = problem(*curve);
     if (refused.empty()) {
         if (Bezier* bezier = std::get_if<Bezier>(&curve->shape)) {
@@ -33,8 +28,6 @@ std::string prepare(Curve* curve) {
     }
     return refused;
 }
-
-};  // namespace
 
 std::size_t Curves::size(void) const noexcept {
     return curves_.size();

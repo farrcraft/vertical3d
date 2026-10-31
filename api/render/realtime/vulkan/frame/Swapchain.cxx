@@ -18,12 +18,9 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
-namespace {
-
 /**
- * @return how a present mode reads in the log
  **/
-const char* describe(VkPresentModeKHR mode) noexcept {
+const char* Swapchain::describe(VkPresentModeKHR mode) noexcept {
     switch (mode) {
     case VK_PRESENT_MODE_MAILBOX_KHR:
         return "uncapped (mailbox)";
@@ -37,8 +34,6 @@ const char* describe(VkPresentModeKHR mode) noexcept {
         return "in a mode with no name here";
     }
 }
-
-};  // namespace
 
 /**
  **/

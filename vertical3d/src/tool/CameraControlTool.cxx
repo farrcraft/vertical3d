@@ -13,25 +13,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * World units a perspective camera moves for each pixel the mouse is dragged.
- **/
-constexpr float perspectiveFactor = 0.125F;
-
-/**
- * How far a perspective zoom changes the angle of view, in degrees for each pixel of the drag.
- **/
-constexpr float fovFactor = 0.25F;
-
-/**
- * How far a pitch turns the camera, in radians for each pixel of the drag.
- **/
-constexpr float pitchFactor = 0.005F;
-
-};  // namespace
-
 /**
  **/
 CameraControlTool::CameraControlTool() :
@@ -41,10 +22,9 @@ CameraControlTool::CameraControlTool() :
     dragging_(false) {
 }
 
-namespace {
-
-/** The move a command names, or none. **/
-CameraControlTool::CameraMode named(const std::string& name) {
+/**
+ **/
+CameraControlTool::CameraMode CameraControlTool::named(const std::string& name) {
     if (name == "zoom") {
         return CameraControlTool::CAMERA_MODE_ZOOM;
     }
@@ -62,8 +42,6 @@ CameraControlTool::CameraMode named(const std::string& name) {
     }
     return CameraControlTool::CAMERA_MODE_NONE;
 }
-
-};  // namespace
 
 /**
  **/

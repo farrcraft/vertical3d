@@ -56,6 +56,12 @@ class SpriteClip final {
     const std::vector<Frame>& frames() const noexcept;
 
  private:
+    /**
+     * @return the summed length of the frames
+     * @throw std::invalid_argument for no frames, or a frame whose duration is not positive
+     **/
+    static float total(const std::vector<Frame>& frames);
+
     std::vector<Frame> frames_;
     std::vector<float> ends_;  /**< where each frame stops showing, rising **/
     Clock clock_;

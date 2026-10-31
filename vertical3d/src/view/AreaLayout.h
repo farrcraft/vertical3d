@@ -333,6 +333,21 @@ class AreaLayout final {
 
  private:
     /**
+     * How many steps a snapped divider takes across its split.
+     **/
+    static constexpr float TENTHS = 10.0F;
+    /**
+     * Take one editor out of an area, and keep the area showing the one it showed, or the one
+     * before it when that is the one taken.
+     **/
+    static AreaLayout::Editor take(AreaLayout::Area* area, std::size_t editor);
+    /**
+     * @return a region shrunk by a margin on every side, and never to less than nothing
+     **/
+    static glm::vec4 inset(const glm::vec4& region, float margin);
+    static bool contains(const glm::vec4& region, float x, float y) noexcept;
+
+    /**
      * One node of the tree: a split with children, or an area.
      **/
     struct Node final {

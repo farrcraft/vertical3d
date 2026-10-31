@@ -114,6 +114,64 @@ class Polygon : public reyes::Primitive {
     void split(const v3d::type::geometry::Plane & plane, const boost::shared_ptr<Polygon> & p1, const boost::shared_ptr<Polygon> & p2);
 
  private:
+    /**
+     * The least length of the cross product of two edges from a polygon's first vertex that gives
+     * the polygon a normal.
+     **/
+    static constexpr float SMALLEST_SPANNED_AREA = 1.0e-8F;
+
+    /**
+     * Where an edge whose ends classify on opposite sides of a plane meets it. The two tests round
+     * differently, so intersectEdge can find no meeting for an edge that ends a hair past the
+     * plane. The edge then meets the plane at the end nearer to it.
+     **/
+    static glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & start, const glm::vec3 & end);
+
+    /**
+     * A piece is worth handing back only if it bounds something and is strictly smaller
+     * than what it came from on some axis. A split that does not shrink its input would be
+     * measured as undiceable again and split again, without end.
+     **/
+    static bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometry::AABBox & parent);
+
+    /**
+     * A corner of a piece: the vertex it came from, with the position, colour, shading normal and
+     * texture coordinates that vertex has. A value the vertex was not given stays unset, so the
+     * piece fills it from the primitive's state as its parent was filled.
+     **/
+    static Vertex carried(const Vertex & from);
+
+    /**
+     * The shading normal part of the way from one normal to another, as a unit vector. Two equal
+     * normals give that normal back unchanged. Opposite normals meeting half way give zero, which
+     * names no direction, so false is returned and the crossing is left without a normal of its
+     * own.
+     **/
+    static bool between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec3* normal);
+
+    /**
+     * Where an edge meets the plane. Colour, shading normal and texture coordinates are taken as
+     * far along the edge as the point is, each only when both ends of the edge have one. The
+     * normal is renormalised.
+     **/
+    static Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit);
+
+    /**
+     * An edge that crosses the plane. hit is the vertex both halves share, so it goes into each
+     * of them. The side start is on decides which half keeps start and which keeps end.
+     **/
+    static void addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
+        bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2);
+
+    /**
+     * An edge wholly on one side of the plane, so both its vertices go to the same half.
+     *
+     * Only the first edge contributes its start and only a non-final edge contributes its end:
+     * every other vertex is the end of the edge before it.
+     **/
+    static void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, bool last,
+        const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2);
+
     std::vector<Vertex> vertices_;
     // one grid covers the whole polygon, so dice() returns true once and false afterwards
     bool diced_ = false;

@@ -41,12 +41,6 @@ const uint32_t fragmentShader[] =
 #include "shaders/line.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
-/**
- * What each vertex buffer starts at, in bytes. The buffers double from here when a
- * canvas does not fit.
- **/
-const VkDeviceSize initialVertexBytes = 64ULL * 1024;
-
 };  // namespace
 
 /**

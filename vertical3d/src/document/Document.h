@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/CommandStack.h>
+#include <vertical3d/src/command/TopologyCommand.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/CreateItem.h>
 #include <vertical3d/src/scene/Item.h>
@@ -16,6 +17,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/store/Project.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -183,6 +185,32 @@ class Document final {
         const std::string& picture);
 
  private:
+    /**
+     * What a modelling operation says when it changed the mesh, and when there was nothing to
+     * change.
+     **/
+    struct Said final {
+        std::string done;
+        std::string refused;
+    };
+
+    /**
+     * @return a count of items, singular for one: "1 item", "3 items"
+     **/
+    static std::string items(std::size_t count);
+
+    /**
+     * @return a kind's name with each word begun in capitals, as a new item is named: "point light"
+     *         is "Point Light"
+     **/
+    static std::string titled(const std::string& kind);
+
+    /**
+     * Record a modelling operation's change, or say why there was none. A modelling operation has
+     * changed the mesh by the time it hands its record back.
+     **/
+    static Outcome record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<Scene> scene_;
     boost::shared_ptr<CommandStack> history_;

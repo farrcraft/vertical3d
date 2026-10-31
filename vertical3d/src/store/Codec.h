@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/store/Blob.h>
 
 #include <cstddef>
 #include <cstdint>

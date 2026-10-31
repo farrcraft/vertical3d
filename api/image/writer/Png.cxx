@@ -7,6 +7,8 @@
 
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
+#include <api/image/writer/internal/Picture.h>
+#include <api/image/writer/internal/Reporting.h>
 #include <api/log/Logger.h>
 
 #include <png.h>
@@ -17,17 +19,12 @@
 #include <string>
 #include <vector>
 
+namespace v3d::image::writer {
+
 namespace {
 
-/**
- * What libpng's error and warning handlers report through, the log.
- **/
-struct Reporting {
-    v3d::log::Logger* logger = nullptr;
-};
-
 void warned(png_structp png, png_const_charp message) {
-    const Reporting* reporting = static_cast<const Reporting*>(png_get_error_ptr(png));
+    const internal::Reporting* reporting = static_cast<const internal::Reporting*>(png_get_error_ptr(png));
     reporting->logger->get()->warn("libpng, encoding: {}", message);
 }
 
@@ -35,7 +32,7 @@ void warned(png_structp png, png_const_charp message) {
  * Reports the error and returns, and libpng then longjmps to the png_jmpbuf that compress() set.
  **/
 void failed(png_structp png, png_const_charp message) {
-    const Reporting* reporting = static_cast<const Reporting*>(png_get_error_ptr(png));
+    const internal::Reporting* reporting = static_cast<const internal::Reporting*>(png_get_error_ptr(png));
     reporting->logger->get()->error("libpng, encoding: {}", message);
 }
 
@@ -54,18 +51,6 @@ void flush(png_structp /* png */) {
 }
 
 /**
- * The picture in the shape libpng's header takes.
- **/
-struct Picture {
-    png_uint_32 width = 0;
-    png_uint_32 height = 0;
-    int depth = 8;
-    int colour = PNG_COLOR_TYPE_RGB;
-    png_color_8 significant = {};
-    png_bytepp rows = nullptr;
-};
-
-/**
  * Every libpng call that can fail, behind the setjmp that catches the failure. libpng reports an
  * error by longjmp, which skips destructors, so nothing here has one. The caller owns and frees
  * everything.
@@ -77,7 +62,7 @@ struct Picture {
 #pragma warning(push)
 #pragma warning(disable : 4611)
 #endif
-bool compress(png_structp png, png_infop info, Picture* picture) {
+bool compress(png_structp png, png_infop info, internal::Picture* picture) {
     if (setjmp(png_jmpbuf(png))) {  // NOLINT(cert-err52-cpp) - libpng reports an error by longjmp
         return false;
     }
@@ -95,7 +80,6 @@ bool compress(png_structp png, png_infop info, Picture* picture) {
 
 };  // namespace
 
-namespace v3d::image::writer {
 /**
  **/
 Png::Png(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
@@ -110,7 +94,7 @@ std::optional<std::string> Png::encode(const boost::shared_ptr<Image>& img) {
 
     // png_set_sBIT reads whichever members the colour type covers, so the ones this writer does
     // not set have to be zero rather than indeterminate
-    Picture picture;
+    internal::Picture picture;
     picture.width = img->width();
     picture.height = img->height();
     const png_byte bytes = static_cast<png_byte>(img->bpp() / static_cast<int>(img->format()));
@@ -138,7 +122,7 @@ std::optional<std::string> Png::encode(const boost::shared_ptr<Image>& img) {
     }
     picture.rows = rows.data();
 
-    Reporting reporting{.logger = logger().get()};
+    internal::Reporting reporting{.logger = logger().get()};
     std::string encoded;
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, &reporting, failed, warned);
     png_infop info = png == nullptr ? nullptr : png_create_info_struct(png);

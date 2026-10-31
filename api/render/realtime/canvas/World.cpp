@@ -13,13 +13,6 @@
 
 namespace v3d::render::realtime::canvas {
 
-namespace {
-
-// two triangles
-constexpr uint32_t QUAD_INDICES = 6;
-
-};  // namespace
-
 /**
  **/
 World::Batch::Batch() noexcept :

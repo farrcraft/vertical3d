@@ -37,51 +37,12 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * An unselected mesh.
  **/
-constexpr glm::vec4 wire(0.78F, 0.80F, 0.84F, 1.0F);
-
-/**
- * An unselected camera or light, apart from the meshes around it.
- **/
-constexpr glm::vec4 glyph(0.95F, 0.82F, 0.42F, 1.0F);
-
-/**
- * An item selected as a whole, which is object mode selection.
- **/
-constexpr glm::vec4 object(0.35F, 0.72F, 1.0F, 1.0F);
-
-/**
- * A selected component: an edge, the boundary of a selected face, or the marker
- * drawn at a selected vertex.
- **/
-constexpr glm::vec4 component(1.0F, 0.62F, 0.19F, 1.0F);
-
-/**
- * How big a selected vertex's marker is, as a fraction of the mesh's largest
- * dimension. A line canvas is world space, so the marker cannot be sized in pixels
- * and is sized against the mesh instead.
- **/
-constexpr float markerScale = 0.04F;
-
-/**
- * How big a curve's control point or handle marker is, against the curve's largest dimension.
- * It is smaller than a vertex's, because a curve's points lie closer together than a mesh's.
- **/
-constexpr float controlScale = 0.015F;
-
-/**
- * A marker's half size for geometry this large across, kept visible when the geometry is flat.
- **/
-float markerSize(const glm::vec3& extent, float scale) {
+float WireframeVisitor::markerSize(const glm::vec3& extent, float scale) {
     const float size = std::max(std::max(extent.x, extent.y), extent.z) * scale;
     return size > 0.0F ? size : scale;
 }
-
-};  // namespace
 
 /**
  **/

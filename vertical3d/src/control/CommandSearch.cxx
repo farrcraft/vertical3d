@@ -29,85 +29,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * What separates a row's path from its shortcut.
- **/
-constexpr std::string_view SHORTCUT_GAP = "      ";
-
-/**
- * @return a string with every letter in lower case
- **/
-std::string lower(std::string_view text) {
-    std::string made(text);
-    std::ranges::transform(made, made.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
-    return made;
-}
-
-/**
- * @return the words of a query, in lower case
- **/
-std::vector<std::string> words(std::string_view query) {
-    std::vector<std::string> made;
-    std::string word;
-    for (const char letter : query) {
-        if (letter == ' ') {
-            if (!word.empty()) {
-                made.push_back(lower(word));
-            }
-            word.clear();
-        } else {
-            word += letter;
-        }
-    }
-    if (!word.empty()) {
-        made.push_back(lower(word));
-    }
-    return made;
-}
-
-/**
- * @return whether a word of a text, as letters and digits after anything else, begins with a
- *         prefix
- **/
-bool beginsWord(const std::string& text, const std::string& prefix) {
-    for (std::size_t at = text.find(prefix); at != std::string::npos; at = text.find(prefix, at + 1)) {
-        if (at == 0 || std::isalnum(static_cast<unsigned char>(text[at - 1])) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Add the items of a menu that send a command, under the path that leads to it.
- **/
-void gather(const boost::shared_ptr<v3d::ui::component::menu::Menu>& menu, const std::string& path,
-    std::vector<CommandSearch::Entry>* into, std::set<std::string>* seen) {
-    if (!menu) {
-        return;
-    }
-    for (std::size_t index = 0; index < menu->count(); index++) {
-        const boost::shared_ptr<v3d::ui::component::menu::Item>& item = (*menu)[index];
-        if (!item || item->separator()) {
-            continue;
-        }
-        const std::string label = path + std::string(CommandSearch::STEP) + std::string(item->label());
-        if (item->itemType() == v3d::ui::component::menu::ItemType::Submenu) {
-            gather(item->submenu(), label, into, seen);
-            continue;
-        }
-        const std::string command = item->event().str();
-        if (command.empty() || command.ends_with("::") || !seen->insert(command).second) {
-            continue;
-        }
-        into->push_back({ .command = command, .path = label, .shortcut = {} });
-    }
-}
-
-};  // namespace
-
 /**
  **/
 CommandSearch::CommandSearch(const boost::shared_ptr<v3d::ui::Interface>& ui) :
@@ -294,6 +215,71 @@ void CommandSearch::show() {
     }
     list->items(rows);
     list->selected(matches_.empty() ? -1 : static_cast<int>(choice_));
+}
+
+/**
+ **/
+std::string CommandSearch::lower(std::string_view text) {
+    std::string made(text);
+    std::ranges::transform(made, made.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
+    return made;
+}
+
+/**
+ **/
+std::vector<std::string> CommandSearch::words(std::string_view query) {
+    std::vector<std::string> made;
+    std::string word;
+    for (const char letter : query) {
+        if (letter == ' ') {
+            if (!word.empty()) {
+                made.push_back(lower(word));
+            }
+            word.clear();
+        } else {
+            word += letter;
+        }
+    }
+    if (!word.empty()) {
+        made.push_back(lower(word));
+    }
+    return made;
+}
+
+/**
+ **/
+bool CommandSearch::beginsWord(const std::string& text, const std::string& prefix) {
+    for (std::size_t at = text.find(prefix); at != std::string::npos; at = text.find(prefix, at + 1)) {
+        if (at == 0 || std::isalnum(static_cast<unsigned char>(text[at - 1])) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ **/
+void CommandSearch::gather(const boost::shared_ptr<v3d::ui::component::menu::Menu>& menu, const std::string& path,
+    std::vector<CommandSearch::Entry>* into, std::set<std::string>* seen) {
+    if (!menu) {
+        return;
+    }
+    for (std::size_t index = 0; index < menu->count(); index++) {
+        const boost::shared_ptr<v3d::ui::component::menu::Item>& item = (*menu)[index];
+        if (!item || item->separator()) {
+            continue;
+        }
+        const std::string label = path + std::string(CommandSearch::STEP) + std::string(item->label());
+        if (item->itemType() == v3d::ui::component::menu::ItemType::Submenu) {
+            gather(item->submenu(), label, into, seen);
+            continue;
+        }
+        const std::string command = item->event().str();
+        if (command.empty() || command.ends_with("::") || !seen->insert(command).second) {
+            continue;
+        }
+        into->push_back({ .command = command, .path = label, .shortcut = {} });
+    }
 }
 
 };  // namespace v3d::editor

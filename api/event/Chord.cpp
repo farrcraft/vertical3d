@@ -11,6 +11,30 @@
 
 namespace v3d::event {
 
+namespace {
+
+/**
+ * A word with its first letter, and each letter after a space, in capitals.
+ **/
+std::string capitalised(std::string_view word) {
+    std::string out(word);
+    bool start = true;
+    for (char& letter : out) {
+        if (letter == '_') {
+            letter = ' ';
+            start = true;
+        } else if (start) {
+            if (letter >= 'a' && letter <= 'z') {
+                letter = static_cast<char>(letter - 'a' + 'A');
+            }
+            start = false;
+        }
+    }
+    return out;
+}
+
+};  // namespace
+
 int Modifiers::count() const noexcept {
     return (ctrl ? 1 : 0) + (shift ? 1 : 0) + (alt ? 1 : 0);
 }
@@ -47,30 +71,6 @@ Chord chord(std::string_view name) {
         words = words.substr(plus + 1);
     }
 }
-
-namespace {
-
-/**
- * A word with its first letter, and each letter after a space, in capitals.
- **/
-std::string capitalised(std::string_view word) {
-    std::string out(word);
-    bool start = true;
-    for (char& letter : out) {
-        if (letter == '_') {
-            letter = ' ';
-            start = true;
-        } else if (start) {
-            if (letter >= 'a' && letter <= 'z') {
-                letter = static_cast<char>(letter - 'a' + 'A');
-            }
-            start = false;
-        }
-    }
-    return out;
-}
-
-};  // namespace
 
 std::string printed(std::string_view name) {
     const Chord split = chord(name);

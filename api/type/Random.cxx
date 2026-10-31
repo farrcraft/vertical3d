@@ -15,23 +15,6 @@
 
 namespace v3d::type {
 
-namespace {
-
-// SplitMix64: the counter's step, which is 2^64 divided by the golden ratio, and the shifts
-// and multipliers of its two mixing rounds and final fold
-constexpr uint64_t STATE_STEP = 0x9E3779B97F4A7C15ULL;
-constexpr int FIRST_MIX_SHIFT = 30;
-constexpr uint64_t FIRST_MIX_MULTIPLIER = 0xBF58476D1CE4E5B9ULL;
-constexpr int SECOND_MIX_SHIFT = 27;
-constexpr uint64_t SECOND_MIX_MULTIPLIER = 0x94D049BB133111EBULL;
-constexpr int FOLD_SHIFT = 31;
-
-// unit() keeps the top 24 bits of a draw, the precision of a float, and scales them by 2^-24
-constexpr int UNIT_DISCARDED_BITS = 40;
-constexpr float UNIT_SCALE = 0x1.0p-24F;
-
-};  // namespace
-
 Random::Random(uint64_t seed) noexcept :
     state_(seed) {
 }

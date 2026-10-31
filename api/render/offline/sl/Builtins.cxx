@@ -23,6 +23,45 @@ namespace {
 typedef Signature::Argument Argument;
 typedef Signature::Body Body;
 
+/*
+    The light model, in the shading language. L points from the point being shaded toward
+    the light, both in a light shader's illuminate and in a surface shader's illuminance
+    body. A cosine falloff is therefore L . N, and no term here negates L.
+
+    A cone of PI/2 covers the front of the surface, so a light behind it is left out of
+    the sum.
+*/
+const char* const SOURCE = R"(
+surface library() {
+    color diffuse(normal Nn) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * (normalize(L) . Nn);
+        }
+        return C;
+    }
+    color specularbrdf(vector Ln; normal Nn; vector V; float roughness) {
+        vector H = normalize(Ln + V);
+        return color (pow(max(0, Nn . H), 1 / roughness));
+    }
+    color specular(normal Nn; vector V; float roughness) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * specularbrdf(normalize(L), Nn, V, roughness);
+        }
+        return C;
+    }
+    color phong(normal Nn; vector V; float size) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            vector R = reflect(-normalize(L), Nn);
+            C += Cl * pow(max(0, R . V), size);
+        }
+        return C;
+    }
+}
+)";
+
 Signature declare(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
     Signature signature;
     signature.name = name;
@@ -241,45 +280,6 @@ std::vector<Signature> build() {
 
     return table;
 }
-
-/*
-    The light model, in the shading language. L points from the point being shaded toward
-    the light, both in a light shader's illuminate and in a surface shader's illuminance
-    body. A cosine falloff is therefore L . N, and no term here negates L.
-
-    A cone of PI/2 covers the front of the surface, so a light behind it is left out of
-    the sum.
-*/
-const char* const SOURCE = R"(
-surface library() {
-    color diffuse(normal Nn) {
-        color C = 0;
-        illuminance(P, Nn, 1.5707963) {
-            C += Cl * (normalize(L) . Nn);
-        }
-        return C;
-    }
-    color specularbrdf(vector Ln; normal Nn; vector V; float roughness) {
-        vector H = normalize(Ln + V);
-        return color (pow(max(0, Nn . H), 1 / roughness));
-    }
-    color specular(normal Nn; vector V; float roughness) {
-        color C = 0;
-        illuminance(P, Nn, 1.5707963) {
-            C += Cl * specularbrdf(normalize(L), Nn, V, roughness);
-        }
-        return C;
-    }
-    color phong(normal Nn; vector V; float size) {
-        color C = 0;
-        illuminance(P, Nn, 1.5707963) {
-            vector R = reflect(-normalize(L), Nn);
-            C += Cl * pow(max(0, R . V), size);
-        }
-        return C;
-    }
-}
-)";
 
 std::vector<syntax::Function> read() {
     std::istringstream stream(SOURCE);

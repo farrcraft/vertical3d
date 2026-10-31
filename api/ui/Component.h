@@ -222,6 +222,12 @@ class Component {
     Motion& motion() noexcept;
 
  private:
+    /**
+     * @return the next component id, unique across the run. A component may be built on any
+     *      thread
+     **/
+    static unsigned int nextId() noexcept;
+
     Layout layout_;
     std::vector<boost::shared_ptr<Component>> children_;
     Component* parent_;

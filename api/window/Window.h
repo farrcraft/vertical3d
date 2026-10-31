@@ -195,6 +195,15 @@ class Window final {
     Pointer pointer() const noexcept;
 
  private:
+    // the size a window reports before it is created
+    static constexpr int DEFAULT_WIDTH = 300;
+    static constexpr int DEFAULT_HEIGHT = 200;
+
+    /**
+     * @return the platform's cursor for a shape
+     **/
+    static SDL_SystemCursor systemCursor(Window::Pointer shape) noexcept;
+
     // one per shape, made the first time the shape is asked for and freed with the window
     std::array<SDL_Cursor*, 3> pointers_{};
     Pointer shape_ = Pointer::Arrow;

@@ -93,6 +93,31 @@ class Outliner final {
         std::set<std::int64_t> folded;
     };
 
+    /**
+     * What a walk of the tree is asked for: the filter's words, and the items folded.
+     **/
+    struct Walk final {
+        const Scene& scene;
+        const std::vector<std::string>& words;
+        const std::set<std::int64_t>& folded;
+    };
+
+    /**
+     * @return text in lower case, which the filter compares
+     **/
+    static std::string lower(const std::string& text);
+
+    /**
+     * @return the words of a filter, in lower case
+     **/
+    static std::vector<std::string> words(const std::string& filter);
+
+    /**
+     * Add the rows of an item and everything beneath it that is shown.
+     * @return whether the item is shown
+     **/
+    static bool gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int depth, std::vector<Row>* into);
+
     std::map<std::size_t, State> states_;
 };
 

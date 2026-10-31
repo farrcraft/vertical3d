@@ -29,41 +29,23 @@
 
 namespace v3d::moya {
 
-namespace {
-
-/**
- * How many times a segment may be halved. A segment measured smaller each time reaches a grid's
- * size long before this, so a segment still not diceable here is one that does not shrink.
- **/
-constexpr unsigned int MOST_SPLITS = 16;
-
-/**
- * A cubic's degree, which its derivative is this many times the steps between its points.
- **/
-constexpr float DEGREE = 3.0F;
-
-glm::vec3 pointOn(const Curve::Controls & controls, float v) {
+glm::vec3 Curve::pointOn(const Curve::Controls & controls, float v) {
     const glm::vec3 first = glm::mix(controls[0], controls[1], v);
     const glm::vec3 middle = glm::mix(controls[1], controls[2], v);
     const glm::vec3 last = glm::mix(controls[2], controls[3], v);
     return glm::mix(glm::mix(first, middle, v), glm::mix(middle, last, v), v);
 }
 
-glm::vec3 tangentOn(const Curve::Controls & controls, float v) {
+glm::vec3 Curve::tangentOn(const Curve::Controls & controls, float v) {
     const glm::vec3 first = glm::mix(controls[1] - controls[0], controls[2] - controls[1], v);
     const glm::vec3 last = glm::mix(controls[2] - controls[1], controls[3] - controls[2], v);
     return DEGREE * glm::mix(first, last, v);
 }
 
-/**
- * Any direction square to another, for a curve seen end on.
- **/
-glm::vec3 square(const glm::vec3 & direction) {
+glm::vec3 Curve::square(const glm::vec3 & direction) {
     const glm::vec3 axis = std::abs(direction.x) < std::abs(direction.y) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
     return glm::normalize(glm::cross(direction, axis));
 }
-
-};  // namespace
 
 Curve::Curve(const Controls & controls, const glm::vec2 & widths) : controls_(controls), widths_(widths) {
 }

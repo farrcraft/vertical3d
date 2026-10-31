@@ -17,16 +17,16 @@ struct Position1D final {
     float value = 0.0F;
 };
 
-inline Position1D interpolate(const Position1D& from, const Position1D& to, float alpha) {
-    return Position1D{glm::mix(from.value, to.value, alpha)};
-}
-
 /**
  * A position on a plane, which can be drawn between two steps.
  **/
 struct Position2D final {
     glm::vec2 value{0.0F};
 };
+
+inline Position1D interpolate(const Position1D& from, const Position1D& to, float alpha) {
+    return Position1D{glm::mix(from.value, to.value, alpha)};
+}
 
 inline Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
     return Position2D{glm::mix(from.value, to.value, alpha)};

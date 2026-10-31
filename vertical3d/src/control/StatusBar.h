@@ -5,13 +5,17 @@
 
 #pragma once
 
+#include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -72,6 +76,28 @@ class StatusBar final {
      * @return the frame rate a mean frame time makes, as "60 fps", or nothing for no time
      **/
     static std::string rate(std::uint64_t nanoseconds);
+
+ private:
+    /**
+     * How many nanoseconds there are in a second.
+     **/
+    static constexpr double SECOND = 1e9;
+
+    /**
+     * @return what a camera move is called on the status bar, or nothing for no move
+     **/
+    static std::optional<std::string> cameraMove(CameraControlTool::CameraMode mode);
+
+    /**
+     * @return what a transform mode's handles do to the selection, or nothing for no handles
+     **/
+    static std::optional<std::string> handles(TransformTool::Mode mode);
+
+    /**
+     * @return how many parts of one kind are selected in an item. An edge counts once, though
+     *         either of its halves or both may be selected
+     **/
+    static std::size_t parts(const Scene& scene, const Item& item, Component kind);
 };
 
 };  // namespace v3d::editor

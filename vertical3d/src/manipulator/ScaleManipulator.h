@@ -44,6 +44,14 @@ class ScaleManipulator final : public Manipulator {
      * Always local, whatever the coordinate space says.
      **/
     Space effective() const noexcept override;
+
+ private:
+    /**
+     * The box at the tip of a handle, and the one at the centre, as a fraction of a
+     * handle's length.
+     **/
+    static constexpr float tipSize = 0.07F;
+    static constexpr float centreSize = 0.06F;
 };
 
 };  // namespace v3d::editor

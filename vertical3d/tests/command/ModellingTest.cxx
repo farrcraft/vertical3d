@@ -114,6 +114,18 @@ void undoRedo(v3d::editor::TopologyCommand* command, const v3d::editor::Scene& s
     sound(*mesh);
 }
 
+/**
+ * The index of a mesh's face whose normal points one way.
+ **/
+v3d::brep::Index facing(const v3d::brep::BRep& mesh, const glm::vec3& normal) {
+    for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
+        if (glm::distance(mesh.face(id)->normal(), normal) < 0.0001F) {
+            return id;
+        }
+    }
+    return v3d::brep::INVALID_ID;
+}
+
 BOOST_AUTO_TEST_CASE(modelling_split_edges_test) {
     const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
@@ -284,18 +296,6 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     history.undo();
     history.undo();
     BOOST_CHECK(same(cube->geometry()->snapshot(), original));
-}
-
-/**
- * The index of a mesh's face whose normal points one way.
- **/
-v3d::brep::Index facing(const v3d::brep::BRep& mesh, const glm::vec3& normal) {
-    for (v3d::brep::Index id = 0; id < mesh.faceCount(); id++) {
-        if (glm::distance(mesh.face(id)->normal(), normal) < 0.0001F) {
-            return id;
-        }
-    }
-    return v3d::brep::INVALID_ID;
 }
 
 BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {

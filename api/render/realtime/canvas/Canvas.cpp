@@ -16,15 +16,6 @@
 
 namespace v3d::render::realtime::canvas {
 
-namespace {
-
-// two triangles
-constexpr uint32_t QUAD_INDICES = 6;
-// the sweep of a whole circle, in radians
-constexpr float FULL_TURN = 6.283185307179586F;
-
-};  // namespace
-
 /**
  **/
 Canvas::Batch::Batch() noexcept :

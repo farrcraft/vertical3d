@@ -12,6 +12,7 @@
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/renderer/Lit.h>
+#include <api/render/realtime/entity/internal/Placed.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
@@ -35,15 +36,6 @@ namespace v3d::render::realtime::entity {
 namespace {
 
 /**
- * An entity about to be drawn: its entry, where it stands, and where its palette starts.
- **/
-struct Placed final {
-    const MeshRegistry::Entry* entry;
-    glm::mat4 model;
-    uint32_t firstJoint;
-};
-
-/**
  * Where an entity's palette starts: zero for a static entry, which reads none, and nothing for
  * a skinned one the poses do not name.
  **/
@@ -62,9 +54,9 @@ std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entit
  *
  * @param castersOnly true to leave out an entity whose mesh casts no shadow
  **/
-std::vector<std::vector<Placed>> gather(const entt::registry& registry, float alpha, const MeshRegistry& meshes,
+std::vector<std::vector<internal::Placed>> gather(const entt::registry& registry, float alpha, const MeshRegistry& meshes,
     const Poses& poses, bool castersOnly) {
-    std::vector<std::vector<Placed>> groups;
+    std::vector<std::vector<internal::Placed>> groups;
     std::unordered_map<const MeshRegistry::Entry*, std::size_t> found;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
@@ -85,7 +77,7 @@ std::vector<std::vector<Placed>> gather(const entt::registry& registry, float al
             groups.emplace_back();
         }
         const glm::mat4 model = ecs::interpolated<ecs::component::Transform>(registry, entity, alpha).matrix();
-        groups[at->second].push_back(Placed{entry, model, *first});
+        groups[at->second].push_back(internal::Placed{entry, model, *first});
     }
     return groups;
 }
@@ -93,7 +85,7 @@ std::vector<std::vector<Placed>> gather(const entt::registry& registry, float al
 /**
  * Whether a placed caster can throw a shadow into the cascade a pass draws.
  **/
-bool reaches(const Placed& placed, const Casting& casting) {
+bool reaches(const internal::Placed& placed, const Casting& casting) {
     if (!casting.covers || placed.entry->skin) {
         return true;
     }
@@ -110,7 +102,7 @@ bool reaches(const Placed& placed, const Casting& casting) {
  *
  * @param cascade what a shadow draw pushes, or null for a draw that pushes nothing
  **/
-void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float outline, renderer::Lit* lit,
+void submit(const std::vector<internal::Placed>& group, PipelineHandle pipeline, float outline, renderer::Lit* lit,
     Pass* pass, const renderer::Lit::Cascade* cascade = nullptr) {
     const MeshRegistry::Entry& entry = *group.front().entry;
     for (const MeshRegistry::Part& part : entry.parts) {
@@ -147,13 +139,13 @@ void submit(const std::vector<Placed>& group, PipelineHandle pipeline, float out
  **/
 void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     float outline, Pass* pass, const Poses& poses) {
-    const std::vector<std::vector<Placed>> groups = gather(registry, alpha, meshes, poses, false);
+    const std::vector<std::vector<internal::Placed>> groups = gather(registry, alpha, meshes, poses, false);
     const bool outlined = outline > 0.0F;
 
     // two loops over the groups, so every hull is submitted before any surface
     for (int walk = outlined ? 0 : 1; walk < 2; walk++) {
         const bool surfaces = walk == 1;
-        for (const std::vector<Placed>& group : groups) {
+        for (const std::vector<internal::Placed>& group : groups) {
             const bool skinned = static_cast<bool>(group.front().entry->skin);
             const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
             const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
@@ -167,10 +159,10 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
 void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
     Pass* pass, const Poses& poses, const Casting& casting) {
     const renderer::Lit::Cascade cascade{.index = casting.cascade};
-    std::vector<Placed> reaching;
-    for (const std::vector<Placed>& group : gather(registry, alpha, meshes, poses, true)) {
+    std::vector<internal::Placed> reaching;
+    for (const std::vector<internal::Placed>& group : gather(registry, alpha, meshes, poses, true)) {
         reaching.clear();
-        std::ranges::copy_if(group, std::back_inserter(reaching), [&casting](const Placed& placed) { return reaches(placed, casting); });
+        std::ranges::copy_if(group, std::back_inserter(reaching), [&casting](const internal::Placed& placed) { return reaches(placed, casting); });
         if (reaching.empty()) {
             continue;
         }

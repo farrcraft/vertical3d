@@ -38,10 +38,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
 /**
  * A scene document in the temporary directory, removed before and after the test.
  **/
@@ -67,6 +63,18 @@ class Scratch final {
  private:
     boost::filesystem::path path_;
 };
+
+/**
+ * A document damaged one way, and what the damage is.
+ **/
+struct Damage {
+    const char* what;
+    const char* sql;
+};
+
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
 
 boost::shared_ptr<v3d::editor::Mesh> item(const boost::shared_ptr<v3d::brep::BRep>& geometry) {
     return boost::make_shared<v3d::editor::Mesh>(geometry);
@@ -343,14 +351,6 @@ BOOST_AUTO_TEST_CASE(store_refuses_another_programs_database_test) {
     BOOST_CHECK(!store.write(scratch.path(), *everyKind()));
     BOOST_CHECK_EQUAL(query(scratch, "SELECT value FROM theirs"), 7);
 }
-
-/**
- * A document damaged one way, and what the damage is.
- **/
-struct Damage {
-    const char* what;
-    const char* sql;
-};
 
 BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
     const std::vector<Damage> damages = {

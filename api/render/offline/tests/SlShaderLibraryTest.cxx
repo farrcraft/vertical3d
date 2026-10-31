@@ -27,10 +27,30 @@
 namespace {
 
 typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
+
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
+
 typedef v3d::render::offline::sl::ShaderType ShaderType;
+
 typedef v3d::render::offline::rib::Declaration Declaration;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+
+/**
+ * A renderer that has placed the shader two units up, as a scene's transform in force at
+ * the `LightSource` request would. The matrix maps current space into shader space, so it
+ * moves a point two units down.
+ **/
+class Placed final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name != "shader") {
+            return false;
+        }
+        *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
+        return true;
+    }
+};
 
 boost::shared_ptr<v3d::log::Logger> logger() {
     return boost::make_shared<v3d::log::Logger>();
@@ -254,26 +274,6 @@ BOOST_AUTO_TEST_CASE(slshaderlibrary_searchpath_test) {
 
     std::remove("matte.sl");
 }
-
-namespace {
-
-/**
- * A renderer that has placed the shader two units up, as a scene's transform in force at
- * the `LightSource` request would. The matrix maps current space into shader space, so it
- * moves a point two units down.
- **/
-class Placed final : public v3d::render::offline::sl::runtime::Renderer {
- public:
-    bool space(const std::string & name, glm::mat4x4* matrix) override {
-        if (name != "shader") {
-            return false;
-        }
-        *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
-        return true;
-    }
-};
-
-};  // namespace
 
 /**
  * A shader's own space is the transform that was in force when the scene instanced it.

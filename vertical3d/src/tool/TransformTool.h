@@ -129,6 +129,11 @@ class TransformTool final : public Tool {
 
  private:
     /**
+     * What a mode is called, for the log.
+     **/
+    static const char* modeName(TransformTool::Mode mode);
+
+    /**
      * @return the view's camera and region, which the handles are seen through
      **/
     Screen screen() const;

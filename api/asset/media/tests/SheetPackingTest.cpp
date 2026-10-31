@@ -24,14 +24,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
-v3d::image::Sprite sprite(const std::string& name, unsigned int width, unsigned int height) {
-    return {.name = name, .image = boost::make_shared<v3d::image::Image>(glm::uvec2(width, height), 32)};
-}
-
 /**
  * A directory of its own per case, removed with everything under it.
  **/
@@ -59,6 +51,14 @@ class Sandbox {
  private:
     boost::filesystem::path path_;
 };
+
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
+
+v3d::image::Sprite sprite(const std::string& name, unsigned int width, unsigned int height) {
+    return {.name = name, .image = boost::make_shared<v3d::image::Image>(glm::uvec2(width, height), 32)};
+}
 
 /**
  * A packed sheet is the packed image's size, names the file it is written to, and holds each

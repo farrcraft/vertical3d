@@ -66,6 +66,10 @@ class Reader final {
     const std::vector<std::string> & unsupported() const;
 
  private:
+    typedef Token::Kind Kind;
+
+    static std::string position(const Token & token);
+
     /**
      * The result of offering a request name to one group of requests.
      *

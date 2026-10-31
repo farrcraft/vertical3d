@@ -12,20 +12,6 @@
 
 namespace v3d::type::geometry {
 
-namespace {
-
-// where vertices() puts each corner of the box
-constexpr std::size_t MIN_X_MAX_Y_MAX_Z = 0;
-constexpr std::size_t MAX_X_MIN_Y_MIN_Z = 1;
-constexpr std::size_t MAX_X_MAX_Y_MIN_Z = 2;
-constexpr std::size_t MIN_X_MAX_Y_MIN_Z = 3;
-constexpr std::size_t MAX_X_MIN_Y_MAX_Z = 4;
-constexpr std::size_t MIN_X_MIN_Y_MAX_Z = 5;
-constexpr std::size_t MIN_X_MIN_Y_MIN_Z = 6;
-constexpr std::size_t MAX_X_MAX_Y_MAX_Z = 7;
-
-};  // namespace
-
 // a default box has both corners at the origin. BRep::bound() returns one for a mesh with
 // no vertices, and its callers read it
 AABBox::AABBox() : min_(0.0F), max_(0.0F) {

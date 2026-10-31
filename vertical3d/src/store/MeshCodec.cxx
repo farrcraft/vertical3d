@@ -19,8 +19,10 @@
 #include <string_view>
 #include <vector>
 
+#include "Blob.h"
 #include "Bytes.h"
 #include "Codec.h"
+#include "Cursor.h"
 #include "Payload.h"
 
 #include <boost/json.hpp>
@@ -30,20 +32,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
- * its vertex, face, pair and next. A face is its normal and its first half edge.
  **/
-constexpr std::size_t VERTEX_SIZE = 3 * sizeof(float);
-constexpr std::size_t EDGE_SIZE = 4 * sizeof(std::uint32_t);
-constexpr std::size_t FACE_SIZE = (3 * sizeof(float)) + sizeof(std::uint32_t);
-
-/**
- * Build a mesh from its three blobs, index for index.
- **/
-bool decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
+bool MeshCodec::decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
     if (blobs.size() != 3 || !blobs.contains("vertices") || !blobs.contains("edges") || !blobs.contains("faces")) {
         *problem = "it does not have exactly its vertices, edges and faces";
         return false;
@@ -90,7 +81,6 @@ bool decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
     return mesh->validate(problem);
 }
 
-};  // namespace
 
 /**
  **/

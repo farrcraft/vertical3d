@@ -18,32 +18,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
-namespace {
-
-/**
- * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
- * is scaled to this size rather than rasterized at it.
- **/
-const float fontSize = 28.0F;
-
-// the court is drawn over black, so a window of another shape shows where it ends
-constexpr glm::vec4 barColour(0.0F, 0.0F, 0.0F, 1.0F);
-constexpr glm::vec4 courtColour(0.06F, 0.07F, 0.10F, 1.0F);
-constexpr glm::vec4 boardColour(0.35F, 0.35F, 0.35F, 1.0F);
-constexpr glm::vec4 ballColour(1.0F, 1.0F, 1.0F, 1.0F);
-constexpr glm::vec4 scoreColour(0.85F, 0.85F, 0.85F, 1.0F);
-
-const unsigned int ballSides = 32;
-const unsigned int centreLineWidth = 14;
-
-// where the scores sit, as fractions of the court: a quarter of the way down, centred over
-// each half
-constexpr float scoreRow = 0.25F;
-constexpr float leftScoreColumn = 0.25F;
-constexpr float rightScoreColumn = 0.75F;
-
-};  // namespace
-
 /**
  **/
 PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,

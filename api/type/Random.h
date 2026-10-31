@@ -72,6 +72,19 @@ class Random final {
     uint64_t state() const noexcept;
 
  private:
+    // SplitMix64: the counter's step, which is 2^64 divided by the golden ratio, and the shifts
+    // and multipliers of its two mixing rounds and final fold
+    static constexpr uint64_t STATE_STEP = 0x9E3779B97F4A7C15ULL;
+    static constexpr int FIRST_MIX_SHIFT = 30;
+    static constexpr uint64_t FIRST_MIX_MULTIPLIER = 0xBF58476D1CE4E5B9ULL;
+    static constexpr int SECOND_MIX_SHIFT = 27;
+    static constexpr uint64_t SECOND_MIX_MULTIPLIER = 0x94D049BB133111EBULL;
+    static constexpr int FOLD_SHIFT = 31;
+
+    // unit() keeps the top 24 bits of a draw, the precision of a float, and scales them by 2^-24
+    static constexpr int UNIT_DISCARDED_BITS = 40;
+    static constexpr float UNIT_SCALE = 0x1.0p-24F;
+
     uint64_t state_;
 };
 

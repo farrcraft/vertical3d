@@ -11,6 +11,7 @@
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>
+#include <api/input/internal/Named.h>
 
 #include <algorithm>
 #include <string>
@@ -20,16 +21,7 @@ namespace v3d::input {
 
 namespace {
 
-/**
- * Every key this library has a name for, and the name. Read in both directions: an SDL key
- * to the name a binding and a text box use, and a name back to whether it is one.
- **/
-struct Named {
-    SDL_Keycode key;
-    std::string_view name;
-};
-
-constexpr Named KEYS[] = {
+constexpr internal::Named KEYS[] = {
     {SDLK_ESCAPE, "escape"},
     {SDLK_RETURN, "return"},
     {SDLK_A, "a"},
@@ -121,7 +113,7 @@ constexpr Named KEYS[] = {
 /**
  **/
 std::string keyName(SDL_Keycode key) {
-    for (const Named& named : KEYS) {
+    for (const internal::Named& named : KEYS) {
         if (named.key == key) {
             return std::string(named.name);
         }
@@ -132,7 +124,7 @@ std::string keyName(SDL_Keycode key) {
 /**
  **/
 bool isKeyName(std::string_view name) {
-    return std::ranges::any_of(KEYS, [name](const Named& named) { return named.name == name; });
+    return std::ranges::any_of(KEYS, [name](const internal::Named& named) { return named.name == name; });
 }
 
 /**

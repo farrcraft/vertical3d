@@ -16,57 +16,6 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * Find a named component in a subtree, the component itself first and then what it holds.
- **/
-boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& component, const std::string& name) {
-    if (!component) {
-        return nullptr;
-    }
-    if (component->name() == name) {
-        return component;
-    }
-    for (const boost::shared_ptr<Component>& child : component->children()) {
-        const boost::shared_ptr<Component> found = search(child, name);
-        if (found) {
-            return found;
-        }
-    }
-    return nullptr;
-}
-
-/**
- * Offer a point to a subtree, deepest and last drawn first, which is the reverse of the
- * order it was drawn in.
- **/
-boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
-    // a disabled subtree is skipped whole, like a hidden one, because nothing inside a
-    // disabled component can be used
-    if (!component || !component->visible() || !component->enabled()) {
-        return nullptr;
-    }
-
-    // only what was drawn can be picked. A tab page that is not chosen keeps the box it last
-    // held, and a child drawn over its sibling is offered the point first
-    std::vector<boost::shared_ptr<Component>> drawn;
-    forEachDrawn(*component, [&drawn](const boost::shared_ptr<Component>& child) { drawn.push_back(child); });
-    for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
-        const boost::shared_ptr<Component> found = probe(*it, point);
-        if (found) {
-            return found;
-        }
-    }
-    const v3d::type::geometry::Bound2D bound = component->bound();
-    if (component->pickable() && bound.contains(point)) {
-        return component;
-    }
-    return nullptr;
-}
-
-};  // namespace
-
 Container::Container(const std::string& name, bool visible) :
     name_(name),
     visible_(visible),
@@ -136,6 +85,46 @@ std::string_view Container::name() const {
 
 const std::vector<boost::shared_ptr<Component>>& Container::components() const noexcept {
     return components_;
+}
+
+boost::shared_ptr<Component> Container::search(const boost::shared_ptr<Component>& component, const std::string& name) {
+    if (!component) {
+        return nullptr;
+    }
+    if (component->name() == name) {
+        return component;
+    }
+    for (const boost::shared_ptr<Component>& child : component->children()) {
+        const boost::shared_ptr<Component> found = search(child, name);
+        if (found) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+boost::shared_ptr<Component> Container::probe(const boost::shared_ptr<Component>& component, const glm::vec2& point) {
+    // a disabled subtree is skipped whole, like a hidden one, because nothing inside a
+    // disabled component can be used
+    if (!component || !component->visible() || !component->enabled()) {
+        return nullptr;
+    }
+
+    // only what was drawn can be picked. A tab page that is not chosen keeps the box it last
+    // held, and a child drawn over its sibling is offered the point first
+    std::vector<boost::shared_ptr<Component>> drawn;
+    forEachDrawn(*component, [&drawn](const boost::shared_ptr<Component>& child) { drawn.push_back(child); });
+    for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
+        const boost::shared_ptr<Component> found = probe(*it, point);
+        if (found) {
+            return found;
+        }
+    }
+    const v3d::type::geometry::Bound2D bound = component->bound();
+    if (component->pickable() && bound.contains(point)) {
+        return component;
+    }
+    return nullptr;
 }
 
 };  // namespace v3d::ui

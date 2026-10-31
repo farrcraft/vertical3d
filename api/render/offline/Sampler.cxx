@@ -17,17 +17,9 @@
 
 namespace v3d::render::offline {
 
-namespace {
-
-/**
- * Where in a stratum a sample falls: its centre when the axis has one stratum, and anywhere
- * in it otherwise.
- **/
-float jitter(unsigned int strata, v3d::type::Random * random) {
+float Sampler::jitter(unsigned int strata, v3d::type::Random * random) {
     return strata == 1 ? 0.5F : random->unit();
 }
-
-};  // namespace
 
 Sampler::Sampler(const Sampling & sampling) : sampling_(sampling) {
 }

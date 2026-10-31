@@ -18,17 +18,6 @@
 
 namespace v3d::ui::immediate {
 
-namespace {
-
-/**
- * The seed and the multiplier of FNV-1a, which hashes a label into an id.
- * Any hash would do; this one is four lines and needs no table.
- **/
-const std::uint64_t hashSeed = 1469598103934665603ULL;
-const std::uint64_t hashPrime = 1099511628211ULL;
-
-};  // namespace
-
 Reaction::Reaction() noexcept :
 hovered(false),
 held(false),

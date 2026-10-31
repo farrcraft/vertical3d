@@ -4,6 +4,7 @@ v3d_add_api_library(curve
 	"Curves.h" "Curves.cxx"
 	"Segment.h"
 	"Spline.h" "Spline.cxx"
+	"internal/Neighbours.h"
 )
 
 # PUBLIC: every header here holds glm values.

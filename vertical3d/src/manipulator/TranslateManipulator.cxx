@@ -19,28 +19,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * The arrow head at the tip of a handle, as a fraction of the handle's length.
- **/
-constexpr float headLength = 0.22F;
-constexpr float headRadius = 0.07F;
-
-/**
- * How many segments the head's ring is drawn with, and how many of them are joined
- * back to the tip.
- **/
-constexpr unsigned int headSides = 12;
-constexpr unsigned int headSpokes = 4;
-
-/**
- * The centre handle's box, as a fraction of a handle's length.
- **/
-constexpr float centreSize = 0.06F;
-
-};  // namespace
-
 /**
  **/
 TranslateManipulator::TranslateManipulator() {

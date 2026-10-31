@@ -101,6 +101,19 @@ most often Major.
 - LF line endings. `.gitattributes` enforces it; a file that arrives with CRLF turns a small
   change into a whole-file diff.
 
+### What a source file keeps to itself
+
+Conventions.md has five rules under this heading, and `node scripts/filelocal.ts` checks four of
+them. Run it, and report what it reports in the changed files. The fifth needs you:
+
+- **A helper or constant in the anonymous namespace that only one class's code uses.** It belongs
+  to that class, as a private static member or a `static constexpr` member. Check each new or
+  moved entry in a source file's anonymous namespace: if every caller is a member of the class
+  the file implements, it is a finding. A helper that free functions also call, or that two
+  classes call, stays.
+- **A type added to a source file to dodge rule 1 by nesting it in a function**, or a new
+  `process-wide:` static whose comment does not say what outside the tree makes it process-wide.
+
 ### Boundaries
 
 - **The offline renderer must not acquire a realtime dependency.** `moya` is offline and

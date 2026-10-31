@@ -7,7 +7,6 @@
 
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declarations.h>
-#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/Checked.h>
 #include <moya/libmoya/Polygon.h>
@@ -26,37 +25,15 @@
 
 namespace v3d::moya::ri {
 
-namespace {
-
-/**
- * A number from a scene as a count of pixels or micropolygons: at least one and at most
- * largestLimit. Anything else is refused.
- **/
-std::optional<uint32_t> count(float value) {
+std::optional<uint32_t> RIBHandler::count(float value) {
     return v3d::type::toCount(value, {.minimum = 1, .maximum = RIBHandler::largestLimit});
 }
 
-/**
- * A picture side as the context takes it. A side too large for an int is held just above
- * largestResolution, which the context refuses.
- **/
-int side(unsigned int value) {
+int RIBHandler::side(unsigned int value) {
     return static_cast<int>(std::min(value, v3d::render::offline::largestResolution + 1));
 }
 
-/**
- * The deepest a scene may ask trace() to go. A shader that traces twice at every hit doubles
- * the rays at every level, and every level holds a shader on the stack.
- **/
-const float DEEPEST_TRACE = 16.0F;
-
-typedef v3d::render::offline::rib::ParameterList ParameterList;
-
-/**
- * Print Pixar's copyright notice the first time it is called in a process. A static's
- * initialiser runs once even when two threads reach it together.
- **/
-void notice() {
+void RIBHandler::notice() {
     static const bool printed = [] {
         std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
                      "Copyright 1988, 1989, Pixar" << "\n" <<
@@ -65,8 +42,6 @@ void notice() {
     }();
     (void)printed;
 }
-
-};  // namespace
 
 RIBHandler::RIBHandler(const std::string & name) : context_(name) {
     notice();

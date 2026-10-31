@@ -51,6 +51,43 @@ class TetrisRenderer final {
 
  private:
     /**
+     * The size the ui and the side panel are drawn at. Glyphs are distance fields, so the atlas
+     * is scaled to this size rather than rasterized at it.
+     **/
+    static constexpr float fontSize = 22.0F;
+
+    /**
+     * The piece colours, which are also the texture file names and the names a shape in
+     * pieces/shapes.txt gives itself.
+     **/
+    static constexpr const char* colours[] = { "red", "cyan", "blue", "green", "orange", "purple", "yellow" };
+
+    /**
+     * The size of the atlas the seven 64x64 block textures are packed into. Three fit across a
+     * row, so seven need three rows. The atlas keeps a one texel gutter around each texture.
+     **/
+    static constexpr unsigned int atlasSize = 256;
+
+    /**
+     * How many cells of well width the panel beside it is given, for the preview and the
+     * score. The two together decide how big a cell can be.
+     **/
+    static constexpr float panelCells = 6.0F;
+
+    static constexpr float margin = 16.0F;
+
+    /**
+     * The height of a line of text, as a multiple of the text's size.
+     **/
+    static constexpr float lineSpacing = 1.4F;
+
+    static constexpr glm::vec4 backgroundColour{0.09F, 0.09F, 0.11F, 1.0F};
+    static constexpr glm::vec4 wellColour{0.04F, 0.04F, 0.05F, 1.0F};
+    static constexpr glm::vec4 borderColour{0.30F, 0.30F, 0.34F, 1.0F};
+    static constexpr glm::vec4 textColour{0.85F, 0.85F, 0.85F, 1.0F};
+    static constexpr glm::vec4 white{1.0F, 1.0F, 1.0F, 1.0F};
+
+    /**
      * Where in the atlas one piece colour was packed.
      **/
     struct Sprite final {

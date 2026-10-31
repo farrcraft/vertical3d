@@ -20,22 +20,13 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * The next id to hand out. Atomic because a component may be built on any thread.
- **/
-std::atomic<unsigned int> nextID { 0 };
-
-};  // namespace
-
 // in declaration order, so that no member is initialised from one that is not yet set
 Component::Component(component::Type type) :
     parent_(nullptr),
     position_(0.0F, 0.0F),
     size_(0.0F, 0.0F),
     zIndex_(0),
-    id_(nextID++),
+    id_(nextId()),
     visible_(true),
     enabled_(true),
     pickable_(false),
@@ -236,6 +227,11 @@ std::string_view Component::tooltip() const noexcept {
 
 void Component::tooltip(const std::string& text) {
     tooltip_ = text;
+}
+
+unsigned int Component::nextId() noexcept {
+    static std::atomic<unsigned int> next{0};  // process-wide: a counter of ids unique across the run
+    return next++;
 }
 
 };  // end namespace v3d::ui

@@ -78,6 +78,15 @@ class Declaration final {
     bool operator==(const Declaration & other) const;
 
  private:
+    static bool storageWord(const std::string & word, Declaration::Storage * storage);
+
+    static bool typeWord(const std::string & word, Declaration::Type * type);
+
+    /**
+     * Split a trailing "[n]" off a type word.
+     **/
+    static unsigned int arrayCount(std::string * word);
+
     Storage storage_ = Storage::UNIFORM;
     Type type_ = Type::FLOAT;
     unsigned int count_ = 1;

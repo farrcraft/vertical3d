@@ -2,7 +2,8 @@ v3d_add_api_library(interchange
 	"Scene.h"
 	"Placement.h" "Placement.cxx"
 	"Gltf.h" "Gltf.cxx"
-	"CgltfImpl.cxx")
+	"CgltfImpl.cxx"
+	"internal/Reader.h" "internal/Reader.cxx")
 
 # PUBLIC: a scene places each node by a type::Transform and holds curve::Curve values. glm, for
 # the points and values.
@@ -12,7 +13,8 @@ target_link_libraries(v3dlib_interchange PUBLIC v3dlib_curve v3dlib_type glm::gl
 target_link_libraries(v3dlib_interchange PRIVATE v3dlib_asset)
 
 # PRIVATE: only the glTF reader and the translation unit owning cgltf's implementation include
-# the header, and no header here names a cgltf type. The implementation is compiled here, once
+# the header, and no header here names a cgltf type but internal/Reader.h, which only this
+# library's own sources include. The implementation is compiled here, once
 # for every program, and asset_media's model loader links this library to reach it.
 target_include_directories(v3dlib_interchange PRIVATE "${V3D_CGLTF_INCLUDE_DIR}")
 

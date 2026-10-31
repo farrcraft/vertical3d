@@ -32,6 +32,29 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 }
 
 /**
+ * A triangle small enough that addPolygon() measures it as diceable, so its vertices are
+ * moved into eye space and it is not split. Its plane is (1, 1, 0) normalised, a normal that
+ * a scale of the x or y axis alone changes.
+ **/
+boost::shared_ptr<v3d::moya::Polygon> diagonal() {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(0.01F, 0.0F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.01F));
+    return polygon;
+}
+
+/** A quad in front of the camera, sent to a prepared context. **/
+void addQuad(v3d::moya::state::RenderContext* rc) {
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
+    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
+    rc->addPolygon(polygon);
+}
+
+/**
  * The defaults a context starts on, which stand in for the RiFormat and bucketing options a
  * RIB file would otherwise set.
  **/
@@ -231,23 +254,6 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     */
     BOOST_TEST(rc.bucketed() == 256U);
 }
-
-namespace {
-
-/**
- * A triangle small enough that addPolygon() measures it as diceable, so its vertices are
- * moved into eye space and it is not split. Its plane is (1, 1, 0) normalised, a normal that
- * a scale of the x or y axis alone changes.
- **/
-boost::shared_ptr<v3d::moya::Polygon> diagonal() {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(0.01F, 0.0F, 5.0F));
-    polygon->addVertex(vertex(0.0F, 0.01F, 5.0F));
-    polygon->addVertex(vertex(0.0F, 0.01F, 5.01F));
-    return polygon;
-}
-
-};  // namespace
 
 /**
  * A polygon that says nothing about its normals gets its own plane on every vertex, as both Ng
@@ -490,16 +496,6 @@ BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
     rc.render();
 
     BOOST_TEST(rc.bucketed() == 64U);
-}
-
-/** A quad in front of the camera, sent to a prepared context. **/
-void addQuad(v3d::moya::state::RenderContext* rc) {
-    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
-    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
-    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
-    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
-    rc->addPolygon(polygon);
 }
 
 /**

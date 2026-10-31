@@ -36,6 +36,48 @@ std::vector<unsigned char> bytes(const std::string& path) {
     return encoded;
 }
 
+/**
+ * A bmp built byte by byte: one row per entry of rows, top row first, stored bottom up as a
+ * positive height says. Each row is padded to a dword boundary here. Masks, when given, follow
+ * the 40 byte header and the compression is BI_BITFIELDS.
+ **/
+std::vector<unsigned char> bitmap(int width, int bits, const std::vector<uint32_t> & masks,
+    const std::vector<std::vector<unsigned char>> & rows) {
+    std::vector<unsigned char> out;
+    const auto put16 = [&out](uint32_t value) {
+        out.push_back(static_cast<unsigned char>(value));
+        out.push_back(static_cast<unsigned char>(value >> 8));
+    };
+    const auto put32 = [&put16](uint32_t value) {
+        put16(value);
+        put16(value >> 16);
+    };
+    const uint32_t pad = (static_cast<uint32_t>(width * bits / 8) + 3) / 4 * 4;
+    const uint32_t offset = 14 + 40 + (static_cast<uint32_t>(masks.size()) * 4);
+    put16(19778);
+    put32(offset + (pad * static_cast<uint32_t>(rows.size())));
+    put32(0);
+    put32(offset);
+    put32(40);
+    put32(static_cast<uint32_t>(width));
+    put32(static_cast<uint32_t>(rows.size()));
+    put16(1);
+    put16(static_cast<uint32_t>(bits));
+    put32(masks.empty() ? 0 : 3);
+    for (int field = 0; field < 5; ++field) {
+        put32(0);
+    }
+    for (const uint32_t mask : masks) {
+        put32(mask);
+    }
+    for (auto row = rows.rbegin(); row != rows.rend(); ++row) {
+        std::vector<unsigned char> padded = *row;
+        padded.resize(pad, 0);
+        out.insert(out.end(), padded.begin(), padded.end());
+    }
+    return out;
+}
+
 BOOST_AUTO_TEST_CASE(imagereader_test) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -321,52 +363,6 @@ BOOST_AUTO_TEST_CASE(imagereader_bmp_orientation) {
         }
     }
 }
-
-namespace {
-
-/**
- * A bmp built byte by byte: one row per entry of rows, top row first, stored bottom up as a
- * positive height says. Each row is padded to a dword boundary here. Masks, when given, follow
- * the 40 byte header and the compression is BI_BITFIELDS.
- **/
-std::vector<unsigned char> bitmap(int width, int bits, const std::vector<uint32_t> & masks,
-    const std::vector<std::vector<unsigned char>> & rows) {
-    std::vector<unsigned char> out;
-    const auto put16 = [&out](uint32_t value) {
-        out.push_back(static_cast<unsigned char>(value));
-        out.push_back(static_cast<unsigned char>(value >> 8));
-    };
-    const auto put32 = [&put16](uint32_t value) {
-        put16(value);
-        put16(value >> 16);
-    };
-    const uint32_t pad = (static_cast<uint32_t>(width * bits / 8) + 3) / 4 * 4;
-    const uint32_t offset = 14 + 40 + (static_cast<uint32_t>(masks.size()) * 4);
-    put16(19778);
-    put32(offset + (pad * static_cast<uint32_t>(rows.size())));
-    put32(0);
-    put32(offset);
-    put32(40);
-    put32(static_cast<uint32_t>(width));
-    put32(static_cast<uint32_t>(rows.size()));
-    put16(1);
-    put16(static_cast<uint32_t>(bits));
-    put32(masks.empty() ? 0 : 3);
-    for (int field = 0; field < 5; ++field) {
-        put32(0);
-    }
-    for (const uint32_t mask : masks) {
-        put32(mask);
-    }
-    for (auto row = rows.rbegin(); row != rows.rend(); ++row) {
-        std::vector<unsigned char> padded = *row;
-        padded.resize(pad, 0);
-        out.insert(out.end(), padded.begin(), padded.end());
-    }
-    return out;
-}
-
-};  // namespace
 
 /**
  * 16 bits uncompressed is five bits a channel, and widens so that a full channel is 255. With

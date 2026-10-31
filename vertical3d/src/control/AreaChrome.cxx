@@ -42,57 +42,31 @@
 
 namespace v3d::editor {
 
-namespace {
+/**
+ **/
+AreaChrome::AreaChrome(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve) :
+    ui_(ui),
+    before_(before),
+    resolve_(resolve) {
+}
 
 /**
- * The four ways an area can be divided or met: as each command names it, and as a menu reads it
- * for a split and for a join or a swap.
  **/
-struct Way final {
-    const char* command;
-    const char* split;
-    const char* across;
-};
-
-constexpr Way WAYS[] = {
-    { .command = "left", .split = "Left", .across = "Left" },
-    { .command = "right", .split = "Right", .across = "Right" },
-    { .command = "top", .split = "Top", .across = "Above" },
-    { .command = "bottom", .split = "Bottom", .across = "Below" },
-};
-
-/**
- * @return a menu item that sends an area's command
- **/
-boost::json::object item(const std::string& label, const std::string& command, std::size_t area) {
-    return boost::json::object{ { "label", label }, { "type", "action" }, { "context", AreaChrome::CONTEXT },
+boost::json::object AreaChrome::item(const std::string& label, const std::string& command, std::size_t area) {
+    return boost::json::object{ { "label", label }, { "type", "action" }, { "context", CONTEXT },
         { "command", command }, { "data", static_cast<std::int64_t>(area) } };
 }
 
 /**
- * @return a check or radio item that sends a view's command for an area
  **/
-boost::json::object mark(const std::string& label, const char* type, const std::string& command, std::size_t area) {
-    return boost::json::object{ { "label", label }, { "type", type }, { "context", AreaChrome::VIEW_CONTEXT },
+boost::json::object AreaChrome::mark(const std::string& label, const char* type, const std::string& command, std::size_t area) {
+    return boost::json::object{ { "label", label }, { "type", type }, { "context", VIEW_CONTEXT },
         { "command", command }, { "data", static_cast<std::int64_t>(area) } };
 }
 
-/** A choice on a view's menu: the end of its command, and what the menu names it. **/
-struct Choice final {
-    const char* command;
-    const char* label;
-};
-
-constexpr Choice FILLS[] = { { "points", "Points" }, { "lines", "Lines" }, { "fill", "Fill" } };
-constexpr ViewPort::Fill FILLED[] = { ViewPort::Fill::Points, ViewPort::Fill::Lines, ViewPort::Fill::Fill };
-
-constexpr Choice CULLS[] = { { "none", "None" }, { "front", "Front" }, { "back", "Back" }, { "both", "Both" } };
-constexpr ViewPort::Cull CULLED[] = { ViewPort::Cull::None, ViewPort::Cull::Front, ViewPort::Cull::Back, ViewPort::Cull::Both };
-
 /**
- * @return a submenu of radio items, one for each choice, sending a view's command for an area
  **/
-boost::json::object choices(const char* label, const std::string& prefix, std::span<const Choice> each, std::size_t area) {
+boost::json::object AreaChrome::choices(const char* label, const std::string& prefix, std::span<const Choice> each, std::size_t area) {
     boost::json::array items;
     for (const Choice& choice : each) {
         items.emplace_back(mark(choice.label, "radio", prefix + choice.command, area));
@@ -100,24 +74,9 @@ boost::json::object choices(const char* label, const std::string& prefix, std::s
     return boost::json::object{ { "label", label }, { "type", "submenu" }, { "items", std::move(items) } };
 }
 
-/** The masks a mask menu offers, in its order, and where a separator goes before one. **/
-struct Masked final {
-    SelectMask mask;
-    bool rule;
-};
-
-constexpr Masked MASKS[] = {
-    { .mask = SelectMask::Object, .rule = false }, { .mask = SelectMask::Mesh, .rule = false },
-    { .mask = SelectMask::Curve, .rule = false }, { .mask = SelectMask::Camera, .rule = false },
-    { .mask = SelectMask::Light, .rule = false }, { .mask = SelectMask::Vertex, .rule = true },
-    { .mask = SelectMask::Edge, .rule = false }, { .mask = SelectMask::Face, .rule = false },
-    { .mask = SelectMask::Handle, .rule = false },
-};
-
 /**
- * @return a kind with a capital, as a menu names it
  **/
-std::string capital(const std::string& kind) {
+std::string AreaChrome::capital(const std::string& kind) {
     std::string named = kind;
     if (!named.empty()) {
         named.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(named.front())));
@@ -126,9 +85,8 @@ std::string capital(const std::string& kind) {
 }
 
 /**
- * @return a viewport's mask menu, named for the mask in force
  **/
-boost::json::object maskMenu(SelectMask mask, std::size_t area) {
+boost::json::object AreaChrome::maskMenu(SelectMask mask, std::size_t area) {
     boost::json::array items;
     for (const Masked& each : MASKS) {
         if (each.rule) {
@@ -142,13 +100,12 @@ boost::json::object maskMenu(SelectMask mask, std::size_t area) {
 }
 
 /**
- * @return a viewport's camera menu and its shading menu, named for what the view shows
  **/
-boost::json::array viewMenus(const ViewPort& view, std::size_t area) {
+boost::json::array AreaChrome::viewMenus(const ViewPort& view, std::size_t area) {
     boost::json::array cameras;
-    for (const AreaChrome::FixedView& fixed : AreaChrome::fixedViews()) {
+    for (const FixedView& fixed : fixedViews()) {
         // an item names its command without its context
-        cameras.emplace_back(mark(fixed.profile, "radio", fixed.command.substr(AreaChrome::VIEW_CONTEXT.size() + 2), area));
+        cameras.emplace_back(mark(fixed.profile, "radio", fixed.command.substr(VIEW_CONTEXT.size() + 2), area));
     }
     cameras.emplace_back(boost::json::object{ { "type", "separator" } });
     cameras.emplace_back(mark("Orthographic", "check", "camera::orthographic", area));
@@ -167,17 +124,9 @@ boost::json::array viewMenus(const ViewPort& view, std::size_t area) {
     };
 }
 
-/** A submenu of one of an area's commands, in each of the four ways. **/
-struct Ways final {
-    const char* label;
-    const char* command;
-    bool across;   /**< whether the ways read as neighbours rather than as edges **/
-};
-
 /**
- * @return the submenu, its items sending the command for one area
  **/
-boost::json::object ways(const Ways& spec, std::size_t area) {
+boost::json::object AreaChrome::ways(const Ways& spec, std::size_t area) {
     boost::json::array items;
     for (const Way& way : WAYS) {
         items.emplace_back(item(spec.across ? way.across : way.split, std::string(spec.command) + "::" + way.command, area));
@@ -186,9 +135,8 @@ boost::json::object ways(const Ways& spec, std::size_t area) {
 }
 
 /**
- * Check or clear the items of a menu bar that send each command, as a list of marks says.
  **/
-void check(v3d::ui::component::menu::Bar* bar, const std::vector<std::pair<std::string, bool>>& marks) {
+void AreaChrome::check(v3d::ui::component::menu::Bar* bar, const std::vector<std::pair<std::string, bool>>& marks) {
     for (const auto& [command, on] : marks) {
         if (const boost::shared_ptr<v3d::ui::component::menu::Item> found = bar->find(command)) {
             found->checked(on);
@@ -197,24 +145,13 @@ void check(v3d::ui::component::menu::Bar* bar, const std::vector<std::pair<std::
 }
 
 /**
- * Set a component's box in window pixels.
  **/
-void box(v3d::ui::Component* component, const glm::vec4& region) {
+void AreaChrome::box(v3d::ui::Component* component, const glm::vec4& region) {
     v3d::ui::Layout& layout = component->layout();
     layout.x = v3d::ui::Length(region.x, v3d::ui::Length::Unit::Pixels);
     layout.y = v3d::ui::Length(region.y, v3d::ui::Length::Unit::Pixels);
     layout.width = v3d::ui::Length(std::max(0.0F, region.z), v3d::ui::Length::Unit::Pixels);
     layout.height = v3d::ui::Length(std::max(0.0F, region.w), v3d::ui::Length::Unit::Pixels);
-}
-
-};  // namespace
-
-/**
- **/
-AreaChrome::AreaChrome(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve) :
-    ui_(ui),
-    before_(before),
-    resolve_(resolve) {
 }
 
 /**

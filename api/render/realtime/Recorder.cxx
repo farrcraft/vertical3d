@@ -28,18 +28,9 @@
 
 namespace v3d::render::realtime {
 
-namespace {
-
 /**
- * Whether the pass at an index is the first of the frame to draw into the target it
- * names, or the last.
- *
- * A target is moved into its attachment layout once, before the first pass that writes it,
- * and left readable after the last one. Two passes that draw into one target then cost one
- * pair of barriers, not two. The passes are scanned each time, not counted into a map,
- * because a frame has few passes.
  **/
-bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+bool Recorder::firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     for (std::size_t before = 0; before < index; ++before) {
         if (passes[before]->target() == passes[index]->target()) {
             return false;
@@ -48,7 +39,9 @@ bool firstWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t 
     return true;
 }
 
-bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+/**
+ **/
+bool Recorder::lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     for (std::size_t after = index + 1; after < passes.size(); ++after) {
         if (passes[after]->target() == passes[index]->target()) {
             return false;
@@ -58,10 +51,8 @@ bool lastWrite(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t i
 }
 
 /**
- * Whether any pass that writes the same target as passes[index] uses its depth. A target is
- * opened and closed once a frame, so its depth image is moved if any of its passes needs it.
  **/
-bool depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
+bool Recorder::depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_t index) {
     const boost::shared_ptr<RenderTarget>& target = passes[index]->target();
     return std::ranges::any_of(passes, [&target](const boost::shared_ptr<Pass>& other) {
         return other->target() == target && other->depth();
@@ -69,9 +60,8 @@ bool depthWritten(const std::vector<boost::shared_ptr<Pass>>& passes, std::size_
 }
 
 /**
- * Where a pass actually draws: a target of its own, or what the frame was given.
  **/
-Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
+Recorder::Target Recorder::resolve(const Pass& pass, const Recorder::Target& frame) {
     const boost::shared_ptr<RenderTarget>& offscreen = pass.target();
     if (!offscreen) {
         return frame;
@@ -96,13 +86,8 @@ Recorder::Target resolve(const Pass& pass, const Recorder::Target& frame) {
 }
 
 /**
- * Write the pass's camera into the frame's uniform buffer and return the set it is bound
- * from, or null for a frame whose pipelines declare nothing at set 0.
- *
- * A viewport width or height of zero means the whole extent of what the pass draws into. For
- * a pass into its own target, that is the target's extent, not the frame's.
  **/
-VkDescriptorSet writeCamera(vulkan::frame::FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
+VkDescriptorSet Recorder::writeCamera(vulkan::frame::FrameUniforms* uniforms, const Pass& pass, const Recorder::Target& into) {
     if (uniforms == nullptr) {
         return VK_NULL_HANDLE;
     }
@@ -117,8 +102,6 @@ VkDescriptorSet writeCamera(vulkan::frame::FrameUniforms* uniforms, const Pass& 
     camera.viewport.w = pass.viewport().w > 0.0F ? pass.viewport().w : static_cast<float>(into.extent.height);
     return uniforms->write(camera);
 }
-
-};  // namespace
 
 /**
  **/

@@ -35,6 +35,26 @@ struct Recorder {
     std::vector<v3d::event::Event> events_;
 };
 
+/**
+ * Records what both sinks deliver in one list, so a test can read the order a key and its
+ * command arrive in.
+ **/
+struct Order {
+    void key(const v3d::event::Source& source) {
+        heard_.push_back("key " + std::string(source.name()));
+        if (drop_) {
+            source.consume();
+        }
+    }
+
+    void command(const v3d::event::Event& event) {
+        heard_.push_back("command " + std::string(event.name()));
+    }
+
+    bool drop_ = false;
+    std::vector<std::string> heard_;
+};
+
 v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
     return v3d::event::Source(name, context, state);
@@ -150,28 +170,6 @@ BOOST_AUTO_TEST_CASE(engine_lets_the_dispatcher_go_test) {
     // no delegate to it
     BOOST_CHECK(dispatcher->sink<v3d::event::Unclaimed>().empty());
 }
-
-namespace {
-/**
- * Records what both sinks deliver in one list, so a test can read the order a key and its
- * command arrive in.
- **/
-struct Order {
-    void key(const v3d::event::Source& source) {
-        heard_.push_back("key " + std::string(source.name()));
-        if (drop_) {
-            source.consume();
-        }
-    }
-
-    void command(const v3d::event::Event& event) {
-        heard_.push_back("command " + std::string(event.name()));
-    }
-
-    bool drop_ = false;
-    std::vector<std::string> heard_;
-};
-};  // namespace
 
 /**
  * A key and the command it is bound to go to two sinks, and every listener receives the key

@@ -19,6 +19,9 @@ add_library("v3dlib_moya"
 	"state/Transforms.h" "state/Transforms.cxx"
 
 	"raytrace/Hider.h" "raytrace/Hider.cxx"
+	"raytrace/Pass.h"
+	"raytrace/Pixel.h"
+	"raytrace/Spread.h"
 	"raytrace/Scene.h" "raytrace/Scene.cxx"
 
 	"reyes/Bucket.h" "reyes/Bucket.cxx"
@@ -28,6 +31,8 @@ add_library("v3dlib_moya"
 	"reyes/Hider.h" "reyes/Hider.cxx"
 	"reyes/MicroPolygon.h" "reyes/MicroPolygon.cxx"
 	"reyes/MicroPolygonGrid.h" "reyes/MicroPolygonGrid.cxx"
+	"reyes/Motions.h" "reyes/Motions.cxx"
+	"reyes/Placement.h" "reyes/Placement.cxx"
 	"reyes/Primitive.h" "reyes/Primitive.cxx"
 	"reyes/Samples.h" "reyes/Samples.cxx"
 )

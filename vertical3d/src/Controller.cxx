@@ -90,39 +90,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * What the ui config calls the container the editor's own components are in, and the
- * menu bar within it. Every other component of that container is a toolbar.
- **/
-const char* const uiContainer = "editor";
-const char* const menuBar = "menu-bar";
-
-/**
- * The first container the ui config lists after the editor's own. The top bar goes before it,
- * so it is drawn over the menu bar and under every dialog.
- **/
-const char* const firstDialog = "chooser";
-
-#ifdef _WIN32
-const char* const MOYA = "moya.exe";
-#else
-const char* const MOYA = "moya";
-#endif
-
-/**
- * The editor's shell. It has no game menu, because the editor's menu is its menu bar.
- **/
-v3d::shell::Shell::Options shellOptions() {
-    v3d::shell::Shell::Options options;
-    options.menu = false;
-    options.statistics = "view::show::statistics";
-    return options;
-}
-
-};  // namespace
-
 /**
  **/
 Controller::Controller(const std::string& path) :
@@ -130,6 +97,15 @@ Controller::Controller(const std::string& path) :
     path_(path),
     shell_(this, shellOptions()) {
     registerCommands();
+}
+
+/**
+ **/
+v3d::shell::Shell::Options Controller::shellOptions() {
+    v3d::shell::Shell::Options options;
+    options.menu = false;
+    options.statistics = "view::show::statistics";
+    return options;
 }
 
 /**

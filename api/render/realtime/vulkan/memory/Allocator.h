@@ -98,6 +98,14 @@ class Allocator final {
 
  private:
     /**
+     * Allocate for a resource whose requirements have already been read, and write what was
+     * allocated. Buffers and images differ only in which call reports the requirements, so
+     * everything after that is shared.
+     **/
+    static VkResult allocate(VkDevice device, VkPhysicalDevice physical, const VkMemoryRequirements& requirements,
+        VkMemoryPropertyFlags properties, Allocation* allocation);
+
+    /**
      * Allocate through the suballocator and bind, for whichever of the two is not null.
      * One function because the two differ only in which pair of vma calls they make.
      **/

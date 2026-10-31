@@ -16,30 +16,13 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-/**
- * The keywords: the shader types, the data types, the storage classes, the control flow,
- * and the lighting constructs. Any other name is an identifier, so a shader may declare a
- * variable called "output" or "noise".
- **/
-const char* const KEYWORDS[] = {
-    "surface", "light", "displacement", "volume", "imager",
-    "float", "point", "vector", "normal", "color", "matrix", "string", "void",
-    "uniform", "varying",
-    "if", "else", "for", "while", "break", "continue", "return",
-    "illuminance", "illuminate", "solar"
-};
-
-bool punctuation(int character) {
+bool Lexer::punctuation(int character) {
     return character == '(' || character == ')' || character == '[' || character == ']' || character == '{' || character == '}' || character == ',' || character == ';';
 }
 
-bool keyword(const std::string & name) {
+bool Lexer::keyword(const std::string & name) {
     return std::ranges::any_of(KEYWORDS, [&name](const char* word) { return name == word; });
 }
-
-};  // namespace
 
 Lexer::Lexer(std::istream & stream) : in_(stream) {
 }

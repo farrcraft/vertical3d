@@ -47,6 +47,10 @@ class Paddle final {
     void score(int s);
 
  private:
+    // a paddle's thickness and its length along the side it moves on, in court units
+    static constexpr float PADDLE_THICKNESS = 15.0F;
+    static constexpr float PADDLE_LENGTH = 50.0F;
+
     entt::entity id_;
     entt::registry* registry_;
 };

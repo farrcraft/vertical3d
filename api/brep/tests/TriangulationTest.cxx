@@ -23,6 +23,14 @@
 namespace {
 
 /**
+ * How a face should come out: how many triangles, and the area they cover together.
+ **/
+struct Expected {
+    std::size_t triangles;
+    float area;
+};
+
+/**
  * A mesh of one face in the z = 0 plane, facing +z. The points are given counter-clockwise
  * seen from +z, and the face is built clockwise, as every face is.
  **/
@@ -43,14 +51,6 @@ float area(const v3d::brep::BRep& mesh, const std::array<v3d::brep::Index, 3>& t
     const glm::vec3 third = mesh.vertex(triangle[2])->point();
     return glm::cross(second - first, third - first).z * 0.5F;
 }
-
-/**
- * How a face should come out: how many triangles, and the area they cover together.
- **/
-struct Expected {
-    std::size_t triangles;
-    float area;
-};
 
 /**
  * Every triangle winds counter-clockwise seen from outside, and together they cover the face's

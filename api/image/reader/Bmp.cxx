@@ -21,14 +21,16 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::image::reader {
+
+const Bmp::Masks Bmp::RGB555_MASKS{0x7C00U, 0x03E0U, 0x001FU, 0U};
+const Bmp::Masks Bmp::ARGB8888_MASKS{0x00FF0000U, 0x0000FF00U, 0x000000FFU, 0xFF000000U};
+
 /**
  **/
 Bmp::Bmp(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {
 }
 
-namespace {
-
-void logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const format::bmp_file_header& fheader,
+void Bmp::logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const format::bmp_file_header& fheader,
     const format::bmp_info_header& iheader, int num_colors) {
     logger->get()->debug("BMPReader::read - bmp type: {}", fheader.type_);
     logger->get()->debug("BMPReader::read - bmp size: {}", fheader.size_);
@@ -49,11 +51,7 @@ void logHeaders(const boost::shared_ptr<v3d::log::Logger>& logger, const format:
     logger->get()->debug("BMPReader::read - num colors: {}", num_colors);
 }
 
-/**
- * One channel of a packed pixel, picked out by its mask and widened to a byte. A mask of
- * five bits gives 0 to 31, which is spread over 0 to 255 so that full is 255.
- **/
-unsigned char channel(uint32_t pixel, uint32_t mask) {
+unsigned char Bmp::channel(uint32_t pixel, uint32_t mask) {
     if (mask == 0) {
         return 0;
     }
@@ -70,47 +68,12 @@ unsigned char channel(uint32_t pixel, uint32_t mask) {
     return static_cast<unsigned char>(((value * 255U) + (most / 2)) / most);
 }
 
-/**
- * Where each channel sits in a packed 16 or 32 bit pixel.
- **/
-struct Masks final {
-    uint32_t red = 0;
-    uint32_t green = 0;
-    uint32_t blue = 0;
-    uint32_t alpha = 0;
-};
-
-// an uncompressed 16 bit file has five bits a channel
-constexpr Masks RGB555_MASKS{0x7C00U, 0x03E0U, 0x001FU, 0U};
-// and an uncompressed 32 bit file has eight, with alpha in the top byte
-constexpr Masks ARGB8888_MASKS{0x00FF0000U, 0x0000FF00U, 0x000000FFU, 0xFF000000U};
-// each mask after the info header is one word, in the order red, green, blue, alpha
-constexpr std::size_t MASK_SIZE = sizeof(uint32_t);
-
-uint32_t readWord(const unsigned char* at) {
+uint32_t Bmp::readWord(const unsigned char* at) {
     return static_cast<uint32_t>(at[0]) | (static_cast<uint32_t>(at[1]) << 8) |
         (static_cast<uint32_t>(at[2]) << 16) | (static_cast<uint32_t>(at[3]) << 24);
 }
 
-/**
- * Where a bmp's rows are and how they are laid out.
- **/
-struct Layout final {
-    unsigned int bits = 0;
-    uint64_t columns = 0;
-    uint64_t rows = 0;
-    uint64_t pad = 0;       /**< the bytes a row takes on disk, padded to a dword boundary **/
-    bool bottomUp = true;   /**< a positive height stores the last row first, which is the usual way **/
-    unsigned int channels = 3;
-};
-
-const uint32_t bitfields = 3;
-
-/**
- * Whether the reader has a conversion for this file: 8, 16, 24 or 32 bits, uncompressed or, at
- * 16 and 32 bits, packed by masks, and with pixels to read.
- **/
-bool supported(const format::bmp_info_header& header, const boost::shared_ptr<v3d::log::Logger>& logger) {
+bool Bmp::supported(const format::bmp_info_header& header, const boost::shared_ptr<v3d::log::Logger>& logger) {
     const unsigned int bits = header.bits_;
     if (bits != 8 && bits != 16 && bits != 24 && bits != 32) {
         logger->get()->error("BMPReader::read - {} bit bmps are not supported", bits);
@@ -128,12 +91,7 @@ bool supported(const format::bmp_info_header& header, const boost::shared_ptr<v3
     return true;
 }
 
-/**
- * Where each channel of a 16 or 32 bit pixel is: the standard places for an uncompressed file,
- * or the masks the file gives. A 40 byte header is followed by three masks, and a longer one
- * holds them and an alpha mask too.
- **/
-bool readMasks(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header, Masks* masks) {
+bool Bmp::readMasks(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header, Masks* masks) {
     if (header.bits_ == 16) {
         *masks = RGB555_MASKS;
     } else if (header.bits_ == 32) {
@@ -154,11 +112,7 @@ bool readMasks(const unsigned char* encoded, std::size_t length, const format::b
     return true;
 }
 
-/**
- * An 8 bit file's colour table, which follows the info header whatever that header's length.
- * A file says how many entries it uses, and none means all of them.
- **/
-bool readPalette(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header,
+bool Bmp::readPalette(const unsigned char* encoded, std::size_t length, const format::bmp_info_header& header,
     std::vector<format::bmp_rgb_quad>* colors) {
     const std::size_t at = sizeof(format::bmp_file_header) + header.size_;
     const std::size_t used = header.used_ == 0 || header.used_ > 256 ? 256 : header.used_;
@@ -171,12 +125,7 @@ bool readPalette(const unsigned char* encoded, std::size_t length, const format:
     return true;
 }
 
-/**
- * One pixel, as rgb or rgba.
- *
- * @return whether its alpha is anything but zero
- **/
-bool convertPixel(const unsigned char* src, uint64_t column, const Layout& layout, const Masks& masks,
+bool Bmp::convertPixel(const unsigned char* src, uint64_t column, const Layout& layout, const Masks& masks,
     const std::vector<format::bmp_rgb_quad>& colors, unsigned char* out) {
     if (layout.bits == 8) {
         const format::bmp_rgb_quad& entry = colors[src[column]];
@@ -206,11 +155,7 @@ bool convertPixel(const unsigned char* src, uint64_t column, const Layout& layou
     return out[3] != 0;
 }
 
-/**
- * Every row, top down whatever order the file stored them in. A 32 bit file whose alpha is zero
- * everywhere did not use it, as most writers do not, and is made opaque rather than invisible.
- **/
-void convertRows(const unsigned char* pixels, const Layout& layout, const Masks& masks,
+void Bmp::convertRows(const unsigned char* pixels, const Layout& layout, const Masks& masks,
     const std::vector<format::bmp_rgb_quad>& colors, unsigned char* data) {
     bool anyAlpha = false;
     for (uint64_t row = 0; row < layout.rows; ++row) {
@@ -226,8 +171,6 @@ void convertRows(const unsigned char* pixels, const Layout& layout, const Masks&
         }
     }
 }
-
-};  // namespace
 
 /**
  **/

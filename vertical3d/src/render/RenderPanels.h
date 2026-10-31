@@ -59,6 +59,18 @@ class RenderPanels final {
     std::optional<RenderSettings> settings() const;
 
  private:
+    static constexpr const char* VIEW = "render-view";
+    static constexpr const char* SETTINGS = "render-settings";
+    /**
+     * One of a container's components, as its type, or an empty pointer.
+     **/
+    template <typename T>
+    static boost::shared_ptr<T> find(const boost::shared_ptr<v3d::ui::Container>& container, const char* name);
+    /**
+     * A text box's text as a whole number, or nothing.
+     **/
+    static std::optional<unsigned int> number(const boost::shared_ptr<v3d::ui::Container>& container, const char* name);
+
     boost::shared_ptr<v3d::ui::Container> container(const char* name) const;
 
     boost::shared_ptr<v3d::ui::Interface> engine_;

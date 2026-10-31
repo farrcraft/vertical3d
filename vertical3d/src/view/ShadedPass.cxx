@@ -50,35 +50,6 @@ const uint32_t fragmentShader[] =
 #include "shaders/shaded.frag.inc"
 ;  // NOLINT(whitespace/semicolon) - the initialiser it terminates is the include above
 
-/**
- * One vertex as the pipeline reads it.
- **/
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-};
-
-/**
- * What the shaders read from the push constant: the item's placement and its colour.
- **/
-struct Object {
-    glm::mat4 model;
-    glm::vec4 colour;
-};
-
-/**
- * The bias every surface is drawn at, in the depth format's units and in units of the surface's
- * slope. It pushes a surface back just far enough that a line drawn on it wins the depth test.
- **/
-constexpr float BIAS_CONSTANT = 1.0F;
-constexpr float BIAS_SLOPE = 1.0F;
-
-/**
- * Which side a draw keeps, in the order the pipelines are held.
- **/
-constexpr std::size_t FRONT = 0;
-constexpr std::size_t BACK = 1;
-
 VkPolygonMode polygon(ViewPort::Fill fill) {
     switch (fill) {
         case ViewPort::Fill::Points:

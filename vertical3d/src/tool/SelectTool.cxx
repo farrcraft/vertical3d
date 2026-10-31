@@ -29,12 +29,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * Whether the mesh holds the component a hit names.
  **/
-bool holds(const v3d::brep::BRep& mesh, Component kind, v3d::brep::Index index) {
+bool SelectTool::holds(const v3d::brep::BRep& mesh, Component kind, v3d::brep::Index index) {
     switch (kind) {
         case Component::Vertex:
             return index < mesh.vertexCount();
@@ -49,9 +46,8 @@ bool holds(const v3d::brep::BRep& mesh, Component kind, v3d::brep::Index index) 
 }
 
 /**
- * Whether the curves hold the component a hit names.
  **/
-bool holds(const v3d::curve::Curves& curves, Component kind, v3d::brep::Index index) {
+bool SelectTool::holds(const v3d::curve::Curves& curves, Component kind, v3d::brep::Index index) {
     switch (kind) {
         case Component::Vertex:
             return pointAt(curves, index).has_value();
@@ -65,9 +61,8 @@ bool holds(const v3d::curve::Curves& curves, Component kind, v3d::brep::Index in
 }
 
 /**
- * Whether the item holds the component a hit names. Only a mesh and a curve have components.
  **/
-bool holds(const boost::shared_ptr<Item>& item, Component kind, v3d::brep::Index index) {
+bool SelectTool::holds(const boost::shared_ptr<Item>& item, Component kind, v3d::brep::Index index) {
     if (const boost::shared_ptr<Mesh> mesh = as<Mesh>(item)) {
         return holds(*mesh->geometry(), kind, index);
     }
@@ -78,24 +73,20 @@ bool holds(const boost::shared_ptr<Item>& item, Component kind, v3d::brep::Index
 }
 
 /**
- * Whether the component a hit names is selected. A component that is not there is not.
  **/
-bool componentSelected(const Components& components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit) {
+bool SelectTool::componentSelected(const Components& components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit) {
     const std::optional<Component> kind = componentOf(hit.kind);
     return kind && holds(item, *kind, hit.component) && components.selected(item->id(), *kind, hit.component);
 }
 
 /**
- * Select or deselect the component a hit names, if it is there.
  **/
-void markComponent(Components* components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit, bool wanted) {
+void SelectTool::markComponent(Components* components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit, bool wanted) {
     const std::optional<Component> kind = componentOf(hit.kind);
     if (kind && holds(item, *kind, hit.component)) {
         components->select(item->id(), *kind, hit.component, wanted);
     }
 }
-
-};  // namespace
 
 /**
  **/

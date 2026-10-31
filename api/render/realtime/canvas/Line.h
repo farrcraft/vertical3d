@@ -168,6 +168,8 @@ class Line final {
     bool empty() const noexcept;
 
  private:
+    static constexpr float twoPi = 6.283185307179586F;
+
     /**
      * Start a batch, or extend the open one when it is cut the same way.
      *

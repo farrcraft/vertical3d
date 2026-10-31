@@ -29,6 +29,30 @@
 namespace {
 
 /**
+ * The middle of the front view. An untranslated mesh sits there.
+ **/
+constexpr glm::vec2 centre(200.0F, 200.0F);
+
+v3d::editor::Screen frontView();
+
+/**
+ * Two cubes either side of the middle of the front view, so the pivot is the middle.
+ **/
+struct TwoCubes {
+    TwoCubes() :
+        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        view(frontView()) {
+        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
+        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
+    }
+
+    boost::shared_ptr<v3d::editor::Mesh> left;
+    boost::shared_ptr<v3d::editor::Mesh> right;
+    v3d::editor::Screen view;
+};
+
+/**
  * The same square front view the picker's own tests use: a world unit is two hundred
  * pixels and the middle of the view is the middle of a unit primitive. The camera looks
  * along +z, so world x runs right across the view and world y runs up it.
@@ -39,11 +63,6 @@ v3d::editor::Screen frontView() {
     view.resize(glm::vec4(0.0F, 0.0F, 400.0F, 400.0F));
     return v3d::editor::Screen{ .camera = view.camera(), .region = view.region() };
 }
-
-/**
- * The middle of that view. An untranslated mesh sits there.
- **/
-constexpr glm::vec2 centre(200.0F, 200.0F);
 
 /**
  * Whole objects as a manipulator's target.
@@ -251,23 +270,6 @@ BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
     BOOST_CHECK_SMALL(handleAxis.x, 0.001F);
     BOOST_CHECK_CLOSE(handleAxis.y, 1.0F, 0.5F);
 }
-
-/**
- * Two cubes either side of the middle of the front view, so the pivot is the middle.
- **/
-struct TwoCubes {
-    TwoCubes() :
-        left(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        right(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        view(frontView()) {
-        left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
-        right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
-    }
-
-    boost::shared_ptr<v3d::editor::Mesh> left;
-    boost::shared_ptr<v3d::editor::Mesh> right;
-    v3d::editor::Screen view;
-};
 
 BOOST_AUTO_TEST_CASE(manipulator_set_translate_test) {
     const TwoCubes cubes;

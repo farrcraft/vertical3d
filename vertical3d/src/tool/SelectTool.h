@@ -5,7 +5,12 @@
 
 #pragma once
 
+#include <api/brep/BRep.h>
+#include <api/brep/Index.h>
+#include <api/curve/Curves.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/scene/Components.h>
+#include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -120,6 +125,27 @@ class SelectTool final : public Tool {
     std::optional<Band> band() const;
 
  private:
+    /**
+     * Whether the mesh holds the component a hit names.
+     **/
+    static bool holds(const v3d::brep::BRep& mesh, Component kind, v3d::brep::Index index);
+    /**
+     * Whether the curves hold the component a hit names.
+     **/
+    static bool holds(const v3d::curve::Curves& curves, Component kind, v3d::brep::Index index);
+    /**
+     * Whether the item holds the component a hit names. Only a mesh and a curve have components.
+     **/
+    static bool holds(const boost::shared_ptr<Item>& item, Component kind, v3d::brep::Index index);
+    /**
+     * Whether the component a hit names is selected. A component that is not there is not.
+     **/
+    static bool componentSelected(const Components& components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit);
+    /**
+     * Select or deselect the component a hit names, if it is there.
+     **/
+    static void markComponent(Components* components, const boost::shared_ptr<Item>& item, const Picker::Hit& hit, bool wanted);
+
     /**
      * Write a pick into the scene's selection flags.
      **/

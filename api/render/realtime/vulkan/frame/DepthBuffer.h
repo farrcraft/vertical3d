@@ -139,6 +139,17 @@ class DepthBuffer final {
 
  private:
     /**
+     * In preference order. A depth only format is preferred, because nothing in the renderer
+     * uses stencil. The two combined formats are here only for a device that cannot use D32 as
+     * an attachment.
+     **/
+    static constexpr VkFormat candidates[3] = {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT
+    };
+
+    /**
      **/
     void create(uint32_t width, uint32_t height);
 

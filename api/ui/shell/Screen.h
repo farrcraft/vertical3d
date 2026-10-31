@@ -185,6 +185,16 @@ class Screen final {
 
  private:
     /**
+     * The height of a line of text, as a multiple of the text's size.
+     **/
+    static constexpr float LINE_SPACING = 1.4F;
+    /**
+     * The Dress used when an app passes none. It sets only the line height, which covers a line
+     * of text and the gap after it.
+     **/
+    static void lineHeight(paint::Dressing* dressing, float size);
+
+    /**
      * Draw the tooltip of what the cursor rests on, once it has rested long enough.
      **/
     void tip(const Interface& ui);

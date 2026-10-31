@@ -18,6 +18,11 @@ using v3d::render::realtime::vulkan::frame::Swapchain;
 namespace {
 
 /**
+ * Every request.
+ **/
+const Present requests[] = {Present::Uncapped, Present::Vsync, Present::AdaptiveVsync, Present::Immediate};
+
+/**
  * The only mode every implementation has to offer.
  **/
 std::vector<VkPresentModeKHR> fifoOnly() {
@@ -37,11 +42,6 @@ std::vector<VkPresentModeKHR> fifoAndMailbox() {
 std::vector<VkPresentModeKHR> allFour() {
     return {VK_PRESENT_MODE_FIFO_RELAXED_KHR, VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_MAILBOX_KHR};
 }
-
-/**
- * Every request.
- **/
-const Present requests[] = {Present::Uncapped, Present::Vsync, Present::AdaptiveVsync, Present::Immediate};
 
 BOOST_AUTO_TEST_SUITE(swapchain_present_test)
 

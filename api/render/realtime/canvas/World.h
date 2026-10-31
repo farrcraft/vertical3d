@@ -160,6 +160,9 @@ class World final {
     bool empty() const noexcept;
 
  private:
+    // two triangles
+    static constexpr uint32_t QUAD_INDICES = 6;
+
     /**
      * Start a batch, or extend the open one when it draws against the same texture.
      **/

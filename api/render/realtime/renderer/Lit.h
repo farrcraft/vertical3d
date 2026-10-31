@@ -33,6 +33,10 @@ namespace v3d::render::realtime {
 class DeviceContext;
 };  // namespace v3d::render::realtime
 
+namespace v3d::render::realtime::vulkan::pipeline {
+class Builder;
+};  // namespace v3d::render::realtime::vulkan::pipeline
+
 namespace v3d::render::realtime::renderer {
 
 /**
@@ -205,6 +209,43 @@ class Lit final {
     VkDescriptorSetLayout sceneLayout() const noexcept;
 
  private:
+    template <std::size_t N>
+    static std::vector<uint32_t> words(const uint32_t (&code)[N]);
+
+    /**
+     * Sets 0 to 2, which every lit pipeline declares alike so that the sets a pass binds stay bound
+     * across a switch between them.
+     **/
+    static void declare(vulkan::pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
+        VkDescriptorSetLayout scene);
+
+    /**
+     * The attributes a lit vertex stage reads. A pipeline declares exactly these, because the
+     * validation layer warns about an attribute that is declared and not read.
+     **/
+    enum class Reads : uint8_t {
+        Position,  /**< a depth only stage **/
+        Normal,    /**< the position and the normal, which the outline pushes out along **/
+        Surface    /**< the position, the normal and the uv **/
+    };
+
+    /**
+     * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
+     * layout MeshRegistry uploads a skinned model in.
+     **/
+    static void vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads);
+
+    /**
+     * The palette's starting room, in matrices: enough for a handful of characters before the
+     * first grow.
+     **/
+    static constexpr std::size_t initialJoints = 256;
+
+    /**
+     * The object buffer's starting room: a scene of a few hundred objects before the first grow.
+     **/
+    static constexpr std::size_t initialObjects = 256;
+
     /**
      * A frame's scene: the uniform buffer, the palettes, the objects, and the set pointing at
      * all three.

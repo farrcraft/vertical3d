@@ -111,6 +111,9 @@ A test file puts everything after its includes in one anonymous namespace, its s
 as well as its fixtures and helpers. `BOOST_AUTO_TEST_CASE` declares a struct named after the
 case, so two files in one executable with the same suite and case names would otherwise define
 the same struct twice. clang-tidy's `misc-use-internal-linkage` reports a case outside one.
+Fixtures and helpers come before the first case, and none of them holds mutable state at
+namespace scope. [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) has the
+rules a test file shares with the rest of the tree.
 
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`

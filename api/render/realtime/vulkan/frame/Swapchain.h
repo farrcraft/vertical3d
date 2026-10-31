@@ -149,6 +149,11 @@ class Swapchain final {
 
  private:
     /**
+     * @return how a present mode reads in the log
+     **/
+    static const char* describe(VkPresentModeKHR mode) noexcept;
+
+    /**
      * What the surface supports on the device in use.
      **/
     struct Support {

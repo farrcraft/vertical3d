@@ -7,15 +7,6 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * What a percentage is multiplied by to give a fraction.
- **/
-constexpr float PERCENT_TO_FRACTION = 0.01F;
-
-};  // namespace
-
 Length::Length() noexcept :
     value_(0.0F),
     unit_(Unit::Auto) {

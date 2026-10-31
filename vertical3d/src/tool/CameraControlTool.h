@@ -115,6 +115,24 @@ class CameraControlTool final : public Tool {
 
  private:
     /**
+     * World units a perspective camera moves for each pixel the mouse is dragged.
+     **/
+    static constexpr float perspectiveFactor = 0.125F;
+
+    /**
+     * How far a perspective zoom changes the angle of view, in degrees for each pixel of the drag.
+     **/
+    static constexpr float fovFactor = 0.25F;
+
+    /**
+     * How far a pitch turns the camera, in radians for each pixel of the drag.
+     **/
+    static constexpr float pitchFactor = 0.005F;
+
+    /** The move a command names, or none. **/
+    static CameraMode named(const std::string& name);
+
+    /**
      * Where the cursor is within the view. The arcball and the deltas are measured from
      * the view's origin, which is not the window's.
      **/

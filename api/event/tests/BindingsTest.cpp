@@ -21,7 +21,7 @@
 
 namespace {
 
-const char* DOCUMENT = R"({"mappings": [
+const char* const DOCUMENT = R"({"mappings": [
     {"source": {"name": "w", "context": "keyboard", "state": "pressed"},
      "destination": {"name": "up", "context": "game"}},
     {"source": {"name": "arrow_up", "context": "keyboard"},

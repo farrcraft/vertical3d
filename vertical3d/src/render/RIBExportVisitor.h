@@ -112,6 +112,15 @@ class RIBExportVisitor final : public SceneVisitor {
     void leave(const boost::shared_ptr<Item>& item) override;
 
  private:
+    /** The version of RIB the export is written in. **/
+    static constexpr float RIB_VERSION = 3.03F;
+    /**
+     * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
+     * approximated by. Four keep a circle within 0.05% of its radius.
+     **/
+    static constexpr unsigned int APPROXIMATION_PIECES = 4;
+    static std::vector<float> floats(const glm::vec3& value);
+
     /**
      * The block of an item being visited: the name and local matrix that begin it, and
      * whether it has been sent.

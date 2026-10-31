@@ -102,6 +102,20 @@ struct Fixture final {
     boost::shared_ptr<World> world;
 };
 
+/**
+ * A loader that throws, where every loader is meant to log and return nothing.
+ **/
+class Throwing final : public v3d::asset::Loader {
+ public:
+    explicit Throwing(const boost::shared_ptr<v3d::log::Logger>& logger) :
+        Loader(typeid(v3d::asset::kind::Json), logger) {
+    }
+
+    boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
+        throw std::runtime_error("the disk caught fire");
+    }
+};
+
 boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
     boost::json::value parsed = boost::json::parse(text);
     return boost::make_shared<v3d::asset::kind::Json>("world", parsed.as_object());
@@ -324,20 +338,6 @@ BOOST_AUTO_TEST_CASE(a_world_destroyed_before_its_loads_arrive) {
     fixture.world.reset();
     BOOST_CHECK(fixture.drain());
 }
-
-/**
- * A loader that throws, where every loader is meant to log and return nothing.
- **/
-class Throwing final : public v3d::asset::Loader {
- public:
-    explicit Throwing(const boost::shared_ptr<v3d::log::Logger>& logger) :
-        Loader(typeid(v3d::asset::kind::Json), logger) {
-    }
-
-    boost::shared_ptr<v3d::asset::Asset> load(std::string_view /* name */) override {
-        throw std::runtime_error("the disk caught fire");
-    }
-};
 
 /**
  * A region whose load throws on the worker is marked failed, and the exception is logged with

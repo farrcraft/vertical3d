@@ -10,6 +10,8 @@
 #include "TileCoord.h"
 #include "TileGrid.h"
 
+#include <api/grid/internal/Step.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -34,21 +36,6 @@ int signOf(int value) {
 bool precedes(TileCoord first, TileCoord second) {
     return first.y != second.y ? first.y < second.y : first.x < second.x;
 }
-
-/**
- * One tile the traced segment moves onto.
- **/
-struct Step {
-    TileCoord tile;
-
-    /**
-     * Set when the segment passed exactly through the point four tiles share, so it moved
-     * diagonally and touched neither tile it passed between. Those two tiles block sight
-     * only when both of them block.
-     **/
-    bool diagonal{false};
-    std::pair<TileCoord, TileCoord> corner;
-};
 
 /**
  * Visits every tile that the segment between two tile centres passes through, excluding from.
@@ -78,7 +65,7 @@ void trace(TileCoord from, TileCoord to, OnStep onStep) {
     while (xSteps != adx || ySteps != ady) {
         const std::int64_t boundary = (ady * ((2 * xSteps) + 1)) - (adx * ((2 * ySteps) + 1));
 
-        Step step;
+        internal::Step step;
         if (boundary == 0) {
             step.diagonal = true;
             step.corner = { at(xSteps + 1, ySteps), at(xSteps, ySteps + 1) };
@@ -120,7 +107,7 @@ bool hasLineOfSight(const GridSet& grids, TileCoord from, TileCoord to, const Si
     };
 
     bool clear = true;
-    trace(from, to, [&](const Step& step) {
+    trace(from, to, [&](const internal::Step& step) {
         // the two tiles a diagonal step passes between block sight only if both block. The
         // tile a step lands on is tested like any other, except the far endpoint, which is not
         // tested
@@ -147,7 +134,7 @@ std::vector<TileCoord> sightLine(const TileGrid& grid, TileCoord from, TileCoord
     }
 
     std::vector<TileCoord> line{ from };
-    trace(from, to, [&line](const Step& step) {
+    trace(from, to, [&line](const internal::Step& step) {
         line.push_back(step.tile);
         return true;
     });

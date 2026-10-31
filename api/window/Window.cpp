@@ -13,29 +13,6 @@
 
 namespace v3d::window {
 
-namespace {
-
-// the size a window reports before it is created
-constexpr int DEFAULT_WIDTH = 300;
-constexpr int DEFAULT_HEIGHT = 200;
-
-/**
- * @return the platform's cursor for a shape
- **/
-SDL_SystemCursor systemCursor(Window::Pointer shape) noexcept {
-    switch (shape) {
-    case Window::Pointer::Columns:
-        return SDL_SYSTEM_CURSOR_EW_RESIZE;
-    case Window::Pointer::Rows:
-        return SDL_SYSTEM_CURSOR_NS_RESIZE;
-    case Window::Pointer::Arrow:
-        break;
-    }
-    return SDL_SYSTEM_CURSOR_DEFAULT;
-}
-
-};  // namespace
-
 /**
  **/
 Window::Window(const boost::shared_ptr<v3d::log::Logger>& logger) noexcept :
@@ -245,6 +222,18 @@ void Window::pointer(Pointer shape) {
  **/
 Window::Pointer Window::pointer() const noexcept {
     return shape_;
+}
+
+SDL_SystemCursor Window::systemCursor(Window::Pointer shape) noexcept {
+    switch (shape) {
+    case Window::Pointer::Columns:
+        return SDL_SYSTEM_CURSOR_EW_RESIZE;
+    case Window::Pointer::Rows:
+        return SDL_SYSTEM_CURSOR_NS_RESIZE;
+    case Window::Pointer::Arrow:
+        break;
+    }
+    return SDL_SYSTEM_CURSOR_DEFAULT;
 }
 
 };  // namespace v3d::window

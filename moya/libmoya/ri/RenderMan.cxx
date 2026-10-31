@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <deque>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,7 +37,7 @@ namespace {
 // that reaches it, so an exception from its constructor reaches the caller. An exception from
 // a static initialiser reaches no handler at all.
 v3d::moya::ri::Renderer& renderer() {
-    static v3d::moya::ri::Renderer instance;
+    static v3d::moya::ri::Renderer instance;  // process-wide: the RenderMan C interface drives one implicit renderer
     return instance;
 }
 
@@ -98,17 +97,40 @@ v3d::render::offline::rib::ParameterList parameters(RtInt n, RtToken tokens[], R
  * A light handle a C caller can hold on to.
  *
  * RtLightHandle is an untyped pointer, so the characters it points at must outlive the call
- * that made it. A caller may pass one back to RiIlluminate at any later point. The handles
- * are kept in a deque, whose elements do not move when another is added.
+ * that made it. A caller may pass one back to RiIlluminate at any later point. The renderer
+ * keeps the handles for as long as it runs.
  **/
 RtLightHandle keep(const std::string & value) {
-    static std::deque<std::string> handles;
-    handles.push_back(value);
-    return const_cast<char*>(handles.back().c_str());
+    return const_cast<char*>(renderer().keep(value).c_str());
 }
 
-/** How many lights the C interface has made. Each light's handle is the count before it. **/
-unsigned int made = 0;
+/** A light, as an ordinary light or as an area light. **/
+RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], bool area) {
+    /*
+        A C caller has no handle to give, so the interface returns one. The handler keys
+        lights on a string, because RIB 3.03 writes a handle as a number and later versions
+        write a string. This handle is the count of lights made so far, the same sequence a
+        3.03 file writes. A light whose shader cannot be made still has a handle, which turns
+        nothing on or off.
+    */
+    const std::string handle = std::to_string(renderer().nextLight());
+    const v3d::render::offline::rib::LightSource request = {.shader = text(name), .handle = handle};
+    if (area) {
+        handler().areaLightSource(request, parameters(n, tokens, parms));
+    } else {
+        handler().lightSource(request, parameters(n, tokens, parms));
+    }
+    return keep(handle);
+}
+
+/*
+    An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
+    glm stores column major under a column vector one, so reading them in order is the
+    change of convention and a transpose would undo it.
+*/
+glm::mat4x4 matrix(RtMatrix transform) {
+    return glm::make_mat4(&transform[0][0]);
+}
 
 };  // namespace
 
@@ -498,29 +520,6 @@ RtLightHandle RiLightSource(RtToken name, ...) {
     return RiLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-namespace {
-
-/** A light, as an ordinary light or as an area light. **/
-RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], bool area) {
-    /*
-        A C caller has no handle to give, so the interface returns one. The handler keys
-        lights on a string, because RIB 3.03 writes a handle as a number and later versions
-        write a string. This handle is the count of lights made so far, the same sequence a
-        3.03 file writes. A light whose shader cannot be made still has a handle, which turns
-        nothing on or off.
-    */
-    const std::string handle = std::to_string(made++);
-    const v3d::render::offline::rib::LightSource request = {.shader = text(name), .handle = handle};
-    if (area) {
-        handler().areaLightSource(request, parameters(n, tokens, parms));
-    } else {
-        handler().lightSource(request, parameters(n, tokens, parms));
-    }
-    return keep(handle);
-}
-
-};  // namespace
-
 RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
     return light(name, n, tokens, parms, false);
 }
@@ -610,19 +609,6 @@ RtVoid RiSides(RtInt sides) {
 RtVoid RiIdentity(void) {
     handler().identity();
 }
-
-namespace {
-
-/*
-    An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
-    glm stores column major under a column vector one, so reading them in order is the
-    change of convention and a transpose would undo it.
-*/
-glm::mat4x4 matrix(RtMatrix transform) {
-    return glm::make_mat4(&transform[0][0]);
-}
-
-};  // namespace
 
 RtVoid RiTransform(RtMatrix transform) {
     handler().transform(matrix(transform));

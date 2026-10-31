@@ -12,13 +12,7 @@
 
 namespace v3d::animation {
 
-namespace {
-
-/**
- * @return the summed length of the frames
- * @throw std::invalid_argument for no frames, or a frame whose duration is not positive
- **/
-float total(const std::vector<SpriteClip::Frame>& frames) {
+float SpriteClip::total(const std::vector<Frame>& frames) {
     if (frames.empty()) {
         throw std::invalid_argument("a sprite clip needs at least one frame");
     }
@@ -31,8 +25,6 @@ float total(const std::vector<SpriteClip::Frame>& frames) {
     }
     return sum;
 }
-
-};  // namespace
 
 SpriteClip::SpriteClip(const std::vector<Frame>& frames, bool loops) :
     frames_(frames),

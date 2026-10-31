@@ -159,6 +159,27 @@ class Device final {
 
  private:
     /**
+     * The device extensions the renderer cannot do without. Both the check against a candidate
+     * device and the list the logical device is created with come from here, so a device is
+     * created with exactly the extensions it was selected for.
+     *
+     * @param presenting whether the device presents, which is all the swapchain extension is for.
+     *        A headless device needs nothing beyond 1.3 core
+     **/
+    static std::vector<const char*> deviceExtensions(bool presenting);
+
+    /**
+     * The extension a portability driver offers, and a device that offers it must be created with.
+     * Its name is spelled here because the header that names it is vulkan's beta one.
+     **/
+    static constexpr const char* portabilitySubset = "VK_KHR_portability_subset";
+
+    /**
+     * The vulkan version the renderer is written against.
+     **/
+    static constexpr uint32_t requiredApiVersion = VK_API_VERSION_1_3;
+
+    /**
      * Pick the first physical device that can draw, and present when there is a surface,
      * preferring a discrete gpu.
      * @throw std::runtime_error if none of them can

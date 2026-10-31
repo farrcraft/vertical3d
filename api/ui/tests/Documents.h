@@ -33,31 +33,6 @@ namespace v3d::ui::documents {
  */
 
 /**
- * A ui::Interface over a document written inline, which is all a config file amounts to by
- * the time it reaches the loader.
- **/
-inline boost::shared_ptr<v3d::ui::Interface> load(const std::string& document, bool* loaded) {
-    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
-    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
-        boost::make_shared<v3d::event::Router>(dispatcher),
-        dispatcher,
-        boost::make_shared<v3d::log::Logger>());
-
-    *loaded = ui->load(boost::json::parse(document).as_object());
-    return ui;
-}
-
-/**
- * A renderer that records nothing but the geometry, since none of these cases is about
- * where a label went.
- **/
-inline v3d::ui::paint::ComponentRenderer renderer() {
-    return v3d::ui::paint::ComponentRenderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
-}
-
-/**
  * What the renderer asked to be written, for the cases that are about a label.
  **/
 struct Written final {
@@ -129,5 +104,30 @@ inline const char* const themedDocument = R"({
         "theme": "light",
         "containers": [ { "name": "hud", "visible": true, "components": [] } ]
 })";
+
+/**
+ * A ui::Interface over a document written inline, which is all a config file amounts to by
+ * the time it reaches the loader.
+ **/
+inline boost::shared_ptr<v3d::ui::Interface> load(const std::string& document, bool* loaded) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher),
+        dispatcher,
+        boost::make_shared<v3d::log::Logger>());
+
+    *loaded = ui->load(boost::json::parse(document).as_object());
+    return ui;
+}
+
+/**
+ * A renderer that records nothing but the geometry, since none of these cases is about
+ * where a label went.
+ **/
+inline v3d::ui::paint::ComponentRenderer renderer() {
+    return v3d::ui::paint::ComponentRenderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+}
 
 };  // namespace v3d::ui::documents

@@ -17,6 +17,10 @@
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
 
+namespace v3d::font::internal {
+class Freetype;
+};  // namespace v3d::font::internal
+
 namespace v3d::font {
 
 class TextureFont {
@@ -172,8 +176,7 @@ class TextureFont {
     float underlinePosition_;
     float underlineThickness_;
 
-    class Freetype;
-    boost::shared_ptr<Freetype> freetype_;
+    boost::shared_ptr<internal::Freetype> freetype_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
 };  // namespace v3d::font

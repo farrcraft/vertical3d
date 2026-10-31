@@ -18,30 +18,7 @@
 #include <glm/trigonometric.hpp>
 #include <glm/vec2.hpp>
 
-namespace {
-
-/** Degrees below or above the horizon the view stops at: straight down or straight up. **/
-constexpr float PITCH_LIMIT = 90.0F;
-
-constexpr glm::vec3 WORLD_UP(0.0F, 1.0F, 0.0F);
-
-/** One axis's velocity, which way it is driven, how fast it changes, its limit, and the time. **/
-struct Axis {
-    float current = 0.0F;
-    float direction = 0.0F;
-    float acceleration = 0.0F;
-    float limit = 0.0F;
-    float elapsed = 0.0F;
-};
-
-/**
- * One axis of the velocity, after one update.
- *
- * A driven axis accelerates toward its limit and is clamped there. An axis that is not
- * driven decelerates toward zero and stops there, without crossing it. The deceleration
- * therefore takes the sign that moves the velocity toward zero.
- **/
-float axisVelocity(const Axis& axis) {
+float CameraController::axisVelocity(const Axis& axis) {
     float current = axis.current;
     if (axis.direction != 0.0F) {
         current += axis.direction * axis.acceleration * axis.elapsed;
@@ -54,8 +31,6 @@ float axisVelocity(const Axis& axis) {
     current += axis.acceleration * axis.elapsed;
     return current > 0.0F ? 0.0F : current;
 }
-
-};  // namespace
 
 CameraController::CameraController(v3d::type::camera::Camera* camera, const Motion& motion) :
     camera_(camera),

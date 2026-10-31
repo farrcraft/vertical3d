@@ -16,18 +16,11 @@
 
 namespace v3d::render::realtime {
 
-namespace {
-
 /**
- * A handle's slot as a key field. Slots that do not fit in sixteen bits, and an unset handle,
- * share the last value. Items with those slots may cost extra binds, but the order of layers
- * is unaffected.
  **/
-uint16_t slot(uint32_t id) noexcept {
+uint16_t Pass::slot(uint32_t id) noexcept {
     return static_cast<uint16_t>(std::min<uint32_t>(id, std::numeric_limits<uint16_t>::max()));
 }
-
-};  // namespace
 
 /**
  **/

@@ -23,15 +23,7 @@
 
 namespace v3d::render::offline {
 
-namespace {
-
-constexpr float PI = 3.14159265358979F;
-
-/**
- * FNV-1a over the handle's bytes. It is written here rather than taken from std::hash, whose
- * values differ between standard libraries, so a light's samples are the same everywhere.
- **/
-std::uint64_t fnv(const std::string & text) {
+std::uint64_t Area::fnv(const std::string & text) {
     constexpr std::uint64_t offset = 14695981039346656037ULL;
     constexpr std::uint64_t prime = 1099511628211ULL;
     std::uint64_t hash = offset;
@@ -41,8 +33,6 @@ std::uint64_t fnv(const std::string & text) {
     }
     return hash;
 }
-
-};  // namespace
 
 Area::Area(const std::string & handle) : key_(fnv(handle)) {
 }

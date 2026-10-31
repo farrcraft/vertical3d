@@ -86,6 +86,9 @@ class Film final {
     void resolve(FrameBuffer * frame, unsigned int colour, unsigned int coverage, int depth = -1) const;
 
  private:
+    /** A pixel whose total filter weight is smaller than this has no value. **/
+    static constexpr double NEGLIGIBLE_WEIGHT = 1.0e-12;
+
     class Pixel {
      public:
         glm::dvec3 colour { 0.0, 0.0, 0.0 };

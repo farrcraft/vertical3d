@@ -35,26 +35,14 @@
 namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+
 typedef v3d::render::offline::sl::ShaderType ShaderType;
+
 typedef v3d::render::offline::trace::Scene Scene;
+
 typedef v3d::render::offline::trace::Tracer Tracer;
-
-/** A uniform parameter of a given type, for a shader's parameter list. **/
-void bind(ParameterList* parameters, const std::string & name, Declaration::Type type, const std::vector<float> & values) {
-    parameters->add(name, Declaration(Declaration::Storage::UNIFORM, type, 1), values, std::vector<std::string>());
-}
-
-/** A standard shader, or one of the suite's fixtures, with the parameters given bound. **/
-v3d::render::offline::sl::Placed shader(const std::string & name, ShaderType type,
-    const ParameterList & parameters = ParameterList()) {
-    static v3d::render::offline::sl::ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
-    shaders.searchpath("data:&");
-    v3d::render::offline::sl::Placed placed;
-    placed.shader = shaders.instance(name, type, parameters);
-    BOOST_REQUIRE_MESSAGE(placed.shader, "no shader named " + name);
-    return placed;
-}
 
 /**
  * What a run of a shader holds uniform that a primitive sets: its object space, the shader's
@@ -65,6 +53,22 @@ struct Held {
     glm::mat4x4 placement = glm::mat4x4(1.0F);
     v3d::render::offline::trace::Lights lights;
 };
+
+/** A uniform parameter of a given type, for a shader's parameter list. **/
+void bind(ParameterList* parameters, const std::string & name, Declaration::Type type, const std::vector<float> & values) {
+    parameters->add(name, Declaration(Declaration::Storage::UNIFORM, type, 1), values, std::vector<std::string>());
+}
+
+/** A standard shader, or one of the suite's fixtures, with the parameters given bound. **/
+v3d::render::offline::sl::Placed shader(const std::string & name, ShaderType type,
+    const ParameterList & parameters = ParameterList()) {
+    v3d::render::offline::sl::ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    shaders.searchpath("data:&");
+    v3d::render::offline::sl::Placed placed;
+    placed.shader = shaders.instance(name, type, parameters);
+    BOOST_REQUIRE_MESSAGE(placed.shader, "no shader named " + name);
+    return placed;
+}
 
 /** A camera whose raster space is world space scaled up, so a pixel is 1 / scale wide. **/
 void camera(Scene* scene, float scale) {

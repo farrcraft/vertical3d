@@ -73,6 +73,18 @@ class ConstructionPlane final {
 
  private:
     /**
+     * How many lines apart the emphasised ones are, and how many lines the grid is across.
+     **/
+    static constexpr unsigned int defaultIntervals = 10;
+    static constexpr unsigned int defaultLines = 60;
+    /**
+     * The colours of an ordinary line, an emphasised line and the lines through the origin.
+     **/
+    static constexpr glm::vec4 minorColour{ 0.30F, 0.30F, 0.30F, 1.0F };
+    static constexpr glm::vec4 majorColour{ 0.42F, 0.42F, 0.52F, 1.0F };
+    static constexpr glm::vec4 originColour{ 0.65F, 0.65F, 0.70F, 1.0F };
+
+    /**
      * The two axes the grid is spanned by, which are the camera's own right and up under
      * an orthographic view and the ground plane under a perspective one.
      **/

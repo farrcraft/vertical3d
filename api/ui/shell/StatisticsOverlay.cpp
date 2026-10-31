@@ -21,39 +21,6 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace {
-
-/**
- * The gap from the corner of the canvas to the box, and from the box to the text inside it.
- **/
-const float margin = 8.0F;
-const float padding = 6.0F;
-
-/**
- * A line's height as a multiple of the size the readout is drawn at.
- **/
-const float lineSpacing = 1.3F;
-
-/**
- * The background is translucent, so that the scene stays visible under the numbers.
- **/
-constexpr glm::vec4 background(0.0F, 0.0F, 0.0F, 0.6F);
-constexpr glm::vec4 foreground(0.9F, 0.9F, 0.9F, 1.0F);
-
-const double nanosecondsPerMillisecond = 1000000.0;
-const double nanosecondsPerSecond = 1000000000.0;
-
-/**
- * A duration in nanoseconds, as milliseconds to one decimal place.
- **/
-std::string milliseconds(std::uint64_t nanoseconds) {
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(1) << (static_cast<double>(nanoseconds) / nanosecondsPerMillisecond) << " ms";
-    return out.str();
-}
-
-};  // namespace
-
 namespace v3d::ui::shell {
 
 /**
@@ -176,6 +143,12 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         text_->draw(canvas, line, glm::vec2(margin + padding, pen), foreground, size_);
         pen += lineHeight;
     }
+}
+
+std::string StatisticsOverlay::milliseconds(std::uint64_t nanoseconds) {
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << (static_cast<double>(nanoseconds) / nanosecondsPerMillisecond) << " ms";
+    return out.str();
 }
 
 };  // namespace v3d::ui::shell

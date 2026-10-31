@@ -5,6 +5,8 @@
 
 #include "Barriers.h"
 
+#include <api/render/realtime/vulkan/memory/internal/Transition.h>
+
 #include <cstdint>
 #include <initializer_list>
 
@@ -12,16 +14,12 @@ namespace v3d::render::realtime::vulkan::memory {
 
 namespace {
 
-/** The layout an image leaves, and the layout it enters. **/
-struct Transition {
-    VkImageLayout from = VK_IMAGE_LAYOUT_UNDEFINED;
-    VkImageLayout to = VK_IMAGE_LAYOUT_UNDEFINED;
-};
+const VkPipelineStageFlags2 depthTests = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 
 /**
  * A barrier from one layout to another with no scopes yet, for the caller to fill in.
  **/
-VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, const Transition& transition) {
+VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, const internal::Transition& transition) {
     VkImageMemoryBarrier2 barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
     barrier.oldLayout = transition.from;
@@ -35,8 +33,6 @@ VkImageMemoryBarrier2 barrier(VkImage image, VkImageAspectFlags aspect, const Tr
     barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
     return barrier;
 }
-
-const VkPipelineStageFlags2 depthTests = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 
 };  // namespace
 

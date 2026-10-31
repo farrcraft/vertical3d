@@ -21,41 +21,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * How many segments a ring is drawn with.
  **/
-constexpr unsigned int ringSides = 48;
-
-/**
- * The centre handle's box, as a fraction of a ring's radius.
- **/
-constexpr float centreSize = 0.06F;
-
-/**
- * Radians a pixel, for the tumble the centre handle drives. A drag the width of a
- * handle turns the object about a third of a turn.
- **/
-constexpr float tumbleRate = 0.0075F;
-
-/**
- * How face on a ring has to be before a click can be meant for it, as the cosine of
- * the angle between its axis and the direction of view.
- *
- * A ring seen edge on projects to a line through the middle of the manipulator. The
- * line crosses every other handle. Its ends land exactly on the rim of the ring
- * facing the camera, so a click meant for that rim would be taken by a ring whose
- * shape the user cannot even see. An axis view is the case that matters. Two of the
- * three rings are exactly edge on there, and only the third can be turned.
- **/
-constexpr float faceOn = 0.15F;
-
-/**
- * An angle brought back into the half turn either side of zero, so a sweep across
- * the line where atan2 wraps is a small rotation rather than a whole turn.
- **/
-float wrap(float angle) {
+float RotateManipulator::wrap(float angle) {
     const float turn = 2.0F * glm::pi<float>();
     while (angle > glm::pi<float>()) {
         angle -= turn;
@@ -65,8 +33,6 @@ float wrap(float angle) {
     }
     return angle;
 }
-
-};  // namespace
 
 /**
  **/

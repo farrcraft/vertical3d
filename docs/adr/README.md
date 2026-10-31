@@ -185,6 +185,7 @@ content went. Numbers are never reused.
 | 0050 | *Merged into 0054* | removed |
 | [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
 | [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | accepted |
+| [0137](0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local | accepted |
 
 ## Process
 

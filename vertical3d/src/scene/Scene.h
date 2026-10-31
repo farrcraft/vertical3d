@@ -267,6 +267,17 @@ class Scene final {
 
  private:
     /**
+     * The items beneath each parent, named by its document id, in the scene's order. The items
+     * with no parent are under 0.
+     **/
+    using Tree = std::unordered_map<std::int64_t, Items>;
+
+    /**
+     * Visit one item through the visit() for its kind, then everything beneath it.
+     **/
+    static void walk(SceneVisitor* visitor, const boost::shared_ptr<Item>& item, const Evaluation& evaluation, const Tree& tree);
+
+    /**
      * The item of a document id, or an empty pointer.
      **/
     boost::shared_ptr<Item> document(std::int64_t id) const;

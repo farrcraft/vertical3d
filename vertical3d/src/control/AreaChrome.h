@@ -7,6 +7,7 @@
 
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
+#include <api/ui/component/menu/Bar.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -15,6 +16,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -23,6 +25,7 @@
 #include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::editor {
 
@@ -156,6 +159,101 @@ class AreaChrome final {
     static std::vector<std::pair<std::string, bool>> marks(SelectMask mask);
 
  private:
+    /**
+     * The four ways an area can be divided or met: as each command names it, and as a menu reads it
+     * for a split and for a join or a swap.
+     **/
+    struct Way final {
+        const char* command;
+        const char* split;
+        const char* across;
+    };
+
+    /** A choice on a view's menu: the end of its command, and what the menu names it. **/
+    struct Choice final {
+        const char* command;
+        const char* label;
+    };
+
+    /** The masks a mask menu offers, in its order, and where a separator goes before one. **/
+    struct Masked final {
+        SelectMask mask;
+        bool rule;
+    };
+
+    /** A submenu of one of an area's commands, in each of the four ways. **/
+    struct Ways final {
+        const char* label;
+        const char* command;
+        bool across;   /**< whether the ways read as neighbours rather than as edges **/
+    };
+
+    static constexpr Way WAYS[] = {
+        { .command = "left", .split = "Left", .across = "Left" },
+        { .command = "right", .split = "Right", .across = "Right" },
+        { .command = "top", .split = "Top", .across = "Above" },
+        { .command = "bottom", .split = "Bottom", .across = "Below" },
+    };
+
+    static constexpr Choice FILLS[] = { { "points", "Points" }, { "lines", "Lines" }, { "fill", "Fill" } };
+    static constexpr ViewPort::Fill FILLED[] = { ViewPort::Fill::Points, ViewPort::Fill::Lines, ViewPort::Fill::Fill };
+
+    static constexpr Choice CULLS[] = { { "none", "None" }, { "front", "Front" }, { "back", "Back" }, { "both", "Both" } };
+    static constexpr ViewPort::Cull CULLED[] = { ViewPort::Cull::None, ViewPort::Cull::Front, ViewPort::Cull::Back, ViewPort::Cull::Both };
+
+    static constexpr Masked MASKS[] = {
+        { .mask = SelectMask::Object, .rule = false }, { .mask = SelectMask::Mesh, .rule = false },
+        { .mask = SelectMask::Curve, .rule = false }, { .mask = SelectMask::Camera, .rule = false },
+        { .mask = SelectMask::Light, .rule = false }, { .mask = SelectMask::Vertex, .rule = true },
+        { .mask = SelectMask::Edge, .rule = false }, { .mask = SelectMask::Face, .rule = false },
+        { .mask = SelectMask::Handle, .rule = false },
+    };
+
+    /**
+     * @return a menu item that sends an area's command
+     **/
+    static boost::json::object item(const std::string& label, const std::string& command, std::size_t area);
+
+    /**
+     * @return a check or radio item that sends a view's command for an area
+     **/
+    static boost::json::object mark(const std::string& label, const char* type, const std::string& command, std::size_t area);
+
+    /**
+     * @return a submenu of radio items, one for each choice, sending a view's command for an area
+     **/
+    static boost::json::object choices(const char* label, const std::string& prefix, std::span<const Choice> each, std::size_t area);
+
+    /**
+     * @return a kind with a capital, as a menu names it
+     **/
+    static std::string capital(const std::string& kind);
+
+    /**
+     * @return a viewport's mask menu, named for the mask in force
+     **/
+    static boost::json::object maskMenu(SelectMask mask, std::size_t area);
+
+    /**
+     * @return a viewport's camera menu and its shading menu, named for what the view shows
+     **/
+    static boost::json::array viewMenus(const ViewPort& view, std::size_t area);
+
+    /**
+     * @return the submenu, its items sending the command for one area
+     **/
+    static boost::json::object ways(const Ways& spec, std::size_t area);
+
+    /**
+     * Check or clear the items of a menu bar that send each command, as a list of marks says.
+     **/
+    static void check(v3d::ui::component::menu::Bar* bar, const std::vector<std::pair<std::string, bool>>& marks);
+
+    /**
+     * Set a component's box in window pixels.
+     **/
+    static void box(v3d::ui::Component* component, const glm::vec4& region);
+
     /**
      * @return what decides whether the containers have to be built again: each area's id, the
      *         kind of editor it shows, its editors' ids and labels, and the names of its view's

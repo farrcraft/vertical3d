@@ -15,13 +15,6 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
-namespace {
-
-// the timestamp period is in nanoseconds, and a timing is reported in milliseconds
-constexpr double NANOSECONDS_PER_MILLISECOND = 1.0e6;
-
-};  // namespace
-
 /**
  **/
 Timings::Timings(const boost::shared_ptr<device::Device>& device, uint32_t framesInFlight) :

@@ -30,6 +30,15 @@ class Texture final {
     unsigned int height() const;
 
  private:
+    /** A texel index along one axis, and how many texels the axis has. **/
+    struct Axis {
+        int index = 0;
+        unsigned int size = 1;
+    };
+
+    /** A texel index wrapped into [0, size), negative ones included. **/
+    static int wrap(const Axis & axis);
+
     /** The texel at a column and row, either of which may be outside the image. **/
     const glm::vec3 & texel(int column, int row) const;
 

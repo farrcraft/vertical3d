@@ -112,6 +112,11 @@ class Item {
     void changed() noexcept;
 
  private:
+    /**
+     * An id no earlier item had, larger than every earlier one.
+     **/
+    static unsigned int nextId() noexcept;
+
     unsigned int id_;
     v3d::type::Transform placement_;
     std::string name_;

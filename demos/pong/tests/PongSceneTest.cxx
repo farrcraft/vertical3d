@@ -60,14 +60,6 @@ struct Sounds final {
 constexpr float STEP = 1.0F / 60.0F;
 
 /**
- * Speeds are per second and a sixtieth is not exactly representable, so a position is
- * asserted to within a hundredth of a court unit rather than exactly.
- **/
-bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
-    return std::abs(lhs.x - rhs.x) < 0.01F && std::abs(lhs.y - rhs.y) < 0.01F;
-}
-
-/**
  * A scene reset and listening. Everything below measures against the 800x600 court, the
  * units the collision tests are written in.
  **/
@@ -84,6 +76,14 @@ struct Fixture final {
     Sounds sounds_;
     PongScene scene_;
 };
+
+/**
+ * Speeds are per second and a sixtieth is not exactly representable, so a position is
+ * asserted to within a hundredth of a court unit rather than exactly.
+ **/
+bool near(const glm::vec2& lhs, const glm::vec2& rhs) {
+    return std::abs(lhs.x - rhs.x) < 0.01F && std::abs(lhs.y - rhs.y) < 0.01F;
+}
 
 /**
  * reset() centres both paddles and the ball and serves to the left, the state a round

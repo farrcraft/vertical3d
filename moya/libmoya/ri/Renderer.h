@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -44,8 +45,29 @@ class Renderer {
          * needs RiBegin first.
          **/
         RIBHandler & active();
+        /**
+         * Keep a light handle's characters for as long as the C interface runs, so that a
+         * pointer to them stays good after the call that made the light.
+         *
+         * @return the kept copy, which does not move when another handle is kept
+         **/
+        const std::string & keep(const std::string & handle);
+        /**
+         * The number for the next light's handle: how many lights the C interface has made
+         * before it.
+         **/
+        unsigned int nextLight();
 
  private:
         std::vector<boost::shared_ptr<RIBHandler>> handlers_;
+        /**
+         * Every light handle kept so far, in a deque, whose elements do not move when another is
+         * added.
+         **/
+        std::deque<std::string> handles_;
+        /**
+         * How many lights the C interface has made. Each light's handle is the count before it.
+         **/
+        unsigned int made_ = 0;
 };
 };  // namespace v3d::moya::ri

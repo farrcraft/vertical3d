@@ -77,6 +77,16 @@ class Container {
     boost::shared_ptr<Component> pick(const glm::vec2& point) const;
 
  private:
+    /**
+     * Find a named component in a subtree, the component itself first and then what it holds.
+     **/
+    static boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& component, const std::string& name);
+    /**
+     * Offer a point to a subtree, deepest and last drawn first, which is the reverse of the
+     * order it was drawn in.
+     **/
+    static boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point);
+
     std::string name_;
     std::vector<boost::shared_ptr<Component>> components_;
     bool visible_;

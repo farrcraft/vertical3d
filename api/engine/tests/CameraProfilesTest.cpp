@@ -17,15 +17,6 @@
 
 namespace {
 
-boost::json::object config(const std::string& text) {
-    boost::json::value parsed = boost::json::parse(text);
-    return parsed.as_object();
-}
-
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
 /**
  * Two of the profiles from vertical3d/data/cameras.json.
  **/
@@ -38,6 +29,15 @@ const char* const cameras =
 " \"lookat\": [0.0, 0.0, 0.0], \"up\": [0.0, 1.0, 0.0], \"fov\": 60.0,"
 " \"aspect\": 1.33, \"near\": 0.1, \"far\": 100.0, \"adaptive\": \"none\"}"
 "]}";
+
+boost::json::object config(const std::string& text) {
+    boost::json::value parsed = boost::json::parse(text);
+    return parsed.as_object();
+}
+
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
 
 BOOST_AUTO_TEST_CASE(cameraprofiles_load_test) {
     v3d::engine::CameraProfiles profiles(logger());

@@ -35,19 +35,13 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * A frame's file name: the camera's name and the frame, four digits wide so that the files
- * sort in frame order.
  **/
-std::string frameName(const std::string& camera, int frame, const char* extension) {
+std::string Batch::frameName(const std::string& camera, int frame, const char* extension) {
     std::ostringstream name;
     name << camera << "." << std::setw(4) << std::setfill('0') << frame << extension;
     return name.str();
 }
-
-};  // namespace
 
 /**
  **/

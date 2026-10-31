@@ -53,37 +53,6 @@
 
 namespace v3d::ui::loader {
 
-namespace {
-
-/**
- * Read one length: a number is pixels, and a string ending in % is a fraction of the parent.
- * @return the length, or nothing when the value is neither
- **/
-std::optional<Length> length(const boost::json::value& value) {
-    if (value.is_number()) {
-        return Length(static_cast<float>(value.to_number<double>()), Length::Unit::Pixels);
-    }
-    if (!value.is_string()) {
-        return std::nullopt;
-    }
-    const std::string text(value.as_string().c_str());
-    if (text.size() < 2 || text.back() != '%') {
-        return std::nullopt;
-    }
-    try {
-        std::size_t read = 0;
-        const float fraction = std::stof(text.substr(0, text.size() - 1), &read);
-        if (read != text.size() - 1) {
-            return std::nullopt;
-        }
-        return Length(fraction, Length::Unit::Percent);
-    } catch (const std::exception&) {
-        return std::nullopt;
-    }
-}
-
-};  // namespace
-
 ComponentReader::ComponentReader(const boost::shared_ptr<v3d::event::Router>& router,
     const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const boost::shared_ptr<v3d::log::Logger>& logger) :
@@ -596,6 +565,29 @@ boost::shared_ptr<component::Toolbar> ComponentReader::readToolbar(const boost::
         bar->add(button);
     }
     return bar;
+}
+
+std::optional<Length> ComponentReader::length(const boost::json::value& value) {
+    if (value.is_number()) {
+        return Length(static_cast<float>(value.to_number<double>()), Length::Unit::Pixels);
+    }
+    if (!value.is_string()) {
+        return std::nullopt;
+    }
+    const std::string text(value.as_string().c_str());
+    if (text.size() < 2 || text.back() != '%') {
+        return std::nullopt;
+    }
+    try {
+        std::size_t read = 0;
+        const float fraction = std::stof(text.substr(0, text.size() - 1), &read);
+        if (read != text.size() - 1) {
+            return std::nullopt;
+        }
+        return Length(fraction, Length::Unit::Percent);
+    } catch (const std::exception&) {
+        return std::nullopt;
+    }
 }
 
 };  // namespace v3d::ui::loader

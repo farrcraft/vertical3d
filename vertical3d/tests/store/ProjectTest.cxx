@@ -24,10 +24,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
 /**
  * A project directory in the temporary directory, removed before and after the test.
  **/
@@ -53,6 +49,10 @@ class Scratch final {
  private:
     boost::filesystem::path path_;
 };
+
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
 
 /**
  * A scene of a cube and a light.

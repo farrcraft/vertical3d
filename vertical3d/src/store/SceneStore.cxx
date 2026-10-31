@@ -17,6 +17,9 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/store/internal/Inserts.h>
+#include <vertical3d/src/store/internal/Loaded.h>
+#include <vertical3d/src/store/internal/Writes.h>
 
 #include <algorithm>
 #include <array>
@@ -35,8 +38,10 @@
 #include <utility>
 #include <vector>
 
+#include "Blob.h"
 #include "Bytes.h"
 #include "Codec.h"
+#include "Cursor.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
@@ -52,43 +57,6 @@ namespace v3d::editor {
 namespace {
 
 // blobs are written as the machine holds them, which is the order the format defines
-/**
- * The tables of a scene document at SCHEMA_VERSION.
- *
- * An item's kind is not checked by the table, so a new kind needs no new schema. Its payload
- * must be JSON. A buffer belongs to one item and goes when the item does. A parent is checked
- * when a write commits rather than row by row, because a changed row is deleted and written
- * again while its children still name it.
- **/
-const char* const SCHEMA =
-"CREATE TABLE meta ("
-"  key TEXT PRIMARY KEY NOT NULL,"
-"  value ANY NOT NULL) STRICT;"
-"CREATE TABLE items ("
-"  id INTEGER PRIMARY KEY,"
-"  position INTEGER NOT NULL,"
-"  kind TEXT NOT NULL,"
-"  type_version INTEGER NOT NULL,"
-"  tx REAL NOT NULL, ty REAL NOT NULL, tz REAL NOT NULL,"
-"  rx REAL NOT NULL, ry REAL NOT NULL, rz REAL NOT NULL, rw REAL NOT NULL,"
-"  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
-"  payload TEXT NOT NULL CHECK (json_valid(payload)),"
-"  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
-"  name TEXT NOT NULL DEFAULT '') STRICT;"
-"CREATE TABLE buffers ("
-"  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
-"  role TEXT NOT NULL,"
-"  count INTEGER NOT NULL CHECK (count >= 0),"
-"  data BLOB NOT NULL,"
-"  PRIMARY KEY (item, role)) STRICT;"
-"CREATE TABLE curves ("
-"  owner INTEGER NOT NULL REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
-"  property TEXT NOT NULL,"
-"  type_version INTEGER NOT NULL,"
-"  count INTEGER NOT NULL CHECK (count >= 0),"
-"  keys BLOB NOT NULL,"
-"  PRIMARY KEY (owner, property)) STRICT;";
-
 /**
  * What takes a document's tables from version 1 to version 2: the parent column, which
  * version 1 does not have.
@@ -274,25 +242,6 @@ boost::shared_ptr<Item> readItem(const v3d::database::Statement& rows, v3d::data
     item->scale(scale);
     return item;
 }
-
-/**
- * Every item one document holds, read before any of it reaches the scene.
- **/
-struct Loaded {
-    struct Animated {
-        std::int64_t owner = 0;
-        std::string path;
-        v3d::animation::Curve curve;
-    };
-
-    Items items;
-    std::vector<Animated> curves;
-    Timeline timeline;
-    RenderSettings render;
-    // each child's parent, both by document id
-    std::map<std::int64_t, std::int64_t> parents;
-    std::int64_t next = 1;
-};
 
 /**
  * Whether every parent is an item the document holds, and no item is its own ancestor.
@@ -540,14 +489,6 @@ bool loadSettings(v3d::database::Database* database, Loaded* loaded, std::string
 }
 
 /**
- * The two inserts a write runs for each item.
- **/
-struct Inserts {
-    v3d::database::Statement item;
-    v3d::database::Statement buffer;
-};
-
-/**
  * Write one item's row, and its blobs.
  **/
 bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64_t position, std::int64_t parent) {
@@ -567,43 +508,6 @@ bool storeItem(Inserts* inserts, const boost::shared_ptr<Item>& item, std::int64
             .integer(static_cast<std::int64_t>(buffer.count)).blob(buffer.data).run();
     });
 }
-
-/**
- * The statements a write runs.
- **/
-struct Writes {
-    explicit Writes(v3d::database::Database* database) :
-        inserts{
-            .item = database->prepare(
-                "INSERT INTO items (id, position, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, parent, name) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-            .buffer = database->prepare("INSERT INTO buffers (item, role, count, data) VALUES (?, ?, ?, ?)") },
-        remove(database->prepare("DELETE FROM items WHERE id = ?")),
-        move(database->prepare("UPDATE items SET position = ?, parent = ? WHERE id = ?")),
-        next(database->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('next_id', ?)")) {
-    }
-
-    bool valid() const {
-        return inserts.item.valid() && inserts.buffer.valid() && remove.valid() && move.valid() && next.valid();
-    }
-
-    /**
-     * The reason a statement failed, from whichever did.
-     **/
-    std::string error() const {
-        for (const v3d::database::Statement* statement : { &inserts.item, &inserts.buffer, &remove, &move, &next }) {
-            if (!statement->error().empty()) {
-                return statement->error();
-            }
-        }
-        return std::string();
-    }
-
-    Inserts inserts;
-    v3d::database::Statement remove;
-    v3d::database::Statement move;
-    v3d::database::Statement next;
-};
 
 /**
  * Write the scene's changes since the items saved, or every item when nothing is saved, and the

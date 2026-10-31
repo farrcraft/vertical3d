@@ -11,7 +11,10 @@
 #include <api/event/Source.h>
 #include <api/shell/Shell.h>
 
+#include <array>
 #include <string>
+#include <string_view>
+#include <utility>
 
 #include "PongScene.h"
 
@@ -47,6 +50,24 @@ class PongEngine final : public v3d::engine::Engine {
     bool release() override;
 
  private:
+    /**
+     * Each menu item that captures a key, paired with the paddle command it rebinds.
+     **/
+    // an array of views rather than a map of strings, because a map with static storage
+    // duration allocates during static initialization and can throw where nothing can catch it
+    static constexpr std::array<std::pair<std::string_view, std::string_view>, 4> PADDLE_COMMANDS = {{
+        {"setLeftPaddleUpKey", "pong::leftPaddleUp"},
+        {"setLeftPaddleDownKey", "pong::leftPaddleDown"},
+        {"setRightPaddleUpKey", "pong::rightPaddleUp"},
+        {"setRightPaddleDownKey", "pong::rightPaddleDown"}
+    }};
+
+    /**
+     * @return the command the named menu item drives, or an empty view for an item that drives
+     *         no paddle
+     **/
+    static std::string_view paddleCommand(std::string_view item);
+
     /**
      * Change the game's mode from the menu, and start a new round. Only coop differs from the
      * other modes: outside coop, the computer plays the right paddle.

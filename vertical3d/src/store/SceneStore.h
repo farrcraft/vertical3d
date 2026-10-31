@@ -130,6 +130,43 @@ class SceneStore final {
     using SavedCurves = std::map<std::pair<std::int64_t, std::string>, v3d::animation::Curve>;
 
  private:
+    /**
+     * The tables of a scene document at SCHEMA_VERSION.
+     *
+     * An item's kind is not checked by the table, so a new kind needs no new schema. Its payload
+     * must be JSON. A buffer belongs to one item and goes when the item does. A parent is checked
+     * when a write commits rather than row by row, because a changed row is deleted and written
+     * again while its children still name it.
+     **/
+    static constexpr const char* SCHEMA =
+        "CREATE TABLE meta ("
+        "  key TEXT PRIMARY KEY NOT NULL,"
+        "  value ANY NOT NULL) STRICT;"
+        "CREATE TABLE items ("
+        "  id INTEGER PRIMARY KEY,"
+        "  position INTEGER NOT NULL,"
+        "  kind TEXT NOT NULL,"
+        "  type_version INTEGER NOT NULL,"
+        "  tx REAL NOT NULL, ty REAL NOT NULL, tz REAL NOT NULL,"
+        "  rx REAL NOT NULL, ry REAL NOT NULL, rz REAL NOT NULL, rw REAL NOT NULL,"
+        "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
+        "  payload TEXT NOT NULL CHECK (json_valid(payload)),"
+        "  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
+        "  name TEXT NOT NULL DEFAULT '') STRICT;"
+        "CREATE TABLE buffers ("
+        "  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
+        "  role TEXT NOT NULL,"
+        "  count INTEGER NOT NULL CHECK (count >= 0),"
+        "  data BLOB NOT NULL,"
+        "  PRIMARY KEY (item, role)) STRICT;"
+        "CREATE TABLE curves ("
+        "  owner INTEGER NOT NULL REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
+        "  property TEXT NOT NULL,"
+        "  type_version INTEGER NOT NULL,"
+        "  count INTEGER NOT NULL CHECK (count >= 0),"
+        "  keys BLOB NOT NULL,"
+        "  PRIMARY KEY (owner, property)) STRICT;";
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     // the document this store last wrote or read, and its items by document id
     std::string path_;

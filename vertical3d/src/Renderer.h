@@ -200,6 +200,76 @@ class Renderer final {
 
  private:
     /**
+     * What every viewport clears to.
+     **/
+    static constexpr glm::vec4 background = glm::vec4(0.16F, 0.17F, 0.19F, 1.0F);
+
+    /**
+     * The outline of a rubber band.
+     **/
+    static constexpr glm::vec4 bandColour = glm::vec4(0.9F, 0.9F, 0.9F, 1.0F);
+
+    /**
+     * How opaque the accent laid over where a dragged tab would land is.
+     **/
+    static constexpr float landingAlpha = 0.25F;
+
+    /**
+     * Where a line of text's baseline sits below the middle of the band it is centred in, as a
+     * share of the text's size.
+     **/
+    static constexpr float BASELINE = 0.35F;
+
+    /**
+     * How far a notice sits above the foot of its area, at a ui scale of 1.
+     **/
+    static constexpr float NOTICE_MARGIN = 16.0F;
+
+    /**
+     * What separates the parts of the right side of the status bar.
+     **/
+    static constexpr const char* STATUS_GAP = "     ";
+
+    /**
+     * What a view's handle pass is called, on the end of the view's own name.
+     **/
+    static constexpr const char* handleSuffix = " handles";
+
+    /**
+     * The pass that belongs to no view, drawn over all of them.
+     **/
+    static constexpr const char* uiPass = "ui";
+
+    /**
+     * How large the whole ui is drawn, as a multiple of the size it was laid out at. The screen
+     * multiplies it by the monitor's scale.
+     *
+     * Every metric below is a multiple of the text size, and the text size is a multiple of
+     * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
+     * does not need a rebuilt atlas.
+     **/
+    static constexpr float uiScale = 1.0F;
+
+    /**
+     * The size the ui text is drawn at, and what the bar and its rows are sized from.
+     **/
+    static constexpr float fontSize = 15.0F * uiScale;
+
+    /**
+     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 15 pixel
+     * text.
+     **/
+    static constexpr float iconScale = 1.2F;
+
+    /**
+     * The ui's spacing, each a multiple of the text size.
+     **/
+    static constexpr float lineHeightScale = 1.5F;
+    static constexpr float paddingScale = 1.4F;
+    static constexpr float barHeightScale = 1.8F;
+    static constexpr float panelPaddingScale = 0.3F;
+
+    /**
      * @return what a ui image source resolves to: a cell of the icon sheet for an icon's name,
      *         and otherwise the whole of the image the source names, or nothing when the image
      *         cannot be loaded

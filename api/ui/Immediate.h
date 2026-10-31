@@ -526,6 +526,46 @@ class Immediate {
     void endTable();
 
  private:
+    /**
+     * How far a scrub moves the value for each pixel the cursor travels. One unit per pixel is
+     * too fast to land on a number by hand and too slow to cross a wide range; a quarter is a
+     * compromise between the two.
+     **/
+    static constexpr float scrubRate = 0.25F;
+    /**
+     * The most units one frame's drag may move a value. A larger step is not a hand on a mouse, and
+     * is ignored.
+     **/
+    static constexpr int32_t scrubLimit = 1000000;
+    /**
+     * The side of the square a bullet is drawn in, as a fraction of a row.
+     **/
+    static constexpr float bulletScale = 0.28F;
+    /**
+     * How many segments a bullet is drawn with.
+     **/
+    static constexpr unsigned int bulletSides = 8;
+    /**
+     * How far a tree row's fold mark reaches from its middle, and how thick its strokes are, as
+     * fractions of a line.
+     **/
+    static constexpr float foldScale = 0.18F;
+    static constexpr float foldWidth = 0.08F;
+    /**
+     * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
+     **/
+    static constexpr float tickInset = 0.25F;
+    /**
+     * How wide the mark at the right end of a combo is, as a fraction of a row.
+     **/
+    static constexpr float comboMark = 0.4F;
+    /**
+     * How far a press on a title bar has to travel before it moves the window instead of
+     * folding it. Wide enough that a hand resting on the button does not drag,
+     * and narrow enough that a move that was meant is never read as a fold.
+     **/
+    static constexpr float dragThreshold = 3.0F;
+
     std::unique_ptr<immediate::Context> context_;
 };
 

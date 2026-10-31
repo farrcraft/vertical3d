@@ -7,11 +7,13 @@
 
 #include <api/log/Logger.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui::style {
 class Property;
@@ -49,6 +51,12 @@ class ThemeReader final {
     const std::string& active() const noexcept;
 
  private:
+    /**
+     * A colour's value: four numbers, RGBA.
+     * @return the colour, or nothing when the value is missing or is not four numbers
+     **/
+    static std::optional<glm::vec4> colour(const boost::json::object& property);
+
     /**
      * Read one theme and the styles in it. A theme holding no styles draws in the defaults.
      **/

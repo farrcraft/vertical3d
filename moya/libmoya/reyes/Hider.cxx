@@ -39,31 +39,13 @@
 
 namespace v3d::moya::reyes {
 
-namespace {
-
-/** An axis aligned box, by its least and greatest corners. **/
-struct Bound {
-    glm::vec3 min{0.0F};
-    glm::vec3 max{0.0F};
-};
-
-/**
- * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
- * picks z, each from max when set and from min when clear.
- **/
-glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
+glm::vec3 Hider::boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index) {
     return glm::vec3((index & 1) != 0 ? max.x : min.x,
                      (index & 2) != 0 ? max.y : min.y,
                      (index & 4) != 0 ? max.z : min.z);
 }
 
-/**
- * The axis aligned bound of a box carried through an affine matrix.
- *
- * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
- * on an axis, so the two diagonal corners alone can leave part of the box outside.
- **/
-Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
+Hider::Bound Hider::transformBound(const glm::mat4x4 & transform, const Bound & object) {
     Bound bound{.min = glm::vec3(std::numeric_limits<float>::max()), .max = glm::vec3(std::numeric_limits<float>::lowest())};
     for (int k = 0; k < 8; k++) {
         const glm::vec3 corner(transform * glm::vec4(boxCorner(object.min, object.max, k), 1.0F));
@@ -73,11 +55,7 @@ Bound transformBound(const glm::mat4x4 & transform, const Bound & object) {
     return bound;
 }
 
-/**
- * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
- * from its object space bound. A still primitive's bound is left as it is.
- **/
-void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept) {
+void Hider::sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept) {
     if (!motion.moving()) {
         return;
     }
@@ -88,16 +66,7 @@ void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & o
     }
 }
 
-/**
- * Give every vertex that brought no colour or normal of its own the primitive's, and every
- * vertex the primitive's plane as its geometric normal.
- *
- * A vertex with no "Cs" takes the primitive's colour, which the surface shader then reads as
- * Cs. The normals go the same way: Ng is the primitive's plane on every vertex, and a vertex
- * that brought no varying "N" shades with it, so a polygon that gives no normals is shaded
- * faceted.
- **/
-void fillVertices(Polygon* poly) {
+void Hider::fillVertices(Polygon* poly) {
     for (unsigned int i = 0; i < poly->vertexCount(); i++) {
         if (!(*poly)[i].hasColor()) {
             (*poly)[i].color(poly->color());
@@ -108,8 +77,6 @@ void fillVertices(Polygon* poly) {
         }
     }
 }
-
-};  // namespace
 
 bool Hider::traces() const {
     return false;

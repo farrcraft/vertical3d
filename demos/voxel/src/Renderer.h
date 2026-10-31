@@ -18,6 +18,8 @@
 #include <vulkan/vulkan.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -83,6 +85,58 @@ class Renderer {
     void shutdown();
 
  private:
+    /**
+     * The pass the overlay and the ui draw into, over whatever the terrain left.
+     **/
+    static constexpr const char* overlayPass = "overlay";
+
+    /**
+     * What the debug readout's window is titled, which is also its id in the immediate layer.
+     **/
+    static constexpr const char* debugTitle = "Debug";
+
+    /**
+     * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
+     * atlas is scaled to this size rather than rasterized at it.
+     **/
+    static constexpr float fontSize = 18.0F;
+
+    static constexpr glm::vec4 sky{0.4F, 0.6F, 0.9F, 1.0F};
+    static constexpr glm::vec4 textColour{0.95F, 0.95F, 0.95F, 1.0F};
+    static constexpr glm::vec4 white{1.0F, 1.0F, 1.0F, 1.0F};
+
+    /**
+     * How many chunks are remeshed in one tick. Each mesh waits for its staging copy, so meshing
+     * the whole world in one frame would stall that frame visibly.
+     **/
+    static constexpr size_t chunkUpdatesPerTick = 16;
+
+    /**
+     * The sun, in world space and well above a 256 block wide world.
+     **/
+    static constexpr glm::vec4 sunPosition{128.0F, 200.0F, 128.0F, 1.0F};
+    static constexpr glm::vec4 ambientLight{0.4F, 0.4F, 0.4F, 1.0F};
+
+    /**
+     * The specular colour every block shares, with its shininess in the fourth component.
+     **/
+    static constexpr glm::vec4 blockSpecular{0.8F, 0.8F, 0.8F, 100.0F};
+
+    /**
+     * The farthest distance, in blocks, that a draw's depth key can hold.
+     **/
+    static constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::max());
+
+    /**
+     * Where the debug readout sits and how big it is, in pixels, and the alpha its background is
+     * drawn at. Its height is debugHeight plus one debugLineHeight for each timed span.
+     **/
+    static constexpr glm::vec2 debugPosition{20.0F, 20.0F};
+    static constexpr float debugWidth = 260.0F;
+    static constexpr float debugHeight = 154.0F;
+    static constexpr float debugLineHeight = 26.0F;
+    static constexpr float debugAlpha = 0.85F;
+
     /**
      * Create the descriptor pool and layout for set 1: the light and the block palette, which
      * every chunk draws with.

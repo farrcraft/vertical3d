@@ -17,21 +17,6 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
-namespace {
-
-/**
- * In preference order. A depth only format is preferred, because nothing in the renderer
- * uses stencil. The two combined formats are here only for a device that cannot use D32 as
- * an attachment.
- **/
-const VkFormat candidates[3] = {
-    VK_FORMAT_D32_SFLOAT,
-    VK_FORMAT_D32_SFLOAT_S8_UINT,
-    VK_FORMAT_D24_UNORM_S8_UINT
-};
-
-};  // namespace
-
 /**
  **/
 DepthBuffer::DepthBuffer(const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,

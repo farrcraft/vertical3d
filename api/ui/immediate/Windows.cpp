@@ -21,23 +21,6 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * How far one notch of the wheel scrolls a window, as a multiple of a row. Three rows is
- * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
- **/
-const float wheelRows = 3.0F;
-
-/**
- * How far a press on a title bar has to travel before it moves the window instead of
- * folding it. Wide enough that a hand resting on the button does not drag,
- * and narrow enough that a move that was meant is never read as a fold.
- **/
-const float dragThreshold = 3.0F;
-
-};  // namespace
-
 bool Immediate::window(const std::string& title, const v3d::type::geometry::Bound2D::Area& area, float alpha) {
     const glm::vec2& position = area.position;
     const glm::vec2& size = area.size;

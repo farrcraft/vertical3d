@@ -26,15 +26,7 @@
 
 namespace v3d::render::offline::sl::runtime {
 
-namespace {
-
-/**
- * The most instructions one run executes before it fails. A shader with an endless loop then
- * fails with a reason instead of hanging the render.
- **/
-const std::size_t LIMIT = 4000000;
-
-float compare(Opcode opcode, float left, float right) {
+float Machine::compare(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::LESS:
             return left < right ? 1.0F : 0.0F;
@@ -55,12 +47,7 @@ float compare(Opcode opcode, float left, float right) {
     }
 }
 
-/**
- * Component index of a value, read as if the value had wide components. A float fills every
- * component, except that a float read as a matrix is the diagonal matrix. An assignment
- * promotes a float the same way.
- **/
-float promoted(const Value & value, unsigned int point, unsigned int index, unsigned int wide) {
+float Machine::promoted(const Value & value, unsigned int point, unsigned int index, unsigned int wide) {
     if (value.components() != 1) {
         return value.component(point, index);
     }
@@ -70,7 +57,7 @@ float promoted(const Value & value, unsigned int point, unsigned int index, unsi
     return value.number(point);
 }
 
-float combine(Opcode opcode, float left, float right) {
+float Machine::combine(Opcode opcode, float left, float right) {
     switch (opcode) {
         case Opcode::ADD:
             return left + right;
@@ -82,8 +69,6 @@ float combine(Opcode opcode, float left, float right) {
             return left / right;
     }
 }
-
-};  // namespace
 
 void Machine::prepare(const Program & program, unsigned int batch) {
     program_ = &program;
@@ -282,7 +267,7 @@ void Machine::compare(const Instruction & instruction) {
             }
             target.number(point, equal == (instruction.opcode == Opcode::EQUAL) ? 1.0F : 0.0F);
         } else {
-            target.number(point, runtime::compare(instruction.opcode,
+            target.number(point, compare(instruction.opcode,
                 left.number(point), right.number(point)));
         }
     }
@@ -382,14 +367,7 @@ void Machine::gather(const std::vector<glm::vec3> & axes, const std::vector<floa
     gatherAngles_ = angles;
 }
 
-namespace {
-
-/**
- * The direction inside a light's cone nearest a surface's axis: the axis itself when it lies
- * inside the cone, and otherwise the cone's edge on the way from the light's axis to it. It has
- * the length of the light's axis.
- **/
-glm::vec3 nearest(const glm::vec3 & lightAxis, float lightAngle, const glm::vec3 & surfaceAxis) {
+glm::vec3 Machine::nearest(const glm::vec3 & lightAxis, float lightAngle, const glm::vec3 & surfaceAxis) {
     const float length = glm::length(lightAxis);
     if (length == 0.0F || glm::length(surfaceAxis) == 0.0F) {
         return lightAxis;
@@ -412,8 +390,6 @@ glm::vec3 nearest(const glm::vec3 & lightAxis, float lightAngle, const glm::vec3
     across = glm::normalize(across);
     return ((from * std::cos(lightAngle)) + (across * std::sin(lightAngle))) * length;
 }
-
-};  // namespace
 
 bool Machine::inside(const glm::vec3 & direction, const std::vector<int> & cone,
     std::size_t first, unsigned int point) const {

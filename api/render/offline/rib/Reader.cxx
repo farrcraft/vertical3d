@@ -36,15 +36,9 @@
 
 namespace v3d::render::offline::rib {
 
-namespace {
-
-typedef Token::Kind Kind;
-
-std::string position(const Token & token) {
+std::string Reader::position(const Token & token) {
     return " at line " + std::to_string(token.line()) + ", column " + std::to_string(token.column());
 }
-
-};  // namespace
 
 Reader::Reader(const boost::shared_ptr<v3d::log::Logger> & logger) : logger_(logger) {
 }

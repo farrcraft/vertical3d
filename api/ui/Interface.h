@@ -272,6 +272,16 @@ class Interface {
      * @return whether a component is in a container's tree
      **/
     static bool holds(const Container& container, const boost::shared_ptr<Component>& component);
+    /**
+     * @return whether a component is one of a tree's, the root included
+     **/
+    static bool within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component);
+    /**
+     * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
+     * chosen, so a control on one is left out.
+     **/
+    static void focusable(const boost::shared_ptr<Component>& component,
+        std::vector<boost::shared_ptr<Component>>* found);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Router> router_;

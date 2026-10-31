@@ -17,6 +17,7 @@ add_executable(voxel
 	"src/voxel/MeshBuilder.h" "src/voxel/MeshBuilder.cxx"
 	"src/voxel/MeshCache.h" "src/voxel/MeshCache.cxx"
 	"src/voxel/TerrainMap.h" "src/voxel/TerrainMap.cxx"
+	"src/voxel/TerrainNoise.h" "src/voxel/TerrainNoise.cxx"
 	"src/voxel/Voxel.h" "src/voxel/Voxel.cxx"
 	"src/voxel/World.h" "src/voxel/World.cxx"
 	"src/Controller.h" "src/Controller.cxx"

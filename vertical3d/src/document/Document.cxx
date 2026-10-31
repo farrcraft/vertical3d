@@ -44,53 +44,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * @return a count of items, singular for one: "1 item", "3 items"
- **/
-std::string items(std::size_t count) {
-    return std::to_string(count) + (count == 1 ? " item" : " items");
-}
-
-/**
- * @return a kind's name with each word begun in capitals, as a new item is named: "point light"
- *         is "Point Light"
- **/
-std::string titled(const std::string& kind) {
-    std::string title = kind;
-    bool start = true;
-    for (char& letter : title) {
-        if (start) {
-            letter = static_cast<char>(std::toupper(static_cast<unsigned char>(letter)));
-        }
-        start = letter == ' ';
-    }
-    return title;
-}
-
-/**
- * What a modelling operation says when it changed the mesh, and when there was nothing to change.
- **/
-struct Said final {
-    std::string done;
-    std::string refused;
-};
-
-/**
- * Record a modelling operation's change, or say why there was none. A modelling operation has
- * changed the mesh by the time it hands its record back.
- **/
-Outcome record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said) {
-    if (!command) {
-        return { .done = false, .message = said.refused };
-    }
-    history->push(command);
-    return { .done = true, .message = said.done };
-}
-
-};  // namespace
-
 Document::Document(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::filesystem::path& project) :
     logger_(logger),
     scene_(boost::make_shared<Scene>()),
@@ -174,7 +127,7 @@ Outcome Document::group(const Items& items) {
     }
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "grouped " + v3d::editor::items(items.size()) + " - " + v3d::editor::items(scene_->count()) };
+    return { .done = true, .message = "grouped " + Document::items(items.size()) + " - " + Document::items(scene_->count()) };
 }
 
 Outcome Document::importScene(const boost::filesystem::path& file) {
@@ -352,6 +305,30 @@ Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type
     }
     writeShot(&stream, *scene_, scene_->evaluate(), from, RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
     return { .done = true, .message = "exported " + items(scene_->count()) + " to " + file.string() };
+}
+
+std::string Document::items(std::size_t count) {
+    return std::to_string(count) + (count == 1 ? " item" : " items");
+}
+
+std::string Document::titled(const std::string& kind) {
+    std::string title = kind;
+    bool start = true;
+    for (char& letter : title) {
+        if (start) {
+            letter = static_cast<char>(std::toupper(static_cast<unsigned char>(letter)));
+        }
+        start = letter == ' ';
+    }
+    return title;
+}
+
+Outcome Document::record(CommandStack* history, const boost::shared_ptr<TopologyCommand>& command, const Said& said) {
+    if (!command) {
+        return { .done = false, .message = said.refused };
+    }
+    history->push(command);
+    return { .done = true, .message = said.done };
 }
 
 };  // namespace v3d::editor

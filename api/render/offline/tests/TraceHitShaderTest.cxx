@@ -30,8 +30,11 @@
 namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+
 typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
+
 typedef v3d::render::offline::sl::Placed Placed;
 
 void add(ParameterList* list, const std::string & name, Declaration::Type type,
@@ -40,9 +43,11 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
         std::vector<std::string>());
 }
 
-ShaderLibrary & library() {
-    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
-    return shaders;
+/**
+ * A library of its own for each call. An instance owns its program, so it outlives the library.
+ **/
+ShaderLibrary library() {
+    return ShaderLibrary(boost::make_shared<v3d::log::Logger>());
 }
 
 Placed instance(const std::string & name, v3d::render::offline::sl::ShaderType type,
@@ -69,6 +74,45 @@ v3d::render::offline::trace::Hit at(const v3d::render::offline::trace::Scene & s
     v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE_MESSAGE(scene.nearest(ray, 0.0F, &hit), "the ray missed the triangle");
     return hit;
+}
+
+/**
+ * Two triangles a unit apart facing each other, each shaded by `relay`, which adds its own
+ * colour to what it traces along its normal: red below, facing up, and green above, facing
+ * down. The hit is on the red one, seen from between them.
+ **/
+glm::vec3 relayed(unsigned int depth) {
+    ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    shaders.searchpath("data");
+
+    v3d::render::offline::trace::Scene scene;
+    scene.traceDepth(depth);
+    v3d::render::offline::trace::Triangle below = facing(2.0F, glm::vec3(1.0F, 0.0F, 0.0F));
+    v3d::render::offline::trace::Triangle above({glm::vec3(-2.0F, -2.0F, 1.0F), glm::vec3(0.0F, 2.0F, 1.0F), glm::vec3(2.0F, -2.0F, 1.0F)}, glm::vec3(0.0F, 1.0F, 0.0F));
+    Placed relay;
+    relay.shader = shaders.instance("relay", v3d::render::offline::sl::ShaderType::SURFACE,
+        ParameterList());
+    BOOST_REQUIRE(relay.shader);
+    below.surface(relay);
+    above.surface(relay);
+    scene.add(below);
+    scene.add(above);
+
+    const v3d::type::geometry::Ray ray({.origin = glm::vec3(0.0F, 0.0F, 0.5F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
+    v3d::render::offline::trace::Hit hit;
+    BOOST_REQUIRE(scene.nearest(ray, 0.0F, &hit));
+    v3d::render::offline::trace::Tracer shader(&scene);
+    return shader.shade(hit);
+}
+
+/** What a ray straight down the negative z axis from a height sees. **/
+v3d::render::offline::trace::Tracer::Seen down(v3d::render::offline::trace::Tracer* shader, float x, float y, float from) {
+    return shader->see(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, from), .direction = glm::vec3(0.0F, 0.0F, -1.0F)}));
+}
+
+/** A triangle in the plane z = height, facing down the negative z axis. **/
+v3d::render::offline::trace::Triangle downward(float size, float height, const glm::vec3 & colour) {
+    return v3d::render::offline::trace::Triangle({glm::vec3(-size, -size, height), glm::vec3(0.0F, size, height), glm::vec3(size, -size, height)}, colour);
 }
 
 /**
@@ -205,39 +249,6 @@ BOOST_AUTO_TEST_CASE(trace_no_shader_is_the_flat_colour_test) {
     BOOST_CHECK_CLOSE(colour.b, 0.75F, 0.1F);
 }
 
-namespace {
-
-/**
- * Two triangles a unit apart facing each other, each shaded by `relay`, which adds its own
- * colour to what it traces along its normal: red below, facing up, and green above, facing
- * down. The hit is on the red one, seen from between them.
- **/
-glm::vec3 relayed(unsigned int depth) {
-    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
-    shaders.searchpath("data");
-
-    v3d::render::offline::trace::Scene scene;
-    scene.traceDepth(depth);
-    v3d::render::offline::trace::Triangle below = facing(2.0F, glm::vec3(1.0F, 0.0F, 0.0F));
-    v3d::render::offline::trace::Triangle above({glm::vec3(-2.0F, -2.0F, 1.0F), glm::vec3(0.0F, 2.0F, 1.0F), glm::vec3(2.0F, -2.0F, 1.0F)}, glm::vec3(0.0F, 1.0F, 0.0F));
-    Placed relay;
-    relay.shader = shaders.instance("relay", v3d::render::offline::sl::ShaderType::SURFACE,
-        ParameterList());
-    BOOST_REQUIRE(relay.shader);
-    below.surface(relay);
-    above.surface(relay);
-    scene.add(below);
-    scene.add(above);
-
-    const v3d::type::geometry::Ray ray({.origin = glm::vec3(0.0F, 0.0F, 0.5F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
-    v3d::render::offline::trace::Hit hit;
-    BOOST_REQUIRE(scene.nearest(ray, 0.0F, &hit));
-    v3d::render::offline::trace::Tracer shader(&scene);
-    return shader.shade(hit);
-}
-
-};  // namespace
-
 /**
  * A surface tracing into a surface with the same shader gets that surface's colour, and
  * its own registers survive the trace.
@@ -270,20 +281,6 @@ BOOST_AUTO_TEST_CASE(trace_a_trace_stops_at_the_depth_test) {
     BOOST_CHECK_CLOSE(deeper.r, 2.0F, 0.1F);
     BOOST_CHECK_CLOSE(deeper.g, 2.0F, 0.1F);
 }
-
-namespace {
-
-/** What a ray straight down the negative z axis from a height sees. **/
-v3d::render::offline::trace::Tracer::Seen down(v3d::render::offline::trace::Tracer* shader, float x, float y, float from) {
-    return shader->see(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, from), .direction = glm::vec3(0.0F, 0.0F, -1.0F)}));
-}
-
-/** A triangle in the plane z = height, facing down the negative z axis. **/
-v3d::render::offline::trace::Triangle downward(float size, float height, const glm::vec3 & colour) {
-    return v3d::render::offline::trace::Triangle({glm::vec3(-size, -size, height), glm::vec3(0.0F, size, height), glm::vec3(size, -size, height)}, colour);
-}
-
-};  // namespace
 
 /**
  * A mirror facing a red quad shows the red quad, exactly: shinymetal with its ambient and its
@@ -412,7 +409,7 @@ BOOST_AUTO_TEST_CASE(trace_a_primitive_has_its_own_lights_test) {
  * shader is, and its opacity still applies to that colour.
  **/
 BOOST_AUTO_TEST_CASE(trace_a_failed_shader_keeps_its_opacity_test) {
-    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
     shaders.searchpath("data");
 
     v3d::render::offline::trace::Scene scene;

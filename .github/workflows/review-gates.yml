@@ -62,6 +62,11 @@ jobs:
     - name: Library table
       if: ${{ !cancelled() }}
       run: node scripts/librarytable.ts
+    # every type is in a header, no state is global, and a file's own helpers are in one
+    # anonymous namespace at its top, as docs/contributing/Conventions.md sets out
+    - name: File-local code
+      if: ${{ !cancelled() }}
+      run: node scripts/filelocal.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

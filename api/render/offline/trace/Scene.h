@@ -171,6 +171,19 @@ class Scene final {
     void traceDepth(unsigned int depth);
 
  private:
+    /** How many steps a moving primitive's corners are followed through across its motion. **/
+    static constexpr int SWEEP_STEPS = 16;
+
+    static Hierarchy::Box still(const v3d::type::geometry::AABBox & stored);
+
+    /**
+     * A box that holds a moving primitive at every time of its motion. The primitive at a time is
+     * its stored box's corners through that time's pose, so the box follows those corners across
+     * the motion. A rotation carries a corner along an arc between two steps, and the arc stays
+     * within one step's length of either end. The box is grown by the longest step to hold it.
+     **/
+    static Hierarchy::Box swept(const v3d::type::geometry::AABBox & stored, const v3d::render::offline::MovingTransform & motion);
+
     v3d::render::offline::Camera camera_;
     std::map<std::string, glm::mat4x4> named_;
     /** The motion a primitive placed by this transformation is carried by, or -1. **/

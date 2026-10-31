@@ -69,11 +69,75 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   the source file of the same name.
 - A small struct used by one class is still a separate class. An `Allocation` struct goes in
   `Allocation.h`, not in `Allocator.h`.
-- A class nested inside another class stays in its owner's header. A helper in a source file's
-  anonymous namespace stays in that source file. Neither is visible elsewhere.
+- A class nested inside another class stays in its owner's header.
+- **A header that only its own library's sources include goes in an `internal/` directory** of
+  the directory it serves, such as `api/interchange/usd/internal/Reader.h`. Under `api/` it takes
+  the namespace that directory gives it. Only files in the directory that holds `internal/` may
+  include it, so what it includes is linked PRIVATE. This holds for an app library such as
+  `v3dlib_editor` too, whose executable and suites include its other headers.
 - A typedef or an enum goes in the header of the class that gives it meaning.
 - When splitting leaves a family of headers that are only used together, such as an AST's node
   types or an app's ECS components, put them in a subdirectory of their own.
+
+### What a source file keeps to itself
+
+A source file defines what its header declares. Anything else it needs follows these rules.
+
+1. **Every type is declared in a header.** A class, struct, union or enum goes in its own header,
+   or is nested in the class that owns it, even when only one source file uses it. A type
+   defined in a source file cannot be tested on its own, and the library's headers do not show
+   that it exists.
+2. **No variable at namespace scope is mutable.** A counter, a cache or a registry is state. It
+   belongs to an object that owns it, and is passed to the code that uses it. A `static` data
+   member or a `static` local that is not const is the same thing, and follows the same rule. A
+   constant is `constexpr`, or `const` all the way down: `const char* const`. There are three
+   exceptions:
+   - A variable that an external standard declares, such as the RenderMan Interface's tokens
+     and `RiLastError`, is defined as the standard's header declares it, `extern` in a header
+     of this tree.
+   - Some state is process-wide for reasons outside this tree, such as Vulkan's loader or the
+     RenderMan C interface's one implicit renderer. It is kept in `static` locals of the one
+     function that hands it out, with the mutex that guards it when threads share it. Each of
+     those lines ends with a comment that starts `process-wide:` and says what makes it so.
+   - Some counters only hand out ids that are unique across the run, such as an item's id. Such
+     a counter is one `std::atomic` static local in the function that hands the ids out, marked
+     `process-wide:` in the same way. It only counts up, is never reset, and its value means
+     nothing but that it differs from every other. Ids from one counter stay unique when items
+     move between documents, which a counter per owner would not give. A counter that holds
+     anything more is state, and follows the rule.
+3. **A helper that only one class's code uses is a private static member of that class.** A
+   constant that only it uses is a `static constexpr` member. Both are then declared with the
+   rest of the class. The exception is a helper whose declaration would make the class's header
+   include something it does not otherwise include, such as a package the library links
+   PRIVATE. That helper stays in the anonymous namespace, so the header's users do not compile
+   against what only the source uses.
+4. **What is left goes in one anonymous namespace at the top of the file**, after the includes
+   and before any other definition. It holds stateless functions and constants that no single
+   class owns, such as the helpers of a file whose header declares only free functions. Close
+   it with `};  // namespace`. clang-tidy's `misc-use-internal-linkage` reports a definition
+   that is in neither a header nor this namespace.
+5. **Nothing at namespace scope follows the first function definition** except more function
+   definitions. A constant or a type declared between two functions is easy to miss, and is
+   read after the code that uses it.
+
+A test file follows rules 2, 4 and 5, and is exempt from rule 1. Its cases, fixtures and helpers
+all sit in its one anonymous namespace, for the reason [Testing.md](Testing.md) gives, with every
+fixture and helper before the first case. A fixture that two test files share gets a header.
+
+| Breaks the rules | Follows them |
+|---|---|
+| A `Reader` class defined in `Usd.cxx`, which only `readUsd()` uses | `Reader` declared in `internal/Reader.h`, and constructed by `readUsd()` |
+| `struct Form` defined between two functions | `Reader::Form`, nested in the class that uses it |
+| `std::map<std::string, Font> loaded;` at namespace scope | A member of the object that loads the fonts, passed to what reads them |
+| `constexpr float SPHERE` used only by `Reader`'s methods | `static constexpr float SPHERE` in `Reader` |
+| `toGlm()` in the anonymous namespace, called only by `Reader` | A private static member of `Reader` |
+| Two anonymous namespaces, or one opened below a function | One anonymous namespace, at the top |
+
+`scripts/filelocal.ts` checks rules 1, 2, 4 and 5, and that no file outside a library includes
+its `internal/` headers. The review gates run it on the whole tree. Rule 3 is a judgment, and review
+checks it.
+
+Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md)
 
 ### Directories
 
@@ -94,10 +158,6 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
   (` public:`, ` private:`).
 - **Do not indent a namespace body.** A continuation line at namespace scope also starts at
   column 0. [Linting.md](Linting.md#namespace-indentation) shows examples and explains why.
-- **What a header does not declare goes in an anonymous namespace.** That covers a source
-  file's own functions, variables and types, which then cannot collide with another file's.
-  Close it with `};  // namespace`. clang-tidy's `misc-use-internal-linkage` reports a
-  definition outside one.
 - **Use `boost::shared_ptr` and `boost::make_shared`**, not the `std` equivalents.
 - **A local that is never modified is `const`**, and so is what a pointer points to when it is
   only read through. `const` goes before the type: `const float x`, `const auto& item`. An

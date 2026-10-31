@@ -12,6 +12,7 @@
 #include <api/ui/style/Resolver.h>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -56,6 +57,7 @@ class Toolbar;
 
 namespace component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace component::menu
 
@@ -294,6 +296,56 @@ class ComponentRenderer {
     glm::vec2 insets(const Interface& ui) const;
 
  private:
+    /**
+     * The colour a component's own text is drawn in: the given colour, or the theme's disabled
+     * colour when the component, or anything holding it, cannot be used. An icon is tinted with
+     * the same colour, so disabling a box greys both a label and the picture beside it.
+     **/
+    static glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour);
+    /**
+     * The colour a menu item's label is written in, in a centred menu and in a dropped panel
+     * alike. An item that cannot be used, or one in a menu that cannot be, is written in the
+     * disabled colour even while it is the active one, because navigation does not activate it.
+     **/
+    static glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected);
+    /**
+     * How many segments a radio button's disc is drawn with. Small enough to cost little at
+     * the size a mark is drawn, large enough that the rim does not read as a polygon.
+     **/
+    static constexpr unsigned int markSides = 16;
+    /**
+     * How much of the box, or of the disc, a mark fills. The rest is the gap that makes it
+     * read as a mark inside something rather than as a filled box.
+     **/
+    static constexpr float markFill = 0.5F;
+    /**
+     * How far in from the edge of a skinned button the corner images reach, when the
+     * style names no corner of its own. A texture carries no size a handle can be asked
+     * for, so this is a number rather than something measured.
+     **/
+    static constexpr float defaultCorner = 8.0F;
+    /**
+     * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
+     **/
+    static constexpr float widgetBaseline = 0.7F;
+    /**
+     * How far down a line of text its baseline sits, as a fraction of the line height. The rest
+     * is room for descenders.
+     **/
+    static constexpr float lineBaseline = 0.75F;
+    /**
+     * The half side of the square that marks a checked menu item, as a fraction of a line.
+     **/
+    static constexpr float checkMarkScale = 0.15F;
+    /**
+     * The radius of the arrow that marks a submenu, as a fraction of a line.
+     **/
+    static constexpr float submenuArrowScale = 0.18F;
+    /**
+     * How far a tooltip's text sits in from its edges, as a fraction of a line.
+     **/
+    static constexpr float tooltipInset = 0.4F;
+
     /**
      * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark
      * or icon, its submenu arrow, its label and its shortcut.

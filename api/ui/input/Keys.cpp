@@ -25,57 +25,6 @@
 
 namespace v3d::ui::input {
 
-namespace {
-
-/** The key that steps towards the end, and the one that steps towards the start. **/
-struct Arrows {
-    std::string_view along;
-    std::string_view back;
-};
-
-/**
- * Where a key moves a cursor through count things, starting from where.
- *
- * A list and a tab bar step through what they hold the same way. They differ only in which
- * arrows step: down and up for rows stacked vertically, right and left for tabs laid out
- * across. Neither wraps, so holding an arrow stops at the last item.
- *
- * @return where to move to, or `where` when the key moves nothing
- **/
-int step(std::string_view key, int where, int count, const Arrows& arrows) {
-    const std::string_view along = arrows.along;
-    const std::string_view back = arrows.back;
-    if (count <= 0) {
-        return where;
-    }
-    if (key == along) {
-        // with nothing chosen, the first step goes to the first item, not the second
-        if (where < 0) {
-            return 0;
-        }
-        return where + 1 < count ? where + 1 : where;
-    }
-    if (key == back) {
-        return where <= 0 ? 0 : where - 1;
-    }
-    if (key == "home") {
-        return 0;
-    }
-    if (key == "end") {
-        return count - 1;
-    }
-    return where;
-}
-
-/**
- * @return whether a key is the one that activates whatever holds the focus
- **/
-bool activates(std::string_view key) noexcept {
-    return key == "return" || key == "space";
-}
-
-};  // namespace
-
 Keys::Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const Clipboard& clipboard) :
     ui_(ui),
@@ -333,6 +282,35 @@ void Keys::send(const boost::shared_ptr<Component>& component) const {
 
 void Keys::send(const v3d::event::Event& event) const {
     input::send(dispatcher_.get(), event);
+}
+
+int Keys::step(std::string_view key, int where, int count, const Arrows& arrows) {
+    const std::string_view along = arrows.along;
+    const std::string_view back = arrows.back;
+    if (count <= 0) {
+        return where;
+    }
+    if (key == along) {
+        // with nothing chosen, the first step goes to the first item, not the second
+        if (where < 0) {
+            return 0;
+        }
+        return where + 1 < count ? where + 1 : where;
+    }
+    if (key == back) {
+        return where <= 0 ? 0 : where - 1;
+    }
+    if (key == "home") {
+        return 0;
+    }
+    if (key == "end") {
+        return count - 1;
+    }
+    return where;
+}
+
+bool Keys::activates(std::string_view key) noexcept {
+    return key == "return" || key == "space";
 }
 
 };  // namespace v3d::ui::input

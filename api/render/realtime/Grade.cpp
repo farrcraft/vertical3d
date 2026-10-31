@@ -52,14 +52,14 @@ const uint32_t gradeLinearShader[] =
 #include "shaders/grade_linear.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
+};  // namespace
+
+/**
+ **/
 template <std::size_t N>
-std::vector<uint32_t> words(const uint32_t (&code)[N]) {
+std::vector<uint32_t> Grade::words(const uint32_t (&code)[N]) {
     return std::vector<uint32_t>(std::begin(code), std::end(code));
 }
-
-const std::size_t TEXELS = static_cast<std::size_t>(Grade::SIZE) * Grade::SIZE * Grade::SIZE;
-
-};  // namespace
 
 /**
  **/

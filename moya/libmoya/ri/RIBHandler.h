@@ -9,6 +9,8 @@
 #include <api/render/offline/rib/Handler.h>
 #include <moya/libmoya/state/RenderContext.h>
 
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -147,6 +149,32 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     static constexpr unsigned int largestLimit = 65536;
 
  private:
+    /**
+     * A number from a scene as a count of pixels or micropolygons: at least one and at most
+     * largestLimit. Anything else is refused.
+     **/
+    static std::optional<uint32_t> count(float value);
+
+    /**
+     * A picture side as the context takes it. A side too large for an int is held just above
+     * largestResolution, which the context refuses.
+     **/
+    static int side(unsigned int value);
+
+    /**
+     * The deepest a scene may ask trace() to go. A shader that traces twice at every hit doubles
+     * the rays at every level, and every level holds a shader on the stack.
+     **/
+    static constexpr float DEEPEST_TRACE = 16.0F;
+
+    typedef v3d::render::offline::rib::ParameterList ParameterList;
+
+    /**
+     * Print Pixar's copyright notice the first time it is called in a process. A static's
+     * initialiser runs once even when two threads reach it together.
+     **/
+    static void notice();
+
     /** Whether the primitive arriving now deforms one already in the motion block. **/
     bool deforms();
 

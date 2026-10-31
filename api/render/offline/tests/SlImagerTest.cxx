@@ -32,9 +32,11 @@ typedef v3d::render::offline::sl::ShaderType ShaderType;
 /** The index of the coverage plane, which follows the three colour planes. **/
 const unsigned int COVERAGE = 3;
 
-ShaderLibrary & library() {
-    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
-    return shaders;
+/**
+ * A library of its own for each call. An instance owns its program, so it outlives the library.
+ **/
+ShaderLibrary library() {
+    return ShaderLibrary(boost::make_shared<v3d::log::Logger>());
 }
 
 /**

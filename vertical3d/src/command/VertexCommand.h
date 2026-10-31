@@ -101,6 +101,20 @@ class VertexCommand final : public Command {
     std::string name() const override;
 
  private:
+    /**
+     * How far apart two points may be and still be the same point. A vertex is moved through
+     * its object's matrix and back, so a gesture that measured nothing still changes the last
+     * bits of it.
+     **/
+    static constexpr float tolerance = 1e-5F;
+
+    /**
+     * Whether two curves are of one type and closed alike, with their points, handles and handle
+     * types the same, to within the tolerance. A gesture moves no NURBS weight or knot, so those
+     * are not compared.
+     **/
+    static bool sameCurve(const v3d::curve::Curve& one, const v3d::curve::Curve& other);
+
     std::vector<Change> changes_;
     std::vector<CurveChange> curves_;
     std::string mode_;

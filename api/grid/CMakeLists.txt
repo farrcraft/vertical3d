@@ -12,6 +12,9 @@ v3d_add_api_library(grid
 "Picture.h" "Picture.cpp"
 "Terrain.h"
 "Unknown.h"
+"internal/Frontier.h"
+"internal/Step.h"
+"internal/Walk.h"
 )
 
 target_link_libraries(v3dlib_grid PUBLIC glm::glm)

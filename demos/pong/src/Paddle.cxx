@@ -13,14 +13,6 @@
 #include <demos/pong/src/component/Score.h>
 #include <demos/pong/src/component/Travel.h>
 
-namespace {
-
-// a paddle's thickness and its length along the side it moves on, in court units
-constexpr float PADDLE_THICKNESS = 15.0F;
-constexpr float PADDLE_LENGTH = 50.0F;
-
-};  // namespace
-
 Paddle::Paddle(entt::registry* registry) :
     registry_(registry) {
     id_ = registry->create();

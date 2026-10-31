@@ -29,21 +29,6 @@
 namespace {
 
 /**
- * Every key the editor ships bound sends a command the editor registers. The engine is built and
- * never started, so this needs no window.
- **/
-BOOST_AUTO_TEST_CASE(every_binding_sends_a_handled_command) {
-    const std::ifstream file("data/mappings.json");
-    BOOST_REQUIRE(file.is_open());
-    std::stringstream text;
-    text << file.rdbuf();
-
-    const v3d::editor::Controller engine("");
-    const std::vector<std::string> unhandled = engine.unhandled(boost::json::parse(text.str()).as_object());
-    BOOST_TEST(unhandled.empty(), "nothing handles " << boost::algorithm::join(unhandled, ", "));
-}
-
-/**
  * Collect the command every component under a ui entry sends, as "context::command".
  **/
 void sent(const boost::json::value& entry, std::vector<std::string>* commands) {
@@ -65,6 +50,21 @@ void sent(const boost::json::value& entry, std::vector<std::string>* commands) {
             sent(object.at(children), commands);
         }
     }
+}
+
+/**
+ * Every key the editor ships bound sends a command the editor registers. The engine is built and
+ * never started, so this needs no window.
+ **/
+BOOST_AUTO_TEST_CASE(every_binding_sends_a_handled_command) {
+    const std::ifstream file("data/mappings.json");
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+
+    const v3d::editor::Controller engine("");
+    const std::vector<std::string> unhandled = engine.unhandled(boost::json::parse(text.str()).as_object());
+    BOOST_TEST(unhandled.empty(), "nothing handles " << boost::algorithm::join(unhandled, ", "));
 }
 
 /**

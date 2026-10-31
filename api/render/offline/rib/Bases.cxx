@@ -31,6 +31,17 @@ constexpr float DEGREE = 3.0F;
 constexpr float THIRD = 1.0F / DEGREE;
 
 /**
+ * RI's standard bases, as its specification gives them.
+ **/
+constexpr auto STANDARD = std::to_array<std::pair<const char*, Basis::Matrix>>({
+    { "bezier", Basis::BEZIER },
+    { "b-spline", { -SIXTH, 0.5F, -0.5F, SIXTH, 0.5F, -1, 0.5F, 0, -0.5F, 0, 0.5F, 0, SIXTH, TWO_THIRDS, SIXTH, 0 } },
+    { "catmull-rom", { -0.5F, 1.5F, -1.5F, 0.5F, 1, -2.5F, 2, -0.5F, -0.5F, 0, 0.5F, 0, 0, 1, 0, 0 } },
+    { "hermite", { 2, 1, -2, 1, -3, -2, 3, -1, 0, 1, 0, 0, 1, 0, 0, 0 } },
+    { "power", { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } },
+});
+
+/**
  * How many segments one curve of a Curves request has.
  **/
 std::size_t segmentCount(std::size_t points, bool cubic, bool periodic, unsigned int step) {
@@ -45,17 +56,6 @@ std::size_t segmentCount(std::size_t points, bool cubic, bool periodic, unsigned
     }
     return periodic ? points / step : ((points - 4) / step) + 1;
 }
-
-/**
- * RI's standard bases, as its specification gives them.
- **/
-constexpr auto STANDARD = std::to_array<std::pair<const char*, Basis::Matrix>>({
-    { "bezier", Basis::BEZIER },
-    { "b-spline", { -SIXTH, 0.5F, -0.5F, SIXTH, 0.5F, -1, 0.5F, 0, -0.5F, 0, 0.5F, 0, SIXTH, TWO_THIRDS, SIXTH, 0 } },
-    { "catmull-rom", { -0.5F, 1.5F, -1.5F, 0.5F, 1, -2.5F, 2, -0.5F, -0.5F, 0, 0.5F, 0, 0, 1, 0, 0 } },
-    { "hermite", { 2, 1, -2, 1, -3, -2, 3, -1, 0, 1, 0, 0, 1, 0, 0, 0 } },
-    { "power", { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 } },
-});
 
 };  // namespace
 

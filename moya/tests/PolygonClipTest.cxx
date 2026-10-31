@@ -19,6 +19,15 @@
 
 namespace {
 
+/**
+ * A polygon that makes the protected split by one plane public to a test. The renderer calls
+ * that split only through split(RenderContext &), which cuts a polygon into four.
+ **/
+class Splittable final : public v3d::moya::Polygon {
+ public:
+    using v3d::moya::Polygon::split;
+};
+
 v3d::moya::Vertex vertex(float x, float y, float z) {
     v3d::moya::Vertex v;
     v.point(glm::vec3(x, y, z));
@@ -52,15 +61,6 @@ glm::vec3 cutEnd() {
 glm::vec3 keptEnd() {
     return glm::vec3(-3.20165992F, -0.251474023F, -2.44707513F);
 }
-
-/**
- * A polygon that makes the protected split by one plane public to a test. The renderer calls
- * that split only through split(RenderContext &), which cuts a polygon into four.
- **/
-class Splittable final : public v3d::moya::Polygon {
- public:
-    using v3d::moya::Polygon::split;
-};
 
 /**
  * A triangle with the edge from cutEnd() to keptEnd(), and a third corner well inside the kept

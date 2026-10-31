@@ -10,6 +10,7 @@
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/view/Picture.h>
 
 #include <cmath>
 #include <cstddef>
@@ -41,15 +42,6 @@ constexpr float STAR_REACH = 0.25F;
  **/
 constexpr float RAY_SPACING = 0.2F;
 constexpr float ARROWHEAD = 0.15F;
-
-/**
- * A camera's picture: a rectangle about the +z axis, at a distance along it.
- **/
-struct Picture {
-    float halfWidth = 0.0F;
-    float halfHeight = 0.0F;
-    float depth = 0.0F;
-};
 
 /**
  * The picture's rectangle, joined round.

@@ -73,6 +73,11 @@ class Controller final : public v3d::engine::Engine {
 
  private:
         /**
+         * The button the immediate layer responds to, named as a binding config names it.
+         **/
+        static constexpr const char* primaryButton = "left";
+
+        /**
          * Pause the world while the menu is over it, and give the pointer back.
          *
          * Relative mode is off while the menu is open. Relative mode hides the cursor, and the

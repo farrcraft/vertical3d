@@ -179,6 +179,31 @@ class Target final {
     void move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame);
 
  private:
+    /**
+     * The vertex a half edge starts at, which is the vertex the half edge before it in its
+     * loop ends at. A half edge names only its end, so this scans for the one whose next it is.
+     **/
+    static bool startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Index* vertex);
+    /**
+     * The vertices the selected components of one kind of a mesh item bring, each once, in index
+     * order. A part the geometry does not hold brings nothing.
+     **/
+    static std::vector<v3d::brep::Index> selectedVertices(const Mesh& item, SelectMask kind, const Components& components);
+    /**
+     * The faces any of the vertices is a corner of, each once, in index order.
+     **/
+    static std::vector<v3d::brep::Index> facesAround(const v3d::brep::BRep& mesh, const std::vector<v3d::brep::Index>& vertices);
+    /**
+     * The selected control points of a curve item, by part number, rising. A part the geometry does
+     * not hold is left out.
+     **/
+    static std::vector<v3d::brep::Index> selectedPoints(const Curve& item, const Components& components);
+    /**
+     * The selected Bezier handles of a curve item, by part number, rising. A part that names no
+     * handle the geometry holds is left out.
+     **/
+    static std::vector<v3d::brep::Index> selectedHandles(const Curve& item, const Components& components);
+
     Items items_;
     // for an object target, the world matrix of each object's parent, in the order of items_
     std::vector<glm::mat4> parents_;

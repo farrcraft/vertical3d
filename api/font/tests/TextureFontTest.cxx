@@ -18,9 +18,9 @@
 
 namespace {
 
-const char* kInter = "data/fonts/Inter-Regular.ttf";
-const char* kInterSemiBold = "data/fonts/Inter-SemiBold.ttf";
-const char* kNoto = "data/fonts/NotoSans-Regular.ttf";
+const char* const kInter = "data/fonts/Inter-Regular.ttf";
+const char* const kInterSemiBold = "data/fonts/Inter-SemiBold.ttf";
+const char* const kNoto = "data/fonts/NotoSans-Regular.ttf";
 
 const float kBase = 48.0F;
 const unsigned int kSpread = 8;

@@ -30,7 +30,17 @@
 namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+
+/**
+ * Which way a grid faces, and its colour. The camera looks down positive z, so a surface
+ * facing it has a normal along negative z.
+ **/
+struct Surface {
+    glm::vec3 normal{0.0F, 0.0F, -1.0F};
+    glm::vec3 colour{1.0F};
+};
 
 /**
  * A context with a camera and nothing in it, ready for a shader and some lights.
@@ -48,15 +58,6 @@ void add(ParameterList* list, const std::string & name, Declaration::Type type,
 }
 
 /**
- * Which way a grid faces, and its colour. The camera looks down positive z, so a surface
- * facing it has a normal along negative z.
- **/
-struct Surface {
-    glm::vec3 normal{0.0F, 0.0F, -1.0F};
-    glm::vec3 colour{1.0F};
-};
-
-/**
  * A grid of four vertices, all facing the same way and with the same colour. A case that
  * checks one vertex then checks the shader and not the interpolation.
  **/
@@ -71,6 +72,26 @@ v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
             vert.normal(normal);
             vert.geometricNormal(normal);
             vert.color(colour);
+            grid.addVertex(vert, i, j);
+        }
+    }
+    return grid;
+}
+
+/**
+ * A grid of five vertices a side over the plane z = 5, facing the camera. Vertex (i, j) is at
+ * x = j * 0.25 and y = i * 0.25, so u runs up y and v runs along x, and Du(P) ^ Dv(P) points
+ * at the camera, along -z, as the normal does.
+ **/
+v3d::moya::reyes::MicroPolygonGrid plane() {
+    v3d::moya::reyes::MicroPolygonGrid grid(5);
+    for (unsigned int i = 0; i < 5; i++) {
+        for (unsigned int j = 0; j < 5; j++) {
+            v3d::moya::Vertex vert;
+            vert.point(glm::vec3(static_cast<float>(j) * 0.25F, static_cast<float>(i) * 0.25F, 5.0F));
+            vert.normal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.geometricNormal(glm::vec3(0.0F, 0.0F, -1.0F));
+            vert.color(glm::vec3(1.0F));
             grid.addVertex(vert, i, j);
         }
     }
@@ -287,27 +308,6 @@ BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
     const glm::vec4 corner = ndc * (glm::inverse(raster) * glm::vec4(64.0F, 48.0F, 1.0F, 1.0F));
     BOOST_CHECK_CLOSE(corner.x, 1.0F, 0.1F);
     BOOST_CHECK_CLOSE(corner.y, 1.0F, 0.1F);
-}
-
-
-/**
- * A grid of five vertices a side over the plane z = 5, facing the camera. Vertex (i, j) is at
- * x = j * 0.25 and y = i * 0.25, so u runs up y and v runs along x, and Du(P) ^ Dv(P) points
- * at the camera, along -z, as the normal does.
- **/
-v3d::moya::reyes::MicroPolygonGrid plane() {
-    v3d::moya::reyes::MicroPolygonGrid grid(5);
-    for (unsigned int i = 0; i < 5; i++) {
-        for (unsigned int j = 0; j < 5; j++) {
-            v3d::moya::Vertex vert;
-            vert.point(glm::vec3(static_cast<float>(j) * 0.25F, static_cast<float>(i) * 0.25F, 5.0F));
-            vert.normal(glm::vec3(0.0F, 0.0F, -1.0F));
-            vert.geometricNormal(glm::vec3(0.0F, 0.0F, -1.0F));
-            vert.color(glm::vec3(1.0F));
-            grid.addVertex(vert, i, j);
-        }
-    }
-    return grid;
 }
 
 /**

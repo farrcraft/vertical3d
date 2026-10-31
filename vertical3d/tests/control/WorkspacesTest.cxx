@@ -19,16 +19,8 @@ namespace {
 
 using v3d::editor::Workspaces;
 
-/**
- * A layout of one viewport, named.
- **/
-std::string single(const std::string& name, const std::string& camera) {
-    return R"({"name": ")" + name + R"(", "root": {"editors": [{"kind": "viewport", "camera": ")" + camera + R"("}]}})";
-}
-
-boost::json::object parse(const std::string& text) {
-    return boost::json::parse(text).as_object();
-}
+std::string single(const std::string& name, const std::string& camera);
+boost::json::object parse(const std::string& text);
 
 /**
  * The shipped set: Modelling and Animation.
@@ -44,6 +36,17 @@ struct Shipped {
 
     Workspaces workspaces;
 };
+
+/**
+ * A layout of one viewport, named.
+ **/
+std::string single(const std::string& name, const std::string& camera) {
+    return R"({"name": ")" + name + R"(", "root": {"editors": [{"kind": "viewport", "camera": ")" + camera + R"("}]}})";
+}
+
+boost::json::object parse(const std::string& text) {
+    return boost::json::parse(text).as_object();
+}
 
 BOOST_AUTO_TEST_SUITE(workspaces_test)
 

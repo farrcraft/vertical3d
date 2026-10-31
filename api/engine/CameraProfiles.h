@@ -15,6 +15,7 @@
 
 #include <boost/json/object.hpp>
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 
 namespace v3d::engine {
 
@@ -66,6 +67,27 @@ class CameraProfiles final {
     const std::vector<std::string>& names() const noexcept;
 
  private:
+    // the values a profile entry gets when it leaves these out, where they differ from a new
+    // Profile
+    static constexpr float ENTRY_ZOOM = 10.0F;
+    static constexpr float ENTRY_NEAR = 0.1F;
+    static constexpr glm::vec3 ENTRY_EYE{0.0F, 0.0F, -10.0F};
+
+    /**
+     * Read a three element array as a vector.
+     * @return the value read, or the fallback if the entry is missing, the wrong length, or holds
+     *         something other than numbers
+     **/
+    static glm::vec3 vector(const boost::json::object& entry, const char* key, const glm::vec3& fallback);
+    /**
+     * @return the value read, or the fallback if the entry is missing or not a number
+     **/
+    static float number(const boost::json::object& entry, const char* key, float fallback);
+    /**
+     * @return the value read, or the fallback if the entry is missing or not a bool
+     **/
+    static bool flag(const boost::json::object& entry, const char* key, bool fallback);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::map<std::string, v3d::type::camera::Profile> profiles_;
     std::vector<std::string> names_;

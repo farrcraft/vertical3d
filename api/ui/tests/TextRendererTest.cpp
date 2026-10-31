@@ -20,6 +20,9 @@
 
 namespace {
 
+// e with an acute accent, U+00E9, as UTF-8
+const char* const eAcute = "\xC3\xA9";
+
 /**
  * A renderer over the shared font that packs the given glyphs. The upload hands back a
  * handle without a device, since nothing here draws to one.
@@ -34,9 +37,6 @@ boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(std::string_view charse
     return boost::make_shared<v3d::ui::paint::TextRenderer>(assets, logger, upload,
         v3d::ui::paint::TextRenderer::baseSize, faces, charset);
 }
-
-// e with an acute accent, U+00E9, as UTF-8
-const char* const eAcute = "\xC3\xA9";
 
 BOOST_AUTO_TEST_SUITE(text_renderer_test)
 

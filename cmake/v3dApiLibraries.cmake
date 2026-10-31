@@ -316,8 +316,9 @@ function(v3d_api_verify_visibility root)
 		set(included)
 		foreach(header IN LISTS headers)
 			# a test's headers are not the library's, and nor are those of a library nested in
-			# this one's directory
-			if(header MATCHES "/tests/")
+			# this one's directory. A header under internal/ is included only by the library's
+			# own sources, so what it includes is linked PRIVATE.
+			if(header MATCHES "/tests/" OR header MATCHES "/internal/")
 				continue()
 			endif()
 			v3d_api_owner("${header}" owner)

@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -137,6 +138,36 @@ class Project final {
     void name(const std::string& title);
 
  private:
+    /**
+     * What the manifest's "format" says, so a JSON file that is not a manifest is refused.
+     **/
+    static constexpr const char* FORMAT = "v3d-project";
+
+    /**
+     * The scene a new project has.
+     **/
+    static constexpr const char* FIRST_SCENE = "scenes/main.v3d";
+
+    /**
+     * What a manifest holds.
+     **/
+    struct Manifest {
+        std::string name;
+        std::vector<std::string> scenes;
+    };
+
+    /**
+     * Whether a path in the manifest names a file inside the project. An absolute path, or one
+     * that climbs out with "..", would let a manifest write a scene anywhere.
+     **/
+    static bool inside(const std::string& entry);
+
+    /**
+     * Read a manifest.
+     * @return nothing when it is not a manifest this build can read, with the problem logged
+     **/
+    static std::optional<Manifest> readManifest(const boost::filesystem::path& path, const boost::shared_ptr<v3d::log::Logger>& logger);
+
     /**
      * Write the layout, the scene and the manifest into a directory.
      **/

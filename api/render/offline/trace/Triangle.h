@@ -80,6 +80,15 @@ class Triangle final : public Primitive {
     bool at(const glm::vec2 & parameters, Hit* hit) const override;
 
  private:
+    /** The least length of a triangle's edge cross product that gives it a plane. **/
+    static constexpr float SMALLEST_TRIANGLE_AREA = 1.0e-8F;
+
+    /**
+     * The plane of a triangle, wound the way its corners are. A triangle with no area names no
+     * plane and returns zero rather than normalising a zero vector.
+     **/
+    static glm::vec3 plane(const glm::vec3 & cornerA, const glm::vec3 & cornerB, const glm::vec3 & cornerC);
+
     glm::vec3 a_;
     glm::vec3 b_;
     glm::vec3 c_;

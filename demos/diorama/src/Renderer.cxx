@@ -37,28 +37,6 @@
 
 namespace diorama {
 
-namespace {
-
-/** What the lit pass clears to, a pale blue sky, in linear light. **/
-constexpr glm::vec4 SKY(0.45F, 0.62F, 0.85F, 1.0F);
-
-/** The width of the shadow map, in texels. **/
-constexpr uint32_t SHADOW_TEXELS = 2048;
-
-/**
- * How far past the casters the shadow map reaches, for the height of a tree and the length of
- * its shadow, in world units.
- **/
-constexpr float SHADOW_MARGIN = 3.0F;
-
-/**
- * The camera's near and far planes. The orbit's eye is 30 units from the target, so the far
- * plane takes in the whole ground from any azimuth.
- **/
-constexpr glm::vec2 CLIPPING(0.1F, 100.0F);
-
-};  // namespace
-
 /**
  **/
 Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const boost::shared_ptr<v3d::log::Logger>& logger,

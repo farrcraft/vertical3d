@@ -5,8 +5,10 @@
 
 #pragma once
 
+#include <api/brep/BRep.h>
 #include <vertical3d/src/scene/Item.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -40,6 +42,20 @@ class MeshCodec final : public Codec {
     std::vector<Buffer> buffers(const Item& item) const override;
     boost::json::object payload(const Item& item) const override;
     boost::shared_ptr<Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const override;
+
+ private:
+    /**
+     * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
+     * its vertex, face, pair and next. A face is its normal and its first half edge.
+     **/
+    static constexpr std::size_t VERTEX_SIZE = 3 * sizeof(float);
+    static constexpr std::size_t EDGE_SIZE = 4 * sizeof(std::uint32_t);
+    static constexpr std::size_t FACE_SIZE = (3 * sizeof(float)) + sizeof(std::uint32_t);
+
+    /**
+     * Build a mesh from its three blobs, index for index.
+     **/
+    static bool decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem);
 };
 
 };  // namespace v3d::editor

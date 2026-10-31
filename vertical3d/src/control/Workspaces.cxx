@@ -23,17 +23,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * @return a layout's name, or an empty string when it has none
- **/
-std::string nameOf(const boost::json::object& layout) {
-    return v3d::asset::readString(layout, "name").value_or(std::string());
-}
-
-};  // namespace
-
 /**
  **/
 Workspaces::Workspaces(const boost::shared_ptr<v3d::log::Logger>& logger) :
@@ -235,6 +224,12 @@ std::vector<std::string> Workspaces::imported(const boost::json::object& file) {
         }
     }
     return names;
+}
+
+/**
+ **/
+std::string Workspaces::nameOf(const boost::json::object& layout) {
+    return v3d::asset::readString(layout, "name").value_or(std::string());
 }
 
 };  // namespace v3d::editor

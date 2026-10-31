@@ -17,12 +17,6 @@
 
 namespace v3d::render::realtime::vulkan::device {
 
-namespace {
-
-const char* const validationLayer = "VK_LAYER_KHRONOS_validation";
-
-};  // namespace
-
 /**
  * What the validation layer has to say, put through the logger at a severity that
  * matches its own. An error here is a real one: the layer only reports an error when the

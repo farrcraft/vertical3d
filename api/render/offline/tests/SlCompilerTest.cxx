@@ -18,43 +18,8 @@
 namespace {
 
 typedef v3d::render::offline::sl::Storage Storage;
+
 typedef v3d::render::offline::sl::Symbol Symbol;
-
-/**
- * Parse one shader and compile it, returning the compiler's error. An empty result means the
- * shader compiled cleanly.
- **/
-std::string compile(const std::string & source, std::vector<Symbol>* symbols = nullptr) {
-    std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    if (shaders.size() != 1) {
-        return parser.error().empty() ? "no shader" : parser.error();
-    }
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
-    const bool compiled = compiler.compile();
-    if (symbols != nullptr) {
-        *symbols = compiler.symbols();
-    }
-    if (compiled) {
-        return "";
-    }
-    return compiler.error();
-}
-
-/**
- * The storage a named symbol came out as. For a name declared more than once, the last
- * declaration's storage is returned.
- **/
-Storage storageOf(const std::vector<Symbol> & symbols, const std::string & name) {
-    Storage found = Storage::UNSPECIFIED;
-    for (const Symbol & symbol : symbols) {
-        if (symbol.name == name) {
-            found = symbol.storage;
-        }
-    }
-    return found;
-}
 
 const char* const CONSTANT =
 "surface constant() {\n"
@@ -131,6 +96,42 @@ const char* const BACKGROUND =
 "    Ci = Ci + (1 - alpha) * bgcolor;\n"
 "    Oi = 1;\n"
 "}\n";
+
+/**
+ * Parse one shader and compile it, returning the compiler's error. An empty result means the
+ * shader compiled cleanly.
+ **/
+std::string compile(const std::string & source, std::vector<Symbol>* symbols = nullptr) {
+    std::istringstream stream(source);
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
+    if (shaders.size() != 1) {
+        return parser.error().empty() ? "no shader" : parser.error();
+    }
+    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    const bool compiled = compiler.compile();
+    if (symbols != nullptr) {
+        *symbols = compiler.symbols();
+    }
+    if (compiled) {
+        return "";
+    }
+    return compiler.error();
+}
+
+/**
+ * The storage a named symbol came out as. For a name declared more than once, the last
+ * declaration's storage is returned.
+ **/
+Storage storageOf(const std::vector<Symbol> & symbols, const std::string & name) {
+    Storage found = Storage::UNSPECIFIED;
+    for (const Symbol & symbol : symbols) {
+        if (symbol.name == name) {
+            found = symbol.storage;
+        }
+    }
+    return found;
+}
 
 /**
  * The standard shaders, as this file writes them out, all pass the checker.

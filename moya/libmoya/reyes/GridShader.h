@@ -95,6 +95,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         v3d::render::offline::sl::runtime::Value* colour) override;
 
  private:
+    typedef v3d::render::offline::sl::runtime::Value Value;
+
     /**
      * A machine sized for one program and one batch, and that program's globals. Kept
      * between grids, for a light's program and a surface's alike.

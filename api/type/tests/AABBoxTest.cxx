@@ -9,6 +9,12 @@
 
 namespace {
 
+v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
+    v3d::type::geometry::AABBox built;
+    built.extents(min, max);
+    return built;
+}
+
 BOOST_AUTO_TEST_CASE(aabbox_test) {
     v3d::type::geometry::AABBox box;
 
@@ -79,16 +85,6 @@ BOOST_AUTO_TEST_CASE(aabbox_test) {
     BOOST_CHECK_EQUAL((min_extent == vertices[6]), true);
     BOOST_CHECK_EQUAL((max_extent == vertices[7]), true);
 }
-
-namespace {
-
-v3d::type::geometry::AABBox box(const glm::vec3 & min, const glm::vec3 & max) {
-    v3d::type::geometry::AABBox built;
-    built.extents(min, max);
-    return built;
-}
-
-};  // namespace
 
 /**
  * Two boxes overlap unless they are apart on at least one axis, and sharing exactly a face

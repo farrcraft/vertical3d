@@ -232,6 +232,24 @@ class MeshRegistry final {
 
  private:
     /**
+     * The mesh on the device: the model's vertices as they are, or interleaved with their
+     * influences for a model with a skeleton.
+     **/
+    static boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const model::Model& model);
+
+    /**
+     * The bytes a decoded model puts on the device: its vertices, its indices, and each albedo it
+     * carries pixels for that is not already uploaded, once.
+     **/
+    static std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded);
+
+    /**
+     * A sphere around a model's vertices: the middle of the box that holds them, and the farthest
+     * of them from it. A model with no vertices is a point at the origin.
+     **/
+    static glm::vec4 bound(const model::Model& model);
+
+    /**
      * An entry, and the keys it was registered under so that releasing it can find them.
      **/
     struct Slot final {

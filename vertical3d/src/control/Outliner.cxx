@@ -24,71 +24,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * @return text in lower case, which the filter compares
- **/
-std::string lower(const std::string& text) {
-    std::string made = text;
-    std::ranges::transform(made, made.begin(), [](char letter) {
-        return static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
-    });
-    return made;
-}
-
-/**
- * @return the words of a filter, in lower case
- **/
-std::vector<std::string> words(const std::string& filter) {
-    std::vector<std::string> made;
-    std::istringstream split(lower(filter));
-    for (std::string word; split >> word;) {
-        made.push_back(word);
-    }
-    return made;
-}
-
-/**
- * What a walk of the tree is asked for: the filter's words, and the items folded.
- **/
-struct Walk final {
-    const Scene& scene;
-    const std::vector<std::string>& words;
-    const std::set<std::int64_t>& folded;
-};
-
-/**
- * Add the rows of an item and everything beneath it that is shown.
- * @return whether the item is shown
- **/
-bool gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int depth, std::vector<Outliner::Row>* into) {
-    const Items children = walk.scene.children(item->id());
-    std::vector<Outliner::Row> below;
-    bool any = false;
-    for (const boost::shared_ptr<Item>& child : children) {
-        any = gather(walk, child, depth + 1, &below) || any;
-    }
-    const std::string named = lower(Outliner::label(*item));
-    const bool matches = std::ranges::all_of(walk.words, [&](const std::string& word) { return named.find(word) != std::string::npos; });
-    if (!matches && !any) {
-        return false;
-    }
-
-    // a filtered tree shows each item it keeps where it sits, with nothing folded
-    const bool filtering = !walk.words.empty();
-    Outliner::Row row{ .item = item, .depth = depth };
-    row.parent = !filtering && !children.empty();
-    row.open = filtering ? any : !walk.folded.contains(item->documentId());
-    into->push_back(row);
-    if (row.open) {
-        into->insert(into->end(), below.begin(), below.end());
-    }
-    return true;
-}
-
-};  // namespace
-
 /**
  **/
 std::string Outliner::label(const Item& item) {
@@ -163,6 +98,54 @@ void Outliner::draw(v3d::ui::Immediate* ui, Scene* scene, std::size_t editor, co
  **/
 void Outliner::keep(const std::vector<std::size_t>& editors) {
     std::erase_if(states_, [&](const auto& entry) { return std::ranges::find(editors, entry.first) == editors.end(); });
+}
+
+/**
+ **/
+std::string Outliner::lower(const std::string& text) {
+    std::string made = text;
+    std::ranges::transform(made, made.begin(), [](char letter) {
+        return static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
+    });
+    return made;
+}
+
+/**
+ **/
+std::vector<std::string> Outliner::words(const std::string& filter) {
+    std::vector<std::string> made;
+    std::istringstream split(lower(filter));
+    for (std::string word; split >> word;) {
+        made.push_back(word);
+    }
+    return made;
+}
+
+/**
+ **/
+bool Outliner::gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int depth, std::vector<Row>* into) {
+    const Items children = walk.scene.children(item->id());
+    std::vector<Row> below;
+    bool any = false;
+    for (const boost::shared_ptr<Item>& child : children) {
+        any = gather(walk, child, depth + 1, &below) || any;
+    }
+    const std::string named = lower(label(*item));
+    const bool matches = std::ranges::all_of(walk.words, [&](const std::string& word) { return named.find(word) != std::string::npos; });
+    if (!matches && !any) {
+        return false;
+    }
+
+    // a filtered tree shows each item it keeps where it sits, with nothing folded
+    const bool filtering = !walk.words.empty();
+    Row row{ .item = item, .depth = depth };
+    row.parent = !filtering && !children.empty();
+    row.open = filtering ? any : !walk.folded.contains(item->documentId());
+    into->push_back(row);
+    if (row.open) {
+        into->insert(into->end(), below.begin(), below.end());
+    }
+    return true;
 }
 
 };  // namespace v3d::editor

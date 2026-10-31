@@ -7,6 +7,7 @@
 
 #include <api/image/Image.h>
 #include <api/image/Reader.h>
+#include <api/image/reader/internal/Cursor.h>
 #include <api/log/Logger.h>
 
 #pragma pack(push, 1)
@@ -26,22 +27,13 @@ namespace v3d::image::reader {
 namespace {
 
 /**
- * How far libpng has read into the buffer. libpng reads in order and never seeks.
- **/
-struct Cursor final {
-    const unsigned char* data;
-    std::size_t size;
-    std::size_t at;
-};
-
-/**
  * libpng's own read, over memory instead of a FILE.
  *
  * A read past the end of the buffer calls png_error, which longjmps out of the decode. No
  * row is then filled from memory past the end of the buffer.
  **/
 void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
-    Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
+    internal::Cursor* cursor = static_cast<internal::Cursor*>(png_get_io_ptr(png));
     if (cursor == nullptr || cursor->at + wanted > cursor->size) {
         png_error(png, "the png ended before it said it would");
         return;
@@ -67,7 +59,7 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     if (encoded == nullptr || size < 8 || png_sig_cmp(encoded, 0, 8) != 0) {
         return empty_ptr;
     }
-    Cursor cursor{ encoded, size, 8 };
+    internal::Cursor cursor{ encoded, size, 8 };
 
     png_structp png_ptr = 0;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);

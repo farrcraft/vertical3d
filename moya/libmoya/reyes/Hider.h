@@ -14,10 +14,16 @@
 #include <cstddef>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #include "Buckets.h"
 #include "Primitive.h"
 #include "Samples.h"
+
+namespace v3d::render::offline {
+class MovingTransform;
+};  // namespace v3d::render::offline
 
 namespace v3d::moya::state {
 class RenderContext;
@@ -67,6 +73,43 @@ class Hider final : public moya::Hider {
     const boost::shared_ptr<Buckets> & buckets() const;
 
  private:
+    /** An axis aligned box, by its least and greatest corners. **/
+    struct Bound {
+        glm::vec3 min{0.0F};
+        glm::vec3 max{0.0F};
+    };
+
+    /**
+     * One of the eight corners of a box. Bit 0 of the index picks x, bit 1 picks y and bit 2
+     * picks z, each from max when set and from min when clear.
+     **/
+    static glm::vec3 boxCorner(const glm::vec3 & min, const glm::vec3 & max, int index);
+
+    /**
+     * The axis aligned bound of a box carried through an affine matrix.
+     *
+     * All eight corners go through the matrix. Under a rotation any corner can hold the extreme
+     * on an axis, so the two diagonal corners alone can leave part of the box outside.
+     **/
+    static Bound transformBound(const glm::mat4x4 & transform, const Bound & object);
+
+    /**
+     * Grow an eye space bound to cover where a moving primitive is at both ends of the shutter,
+     * from its object space bound. A still primitive's bound is left as it is.
+     **/
+    static void sweep(const v3d::render::offline::MovingTransform & motion, const Bound & object, Bound* swept);
+
+    /**
+     * Give every vertex that brought no colour or normal of its own the primitive's, and every
+     * vertex the primitive's plane as its geometric normal.
+     *
+     * A vertex with no "Cs" takes the primitive's colour, which the surface shader then reads as
+     * Cs. The normals go the same way: Ng is the primitive's plane on every vertex, and a vertex
+     * that brought no varying "N" shades with it, so a polygon that gives no normals is shaded
+     * faceted.
+     **/
+    static void fillVertices(Polygon* poly);
+
     /**
      * Measure a placed primitive by its bound in object space: cull it, mark whether it can be
      * diced, and give its bound in raster space.

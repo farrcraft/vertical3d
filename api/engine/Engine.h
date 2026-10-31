@@ -358,6 +358,21 @@ class Engine {
     void route(const SDL_Event& event);
 
  private:
+     /** The settings key the player's key bindings are kept under. **/
+     static constexpr const char* BINDINGS = "bindings";
+
+     /**
+      * The player's key bindings as the settings keep them: a list of overrides, each the command,
+      * the source it replaces, and the name it binds instead.
+      **/
+     static boost::json::array saveBindings(const std::vector<v3d::event::Bindings::Override>& overrides);
+
+     /**
+      * The overrides a settings document holds. An entry of another shape, from a hand edit, is
+      * left out.
+      **/
+     static std::vector<v3d::event::Bindings::Override> readBindings(const boost::json::value& saved);
+
      /**
       * Handle one event the input devices did not take: a quit, a resize, a focus change or
       * a window minimized or restored.

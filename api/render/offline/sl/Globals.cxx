@@ -16,21 +16,17 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-void put(runtime::Machine* machine, int reg, unsigned int lane, const glm::vec3 & value) {
+void Globals::put(runtime::Machine* machine, int reg, unsigned int lane, const glm::vec3 & value) {
     if (reg >= 0) {
         machine->value(reg).triple(lane, value);
     }
 }
 
-void put(runtime::Machine* machine, int reg, unsigned int lane, float value) {
+void Globals::put(runtime::Machine* machine, int reg, unsigned int lane, float value) {
     if (reg >= 0) {
         machine->value(reg).number(lane, value);
     }
 }
-
-};  // namespace
 
 Globals::Globals(const runtime::Program & program) :
     position_(program.symbol("P")),

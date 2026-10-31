@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/scene/Timeline.h>
 
 #include <vector>
 
@@ -54,6 +55,11 @@ class Playback final {
     void lastKey(const Items& items);
 
  private:
+    /**
+     * A keyed frame as a whole frame within the timeline's range, rounded up or down.
+     **/
+    static int wholeFrame(float frame, const Timeline& timeline, bool up);
+
     /**
      * The frames the items have keys on, or every item's when there are none.
      **/

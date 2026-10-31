@@ -31,30 +31,6 @@
 
 namespace v3d::ui::loader {
 
-namespace {
-
-/**
- * A colour's value: four numbers, RGBA.
- * @return the colour, or nothing when the value is missing or is not four numbers
- **/
-std::optional<glm::vec4> colour(const boost::json::object& property) {
-    const boost::json::array* values = v3d::asset::readArray(property, "value");
-    if (values == nullptr || values->size() != 4) {
-        return std::nullopt;
-    }
-    glm::vec4 result(0.0F);
-    for (std::size_t index = 0; index < values->size(); index++) {
-        const boost::json::value& value = (*values)[index];
-        if (!value.is_number()) {
-            return std::nullopt;
-        }
-        result[static_cast<glm::vec4::length_type>(index)] = static_cast<float>(value.to_number<double>());
-    }
-    return result;
-}
-
-};  // namespace
-
 ThemeReader::ThemeReader(const boost::shared_ptr<v3d::log::Logger>& logger) : logger_(logger) {
 }
 
@@ -199,6 +175,22 @@ boost::shared_ptr<style::Property> ThemeReader::readProperty(const std::string& 
     }
     *propertyClass = "image";
     return boost::make_shared<style::property::Image>(style::property::Image::Named{.name = name, .source = *source});
+}
+
+std::optional<glm::vec4> ThemeReader::colour(const boost::json::object& property) {
+    const boost::json::array* values = v3d::asset::readArray(property, "value");
+    if (values == nullptr || values->size() != 4) {
+        return std::nullopt;
+    }
+    glm::vec4 result(0.0F);
+    for (std::size_t index = 0; index < values->size(); index++) {
+        const boost::json::value& value = (*values)[index];
+        if (!value.is_number()) {
+            return std::nullopt;
+        }
+        result[static_cast<glm::vec4::length_type>(index)] = static_cast<float>(value.to_number<double>());
+    }
+    return result;
 }
 
 };  // namespace v3d::ui::loader

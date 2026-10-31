@@ -15,18 +15,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * A keyed frame as a whole frame within the timeline's range, rounded up or down.
- **/
-int wholeFrame(float frame, const Timeline& timeline, bool up) {
-    const float held = std::clamp(frame, static_cast<float>(timeline.start), static_cast<float>(timeline.end));
-    return static_cast<int>(up ? std::ceil(held) : std::floor(held));  // checked: a key's frame is finite, and the clamp holds it in the range
-}
-
-};  // namespace
-
 Playback::Playback(const boost::shared_ptr<Document>& document) :
     document_(document),
     playing_(false),
@@ -108,6 +96,13 @@ void Playback::lastKey(const Items& items) {
     if (!frames.empty()) {
         document_->goTo(wholeFrame(frames.back(), document_->scene()->timeline(), false));
     }
+}
+
+/**
+ **/
+int Playback::wholeFrame(float frame, const Timeline& timeline, bool up) {
+    const float held = std::clamp(frame, static_cast<float>(timeline.start), static_cast<float>(timeline.end));
+    return static_cast<int>(up ? std::ceil(held) : std::floor(held));  // checked: a key's frame is finite, and the clamp holds it in the range
 }
 
 };  // namespace v3d::editor

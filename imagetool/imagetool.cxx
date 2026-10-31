@@ -11,6 +11,7 @@
 #include <api/image/Image.h>
 #include <api/image/Pack.h>
 #include <api/log/Logger.h>
+#include <imagetool/SheetRequest.h>
 
 #include <algorithm>
 #include <cctype>
@@ -71,20 +72,6 @@ std::vector<boost::filesystem::path> imageFiles(const std::vector<std::string> &
 bool plainName(const std::string & name) {
     return !name.empty() && name != "." && name != ".." && name.find_first_of("/\\:") == std::string::npos;
 }
-
-/** What a --pack or --unpack run was asked to do. **/
-class SheetRequest final {
- public:
-    /** The images, and directories of images, to pack. **/
-    std::vector<std::string> pack;
-    /** The sprites document to unpack. **/
-    std::string unpack;
-    /** The sheet to pack, or the one sheet to unpack. Empty unpacks every sheet. **/
-    std::string sheet;
-    /** Where a pack writes the sheet's image. Empty writes <sheet>.png. **/
-    std::string outfile;
-    bool silent = false;
-};
 
 /**
  * Pack the named images into one sheet, write it, and write where each sprite went into the

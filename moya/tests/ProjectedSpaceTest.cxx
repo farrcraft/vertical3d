@@ -34,11 +34,6 @@
 
 namespace {
 
-/** A point off the axis, in camera space, in front of the camera. BODY names the same one. **/
-glm::vec3 offAxis() {
-    return {0.4F, -0.2F, 2.0F};
-}
-
 /**
  * The shader each case runs. It states the point in camera space with a cast, so it is the
  * same point whatever the hider's current space is. It reads the point back in camera space
@@ -61,6 +56,11 @@ struct Answers {
     glm::vec3 back{0.0F};
     glm::vec3 cast{0.0F};
 };
+
+/** A point off the axis, in camera space, in front of the camera. BODY names the same one. **/
+glm::vec3 offAxis() {
+    return {0.4F, -0.2F, 2.0F};
+}
 
 /**
  * A shader's body run over a batch of one against a renderer, which answers its spaces.

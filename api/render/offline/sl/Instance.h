@@ -85,6 +85,22 @@ class Instance final {
 
  private:
     /**
+     * The SL type a RIB declaration says the value is.
+     *
+     * RIB's integer is SL's float, because SL has no integer type. RIB's hpoint has no SL type,
+     * so a parameter declared as one will not coerce.
+     **/
+    static Type declared(rib::Declaration::Type type);
+
+    /**
+     * A position or a direction out of the space it was stated in and into the machine's.
+     *
+     * Each point-like type takes its own transform. Giving a normal a vector's transform is
+     * invisible under a uniform scale, so the mistake is easy to miss.
+     **/
+    static glm::vec3 moved(Type type, const glm::mat4x4 & placement, const glm::vec3 & given);
+
+    /**
      * One parameter of the shader, and the value a scene bound onto it if one did.
      *
      * A parameter that no scene bound is not written. The prologue has already left its

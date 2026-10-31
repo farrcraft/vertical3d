@@ -39,6 +39,37 @@
 
 namespace {
 
+boost::shared_ptr<v3d::editor::ViewPort> frontView();
+
+/**
+ * A cube at the middle of the front view, a point light up and to its right, and a camera
+ * down and to its left, each glyph wholly inside the view.
+ **/
+struct Lit {
+    Lit() :
+        cube(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
+        light(boost::make_shared<v3d::editor::Light>()),
+        camera(boost::make_shared<v3d::editor::Camera>()),
+        view(frontView()) {
+        // both well inside the view's depth, so every point of either glyph is in front of
+        // the eye, and the camera's picture narrow enough to stay clear of the middle
+        light->translation(glm::vec3(0.75F, 0.75F, -0.5F));
+        camera->translation(glm::vec3(-0.5F, -0.55F, -0.5F));
+        v3d::editor::Camera::Lens lens;
+        lens.fov = 30.0F;
+        camera->lens(lens);
+        scene.add(cube);
+        scene.add(light);
+        scene.add(camera);
+    }
+
+    v3d::editor::Scene scene;
+    boost::shared_ptr<v3d::editor::Mesh> cube;
+    boost::shared_ptr<v3d::editor::Light> light;
+    boost::shared_ptr<v3d::editor::Camera> camera;
+    boost::shared_ptr<v3d::editor::ViewPort> view;
+};
+
 /**
  * A square front view, four hundred pixels on a side, of the default orthographic
  * profile. The eye is at z of -1 looking along +z, and the volume spans [-1, 1] on both
@@ -63,6 +94,16 @@ glm::vec2 screen(const boost::shared_ptr<v3d::editor::ViewPort>& view, const glm
     int viewport[4] = { 0, 0, 400, 400 };
     const glm::vec3 projected = camera->project(point, viewport);
     return glm::vec2(projected[0], projected[1]);
+}
+
+/**
+ * How many things of a mask a rectangle between two world points holds, in the front view.
+ **/
+std::size_t inside(const v3d::editor::Scene& scene, const glm::vec3& corner, const glm::vec3& opposite,
+    v3d::editor::SelectMask mask) {
+    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
+    v3d::editor::Picker picker;
+    return picker.inside(scene, *view, screen(view, corner), screen(view, opposite), mask).size();
 }
 
 BOOST_AUTO_TEST_CASE(picker_object_test) {
@@ -261,16 +302,6 @@ BOOST_AUTO_TEST_CASE(picker_edge_test) {
     BOOST_CHECK_EQUAL(missed.valid, false);
 }
 
-/**
- * How many things of a mask a rectangle between two world points holds, in the front view.
- **/
-std::size_t inside(const v3d::editor::Scene& scene, const glm::vec3& corner, const glm::vec3& opposite,
-    v3d::editor::SelectMask mask) {
-    const boost::shared_ptr<v3d::editor::ViewPort> view = frontView();
-    v3d::editor::Picker picker;
-    return picker.inside(scene, *view, screen(view, corner), screen(view, opposite), mask).size();
-}
-
 BOOST_AUTO_TEST_CASE(picker_inside_object_test) {
     v3d::editor::Scene scene;
     const boost::shared_ptr<v3d::editor::Mesh> cube = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
@@ -348,35 +379,6 @@ BOOST_AUTO_TEST_CASE(picker_empty_test) {
     BOOST_CHECK(picker.inside(scene, unsized, glm::vec2(0.0F, 0.0F), glm::vec2(400.0F, 400.0F),
         v3d::editor::SelectMask::Object).empty());
 }
-
-/**
- * A cube at the middle of the front view, a point light up and to its right, and a camera
- * down and to its left, each glyph wholly inside the view.
- **/
-struct Lit {
-    Lit() :
-        cube(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())),
-        light(boost::make_shared<v3d::editor::Light>()),
-        camera(boost::make_shared<v3d::editor::Camera>()),
-        view(frontView()) {
-        // both well inside the view's depth, so every point of either glyph is in front of
-        // the eye, and the camera's picture narrow enough to stay clear of the middle
-        light->translation(glm::vec3(0.75F, 0.75F, -0.5F));
-        camera->translation(glm::vec3(-0.5F, -0.55F, -0.5F));
-        v3d::editor::Camera::Lens lens;
-        lens.fov = 30.0F;
-        camera->lens(lens);
-        scene.add(cube);
-        scene.add(light);
-        scene.add(camera);
-    }
-
-    v3d::editor::Scene scene;
-    boost::shared_ptr<v3d::editor::Mesh> cube;
-    boost::shared_ptr<v3d::editor::Light> light;
-    boost::shared_ptr<v3d::editor::Camera> camera;
-    boost::shared_ptr<v3d::editor::ViewPort> view;
-};
 
 BOOST_FIXTURE_TEST_CASE(picker_glyph_test, Lit) {
     v3d::editor::Picker picker;

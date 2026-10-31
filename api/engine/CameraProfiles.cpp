@@ -18,19 +18,7 @@
 
 namespace v3d::engine {
 
-namespace {
-
-// the values a profile entry gets when it leaves these out, where they differ from a new Profile
-constexpr float ENTRY_ZOOM = 10.0F;
-constexpr float ENTRY_NEAR = 0.1F;
-constexpr glm::vec3 ENTRY_EYE{0.0F, 0.0F, -10.0F};
-
-/**
- * Read a three element array as a vector.
- * @return the value read, or the fallback if the entry is missing, the wrong length, or holds
- *         something other than numbers
- **/
-glm::vec3 vector(const boost::json::object& entry, const char* key, const glm::vec3& fallback) {
+glm::vec3 CameraProfiles::vector(const boost::json::object& entry, const char* key, const glm::vec3& fallback) {
     const boost::json::array* values = v3d::asset::readArray(entry, key);
     if (values == nullptr) {
         return fallback;
@@ -45,22 +33,14 @@ glm::vec3 vector(const boost::json::object& entry, const char* key, const glm::v
         static_cast<float>(list[2].to_number<double>()));
 }
 
-/**
- * @return the value read, or the fallback if the entry is missing or not a number
- **/
-float number(const boost::json::object& entry, const char* key, float fallback) {
+float CameraProfiles::number(const boost::json::object& entry, const char* key, float fallback) {
     const std::optional<double> value = v3d::asset::readNumber(entry, key);
     return value ? static_cast<float>(*value) : fallback;
 }
 
-/**
- * @return the value read, or the fallback if the entry is missing or not a bool
- **/
-bool flag(const boost::json::object& entry, const char* key, bool fallback) {
+bool CameraProfiles::flag(const boost::json::object& entry, const char* key, bool fallback) {
     return v3d::asset::readBool(entry, key).value_or(fallback);
 }
-
-};  // namespace
 
 /**
  **/

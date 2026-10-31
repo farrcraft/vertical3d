@@ -27,31 +27,6 @@
 
 namespace v3d::editor {
 
-namespace {
-
-/**
- * What the search button says.
- **/
-constexpr const char* SEARCH = "Search";
-
-/**
- * What follows a project's name while it has unsaved changes.
- **/
-constexpr const char* UNSAVED = " *";
-
-/**
- * Set a component's box in window pixels.
- **/
-void box(v3d::ui::Component* component, const glm::vec4& region) {
-    v3d::ui::Layout& layout = component->layout();
-    layout.x = v3d::ui::Length(region.x, v3d::ui::Length::Unit::Pixels);
-    layout.y = v3d::ui::Length(region.y, v3d::ui::Length::Unit::Pixels);
-    layout.width = v3d::ui::Length(std::max(0.0F, region.z), v3d::ui::Length::Unit::Pixels);
-    layout.height = v3d::ui::Length(std::max(0.0F, region.w), v3d::ui::Length::Unit::Pixels);
-}
-
-};  // namespace
-
 /**
  **/
 TopBar::TopBar(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const v3d::ui::paint::Measure& measure) :
@@ -127,6 +102,16 @@ void TopBar::sync(const State& state, const glm::vec4& band) {
             }
         }
     }
+}
+
+/**
+ **/
+void TopBar::box(v3d::ui::Component* component, const glm::vec4& region) {
+    v3d::ui::Layout& layout = component->layout();
+    layout.x = v3d::ui::Length(region.x, v3d::ui::Length::Unit::Pixels);
+    layout.y = v3d::ui::Length(region.y, v3d::ui::Length::Unit::Pixels);
+    layout.width = v3d::ui::Length(std::max(0.0F, region.z), v3d::ui::Length::Unit::Pixels);
+    layout.height = v3d::ui::Length(std::max(0.0F, region.w), v3d::ui::Length::Unit::Pixels);
 }
 
 };  // namespace v3d::editor

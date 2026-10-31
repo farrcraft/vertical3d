@@ -30,6 +30,8 @@ using v3d::grid::tileDistance;
 
 namespace {
 
+constexpr TileCoord CENTRE{ 4, 4 };
+
 // the preprocessor splits a macro argument on every comma outside parentheses, so a braced
 // TileCoord cannot be written inside a BOOST_CHECK. this is the same literal in a form the
 // assertion macros can take
@@ -42,8 +44,6 @@ constexpr TileCoord at(int x, int y) {
 TileGrid makeGrid() {
     return TileGrid(9, 9);
 }
-
-constexpr TileCoord CENTRE{ 4, 4 };
 
 // what a flood fill reached a tile at, or -1 if it did not reach it
 int costOf(const std::vector<ReachableTile>& reached, TileCoord tile) {

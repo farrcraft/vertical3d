@@ -23,12 +23,7 @@
 
 namespace v3d::asset::media {
 
-namespace {
-
-/**
- * @return the value read, or the fallback if the entry is missing or not a whole number
- **/
-int whole(const boost::json::object& entry, const char* key, int fallback) {
+int SpriteSheets::whole(const boost::json::object& entry, const char* key, int fallback) {
     if (!entry.contains(key) || !entry.at(key).is_number()) {
         return fallback;
     }
@@ -37,14 +32,9 @@ int whole(const boost::json::object& entry, const char* key, int fallback) {
     return error ? fallback : value;
 }
 
-/**
- * @return the value read, or an empty string if the entry is missing or not a string
- **/
-std::string text(const boost::json::object& entry, const char* key) {
+std::string SpriteSheets::text(const boost::json::object& entry, const char* key) {
     return v3d::asset::readString(entry, key).value_or(std::string());
 }
-
-};  // namespace
 
 /**
  **/
@@ -52,14 +42,7 @@ SpriteSheets::SpriteSheets(const boost::shared_ptr<v3d::log::Logger>& logger) :
     logger_(logger) {
 }
 
-namespace {
-
-/**
- * Read one sheet's sprites into it.
- *
- * @return whether every one of them was understood
- **/
-bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
+bool SpriteSheets::readSprites(const boost::json::object& entry, SpriteSheet* sheet,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
     if (!entry.contains("sprites") || !entry.at("sprites").is_array()) {
         return true;  // a sheet naming an image and no sprites is empty rather than wrong
@@ -87,8 +70,6 @@ bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
     }
     return understood;
 }
-
-};  // namespace
 
 /**
  **/

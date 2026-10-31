@@ -24,6 +24,9 @@ namespace {
 
 using v3d::ui::style::Resolver;
 
+constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
+
 boost::shared_ptr<v3d::ui::style::Style> style(const std::string& name, const std::string& className) {
     return boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = name, .className = className});
 }
@@ -36,9 +39,6 @@ void colour(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::s
 void metric(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name, float value) {
     target->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
 }
-
-constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
-constexpr glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
 
 BOOST_AUTO_TEST_SUITE(resolver_test)
 

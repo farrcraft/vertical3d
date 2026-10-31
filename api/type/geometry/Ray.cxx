@@ -19,27 +19,6 @@
 
 namespace v3d::type::geometry {
 
-namespace {
-
-/**
- * A direction shorter than this is degenerate. A triangle determinant smaller than this
- * means the ray runs in the plane of the triangle, where the barycentric solution is
- * meaningless.
- **/
-constexpr float epsilon = 1e-7F;
-
-/**
- * Whether every component of a ray's origin and direction is finite. Each intersection test
- * rejects a ray that is not. A comparison with NaN is false, so a NaN ray would otherwise
- * pass every rejection test.
- **/
-bool finite(const glm::vec3& origin, const glm::vec3& direction) {
-    return std::isfinite(origin.x) && std::isfinite(origin.y) && std::isfinite(origin.z) &&
-        std::isfinite(direction.x) && std::isfinite(direction.y) && std::isfinite(direction.z);
-}
-
-};  // namespace
-
 /**
  **/
 Ray::Ray() :
@@ -201,6 +180,11 @@ bool Ray::intersects(const Plane& plane, float* distance) const {
         *distance = hit;
     }
     return true;
+}
+
+bool Ray::finite(const glm::vec3& origin, const glm::vec3& direction) {
+    return std::isfinite(origin.x) && std::isfinite(origin.y) && std::isfinite(origin.z) &&
+        std::isfinite(direction.x) && std::isfinite(direction.y) && std::isfinite(direction.z);
 }
 
 };  // namespace v3d::type::geometry

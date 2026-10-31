@@ -23,6 +23,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::editor {
@@ -90,6 +92,36 @@ class ShadedPass final {
     bool nonSolid() const noexcept;
 
  private:
+    /**
+     * One vertex as the pipeline reads it.
+     **/
+    struct Vertex {
+        glm::vec3 position;
+        glm::vec3 normal;
+    };
+
+    /**
+     * What the shaders read from the push constant: the item's placement and its colour.
+     **/
+    struct Object {
+        glm::mat4 model;
+        glm::vec4 colour;
+    };
+
+    /**
+     * The bias every surface is drawn at, in the depth format's units and in units of the
+     * surface's slope. It pushes a surface back just far enough that a line drawn on it wins the
+     * depth test.
+     **/
+    static constexpr float BIAS_CONSTANT = 1.0F;
+    static constexpr float BIAS_SLOPE = 1.0F;
+
+    /**
+     * Which side a draw keeps, in the order the pipelines are held.
+     **/
+    static constexpr std::size_t FRONT = 0;
+    static constexpr std::size_t BACK = 1;
+
     /**
      * One mesh's triangles on the device, and the change count they were built at.
      **/

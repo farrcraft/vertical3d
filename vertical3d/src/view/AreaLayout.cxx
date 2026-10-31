@@ -22,18 +22,9 @@
 
 namespace v3d::editor {
 
-namespace {
-
 /**
- * How many steps a snapped divider takes across its split.
  **/
-constexpr float TENTHS = 10.0F;
-
-/**
- * Take one editor out of an area, and keep the area showing the one it showed, or the one
- * before it when that is the one taken.
- **/
-AreaLayout::Editor take(AreaLayout::Area* area, std::size_t editor) {
+AreaLayout::Editor AreaLayout::take(AreaLayout::Area* area, std::size_t editor) {
     AreaLayout::Editor taken = area->editors[editor];
     area->editors.erase(area->editors.begin() + static_cast<std::ptrdiff_t>(editor));
     if (editor < area->chosen || (editor == area->chosen && area->chosen > 0)) {
@@ -43,18 +34,17 @@ AreaLayout::Editor take(AreaLayout::Area* area, std::size_t editor) {
 }
 
 /**
- * @return a region shrunk by a margin on every side, and never to less than nothing
  **/
-glm::vec4 inset(const glm::vec4& region, float margin) {
+glm::vec4 AreaLayout::inset(const glm::vec4& region, float margin) {
     return glm::vec4(region.x + margin, region.y + margin,
         std::max(0.0F, region.z - (2.0F * margin)), std::max(0.0F, region.w - (2.0F * margin)));
 }
 
-bool contains(const glm::vec4& region, float x, float y) noexcept {
+/**
+ **/
+bool AreaLayout::contains(const glm::vec4& region, float x, float y) noexcept {
     return x >= region.x && x < region.x + region.z && y >= region.y && y < region.y + region.w;
 }
-
-};  // namespace
 
 /**
  **/
