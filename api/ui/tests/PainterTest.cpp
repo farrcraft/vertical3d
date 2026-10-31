@@ -188,8 +188,8 @@ BOOST_AUTO_TEST_CASE(a_plate_with_no_border_is_one_shape) {
 }
 
 /**
- * A shadow is its colour over the box and at the box's edge, and fades to nothing at its reach
- * along half a turn of a cosine, so it falls slowly at both ends and fastest in the middle.
+ * A shadow is its colour over the box and at the box's edge, and fades to nothing at its reach.
+ * The fade is half a turn of a cosine, so it falls slowly at both ends and fastest in the middle.
  **/
 BOOST_AUTO_TEST_CASE(a_shadow_fades_from_the_box_to_nothing) {
     const float radius = 8.0F;

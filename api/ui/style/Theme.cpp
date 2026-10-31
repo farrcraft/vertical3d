@@ -39,7 +39,7 @@ bool alike(const Style& one, const Style& other) {
 
 /**
  * A new style of the same kind, class and name as another, holding the same properties. The
- * properties are shared; the style is not, so merging into one theme's copy leaves another's.
+ * properties are shared but the style is not, so merging into one theme's copy leaves another's.
  **/
 boost::shared_ptr<Style> copied(const Style& style) {
     boost::shared_ptr<Style> made;

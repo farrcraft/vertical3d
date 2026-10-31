@@ -221,7 +221,7 @@ layer keeps a `Transition` for a widget's fill in the widget's `Retained` entry,
 `Context::eased(id, colour)`. A transition outlives the component renderer, which a rescale
 rebuilds, and goes with its component or with its id when that ages out.
 
-- **A change of colour starts a transition.** Drawing code works out the colour it wants this
+- **A change of colour starts a transition.** Drawing code works out the colour to draw this
   frame, exactly as it would without transitions, and passes it to `Transition::toward()`. When
   it differs from the last colour asked for, the transition starts from the colour shown at that
   moment. Nothing hooks the cursor, so a change made from the keyboard or by the app eases the
@@ -240,7 +240,7 @@ rebuilds, and goes with its component or with its id when that ages out.
   not multiplied by the scale, and `Dressing::resize()` copies them with the sizes.
 
 To animate something new, give its colour a `Transition` in `Motion` or in `Retained`, and pass
-the colour it wants each frame through it. A field added to `Motion` costs every component.
+the colour to draw each frame through it. A field added to `Motion` costs every component.
 
 Background: [ADR-0132](../../adr/0132-ui-transition-state-lives-on-what-it-animates.md)
 

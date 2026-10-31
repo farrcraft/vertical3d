@@ -173,8 +173,8 @@ class Screen final {
      * over both, into the canvas. Either may be missing.
      *
      * A component shows its tooltip once the cursor has rested on it for the dressing's
-     * tooltip delay, or for the quick delay when a tooltip was showing a moment before, so
-     * moving along a row of buttons shows each one's at once. A press puts it away.
+     * tooltip delay. When a tooltip was showing a moment before, the quick delay applies
+     * instead, so moving along a row of buttons shows each one's at once. A press puts it away.
      *
      * @param ui what to draw, or null for nothing but the statistics
      **/

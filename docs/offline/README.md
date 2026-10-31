@@ -104,7 +104,8 @@ because most take varargs and a `va_list` cannot be built at run time.
 ### The render context
 
 **`RenderContext` has one method per RI request**, and holds the world from `WorldBegin` to
-`WorldEnd`. Each part of the graphics state is a class of its own in `moya::state`, in `moya/libmoya/state/`:
+`WorldEnd`. Each part of the graphics state is a class of its own in `moya::state`, in
+`moya/libmoya/state/`:
 
 | Class | Holds |
 |---|---|
@@ -123,8 +124,8 @@ The planes a frame is drawn into are `context().picture()`, indexed by `moya::st
 
 **A hider is a `moya::Hider`.** It reports whether it sees only the traced scene
 (`traces()`), and it renders what the context gathered (`render()`). `RenderContext` holds one.
-`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::raytrace::Hider`. A hider name moya does
-not recognise is logged, and the current hider stays.
+`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::raytrace::Hider`. A hider name
+moya does not recognise is logged, and the current hider stays.
 
 Both hiders read one graphics state and one camera, write one framebuffer, and share the film,
 the shading language and the ray tracer. They differ in these ways:

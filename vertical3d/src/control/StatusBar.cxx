@@ -90,7 +90,7 @@ std::string StatusBar::rate(std::uint64_t nanoseconds) {
     if (nanoseconds == 0) {
         return {};
     }
-    return std::to_string(static_cast<std::int64_t>(std::lround(SECOND / static_cast<double>(nanoseconds)))) + " fps";
+    return std::to_string(std::lround(SECOND / static_cast<double>(nanoseconds))) + " fps";
 }
 
 /**

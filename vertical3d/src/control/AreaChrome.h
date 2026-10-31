@@ -93,7 +93,7 @@ class AreaChrome final {
 
     /**
      * Build the containers again if the areas, their editors or the names of their menus
-     * changed, put each where its area is, and mark what each viewport holds and the select
+     * changed, and put each where its area is. Mark what each viewport holds and the select
      * mask on its header's menus. An area with no room hides its container.
      *
      * @param mask the select mask in force
@@ -255,9 +255,9 @@ class AreaChrome final {
     static void box(v3d::ui::Component* component, const glm::vec4& region);
 
     /**
-     * @return what decides whether the containers have to be built again: each area's id, the
-     *         kind of editor it shows, its editors' ids and labels, and the names of its view's
-     *         menus and of the mask
+     * @return what decides whether the containers have to be built again. That is each area's
+     *         id, the kind of editor it shows, its editors' ids and labels, and the names of its
+     *         view's menus and of the mask
      **/
     static std::string signature(const view::AreaViews& views, selection::SelectMask mask);
 

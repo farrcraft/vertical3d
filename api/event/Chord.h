@@ -36,8 +36,8 @@ struct Modifiers final {
  *
  * A binding names a chord by putting modifier words before the key, joined by "+": "ctrl+z",
  * "ctrl+shift+z", "alt+left". The words are ctrl, shift and alt, and each matches either side
- * of the keyboard. A name with no "+" is a key alone. So is a name with a word before the last
- * "+" that is not one of the three, which then names a key no device sends.
+ * of the keyboard. A name with no "+" is a key alone. A name with a word before the last "+"
+ * that is not one of the three is a key alone too, and names a key no device sends.
  **/
 struct Chord final {
     std::string key;

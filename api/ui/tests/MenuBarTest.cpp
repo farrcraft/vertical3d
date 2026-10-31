@@ -667,8 +667,9 @@ BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
 }
 
 /**
- * The arrows walk an open bar: down and up through the deepest panel, stepping over a separator
- * and wrapping, right into a submenu at once, left back out of it and across to the other menu.
+ * The arrows walk an open bar. Down and up move through the deepest panel, stepping over a
+ * separator and wrapping. Right enters a submenu at once, and left comes back out of it and
+ * across to the other menu.
  * Return sends the chosen item and closes the bar. A closed bar takes no key.
  **/
 BOOST_AUTO_TEST_CASE(the_arrows_walk_an_open_bar) {

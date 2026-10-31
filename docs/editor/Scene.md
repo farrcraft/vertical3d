@@ -186,10 +186,10 @@ kinds:
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
   its name, its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is
   the item's own count of changes, which the name's setter, every placement setter and every
-  setter of what its kind holds adds one to, and for a mesh `BRep::changes()` or for a curve
-  `Curves::changes()` as well. A setter that writes what is already there counts too. Each count
-  only goes up, so the sum moves exactly when one of them does. A change of selection does not move it. A save writes an item again only
-  when its revision has moved.
+  setter of what its kind holds adds one to. A mesh adds `BRep::changes()` to it, and a curve
+  `Curves::changes()`. A setter that writes what is already there counts too. Each count only
+  goes up, so the sum moves exactly when one of them does. A change of selection does not move
+  it. A save writes an item again only when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,
   and `Scene::item(id)` finds any kind.
@@ -392,12 +392,13 @@ built as the editor runs and put before the editor's own container so its menus 
   editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
   chosen one is checked.
 - The containers are built again when the areas, the kind of editor each shows, their editors,
-  or what a view's menus are named for change, and are otherwise moved each frame to where the
-  areas are. A container whose area has no room is hidden.
+  or what a view's menus are named for change. Otherwise they are moved each frame to where
+  the areas are. A container whose area has no room is hidden.
 
 The area menu's commands are in the `area` context, a viewport's camera and shading menus' in
-the `view` context, and its mask menu's in the `select` context. A header's command carries its area's id as its data, and the same
-command sent by a key or the View menu acts on the active area.
+the `view` context, and its mask menu's in the `select` context. A header's command carries its
+area's id as its data, and the same command sent by a key or the View menu acts on the active
+area.
 
 | Command | Effect |
 |---|---|
@@ -458,11 +459,11 @@ areas never marks a project unsaved, and the project's files hold only content.
   before another project is opened, and around each change of workspace. A project opened or
   saved under a new name shows its own last workspace, or keeps the arrangement it has.
 
-**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace, which shows it
-(`workspace::show`, carrying the workspace's name) and is checked while it is shown, then the
-project's name with ` *` after it while it has unsaved changes, and a Search button at the right
-end that opens the command search. They are a container listed after the editor's own, over the
-menu bar's band, which takes a press only on a label.
+**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace. A tab shows its
+workspace (`workspace::show`, carrying the workspace's name) and is checked while it is shown.
+After the tabs come the project's name, with ` *` after it while it has unsaved changes, and a
+Search button at the right end that opens the command search. They are a container listed after
+the editor's own, over the menu bar's band, which takes a press only on a label.
 
 **Commands**, in the Window menu:
 
@@ -541,23 +542,23 @@ checked while the camera is orthographic.
 
 **Overlays.** Each view draws two things over itself, in window pixels, in the ui pass:
 
-- **An axis marker**, 36 pixels in from its lower left corner: a 20 pixel line along each world
-  axis as the view's camera sees it, in the axis's colour, with the axis's letter beyond its
-  end. An axis seen end on, whose line is shorter than a quarter of its length, has no letter.
-- **A navigation gizmo**, in a perspective view only, 8 pixels in from the upper right corner
-  and below the header. A ball 9 pixels in radius sits 30 pixels from its centre at each end of
-  each axis: filled with the axis's letter at a positive end, with a line back to the centre,
-  and a ring at a negative end. A faint disc lies behind it while the cursor is over it, and a
-  ring around the ball under the cursor.
+- **An axis marker**, 36 pixels in from its lower left corner. It is a 20 pixel line along each
+  world axis as the view's camera sees it, in the axis's colour, with the axis's letter beyond
+  its end. An axis seen end on, whose line is shorter than a quarter of its length, has no letter.
+- **A navigation gizmo**, in a perspective view only, 8 pixels in from the upper right corner and
+  below the header. A ball 9 pixels in radius sits 30 pixels from its centre at each end of each
+  axis. At a positive end it is filled, with the axis's letter and a line back to the centre. At a
+  negative end it is a ring. A faint disc lies behind it while the cursor is over it, and a ring
+  around the ball under the cursor.
 
 The axes are drawn as an orthographic camera would show them, so perspective does not bend
 them. X is `#d9595f`, Y `#72b052` and Z `#5590e8`. The sizes are multiplied by the ui's scale.
 
-A press on a gizmo's ball is taken before the dividers and the tools, and turns the camera to
-look down that axis from its end, at the point the camera looked at: where its line of sight
-passes nearest the origin, or a unit in front of the eye when that is behind it. The eye keeps
-its distance. Looking down y has z for up, as Top and Bottom do, and any other axis y. Where two
-balls overlap, the one nearer the viewer is taken. `src/view/ViewOverlay.h` holds the geometry
+A press on a gizmo's ball is taken before the dividers and the tools. It turns the camera to look
+down that axis from its end, at the point the camera looked at. That point is where its line of
+sight passes nearest the origin, or a unit in front of the eye when that is behind it. The eye
+keeps its distance. Looking down y has z for up, as Top and Bottom do, and any other axis y. Where
+two balls overlap, the one nearer the viewer is taken. `src/view/ViewOverlay.h` holds the geometry
 and the drawing.
 
 **The status bar** runs along the foot of the window, as tall as a menu bar, from the right of
@@ -574,12 +575,12 @@ with a `hairline` along its top. `StatusBar` in `src/control/` says what it show
   counts once whichever of its halves are selected. Nothing selected says so. The frame rate is
   from the engine's mean frame time.
 
-**Notices.** What an operation says, done or refused, shows as a notice at the foot of the
-active area, 16 pixels above its edge and centred: the message with a capital, on a plate in the
-theme's `panel` and `border`, with a menu's shadow. Undo and redo say the name of what they
-undid or redid. A notice shows for 2.5 seconds on the ui's clock, from the first frame it is
-drawn, and fades in and out over 0.15 seconds of that. A new notice replaces the one showing.
-`Notices` in `src/control/` times it.
+**Notices.** What an operation says, done or refused, shows as a notice at the foot of the active
+area, 16 pixels above its edge and centred. The message starts with a capital, on a plate in the
+theme's `panel` and `border`, with a menu's shadow. Undo and redo say the name of what they undid
+or redid. A notice shows for 2.5 seconds on the ui's clock, from the first frame it is drawn, and
+fades in and out over 0.15 seconds of that. A new notice replaces the one showing. `Notices` in
+`src/control/` times it.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with

@@ -208,9 +208,9 @@ of the commands that match it. `CommandSearch` in `src/control/` drives the `sea
 of `data/vgui.json`.
 
 - **What it searches.** Every item of the editor's menu bar and of the active area's header that
-  sends a command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is listed
-  once, from the menu bar. A held command, such as a camera move's modifier, and a dialog's own
-  buttons are on no menu and are not searched. Each row ends with the command's shortcut, the
+  sends a command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is
+  listed once, from the menu bar. A held command, such as a camera move's modifier, and a dialog's
+  own buttons are on no menu and are not searched. Each row ends with the command's shortcut, the
   one its menu item shows.
 - **Matching.** The query is words, matched without regard to case, and each has to be in the
   path. Commands whose own label begins with the first word come first, then those where every

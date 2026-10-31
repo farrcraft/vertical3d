@@ -59,8 +59,8 @@ Notes on individual components:
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
   with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an
   icon is square, as tall as the strip is wide, and one without is a line tall. A toolbar
-  button falls back to its label when its icon is not resolved. A hidden button takes no room in its strip, is not
-  drawn and takes no press, and the buttons after it close up.
+  button falls back to its label when its icon is not resolved. A hidden button takes no room
+  in its strip, is not drawn and takes no press, and the buttons after it close up.
 - **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
   `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
   `check`, `radio`, `input`, `numeric_input`, `key_input`, `slider` and `separator`. A check and
@@ -118,8 +118,8 @@ Notes on individual components:
 ## Tooltips
 
 Any component may carry a `tooltip`. Once the cursor has rested on it for the theme's
-`tooltip-delay`, the screen draws the text in a small plate just under the component, with the
-shortcut of the command the component sends after it in `secondary-text`.
+`tooltip-delay`, the screen draws the text in a small plate just under the component. The
+shortcut of the command the component sends follows it, in `secondary-text`.
 
 - A tooltip shows after `tooltip-quick-delay` instead when another was showing a moment
   before, so moving along a row of buttons shows each one's almost at once. A cursor that has
@@ -133,7 +133,7 @@ shortcut of the command the component sends after it in `secondary-text`.
 - A toolbar's buttons and the components of the tree show tooltips. A menu item shows its
   shortcut beside its label instead.
 - `shell::Screen` draws them, from what `input::Cursor` writes as `Interface::hovered()`. An app
-  that draws a `ComponentRenderer` itself calls `tooltip()` with the text it wants shown.
+  that draws a `ComponentRenderer` itself calls `tooltip()` with the text to show.
 
 ## Enabled and disabled
 

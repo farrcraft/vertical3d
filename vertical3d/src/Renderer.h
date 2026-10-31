@@ -270,8 +270,8 @@ class Renderer final {
     static constexpr float panelPaddingScale = 0.3F;
 
     /**
-     * @return what a ui image source resolves to: a cell of the icon sheet for an icon's name,
-     *         and otherwise the whole of the image the source names, or nothing when the image
+     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
+     *         Any other source is the whole of the image it names, or nothing when the image
      *         cannot be loaded
      **/
     v3d::ui::Image image(const std::string& source);

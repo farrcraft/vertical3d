@@ -221,8 +221,8 @@ jobs:
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache
       # makes a second run cheap. vcpkg refuses a cache directory that is not there.
       #
-      # The key names everything vcpkg hashes into a package's ABI that this job can vary:
-      # vcpkg.json for which ports and the baseline that fixes their versions,
+      # The key names everything vcpkg hashes into a package's ABI that this job can vary. That
+      # is vcpkg.json for the ports and the baseline that fixes their versions,
       # vcpkg-configuration.json for the registries, and the toolset that compiles them. An
       # archive restored under a key missing any of them is not a cheaper build, it is a
       # download whose every entry misses.

@@ -16,8 +16,8 @@ send what Z alone is bound to. A rebinding is stored, saved and compared as one 
 
 A source name may put the modifier words ctrl, shift and alt before its key, as in
 "ctrl+shift+z", each matching either side of the keyboard. A press fires the bindings on its
-key whose modifiers are all held, and of those only the ones naming the most modifiers, so a
-chord claims its key while a plain binding still fires under any modifier no chord on that key
+key whose modifiers are all held, and of those only the ones naming the most modifiers. A chord
+claims its key, while a plain binding still fires under any modifier no chord on that key
 claims. A chord's repeats and release go to what its press fired.
 
 ## Alternatives
@@ -33,8 +33,8 @@ claims. A chord's repeats and release go to what its press fired.
 
 ### Any match fires
 - **For**: the simplest rule, and Godot's default: every binding whose modifiers are held fires.
-- **Against**: Ctrl+Z fires both undo and whatever Z alone is bound to, which is why Godot
-  offers an exact match as well.
+- **Against**: Ctrl+Z fires both undo and whatever Z alone is bound to. Godot offers an exact
+  match as well for this reason.
 - **Rejected because**: a chord has to stop its key's plain binding firing.
 
 ## Consequences

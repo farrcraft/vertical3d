@@ -25,7 +25,7 @@ struct Clock final {
 /**
  * A colour easing from what was shown toward what is asked for.
  *
- * It starts whenever the colour asked for differs from the one asked for before, and starts from
+ * It starts whenever the colour asked for differs from the one asked for before. It starts from
  * the colour shown at that moment, so a change made partway through another eases on from where
  * that one had reached. The first colour asked for is shown at once, and a colour easing in from
  * nothing shown eases in its own colour, so nothing passes through black on its way in.

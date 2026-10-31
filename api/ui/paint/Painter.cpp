@@ -40,9 +40,9 @@ const float threeQuarterTurn = quarterTurn * 3.0F;
 const unsigned int fadeBands = 3;
 
 /**
- * How much of a shadow's colour is left at a share of the way out across its fade: all of it
- * at the box's edge and none at the far end, falling fastest in the middle. It is half a turn
- * of a cosine, lifted to run from one down to zero.
+ * How much of a shadow's colour is left at a share of the way out across its fade. All of it is
+ * left at the box's edge and none at the far end, and it falls fastest in the middle. It is half
+ * a turn of a cosine, lifted to run from one down to zero.
  **/
 float fade(float share) noexcept {
     return 0.5F + (0.5F * std::cos(halfTurn * share));

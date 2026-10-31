@@ -251,8 +251,8 @@ BOOST_AUTO_TEST_CASE(a_theme_beneath_fills_in_what_the_one_over_it_does_not_name
 }
 
 /**
- * Each theme a style is put beneath takes its own copy of the style, of the same kind, so
- * filling in one theme's copy later leaves the other themes and the theme beneath as they were.
+ * Each theme a style is put beneath takes its own copy of the style, of the same kind. Filling
+ * in one theme's copy later leaves the other themes and the theme beneath as they were.
  **/
 BOOST_AUTO_TEST_CASE(a_style_put_beneath_two_themes_is_not_shared_between_them) {
     const auto plate = [](const std::string& name, float value) {

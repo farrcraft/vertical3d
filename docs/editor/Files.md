@@ -170,11 +170,11 @@ that does not move it is not saved.
   dropping the fields it cannot read.
 
 Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, and versions 1
-to 3 have no `name` column. A read takes an older document as it is: every item of a version 1
-document is at the top of the scene, nothing in a version 1 or 2 document is animated, and every
-item of a version 1 to 3 document has an empty name. The first write to it adds what it lacks
-and sets the version to 4, in the same transaction as the rest of the write. Every kind and the curves are at version
-1.
+to 3 have no `name` column. A read takes an older document as it is. Every item of a version 1
+document is at the top of the scene, and nothing in a version 1 or 2 document is animated.
+Every item of a version 1 to 3 document has an empty name. The first write to it adds what it
+lacks and sets the version to 4, in the same transaction as the rest of the write. Every kind
+and the curves are at version 1.
 
 **Reading sets the frame.** Once a document is read, its timeline's frame is the current one,
 and no edit is pending. A read changes no item's values, which

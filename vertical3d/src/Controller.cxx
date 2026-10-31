@@ -574,7 +574,7 @@ bool Controller::render() {
     if (search_) {
         search_->sync();
     }
-    // the menus' labels are where the last frame laid them, which is where they are drawn again
+    // the menus' labels are drawn again where the last frame laid them
     if (topBar_ && menu_ && menu_->count() > 0) {
         const v3d::type::geometry::Bound2D last = menu_->bound(menu_->count() - 1);
         const float end = last.position().x + last.size().x;

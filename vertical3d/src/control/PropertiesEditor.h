@@ -35,8 +35,9 @@ namespace v3d::editor::control {
  *
  * An edit is written into the item as it happens, so the views follow a drag of a number. When
  * the edit ends, or its item stops being the one shown, it is recorded in the history as one
- * change, which undo takes back whole. An edit to a keyed number is pending until the frame is set, as a manipulator's is. A lens, an
- * emission or a style an edit would make invalid is not written.
+ * change, which undo takes back whole. An edit to a keyed number is pending until the frame is
+ * set, as a manipulator's is. A lens, an emission or a style an edit would make invalid is not
+ * written.
  **/
 class PropertiesEditor final {
  public:
