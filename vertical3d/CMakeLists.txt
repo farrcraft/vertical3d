@@ -119,9 +119,10 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_window)
 
 # PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
-# store writes through the database, the document imports USD, and moya renders the render
-# window
-target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_interchange_usd v3dlib_moya)
+# store writes through the database, the document imports USD, moya renders the render window,
+# and the controller reads the mouse's held buttons
+target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_input v3dlib_interchange_usd
+	v3dlib_moya)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")
