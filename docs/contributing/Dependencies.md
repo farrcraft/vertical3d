@@ -149,7 +149,12 @@ You do not need to run `vcpkg install` yourself. The first configure installs th
 packages into the build directory. A `vcpkg install` run from the repository root installs a
 second copy into `vcpkg_installed/` at the root, which the build does not use.
 
-CI uses the vcpkg that the GitHub Windows runner image provides, not `vendor/vcpkg`.
+The baseline is a commit of microsoft/vcpkg, read from your clone's history, so the clone has
+to hold it. A clone older than the baseline fails to find it: `git -C vendor/vcpkg pull`, then
+configure again.
+
+CI does not use `vendor/vcpkg` or the runner image's vcpkg. Each job checks out the baseline
+commit alone, at depth one, bootstraps it, and installs from that.
 
 ## Adding a package
 
@@ -199,22 +204,25 @@ To move every package to newer versions, update the baseline and configure again
 .\vendor\vcpkg\vcpkg.exe x-update-baseline
 ```
 
-**The baseline is in [vcpkg-configuration.json](../../vcpkg-configuration.json)**, not in
-`vcpkg.json`. It names a commit of the microsoft/vcpkg repository, not the ports in your local
-`vendor/vcpkg`. A port that the baseline commit does not contain fails with "the baseline does
-not contain an entry for port X", even when `vendor/vcpkg/ports/X` exists.
+**The baseline is the `builtin-baseline` in [vcpkg.json](../../vcpkg.json).** It names a commit
+of the microsoft/vcpkg repository, which vcpkg reads from your clone's history, not from the
+ports checked out in `vendor/vcpkg`. A port that the baseline commit does not contain fails with
+"the baseline does not contain an entry for port X", even when `vendor/vcpkg/ports/X` exists.
+[vcpkg-configuration.json](../../vcpkg-configuration.json) names no default registry, because
+one there would replace the builtin baseline.
 
-Copy the new baseline into
-[examples/starter/vcpkg-configuration.json](../../examples/starter/vcpkg-configuration.json) as
+Copy the new baseline into [examples/starter/vcpkg.json](../../examples/starter/vcpkg.json) as
 well.
 
 A new baseline usually reinstalls most packages, including boost. See [Build.md](Build.md#traps)
 for the cost.
 
-**Dependabot does not move the baseline.** It updates only a `builtin-baseline` in `vcpkg.json`,
-and this tree keeps the baseline in `vcpkg-configuration.json`. It does open pull requests for
-what it can read, as [.github/dependabot.yml](../../.github/dependabot.yml) configures:
+**Dependabot opens pull requests for these updates**, as
+[.github/dependabot.yml](../../.github/dependabot.yml) configures. Each waits until a release is
+seven days old.
 
+- the vcpkg baseline, weekly. One pull request moves it in `vcpkg.json` and in
+  `examples/starter/vcpkg.json` together;
 - the GitHub actions the workflows use, weekly and in one group. It moves each pinned sha and the
   release in its comment together;
 - the `vendor/libnoise` submodule, monthly;

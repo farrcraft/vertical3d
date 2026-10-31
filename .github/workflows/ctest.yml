@@ -222,11 +222,10 @@ jobs:
       # makes a second run cheap. vcpkg refuses a cache directory that is not there.
       #
       # The key names everything vcpkg hashes into a package's ABI that this job can vary:
-      # vcpkg.json for which ports, vcpkg-configuration.json for the registry baseline that
-      # fixes their versions, and the toolset that compiles them. The baseline is the one
-      # easiest to leave out, because it is pinned in the file the manifest never mentions.
-      # An archive restored under a key missing any of the three is not a cheaper build, it
-      # is a download whose every entry misses.
+      # vcpkg.json for which ports and the baseline that fixes their versions,
+      # vcpkg-configuration.json for the registries, and the toolset that compiles them. An
+      # archive restored under a key missing any of them is not a cheaper build, it is a
+      # download whose every entry misses.
       #
       # There is no rung below the toolset in restore-keys for the same reason: a cache built
       # by another compiler cannot be reused by this one, so fetching it only costs time.
@@ -254,6 +253,25 @@ jobs:
           # an array, so that an empty cache still writes the file
           $restored = @(Get-ChildItem -Path "$env:VCPKG_DEFAULT_BINARY_CACHE" -Recurse -Filter *.zip | ForEach-Object { $_.BaseName })
           Set-Content -Path "$env:RUNNER_TEMP\vcpkg-restored.txt" -Value $restored -Encoding ascii
+
+      # The baseline in vcpkg.json is resolved against the vcpkg checkout that runs the install,
+      # and the image's checkout can be older than the baseline. The baseline commit alone is
+      # checked out instead and bootstrapped, and every later step uses it through
+      # VCPKG_INSTALLATION_ROOT. With no version overrides, that commit holds every port tree
+      # the install reads.
+      - name: Check vcpkg out at the baseline
+        shell: pwsh
+        run: |
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          $root = Join-Path $env:RUNNER_TEMP "vcpkg"
+          git init --quiet $root
+          git -C $root fetch --quiet --depth 1 https://github.com/microsoft/vcpkg.git $baseline
+          if ($LASTEXITCODE -ne 0) { throw "could not fetch the vcpkg baseline $baseline" }
+          git -C $root checkout --quiet --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw "could not check out the vcpkg baseline $baseline" }
+          & (Join-Path $root "bootstrap-vcpkg.bat") -disableMetrics
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
+          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
       # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
       # is not on this image, and its cmake_minimum_required predates what current CMake
