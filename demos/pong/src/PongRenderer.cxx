@@ -32,9 +32,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window,
     court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
-    shell_->present(&engine_, options);
+    shell_->present(&engine_, v3d::shell::Shell::game());
 }
 
 /**

@@ -95,12 +95,6 @@ class Renderer {
      **/
     static constexpr const char* debugTitle = "Debug";
 
-    /**
-     * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
-     * atlas is scaled to this size rather than rasterized at it.
-     **/
-    static constexpr float fontSize = 18.0F;
-
     static constexpr glm::vec4 sky{0.4F, 0.6F, 0.9F, 1.0F};
     static constexpr glm::vec4 textColour{0.95F, 0.95F, 0.95F, 1.0F};
     static constexpr glm::vec4 white{1.0F, 1.0F, 1.0F, 1.0F};

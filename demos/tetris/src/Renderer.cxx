@@ -41,9 +41,7 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::window::Window>& win
     loadPieces(assetManager, logger);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
-    shell_->present(&engine_, options);
+    shell_->present(&engine_, v3d::shell::Shell::game());
     screen_ = shell_->screen();
 }
 

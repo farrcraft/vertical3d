@@ -73,7 +73,8 @@ Every game is drawn in one designed shell, and names only its title and its acce
   ```
 
 - **`Shell::game()` is the screen a game is drawn on**: body text 26 pixels high in a window
-  1080 pixels high, scaled with the window's height. A game passes it to `present()`.
+  1080 pixels high, scaled with the window's height. A game passes it to `present()`, and may
+  change the parts it builds, as voxel does to drop the overlay and add an immediate layer.
 - **The game is paused while the menu is up**, through the `suspend` callback each game gives
   `start()`.
 

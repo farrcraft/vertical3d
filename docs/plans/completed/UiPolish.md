@@ -7,12 +7,12 @@ shadows, transitions and tooltips. The editor's window is a tiling of areas that
 tabs, with clear borders, resizable and maximisable views, a status bar and a command search.
 Every game opens on a titled menu over a dimmed backdrop, in its own accent colour.
 
-`api/ui` is described in [api/ui/](../api/ui/README.md) and [internals/ui/](../internals/ui/README.md),
-and the editor in [editor/](../editor/README.md).
+`api/ui` is described in [api/ui/](../../api/ui/README.md) and [internals/ui/](../../internals/ui/README.md),
+and the editor in [editor/](../../editor/README.md).
 
 A step with a testable CPU half brings test cases with it. A step that changes how something
 looks is checked by running the app and reading a screenshot, as
-[Testing.md](../contributing/Testing.md) describes.
+[Testing.md](../../contributing/Testing.md) describes.
 
 ## What the survey found
 
@@ -54,7 +54,7 @@ size.
 * **The chrome is a menu bar and two toolbars.** The select mask is a text toolbar along the top,
   and the tools are four 16-pixel icons down the left. There is no status bar.
 * **The bindings cannot express a chord**, so undo is Z and redo is Y
-  ([editor/README.md](../editor/README.md#running-it)).
+  ([editor/README.md](../../editor/README.md#running-it)).
 
 **The games:**
 
@@ -182,7 +182,7 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 - `PaletteTest` pins the scale and checks each role's contrast for both ui models. The resolver,
   toolbar, cursor and renderer suites cover derivation, overrides, undoing a theme, the pressed
   state and rounded menus.
-- [Themes.md](../api/ui/Themes.md#colours-from-a-base-an-accent-and-a-contrast) states the
+- [Themes.md](../../api/ui/Themes.md#colours-from-a-base-an-accent-and-a-contrast) states the
   derivation, the override rule and the contrasts.
 
 ### Step 2 — Inter in two weights
@@ -536,8 +536,40 @@ drawn in immediate mode, after weighing retained documents rebuilt on a signatur
 
 ### Step 17 — Each game's pass
 
-Open. Needs steps 14 to 16.
+**Closed.**
 
-- Each game names its title and accent, and draws its menu at the shell's sizes, which ends
-  odyssey's and diorama's 48-pixel menus.
-- Each game is run, its menu, settings and HUD are photographed, and the validation log is read.
+- Each game's `vgui.json` names its menu's title and its accent in a `ui` style named
+  `default`: pong amber, tetris cyan, voxel green, odyssey teal and diorama coral.
+- Every game presents its screen with `Shell::game()`, so its text is 26 pixels at 1080 and
+  follows the window's height. voxel keeps its immediate layer and drops the overlay. pong,
+  tetris and voxel lose their own text sizes, and odyssey and diorama their 48-pixel menus.
+- Each game was run and photographed with its menu up, pong with its Options too, and pong and
+  tetris with their HUD and statistics, and voxel with its debug window. Each menu opened
+  titled, in its accent, over the dimmed game: diorama's sky went from 179, 206, 237 to 72,
+  82, 95 under the backdrop. Every validation log was clean.
+
+## Outcome
+
+Closed 2026-10-31.
+
+**Delivered.** `api/ui` draws from a theme derived from a base, an accent and a contrast, in
+Inter at two weights, scaled to the monitor for a tool and to the window's height for a game.
+It has soft shadows, a backdrop, transitions on a clock of real time, and tooltips with the
+shortcut of the command. Key bindings name chords. The editor's window is a tiling of areas that
+hold editors as tabs, with resizable and maximisable views, view headers and overlays, a top
+bar, a tool shelf, a status bar with notices, a command search, an outliner and a properties
+editor. Every game opens on a titled menu over a dimmed backdrop in its own accent, with
+settings rows that show their values and HUD text drawn from the theme.
+
+**What differed from the plan.** Each step records its own differences. The largest were these:
+
+- Step 1 made secondary text a step lighter than the design drew it, to read at 4.5:1 on a hover.
+- Step 6's keyboard walk of a menu bar's panels moved to step 12.
+- Step 13 gave items names and drew both panels in immediate mode, decided in ADR-0135 and
+  ADR-0136.
+- Step 14 added `panel-opacity`, so a game's 90% panel follows any base it names.
+- Step 15 found pong's rounds could never be changed, and made them a slider.
+- Step 16 kept the well, the court and the pieces in the games' own colours, as their art.
+
+**Left open.** Nothing in the code. Several steps checked a click or a menu key in the running
+editor only through their tests, because SDL takes no posted mouse messages.

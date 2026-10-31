@@ -29,12 +29,24 @@ Every demo follows the same pattern:
 - `main` is one call to `v3d::engine::run<T>(argv[0], identity)`, and the demo is a subclass of
   `v3d::engine::Engine`. The identity names the directory a player's files are kept in.
 - Data is read from the `data/` directory beside the executable. The build copies the demo's
-  own `data/` there, and the shared fonts from the repository's root `data/`.
+  own `data/` there, and the shared fonts and game theme from the repository's root `data/`.
 - `data/config.json` lists the demo's documents by kind. Each kind is one a library reads or
   one of the demo's own.
 - The log is where [api/engine/README.md](api/engine/README.md#logging) says.
 - Keys are bound to commands in `data/mappings.json`. A command is a context and a name,
   written `context::name`.
+- The menu, its text and any text over the game are drawn in the shell's game theme, on the
+  screen `Shell::game()` gives, scaled with the window's height. `data/vgui.json` names only the
+  menu's `title` and the accent colour in a `ui` style named `default`
+  ([api/engine/Shell.md](api/engine/Shell.md#the-games-look)):
+
+  | Demo | Title | Accent |
+  |---|---|---|
+  | Pong | Pong | amber |
+  | Tetris | Tetris | cyan |
+  | Voxel | Voxel | green |
+  | Odyssey | Odyssey | teal |
+  | Diorama | Diorama | coral |
 
 [api/engine/](api/engine/README.md) explains the app lifecycle, the loop, config and bindings.
 

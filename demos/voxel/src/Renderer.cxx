@@ -124,8 +124,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
+    v3d::ui::shell::Screen::Options options = v3d::shell::Shell::game();
     // the frame time is in the debug readout, so there is no overlay to draw it
     options.statistics = false;
     // the debug readout is an immediate mode panel: it is written as calls every frame

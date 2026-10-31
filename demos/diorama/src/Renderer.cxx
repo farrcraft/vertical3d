@@ -49,7 +49,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     camera_.profile().clipping(CLIPPING);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    shell_->present(&engine_, v3d::ui::shell::Screen::Options());
+    shell_->present(&engine_, v3d::shell::Shell::game());
     screen_ = shell_->screen();
 }
 

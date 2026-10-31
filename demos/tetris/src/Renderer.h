@@ -51,12 +51,6 @@ class TetrisRenderer final {
 
  private:
     /**
-     * The size the ui and the side panel are drawn at. Glyphs are distance fields, so the atlas
-     * is scaled to this size rather than rasterized at it.
-     **/
-    static constexpr float fontSize = 22.0F;
-
-    /**
      * The piece colours, which are also the texture file names and the names a shape in
      * pieces/shapes.txt gives itself.
      **/

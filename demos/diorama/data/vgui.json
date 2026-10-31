@@ -1,7 +1,14 @@
 {
   "themes": [
     {
-      "name": "default"
+      "name": "default",
+      "styles": [
+        {
+          "class": "ui",
+          "name": "default",
+          "colors": [ { "name": "accent", "value": [0.9, 0.45, 0.4, 1.0] } ]
+        }
+      ]
     }
   ],
   "containers": [
@@ -11,6 +18,7 @@
       "components": [
         {
           "name": "main-menu",
+          "title": "Diorama",
           "type": "menu",
           "items": [
             {
