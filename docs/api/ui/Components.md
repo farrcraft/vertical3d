@@ -77,16 +77,18 @@ Notes on individual components:
     label set semibold, so it does not change width as the choice moves.
   - The down and up arrows wrap from the last item to the first and back.
   - Each row is a settings row: its label on the left and its value right-aligned, in
-    `secondary-text` unless the row is chosen. The menu makes room for the widest value. A row
-    shows an ellipsis while a capture waits on it, the key bound to the command it `binds`, a
-    slider's value between the arrows that step it, or the value it holds. A row with none
-    shows its label alone.
+    `secondary-text` unless the row is chosen. The menu makes room for the widest value any row
+    can show, the ellipsis of a capture and both ends of a slider's range among them, so it
+    keeps its width as a value changes. A row shows an ellipsis while a capture waits on it,
+    the key bound to the command it `binds`, a slider's value between the arrows that step it,
+    or the value it holds. A row with none shows its label alone.
 - **A slider item** holds a whole number between its `minimum` and `maximum`, which default to
   0 and 10, and moves by its `step`, 1 by default. Its `value` starts it, clamped to the range,
   and without one it starts at the minimum. `Menu::step()`, which `menuLess` and `menuMore` send,
   moves it and sends its command carrying the new value. A step past an end sends nothing.
 - **An item's `binds`** names a command whole, as a binding document writes it, such as
-  `pong::leftPaddleUp`. The row shows the key that command is bound to, through the screen's
+  `pong::leftPaddleUp`. The context is the part before the first `::`, so a command may hold
+  `::` itself. The row shows the key that command is bound to, through the screen's
   shortcut lookup, so it stays true after a rebinding.
 - **A separator** is a rule between two groups of items, half a row tall. It needs no label and
   sends nothing. The keys step over it and the cursor passes over it, so nothing chooses it.

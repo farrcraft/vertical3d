@@ -631,9 +631,10 @@ and edits them. `PropertiesEditor` in `src/control/` draws it.
 - A number is dragged or typed into, as
   [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes. A drag moves a distance a
   hundredth of a unit a pixel, and an angle half a degree.
-- An edit is written into the item as it happens, so the views follow a drag. When it ends it is
-  one change in the history, which [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. An
-  edit to a keyed number is pending until the frame is set, as a manipulator's is.
+- An edit is written into the item as it happens, so the views follow a drag. When it ends, or
+  its item stops being the one shown, it is one change in the history, which
+  [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. An edit to a keyed number is pending
+  until the frame is set, as a manipulator's is.
 - A value that would make a lens, an emission or a curve item's style invalid is not written.
 
 ## Shaded views

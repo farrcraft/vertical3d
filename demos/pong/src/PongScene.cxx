@@ -46,8 +46,8 @@ PongScene::~PongScene() {
 }
 
 void PongScene::checkVictory() {
-    if (left_.score() == gameState_.maxScore() ||
-        right_.score() == gameState_.maxScore()) {
+    if (left_.score() >= gameState_.maxScore() ||
+        right_.score() >= gameState_.maxScore()) {
         reset();
         dispatcher_->trigger(v3d::event::kind::Sound("victory"));
     }

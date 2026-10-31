@@ -543,7 +543,7 @@ void ComponentReader::readSetting(const boost::json::object& entry, component::m
     }
     // the command is written whole, as a binding document writes it: its context, "::" and its name
     if (const std::optional<std::string> binds = optionalString(*logger_, entry, "binds")) {
-        const std::size_t split = binds->rfind("::");
+        const std::size_t split = binds->find("::");
         if (split == std::string::npos || split == 0 || split + 2 >= binds->size()) {
             logger_->get()->warn("A menu item binds [{}], which is not a context and a command", *binds);
         } else {

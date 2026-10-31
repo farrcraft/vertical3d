@@ -11,6 +11,7 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -128,13 +129,23 @@ class MenuRenderer final {
     std::string setting(const component::menu::Item& item, const component::menu::Menu& root) const;
 
     /**
+     * How wide a row's value column has to be for every value the row can show: the ellipsis
+     * of a capture, and both ends of a slider's range. A level sized from this keeps its width
+     * as a slider steps or a capture starts.
+     *
+     * @param shown how wide the value shown now is
+     **/
+    float settingRoom(const component::menu::Item& item, float shown) const;
+
+    /**
      * Draw one row of a centred menu in the box the arranger gave it: its highlight and ring
      * when it is chosen, its label on the left and its value on the right.
      *
      * @param span the left and right edges of the menu's panel
+     * @param valueWidth how wide the value is, as draw() measured it
      **/
     void settingRow(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
-        const glm::vec2& span, bool selected, const std::string& value) const;
+        const glm::vec2& span, bool selected, const std::string& value, float valueWidth) const;
 
     /**
      * The half side of the square that marks a checked menu item, as a fraction of a line.
@@ -144,6 +155,10 @@ class MenuRenderer final {
      * The radius of the arrow that marks a submenu, as a fraction of a line.
      **/
     static constexpr float submenuArrowScale = 0.18F;
+    /**
+     * What a row shows while a capture waits on its key.
+     **/
+    static constexpr std::string_view CAPTURE = "...";
 
     /**
      * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark

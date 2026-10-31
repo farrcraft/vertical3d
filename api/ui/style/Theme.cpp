@@ -6,12 +6,16 @@
 #include "Theme.h"
 
 #include "Button.h"
+#include "Menu.h"
 #include "Style.h"
 
 #include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace v3d::ui::style {
 
@@ -31,6 +35,23 @@ bool alike(const Style& one, const Style& other) {
         return button == otherButton;
     }
     return button->state() == otherButton->state();
+}
+
+/**
+ * A new style of the same kind, class and name as another, holding the same properties. The
+ * properties are shared; the style is not, so merging into one theme's copy leaves another's.
+ **/
+boost::shared_ptr<Style> copied(const Style& style) {
+    boost::shared_ptr<Style> made;
+    if (const auto* button = dynamic_cast<const Button*>(&style)) {
+        made = boost::make_shared<Button>(std::string(style.name()), button->state());
+    } else if (dynamic_cast<const Menu*>(&style) != nullptr) {
+        made = boost::make_shared<Menu>(std::string(style.name()));
+    } else {
+        made = boost::make_shared<Style>(Selector{ .name = std::string(style.name()), .className = std::string(style.className()) });
+    }
+    made->under(style);
+    return made;
 }
 
 };  // namespace
@@ -74,7 +95,7 @@ void Theme::beneath(const Theme& lower) {
             }
         }
         if (!matched) {
-            styles_.push_back(under);
+            styles_.push_back(copied(*under));
         }
     }
 }

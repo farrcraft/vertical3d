@@ -6,15 +6,14 @@
 #include "Outliner.h"
 
 #include <api/ui/Immediate.h>
+#include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
-#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -98,27 +97,6 @@ void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t edi
  **/
 void Outliner::keep(const std::vector<std::size_t>& editors) {
     std::erase_if(states_, [&](const auto& entry) { return std::ranges::find(editors, entry.first) == editors.end(); });
-}
-
-/**
- **/
-std::string Outliner::lower(const std::string& text) {
-    std::string made = text;
-    std::ranges::transform(made, made.begin(), [](char letter) {
-        return static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
-    });
-    return made;
-}
-
-/**
- **/
-std::vector<std::string> Outliner::words(const std::string& filter) {
-    std::vector<std::string> made;
-    std::istringstream split(lower(filter));
-    for (std::string word; split >> word;) {
-        made.push_back(word);
-    }
-    return made;
 }
 
 /**

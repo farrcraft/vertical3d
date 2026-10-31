@@ -103,16 +103,6 @@ class Outliner final {
     };
 
     /**
-     * @return text in lower case, which the filter compares
-     **/
-    static std::string lower(const std::string& text);
-
-    /**
-     * @return the words of a filter, in lower case
-     **/
-    static std::vector<std::string> words(const std::string& filter);
-
-    /**
      * Add the rows of an item and everything beneath it that is shown.
      * @return whether the item is shown
      **/

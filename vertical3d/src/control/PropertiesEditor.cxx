@@ -9,6 +9,7 @@
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/Camera.h>
 #include <vertical3d/src/scene/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
@@ -17,7 +18,6 @@
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
-#include <cctype>
 #include <cstddef>
 #include <map>
 #include <string>
@@ -54,6 +54,10 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::si
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     ui->pushId(id);
     const scene::Items selected = scene->selection();
+    // an edit whose item is no longer shown cannot end at its field, so it ends here
+    if (pending_ && (selected.size() != 1 || selected.front() != pending_->item)) {
+        finish();
+    }
     if (selected.size() != 1) {
         ui->textDisabled(selected.empty() ? "Nothing is selected" : std::to_string(selected.size()) + " items are selected");
     } else {
@@ -61,11 +65,11 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::si
         ui->text(Outliner::kind(item->kind()));
         std::string name = item->name();
         if (ui->textField("Name", &name)) {
-            begin(item);
+            begin(item, "rename");
             item->name(name);
         }
         if (ui->itemFinished()) {
-            finish("rename");
+            finish();
         }
         numbers(ui, item, scene->evaluate().pose(*item));
         settings(ui, item);
@@ -98,7 +102,7 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
         ui->pushId(path);
         float value = now.at(path);
         if (ui->dragFloat(look.label, &value, look.speed)) {
-            begin(item);
+            begin(item, "edit " + lower(look.group));
             // a rotation is set whole, so the angles not dragged are given as they are shown
             std::map<std::string, float> set{ { "rotation.x", angles_.x }, { "rotation.y", angles_.y }, { "rotation.z", angles_.z } };
             set[path] = value;
@@ -109,7 +113,7 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
             }
         }
         if (ui->itemFinished()) {
-            finish("edit " + lower(look.group));
+            finish();
         }
         ui->popId();
     }
@@ -148,11 +152,11 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
             changed = ui->checkbox("Renders", &wanted.style.renders);
             what = "edit render";
             if (ui->dragFloat("Width", &wanted.style.width, WIDTH_SPEED) && valid(*item, wanted)) {
-                begin(item);
+                begin(item, "edit width");
                 command::Edit::apply(item.get(), wanted);
             }
             if (ui->itemFinished()) {
-                finish("edit width");
+                finish();
             }
             break;
         }
@@ -162,31 +166,31 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
     }
     // a choice is a whole edit, which ends as it is made
     if (changed && valid(*item, wanted)) {
-        begin(item);
+        begin(item, what);
         command::Edit::apply(item.get(), wanted);
-        finish(what);
+        finish();
     }
 }
 
 /**
  **/
-void PropertiesEditor::begin(const boost::shared_ptr<scene::Item>& item) {
+void PropertiesEditor::begin(const boost::shared_ptr<scene::Item>& item, const std::string& what) {
     if (pending_ && pending_->item != item) {
-        finish("edit");
+        finish();
     }
     if (!pending_) {
-        pending_ = Pending{ .item = item, .before = command::Edit::of(*item) };
+        pending_ = Pending{ .item = item, .before = command::Edit::of(*item), .what = what };
     }
 }
 
 /**
  **/
-void PropertiesEditor::finish(const std::string& what) {
+void PropertiesEditor::finish() {
     if (!pending_) {
         return;
     }
     if (!command::Edit::same(pending_->before, command::Edit::of(*pending_->item)) && history_) {
-        history_->push(boost::make_shared<command::Edit>(pending_->item, pending_->before, what));
+        history_->push(boost::make_shared<command::Edit>(pending_->item, pending_->before, pending_->what));
     }
     pending_.reset();
 }
@@ -216,16 +220,6 @@ const std::map<std::string, PropertiesEditor::Field>& PropertiesEditor::fields()
         { "emission.delta", { "Emission", "Soft Edge", 0.005F } },
     };
     return each;
-}
-
-/**
- **/
-std::string PropertiesEditor::lower(const std::string& text) {
-    std::string made = text;
-    for (char& letter : made) {
-        letter = static_cast<char>(std::tolower(static_cast<unsigned char>(letter)));
-    }
-    return made;
 }
 
 /**

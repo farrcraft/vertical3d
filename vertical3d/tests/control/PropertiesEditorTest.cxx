@@ -254,6 +254,31 @@ BOOST_FIXTURE_TEST_CASE(a_rename_is_one_change, Panel) {
     BOOST_CHECK_EQUAL(cube->name(), "Cube");
 }
 
+/**
+ * A rename still open when its item stops being the one shown is one change, under its own
+ * name, as soon as the editor is drawn without it.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_rename_ends_when_its_item_is_no_longer_shown, Panel) {
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> start = at("Cube");
+    BOOST_REQUIRE(start);
+    const std::optional<glm::vec2> name = *start + glm::vec2(60.0F, 0.0F);
+    frame(input(*name, false, false, false));
+    frame(input(*name, true, true, false));
+    frame(input(*name, false, false, true));
+    BOOST_REQUIRE(layer.typing());
+    BOOST_CHECK(layer.typed("s"));
+    frame(input(*name, false, false, false));
+    BOOST_CHECK_EQUAL(cube->name(), "Cubes");
+    BOOST_CHECK_EQUAL(history->undoDepth(), 0U);
+
+    cube->selected(false);
+    frame({});
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    BOOST_CHECK_EQUAL(history->undo()->name(), "rename");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

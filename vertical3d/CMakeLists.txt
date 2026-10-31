@@ -27,6 +27,7 @@ add_library("v3dlib_editor"
 	"src/control/PropertiesEditor.h" "src/control/PropertiesEditor.cxx"
 	"src/control/RenderWindow.h" "src/control/RenderWindow.cxx"
 	"src/control/StatusBar.h" "src/control/StatusBar.cxx"
+	"src/control/Text.h" "src/control/Text.cxx"
 	"src/control/TopBar.h" "src/control/TopBar.cxx"
 	"src/control/Workspaces.h" "src/control/Workspaces.cxx"
 

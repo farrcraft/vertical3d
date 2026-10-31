@@ -177,7 +177,8 @@ beneath every game's document this way.
 - **A style fills in what it does not name** from the style beneath of the same class and name,
   and of the same `state` for a button. Its own values win.
 - **A style beneath with no match is added** after the theme's own styles, so the theme's own
-  first style of a class still dresses a component that names none.
+  first style of a class still dresses a component that names none. Each theme takes its own
+  copy, so filling one theme's copy in later changes no other theme.
 - **A game overrides the game theme by naming its style.** The game theme's base style is
   `{ "class": "ui", "name": "default" }`, so a game's `ui` style named `default` is filled in
   from it. A `ui` style under another name comes first and is read alone, and the game theme's

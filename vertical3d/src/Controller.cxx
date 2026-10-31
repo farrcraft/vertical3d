@@ -469,8 +469,9 @@ control::TopBar::State Controller::topState() const {
 void Controller::openSearch() {
     std::vector<boost::shared_ptr<v3d::ui::component::menu::Bar>> bars{ menu_ };
     // an area's commands are on its header, and run from the search they act on the active area
-    if (!context_.layout->areas().empty()) {
-        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::AreaChrome::name(context_.layout->areas().front().id));
+    const std::size_t active = context_.areaOf(v3d::event::Event());
+    if (active < context_.layout->areas().size()) {
+        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::AreaChrome::name(context_.layout->areas()[active].id));
         if (area) {
             bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
         }

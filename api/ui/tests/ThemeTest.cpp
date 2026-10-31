@@ -251,6 +251,47 @@ BOOST_AUTO_TEST_CASE(a_theme_beneath_fills_in_what_the_one_over_it_does_not_name
 }
 
 /**
+ * Each theme a style is put beneath takes its own copy of the style, of the same kind, so
+ * filling in one theme's copy later leaves the other themes and the theme beneath as they were.
+ **/
+BOOST_AUTO_TEST_CASE(a_style_put_beneath_two_themes_is_not_shared_between_them) {
+    const auto plate = [](const std::string& name, float value) {
+        const boost::shared_ptr<v3d::ui::style::Style> style =
+            boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{ .name = "plate", .className = "panel" });
+        style->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
+        return style;
+    };
+    v3d::ui::style::Theme lower("lower");
+    lower.addStyle(plate("radius", 2.0F));
+    lower.addStyle(boost::make_shared<v3d::ui::style::Button>("go", v3d::ui::style::Button::State::Hover));
+    v3d::ui::style::Theme one("one");
+    v3d::ui::style::Theme two("two");
+    one.beneath(lower);
+    two.beneath(lower);
+
+    v3d::ui::style::Theme further("further");
+    further.addStyle(plate("corner", 4.0F));
+    one.beneath(further);
+
+    float corner = 0.0F;
+    v3d::ui::style::readMetric(one.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 4.0F, 0.001F);
+    corner = 0.0F;
+    v3d::ui::style::readMetric(two.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 0.0F, 0.001F);
+    v3d::ui::style::readMetric(lower.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 0.0F, 0.001F);
+    float radius = 0.0F;
+    v3d::ui::style::readMetric(two.getStyleSet("plate", "panel").front(), "radius", &radius);
+    BOOST_CHECK_CLOSE(radius, 2.0F, 0.001F);
+
+    const boost::shared_ptr<v3d::ui::style::Button> button =
+        boost::dynamic_pointer_cast<v3d::ui::style::Button>(two.getStyleSet("go", "button").front());
+    BOOST_REQUIRE(button);
+    BOOST_CHECK(button->state() == v3d::ui::style::Button::State::Hover);
+}
+
+/**
  * A ui with no theme of its own takes the themes put beneath it, and the first is active. A
  * document that does not read puts nothing beneath.
  **/

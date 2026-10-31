@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -90,12 +91,14 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
     }
 
     std::vector<std::string> values(count);
+    std::vector<float> widths(count, 0.0F);
     float widest = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         if (item) {
             values[index] = setting(*item, *menu);
-            widest = std::max(widest, measure_(values[index]));
+            widths[index] = measure_(values[index]);
+            widest = std::max(widest, settingRoom(*item, widths[index]));
         }
     }
     arranger_.centred(*level, glm::vec2(static_cast<float>(canvas->width()), static_cast<float>(canvas->height())), widest);
@@ -129,7 +132,7 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
             rule(canvas, origin.x + base().padding, origin.x + width - base().padding, top + (item->size().y * 0.5F));
             continue;
         }
-        settingRow(canvas, item, glm::vec2(origin.x, origin.x + width), active && item == active, values[index]);
+        settingRow(canvas, item, glm::vec2(origin.x, origin.x + width), active && item == active, values[index], widths[index]);
     }
     end(canvas);
 }
@@ -137,7 +140,7 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
 /**
  **/
 void MenuRenderer::settingRow(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
-    const glm::vec2& span, bool selected, const std::string& value) const {
+    const glm::vec2& span, bool selected, const std::string& value, float valueWidth) const {
     const float top = item->position().y;
     const glm::vec4 lit = selected ? easing_.toward(&item->motion().face, base().highlight) : easing_.away(&item->motion().face);
     const glm::vec2 min(span.x + (base().padding * 0.5F), top);
@@ -162,7 +165,7 @@ void MenuRenderer::settingRow(v3d::render::realtime::canvas::Canvas* canvas, con
         // a value says less than its label, unless its row is the chosen one, where
         // secondary text would not read against the highlight
         const glm::vec4 quiet = selected || !usable(*item) ? ink : base().secondaryText;
-        write_(value, glm::vec2(span.y - base().padding - measure_(value), pen.y), quiet);
+        write_(value, glm::vec2(span.y - base().padding - valueWidth, pen.y), quiet);
     }
 }
 
@@ -170,7 +173,7 @@ void MenuRenderer::settingRow(v3d::render::realtime::canvas::Canvas* canvas, con
  **/
 std::string MenuRenderer::setting(const component::menu::Item& item, const component::menu::Menu& root) const {
     if (root.captured().get() == &item) {
-        return "...";
+        return std::string(CAPTURE);
     }
     if (item.binds().context()) {
         const std::string bound = shortcut(item.binds());
@@ -183,6 +186,20 @@ std::string MenuRenderer::setting(const component::menu::Item& item, const compo
         return "< " + (held.empty() ? std::to_string(item.range().minimum) : held) + " >";
     }
     return item.shown();
+}
+
+/**
+ **/
+float MenuRenderer::settingRoom(const component::menu::Item& item, float shown) const {
+    float room = shown;
+    if (item.binds().context()) {
+        room = std::max(room, measure_(CAPTURE));
+    }
+    if (item.itemType() == component::menu::ItemType::Slider) {
+        const component::menu::Item::Range& span = item.range();
+        room = std::max({ room, measure_("< " + std::to_string(span.minimum) + " >"), measure_("< " + std::to_string(span.maximum) + " >") });
+    }
+    return room;
 }
 
 /**

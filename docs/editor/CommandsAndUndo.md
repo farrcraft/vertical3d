@@ -207,8 +207,8 @@ F3 (`search::open`) puts up a panel over the views: a field the query is typed i
 of the commands that match it. `CommandSearch` in `src/control/` drives the `search` container
 of `data/vgui.json`.
 
-- **What it searches.** Every item of the editor's menu bar and of an area's header that sends a
-  command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is listed
+- **What it searches.** Every item of the editor's menu bar and of the active area's header that
+  sends a command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is listed
   once, from the menu bar. A held command, such as a camera move's modifier, and a dialog's own
   buttons are on no menu and are not searched. Each row ends with the command's shortcut, the
   one its menu item shows.

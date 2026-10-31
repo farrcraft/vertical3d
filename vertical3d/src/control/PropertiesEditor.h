@@ -34,8 +34,8 @@ namespace v3d::editor::control {
  * it, and its width.
  *
  * An edit is written into the item as it happens, so the views follow a drag of a number. When
- * the edit ends it is recorded in the history as one change, which undo takes back whole. An
- * edit to a keyed number is pending until the frame is set, as a manipulator's is. A lens, an
+ * the edit ends, or its item stops being the one shown, it is recorded in the history as one
+ * change, which undo takes back whole. An edit to a keyed number is pending until the frame is set, as a manipulator's is. A lens, an
  * emission or a style an edit would make invalid is not written.
  **/
 class PropertiesEditor final {
@@ -86,11 +86,6 @@ class PropertiesEditor final {
     static const std::map<std::string, Field>& fields();
 
     /**
-     * @return a heading in lower case, as the name of the change an edit under it makes
-     **/
-    static std::string lower(const std::string& text);
-
-    /**
      * @return whether values can be written into an item: a camera's lens, a light's emission and a
      *         curve item's style are each valid, and the other kinds' are not written
      **/
@@ -102,6 +97,7 @@ class PropertiesEditor final {
     struct Pending final {
         boost::shared_ptr<scene::Item> item;
         command::Edit::Values before;
+        std::string what;   /**< the name of the change, such as "rename" **/
     };
 
     /**
@@ -116,15 +112,15 @@ class PropertiesEditor final {
     void settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item);
 
     /**
-     * Remember an item's values before the first change of an edit. An edit of another item
-     * that has not ended is recorded first.
+     * Remember an item's values before the first change of an edit, and what the change is
+     * called. An edit of another item that has not ended is recorded first.
      **/
-    void begin(const boost::shared_ptr<scene::Item>& item);
+    void begin(const boost::shared_ptr<scene::Item>& item, const std::string& what);
 
     /**
      * Record the edit that has ended, if it changed anything.
      **/
-    void finish(const std::string& what);
+    void finish();
 
     boost::shared_ptr<command::Stack> history_;
     std::optional<Pending> pending_;

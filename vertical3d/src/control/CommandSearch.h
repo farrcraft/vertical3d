@@ -129,16 +129,6 @@ class CommandSearch final {
     static constexpr std::string_view SHORTCUT_GAP = "      ";
 
     /**
-     * @return a string with every letter in lower case
-     **/
-    static std::string lower(std::string_view text);
-
-    /**
-     * @return the words of a query, in lower case
-     **/
-    static std::vector<std::string> words(std::string_view query);
-
-    /**
      * @return whether a word of a text, as letters and digits after anything else, begins with a
      *         prefix
      **/

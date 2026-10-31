@@ -336,6 +336,21 @@ BOOST_AUTO_TEST_CASE(pong_scene_left_edge_scores_test) {
 }
 
 /**
+ * A match is won by a score that reaches the rounds, or has already passed them because the
+ * rounds were lowered during the match. A win starts a new match and plays the victory sound.
+ **/
+BOOST_AUTO_TEST_CASE(pong_scene_lowered_rounds_end_the_match_test) {
+    Fixture fixture;
+    fixture.scene_.right().score(4);
+    fixture.scene_.state().maxScore(3);
+
+    fixture.scene_.tick(STEP);
+
+    BOOST_TEST(fixture.scene_.right().score() == 0);
+    BOOST_TEST(fixture.sounds_.has("victory"));
+}
+
+/**
  * A point puts the ball back on the centre spot rather than moving it there. The frame after
  * the point is drawn from the centre, not swept across the court from the edge it left by.
  **/

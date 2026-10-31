@@ -13,6 +13,7 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Type.h>
+#include <vertical3d/src/control/Text.h>
 
 #include <algorithm>
 #include <cctype>
@@ -215,35 +216,6 @@ void CommandSearch::show() {
     }
     list->items(rows);
     list->selected(matches_.empty() ? -1 : static_cast<int>(choice_));
-}
-
-/**
- **/
-std::string CommandSearch::lower(std::string_view text) {
-    std::string made(text);
-    std::ranges::transform(made, made.begin(), [](unsigned char letter) { return static_cast<char>(std::tolower(letter)); });
-    return made;
-}
-
-/**
- **/
-std::vector<std::string> CommandSearch::words(std::string_view query) {
-    std::vector<std::string> made;
-    std::string word;
-    for (const char letter : query) {
-        if (letter == ' ') {
-            if (!word.empty()) {
-                made.push_back(lower(word));
-            }
-            word.clear();
-        } else {
-            word += letter;
-        }
-    }
-    if (!word.empty()) {
-        made.push_back(lower(word));
-    }
-    return made;
 }
 
 /**

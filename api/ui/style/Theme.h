@@ -47,7 +47,8 @@ class Theme {
      * The other's styles with no such match are added after this theme's own, so a component
      * that names no style is still dressed by this theme's first style of its class.
      *
-     * The styles added are shared with the other theme, not copied.
+     * Each style added is a copy of the other's, of the same kind and holding the same
+     * properties, so filling in this theme's copy later leaves the other theme's style alone.
      *
      * @param lower the theme beneath this one
      **/

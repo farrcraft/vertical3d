@@ -198,7 +198,8 @@ BOOST_AUTO_TEST_CASE(a_menu_names_its_title_and_a_submenu_takes_its_items) {
 
 /**
  * A slider reads its range and its starting value, clamped to the range, and an item reads
- * the command it binds as a context and a command. A binding that names no context is ignored.
+ * the command it binds as a context and a command. The context is the part before the first
+ * "::", so a command may hold "::" itself. A binding that names no context is ignored.
  **/
 BOOST_AUTO_TEST_CASE(a_settings_item_reads_its_range_and_what_it_binds) {
     bool loaded = false;
@@ -209,7 +210,8 @@ BOOST_AUTO_TEST_CASE(a_settings_item_reads_its_range_and_what_it_binds) {
                 { "label": "Rounds", "type": "slider", "command": "rounds", "context": "ui",
                   "minimum": 1, "maximum": 9, "step": 2, "value": 12 },
                 { "label": "Up", "type": "key_input", "command": "setUp", "context": "ui", "binds": "pong::up" },
-                { "label": "Down", "type": "key_input", "command": "setDown", "context": "ui", "binds": "down" }
+                { "label": "Down", "type": "key_input", "command": "setDown", "context": "ui", "binds": "down" },
+                { "label": "Front", "type": "key_input", "command": "setFront", "context": "ui", "binds": "editor::camera::front" }
             ] }
         ] } ]
     })", &loaded);
@@ -228,6 +230,10 @@ BOOST_AUTO_TEST_CASE(a_settings_item_reads_its_range_and_what_it_binds) {
     BOOST_CHECK_EQUAL(binds.context()->name(), "pong");
     BOOST_CHECK_EQUAL(binds.name(), "up");
     BOOST_CHECK(!(*menu)[2]->binds().context());
+    const v3d::event::Event& nested = (*menu)[3]->binds();
+    BOOST_REQUIRE(nested.context());
+    BOOST_CHECK_EQUAL(nested.context()->name(), "editor");
+    BOOST_CHECK_EQUAL(nested.name(), "camera::front");
 }
 
 /**

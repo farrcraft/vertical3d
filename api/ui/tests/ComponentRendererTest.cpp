@@ -602,9 +602,10 @@ BOOST_AUTO_TEST_CASE(a_menu_too_tall_for_the_safe_area_starts_at_its_top) {
 
 /**
  * A settings row writes its label on the left and its value right-aligned, in secondary text
- * when the row is not the chosen one. The menu makes room for a column of values. A slider
- * shows its value between the arrows that step it, and a key input the key bound to the
- * command it binds, or an ellipsis while it waits on a key.
+ * when the row is not the chosen one. The menu makes room for a column as wide as the widest
+ * value any row can show, so it keeps its width as a value changes. A slider shows its value
+ * between the arrows that step it, and a key input the key bound to the command it binds, or
+ * an ellipsis while it waits on a key.
  **/
 BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
     std::vector<Written> written;
@@ -652,9 +653,15 @@ BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
     BOOST_REQUIRE(key != written.end());
     BOOST_CHECK_CLOSE(key->pen.x + characterWidth, right, 0.01F);
     BOOST_CHECK(find("Rounds") != written.end());
-    // the widest label, a column's gap and the widest value, inside the padding
+    // the widest label, a column's gap and the widest value any row can show, inside the
+    // padding. That value is "< 10 >", the slider's maximum, not the "< 5 >" it shows now
     const float width = static_cast<const v3d::ui::Component&>(*menu).size().x;
-    BOOST_CHECK_CLOSE(width, (6.0F * characterWidth) + (dress.padding * 2.0F) + (5.0F * characterWidth) + (dress.padding * 2.0F), 0.01F);
+    BOOST_CHECK_CLOSE(width, (6.0F * characterWidth) + (dress.padding * 2.0F) + (6.0F * characterWidth) + (dress.padding * 2.0F), 0.01F);
+
+    // stepping the slider to its widest value leaves the width as it was
+    rounds->value(10);
+    renderer.draw(&canvas, menu);
+    BOOST_CHECK_CLOSE(static_cast<const v3d::ui::Component&>(*menu).size().x, width, 0.01F);
 
     // a capture on the key shows that it waits
     menu->active(2);
@@ -664,6 +671,7 @@ BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
     renderer.draw(&canvas, menu);
     BOOST_CHECK(find("...") != written.end());
     BOOST_CHECK(find("W") == written.end());
+    BOOST_CHECK_CLOSE(static_cast<const v3d::ui::Component&>(*menu).size().x, width, 0.01F);
 }
 
 /**
