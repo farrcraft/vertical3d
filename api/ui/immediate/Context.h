@@ -174,6 +174,17 @@ struct Body {
 };
 
 /**
+ * A number field being drawn: its id, its label, the value it shows, and its box.
+ **/
+struct Number {
+    Id id = 0;
+    std::string label;
+    float value = 0.0F;
+    glm::vec2 min{0.0F};
+    glm::vec2 max{0.0F};
+};
+
+/**
  * Everything an Immediate holds, and the steps its widgets share.
  *
  * Immediate's header carries only what an app calls. This is the rest: what the layer keeps
@@ -276,6 +287,27 @@ class Context final {
      * the caret, slid left as far as the caret needs. The caller clips to the corners.
      **/
     void drawEdit(const glm::vec2& low, const glm::vec2& high);
+
+    /**
+     * A number field that has the keyboard: when it lets go, take what was typed, unless escape
+     * let it go or the text is not a finite number.
+     *
+     * @return whether the value changed
+     **/
+    bool typeNumber(const Reaction& reaction, float* value);
+
+    /**
+     * A number field that does not have the keyboard: drag the value once a press has
+     * travelled, finish the drag on release, and type into the field after a click.
+     *
+     * @return whether the value changed
+     **/
+    bool dragNumber(Id id, const Reaction& reaction, float* value, float speed);
+
+    /**
+     * Draw a number field: its label and value, or the line being typed into it.
+     **/
+    void drawNumber(const Number& field, const Reaction& reaction);
 
     /**
      * Close a scrolled region, a window's body or a table: measure what was drawn into it,

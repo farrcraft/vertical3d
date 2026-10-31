@@ -172,74 +172,89 @@ bool Immediate::dragFloat(const std::string& label, float* value, float speed) {
     const glm::vec2 max = min + size;
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, max);
-    immediate::Retained& retained = context_->retain(id);
 
     bool changed = false;
     if (context_->typing == id) {
-        context_->typingDrawn = true;
-        // a typed value is taken as the field lets go, so a half typed number never reaches
-        // the caller
-        if (context_->letGo || context_->disabled > 0 || (context_->input.pressed && !reaction.hovered)) {
-            const std::optional<float> typed = context_->escaped ? std::nullopt : number(context_->edit.text());
-            if (typed && *typed != *value) {
-                *value = *typed;
-                changed = true;
-            }
-            context_->focus(0);
-            context_->itemFinished = true;
-        }
-    } else if (reaction.held) {
-        // a press becomes a drag once it has travelled, and the pixels spent deciding are not
-        // applied. One that never travelled is a click, which types into the field
-        if (!retained.dragging && std::abs(context_->input.cursor.x - context_->pressAt.x) > dragThreshold) {
-            retained.dragging = true;
-        }
-        if (retained.dragging && std::isfinite(context_->drag.x) && context_->drag.x != 0.0F) {
-            const float wanted = *value + (context_->drag.x * speed);
-            if (std::isfinite(wanted) && wanted != *value) {
-                *value = wanted;
-                changed = true;
-            }
-        }
-        if (context_->input.released) {
-            if (retained.dragging) {
-                context_->itemFinished = true;
-            } else if (reaction.clicked) {
-                context_->focus(id);
-                context_->typingDrawn = true;
-                context_->edit.text(std::format("{}", *value));
-                context_->edit.selectAll();
-            }
-            retained.dragging = false;
-        }
+        changed = context_->typeNumber(reaction, value);
     } else {
+        changed = context_->dragNumber(id, reaction, value, speed);
+    }
+    context_->drawNumber({.id = id, .label = label, .value = *value, .min = min, .max = max}, reaction);
+    return changed;
+}
+
+bool immediate::Context::typeNumber(const Reaction& reaction, float* value) {
+    typingDrawn = true;
+    // a typed value is taken as the field lets go, so a half typed number never reaches the
+    // caller
+    if (!letGo && disabled == 0 && (!input.pressed || reaction.hovered)) {
+        return false;
+    }
+    const std::optional<float> typed = escaped ? std::nullopt : number(edit.text());
+    focus(0);
+    itemFinished = true;
+    if (!typed || *typed == *value) {
+        return false;
+    }
+    *value = *typed;
+    return true;
+}
+
+bool immediate::Context::dragNumber(Id id, const Reaction& reaction, float* value, float speed) {
+    Retained& retained = retain(id);
+    if (!reaction.held) {
+        retained.dragging = false;
+        return false;
+    }
+    // a press becomes a drag once it has travelled, and the pixels spent deciding are not
+    // applied. One that never travelled is a click, which types into the field
+    if (!retained.dragging && std::abs(input.cursor.x - pressAt.x) > dragThreshold) {
+        retained.dragging = true;
+    }
+    bool changed = false;
+    const float wanted = *value + (drag.x * speed);
+    if (retained.dragging && std::isfinite(wanted) && wanted != *value) {
+        *value = wanted;
+        changed = true;
+    }
+    if (input.released) {
+        if (retained.dragging) {
+            itemFinished = true;
+        } else if (reaction.clicked) {
+            focus(id);
+            typingDrawn = true;
+            edit.text(std::format("{}", *value));
+            edit.selectAll();
+        }
         retained.dragging = false;
     }
+    return changed;
+}
 
-    const bool focused = context_->typing == id;
-    const glm::vec2 low(min.x + context_->dressing.padding, min.y + context_->dressing.borderWidth);
-    const glm::vec2 high(max.x - context_->dressing.padding, max.y - context_->dressing.borderWidth);
+void immediate::Context::drawNumber(const Number& field, const Reaction& reaction) {
+    const bool focused = typing == field.id;
+    const bool dragging = reaction.held && retain(field.id).dragging;
     if (focused) {
-        paint::plateBox(context_->canvas, min, max, context_->dressing.radius, context_->dressing.borderWidth,
-            {.inside = context_->dressing.widget, .outline = context_->dressing.focus});
+        paint::plateBox(canvas, field.min, field.max, dressing.radius, dressing.borderWidth,
+            {.inside = dressing.widget, .outline = dressing.focus});
     } else {
-        paint::fillBox(context_->canvas, min, max, context_->dressing.radius,
-            context_->eased(id, context_->face(reaction.held && retained.dragging, reaction.hovered)));
+        paint::fillBox(canvas, field.min, field.max, dressing.radius, eased(field.id, face(dragging, reaction.hovered)));
     }
+    const glm::vec2 low(field.min.x + dressing.padding, field.min.y + dressing.borderWidth);
+    const glm::vec2 high(field.max.x - dressing.padding, field.max.y - dressing.borderWidth);
     if (high.x <= low.x) {
-        return changed;
+        return;
     }
-    context_->canvas->clip(low, high);
+    canvas->clip(low, high);
     if (focused) {
-        context_->drawEdit(low, high);
+        drawEdit(low, high);
     } else {
         const glm::vec2 room(high.x - low.x, high.y - low.y);
-        context_->label(label, low, room, context_->ink(context_->dressing.secondaryText));
-        const std::string shown = std::format("{:.3f}", *value);
-        context_->label(shown, glm::vec2(high.x - context_->measure(shown), low.y), room, context_->ink(context_->dressing.text));
+        label(field.label, low, room, ink(dressing.secondaryText));
+        const std::string shown = std::format("{:.3f}", field.value);
+        label(shown, glm::vec2(high.x - measure(shown), low.y), room, ink(dressing.text));
     }
-    context_->canvas->unclip();
-    return changed;
+    canvas->unclip();
 }
 
 void immediate::Context::drawEdit(const glm::vec2& low, const glm::vec2& high) {
