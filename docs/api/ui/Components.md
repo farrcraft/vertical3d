@@ -57,8 +57,9 @@ Notes on individual components:
   box that frame, so they are not picked or focused.
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
-  with an `icon` is sized to the icon; otherwise to its label. A toolbar button falls back to
-  its label when its icon is not resolved. A hidden button takes no room in its strip, is not
+  with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an
+  icon is square, as tall as the strip is wide, and one without is a line tall. A toolbar
+  button falls back to its label when its icon is not resolved. A hidden button takes no room in its strip, is not
   drawn and takes no press, and the buttons after it close up.
 - **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
   `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
@@ -81,6 +82,14 @@ Notes on individual components:
   reaches it.
 - **An open menu bar takes every press.** While a menu is open, a press anywhere on screen
   closes it and is consumed. A click meant for the scene under an open menu does nothing.
+- **An open menu bar takes the keys that walk it**, before anything that has the focus. The
+  down and up arrows choose the next and the previous item of the deepest panel, stepping over
+  separators and wrapping. The right arrow opens the chosen item's submenu at once, or the next
+  menu when it has none. The left arrow closes the deepest submenu, or opens the previous menu
+  from the first panel. A menu opened from the keys chooses its first item. Return and space act
+  on the chosen item as a press would, and escape closes the deepest submenu, or the bar.
+- **A closed menu bar takes a press only on a label.** A press on the rest of its band is not
+  taken, so a container listed after the bar's can put buttons beside the labels.
 
 ## Tooltips
 
@@ -94,6 +103,9 @@ shortcut of the command the component sends after it in `secondary-text`.
 - A press puts the tooltip away until the cursor moves again.
 - A tooltip is drawn last, over every container and the statistics. Where it would leave the
   canvas below its component, it is drawn above it.
+- A button on a toolbar down the left has its tooltip beside it, to its right and level with
+  it, where one underneath would cover the next button. Where it would leave the canvas on the
+  right, it is drawn to the left.
 - A toolbar's buttons and the components of the tree show tooltips. A menu item shows its
   shortcut beside its label instead.
 - `shell::Screen` draws them, from what `input::Cursor` writes as `Interface::hovered()`. An app

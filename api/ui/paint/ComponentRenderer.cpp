@@ -258,7 +258,7 @@ std::string ComponentRenderer::shortcut(const v3d::event::Event& command) const 
 /**
  **/
 void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
-    const v3d::type::geometry::Bound2D& below) const {
+    const v3d::type::geometry::Bound2D& below, bool beside) const {
     if (canvas == nullptr || (text.empty() && keys.empty())) {
         return;
     }
@@ -269,9 +269,14 @@ void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, c
     const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
 
     // just under the box, and back onto the canvas where it would leave it. Below the bottom
-    // edge it goes above the box instead
+    // edge it goes above the box instead. Beside the box it goes right, or left past the right edge
     glm::vec2 corner(below.position().x, below.position().y + below.size().y + base().spacing);
-    if (corner.y + size.y > room.y) {
+    if (beside) {
+        corner = glm::vec2(below.position().x + below.size().x + base().spacing, below.position().y + ((below.size().y - size.y) * 0.5F));
+        if (corner.x + size.x > room.x) {
+            corner.x = below.position().x - base().spacing - size.x;
+        }
+    } else if (corner.y + size.y > room.y) {
         corner.y = below.position().y - base().spacing - size.y;
     }
     corner = glm::vec2(std::clamp(corner.x, 0.0F, std::max(0.0F, room.x - size.x)), std::max(corner.y, 0.0F));

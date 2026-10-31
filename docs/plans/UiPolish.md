@@ -416,18 +416,29 @@ saving it with the project, in the user's settings alone, and in each project's 
 
 ### Step 12 — The editor's chrome
 
-Open. Needs step 7.
+**Closed.**
 
-- The menus are regrouped as File, Edit, Create, Select, Modify, View, Animate, Render, Window and
-  Help.
-- The tool shelf has 18-pixel icons with tooltips, and covers the modelling operations as well as
-  the transform tools. The icons come from one sheet. A tooltip on the shelf hangs beside its
-  button rather than under it, where it would cover the next tool.
-- A menu bar's panels can be walked with the arrow keys, and the right arrow opens a submenu at
-  once.
-- The select mask moves into the viewport header.
-- The top bar shows the workspaces, the project's name with a mark for unsaved changes, and the
-  command search.
+- The menus are File, Edit, Create, Select, Modify, View, Animate, Render, Window and Help. The
+  commands are unchanged. The camera moves are View > Navigate, the workspaces are on Window,
+  and Help holds the command search.
+- The tool shelf holds the four transform tools and the five modelling operations as icons,
+  each with a tooltip. The icons are cells of one sheet, `data/icons/icons.png`, which
+  `IconSheet` reads from `data/icons.json`, and the renderer resolves an `icon:` source to its
+  cell. The separate PNGs are gone. A column toolbar's icon buttons are square, and a tooltip
+  on a left toolbar hangs beside its button. The editor's icons are 18 pixels beside its 15
+  pixel text, on 39 pixel buttons, since the shelf is as wide as an icon and the padding.
+- An open menu bar takes the arrow keys, return, space and escape before the focus. The right
+  arrow opens a submenu at once, or moves to the next menu.
+- Each viewport header has a mask menu, and the select-mask toolbar is gone.
+- `TopBar` puts a tab for each workspace, the project's name with ` *` while unsaved, and a
+  Search button beside the menus. A closed menu bar takes a press only on a label, so the bar's
+  buttons get theirs. A press outside every area now reaches no tool, so a click on the status
+  bar no longer clears the selection.
+- The menu bar, keyboard, toolbar and renderer suites cover the keys, the closed bar's press,
+  square icons and a tooltip beside its box. The editor's suites cover the mask menu, the top
+  bar, the icon sheet, a press outside the areas and every header command. The editor was
+  photographed with the new menus, the top bar and the shelf. The shelf's tooltips and the menu
+  keys could not be driven in the running editor, so they rest on their tests.
 
 ### Step 13 — The outliner and the properties editor
 

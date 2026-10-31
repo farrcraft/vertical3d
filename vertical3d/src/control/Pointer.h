@@ -26,7 +26,8 @@ namespace v3d::editor {
  * Routes the mouse: to the ui drawn over the views, to a control a view draws over itself, to a
  * divider between areas, and to the tools of the view under the cursor.
  *
- * A press goes to the first of those that takes it, and its release goes to the same place.
+ * A press goes to the first of those that takes it, and its release goes to the same place. A
+ * press outside every area, such as on a bar beside them, reaches no tool.
  * The ui is offered the cursor only between drags, so a drag that passes over the menu bar or
  * a toolbar is not interrupted. The area under the cursor becomes the active one between drags,
  * and its view the active view, so a drag that crosses a gap keeps its area.
@@ -184,6 +185,8 @@ class Pointer final {
     bool dividerGrab_ = false;
     // whether a view's control took the press, for the same reason
     bool controlGrab_ = false;
+    // whether the press landed outside every area, so neither it nor its release reaches a tool
+    bool missed_ = false;
     Take controls_;
     // whether the ui took the last motion
     bool overUi_ = false;

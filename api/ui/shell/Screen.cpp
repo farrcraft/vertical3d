@@ -13,6 +13,7 @@
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Transition.h>
+#include <api/ui/component/Toolbar.h>
 #include <api/ui/input/Command.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
@@ -252,7 +253,10 @@ void Screen::tip(const Interface& ui) {
     if (!tooltip_.due(under, clock_.now, {.first = dress.tooltipDelay, .following = dress.tooltipQuickDelay})) {
         return;
     }
-    components_->tooltip(&canvas_, std::string(under->tooltip()), components_->shortcut(input::command(under)), under->bound());
+    // a tooltip under a button of a strip down the side would cover the next button
+    const component::Toolbar* strip = dynamic_cast<const component::Toolbar*>(under->parent());
+    const bool beside = strip != nullptr && strip->edge() == component::Toolbar::Edge::Left;
+    components_->tooltip(&canvas_, std::string(under->tooltip()), components_->shortcut(input::command(under)), under->bound(), beside);
 }
 
 /**

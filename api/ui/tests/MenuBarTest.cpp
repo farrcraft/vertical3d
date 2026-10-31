@@ -209,6 +209,23 @@ BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
 }
 
 /**
+ * A closed bar takes a press only on a label, so the rest of its band is left for what sits
+ * beside the labels. An open bar takes a press there.
+ **/
+BOOST_AUTO_TEST_CASE(a_closed_bar_takes_a_press_only_on_a_label) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+
+    const glm::vec2 beside = fixture.bar->position() + glm::vec2(fixture.bar->size().x - 2.0F, fixture.bar->size().y / 2.0F);
+    const v3d::type::geometry::Bound2D last = fixture.bar->bound(fixture.bar->count() - 1);
+    BOOST_REQUIRE_GT(beside.x, last.position().x + last.size().x);
+    BOOST_CHECK(!fixture.bar->press(beside));
+    BOOST_CHECK(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK(fixture.bar->press(beside));
+}
+
+/**
  * A press on a label opens that menu, and a second press on the same label closes it.
  **/
 BOOST_AUTO_TEST_CASE(a_press_on_a_label_opens_and_closes_the_menu) {
@@ -647,6 +664,70 @@ BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == nullptr);
     }
     BOOST_TEST(v3d::ui::usable(*first));
+}
+
+/**
+ * The arrows walk an open bar: down and up through the deepest panel, stepping over a separator
+ * and wrapping, right into a submenu at once, left back out of it and across to the other menu.
+ * Return sends the chosen item and closes the bar. A closed bar takes no key.
+ **/
+BOOST_AUTO_TEST_CASE(the_arrows_walk_an_open_bar) {
+    Fixture fixture;
+    build(&fixture);
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture.bar->menu(0);
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Separator, {.label = "", .name = ""}));
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Quit", .name = "quit"}));
+    fixture.draw();
+    BOOST_CHECK(!fixture.bar->key("arrow_down"));
+
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK(fixture.bar->key("arrow_down"));
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+    fixture.bar->key("arrow_down");
+    fixture.bar->key("arrow_down");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Quit");
+    fixture.bar->key("arrow_down");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+    fixture.bar->key("arrow_up");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Quit");
+
+    // Quit has no submenu, so the right arrow moves to View and chooses its first item
+    BOOST_CHECK(fixture.bar->key("arrow_right"));
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 1);
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.bar->panels()[0]->active()->label(), "Shading");
+    fixture.bar->key("arrow_right");
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.bar->panels()[1]->active()->label(), "Flat");
+    fixture.bar->key("arrow_left");
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    fixture.bar->key("arrow_left");
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 0);
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+
+    BOOST_CHECK(fixture.bar->key("return"));
+    BOOST_CHECK(!fixture.bar->active());
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::open");
+}
+
+/**
+ * Escape closes the deepest submenu, and then the bar. A key that walks nothing is not taken.
+ **/
+BOOST_AUTO_TEST_CASE(escape_backs_out_of_an_open_bar) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(1)));
+    fixture.bar->key("arrow_down");
+    fixture.bar->key("return");
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 2U);
+    BOOST_CHECK(!fixture.bar->key("a"));
+    BOOST_CHECK(fixture.bar->key("escape"));
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK(fixture.bar->key("escape"));
+    BOOST_CHECK(!fixture.bar->active());
+    BOOST_CHECK(fixture.sent.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

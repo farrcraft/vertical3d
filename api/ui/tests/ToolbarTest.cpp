@@ -155,6 +155,32 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
 }
 
 /**
+ * A column of icons is a column of squares: the strip is as wide as an icon plus the padding,
+ * and each button as tall as it is wide.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_column_of_icons_is_square) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Left);
+    for (const char* name : { "move", "rotate" }) {
+        const boost::shared_ptr<v3d::ui::component::Button> button = fixture.button({.label = name, .name = name, .toggle = true});
+        button->icon(std::string("icon:") + name);
+        bar->add(button);
+    }
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 30.0F));
+
+    const float side = style.iconSize + style.padding;
+    BOOST_TEST(bar->size().x == side);
+    for (std::size_t index = 0; index < bar->count(); index++) {
+        const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
+        BOOST_TEST(button->size().x == side);
+        BOOST_TEST(button->size().y == side);
+        BOOST_TEST(button->position().y == 30.0F + (side * static_cast<float>(index)));
+    }
+}
+
+/**
  * A press on a button sends that button's command. One on the strip that misses every button
  * is still taken, so a click on the gap does not reach the scene under it, and one off the
  * strip is not taken at all.

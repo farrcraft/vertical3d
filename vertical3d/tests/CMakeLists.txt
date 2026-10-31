@@ -33,8 +33,10 @@ v3d_add_test(vertical3d
 	"control/PointerTest.cxx"
 	"control/AreaChromeTest.cxx"
 	"control/CommandSearchTest.cxx"
+	"control/IconSheetTest.cxx"
 	"control/NoticesTest.cxx"
 	"control/StatusBarTest.cxx"
+	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"
 
 	"command/CommandStackTest.cxx"

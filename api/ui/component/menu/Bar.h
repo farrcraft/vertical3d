@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Menu.h"
@@ -149,12 +150,27 @@ class Bar : public Component {
      * A press on a menu opens or closes it, one on a submenu item descends, and one on
      * any other item sends that item's command and closes the bar. A press anywhere else
      * while the bar is open closes it and is consumed, so the click that dismisses a menu
-     * does nothing else.
+     * does nothing else. A press on the bar beside its labels is not taken while it is closed.
      *
      * @param cursor where the cursor is
      * @return whether the bar took the press
      **/
     bool press(const glm::vec2& cursor);
+
+    /**
+     * A key went down while the bar is open. The deepest panel open is the one walked.
+     *
+     * The down and up arrows choose the next and the previous item, stepping over separators
+     * and wrapping. The right arrow opens the chosen item's submenu at once, or opens the next
+     * menu when the item has none. The left arrow closes the deepest submenu, or opens the
+     * previous menu from the first panel. A menu opened from the keys chooses its first item.
+     * Return and space act on the chosen item as a press would. Escape closes the deepest
+     * submenu, or the bar from the first panel.
+     *
+     * @param key the name api/input gives it
+     * @return whether the bar took it, which a closed bar never does
+     **/
+    bool key(std::string_view key);
 
     /**
      * Find an item anywhere in the bar by the command it sends, so that whatever handles
@@ -195,6 +211,17 @@ class Bar : public Component {
      * @return whether a component's drawn bounds contain the cursor
      **/
     static bool within(const Component& component, const glm::vec2& cursor);
+
+    /**
+     * Choose the item a number of steps from the one a panel has chosen, stepping over
+     * separators and wrapping. A panel with nothing chosen starts before its first item.
+     **/
+    static void step(const boost::shared_ptr<Menu>& panel, int by);
+
+    /**
+     * Open a menu and choose its first item.
+     **/
+    void openFirst(int index);
 
     /**
      * Leave the panel stack this many deep, closing anything under it.

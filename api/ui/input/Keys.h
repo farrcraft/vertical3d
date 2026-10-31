@@ -56,7 +56,9 @@ namespace v3d::ui::input {
  * selection. The app supplies the clipboard, as it supplies text measuring.
  *
  * A ui with nothing focused takes neither kind of input, so a game's movement keys keep
- * working until something is clicked into or Interface::focusFirst() is called.
+ * working until something is clicked into or Interface::focusFirst() is called. An open menu
+ * bar is the exception: it takes the keys that walk it, as menu::Bar::key() lists them, before
+ * anything focused.
  **/
 class Keys final {
  public:

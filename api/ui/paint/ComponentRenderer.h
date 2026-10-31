@@ -160,13 +160,16 @@ class ComponentRenderer {
 
     /**
      * Draw a tooltip: a plate holding a line of text, and the shortcut after it in secondary
-     * text, with a shadow under it. It hangs just below a box, as wide as it needs, and is moved
-     * back onto the canvas where it would leave it. Draw it last, over everything else.
+     * text, with a shadow under it. It hangs just below a box, or beside it, as wide as it needs,
+     * and is moved back onto the canvas where it would leave it. Draw it last, over everything
+     * else.
      *
-     * @param below the box it hangs under, which is the component it describes
+     * @param below the box it hangs by, which is the component it describes
+     * @param beside whether it hangs to the right of the box, centred on it, rather than under
+     *        it. A tooltip that would leave the canvas there goes to the left instead
      **/
     void tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
-        const v3d::type::geometry::Bound2D& below) const;
+        const v3d::type::geometry::Bound2D& below, bool beside = false) const;
 
     /**
      * Draw a label - one line of text at the position it holds.

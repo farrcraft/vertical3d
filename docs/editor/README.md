@@ -5,9 +5,9 @@ library in `api/brep`.
 
 The editor shows four viewports of one scene over a construction grid, in areas that can be
 split, joined, swapped and maximised. It creates primitive meshes, picks objects and their
-parts, moves them with manipulators, undoes changes, and saves projects. Menus, two toolbars,
-each area's header and a file chooser are drawn with `api/ui`, and a status bar and notices
-over the same canvas.
+parts, moves them with manipulators, undoes changes, and saves projects. The menu bar with the
+workspaces beside it, a tool shelf, each area's header, the command search and a file chooser
+are drawn with `api/ui`, and a status bar and notices over the same canvas.
 
 | Page | Read it to |
 |---|---|
@@ -15,7 +15,7 @@ over the same canvas.
 | [Scene.md](Scene.md) | Work with meshes, the scene items that hold them, and the viewports that show the scene |
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
-| [Animation.md](Animation.md) | Key item properties, and play them back with the Timeline menu |
+| [Animation.md](Animation.md) | Key item properties, and play them back with the Animate menu |
 | [Rendering.md](Rendering.md) | Render the scene with moya, in the render window or as a batch of frames |
 | [Files.md](Files.md) | Change the project layout, the scene document format, importing, or the RIB export |
 
@@ -34,7 +34,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Hold Left Alt + drag | `view::camera::dolly` | Dolly a perspective view; zoom an orthographic one |
 | Hold Left Ctrl + drag | `view::camera::truck` | Move the camera sideways and up or down |
 | Middle mouse drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
-| Camera Manipulators menu | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | Latch a camera move, so a left drag with no modifier drives the camera (see [Driving a camera](PickingAndManipulators.md#driving-a-camera)) |
+| View > Navigate menu | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | Latch a camera move, so a left drag with no modifier drives the camera (see [Driving a camera](PickingAndManipulators.md#driving-a-camera)) |
 | Hold Left Shift | `select::add` | A click adds to the selection or takes away from it (see [Picking](PickingAndManipulators.md#picking)) |
 | 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
 | Create menu | `create::perspective::camera`, `ortho::camera`, `light::point`, `light::distant`, `light::spot` | Add a camera or a light at the view under the cursor, facing the way it looks |
@@ -50,12 +50,19 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
 | Ctrl+Space | `area::maximise` | Maximise the area under the cursor, or give every area its place back (see [Viewports](Scene.md#viewports)) |
 | Ctrl+Page Down, Ctrl+Page Up | `workspace::next`, `previous` | Show the next or the previous workspace (see [Workspaces](Scene.md#workspaces)) |
-| Project > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
+| File > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
 | Escape | `ui::quit` | Quit |
 
 Left Ctrl is also the truck modifier, so truck mode is on while a Ctrl chord is pressed. It
 drives the camera only during a drag, so the chord is unaffected. Save As and RIB export are on
-the Project menu only.
+the File menu only.
+
+The menu bar holds File, Edit, Create, Select, Modify, View, Animate, Render, Window and Help.
+Beside it are a tab for each workspace, the project's name, and a Search button. While a menu is
+open, the arrow keys walk it, as [api/ui/Components.md](../api/ui/Components.md) describes. The
+tool shelf down the left holds the transform tools and the modelling operations, each with a
+tooltip beside it, and its icons are cells of `data/icons/icons.png`, which `data/icons.json`
+names.
 
 ## Source layout
 
@@ -74,7 +81,7 @@ a higher one is in the wrong place.
 | `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
-| `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers and the workspaces, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers, the top bar and the workspaces, the command search, the icon sheet, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
 | `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` | `Controller.h` |

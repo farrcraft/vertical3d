@@ -40,8 +40,8 @@ Rules the picker follows:
   having been drawn since the camera moved.
 
 **Select masks.** `SelectMask` is one of Object, Mesh, Light, Camera, Curve, Vertex, Edge, Face
-or Handle, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, the
-select-mask toolbar sets the same four, and the Select Mask menu sets all nine. Changing the mask
+or Handle, and `SelectTool` holds it. Keys 5 to 8 set Object, Vertex, Edge and Face, and the
+Select menu and each viewport header's mask menu set all nine. Changing the mask
 clears the component selection.
 
 - **Object, Mesh, Light, Camera and Curve select whole items.** Object takes every kind, and each
@@ -100,7 +100,7 @@ drawn in the `ui` pass as a one-pixel outline in window pixels.
 3. Otherwise `ToolRouter` offers the press to the tools in turn, and the first that takes it has
    the gesture until the release:
    - `CameraControlTool` takes it while a camera move is in force, held by a modifier (Alt or
-     Ctrl) or latched from the Camera Manipulators menu.
+     Ctrl) or latched from the View menu's Navigate submenu.
    - `TransformTool` takes it when the cursor is on a manipulator handle.
    - `SelectTool` takes any press, and picks.
 
@@ -117,7 +117,7 @@ letting it go ends the drag, whatever the left button is doing.
 - **Held.** `view::camera::dolly` (Left Alt), `view::camera::truck` (Left Ctrl) and
   `view::camera::pan` (the middle button) last while they are held. `view::camera::zoom` is a
   held command with no binding.
-- **Latched.** The Camera Manipulators menu's `camera::truck`, `dolly`, `zoom`, `pan` and `pitch`
+- **Latched.** The View > Navigate submenu's `camera::truck`, `dolly`, `zoom`, `pan` and `pitch`
   latch a move, which lasts until the same item is chosen again or a transform mode is chosen.
   The menu checks the latched move.
 

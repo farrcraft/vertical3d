@@ -448,11 +448,12 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
             continue;
         }
         // the strip decides how big a button in it is. A row's is as wide as its label and a
-        // column's is as wide as the strip. The button is then drawn at that size, the same
-        // way a button anywhere else is
+        // column's is as wide as the strip, and as tall when it shows an icon, so a shelf of
+        // icons is a column of squares. The button is then drawn at that size, the same way a
+        // button anywhere else is
         const glm::vec2 box = row
             ? glm::vec2(extent(*button) + styles_.base().padding, size.y)
-            : glm::vec2(size.x, styles_.base().lineHeight);
+            : glm::vec2(size.x, button->icon().empty() ? styles_.base().lineHeight : size.x);
         place(*button, {.position = pen, .size = box});
         pen += row ? glm::vec2(box.x, 0.0F) : glm::vec2(0.0F, box.y);
     }

@@ -13,6 +13,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
+#include <api/ui/Image.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
@@ -20,6 +21,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/StatusBar.h>
@@ -113,6 +115,12 @@ class Renderer final {
     void selectTool(const boost::shared_ptr<SelectTool>& select);
 
     /**
+     * The sheet an image source naming an icon is resolved from. Set it before the ui, whose
+     * images are resolved when it arrives.
+     **/
+    void icons(const IconSheet& sheet);
+
+    /**
      * The ui drawn over every view, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
@@ -174,10 +182,17 @@ class Renderer final {
 
  private:
     /**
-     * @return the texture a ui image becomes, uploading it the first time it is asked for, or an
+     * @return what a ui image source resolves to: a cell of the icon sheet for an icon's name,
+     *         and otherwise the whole of the image the source names, or nothing when the image
+     *         cannot be loaded
+     **/
+    v3d::ui::Image image(const std::string& source);
+
+    /**
+     * @return the texture an image becomes, uploading it the first time it is asked for, or an
      *         unset handle when the image cannot be loaded
      **/
-    v3d::render::realtime::TextureHandle image(const std::string& source);
+    v3d::render::realtime::TextureHandle texture(const std::string& source);
 
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
@@ -220,6 +235,7 @@ class Renderer final {
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
+    IconSheet icons_;
     // the textures the ui's images became, by source, so a component built again reuses them
     std::map<std::string, v3d::render::realtime::TextureHandle> images_;
     v3d::shell::Shell* shell_;

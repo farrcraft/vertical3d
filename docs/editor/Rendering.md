@@ -66,8 +66,8 @@ samples takes a great deal of it. The ray-trace hider keeps nothing per sample.
 
 | Item | Command | Effect |
 |---|---|---|
-| Render Settings | `render::settings` | Put up the settings, filled from the document's. Apply takes them through the history, so one undo puts them back, and refuses a field that is not a whole number or settings out of range |
-| Render View | `render::view` | Open the render window and render into it |
+| Settings | `render::settings` | Put up the settings, filled from the document's. Apply takes them through the history, so one undo puts them back, and refuses a field that is not a whole number or settings out of range |
+| Render | `render::view` | Open the render window and render into it |
 | Batch Render | `render::batch` | Render every frame of the timeline's range from each scene camera into the project's `renders/` directory |
 
 **The render window** shows what the render is doing, then its picture, fitted to the window

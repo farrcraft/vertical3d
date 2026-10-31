@@ -227,6 +227,24 @@ BOOST_AUTO_TEST_CASE(a_views_control_takes_a_press_before_the_tools) {
 }
 
 /**
+ * A press outside every area, as on a bar along the foot of the window, reaches no tool, and
+ * neither does its release.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_outside_the_areas_reaches_no_tool) {
+    const Panes panes;
+    panes.pointer->motion(glm::vec2(150.0F, 150.0F));
+    panes.pointer->button(true);
+    panes.pointer->button(false);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 0);
+
+    panes.pointer->motion(glm::vec2(150.0F, 50.0F));
+    panes.pointer->button(true);
+    BOOST_CHECK_EQUAL(panes.tool->presses, 1);
+    panes.pointer->button(false);
+    BOOST_CHECK(!panes.tool->held);
+}
+
+/**
  * With snapping, a dragged divider lands on a tenth of its split: the split runs 194 pixels
  * from 3, so a drag to 140 lands on its seventh tenth, centred at 138.8.
  **/

@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui::component::menu {
@@ -156,6 +157,97 @@ int Bar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
         }
     }
     return -1;
+}
+
+/**
+ **/
+void Bar::step(const boost::shared_ptr<Menu>& panel, int by) {
+    const int count = static_cast<int>(panel->count());
+    if (count == 0) {
+        return;
+    }
+    int at = -1;
+    const boost::shared_ptr<Item> chosen = panel->active();
+    for (int index = 0; index < count; index++) {
+        if ((*panel)[static_cast<std::size_t>(index)] == chosen && chosen) {
+            at = index;
+        }
+    }
+    // nothing chosen steps down onto the first item, or up onto the last
+    if (at < 0) {
+        at = by > 0 ? -1 : count;
+    }
+    for (int tries = 1; tries <= count; tries++) {
+        const int index = (((at + (by * tries)) % count) + count) % count;
+        const boost::shared_ptr<Item>& item = (*panel)[static_cast<std::size_t>(index)];
+        if (item && !item->separator()) {
+            panel->active(index);
+            return;
+        }
+    }
+}
+
+/**
+ **/
+void Bar::openFirst(int index) {
+    open(index);
+    if (!panels_.empty()) {
+        step(panels_.front(), 1);
+    }
+}
+
+/**
+ **/
+bool Bar::key(std::string_view key) {
+    if (!active() || panels_.empty()) {
+        return false;
+    }
+    const std::size_t depth = panels_.size() - 1;
+    const boost::shared_ptr<Menu> panel = panels_.back();
+    const int menus = static_cast<int>(menus_.size());
+    if (key == "arrow_down" || key == "arrow_up") {
+        pending_.reset();
+        step(panel, key == "arrow_down" ? 1 : -1);
+        return true;
+    }
+    const boost::shared_ptr<Item> item = panel->active();
+    const bool submenu = item && item->itemType() == menu::ItemType::Submenu && item->submenu() && usable(*item);
+    if (key == "arrow_right") {
+        if (submenu) {
+            descend(depth, item);
+            step(panels_.back(), 1);
+        } else {
+            openFirst((open_ + 1) % menus);
+        }
+        return true;
+    }
+    if (key == "arrow_left") {
+        if (depth > 0) {
+            truncate(depth);
+        } else {
+            openFirst((open_ + menus - 1) % menus);
+        }
+        return true;
+    }
+    if (key == "return" || key == "space") {
+        if (submenu) {
+            descend(depth, item);
+            step(panels_.back(), 1);
+        } else if (item && !item->separator() && usable(*item)) {
+            panel->dispatch(item);
+            close();
+        }
+        return true;
+    }
+    if (key == "escape") {
+        if (depth > 0) {
+            truncate(depth);
+        } else {
+            close();
+        }
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -304,8 +396,10 @@ bool Bar::press(const glm::vec2& cursor) {
         const int index = labelAt(cursor);
         if (index >= 0) {
             open(index == open_ ? -1 : index);
+            return true;
         }
-        return true;
+        // the rest of a closed bar is room for what an app puts beside the labels
+        return active();
     }
 
     if (active()) {

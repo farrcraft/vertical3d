@@ -20,6 +20,7 @@
 #include <api/shell/Shell.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/Component.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
@@ -33,11 +34,13 @@
 #include <api/window/Window.h>
 #include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
 #include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/control/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
@@ -91,6 +94,12 @@ namespace {
  **/
 const char* const uiContainer = "editor";
 const char* const menuBar = "menu-bar";
+
+/**
+ * The first container the ui config lists after the editor's own. The top bar goes before it,
+ * so it is drawn over the menu bar and under every dialog.
+ **/
+const char* const firstDialog = "chooser";
 
 #ifdef _WIN32
 const char* const MOYA = "moya.exe";
@@ -187,6 +196,12 @@ bool Controller::start() {
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
 
     renderer_ = boost::make_shared<Renderer>(window(), logger(), assets(), &shell_);
+    IconSheet icons;
+    const boost::json::object* sheet = document(IconSheet::DOCUMENT);
+    if (sheet == nullptr || !icons.load(*sheet)) {
+        logger()->get()->error("The editor has no icon sheet it can read, so its toolbar shows labels");
+    }
+    renderer_->icons(icons);
     renderer_->views(views_);
     renderer_->scene(scene);
     renderer_->transformTool(transformTool_);
@@ -279,6 +294,7 @@ bool Controller::buildUi() {
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<CommandSearch>(vgui);
+    topBar_ = boost::make_shared<TopBar>(vgui, firstDialog, renderer_->measure());
     // moya.exe is built beside the editor
     renderWindow_ = boost::make_shared<RenderWindow>(boost::make_shared<RenderPanels>(vgui),
         boost::make_shared<MoyaDelegate>(logger()), boost::make_shared<Batch>(logger(), boost::filesystem::path(path_) / MOYA),
@@ -335,22 +351,15 @@ void Controller::syncUi() {
         }
     }
 
-    const SelectMask mask = selectTool_->mask();
-    mark("select::mask::object", mask == SelectMask::Object);
-    mark("select::mask::vertex", mask == SelectMask::Vertex);
-    mark("select::mask::edge", mask == SelectMask::Edge);
-    mark("select::mask::face", mask == SelectMask::Face);
+    for (const auto& [command, on] : AreaChrome::marks(selectTool_->mask())) {
+        mark(command, on);
+    }
     const CameraControlTool::CameraMode latched = cameraTool_->latched();
     mark("camera::truck", latched == CameraControlTool::CAMERA_MODE_TRUCK);
     mark("camera::dolly", latched == CameraControlTool::CAMERA_MODE_DOLLY);
     mark("camera::zoom", latched == CameraControlTool::CAMERA_MODE_ZOOM);
     mark("camera::pan", latched == CameraControlTool::CAMERA_MODE_PAN);
     mark("camera::pitch", latched == CameraControlTool::CAMERA_MODE_PITCH);
-    mark("select::mask::mesh", mask == SelectMask::Mesh);
-    mark("select::mask::light", mask == SelectMask::Light);
-    mark("select::mask::camera", mask == SelectMask::Camera);
-    mark("select::mask::curve", mask == SelectMask::Curve);
-    mark("select::mask::handle", mask == SelectMask::Handle);
 
     const TransformTool::Mode mode = transformTool_->mode();
     mark("transform::select", mode == TransformTool::Mode::None);
@@ -387,6 +396,17 @@ void Controller::report(const Outcome& outcome) {
             notices_->post(outcome.message);
         }
     }
+}
+
+/**
+ **/
+TopBar::State Controller::topState() const {
+    TopBar::State state{ .workspaces = {}, .shown = workspace_, .project = document_->project()->directory().filename().string(),
+        .dirty = document_->dirty() };
+    for (const boost::json::object& workspace : workspaces_->all()) {
+        state.workspaces.emplace_back(v3d::asset::readString(workspace, "name").value_or(std::string()));
+    }
+    return state;
 }
 
 /**
@@ -611,6 +631,7 @@ void Controller::registerCommands() {
 
     registerViewCommands();
     registerAreaCommands();
+    registerWorkspaceCommands();
 }
 
 /**
@@ -709,6 +730,34 @@ void Controller::registerAreaCommands() {
             layout_->close(area, layout_->areas()[area].chosen);
         }
     });
+    hold("area::tab::choose", [this](const v3d::event::Event& event) {
+        const boost::optional<v3d::event::EventData> data = event.data();
+        if (!data || !std::holds_alternative<int>(*data)) {
+            return;
+        }
+        const std::size_t editor = static_cast<std::size_t>(std::get<int>(*data));
+        for (std::size_t area = 0; area < layout_->areas().size(); area++) {
+            const std::vector<AreaLayout::Editor>& editors = layout_->areas()[area].editors;
+            const auto found = std::ranges::find(editors, editor, &AreaLayout::Editor::id);
+            if (found != editors.end()) {
+                layout_->choose(area, static_cast<std::size_t>(found - editors.begin()));
+                return;
+            }
+        }
+    });
+}
+
+/**
+ **/
+void Controller::registerWorkspaceCommands() {
+    auto hold = [this](const std::string& name, const v3d::event::Commands::Handler& handler) {
+        if (!commands().add(name, [this, handler](const v3d::event::Event& event) {
+            handler(event);
+            areasChanged();
+        })) {
+            refused_.push_back(name);
+        }
+    };
     hold("workspace::next", [this](const v3d::event::Event& event) {
         if (event.state() != v3d::event::State::Released) {
             switchWorkspace(1);
@@ -717,6 +766,22 @@ void Controller::registerAreaCommands() {
     hold("workspace::previous", [this](const v3d::event::Event& event) {
         if (event.state() != v3d::event::State::Released) {
             switchWorkspace(-1);
+        }
+    });
+    hold("workspace::show", [this](const v3d::event::Event& event) {
+        const boost::optional<v3d::event::EventData> data = event.data();
+        if (event.state() == v3d::event::State::Released || !data || !std::holds_alternative<std::string>(*data)) {
+            return;
+        }
+        const std::string name = std::get<std::string>(*data);
+        if (name == workspace_) {
+            return;
+        }
+        // the arrangement left behind is kept, so coming back to the workspace finds it
+        recordProject();
+        if (showWorkspace(name)) {
+            recordProject();
+            logger()->get()->info("Showing the {} workspace", workspace_);
         }
     });
     hold("workspace::save", [this](const v3d::event::Event&) {
@@ -733,21 +798,6 @@ void Controller::registerAreaCommands() {
     });
     hold("workspace::export", [this](const v3d::event::Event&) { exportWorkspace(); });
     hold("workspace::import", [this](const v3d::event::Event&) { importWorkspace(); });
-    hold("area::tab::choose", [this](const v3d::event::Event& event) {
-        const boost::optional<v3d::event::EventData> data = event.data();
-        if (!data || !std::holds_alternative<int>(*data)) {
-            return;
-        }
-        const std::size_t editor = static_cast<std::size_t>(std::get<int>(*data));
-        for (std::size_t area = 0; area < layout_->areas().size(); area++) {
-            const std::vector<AreaLayout::Editor>& editors = layout_->areas()[area].editors;
-            const auto found = std::ranges::find(editors, editor, &AreaLayout::Editor::id);
-            if (found != editors.end()) {
-                layout_->choose(area, static_cast<std::size_t>(found - editors.begin()));
-                return;
-            }
-        }
-    });
 }
 
 /**
@@ -1084,9 +1134,15 @@ bool Controller::render() {
     if (search_) {
         search_->sync();
     }
+    // the menus' labels are where the last frame laid them, which is where they are drawn again
+    if (topBar_ && menu_ && menu_->count() > 0) {
+        const v3d::type::geometry::Bound2D last = menu_->bound(menu_->count() - 1);
+        const float end = last.position().x + last.size().x;
+        topBar_->sync(topState(), glm::vec4(end, menu_->position().y, static_cast<float>(window()->width()) - end, renderer_->barHeight()));
+    }
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
-        chrome_->sync(*views_, renderer_->barHeight());
+        chrome_->sync(*views_, selectTool_->mask(), renderer_->barHeight());
     }
     renderer_->status(status());
     renderer_->draw();

@@ -7,6 +7,7 @@
 
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -35,14 +36,14 @@ namespace v3d::editor {
  * editors has a strip of tabs above its editor, one toggle button for each, with the chosen one
  * checked.
  *
- * A viewport's header has two more menus. One is named for the camera the view shows and
- * offers the fixed views and the projection switch. The other is named for how the view shades
- * the scene and offers the shading, the fill of each side and the cull. Each marks what its
- * view holds.
+ * A viewport's header has three more menus. One is named for the camera the view shows and
+ * offers the fixed views and the projection switch. One is named for how the view shades the
+ * scene and offers the shading, the fill of each side and the cull. Each marks what its view
+ * holds. The last is named for the select mask, which every view shares, and offers each mask.
  *
- * The area menu's commands are in the "area" context and a viewport's in the "view" context.
- * Every command a header sends carries the area's id as its data, and a tab carries its
- * editor's id.
+ * The area menu's commands are in the "area" context, a viewport's camera and shading menus' in
+ * the "view" context, and its mask menu's in the "select" context. Every command a header sends
+ * carries the area's id as its data, and a tab carries its editor's id.
  *
  * sync() builds the containers again when the areas, their editors, or what a menu is named
  * for change, and otherwise moves them to where the areas are. They are put before the
@@ -81,12 +82,13 @@ class AreaChrome final {
 
     /**
      * Build the containers again if the areas, their editors or the names of their menus
-     * changed, put each where its area is, and mark what each viewport holds on its header's
-     * menus. An area with no room hides its container.
+     * changed, put each where its area is, and mark what each viewport holds and the select
+     * mask on its header's menus. An area with no room hides its container.
      *
+     * @param mask the select mask in force
      * @param height how tall a header and a tab are
      **/
-    void sync(const AreaViews& views, float height);
+    void sync(const AreaViews& views, SelectMask mask, float height);
 
     /**
      * @return the id of the editor whose tab is at a point, or nothing when no tab is there
@@ -94,10 +96,10 @@ class AreaChrome final {
     std::optional<std::size_t> tabAt(const glm::vec2& point) const;
 
     /**
-     * @return the containers the areas of the views' layout are drawn with, as Interface::add()
-     *         reads them
+     * @return the containers the areas of the views' layout are drawn with, under a select mask,
+     *         as Interface::add() reads them
      **/
-    static boost::json::object document(const AreaViews& views);
+    static boost::json::object document(const AreaViews& views, SelectMask mask);
 
     /**
      * @return the name of an area's container
@@ -128,20 +130,27 @@ class AreaChrome final {
      **/
     static std::vector<std::pair<std::string, bool>> marks(const ViewPort& view);
 
+    /**
+     * @return each select mask's command, as "select::mask::" and its name, and whether it is
+     *         the mask in force
+     **/
+    static std::vector<std::pair<std::string, bool>> marks(SelectMask mask);
+
  private:
     /**
      * @return what decides whether the containers have to be built again: each area's id, the
      *         kind of editor it shows, its editors' ids and labels, and the names of its view's
-     *         menus
+     *         menus and of the mask
      **/
-    static std::string signature(const AreaViews& views);
+    static std::string signature(const AreaViews& views, SelectMask mask);
 
     /**
-     * Put one area's header, button and tabs where the area is, and mark what its view holds.
+     * Put one area's header, button and tabs where the area is, and mark what its view holds
+     * and the mask.
      *
      * @param view the view the area shows, or null when it shows another kind of editor
      **/
-    void place(const AreaLayout::Area& area, const ViewPort* view, float height) const;
+    void place(const AreaLayout::Area& area, const ViewPort* view, SelectMask mask, float height) const;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;

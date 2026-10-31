@@ -7,6 +7,7 @@
 
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
+#include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
@@ -14,6 +15,7 @@
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/component/menu/Bar.h>
 #include <api/ui/input/LineEdit.h>
 
 #include <algorithm>
@@ -84,6 +86,20 @@ Keys::Keys(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt:
 bool Keys::press(std::string_view key, bool shifted, bool controlled, bool repeat) {
     if (!ui_ || key.empty()) {
         return false;
+    }
+    // an open menu bar takes the keys that walk it before whatever has the focus, as it takes
+    // every press before any container
+    for (const boost::shared_ptr<Container>& container : ui_->containers()) {
+        if (!container || !container->visible()) {
+            continue;
+        }
+        for (const boost::shared_ptr<Component>& component : container->components()) {
+            const boost::shared_ptr<component::menu::Bar> bar =
+                component && component->type() == component::Type::MenuBar ? boost::dynamic_pointer_cast<component::menu::Bar>(component) : nullptr;
+            if (bar && bar->active()) {
+                return bar->key(key);
+            }
+        }
     }
     const boost::shared_ptr<Component> focused = ui_->focused();
     if (!focused) {

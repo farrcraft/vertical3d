@@ -16,6 +16,7 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
@@ -78,7 +79,7 @@ struct Chrome {
      **/
     void sync() {
         BOOST_REQUIRE(views->sync());
-        chrome.sync(*views, 28.0F);
+        chrome.sync(*views, mask, 28.0F);
     }
 
     /**
@@ -108,6 +109,7 @@ struct Chrome {
     AreaLayout& layout;
     boost::shared_ptr<AreaViews> views;
     AreaChrome chrome;
+    v3d::editor::SelectMask mask = v3d::editor::SelectMask::Object;
     v3d::render::realtime::canvas::Canvas canvas;
     v3d::ui::paint::ComponentRenderer renderer;
 };
@@ -249,7 +251,7 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_its_camera_and_shading, Chrome)
     views->of(1)->display().shading = v3d::editor::Shading::Smooth;
     sync();
     const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
-    BOOST_REQUIRE_EQUAL(bar->count(), 3U);
+    BOOST_REQUIRE_EQUAL(bar->count(), 4U);
     BOOST_CHECK_EQUAL(bar->label(1), "Top");
     BOOST_CHECK_EQUAL(bar->label(2), "Smooth");
 
@@ -273,6 +275,26 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_its_camera_and_shading, Chrome)
     BOOST_CHECK(header(1) == bar);
     BOOST_CHECK(bar->find("view::cull::none")->checked());
     BOOST_CHECK(!bar->find("view::cull::back")->checked());
+}
+
+/**
+ * A viewport's header ends with a menu named for the select mask, whose items send each mask's
+ * command with the area's id and mark the one in force. A new mask builds the header again.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_the_mask, Chrome) {
+    sync();
+    BOOST_CHECK_EQUAL(header(0)->label(3), "Object");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> face = header(0)->find("select::mask::face");
+    BOOST_REQUIRE(face);
+    BOOST_CHECK(number(face->event()) == static_cast<int>(layout.areas()[0].id));
+    BOOST_CHECK(!face->checked());
+    BOOST_CHECK(header(0)->find("select::mask::object")->checked());
+
+    mask = v3d::editor::SelectMask::Face;
+    sync();
+    BOOST_CHECK_EQUAL(header(0)->label(3), "Face");
+    BOOST_CHECK(header(0)->find("select::mask::face")->checked());
+    BOOST_CHECK(!header(0)->find("select::mask::object")->checked());
 }
 
 /**

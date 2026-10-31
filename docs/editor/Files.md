@@ -187,10 +187,10 @@ Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.
 ## Open, Save and Save As
 
 - The current project starts as the directory `project` beside the executable. A save makes it.
-- **Open** (O, or Project > Load) shows the file chooser in open mode, filtered to `.json`, to
+- **Open** (Ctrl+O, or File > Open) shows the file chooser in open mode, filtered to `.json`, to
   pick a project's manifest. A successful open makes that project current and clears the history.
-- **Save** (S, or Project > Save) writes to the current project without asking.
-- **Save As** (Project > Save As) shows the chooser in save mode. The name typed is a new project
+- **Save** (Ctrl+S, or File > Save) writes to the current project without asking.
+- **Save As** (File > Save As) shows the chooser in save mode. The name typed is a new project
   directory, which must not exist yet. A successful write makes it the current project.
 
 The chooser is `ui::shell::FileChooser`. It drives the `chooser` container laid out in
@@ -231,7 +231,7 @@ they do beside the file chooser.
 
 ## Importing
 
-Project > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file, and Project >
+File > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file, and File >
 Import > USD (`project::import::usd`) a `.usd`, `.usda`, `.usdc` or `.usdz` stage. Either puts
 the file's scene into the document as one change, which one undo takes out again. The items at
 the top of the import become the selection. `Document::importScene()` does the work, so anything
@@ -270,7 +270,7 @@ Background: [ADR-0122](../adr/0122-editor-import-gltf-and-usd-as-scenes-of-items
 
 ## RIB export
 
-Project > Export > rib (`project::export::rib`) writes the scene as RenderMan RIB to
+File > Export > RIB (`project::export::rib`) writes the scene as RenderMan RIB to
 `export.rib` beside the executable, replacing any file already there. The export is one-way:
 nothing reads it back into the editor. The scene document stays the editor's own format, and
 the offline renderer reads RIB.

@@ -85,7 +85,7 @@ frame. The default is 24 frames a second over frames 1 to 120. Keys sit on frame
 of rate leaves every key where it is and changes how fast they play. The window's caption shows
 the current frame.
 
-The Timeline menu:
+The Animate menu:
 
 | Item | Command | Effect |
 |---|---|---|
@@ -93,8 +93,8 @@ The Timeline menu:
 | Play, Stop | `timeline::playback::play`, `stop` | Start and stop playback. While playing, `simulate()` steps the frame at the frame rate and starts again from the first frame after the last |
 | Next Frame, Previous Frame | `timeline::playback::next`, `previous` | Step one frame, held within the range |
 | First Frame, Last Frame | `timeline::playback::first`, `last` | Go to either end of the range |
-| Next Keyed Frame, Previous Keyed Frame | `timeline::playback::next_key`, `previous_key` | Go to the nearest keyed frame after or before the current one |
-| First Keyed Frame, Last Keyed Frame | `timeline::playback::first_key`, `last_key` | Go to the earliest or the latest keyed frame |
+| Next Key, Previous Key | `timeline::playback::next_key`, `previous_key` | Go to the nearest keyed frame after or before the current one |
+| First Key, Last Key | `timeline::playback::first_key`, `last_key` | Go to the earliest or the latest keyed frame |
 
 The keyed frames are those of the selection, or of every item when nothing is selected. Each
 move to a frame sets the frame, which drops every pending edit.

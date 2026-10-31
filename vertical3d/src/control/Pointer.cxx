@@ -92,6 +92,11 @@ void Pointer::button(bool pressed, unsigned int clicks) {
             place();
             return;
         }
+        // a press on a bar beside the areas, or in the margin around them, is in no view
+        missed_ = layout.areaAt(cursor_.x, cursor_.y) >= layout.areas().size();
+        if (missed_) {
+            return;
+        }
         tools_->button(true, cursor_);
         return;
     }
@@ -118,8 +123,9 @@ void Pointer::button(bool pressed, unsigned int clicks) {
         layout.release();
         return;
     }
-    if (controlGrab_) {
+    if (controlGrab_ || missed_) {
         controlGrab_ = false;
+        missed_ = false;
         return;
     }
     tools_->button(false, cursor_);

@@ -16,6 +16,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
@@ -97,6 +98,47 @@ boost::json::object choices(const char* label, const std::string& prefix, std::s
     return boost::json::object{ { "label", label }, { "type", "submenu" }, { "items", std::move(items) } };
 }
 
+/** The masks a mask menu offers, in its order, and where a separator goes before one. **/
+struct Masked final {
+    SelectMask mask;
+    bool rule;
+};
+
+constexpr Masked MASKS[] = {
+    { .mask = SelectMask::Object, .rule = false }, { .mask = SelectMask::Mesh, .rule = false },
+    { .mask = SelectMask::Curve, .rule = false }, { .mask = SelectMask::Camera, .rule = false },
+    { .mask = SelectMask::Light, .rule = false }, { .mask = SelectMask::Vertex, .rule = true },
+    { .mask = SelectMask::Edge, .rule = false }, { .mask = SelectMask::Face, .rule = false },
+    { .mask = SelectMask::Handle, .rule = false },
+};
+
+/**
+ * @return a kind with a capital, as a menu names it
+ **/
+std::string capital(const std::string& kind) {
+    std::string named = kind;
+    if (!named.empty()) {
+        named.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(named.front())));
+    }
+    return named;
+}
+
+/**
+ * @return a viewport's mask menu, named for the mask in force
+ **/
+boost::json::object maskMenu(SelectMask mask, std::size_t area) {
+    boost::json::array items;
+    for (const Masked& each : MASKS) {
+        if (each.rule) {
+            items.emplace_back(boost::json::object{ { "type", "separator" } });
+        }
+        const std::string name = selectMaskName(each.mask);
+        items.emplace_back(boost::json::object{ { "label", capital(name) }, { "type", "radio" }, { "context", "select" },
+            { "command", "mask::" + name }, { "data", static_cast<std::int64_t>(area) } });
+    }
+    return boost::json::object{ { "label", capital(selectMaskName(mask)) }, { "items", std::move(items) } };
+}
+
 /**
  * @return a viewport's camera menu and its shading menu, named for what the view shows
  **/
@@ -123,17 +165,6 @@ boost::json::array viewMenus(const ViewPort& view, std::size_t area) {
     };
 }
 
-/**
- * @return a kind with a capital, as a menu names it
- **/
-std::string capital(const std::string& kind) {
-    std::string named = kind;
-    if (!named.empty()) {
-        named.front() = static_cast<char>(std::toupper(static_cast<unsigned char>(named.front())));
-    }
-    return named;
-}
-
 /** A submenu of one of an area's commands, in each of the four ways. **/
 struct Ways final {
     const char* label;
@@ -150,6 +181,17 @@ boost::json::object ways(const Ways& spec, std::size_t area) {
         items.emplace_back(item(spec.across ? way.across : way.split, std::string(spec.command) + "::" + way.command, area));
     }
     return boost::json::object{ { "label", spec.label }, { "type", "submenu" }, { "items", std::move(items) } };
+}
+
+/**
+ * Check or clear the items of a menu bar that send each command, as a list of marks says.
+ **/
+void check(v3d::ui::component::menu::Bar* bar, const std::vector<std::pair<std::string, bool>>& marks) {
+    for (const auto& [command, on] : marks) {
+        if (const boost::shared_ptr<v3d::ui::component::menu::Item> found = bar->find(command)) {
+            found->checked(on);
+        }
+    }
 }
 
 /**
@@ -248,9 +290,19 @@ std::vector<std::pair<std::string, bool>> AreaChrome::marks(const ViewPort& view
 
 /**
  **/
-std::string AreaChrome::signature(const AreaViews& views) {
+std::vector<std::pair<std::string, bool>> AreaChrome::marks(SelectMask mask) {
+    std::vector<std::pair<std::string, bool>> made;
+    for (const Masked& each : MASKS) {
+        made.emplace_back(std::string("select::mask::") + selectMaskName(each.mask), each.mask == mask);
+    }
+    return made;
+}
+
+/**
+ **/
+std::string AreaChrome::signature(const AreaViews& views, SelectMask mask) {
     const AreaLayout& layout = *views.layout();
-    std::string made;
+    std::string made = std::string(selectMaskName(mask)) + ";";
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
         const AreaLayout::Area& area = layout.areas()[index];
         made += std::to_string(area.id) + ":" + area.editor().kind + ":";
@@ -267,7 +319,7 @@ std::string AreaChrome::signature(const AreaViews& views) {
 
 /**
  **/
-boost::json::object AreaChrome::document(const AreaViews& views) {
+boost::json::object AreaChrome::document(const AreaViews& views, SelectMask mask) {
     const AreaLayout& layout = *views.layout();
     boost::json::array containers;
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
@@ -288,10 +340,11 @@ boost::json::object AreaChrome::document(const AreaViews& views) {
             for (boost::json::value& menu : viewMenus(*view, id)) {
                 menus.emplace_back(std::move(menu));
             }
+            menus.emplace_back(maskMenu(mask, id));
         }
         boost::json::array components = {
             boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false }, { "menus", std::move(menus) } },
-            boost::json::object{ { "type", "button" }, { "name", "maximise" }, { "icon", "icons/maximise.png" },
+            boost::json::object{ { "type", "button" }, { "name", "maximise" }, { "icon", "icon:maximise" },
                 { "tooltip", "Maximise" }, { "context", CONTEXT }, { "command", "maximise" }, { "data", static_cast<std::int64_t>(id) } },
         };
         if (area.editors.size() >= 2) {
@@ -310,16 +363,16 @@ boost::json::object AreaChrome::document(const AreaViews& views) {
 
 /**
  **/
-void AreaChrome::sync(const AreaViews& views, float height) {
+void AreaChrome::sync(const AreaViews& views, SelectMask mask, float height) {
     const AreaLayout& layout = *views.layout();
-    const std::string now = signature(views);
+    const std::string now = signature(views, mask);
     if (now != signature_) {
         for (const std::string& held : held_) {
             ui_->remove(held);
         }
         held_.clear();
         signature_ = now;
-        if (ui_->add(document(views), before_)) {
+        if (ui_->add(document(views, mask), before_)) {
             for (const AreaLayout::Area& area : layout.areas()) {
                 held_.push_back(name(area.id));
                 if (resolve_) {
@@ -331,13 +384,13 @@ void AreaChrome::sync(const AreaViews& views, float height) {
         }
     }
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
-        place(layout.areas()[index], views.of(index).get(), height);
+        place(layout.areas()[index], views.of(index).get(), mask, height);
     }
 }
 
 /**
  **/
-void AreaChrome::place(const AreaLayout::Area& area, const ViewPort* view, float height) const {
+void AreaChrome::place(const AreaLayout::Area& area, const ViewPort* view, SelectMask mask, float height) const {
     const boost::shared_ptr<v3d::ui::Container> container = ui_->container(name(area.id));
     if (!container) {
         return;
@@ -352,11 +405,8 @@ void AreaChrome::place(const AreaLayout::Area& area, const ViewPort* view, float
         box(header.get(), glm::vec4(content.x, content.y, content.z - height, height));
         const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(header);
         if (bar && view != nullptr) {
-            for (const auto& [command, on] : marks(*view)) {
-                if (const boost::shared_ptr<v3d::ui::component::menu::Item> found = bar->find(command)) {
-                    found->checked(on);
-                }
-            }
+            check(bar.get(), marks(*view));
+            check(bar.get(), marks(mask));
         }
     }
     if (const boost::shared_ptr<v3d::ui::Component> maximise = container->get("maximise")) {

@@ -18,6 +18,10 @@
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Keys.h>
 
 #include <string>
@@ -392,6 +396,36 @@ BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_takes_no_key) {
     BOOST_CHECK(!fixture.keys->press("arrow_down"));
     BOOST_CHECK(!fixture.keys->press("pagedown"));
     BOOST_CHECK(!fixture.keys->press("end"));
+}
+
+/**
+ * An open menu bar takes the keys that walk it before the focused component, so return sends
+ * the menu's item rather than the focused button's command. A closed bar leaves them alone.
+ **/
+BOOST_AUTO_TEST_CASE(an_open_menu_bar_takes_the_keys_first) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> focused = button(&fixture, "focused");
+    fixture.container->add(focused);
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = boost::make_shared<v3d::ui::component::menu::Menu>(fixture.dispatcher);
+    const boost::shared_ptr<v3d::ui::component::menu::Item> open =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, "Open");
+    open->event(v3d::event::Event("open", fixture.context));
+    menu->addItem(open);
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::make_shared<v3d::ui::component::menu::Bar>();
+    bar->add("File", menu);
+    fixture.container->add(bar);
+    fixture.ui->focus(focused);
+
+    bar->open(0);
+    BOOST_CHECK(fixture.keys->press("arrow_down"));
+    BOOST_CHECK(fixture.keys->press("return"));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::open");
+    BOOST_CHECK(!bar->active());
+
+    BOOST_CHECK(fixture.keys->press("return"));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.sent[1], "test::focused");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

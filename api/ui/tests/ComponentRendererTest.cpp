@@ -307,6 +307,34 @@ BOOST_AUTO_TEST_CASE(a_tooltip_hangs_under_its_box) {
 }
 
 /**
+ * Beside its box a tooltip hangs to the right, level with the box, and to the left where the
+ * right would leave the canvas.
+ **/
+BOOST_AUTO_TEST_CASE(a_tooltip_can_hang_beside_its_box) {
+    std::vector<Written> written;
+    const v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
+        });
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+
+    const v3d::type::geometry::Bound2D box({.position = glm::vec2(100.0F, 100.0F), .size = glm::vec2(30.0F, 30.0F)});
+    renderer.tooltip(&canvas, "Move", "", box, true);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_GT(written[0].pen.x, 130.0F);
+    BOOST_CHECK_GT(written[0].pen.y, 100.0F);
+    BOOST_CHECK_LT(written[0].pen.y, 130.0F);
+
+    written.clear();
+    const v3d::type::geometry::Bound2D edge({.position = glm::vec2(780.0F, 100.0F), .size = glm::vec2(20.0F, 30.0F)});
+    renderer.tooltip(&canvas, "Move", "", edge, true);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_LT(written[0].pen.x, 780.0F);
+}
+
+/**
  * A renderer never given a clock draws every change at once, whatever its durations.
  **/
 BOOST_AUTO_TEST_CASE(without_a_clock_a_change_shows_at_once) {

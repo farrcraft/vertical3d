@@ -15,6 +15,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/renderer/Line.h>
 #include <api/shell/Shell.h>
+#include <api/ui/Image.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
@@ -28,6 +29,7 @@
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/StatusBar.h>
@@ -112,6 +114,11 @@ const float uiScale = 1.0F;
 const float fontSize = 15.0F * uiScale;
 
 /**
+ * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 15 pixel text.
+ **/
+constexpr float iconScale = 1.2F;
+
+/**
  * The ui's spacing, each a multiple of the text size.
  **/
 constexpr float lineHeightScale = 1.5F;
@@ -141,6 +148,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
         style->padding = size * paddingScale;
         style->barHeight = size * barHeightScale;
         style->panelPadding = size * panelPaddingScale;
+        style->iconSize = size * iconScale;
     };
     shell_->present(&engine_, options);
     screen_ = shell_->screen();
@@ -227,7 +235,23 @@ void Renderer::resolve(const boost::shared_ptr<v3d::ui::Component>& component) {
 
 /**
  **/
-v3d::render::realtime::TextureHandle Renderer::image(const std::string& source) {
+void Renderer::icons(const IconSheet& sheet) {
+    icons_ = sheet;
+}
+
+/**
+ **/
+v3d::ui::Image Renderer::image(const std::string& source) {
+    if (const std::optional<v3d::ui::Image::Corners> corners = icons_.corners(source)) {
+        const v3d::render::realtime::TextureHandle sheet = texture(icons_.image());
+        return sheet.valid() ? v3d::ui::Image(sheet, *corners) : v3d::ui::Image();
+    }
+    return texture(source);
+}
+
+/**
+ **/
+v3d::render::realtime::TextureHandle Renderer::texture(const std::string& source) {
     const auto found = images_.find(source);
     if (found != images_.end()) {
         return found->second;

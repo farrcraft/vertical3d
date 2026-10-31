@@ -25,6 +25,7 @@
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
 #include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/control/TopBar.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
@@ -113,6 +114,11 @@ class Controller final : public v3d::engine::Engine {
      * Register the commands that change the areas: split, join, swap, maximise and the tabs.
      **/
     void registerAreaCommands();
+
+    /**
+     * Register the commands that show, keep, reset, export and import the workspaces.
+     **/
+    void registerWorkspaceCommands();
 
     /**
      * @return the area a command acts on: the one whose id it carries, or the active area
@@ -219,6 +225,12 @@ class Controller final : public v3d::engine::Engine {
      * invoked. Each handler reads the editor's state back into the ui after it runs.
      **/
     void registerCommands();
+
+    /**
+     * @return what the top bar shows: the workspaces, the one shown, and the project's name and
+     *         whether it has unsaved changes
+     **/
+    TopBar::State topState() const;
 
     /**
      * Put the command search up over every command on the editor's menu bar and an area's
@@ -348,6 +360,8 @@ class Controller final : public v3d::engine::Engine {
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<Notices> notices_;
     boost::shared_ptr<CommandSearch> search_;
+    // the workspaces, the project and the search, beside the menus
+    boost::shared_ptr<TopBar> topBar_;
     boost::shared_ptr<Workspaces> workspaces_;
     // the name of the workspace shown
     std::string workspace_;

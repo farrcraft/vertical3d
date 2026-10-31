@@ -297,8 +297,8 @@ vertical and horizontal splits whose leaves are areas. A layout reads like this:
   held as it was.
 - `save()` writes the same form, with every share and every chosen editor.
 
-The menu bar and the toolbars take strips along two edges of the window, and the areas divide
-the rest.
+The menu bar and the tool shelf take strips along the top and the left of the window, the
+status bar one along the foot, and the areas divide the rest.
 
 **Viewports for editors.** `AreaViews` gives each viewport editor a `ViewPort`, made from the
 profile its state names, and drops the viewport when its editor goes. A viewport outlasts a
@@ -368,17 +368,19 @@ built as the editor runs and put before the editor's own container so its menus 
   such as Viewport, and holds Split, Join and Swap, each with Left, Right and Top or Above and
   Bottom or Below, then New Tab, Close Tab and Maximise. A maximise button sits at the header's
   right end.
-- **A viewport's header** has two more menus, drawn over the scene:
+- **A viewport's header** has three more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
     Back, Left, Right, Top, Bottom and Perspective, and Orthographic.
   - one named for how the view shades the scene: Points or Wireframe when the front of each
     triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
     and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,
     with None, Front, Back and Both.
+  - one named for the select mask, such as Object, holding the nine masks. The mask is the
+    editor's, not the view's, so every header names the same one.
 
   Each item marks what its own view holds, whichever view is active. These are the View menu's
-  `view::camera::`, `view::shade::`, `view::rendermode::` and `view::cull::` commands, which
-  `AreaChrome::marks()` reads for both.
+  `view::camera::`, `view::shade::`, `view::rendermode::` and `view::cull::` commands and the
+  Select menu's `select::mask::` commands, which `AreaChrome::marks()` reads for both.
 - **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
   across its top. The editor draws under the strip and the header sits at the top of the
   editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
@@ -387,8 +389,8 @@ built as the editor runs and put before the editor's own container so its menus 
   or what a view's menus are named for change, and are otherwise moved each frame to where the
   areas are. A container whose area has no room is hidden.
 
-The area menu's commands are in the `area` context, and a viewport's camera and shading menus'
-in the `view` context. A header's command carries its area's id as its data, and the same
+The area menu's commands are in the `area` context, a viewport's camera and shading menus' in
+the `view` context, and its mask menu's in the `select` context. A header's command carries its area's id as its data, and the same
 command sent by a key or the View menu acts on the active area.
 
 | Command | Effect |
@@ -448,10 +450,17 @@ areas never marks a project unsaved, and the project's files hold only content.
   before another project is opened, and around each change of workspace. A project opened or
   saved under a new name shows its own last workspace, or keeps the arrangement it has.
 
-**Commands**, in the Workspace menu:
+**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace, which shows it
+(`workspace::show`, carrying the workspace's name) and is checked while it is shown, then the
+project's name with ` *` after it while it has unsaved changes, and a Search button at the right
+end that opens the command search. They are a container listed after the editor's own, over the
+menu bar's band, which takes a press only on a label.
+
+**Commands**, in the Window menu:
 
 | Command | Effect |
 |---|---|
+| `workspace::show` | Show the workspace whose name it carries, as a top bar tab does |
 | `workspace::next`, `previous` (Ctrl+Page Down, Ctrl+Page Up) | Show the workspace after or before the one shown, wrapping at either end |
 | `workspace::save` | Keep the arrangement shown as the workspace's definition |
 | `workspace::reset` | Put the workspace back as the editor ships it, when it ships one of that name, and show it so |
