@@ -140,7 +140,7 @@ A notice stays for 2.5 s. Resizing and maximising are not animated.
 | UI: where the display's scale comes from, and what it multiplies. Decided in ADR-0131: a tool follows the monitor and a game its window's height, a user preference multiplies either, and the text and every size are redrawn at the result. | 3 |
 | UI: where a transition's state lives. Decided in ADR-0132: on what it animates, a retained component or an immediate widget's per-id state, on a clock of real time. | 5 |
 | Input: how a binding names a chord, and how a chord and a held modifier share a key. Decided in ADR-0133: modifier words before the key, and the most specific binding wins it. | 10 |
-| Editor: where an area layout is saved: with the project, in the user's settings, or as named workspaces in both. To be decided at step 7. | 7 |
+| Editor: where an area layout is saved. Decided in ADR-0134: named workspaces in the user's settings, which also record each project's last arrangement by its path. | 7 |
 
 ## What blocks what
 
@@ -302,7 +302,7 @@ cursor router.
 
 ### Step 7 — Areas
 
-Open. ADR-0127 decided the areas, and the layout's home has to be decided.
+Open. ADR-0127 decided the areas, and ADR-0134 where a layout is saved.
 
 - `ViewLayout` becomes a tree of splits whose leaves are areas. An area holds one or more
   editors, and a viewport is one kind of editor.
@@ -311,8 +311,10 @@ Open. ADR-0127 decided the areas, and the layout's home has to be decided.
   window gains the resize cursors.
 - An area can be split, joined, swapped and maximised, from its editor-type menu and by keys.
   A tab dropped on an area's edge splits it.
-- The layout is saved and restored where the decision says. `data/layout.json` gives the layout
-  a new user starts with.
+- Named workspaces are kept in the user's settings, and `data/layout.json` gives the workspaces a
+  new user starts with. The settings record each project's workspace and arrangement by its
+  path, opening a project restores them, and records for projects that no longer exist are
+  pruned. A workspace can be exported to a file and imported from one.
 
 ### Step 8 — Viewport headers and overlays
 
