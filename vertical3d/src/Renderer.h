@@ -20,7 +20,9 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewOverlay.h>
@@ -51,7 +53,8 @@ namespace v3d::editor {
  * because the manipulator is an overlay.
  *
  * One more pass follows all of them. It covers the whole window, not one view, and draws
- * each view's axis marker and gizmo, the frame around the areas, and the ui. It draws quads, not lines, because panels and glyphs both go through the batched
+ * each view's axis marker and gizmo, the frame around the areas, a notice, the status bar and
+ * the ui. It draws quads, not lines, because panels and glyphs both go through the batched
  * quad pipeline.
  */
 class Renderer final {
@@ -82,6 +85,16 @@ class Renderer final {
      * frame is drawn under the ui and over the views.
      **/
     void pointer(const boost::shared_ptr<Pointer>& pointer);
+
+    /**
+     * What the status bar along the foot of the window says this frame.
+     **/
+    void status(const Status& status);
+
+    /**
+     * The notices drawn at the foot of the active area, or null for none.
+     **/
+    void notices(const boost::shared_ptr<Notices>& notices);
 
     /**
      * The one scene every view draws.
@@ -125,7 +138,8 @@ class Renderer final {
     float scale() const noexcept;
 
     /**
-     * @return how tall a menu bar, a toolbar or a tab is, at the scale the ui is drawn
+     * @return how tall a menu bar, a toolbar, a tab or the status bar is, at the scale the ui
+     *         is drawn
      **/
     float barHeight() const;
 
@@ -170,6 +184,18 @@ class Renderer final {
      **/
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
 
+    /**
+     * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
+     * each button does on the left, and the selection, the frame and the frame rate on the right.
+     **/
+    void drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const;
+
+    /**
+     * Draw the notice showing, if there is one, on a plate centred at the foot of the active
+     * area, faded as far as it has faded.
+     **/
+    void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
     boost::shared_ptr<v3d::asset::Manager> assetManager_;
@@ -185,6 +211,8 @@ class Renderer final {
     boost::shared_ptr<SelectTool> select_;
     boost::shared_ptr<AreaViews> views_;
     boost::shared_ptr<Pointer> pointer_;
+    Status status_;
+    boost::shared_ptr<Notices> notices_;
     // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;

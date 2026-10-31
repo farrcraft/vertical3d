@@ -139,6 +139,12 @@ class Screen final {
     float factor() const noexcept;
 
     /**
+     * @return the ui's clock, which begin() moves on by the real time between frames, for
+     *         whatever an app animates over the ui. It starts at zero
+     **/
+    const Clock& clock() const noexcept;
+
+    /**
      * @return the size text is drawn at, which is Options::size times factor()
      **/
     float size() const noexcept;

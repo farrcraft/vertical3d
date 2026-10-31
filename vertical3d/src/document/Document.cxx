@@ -47,6 +47,13 @@ namespace v3d::editor {
 namespace {
 
 /**
+ * @return a count of items, singular for one: "1 item", "3 items"
+ **/
+std::string items(std::size_t count) {
+    return std::to_string(count) + (count == 1 ? " item" : " items");
+}
+
+/**
  * What a modelling operation says when it changed the mesh, and when there was nothing to change.
  **/
 struct Said final {
@@ -97,7 +104,7 @@ Outcome Document::create(const boost::shared_ptr<Item>& item, const std::string&
     const boost::shared_ptr<CreateCommand> command = boost::make_shared<CreateCommand>(scene_, item, name);
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "created a " + name + " - " + std::to_string(scene_->count()) + " items" };
+    return { .done = true, .message = "created a " + name + " - " + items(scene_->count()) };
 }
 
 Outcome Document::createPrimitive(Primitive primitive) {
@@ -148,7 +155,7 @@ Outcome Document::group(const Items& items) {
     }
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "grouped " + std::to_string(items.size()) + " items - " + std::to_string(scene_->count()) + " items" };
+    return { .done = true, .message = "grouped " + v3d::editor::items(items.size()) + " - " + v3d::editor::items(scene_->count()) };
 }
 
 Outcome Document::importScene(const boost::filesystem::path& file) {
@@ -180,7 +187,7 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     const boost::shared_ptr<ImportCommand> command = boost::make_shared<ImportCommand>(scene_, imported, name);
     command->redo();
     history_->push(command);
-    std::string message = "imported " + std::to_string(imported.items.size()) + " items from " + name;
+    std::string message = "imported " + items(imported.items.size()) + " from " + name;
     const std::size_t left = read.notes.size() + imported.notes.size();
     if (left > 0) {
         message += " - " + std::to_string(left) + " things left out, which the log lists";
@@ -325,7 +332,7 @@ Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type
         return { .done = false, .message = "could not write " + file.string() };
     }
     writeShot(&stream, *scene_, scene_->evaluate(), from, RIBExportVisitor::Output{ .settings = scene_->renderSettings(), .file = picture });
-    return { .done = true, .message = "exported " + std::to_string(scene_->count()) + " item(s) to " + file.string() };
+    return { .done = true, .message = "exported " + items(scene_->count()) + " to " + file.string() };
 }
 
 };  // namespace v3d::editor

@@ -17,6 +17,7 @@
 #include <api/shell/Shell.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
@@ -27,7 +28,9 @@
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/SelectTool.h>
 #include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/view/AreaFrame.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
@@ -66,6 +69,22 @@ constexpr glm::vec4 bandColour(0.9F, 0.9F, 0.9F, 1.0F);
  * How opaque the accent laid over where a dragged tab would land is.
  **/
 constexpr float landingAlpha = 0.25F;
+
+/**
+ * Where a line of text's baseline sits below the middle of the band it is centred in, as a
+ * share of the text's size.
+ **/
+constexpr float BASELINE = 0.35F;
+
+/**
+ * How far a notice sits above the foot of its area, at a ui scale of 1.
+ **/
+constexpr float NOTICE_MARGIN = 16.0F;
+
+/**
+ * What separates the parts of the right side of the status bar.
+ **/
+const char* const STATUS_GAP = "     ";
 
 /**
  * What a view's handle pass is called, on the end of the view's own name.
@@ -147,6 +166,18 @@ void Renderer::views(const boost::shared_ptr<AreaViews>& views) {
  **/
 void Renderer::pointer(const boost::shared_ptr<Pointer>& pointer) {
     pointer_ = pointer;
+}
+
+/**
+ **/
+void Renderer::status(const Status& status) {
+    status_ = status;
+}
+
+/**
+ **/
+void Renderer::notices(const boost::shared_ptr<Notices>& notices) {
+    notices_ = notices;
 }
 
 /**
@@ -344,6 +375,8 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
         drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit(),
             landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
     }
+    drawNotice(&canvas);
+    drawStatus(&canvas);
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
     shell_->draw();
@@ -369,6 +402,68 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());
+}
+
+/**
+ **/
+void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    // a toolbar down the left runs the height of the window, so the bar starts beside it
+    const float left = insets().x;
+    const float width = static_cast<float>(canvas->width());
+    const float bottom = static_cast<float>(canvas->height());
+    const float top = bottom - dress.barHeight;
+    canvas->rect(glm::vec2(left, top), glm::vec2(width, bottom), dress.bar);
+    canvas->rect(glm::vec2(left, top), glm::vec2(width, top + v3d::ui::paint::Dressing::outline(1.0F, screen_->factor())), dress.hairline);
+
+    const float size = screen_->size();
+    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
+    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+    const float baseline = top + (dress.barHeight / 2.0F) + (size * BASELINE);
+    // a button's name, then what it does, then a wider gap before the next button
+    float x = left + dress.padding;
+    for (const Status::Button& button : status_.buttons) {
+        write(button.name, glm::vec2(x, baseline), dress.secondaryText);
+        x += measure(button.name) + (size / 2.0F);
+        write(button.action, glm::vec2(x, baseline), dress.text);
+        x += measure(button.action) + dress.padding;
+    }
+
+    std::string right;
+    for (const std::string* part : { &status_.selection, &status_.frame, &status_.rate }) {
+        if (!part->empty()) {
+            right += (right.empty() ? "" : STATUS_GAP) + *part;
+        }
+    }
+    write(right, glm::vec2(width - dress.padding - measure(right), baseline), dress.secondaryText);
+}
+
+/**
+ **/
+void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
+    if (!notices_ || !views_ || !pointer_ || views_->layout()->areas().empty()) {
+        return;
+    }
+    const std::optional<Notices::Shown> shown = notices_->shown(screen_->clock().now);
+    const glm::vec4& content = views_->layout()->areas()[pointer_->activeArea()].content;
+    if (!shown || content.z <= 0.0F || content.w <= 0.0F) {
+        return;
+    }
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    const float size = screen_->size();
+    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
+    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+
+    const glm::vec2 plate(measure(shown->text) + (dress.padding * 2.0F), dress.barHeight);
+    const glm::vec2 min(std::round(content.x + ((content.z - plate.x) / 2.0F)),
+        std::round(content.y + content.w - (NOTICE_MARGIN * screen_->factor()) - plate.y));
+    const glm::vec2 max = min + plate;
+    canvas->fade(shown->alpha);
+    const glm::vec2 drop(0.0F, dress.shadowOffset);
+    v3d::ui::paint::shadowBox(canvas, min + drop, max + drop, { .radius = dress.radius, .reach = dress.shadowSize, .colour = dress.shadow });
+    v3d::ui::paint::plateBox(canvas, min, max, dress.radius, dress.borderWidth, { .inside = dress.panel, .outline = dress.border });
+    write(shown->text, glm::vec2(min.x + dress.padding, min.y + (plate.y / 2.0F) + (size * BASELINE)), dress.text);
+    canvas->unfade();
 }
 
 /**

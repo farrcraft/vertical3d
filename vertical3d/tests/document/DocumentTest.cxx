@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
 
     const v3d::editor::Outcome made = edited.createPrimitive(v3d::editor::Document::Primitive::Cube);
     BOOST_CHECK(made.done);
-    BOOST_CHECK_EQUAL(made.message, "created a cube - 1 items");
+    BOOST_CHECK_EQUAL(made.message, "created a cube - 1 item");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
     BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
     BOOST_CHECK(edited.dirty());
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(a_curve_is_created_as_one_change) {
     v3d::editor::Document edited = document(scratch.path());
     const v3d::editor::Outcome made = edited.createCurve(v3d::editor::CurveType::Nurbs);
     BOOST_CHECK(made.done);
-    BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 items");
+    BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 item");
     BOOST_REQUIRE_EQUAL(edited.scene()->count(), 1U);
     const boost::shared_ptr<v3d::editor::Curve> curve = v3d::editor::as<v3d::editor::Curve>(edited.scene()->items()[0]);
     BOOST_REQUIRE(curve);

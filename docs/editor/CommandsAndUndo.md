@@ -160,7 +160,9 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 1. If it changes the document, add an operation to `Document` that applies itself, records
    itself and returns an `Outcome`.
 2. Register a handler in `Controller::registerCommands()` with `press()` or `hold()`. A handler
-   that runs an operation passes it what it acts on, and reports its `Outcome`.
+   that runs an operation passes it what it acts on, and reports its `Outcome`. `report()` logs
+   the message and shows it as a notice, and `refuse()` does the same for a request the
+   handler turns down itself.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
    with the same context and name.
 4. If it describes on/off state, mark it in `syncUi()`.

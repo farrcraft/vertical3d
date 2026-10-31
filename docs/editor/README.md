@@ -6,7 +6,8 @@ library in `api/brep`.
 The editor shows four viewports of one scene over a construction grid, in areas that can be
 split, joined, swapped and maximised. It creates primitive meshes, picks objects and their
 parts, moves them with manipulators, undoes changes, and saves projects. Menus, two toolbars,
-each area's header and a file chooser are drawn with `api/ui`.
+each area's header and a file chooser are drawn with `api/ui`, and a status bar and notices
+over the same canvas.
 
 | Page | Read it to |
 |---|---|
@@ -72,7 +73,7 @@ a higher one is in the wrong place.
 | `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
-| `src/control/` | The controllers for playback, the Render menu, and the routing of the mouse | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers and the workspaces, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
 | `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` | `Controller.h` |

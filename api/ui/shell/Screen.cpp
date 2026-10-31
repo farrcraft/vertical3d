@@ -182,6 +182,12 @@ void Screen::display(float monitor) {
 
 /**
  **/
+const Clock& Screen::clock() const noexcept {
+    return clock_;
+}
+
+/**
+ **/
 float Screen::factor() const noexcept {
     if (options_.scaling == Scaling::Display) {
         return scale_ * display_;

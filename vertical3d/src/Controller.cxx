@@ -32,9 +32,11 @@
 #include <api/ui/shell/Prompt.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
@@ -185,6 +187,8 @@ bool Controller::start() {
     renderer_->scene(scene);
     renderer_->transformTool(transformTool_);
     renderer_->selectTool(selectTool_);
+    notices_ = boost::make_shared<Notices>();
+    renderer_->notices(notices_);
 
     if (!buildUi()) {
         return false;
@@ -374,14 +378,36 @@ void Controller::syncCaption() {
 void Controller::report(const Outcome& outcome) {
     if (!outcome.message.empty()) {
         logger()->get()->info("{}", outcome.message);
+        if (notices_) {
+            notices_->post(outcome.message);
+        }
     }
+}
+
+/**
+ **/
+void Controller::refuse(const std::string& message) {
+    report({ .done = false, .message = message });
+}
+
+/**
+ **/
+Status Controller::status() const {
+    Status made;
+    const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
+    const bool perspective = view && view->camera() && !view->camera()->orthographic();
+    made.buttons = StatusBar::buttons(*cameraTool_, *transformTool_, *selectTool_, perspective);
+    made.selection = StatusBar::selection(*document_->scene(), selectTool_->mask());
+    made.frame = "Frame " + std::to_string(document_->scene()->timeline().frame);
+    made.rate = StatusBar::rate(statistics().mean());
+    return made;
 }
 
 /**
  **/
 void Controller::masked(SelectMask mask, const std::string& name, const std::function<Outcome()>& operation) {
     if (selectTool_->mask() != mask) {
-        logger()->get()->info("{} needs the {} select mask", name, selectMaskName(mask));
+        refuse(name + " needs the " + selectMaskName(mask) + " select mask");
         return;
     }
     report(operation());
@@ -392,7 +418,7 @@ void Controller::masked(SelectMask mask, const std::string& name, const std::fun
 void Controller::atView(const std::string& what, const std::function<void(const v3d::type::camera::Profile&)>& run) {
     const boost::shared_ptr<ViewPort> view = pointer_ ? pointer_->activeView() : nullptr;
     if (!view || !view->camera()) {
-        logger()->get()->info("{} at a view, and there is no active view", what);
+        refuse(what + " at a view, and there is no active view");
         return;
     }
     run(view->camera()->profile());
@@ -986,12 +1012,13 @@ void Controller::layoutViews(int width, int height) {
     if (!pointer_) {
         return;
     }
-    // the menu bar and the toolbars cover strips along two edges, and the views divide
-    // what is left
+    // the menu bar and the toolbars cover strips along the top and the left, the status bar
+    // one along the foot, and the views divide what is left
     const glm::vec2 inset = renderer_ ? renderer_->insets() : glm::vec2(0.0F, 0.0F);
+    const float foot = renderer_ ? renderer_->barHeight() : 0.0F;
     pointer_->resize(glm::vec4(inset.x, inset.y,
         std::max(0.0F, static_cast<float>(width) - inset.x),
-        std::max(0.0F, static_cast<float>(height) - inset.y)));
+        std::max(0.0F, static_cast<float>(height) - inset.y - foot)));
 }
 
 /**
@@ -1010,6 +1037,7 @@ bool Controller::render() {
     if (chrome_) {
         chrome_->sync(*views_, renderer_->barHeight());
     }
+    renderer_->status(status());
     renderer_->draw();
     return true;
 }

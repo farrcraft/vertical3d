@@ -67,6 +67,9 @@ BOOST_AUTO_TEST_CASE(a_screen_with_no_renderer_begins_no_frame) {
     BOOST_CHECK(screen.text());
     BOOST_CHECK(screen.statistics());
     BOOST_CHECK(screen.immediate() == nullptr);
+    // a frame that is not begun does not move the clock
+    BOOST_CHECK_EQUAL(screen.clock().now, 0.0F);
+    BOOST_CHECK_EQUAL(screen.clock().frame, 0U);
 }
 
 /**

@@ -357,12 +357,21 @@ saving it with the project, in the user's settings alone, and in each project's 
 
 ### Step 9 — The status bar and notices
 
-Open. Needs step 7 for where a notice is shown.
+**Closed.**
 
-- A status bar along the foot of the window shows what each mouse button does under the current
-  tool and modifiers, the selection, the frame and the frame rate.
-- A completed command can post a notice, which shows at the foot of the active area. Undo and
-  redo post the name of the change.
+- The editor draws a status bar along the foot of the window, beside the left toolbar, in the
+  theme's `bar` with a `hairline` above. `StatusBar` says what the left and middle buttons do
+  under the camera move, the select tool's adding and the transform mode, and counts the
+  selection under the mask, an edge once. The frame and the frame rate sit beside the count.
+  The areas are laid out above the bar.
+- `Notices` shows an operation's message, done or refused, at the foot of the active area for
+  2.5 s, fading in and out over 0.15 s, on a plate with a menu's shadow. `Controller::report()`
+  posts every outcome, so undo and redo post the name of the change, and `refuse()` posts what
+  a handler turns down itself.
+- `Screen::clock()` gives an app the ui's clock, which the notices are timed on.
+- The status bar and notice suites cover the buttons under each tool, the counts under each
+  mask, an edge's halves, the frame rate, a notice's fades and its replacement. The screen suite
+  covers the clock starting at zero. The editor was photographed with a notice showing.
 
 ### Step 10 — Key chords
 

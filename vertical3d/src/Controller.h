@@ -18,10 +18,12 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControlTool.h>
@@ -217,9 +219,19 @@ class Controller final : public v3d::engine::Engine {
     void registerCommands();
 
     /**
-     * Log what an operation said.
+     * Log what an operation said, and show it as a notice.
      **/
     void report(const Outcome& outcome);
+
+    /**
+     * Log something the user asked for that could not be done, and show it as a notice.
+     **/
+    void refuse(const std::string& message);
+
+    /**
+     * @return what the status bar says this frame
+     **/
+    Status status() const;
 
     /**
      * Run an operation on the selected parts, when the select mask selects the parts it works
@@ -320,6 +332,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<AreaViews> views_;
     // each area's header and tabs
     boost::shared_ptr<AreaChrome> chrome_;
+    // what commands said, shown at the foot of the active area
+    boost::shared_ptr<Notices> notices_;
     boost::shared_ptr<Workspaces> workspaces_;
     // the name of the workspace shown
     std::string workspace_;

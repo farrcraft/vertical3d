@@ -474,7 +474,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 |---|---|---|---|
 | Scene pass, named after the view, which no other view shares. It draws the meshes' shaded surfaces first and the scene canvas over them | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
-| `ui` | The whole window | Not tested | Nothing; it also draws each view's overlays, the frame and the rubber band |
+| `ui` | The whole window | Not tested | Nothing; it also draws each view's overlays, the frame, a notice, the status bar and the rubber band |
 
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
@@ -542,6 +542,27 @@ passes nearest the origin, or a unit in front of the eye when that is behind it.
 its distance. Looking down y has z for up, as Top and Bottom do, and any other axis y. Where two
 balls overlap, the one nearer the viewer is taken. `src/view/ViewOverlay.h` holds the geometry
 and the drawing.
+
+**The status bar** runs along the foot of the window, as tall as a menu bar, from the right of
+the toolbar down the left. The areas are laid out above it. It is drawn in the theme's `bar`,
+with a `hairline` along its top. `StatusBar` in `src/control/` says what it shows:
+
+- On the left, what each mouse button does in the active view. The left button names the
+  camera move held or latched, such as Truck or Orbit. Without one it says Select, or Add or
+  remove while Shift is held, and adds what the transform mode's handles do, as in "Select, or
+  drag a handle to rotate". The middle button says Orbit in a perspective view, and is left out
+  of an orthographic one, where it does nothing.
+- On the right, what is selected, the frame and the frame rate. Under a mask that selects whole
+  items the count is of items. Under a part mask it is of the parts of every item, and an edge
+  counts once whichever of its halves are selected. Nothing selected says so. The frame rate is
+  from the engine's mean frame time.
+
+**Notices.** What an operation says, done or refused, shows as a notice at the foot of the
+active area, 16 pixels above its edge and centred: the message with a capital, on a plate in the
+theme's `panel` and `border`, with a menu's shadow. Undo and redo say the name of what they
+undid or redid. A notice shows for 2.5 seconds on the ui's clock, from the first frame it is
+drawn, and fades in and out over 0.15 seconds of that. A new notice replaces the one showing.
+`Notices` in `src/control/` times it.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with

@@ -55,6 +55,8 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   It follows real time rather than the simulation, so a menu eases open over a paused game. An
   app that draws a `ComponentRenderer` or an `Immediate` without a screen gives each a
   `ui::Clock` through `clock()`, and one never given a clock draws every change at once.
+  `Screen::clock()` reads the clock, for anything else an app animates over the ui. It starts
+  at zero.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
 - The passes, the draw order and where the canvas is submitted stay the app's.
