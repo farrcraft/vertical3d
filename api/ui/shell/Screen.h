@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/asset/Manager.h>
+#include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Interface.h>
@@ -20,6 +21,7 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <string>
 
 #include <boost/shared_ptr.hpp>
 
@@ -143,6 +145,12 @@ class Screen final {
      *         whatever an app animates over the ui. It starts at zero
      **/
     const Clock& clock() const noexcept;
+
+    /**
+     * @return the shortcut a command shows in a menu, as Options::shortcut gives it, or empty
+     *         when it shows none or there is no lookup
+     **/
+    std::string shortcut(const v3d::event::Event& command) const;
 
     /**
      * @return the size text is drawn at, which is Options::size times factor()

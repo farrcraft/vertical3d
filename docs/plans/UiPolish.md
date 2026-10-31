@@ -397,10 +397,22 @@ saving it with the project, in the user's settings alone, and in each project's 
 
 ### Step 11 — Command search
 
-Open. Shortcut hints need step 10.
+**Closed.**
 
-- F3 opens a search over every registered command. It matches as the user types, and shows each
-  command's menu path and shortcut. Enter runs the chosen command.
+- F3 opens a panel of a field and a list. `CommandSearch` lists every command on the editor's
+  menu bar and an area's header, under its menu path, with the shortcut its menu item shows.
+  A held command and a dialog's buttons are on no menu, so the search covers what can be run
+  rather than every registered command. The statistics overlay moved from F3 to F12.
+- Every word of a query has to be in a command's path. A command whose own label begins with
+  the first word comes first, then one where every word begins a word of the path. Typing
+  matches again, the arrows move the choice and wrap, Enter or a click runs the command and
+  Escape closes the panel. The editor takes the arrows and Escape before the ui while the panel
+  is up, so Escape does not quit and closing the window still does.
+- `Screen::shortcut()` gives an app the shortcut a menu shows.
+- The search suite covers the catalogue, the ranking, a row's shortcut, typing and moving the
+  choice. The bindings suite covers the panel's commands. The editor was run: F3 and "cu" listed
+  Cube, the curves and the culls, the down arrow moved to Select Mask > Curve, and Enter set
+  that mask.
 
 ### Step 12 — The editor's chrome
 

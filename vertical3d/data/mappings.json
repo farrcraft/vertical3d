@@ -86,12 +86,23 @@
     {
       "source": {
         "context": "keyboard",
-        "name": "f3",
+        "name": "f12",
         "state": "pressed"
       },
       "destination": {
         "context": "view",
         "name": "show::statistics"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "f3",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "search",
+        "name": "open"
       }
     },
     {

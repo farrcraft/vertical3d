@@ -127,11 +127,15 @@ the same handler:
 - **A menu item** in `data/vgui.json`, with `context` and `command` fields.
 - **A toolbar button** in `data/vgui.json`, with the same two fields.
 
+A command on a menu can also be run from the command search, which sends it as its menu item
+would.
+
 **The order of events.** The engine handles each SDL event in this order:
 
-1. `Controller::onEvent()` receives the raw SDL event first. The editor passes keyboard events
-   to `ui::shell::Keyboard`, so a focused text box (such as the file chooser's name box) takes
-   its keys. An event it takes never reaches the bindings.
+1. `Controller::onEvent()` receives the raw SDL event first. While the command search is up it
+   takes the up and down arrows and Escape. The editor passes the other keyboard events to
+   `ui::shell::Keyboard`, so a focused text box (such as the file chooser's name box) takes its
+   keys. An event either takes never reaches the bindings.
 2. A key or button is published as an `event::Source` to every listener on `sink<Source>`. The
    editor does not listen there.
 3. Unless a listener consumed the source, the event router sends the commands bound to it on
@@ -164,11 +168,33 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
    the message and shows it as a notice, and `refuse()` does the same for a request the
    handler turns down itself.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
-   with the same context and name.
+   with the same context and name. A command on a menu can be searched for.
 4. If it describes on/off state, mark it in `syncUi()`.
 
 Playback, the Render menu and the mouse each have a controller in `src/control/`: `Playback`,
 `RenderWindow` and `Pointer`. A command for one of them calls it.
+
+### The command search
+
+F3 (`search::open`) puts up a panel over the views: a field the query is typed into, and a list
+of the commands that match it. `CommandSearch` in `src/control/` drives the `search` container
+of `data/vgui.json`.
+
+- **What it searches.** Every item of the editor's menu bar and of an area's header that sends a
+  command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is listed
+  once, from the menu bar. A held command, such as a camera move's modifier, and a dialog's own
+  buttons are on no menu and are not searched. Each row ends with the command's shortcut, the
+  one its menu item shows.
+- **Matching.** The query is words, matched without regard to case, and each has to be in the
+  path. Commands whose own label begins with the first word come first, then those where every
+  word begins a word of the path, then the rest, each in menu order. An empty query lists every
+  command.
+- **Keys.** Typing matches again and chooses the first row. The up and down arrows move the
+  choice, wrapping at either end. Enter, or a click on a row, takes the search down and runs the
+  command (`search::run`). Escape takes it down and runs nothing.
+
+A command run from the search carries no data, so an area's command acts on the active area,
+as a key's does.
 
 ## Tools
 

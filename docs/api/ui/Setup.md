@@ -57,6 +57,8 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   `ui::Clock` through `clock()`, and one never given a clock draws every change at once.
   `Screen::clock()` reads the clock, for anything else an app animates over the ui. It starts
   at zero.
+- `shortcut(command)` gives the shortcut a menu shows for a command, through
+  `Options::shortcut`, for an app that lists commands somewhere other than a menu.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
 - The passes, the draw order and where the canvas is submitted stay the app's.

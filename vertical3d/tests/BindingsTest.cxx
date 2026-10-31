@@ -67,8 +67,9 @@ void sent(const boost::json::value& entry, std::vector<std::string>* commands) {
 }
 
 /**
- * The dialogs the editor puts up, the file chooser and the prompt, send only commands the
- * editor registers. A button that sent anything else would leave its dialog up for good.
+ * The dialogs the editor puts up, the file chooser, the prompt and the command search, send
+ * only commands the editor registers. A button that sent anything else would leave its dialog
+ * up for good.
  **/
 BOOST_AUTO_TEST_CASE(every_dialog_button_sends_a_handled_command) {
     const std::ifstream file("data/vgui.json");
@@ -80,7 +81,7 @@ BOOST_AUTO_TEST_CASE(every_dialog_button_sends_a_handled_command) {
     std::vector<std::string> commands;
     for (const boost::json::value& container : document.at("containers").as_array()) {
         const std::string name(container.at("name").as_string());
-        if (name == "chooser" || name == "prompt") {
+        if (name == "chooser" || name == "prompt" || name == "search") {
             sent(container, &commands);
         }
     }

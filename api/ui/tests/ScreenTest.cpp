@@ -4,12 +4,15 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/event/Event.h>
 #include <api/event/Router.h>
 #include <api/log/Logger.h>
 #include <api/ui/Interface.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <api/ui/style/Theme.h>
+
+#include <string>
 
 #include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
@@ -70,6 +73,20 @@ BOOST_AUTO_TEST_CASE(a_screen_with_no_renderer_begins_no_frame) {
     // a frame that is not begun does not move the clock
     BOOST_CHECK_EQUAL(screen.clock().now, 0.0F);
     BOOST_CHECK_EQUAL(screen.clock().frame, 0U);
+}
+
+/**
+ * A screen gives the shortcut its options look up for a command, and none without a lookup.
+ **/
+BOOST_AUTO_TEST_CASE(a_screen_gives_a_commands_shortcut) {
+    v3d::ui::shell::Screen::Options options = sized(20.0F);
+    options.shortcut = [](const v3d::event::Event& command) { return command.str() == "edit::undo" ? std::string("Ctrl+Z") : std::string(); };
+    const v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), options);
+    BOOST_CHECK_EQUAL(screen.shortcut(v3d::event::Event("edit::undo")), "Ctrl+Z");
+    BOOST_CHECK_EQUAL(screen.shortcut(v3d::event::Event("edit::redo")), "");
+
+    const v3d::ui::shell::Screen plain(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), sized(20.0F));
+    BOOST_CHECK_EQUAL(plain.shortcut(v3d::event::Event("edit::undo")), "");
 }
 
 /**

@@ -18,6 +18,7 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/control/Playback.h>
@@ -66,7 +67,8 @@ class Controller final : public v3d::engine::Engine {
     bool render() override;
 
     /**
-     * Offer every event to the ui keyboard before the bindings map it.
+     * Offer every event to the ui keyboard before the bindings map it. While the command
+     * search is up, the up and down arrows move its choice and Escape takes it down, first.
      *
      * Only the keyboard goes this way. The ui's share of the mouse is decided by the pointer,
      * from the mapped view::drag command.
@@ -219,6 +221,17 @@ class Controller final : public v3d::engine::Engine {
     void registerCommands();
 
     /**
+     * Put the command search up over every command on the editor's menu bar and an area's
+     * header, each with its shortcut.
+     **/
+    void openSearch();
+
+    /**
+     * Take the command search down and run the command chosen in it.
+     **/
+    void runSearch();
+
+    /**
      * Log what an operation said, and show it as a notice.
      **/
     void report(const Outcome& outcome);
@@ -334,6 +347,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<AreaChrome> chrome_;
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<Notices> notices_;
+    boost::shared_ptr<CommandSearch> search_;
     boost::shared_ptr<Workspaces> workspaces_;
     // the name of the workspace shown
     std::string workspace_;

@@ -44,7 +44,8 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | J | `transform::poly::merge_vertices` | Merge the selected vertices into one |
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
 | P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
-| F3 | `view::show::statistics` | Toggle the frame statistics overlay |
+| F3 | `search::open` | Search the menus' commands, and run one (see [The command search](CommandsAndUndo.md#the-command-search)) |
+| F12 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
 | Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
 | Ctrl+Space | `area::maximise` | Maximise the area under the cursor, or give every area its place back (see [Viewports](Scene.md#viewports)) |

@@ -8,6 +8,7 @@ add_library("v3dlib_editor"
 
 	"src/control/Playback.h" "src/control/Playback.cxx"
 	"src/control/AreaChrome.h" "src/control/AreaChrome.cxx"
+	"src/control/CommandSearch.h" "src/control/CommandSearch.cxx"
 	"src/control/Notices.h" "src/control/Notices.cxx"
 	"src/control/Pointer.h" "src/control/Pointer.cxx"
 	"src/control/RenderWindow.h" "src/control/RenderWindow.cxx"

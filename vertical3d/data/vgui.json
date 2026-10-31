@@ -937,6 +937,33 @@
           ]
         }
       ]
+    },
+    {
+      "name": "search",
+      "visible": false,
+      "components": [
+        {
+          "type": "panel",
+          "name": "searchPanel",
+          "pickable": true,
+          "position": ["25%", 72],
+          "size": ["50%", 380],
+          "children": [
+            {
+              "type": "vbox",
+              "name": "searchColumn",
+              "position": [12, 12],
+              "size": ["96%", 356],
+              "spacing": 8,
+              "stretch": true,
+              "children": [
+                { "type": "textbox", "name": "searchField", "placeholder": "Search commands", "context": "search", "command": "run" },
+                { "type": "list", "name": "searchList", "size": ["100%", 310], "context": "search", "command": "run" }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -6,6 +6,7 @@
 #include "Screen.h"
 
 #include <api/asset/Manager.h>
+#include <api/event/Event.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
@@ -184,6 +185,12 @@ void Screen::display(float monitor) {
  **/
 const Clock& Screen::clock() const noexcept {
     return clock_;
+}
+
+/**
+ **/
+std::string Screen::shortcut(const v3d::event::Event& command) const {
+    return options_.shortcut ? options_.shortcut(command) : std::string();
 }
 
 /**

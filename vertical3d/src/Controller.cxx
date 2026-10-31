@@ -32,6 +32,7 @@
 #include <api/ui/shell/Prompt.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
@@ -59,6 +60,9 @@
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
+
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keycode.h>
 
 #include <algorithm>
 #include <cmath>
@@ -274,6 +278,7 @@ bool Controller::buildUi() {
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
+    search_ = boost::make_shared<CommandSearch>(vgui);
     // moya.exe is built beside the editor
     renderWindow_ = boost::make_shared<RenderWindow>(boost::make_shared<RenderPanels>(vgui),
         boost::make_shared<MoyaDelegate>(logger()), boost::make_shared<Batch>(logger(), boost::filesystem::path(path_) / MOYA),
@@ -381,6 +386,34 @@ void Controller::report(const Outcome& outcome) {
         if (notices_) {
             notices_->post(outcome.message);
         }
+    }
+}
+
+/**
+ **/
+void Controller::openSearch() {
+    std::vector<boost::shared_ptr<v3d::ui::component::menu::Bar>> bars{ menu_ };
+    // an area's commands are on its header, and run from the search they act on the active area
+    if (!layout_->areas().empty()) {
+        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(AreaChrome::name(layout_->areas().front().id));
+        if (area) {
+            bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
+        }
+    }
+    std::vector<CommandSearch::Entry> entries = CommandSearch::catalogue(bars);
+    for (CommandSearch::Entry& entry : entries) {
+        entry.shortcut = shell_.screen()->shortcut(v3d::event::Event(entry.command));
+    }
+    search_->open(entries);
+}
+
+/**
+ **/
+void Controller::runSearch() {
+    const std::optional<std::string> command = search_->chosen();
+    search_->close();
+    if (command && !commands().invoke(v3d::event::Event(*command))) {
+        refuse("nothing runs " + *command);
     }
 }
 
@@ -569,6 +602,9 @@ void Controller::registerCommands() {
     press("project::prompt::answer0", [this]() { prompt_->answer(0); });
     press("project::prompt::answer1", [this]() { prompt_->answer(1); });
     press("project::prompt::answer2", [this]() { prompt_->answer(2); });
+
+    press("search::open", [this]() { openSearch(); });
+    press("search::run", [this]() { runSearch(); });
 
     press("edit::undo", [this]() { report(document_->undo()); });
     press("edit::redo", [this]() { report(document_->redo()); });
@@ -1003,6 +1039,18 @@ void Controller::cameraMode(const std::string& name, bool pressed) {
 /**
  **/
 bool Controller::onEvent(const SDL_Event& event) {
+    // the search takes its keys before the ui and the bindings, so Escape closes it rather than
+    // quitting, while closing the window still quits
+    if (search_ && search_->visible() && event.type == SDL_EVENT_KEY_DOWN) {
+        if (event.key.key == SDLK_UP || event.key.key == SDLK_DOWN) {
+            search_->step(event.key.key == SDLK_UP ? -1 : 1);
+            return true;
+        }
+        if (event.key.key == SDLK_ESCAPE) {
+            search_->close();
+            return true;
+        }
+    }
     return uiKeys_ && uiKeys_->event(event);
 }
 
@@ -1032,6 +1080,9 @@ bool Controller::render() {
             .reach = AreaLayout::Metrics::REACH * scale, .least = AreaLayout::Metrics::LEAST * scale,
             .strip = renderer_->barHeight() });
         layoutViews(window()->width(), window()->height());
+    }
+    if (search_) {
+        search_->sync();
     }
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
