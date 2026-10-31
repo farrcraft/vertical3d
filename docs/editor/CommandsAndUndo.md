@@ -46,6 +46,11 @@ position, and each recomputed face normal, from the start and the end of the ges
 redo write the stored values back rather than applying an inverse motion, so they restore the
 mesh exactly. A gesture that moved no vertex records nothing.
 
+An edit in the properties editor records one `EditCommand` when it ends: a drag of a number is
+let go, a field gives up the keyboard, or a choice is made. It holds the item's name, placement,
+lens, emission and style from the start and the end of the edit, and undo and redo write either
+end back whole. An edit that changed nothing records nothing.
+
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.

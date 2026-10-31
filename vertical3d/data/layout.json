@@ -25,7 +25,13 @@
               }
             ]
           },
-          { "editors": [{ "kind": "outliner" }] }
+          {
+            "split": "vertical",
+            "children": [
+              { "editors": [{ "kind": "outliner" }] },
+              { "editors": [{ "kind": "properties" }], "share": 2 }
+            ]
+          }
         ]
       }
     },

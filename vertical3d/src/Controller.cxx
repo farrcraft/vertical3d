@@ -39,6 +39,7 @@
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
@@ -295,6 +296,7 @@ bool Controller::buildUi() {
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     uiKeys_->immediate(renderer_->immediate());
+    properties_ = boost::make_shared<PropertiesEditor>(document_->history());
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     chooser_ = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     prompt_ = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
@@ -855,6 +857,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         if (editor.kind == Outliner::KIND) {
             outliner_.draw(layer, document_->scene().get(), editor.id, region, selectTool_->adding());
             outliners.push_back(editor.id);
+        } else if (editor.kind == PropertiesEditor::KIND) {
+            properties_->draw(layer, document_->scene().get(), editor.id, region);
         }
     }
     layer->end();

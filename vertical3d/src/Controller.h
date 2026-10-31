@@ -21,6 +21,7 @@
 #include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
@@ -369,6 +370,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<Notices> notices_;
     boost::shared_ptr<CommandSearch> search_;
     Outliner outliner_;
+    boost::shared_ptr<PropertiesEditor> properties_;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<TopBar> topBar_;
     boost::shared_ptr<Workspaces> workspaces_;

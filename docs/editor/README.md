@@ -3,12 +3,12 @@
 These pages are for someone working on the 3D modelling editor in `vertical3d/` or on the mesh
 library in `api/brep`.
 
-The editor shows four viewports of one scene over a construction grid, and an outliner of its
-items, in areas that can be split, joined, swapped and maximised. It creates primitive meshes,
-picks objects and their parts, moves them with manipulators, undoes changes, and saves
-projects. The menu bar with the workspaces beside it, a tool shelf, each area's header, the
-command search and a file chooser are drawn with `api/ui`, and a status bar and notices over
-the same canvas.
+The editor shows four viewports of one scene over a construction grid, an outliner of its items
+and a properties editor, in areas that can be split, joined, swapped and maximised. It creates
+primitive meshes, picks objects and their parts, moves them with manipulators, undoes changes,
+and saves projects. The menu bar with the workspaces beside it, a tool shelf, each area's
+header, the command search and a file chooser are drawn with `api/ui`, and a status bar and
+notices over the same canvas.
 
 | Page | Read it to |
 |---|---|
@@ -82,7 +82,7 @@ a higher one is in the wrong place.
 | `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
-| `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers, the top bar and the workspaces, the command search, the icon sheet, the outliner, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers, the top bar and the workspaces, the command search, the icon sheet, the outliner and the properties editor, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
 | `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` | `Controller.h` |

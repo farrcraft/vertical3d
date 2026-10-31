@@ -92,10 +92,13 @@ bool gather(const Walk& walk, const boost::shared_ptr<Item>& item, unsigned int 
 /**
  **/
 std::string Outliner::label(const Item& item) {
-    if (!item.name().empty()) {
-        return item.name();
-    }
-    switch (item.kind()) {
+    return item.name().empty() ? kind(item.kind()) : item.name();
+}
+
+/**
+ **/
+std::string Outliner::kind(Item::Kind kind) {
+    switch (kind) {
         case Item::Kind::Mesh:
             return "Mesh";
         case Item::Kind::Camera:

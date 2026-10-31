@@ -53,9 +53,14 @@ class Outliner final {
     };
 
     /**
-     * @return what a row calls an item: its name, or its kind with a capital when it has none
+     * @return what a row calls an item: its name, or its kind when it has none
      **/
     static std::string label(const Item& item);
+
+    /**
+     * @return a kind of item as a person reads it, with a capital, such as "Mesh"
+     **/
+    static std::string kind(Item::Kind kind);
 
     /**
      * The rows of a scene, in the order they are shown.

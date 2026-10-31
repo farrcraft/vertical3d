@@ -442,12 +442,27 @@ saving it with the project, in the user's settings alone, and in each project's 
 
 ### Step 13 — The outliner and the properties editor
 
-Open. Needs step 7.
+**Closed.** ADR-0135 decided that item names need not be unique, and ADR-0136 that panels are
+drawn in immediate mode, after weighing retained documents rebuilt on a signature.
 
-- An outliner lists the scene's items as a tree, with a filter. A click selects, and the
-  hierarchy matches `Scene`'s links.
-- A properties editor shows the selected item's placement and settings, and edits them through
-  commands, so each edit undoes.
+- Items have names, which the scene document saves at schema version 4 and an import takes from
+  its nodes. A new item is named for its kind.
+- The immediate layer gained a region with no title bar, a tree row that folds, a number that is
+  dragged or typed into, and `itemFinished()`.
+- An editor other than a viewport is a panel, drawn from the scene every frame under its area's
+  header. A press on one reaches no tool. The header's area menu has an Editor submenu that
+  changes the kind of editor shown, and Modelling has an outliner over a properties editor down
+  its right.
+- The outliner lists the items as the hierarchy's tree, folds rows, filters by words with each
+  match's ancestors, and selects the item clicked, toggling while Shift is held.
+- The properties editor shows the one selected item's name, its numbers a curve can drive, and
+  a camera's projection, a light's type or a curve's render style. An edit is written as it
+  happens and recorded as one `EditCommand` when it ends.
+- The suites cover names in documents and imports, the layer's additions, and the outliner's
+  rows and clicks. They cover the pointer's panels, replacing an editor, the Editor menu, the
+  edit command, and the properties editor's drags, rename and refused lens. The editor was
+  photographed with both panels. A click in a running panel could not be driven, so clicks rest
+  on their tests.
 
 ### Step 14 — The games' shell
 

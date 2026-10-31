@@ -404,7 +404,7 @@ command sent by a key or the View menu acts on the active area.
 | `area::split::left`, `right`, `top`, `bottom` | Splits the area, putting the new half on that edge |
 | `area::join::left`, `right`, `top`, `bottom` | Joins the area with its neighbour on that edge, which goes |
 | `area::swap::left`, `right`, `top`, `bottom` | Swaps what the area holds with its neighbour on that edge |
-| `area::editor::viewport`, `outliner` | Puts an editor of that kind in place of the one shown, in its place among the tabs. A viewport shows Perspective |
+| `area::editor::viewport`, `outliner`, `properties` | Puts an editor of that kind in place of the one shown, in its place among the tabs. A viewport shows Perspective |
 | `area::tab::new` | Adds a viewport of the camera the area shows, or of Perspective |
 | `area::tab::close` | Closes the editor shown, unless it is the only one |
 | `area::tab::choose` | Shows the editor whose id the tab carries |
@@ -430,10 +430,10 @@ An area that a tab leaves with no editor gives its room to its neighbour.
 A workspace is a named layout. `Workspaces` holds them, and the project's arrangement of each.
 
 **Where they come from.** `data/layout.json` holds the workspaces a new user starts with, as an
-array of named layouts under `workspaces`. Modelling is Front, Top, Left and Perspective with an
-outliner down the right, and Perspective is one view. A layout with no name, one
-that cannot be read, or a second of one name is left out, and the editor stops at startup when
-none is left.
+array of named layouts under `workspaces`. Modelling is Front, Top, Left and Perspective, with
+an outliner over a properties editor down the right. Perspective is one view. A layout with no
+name, one that cannot be read, or a second of one name is left out, and the editor stops at
+startup when none is left.
 
 **What the user's settings hold.** The engine's settings document, under the app's identity,
 holds three keys:
@@ -616,6 +616,25 @@ in `src/control/` draws it.
   tool, a click selects an item that is not selected, deselects one that is, and leaves the
   rest. The selected items' rows are highlighted.
 - Each outliner keeps its own filter and folds while the editor runs. Neither is saved.
+
+**The properties editor** (`properties`) shows the selected item's name, placement and settings,
+and edits them. `PropertiesEditor` in `src/control/` draws it.
+
+- It shows one item, when exactly one is selected. Otherwise it says how many are.
+- At the top are the item's kind and a field for its name.
+- Below them is each number a curve can drive, under a heading: Translation, Rotation and Scale
+  for every kind, Lens for a camera and Emission for a light. Each is shown as the current
+  frame shows it, so a keyed number follows playback. A rotation is shown as Euler angles in
+  degrees, kept closest to the angles last shown.
+- A camera adds its projection, a light its type, and a curve item whether a render draws it
+  and its width.
+- A number is dragged or typed into, as
+  [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes. A drag moves a distance a
+  hundredth of a unit a pixel, and an angle half a degree.
+- An edit is written into the item as it happens, so the views follow a drag. When it ends it is
+  one change in the history, which [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. An
+  edit to a keyed number is pending until the frame is set, as a manipulator's is.
+- A value that would make a lens, an emission or a curve item's style invalid is not written.
 
 ## Shaded views
 
