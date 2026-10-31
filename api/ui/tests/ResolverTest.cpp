@@ -593,6 +593,34 @@ BOOST_AUTO_TEST_CASE(a_theme_size_is_multiplied_by_the_scale) {
     BOOST_CHECK_CLOSE(resolver.resolve(Resolver::Class::Panel, std::string_view()).radius, 6.0F, 0.001F);
 }
 
+/**
+ * A "hud" style dresses text over the scene: its plate's colour and opacity, its text and its
+ * padding. A hud style naming no opacity takes the base's, which a "ui" style sets.
+ **/
+BOOST_AUTO_TEST_CASE(a_hud_style_dresses_its_plate_and_text) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("game");
+    const boost::shared_ptr<v3d::ui::style::Style> base = style("default", "ui");
+    metric(base, "plate-opacity", 0.4F);
+    theme->addStyle(base);
+    const boost::shared_ptr<v3d::ui::style::Style> score = style("score", "hud");
+    colour(score, "background", red);
+    colour(score, "text", green);
+    metric(score, "plate-opacity", 0.8F);
+    metric(score, "padding", 5.0F);
+    theme->addStyle(score);
+    const boost::shared_ptr<v3d::ui::style::Style> label = style("label", "hud");
+    theme->addStyle(label);
+
+    Resolver resolver;
+    resolver.theme(theme);
+    const v3d::ui::paint::Dressing& scored = resolver.resolve(Resolver::Class::Hud, "score");
+    BOOST_CHECK(scored.panel == red);
+    BOOST_CHECK(scored.text == green);
+    BOOST_CHECK_CLOSE(scored.plateOpacity, 0.8F, 0.001F);
+    BOOST_CHECK_CLOSE(scored.padding, 5.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.resolve(Resolver::Class::Hud, "label").plateOpacity, 0.4F, 0.001F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

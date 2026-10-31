@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -185,6 +186,38 @@ class ComponentRenderer {
      **/
     void tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
         const v3d::type::geometry::Bound2D& below, bool beside = false) const;
+
+    /**
+     * Where a block of text over the scene goes, and which of its points is put there.
+     **/
+    struct Place final {
+        /** where the anchor goes, in the canvas's pixels **/
+        glm::vec2 at{0.0F};
+        /**
+         * the point of the plate put at `at`, as a share of its size: 0, 0 is its top left
+         * and 0.5, 0 the middle of its top edge
+         **/
+        glm::vec2 anchor{0.0F};
+        /** the "hud" style it names, or empty for the theme's first **/
+        std::string_view style;
+    };
+
+    /**
+     * Draw lines of text over the scene, such as a score or a label, on one plate. The "hud"
+     * class dresses it: the text, the plate's colour and how opaque it is, the padding around
+     * the lines and the corners. The plate is as wide as the widest line and a line high for
+     * each.
+     *
+     * @return the plate's box, so that the next block can be placed against it
+     **/
+    v3d::type::geometry::Bound2D hud(v3d::render::realtime::canvas::Canvas* canvas, const std::vector<std::string>& lines,
+        const Place& place) const;
+
+    /**
+     * @return what text over the scene is dressed in, from the "hud" style of a name, or the
+     *         theme's first when the name is empty
+     **/
+    const Dressing& hud(std::string_view style) const;
 
     /**
      * Draw a label - one line of text at the position it holds.

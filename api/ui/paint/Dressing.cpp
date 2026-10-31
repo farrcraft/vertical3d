@@ -35,6 +35,7 @@ openDuration(OPEN_DURATION),
 submenuDelay(SUBMENU_DELAY),
 tooltipDelay(TOOLTIP_DELAY),
 tooltipQuickDelay(TOOLTIP_QUICK_DELAY),
+plateOpacity(PLATE_OPACITY),
 gap(),
 bar(),
 panel(),
@@ -86,6 +87,7 @@ void Dressing::resize(const Dressing& from) noexcept {
     submenuDelay = from.submenuDelay;
     tooltipDelay = from.tooltipDelay;
     tooltipQuickDelay = from.tooltipQuickDelay;
+    plateOpacity = from.plateOpacity;
 }
 
 float Dressing::outline(float width, float factor) noexcept {

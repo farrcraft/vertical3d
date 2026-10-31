@@ -57,6 +57,9 @@ builds one unless told not to.
   nanoseconds, the simulation steps the last frame ran, and a list of named timing spans.
   The app copies these out of `engine::Statistics`.
 - `size` defaults to 16 pixels, smaller than the ui's own text.
+- It is drawn in the theme's `hud` style named `statistics`, or its first `hud` style: a plate
+  of the panel's colour as opaque as `plate-opacity`, with the text over it
+  ([Themes.md](Themes.md#text-over-the-scene)). `Screen` hands it the style each frame.
 - `device(name)` sets a top line naming the GPU. `Screen` sets it from
   `Device::description()` when it builds the overlay.
 - `lines(sample)` returns the frame's lines without drawing them, and `content(sample)` returns

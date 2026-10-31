@@ -126,6 +126,12 @@ class Canvas final {
     glm::vec2 toSpace(const glm::vec2& pixel) const noexcept;
 
     /**
+     * A point in the space's units, in the canvas's pixels, where something drawn in pixels
+     * is to line up with the space. The point itself when there is no space.
+     **/
+    glm::vec2 toPixels(const glm::vec2& point) const noexcept;
+
+    /**
      * The transform from canvas pixels to clip space, for the pipeline's push constant.
      *
      * Built by hand rather than with glm::ortho, whose y direction and depth range
@@ -370,10 +376,6 @@ class Canvas final {
      **/
     void fan(const Arc& shape, const Blend& colours);
 
-    /**
-     * A point in the space's units, in pixels.
-     **/
-    glm::vec2 toPixels(const glm::vec2& point) const noexcept;
 
     uint32_t width_;
     uint32_t height_;

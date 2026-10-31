@@ -514,13 +514,25 @@ drawn in immediate mode, after weighing retained documents rebuilt on a signatur
 
 ### Step 16 — HUD text and statistics
 
-Open. Needs step 14.
+**Closed.**
 
-- The game theme has a HUD style for a score or a label drawn over the game, on a plate whose
-  opacity the theme sets.
-- `StatisticsOverlay` draws from the theme.
-- tetris's side panel and pong's scores draw through the theme, and their hard-coded colours go.
+- A `hud` style class dresses text over the scene: the plate's colour, its `plate-opacity`,
+  the text, the padding, the corners and the line height. `plate-opacity` is also a base key,
+  0.6 by default.
+- `ComponentRenderer::hud()` draws lines of text on one plate, placed by an anchor, and returns
+  the plate's box so blocks stack. `Canvas::toPixels()` is public, so a game drawing in a space
+  of its own places text over a point of it.
+- `StatisticsOverlay::draw()` takes a dressing, and `Screen` hands it the `hud` style named
+  `statistics`, or the first. Its hard-coded colours are gone.
+- The game theme carries a `default` and a `statistics` hud style.
+- pong's scores are hud blocks centred over each half of the court, and tetris's panel is three
+  blocks: the score, the next piece's label and the game's end. Their text colours are gone,
+  and tetris's well border is the theme's `border`. The well, the court and the pieces keep
+  their own colours, since they are the games' art.
 - `demos/pong/data/fonts.json` is deleted.
+- The canvas suite covers a point mapped into pixels. The resolver suite covers the hud class,
+  the renderer suite a block's size, anchor, plate and lines, and the overlay suite its colours.
+  pong and tetris were run with their statistics shown, over clean validation logs.
 
 ### Step 17 — Each game's pass
 

@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
 #include <api/shell/Shell.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 
@@ -106,8 +107,14 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    shell_->screen()->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
-    shell_->screen()->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
+    // drawn over the court in the theme's text, centred on a point of the court, so each score
+    // stays over its half whatever the window's shape
+    v3d::ui::shell::Screen* screen = shell_->screen();
+    const glm::vec2 centre(0.5F, 0.5F);
+    screen->components().hud(&screen->canvas(), { left },
+        { .at = court_.toPixels(glm::vec2(width * leftScoreColumn, height * scoreRow)), .anchor = centre });
+    screen->components().hud(&screen->canvas(), { right },
+        { .at = court_.toPixels(glm::vec2(width * rightScoreColumn, height * scoreRow)), .anchor = centre });
 }
 
 /**

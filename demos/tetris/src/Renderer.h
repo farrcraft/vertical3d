@@ -76,15 +76,8 @@ class TetrisRenderer final {
 
     static constexpr float margin = 16.0F;
 
-    /**
-     * The height of a line of text, as a multiple of the text's size.
-     **/
-    static constexpr float lineSpacing = 1.4F;
-
     static constexpr glm::vec4 backgroundColour{0.09F, 0.09F, 0.11F, 1.0F};
     static constexpr glm::vec4 wellColour{0.04F, 0.04F, 0.05F, 1.0F};
-    static constexpr glm::vec4 borderColour{0.30F, 0.30F, 0.34F, 1.0F};
-    static constexpr glm::vec4 textColour{0.85F, 0.85F, 0.85F, 1.0F};
     static constexpr glm::vec4 white{1.0F, 1.0F, 1.0F, 1.0F};
 
     /**

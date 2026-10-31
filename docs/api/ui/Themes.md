@@ -126,6 +126,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `focus` | the ring around the component that has the keyboard, or the outline of the field that has it | both |
 | `shadow` | the shadow a menu casts, at its darkest | retained |
 | `backdrop` | what is laid over everything behind a container that dims it | retained |
+| `plate-opacity` | how opaque the plate is behind text drawn over the scene, from 0 to 1, multiplying the panel's alpha. Defaults to 0.6 | retained |
 | `panel-opacity` | how opaque `panel` is, from 0 to 1, multiplying its alpha whether it was derived or named. Defaults to 1 | both |
 | `line-height` | the height of one line of text | both |
 | `padding` | the gap between text and the panel or widget around it | both |
@@ -197,6 +198,7 @@ beneath every game's document this way.
 | `list` | `SelectList` | `background`, `border`, `highlight`, `text`, `active-text`, `border-width`, `radius`, `line-height` |
 | `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `highlight`, `text`, `active-text`, `border`, `bar-height`, `radius` |
 | `textbox` | `TextBox` | `background`, `border`, `text`, `caret`, `placeholder`, `highlight`, `border-width`, `radius`, `line-height` |
+| `hud` | `ComponentRenderer::hud()`, the statistics overlay | `background`, `border`, `text`, `plate-opacity`, `border-width`, `padding`, `radius`, `line-height` |
 | `button` | `Button` | nine images and `corner`; see below |
 | `tools` | `Immediate` | the base keys above |
 
@@ -207,6 +209,26 @@ with the base values.
 
 A `textbox` `highlight` is drawn behind the selected text, and the text is drawn over it in
 its usual colour. An opaque highlight hides the selected text.
+
+### Text over the scene
+
+`ComponentRenderer::hud(canvas, lines, place)` draws lines of text over the scene, such as a
+score or a label, on one plate. A game draws its HUD this way rather than in colours of its own.
+
+- **The `hud` class dresses it.** The plate is the panel's colour, or the style's `background`,
+  with its alpha multiplied by `plate-opacity`. The lines are in `text`, inside `padding`, a
+  `line-height` apart. `place.style` names the style, and empty takes the theme's first.
+- **It is placed by an anchor.** `place.at` is a point in the canvas's pixels, and
+  `place.anchor` is the share of the plate put there: 0, 0 for its top left, 0.5, 0.5 for its
+  centre. A point in a canvas's own space goes through `Canvas::toPixels()` first.
+- **It returns the plate's box**, so the next block can be placed under it.
+- **It writes into the screen's canvas**, because the text writer the renderer was built with
+  writes there.
+- **The statistics overlay is dressed the same way**, by the `hud` style named `statistics`, or
+  the theme's first `hud` style when there is none of that name.
+
+The game theme carries a `hud` style named `default`, 60% opaque with 12 pixels of padding and
+6 pixel corners, and one named `statistics`, 75% opaque.
 
 ### Button styles
 

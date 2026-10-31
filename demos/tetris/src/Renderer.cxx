@@ -11,7 +11,10 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/shell/Shell.h>
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 
@@ -22,6 +25,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <string_view>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
@@ -157,7 +161,8 @@ void TetrisRenderer::drawWell(const Layout& metrics) {
     const glm::vec2 max = min + glm::vec2(metrics.cell * static_cast<float>(board->columns()), metrics.cell * static_cast<float>(board->rows()));
     const float border = 2.0F;
 
-    screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), borderColour);
+    // the well's edge is the theme's, so it takes the game's colours with the panel beside it
+    screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), screen_->components().dressing().border);
     screen_->canvas().rect(min, max, wellColour);
 }
 
@@ -221,25 +226,25 @@ void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, 
  **/
 void TetrisRenderer::drawPanel(const Layout& metrics) {
     const GameBoard* board = scene_->board();
-    const float line = fontSize * lineSpacing;
-    // the panel's rows, counted in lines from its top
+    const v3d::ui::paint::ComponentRenderer& hud = screen_->components();
+    const float line = hud.hud(std::string_view()).lineHeight;
+    // the panel's blocks, counted in lines from its top
     constexpr float nextLabelRow = 3.0F;
-    constexpr float previewRow = 3.5F;
-    constexpr float gameOverRow = 7.0F;
-    constexpr float debugRow = 9.0F;
+    constexpr float gameOverRow = 8.0F;
+    constexpr float debugRow = 10.0F;
     // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
     // panel it was given
     constexpr float previewScale = 0.75F;
-    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0F), line);
+    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0F), 0.0F);
+    v3d::render::realtime::canvas::Canvas* canvas = &screen_->canvas();
 
-    screen_->text()->draw(&screen_->canvas(), "SCORE", panel, textColour, fontSize);
-    screen_->text()->draw(&screen_->canvas(), boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0F, line), textColour, fontSize);
+    hud.hud(canvas, { "SCORE", boost::lexical_cast<std::string>(scene_->score()) }, { .at = panel });
 
-    screen_->text()->draw(&screen_->canvas(), "NEXT", panel + glm::vec2(0.0F, line * nextLabelRow), textColour, fontSize);
-    drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0F, line * previewRow), metrics.cell * previewScale);
+    const v3d::type::geometry::Bound2D next = hud.hud(canvas, { "NEXT" }, { .at = panel + glm::vec2(0.0F, line * nextLabelRow) });
+    drawTetrad(board->nextTetrad(), next.position() + glm::vec2(0.0F, next.size().y + (line * 0.5F)), metrics.cell * previewScale);
 
     if (board->over()) {
-        screen_->text()->draw(&screen_->canvas(), "GAME OVER", panel + glm::vec2(0.0F, line * gameOverRow), textColour, fontSize);
+        hud.hud(canvas, { "GAME OVER" }, { .at = panel + glm::vec2(0.0F, line * gameOverRow) });
     }
 
     if (scene_->debug()) {
@@ -248,6 +253,6 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
         const std::string state =
             boost::lexical_cast<std::string>(position.first) + "," + boost::lexical_cast<std::string>(position.second) +
             " " + boost::lexical_cast<std::string>(current.width()) + "x" + boost::lexical_cast<std::string>(current.height());
-        screen_->text()->draw(&screen_->canvas(), state, panel + glm::vec2(0.0F, line * debugRow), textColour, fontSize);
+        hud.hud(canvas, { state }, { .at = panel + glm::vec2(0.0F, line * debugRow) });
     }
 }

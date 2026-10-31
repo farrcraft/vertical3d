@@ -667,6 +667,47 @@ BOOST_AUTO_TEST_CASE(a_settings_row_shows_its_value_on_the_right) {
 }
 
 /**
+ * Text over the scene is one plate around its lines, placed by its anchor, in the panel's
+ * colour as opaque as the plate opacity, with each line in the text colour inside the
+ * padding. The plate's box comes back so the next block can be placed against it.
+ **/
+BOOST_AUTO_TEST_CASE(hud_text_sits_on_a_plate_placed_by_its_anchor) {
+    std::vector<Written> written;
+    v3d::ui::paint::ComponentRenderer renderer(
+        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
+        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
+            written.push_back({.text = std::string(text), .pen = pen, .colour = colour});
+        });
+    v3d::ui::paint::Dressing& dress = renderer.dressing();
+    dress.panel = glm::vec4(0.1F, 0.2F, 0.3F, 1.0F);
+    dress.plateOpacity = 0.5F;
+    dress.borderWidth = 0.0F;
+    dress.radius = 0.0F;
+    dress.padding = 4.0F;
+    dress.lineHeight = 20.0F;
+
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const v3d::type::geometry::Bound2D box = renderer.hud(&canvas, {"SCORE", "120"},
+        {.at = glm::vec2(400.0F, 100.0F), .anchor = glm::vec2(0.5F, 0.0F)});
+
+    // as wide as the wider line inside the padding, and a line high for each with half a
+    // padding above and below
+    BOOST_CHECK_CLOSE(box.size().x, (5.0F * characterWidth) + 8.0F, 0.001F);
+    BOOST_CHECK_CLOSE(box.size().y, 44.0F, 0.001F);
+    BOOST_CHECK_CLOSE(box.position().x, 400.0F - (box.size().x * 0.5F), 0.001F);
+    BOOST_CHECK_CLOSE(box.position().y, 100.0F, 0.001F);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK(canvas.vertices()[0].colour == glm::vec4(0.1F, 0.2F, 0.3F, 0.5F));
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[1].text, "120");
+    BOOST_CHECK(written[0].colour == dress.text);
+    BOOST_CHECK_CLOSE(written[0].pen.x, box.position().x + 4.0F, 0.001F);
+    BOOST_CHECK_CLOSE(written[1].pen.y - written[0].pen.y, 20.0F, 0.001F);
+}
+
+/**
  * A container that is not visible draws nothing. An app shows and hides its whole ui this
  * way, without taking it apart.
  **/

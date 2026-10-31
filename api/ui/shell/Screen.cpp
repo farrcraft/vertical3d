@@ -19,6 +19,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/style/Resolver.h>
 
 #include "StatisticsOverlay.h"
 
@@ -226,7 +227,8 @@ void Screen::draw(const Interface* ui, const StatisticsOverlay::Sample& statisti
     }
     // last, so the numbers sit over an open menu rather than under it
     if (statistics_) {
-        statistics_->draw(&canvas_, statistics);
+        const bool named = static_cast<bool>(style::lookup(components_->theme(), "hud", statisticsStyle));
+        statistics_->draw(&canvas_, statistics, components_->hud(named ? statisticsStyle : ""));
     }
     // and a tooltip over everything, since it is about whatever is under it
     if (ui != nullptr) {

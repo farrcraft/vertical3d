@@ -59,7 +59,6 @@ class PongRenderer final {
     static constexpr glm::vec4 courtColour{0.06F, 0.07F, 0.10F, 1.0F};
     static constexpr glm::vec4 boardColour{0.35F, 0.35F, 0.35F, 1.0F};
     static constexpr glm::vec4 ballColour{1.0F, 1.0F, 1.0F, 1.0F};
-    static constexpr glm::vec4 scoreColour{0.85F, 0.85F, 0.85F, 1.0F};
 
     static constexpr unsigned int ballSides = 32;
     static constexpr unsigned int centreLineWidth = 14;

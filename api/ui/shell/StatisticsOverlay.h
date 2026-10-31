@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <array>
@@ -90,8 +91,12 @@ class StatisticsOverlay final {
 
     /**
      * Append the overlay to a canvas, or nothing at all while it is hidden.
+     *
+     * @param dress what the readout is dressed in, as text over the scene is: its text, and a
+     *        plate of the panel's colour as opaque as the plate opacity and with its corners
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample,
+        const paint::Dressing& dress = paint::Dressing());
 
     /**
      * The frame's lines, top to bottom.
@@ -132,11 +137,6 @@ class StatisticsOverlay final {
      * A line's height as a multiple of the size the readout is drawn at.
      **/
     static constexpr float lineSpacing = 1.3F;
-    /**
-     * The background is translucent, so that the scene stays visible under the numbers.
-     **/
-    static constexpr glm::vec4 background{0.0F, 0.0F, 0.0F, 0.6F};
-    static constexpr glm::vec4 foreground{0.9F, 0.9F, 0.9F, 1.0F};
     static constexpr double nanosecondsPerMillisecond = 1000000.0;
     static constexpr double nanosecondsPerSecond = 1000000000.0;
     /**

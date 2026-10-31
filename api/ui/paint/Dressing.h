@@ -44,8 +44,8 @@ struct Dressing final {
     Dressing scaled(float factor) const noexcept;
 
     /**
-     * Take every size, every duration and the title weight from another dressing, keeping this
-     * one's colours.
+     * Take every size, every duration, the title weight and the plate's opacity from another
+     * dressing, keeping this one's colours.
      **/
     void resize(const Dressing& from) noexcept;
 
@@ -76,6 +76,7 @@ struct Dressing final {
     float submenuDelay;    /**< how long the cursor rests on a submenu's item before it opens, in seconds **/
     float tooltipDelay;    /**< how long the cursor rests on a component before its tooltip shows, in seconds **/
     float tooltipQuickDelay;  /**< the same, when the cursor has just moved on from a tooltip showing **/
+    float plateOpacity;    /**< how opaque the panel is behind text drawn over the scene, from 0 to 1 **/
     glm::vec4 gap;           /**< what shows between two areas that tile a window **/
     glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/
@@ -127,6 +128,8 @@ struct Dressing final {
     static constexpr float SUBMENU_DELAY = 0.2F;
     static constexpr float TOOLTIP_DELAY = 0.5F;
     static constexpr float TOOLTIP_QUICK_DELAY = 0.1F;
+    // text over the scene keeps the scene visible under its plate
+    static constexpr float PLATE_OPACITY = 0.6F;
 
     // the sizes the immediate layer starts with where they differ, in pixels
     static constexpr float TOOLS_LINE_HEIGHT = 18.0F;

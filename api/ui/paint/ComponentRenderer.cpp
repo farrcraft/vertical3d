@@ -44,6 +44,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -201,6 +202,43 @@ void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, c
     if (!keys.empty()) {
         write_(keys, glm::vec2(corner.x + size.x - inset - measure_(keys), baseline), base().secondaryText);
     }
+}
+
+/**
+ **/
+const Dressing& ComponentRenderer::hud(std::string_view style) const {
+    return styles_.resolve(style::Resolver::Class::Hud, style);
+}
+
+/**
+ **/
+v3d::type::geometry::Bound2D ComponentRenderer::hud(v3d::render::realtime::canvas::Canvas* canvas,
+    const std::vector<std::string>& lines, const Place& place) const {
+    const Dressing& dress = hud(place.style);
+    float widest = 0.0F;
+    for (const std::string& line : lines) {
+        widest = std::max(widest, measure_(line));
+    }
+    const glm::vec2 size(widest + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(lines.size())) + dress.padding);
+    const glm::vec2 corner = place.at - (size * place.anchor);
+    const v3d::type::geometry::Bound2D box({.position = corner, .size = size});
+    if (canvas == nullptr || lines.empty()) {
+        return box;
+    }
+
+    glm::vec4 plate = dress.panel;
+    plate.a *= std::clamp(dress.plateOpacity, 0.0F, 1.0F);
+    glm::vec4 outline = dress.border;
+    outline.a *= std::clamp(dress.plateOpacity, 0.0F, 1.0F);
+    plateBox(canvas, corner, corner + size, dress.radius, dress.borderWidth, {.inside = plate, .outline = outline});
+    // half a padding above the first line and below the last, which a line's own height
+    // already spaces
+    float top = corner.y + (dress.padding * 0.5F);
+    for (const std::string& line : lines) {
+        write_(line, glm::vec2(corner.x + dress.padding, top + (dress.lineHeight * LINE_BASELINE)), dress.text);
+        top += dress.lineHeight;
+    }
+    return box;
 }
 
 /**

@@ -6,6 +6,8 @@
 #include "StatisticsOverlay.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Painter.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <algorithm>
@@ -117,7 +119,7 @@ std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const 
 
 /**
  **/
-void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample) {
+void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample, const paint::Dressing& dress) {
     if (!visible_ || canvas == nullptr || !text_ || !text_->loaded()) {
         return;
     }
@@ -133,14 +135,16 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
-    canvas->rect(glm::vec2(margin, margin),
+    glm::vec4 plate = dress.panel;
+    plate.a *= std::clamp(dress.plateOpacity, 0.0F, 1.0F);
+    paint::fillBox(canvas, glm::vec2(margin, margin),
         glm::vec2(margin + widest + (padding * 2.0F), margin + (lineHeight * static_cast<float>(content.size())) + (padding * 2.0F)),
-        background);
+        dress.radius, plate);
 
     // the pen is the baseline of the line, which sits one font size below the top of it
     float pen = margin + padding + size_;
     for (const std::string& line : content) {
-        text_->draw(canvas, line, glm::vec2(margin + padding, pen), foreground, size_);
+        text_->draw(canvas, line, glm::vec2(margin + padding, pen), dress.text, size_);
         pen += lineHeight;
     }
 }

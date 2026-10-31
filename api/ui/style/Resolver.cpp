@@ -150,6 +150,7 @@ void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Ov
     overlay->metric(style, "tooltip-delay", dressing, &paint::Dressing::tooltipDelay);
     overlay->metric(style, "tooltip-quick-delay", dressing, &paint::Dressing::tooltipQuickDelay);
     overlay->metric(style, "title-weight", dressing, &paint::Dressing::titleWeight);
+    overlay->metric(style, "plate-opacity", dressing, &paint::Dressing::plateOpacity);
 }
 
 void Resolver::chrome() {
@@ -167,6 +168,7 @@ const char* Resolver::named(Class className) noexcept {
         case Class::List:      return "list";
         case Class::Tabs:      return "tabs";
         case Class::TextBox:   return "textbox";
+        case Class::Hud:       return "hud";
         case Class::Button:    return "button";
     }
     return "";
@@ -285,6 +287,18 @@ void Resolver::readClass(Class className, const boost::shared_ptr<Style>& style,
             width(style, "border-width", &dressing.borderWidth);
             metric(style, "radius", &dressing.radius);
             metric(style, "line-height", &dressing.lineHeight);
+            break;
+        case Class::Hud:
+            // text over the scene, on a plate of the panel's colour made as opaque as the
+            // style asks
+            readColour(style, "background", &dressing.panel);
+            readColour(style, "border", &dressing.border);
+            readColour(style, "text", &dressing.text);
+            width(style, "border-width", &dressing.borderWidth);
+            metric(style, "padding", &dressing.padding);
+            metric(style, "radius", &dressing.radius);
+            metric(style, "line-height", &dressing.lineHeight);
+            readMetric(style, "plate-opacity", &dressing.plateOpacity);
             break;
         case Class::Button:
             // a button's fill comes from its skin and its label colour from the base, so

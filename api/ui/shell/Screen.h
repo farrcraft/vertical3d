@@ -77,6 +77,12 @@ class Screen final {
      **/
     static constexpr float titleScale = 1.75F;
 
+    /**
+     * The "hud" style the statistics overlay is dressed in. A theme with no style of that
+     * name dresses it in its first.
+     **/
+    static constexpr const char* statisticsStyle = "statistics";
+
     struct Options final {
         float size { paint::TextRenderer::baseSize };  /**< the font's size at a scale of one **/
         Dress dress;              /**< fills the dressing. When empty, sets only the line height, to 1.4 sizes **/

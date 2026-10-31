@@ -15,6 +15,24 @@
             { "name": "open-distance", "value": 8 },
             { "name": "open-duration", "value": 0.18 }
           ]
+        },
+        {
+          "class": "hud",
+          "name": "default",
+          "numbers": [
+            { "name": "plate-opacity", "value": 0.6 },
+            { "name": "padding", "value": 12 },
+            { "name": "radius", "value": 6 },
+            { "name": "border-width", "value": 0 }
+          ]
+        },
+        {
+          "class": "hud",
+          "name": "statistics",
+          "numbers": [
+            { "name": "plate-opacity", "value": 0.75 },
+            { "name": "radius", "value": 4 }
+          ]
         }
       ]
     }

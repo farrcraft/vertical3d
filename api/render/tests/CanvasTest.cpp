@@ -635,6 +635,26 @@ BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
 }
 
 /**
+ * A point in the space lands in the canvas's pixels inside the viewport, so text drawn in
+ * pixels lines up with what the space holds. Mapped back, the pixel is the point again.
+ **/
+BOOST_AUTO_TEST_CASE(a_point_in_the_space_lands_in_its_pixels) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(1600, 900));
+    canvas.space(glm::vec2(800.0F, 600.0F), v3d::render::realtime::canvas::Canvas::Fit::Contain);
+
+    const glm::vec2 corner = canvas.toPixels(glm::vec2(0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(corner.x, 200.0F, 0.001F);
+    BOOST_CHECK_SMALL(corner.y, 0.001F);
+    const glm::vec2 quarter = canvas.toPixels(glm::vec2(200.0F, 150.0F));
+    BOOST_CHECK_CLOSE(quarter.x, 500.0F, 0.001F);
+    BOOST_CHECK_CLOSE(quarter.y, 225.0F, 0.001F);
+    const glm::vec2 back = canvas.toSpace(quarter);
+    BOOST_CHECK_CLOSE(back.x, 200.0F, 0.001F);
+    BOOST_CHECK_CLOSE(back.y, 150.0F, 0.001F);
+}
+
+/**
  * A canvas with no space projects in its own pixels over the whole window, and so does one
  * whose space was removed again.
  **/
