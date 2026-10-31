@@ -19,9 +19,9 @@
 #include "Primitive.h"
 #include "Samples.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 class RenderContext;
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state
 
 namespace v3d::moya::reyes {
 
@@ -38,7 +38,7 @@ class Hider final : public moya::Hider {
  public:
     bool traces() const override;
     /** The world begins: the buckets are made at the context's bucket size and resolution. **/
-    void begin(RenderContext* context) override;
+    void begin(state::RenderContext* context) override;
     /**
      * Bound a placed polygon in raster space and bucket it, or cull it.
      *
@@ -48,18 +48,18 @@ class Hider final : public moya::Hider {
      * for splitting. One that will be diced has its vertices moved into eye space. A polygon
      * that is not culled goes in the bucket that holds the upper left corner of its bound.
      **/
-    void add(const boost::shared_ptr<Polygon> & poly, RenderContext* context) override;
+    void add(const boost::shared_ptr<Polygon> & poly, state::RenderContext* context) override;
     /**
      * Bound a curve segment in raster space and bucket it, or cull it, as a polygon is. One
      * that will be diced is moved into eye space.
      **/
-    void add(const boost::shared_ptr<Curve> & curve, RenderContext* context) override;
+    void add(const boost::shared_ptr<Curve> & curve, state::RenderContext* context) override;
     std::size_t bucketed() const override;
     /**
      * Render the buckets: every bucket's grids are hidden into a new set of samples, made from
      * the context's sampling as it stands, and the samples are then resolved into the planes.
      **/
-    void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
+    void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
 
     /** The frame's samples, which a grid is hidden into. They exist only while rendering. **/
     Samples & samples();
@@ -81,7 +81,7 @@ class Hider final : public moya::Hider {
      *
      * @return false for a primitive that is culled
      **/
-    static bool measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, RenderContext* context,
+    static bool measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, state::RenderContext* context,
         v3d::type::geometry::AABBox* raster, float reach = 0.0F);
 
     boost::shared_ptr<Buckets> buckets_;

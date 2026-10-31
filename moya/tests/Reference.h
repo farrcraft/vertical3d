@@ -13,11 +13,11 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -121,7 +121,7 @@ inline constexpr const char* HIDERS[] = { "hidden", "raytrace" };
  * A reference drawn this way checks the hider and the shading. reference-sampled checks the
  * sampling.
  **/
-void pixelCentres(v3d::moya::RenderContext & rc);
+void pixelCentres(v3d::moya::state::RenderContext & rc);
 
 v3d::moya::Vertex vertex(float x, float y, float z);
 
@@ -133,7 +133,7 @@ v3d::moya::Vertex vertex(float x, float y, float z);
     Regenerate this reference when a change to shading or sampling alters the picture on
     purpose. Any other change to the picture fails the test.
 */
-void scene(v3d::moya::RenderContext & rc);
+void scene(v3d::moya::state::RenderContext & rc);
 
 /**
  * A vertex with a shading normal of its own, so that a quad's cosine falloff is a gradient
@@ -145,7 +145,7 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal);
  * A quad wound clockwise as the camera sees it, so its geometric normal faces the camera as its
  * shading normals do. Two-argument faceforward turns a normal by the geometric one.
  **/
-void quad(v3d::moya::RenderContext & rc, float left, float right,
+void quad(v3d::moya::state::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner);
 
 /**
@@ -163,14 +163,14 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
     distant light and a point light close enough for its falloff to show. It is sampled at
     the RI defaults unless the caller says otherwise.
 */
-void shadedScene(v3d::moya::RenderContext & rc);
+void shadedScene(v3d::moya::state::RenderContext & rc);
 
 /*
     The same scene as data/reference-focus.rib: a red quad on the plane of focus four units
     out and a blue one ten units out, through a perspective camera. The lens is the file's,
     or a pinhole.
 */
-void focusScene(v3d::moya::RenderContext & rc, bool lens);
+void focusScene(v3d::moya::state::RenderContext & rc, bool lens);
 
 /** A row, and the columns along it from the first to the last, inclusive. **/
 struct Run {
@@ -199,15 +199,15 @@ float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render
 /**
  * The orthographic camera of the other references, with the shutter open from 0 to 1.
  **/
-void motionCamera(v3d::moya::RenderContext & rc);
+void motionCamera(v3d::moya::state::RenderContext & rc);
 
-void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]);
+void quadAt(v3d::moya::state::RenderContext & rc, const glm::vec3 (&corners)[4]);
 
 /*
     The same scene as data/reference-motion.rib: a quad sliding right and a quad turning a
     quarter about its centre, each across the whole shutter.
 */
-void motionScene(v3d::moya::RenderContext & rc);
+void motionScene(v3d::moya::state::RenderContext & rc);
 
 /**
  * The coverage of a quad that slid twelve pixels right while the shutter was open, along the
@@ -239,41 +239,41 @@ struct Scene {
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene);
 
-boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc);
+boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::state::RenderContext & rc);
 
 /**
  * The camera the ray traced references share: orthographic over the default 4:3 screen
  * window, with the world origin one unit in front of the eye. The world is not begun, so a
  * caller can still name an imager.
  **/
-void raytraceCamera(v3d::moya::RenderContext & rc);
+void raytraceCamera(v3d::moya::state::RenderContext & rc);
 
-void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour);
+void background(v3d::moya::state::RenderContext & rc, const glm::vec3 & colour);
 
 /*
     The same scene as data/raytrace-triangle.rib: a triangle asymmetric about both axes, so a
     flipped picture is a failing one, drawn by the shader that means no shading.
 */
-void triangleScene(v3d::moya::RenderContext & rc);
+void triangleScene(v3d::moya::state::RenderContext & rc);
 
 /*
     The same scene as data/raytrace-shaded.rib: a matte floor and a plastic panel, three
     lights of three kinds, and a shadow the panel casts across the floor. It is sampled at the
     RI defaults unless the caller says otherwise.
 */
-void raytraceShadedScene(v3d::moya::RenderContext & rc);
+void raytraceShadedScene(v3d::moya::state::RenderContext & rc);
 
 /*
     The same scene as data/raytrace-spheres.rib: a metal sphere and a glass one over a checked
     floor, in front of a wall, through a perspective camera at the origin and sampled at the RI
     defaults.
 */
-void spheresScene(v3d::moya::RenderContext & rc);
+void spheresScene(v3d::moya::state::RenderContext & rc);
 
 /**
  * A quad sliding half a unit right across the whole shutter, sampled finely under a one pixel
  * box, which is twelve pixels at this frame.
  **/
-void slidingQuad(v3d::moya::RenderContext & rc);
+void slidingQuad(v3d::moya::state::RenderContext & rc);
 
 };  // namespace v3d::moya::reference

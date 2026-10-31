@@ -13,9 +13,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::moya {
-
+namespace v3d::moya::state {
 class RenderContext;
+};  // namespace v3d::moya::state
+
+namespace v3d::moya {
 
 /**
  * One cubic Bezier segment of a curve, as the reyes hider draws it: a flat ribbon facing the
@@ -57,8 +59,8 @@ class Curve final : public reyes::Primitive {
     // reyes::Primitive
     /** The hull grown by half the widest width, which holds the ribbon. **/
     v3d::type::geometry::AABBox bound(void) const override;
-    void split(reyes::Hider & hider, RenderContext & rc) override;
-    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) override;
+    void split(reyes::Hider & hider, state::RenderContext & rc) override;
+    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) override;
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid
      * size. The control points have to be in eye space already.

@@ -12,7 +12,7 @@
 
 #include "RIBHandler.h"
 
-namespace v3d::moya {
+namespace v3d::moya::ri {
 /**
  * The stack of handlers the RI C interface drives. RiBegin pushes one and RiEnd pops it. The
  * last one on the stack is the active handler, and every RI call becomes a request to it. A
@@ -48,4 +48,4 @@ class Renderer {
  private:
         std::vector<boost::shared_ptr<RIBHandler>> handlers_;
 };
-};  // namespace v3d::moya
+};  // namespace v3d::moya::ri

@@ -17,7 +17,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * The lights a scene created. A light lasts for the frame. Which of them are on is an
@@ -63,4 +63,4 @@ class Lights final {
     std::size_t tracedCount_ = 0;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

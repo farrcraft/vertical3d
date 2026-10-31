@@ -6,7 +6,7 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -23,7 +23,7 @@ namespace {
  * The picture, grid and bucket sizes the command line names, each checked before it is used.
  * A size the renderer refuses is reported, and the scene's own size or the default is kept.
  **/
-void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBHandler* handler) {
+void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::RIBHandler* handler) {
     const bool width = var_map.count("width") > 0;
     const bool height = var_map.count("height") > 0;
     // a picture within the largest side can still be larger than memory holds. main catches
@@ -40,7 +40,7 @@ void sizes(const boost::program_options::variables_map& var_map, v3d::moya::RIBH
     }
     // the command line pins the grid and bucket sizes before the scene is read, so a scene
     // that names its own with Option "limits" keeps the command line's
-    const unsigned int largest = v3d::moya::RIBHandler::largestLimit;
+    const unsigned int largest = v3d::moya::ri::RIBHandler::largestLimit;
     if (var_map.count("grid") != 0) {
         const int grid = var_map["grid"].as<int>();
         if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
@@ -109,7 +109,7 @@ int run(int argc, char *argv[]) {
 
     // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     if (!outfile.empty()) {
         handler.output(outfile);

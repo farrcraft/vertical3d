@@ -14,7 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * Where a finished frame goes, and which part of it is kept: RiDisplay and RiCropWindow.
@@ -63,4 +63,4 @@ class Display final {
     v3d::render::offline::rib::CropWindow crop_;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

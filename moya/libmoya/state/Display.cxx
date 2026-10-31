@@ -22,7 +22,7 @@
 
 #include "Planes.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 void Display::request(const v3d::render::offline::rib::Display & display) {
     name_ = display.name;
@@ -82,4 +82,4 @@ void Display::finish(v3d::render::offline::FrameBuffer* planes, const boost::sha
     }
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

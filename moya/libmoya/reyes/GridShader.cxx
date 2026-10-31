@@ -13,8 +13,8 @@
 #include <api/render/offline/sl/runtime/Value.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Line.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include "MicroPolygonGrid.h"
 
@@ -35,7 +35,7 @@ typedef v3d::render::offline::sl::runtime::Value Value;
 
 };  // namespace
 
-GridShader::GridShader(RenderContext* context) :
+GridShader::GridShader(state::RenderContext* context) :
     context_(context), tracer_(&context->traced(), &context->textures()) {
 }
 
@@ -185,7 +185,7 @@ bool GridShader::light(unsigned int index, const Value & surface, const v3d::ren
     return ran;
 }
 
-void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
+void GridShader::displace(const state::Shading & shading, MicroPolygonGrid* grid) {
     // a grid with no displacement shader has none for its surface to read
     displacementRun_ = nullptr;
     if (!shading.displacement.shader || grid == nullptr) {
@@ -241,7 +241,7 @@ void GridShader::displace(const Shading & shading, MicroPolygonGrid* grid) {
     }
 }
 
-void GridShader::shade(const Shading & shading, MicroPolygonGrid* grid) {
+void GridShader::shade(const state::Shading & shading, MicroPolygonGrid* grid) {
     if (!shading.surface || grid == nullptr) {
         return;
     }

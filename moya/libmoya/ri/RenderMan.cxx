@@ -11,6 +11,7 @@
 #include <api/render/offline/rib/Arguments.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <stdarg.h>
 
@@ -21,8 +22,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-#include "RenderContext.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -38,12 +37,12 @@ namespace {
 // the handlers the C interface drives. The stack is built on first use, inside the RI call
 // that reaches it, so an exception from its constructor reaches the caller. An exception from
 // a static initialiser reaches no handler at all.
-v3d::moya::Renderer& renderer() {
-    static v3d::moya::Renderer instance;
+v3d::moya::ri::Renderer& renderer() {
+    static v3d::moya::ri::Renderer instance;
     return instance;
 }
 
-v3d::moya::RIBHandler& handler() {
+v3d::moya::ri::RIBHandler& handler() {
     return renderer().active();
 }
 
@@ -82,7 +81,7 @@ void collect(va_list arguments, std::vector<RtToken>* tokens, std::vector<RtPoin
  **/
 v3d::render::offline::rib::ParameterList parameters(RtInt n, RtToken tokens[], RtPointer parms[],
     unsigned int vertices = 1) {
-    v3d::moya::RIBHandler & active = handler();
+    v3d::moya::ri::RIBHandler & active = handler();
     v3d::render::offline::rib::ParameterList list;
     std::vector<std::string> unresolved;
     v3d::render::offline::rib::arguments(active.declarations(), n, tokens, parms, vertices, &list,
@@ -272,7 +271,7 @@ RtContextHandle RiGetContext(void) {
 
 // a handle to a context that has ended, or was never begun, is ignored
 RtVoid RiContext(RtContextHandle handle) {
-    renderer().activate(static_cast<const v3d::moya::RIBHandler*>(handle));
+    renderer().activate(static_cast<const v3d::moya::ri::RIBHandler*>(handle));
 }
 
 // RI returns the token the name now stands for. In this renderer the token is the name
@@ -281,12 +280,10 @@ RtToken RiDeclare(char * name, char * declaration) {
     return name;
 }
 
-
 // RiBegin pushes a new context and makes it active
 RtVoid RiBegin(RtToken name) {
     renderer().begin(text(name));
 }
-
 
 // RiEnd pops the active context, and the one beneath it becomes active. With no context
 // begun it does nothing. A request that arrives with no context active creates one

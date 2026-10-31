@@ -7,13 +7,12 @@
 
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Handler.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <string>
 #include <vector>
 
-#include "RenderContext.h"
-
-namespace v3d::moya {
+namespace v3d::moya::ri {
 
 /**
  * Drives a render context from RI requests. The RIB reader calls one typed method per request,
@@ -122,7 +121,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
      * The context the requests reach. Its framebuffer holds the picture once the file has
      * been read.
      **/
-    RenderContext & context();
+    state::RenderContext & context();
 
     /**
      * What the scene has declared, and what the standard declares for it. The C interface
@@ -151,7 +150,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     /** Whether the primitive arriving now deforms one already in the motion block. **/
     bool deforms();
 
-    RenderContext context_;
+    state::RenderContext context_;
     v3d::render::offline::rib::Declarations declarations_;
     std::string output_;
     unsigned int width_ = 0;
@@ -162,4 +161,4 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     bool deformed_ = false;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::ri

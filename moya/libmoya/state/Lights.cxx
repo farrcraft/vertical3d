@@ -18,7 +18,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 void Lights::add(const Light & light) {
     lights_.push_back(light);
@@ -67,4 +67,4 @@ const v3d::render::offline::trace::Lights & Lights::traced(const std::vector<v3d
     return traced_;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

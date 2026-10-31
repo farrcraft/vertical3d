@@ -3,9 +3,9 @@
  * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/Renderer.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/ri/Renderer.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -16,7 +16,7 @@ namespace {
  * context the renderer holds, not to a copy.
  **/
 BOOST_AUTO_TEST_CASE(renderer_active_context_test) {
-    v3d::moya::Renderer renderer;
+    v3d::moya::ri::Renderer renderer;
     renderer.begin("default context");
 
     renderer.active().context().imageResolution({1280, 960}, 1.0F);
@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(renderer_active_context_test) {
  * makes the one below it active, with the options it held.
  **/
 BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
-    v3d::moya::Renderer renderer;
+    v3d::moya::ri::Renderer renderer;
 
     renderer.begin("outer");
     renderer.active().context().imageResolution({800, 600}, 1.0F);
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(renderer_context_stack_test) {
  * option call is safe before RiBegin.
  **/
 BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
-    v3d::moya::Renderer renderer;
+    v3d::moya::ri::Renderer renderer;
 
     BOOST_TEST(renderer.active().context().imageWidth() == 320U);
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(renderer_implicit_context_test) {
  * does. The stack is still usable after it.
  **/
 BOOST_AUTO_TEST_CASE(renderer_destroy_with_no_context_test) {
-    v3d::moya::Renderer renderer;
+    v3d::moya::ri::Renderer renderer;
     renderer.end();
 
     renderer.begin("only");
@@ -78,9 +78,9 @@ BOOST_AUTO_TEST_CASE(renderer_destroy_with_no_context_test) {
  * RiGetContext hands out, stays good. activate() makes it the active handler again.
  **/
 BOOST_AUTO_TEST_CASE(renderer_a_context_survives_a_push_test) {
-    v3d::moya::Renderer renderer;
+    v3d::moya::ri::Renderer renderer;
     renderer.begin("outer");
-    v3d::moya::RIBHandler * outer = &renderer.active();
+    v3d::moya::ri::RIBHandler * outer = &renderer.active();
     outer->context().imageResolution({32, 16}, 1.0F);
     for (int i = 0; i < 8; i++) {
         renderer.begin("inner");
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(renderer_a_context_survives_a_push_test) {
     BOOST_TEST(renderer.activate(outer));
     BOOST_TEST(&renderer.active() == outer);
 
-    const v3d::moya::RIBHandler stranger("stranger");
+    const v3d::moya::ri::RIBHandler stranger("stranger");
     BOOST_TEST(!renderer.activate(&stranger));
     BOOST_TEST(&renderer.active() == outer);
 }

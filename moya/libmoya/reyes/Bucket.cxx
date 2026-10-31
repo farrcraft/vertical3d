@@ -8,7 +8,7 @@
 #include "Hider.h"
 
 #include <api/render/offline/MovingTransform.h>
-#include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <array>
@@ -74,12 +74,12 @@ class Placement {
             return;
         }
         for (unsigned int k = 0; k < 4; k++) {
-            still_[k] = project(toRaster_, eye[k]);
+            still_[k] = state::project(toRaster_, eye[k]);
             if (radius_ <= 0.0F) {
                 continue;
             }
-            across_[k] = project(toRaster_, lensed(eye[k], glm::vec2(1.0F, 0.0F))) - still_[k];
-            down_[k] = project(toRaster_, lensed(eye[k], glm::vec2(0.0F, 1.0F))) - still_[k];
+            across_[k] = state::project(toRaster_, lensed(eye[k], glm::vec2(1.0F, 0.0F))) - still_[k];
+            down_[k] = state::project(toRaster_, lensed(eye[k], glm::vec2(0.0F, 1.0F))) - still_[k];
         }
         stillBound();
     }
@@ -156,7 +156,7 @@ class Placement {
     Corners moved(const glm::mat4x4 & delta, const glm::vec2 & lens) const {
         Corners corners;
         for (unsigned int k = 0; k < 4; k++) {
-            corners[k] = project(toRaster_, lensed(glm::vec3(delta * glm::vec4(eye_[k], 1.0F)), lens));
+            corners[k] = state::project(toRaster_, lensed(glm::vec3(delta * glm::vec4(eye_[k], 1.0F)), lens));
         }
         return corners;
     }
@@ -333,7 +333,7 @@ void hide(const Placement & placement, const Samples::Layer & shaded, Samples * 
  * Hide every micropolygon of a grid into the frame's samples. The film filters the samples
  * into pixels once every bucket is done.
  */
-void hide(MicroPolygonGrid & grid, const Primitive & primitive, Hider & hider, RenderContext & rc) {
+void hide(MicroPolygonGrid & grid, const Primitive & primitive, Hider & hider, state::RenderContext & rc) {
     const glm::mat4x4 & toRaster = rc.camera().raster;
     // an orthographic camera has no lens to blur through
     const float radius = rc.perspective() ? rc.sampling().lensRadius() : 0.0F;
@@ -403,7 +403,7 @@ size_t Bucket::primitiveCount(void) const {
     return primitives_.size();
 }
 
-bool Bucket::render(Hider & hider, RenderContext & rc) {
+bool Bucket::render(Hider & hider, state::RenderContext & rc) {
     bool split = false;
     // splitting resubmits pieces through the hider, which may append to this same bucket, so
     // the loop reads the size on every iteration

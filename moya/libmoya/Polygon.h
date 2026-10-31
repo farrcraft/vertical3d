@@ -22,8 +22,11 @@ namespace v3d::render::offline::rib {
 class ParameterList;
 };  // namespace v3d::render::offline::rib
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 class RenderContext;
+};  // namespace v3d::moya::state
+
+namespace v3d::moya {
 
 class Polygon : public reyes::Primitive {
  public:
@@ -99,8 +102,8 @@ class Polygon : public reyes::Primitive {
 
     // reyes::Primitive
     virtual v3d::type::geometry::AABBox bound(void) const;
-    void split(reyes::Hider & hider, RenderContext & rc) override;
-    virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc);
+    void split(reyes::Hider & hider, state::RenderContext & rc) override;
+    virtual bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc);
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid
      * size. The vertices have to be in eye space already, as addPolygon() leaves them.

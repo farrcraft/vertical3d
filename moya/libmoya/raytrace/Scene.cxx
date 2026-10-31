@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "TracedScene.h"
+#include "Scene.h"
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/render/offline/rib/Requests.h>
@@ -13,8 +13,12 @@
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
+#include <moya/libmoya/Curve.h>
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include <array>
 #include <cstddef>
@@ -29,22 +33,17 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "Curve.h"
-#include "Polygon.h"
-#include "Shading.h"
-#include "Vertex.h"
+namespace v3d::moya::raytrace {
 
-namespace v3d::moya {
-
-v3d::render::offline::trace::Scene & TracedScene::scene() {
+v3d::render::offline::trace::Scene & Scene::scene() {
     return scene_;
 }
 
-const v3d::render::offline::trace::Scene & TracedScene::scene() const {
+const v3d::render::offline::trace::Scene & Scene::scene() const {
     return scene_;
 }
 
-void TracedScene::add(const Polygon & poly, const Shading & state, const Submission & with) {
+void Scene::add(const Polygon & poly, const state::Shading & state, const Submission & with) {
     if (poly.vertexCount() < 3) {
         return;
     }
@@ -83,7 +82,7 @@ void TracedScene::add(const Polygon & poly, const Shading & state, const Submiss
     }
 }
 
-void TracedScene::addDisplaced(const Polygon & poly, const Shading & state, const Submission & with) {
+void Scene::addDisplaced(const Polygon & poly, const state::Shading & state, const Submission & with) {
     // a copy in camera space, where the displacement shader runs, with each vertex given the
     // plane and the colour the reyes hider would give it
     const glm::mat4x4 toCamera = with.view * with.transform->reference();
@@ -145,7 +144,7 @@ void TracedScene::addDisplaced(const Polygon & poly, const Shading & state, cons
     }
 }
 
-void TracedScene::shade(v3d::render::offline::trace::Primitive* primitive, const Shading & state, const Submission & with) {
+void Scene::shade(v3d::render::offline::trace::Primitive* primitive, const state::Shading & state, const Submission & with) {
     // a shader's placement takes it to camera space, and the traced scene is in world space
     v3d::render::offline::sl::Placed surface;
     surface.shader = state.surface;
@@ -156,7 +155,7 @@ void TracedScene::shade(v3d::render::offline::trace::Primitive* primitive, const
     primitive->lights(with.lights);
 }
 
-void TracedScene::add(const Curve & segment, const Shading & state, const Submission & with) {
+void Scene::add(const Curve & segment, const state::Shading & state, const Submission & with) {
     // placed by the reference end of its motion, as a polygon's points are
     const glm::mat4x4 & toWorld = with.transform->reference();
     v3d::render::offline::trace::Curve::Controls controls{};
@@ -169,11 +168,11 @@ void TracedScene::add(const Curve & segment, const Shading & state, const Submis
     scene_.add(curve, *with.transform);
 }
 
-void TracedScene::add(const v3d::render::offline::rib::Sphere & shape, const Shading & state, const Submission & with) {
+void Scene::add(const v3d::render::offline::rib::Sphere & shape, const state::Shading & state, const Submission & with) {
     // placed by the reference end of its motion, as a polygon's points are
     v3d::render::offline::trace::Sphere sphere(shape, with.transform->reference(), with.colour);
     shade(&sphere, state, with);
     scene_.add(sphere, *with.transform);
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::raytrace

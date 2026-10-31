@@ -13,7 +13,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * What a primitive is shaded by: its surface shader and the lights that were switched on
@@ -57,4 +57,4 @@ class Shading final {
     float displacementBound = 0.0F;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

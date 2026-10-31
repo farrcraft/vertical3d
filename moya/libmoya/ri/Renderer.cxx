@@ -12,7 +12,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::ri {
 
 void Renderer::begin(const std::string & name) {
     handlers_.push_back(boost::make_shared<RIBHandler>(name));
@@ -41,4 +41,4 @@ RIBHandler & Renderer::active() {
     return *handlers_.back();
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::ri

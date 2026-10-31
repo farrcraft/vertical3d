@@ -35,7 +35,7 @@ class Bucket final {
      * @return whether anything was split. Buckets then renders every bucket again, for pieces
      *         that landed in a bucket it had already rendered
      */
-    bool render(Hider & hider, RenderContext & rc);
+    bool render(Hider & hider, state::RenderContext & rc);
 
     size_t primitiveCount(void) const;
 

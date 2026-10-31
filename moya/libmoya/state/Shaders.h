@@ -16,7 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * The shaders a scene binds, the textures they read, and the imager.
@@ -55,4 +55,4 @@ class Shaders final {
     bool traces_ = false;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

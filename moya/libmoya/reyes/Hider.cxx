@@ -12,10 +12,10 @@
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
 #include <moya/libmoya/Curve.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -115,12 +115,12 @@ bool Hider::traces() const {
     return false;
 }
 
-void Hider::begin(RenderContext* context) {
+void Hider::begin(state::RenderContext* context) {
     buckets_ = boost::make_shared<Buckets>(Buckets::Sizes{.bucket = glm::uvec2(context->bucketWidth(), context->bucketHeight()),
         .image = glm::uvec2(context->imageWidth(), context->imageHeight())});
 }
 
-void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context) {
+void Hider::add(const boost::shared_ptr<Polygon> & poly, state::RenderContext* context) {
     // a hider chosen after the world began has not seen it begin
     if (!buckets_) {
         begin(context);
@@ -160,7 +160,7 @@ void Hider::add(const boost::shared_ptr<Polygon> & poly, RenderContext* context)
     buckets_->add(poly, bound);
 }
 
-void Hider::add(const boost::shared_ptr<Curve> & curve, RenderContext* context) {
+void Hider::add(const boost::shared_ptr<Curve> & curve, state::RenderContext* context) {
     if (!buckets_) {
         begin(context);
     }
@@ -178,7 +178,7 @@ void Hider::add(const boost::shared_ptr<Curve> & curve, RenderContext* context) 
     buckets_->add(curve, bound);
 }
 
-bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, RenderContext* context,
+bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, state::RenderContext* context,
     v3d::type::geometry::AABBox* raster, float reach) {
     const v3d::render::offline::Camera & camera = context->camera();
     v3d::type::geometry::AABBox bound = objectBound;
@@ -264,11 +264,11 @@ bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & o
             primitive.diceable(false);
             continue;
         }
-        const glm::vec3 point = project(screen, corner);
+        const glm::vec3 point = state::project(screen, corner);
         raster_min = glm::min(raster_min, point);
         raster_max = glm::max(raster_max, point);
         projected = true;
-        const glm::vec3 inner = project(screen, boxCorner(surface_min, surface_max, k));
+        const glm::vec3 inner = state::project(screen, boxCorner(surface_min, surface_max, k));
         measured_min = glm::min(measured_min, inner);
         measured_max = glm::max(measured_max, inner);
     }
@@ -302,13 +302,13 @@ std::size_t Hider::bucketed() const {
     return buckets_ ? buckets_->primitiveCount() : 0;
 }
 
-void Hider::render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
+void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
     if (!buckets_) {
         begin(context);
     }
     samples_ = boost::make_shared<Samples>(glm::uvec2(planes->width(), planes->height()), context->sampling());
     buckets_->render(*this, *context);
-    samples_->resolve(planes, Planes::RED, Planes::COVERAGE, Planes::DEPTH);
+    samples_->resolve(planes, state::Planes::RED, state::Planes::COVERAGE, state::Planes::DEPTH);
 }
 
 Samples & Hider::samples() {

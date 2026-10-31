@@ -8,9 +8,9 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Sphere.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/Shading.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -36,7 +36,7 @@ namespace {
  * RiColor is graphics state rather than a material, and it reaches the pixels.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -48,9 +48,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::GREEN, 32, 24), 0.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 32, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::GREEN, 32, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::BLUE, 32, 24), 0.0F);
 }
 
 /**
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
  * again after the transformation has moved on.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_coordinate_systems_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Scale 2 2 2\n"
@@ -77,13 +77,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_coordinate_systems_test) {
  * force stays. The C interface passes RI_NULL on as the empty name.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_an_empty_name_is_ignored_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Surface \"plastic\"\n"
         "Surface \"\"\n", &handler));
 
-    const v3d::moya::Shading shading = handler.context().shading();
+    const v3d::moya::state::Shading shading = handler.context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "plastic");
 }
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_an_empty_name_is_ignored_test) {
  * coloured or placed by what the first one set.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -115,17 +115,17 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     // the screen window is [-4/3, 4/3] by [-1, 1] on a 64 by 48 frame, so -0.5 in x lands at
     // column 20 and +0.5 at column 44
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 20, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 20, 24), 0.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 44, 24), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 44, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 20, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::BLUE, 20, 24), 0.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::BLUE, 44, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 44, 24), 0.0F);
 }
 
 /**
  * TransformEnd restores the current transformation that TransformBegin saved.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     // a polygon added after the block sits where its own points say
     BOOST_REQUIRE(read(
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F);
 }
 
 /**
@@ -161,13 +161,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
         "Scale 1 0 1\n"
         "MotionEnd\n";
     {
-        v3d::moya::RIBHandler handler;
+        v3d::moya::ri::RIBHandler handler;
         BOOST_REQUIRE(read(flat + "Polygon \"P\" [-0.5 -0.5 2  0.5 -0.5 2  0.5 0.5 2  -0.5 0.5 2]\nWorldEnd\n",
             &handler));
         BOOST_CHECK_EQUAL(handler.context().bucketed(), 0U);
     }
     {
-        v3d::moya::RIBHandler handler;
+        v3d::moya::ri::RIBHandler handler;
         BOOST_REQUIRE(read("Hider \"raytrace\"\n" + flat + "Sphere 1 -1 1 360\nWorldEnd\n", &handler));
         BOOST_CHECK(handler.context().traced().all<v3d::render::offline::trace::Sphere>().empty());
     }
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_motion_flat_at_both_ends_test) {
  * join it.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     // read up to WorldEnd, so the lights are still on to be read back
     BOOST_REQUIRE(read(
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
         "Illuminate 2 1\n"
         "Polygon \"P\" [0 0 6  1 0 6  1 1 6  0 1 6]\n", &handler));
 
-    const v3d::moya::Shading shading = handler.context().shading();
+    const v3d::moya::state::Shading shading = handler.context().shading();
     BOOST_REQUIRE_EQUAL(shading.lights.size(), 2U);
     BOOST_CHECK(!shading.lights[0].area);
     BOOST_REQUIRE(shading.lights[1].area);
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_an_area_light_keeps_its_geometry_test) {
  * changes nothing.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     // read up to WorldEnd, so the attribute state is still there to be read back
     BOOST_REQUIRE(read(
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
         "Displacement \"lift\" \"float amount\" [0.1]\n"
         "Attribute \"nothing\" \"float at\" [1]\n", &handler));
 
-    v3d::moya::Shading shading = handler.context().shading();
+    v3d::moya::state::Shading shading = handler.context().shading();
     BOOST_REQUIRE(shading.displacement.shader);
     BOOST_CHECK_EQUAL(shading.displacement.shader->name(), "lift");
     BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
  * with a shader that shows the shading point in object space.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::string & hider) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
         "Format 8 6 1\n"
@@ -280,8 +280,8 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::st
  * depth in its own space is 4 under either.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
-    BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::Planes::BLUE, 4, 3), 4.0F, 0.01F);
-    BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::Planes::BLUE, 4, 3), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(inObjectSpace("")->value(v3d::moya::state::Planes::BLUE, 4, 3), 4.0F, 0.01F);
+    BOOST_CHECK_CLOSE(inObjectSpace("Hider \"raytrace\"\n")->value(v3d::moya::state::Planes::BLUE, 4, 3), 4.0F, 0.01F);
 }
 
 /**
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string & hider, const std::string & light,
     const std::string & surface) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
         "Format 8 6 1\n"
@@ -312,8 +312,8 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string 
 BOOST_AUTO_TEST_CASE(moya_ribhandler_messages_under_both_hiders_test) {
     for (const std::string & hider : { std::string(), std::string("Hider \"raytrace\"\n") }) {
         BOOST_TEST_CONTEXT("hider '" << hider << "'") {
-            BOOST_CHECK_CLOSE(messaged(hider, "messenger", "heard")->value(v3d::moya::Planes::RED, 4, 3), 0.5F, 0.01F);
-            BOOST_CHECK_CLOSE(messaged(hider, "asker", "told")->value(v3d::moya::Planes::RED, 4, 3), 0.75F, 0.01F);
+            BOOST_CHECK_CLOSE(messaged(hider, "messenger", "heard")->value(v3d::moya::state::Planes::RED, 4, 3), 0.5F, 0.01F);
+            BOOST_CHECK_CLOSE(messaged(hider, "asker", "told")->value(v3d::moya::state::Planes::RED, 4, 3), 0.75F, 0.01F);
         }
     }
 }

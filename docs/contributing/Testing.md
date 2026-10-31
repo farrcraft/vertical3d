@@ -398,6 +398,6 @@ change locally by running an app and reading its log.
   against a `TerrainMap`, and the vtable of the flat map a test supplies refers to the Perlin
   implementation. See [Dependencies.md](Dependencies.md#building-libnoise).
 - **Run the moya executable from its own directory.** It is
-  `out/build/x64-Debug/moya/moya/moya.exe`. Started from another directory it can stop on a
+  `out/build/x64-Debug/moya/moya.exe`. Started from another directory it can stop on a
   missing-DLL dialog and use no CPU, which looks like a hung render.
 - **A debug moya render is slow.** A 256x192 ray traced scene takes about a minute.

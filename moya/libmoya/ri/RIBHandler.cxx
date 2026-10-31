@@ -10,9 +10,8 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/Checked.h>
-
-#include "Polygon.h"
-#include "RenderContext.h"
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -25,7 +24,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::ri {
 
 namespace {
 
@@ -73,7 +72,7 @@ RIBHandler::RIBHandler(const std::string & name) : context_(name) {
     notice();
 }
 
-RenderContext & RIBHandler::context() {
+state::RenderContext & RIBHandler::context() {
     return context_;
 }
 
@@ -211,7 +210,7 @@ void RIBHandler::cropWindow(const v3d::render::offline::rib::CropWindow & reques
 }
 
 void RIBHandler::projection(const std::string & name, const ParameterList & parameters) {
-    context().projection(name, parameters.number("fov", RenderContext::defaultFov));
+    context().projection(name, parameters.number("fov", state::RenderContext::defaultFov));
 }
 
 void RIBHandler::clipping(const v3d::render::offline::rib::Clipping & request) {
@@ -415,4 +414,4 @@ void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons 
     }
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::ri

@@ -17,16 +17,16 @@
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/raytrace/Scene.h>
 
 #include "Attributes.h"
 #include "Display.h"
 #include "Planes.h"
 #include "Lights.h"
-#include "Polygon.h"
 #include "Progress.h"
 #include "Shaders.h"
 #include "Shading.h"
-#include "TracedScene.h"
 #include "Transforms.h"
 
 #include <cstddef>
@@ -34,12 +34,14 @@
 #include <string>
 
 namespace v3d::moya {
-
-namespace reyes {
-class GridShader;
-};  // namespace reyes
-
 class Hider;
+};  // namespace v3d::moya
+
+namespace v3d::moya::reyes {
+class GridShader;
+};  // namespace v3d::moya::reyes
+
+namespace v3d::moya::state {
 
 /**
  * The current graphics state. Several contexts may exist at once. The one most recently begun
@@ -437,7 +439,7 @@ class RenderContext {
 
  private:
         /** What a primitive submitted now goes into the traced scene under. **/
-        TracedScene::Submission submission(const Shading & state);
+        raytrace::Scene::Submission submission(const Shading & state);
 
         /*
          * The options below carry RI's defaults as member initialisers, so that both
@@ -475,7 +477,7 @@ class RenderContext {
         boost::shared_ptr<Shaders> shaders_;
         boost::shared_ptr<reyes::GridShader> shader_;
         Lights lights_;
-        TracedScene traced_;
+        raytrace::Scene traced_;
         boost::shared_ptr<v3d::render::offline::FrameBuffer> planes_;
         Progress progress_;
         v3d::render::offline::CameraOptions options_;
@@ -512,4 +514,4 @@ class RenderContext {
  **/
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point);
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

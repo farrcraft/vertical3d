@@ -7,7 +7,7 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/type/geometry/AABBox.h>
-#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include "MicroPolygonGrid.h"
 
@@ -16,9 +16,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 class RenderContext;
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state
 
 namespace v3d::moya::reyes {
 
@@ -41,7 +41,7 @@ class Primitive {
          * primitive afterwards either way. A primitive that cannot be usefully split submits
          * nothing, and is dropped.
          */
-        virtual void split(Hider & hider, RenderContext & rc);
+        virtual void split(Hider & hider, state::RenderContext & rc);
         /**
          * Turn the primitive into a micropolygon grid, one call per grid.
          *
@@ -49,7 +49,7 @@ class Primitive {
          * a grid replaces what the reference holds and returns true. The call after the last
          * grid returns false, and must, or the caller's loop never ends.
          */
-        virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, RenderContext & rc);
+        virtual bool dice(boost::shared_ptr<MicroPolygonGrid> & grid, state::RenderContext & rc);
         virtual void diceable(bool status);
 
         /**
@@ -67,7 +67,7 @@ class Primitive {
          */
         bool placed(void) const;
         void place(const glm::mat4x4 & toEye, const glm::vec3 & color, const glm::vec3 & normal,
-            const Shading & shading);
+            const state::Shading & shading);
         const glm::mat4x4 & placement(void) const;
         const glm::vec3 & color(void) const;
         const glm::vec3 & normal(void) const;
@@ -75,7 +75,7 @@ class Primitive {
          * The surface shader and the lights that were on. Carried across a split with the
          * rest of the state, and read when the second pass shades the primitive's grids.
          */
-        const Shading & shading(void) const;
+        const state::Shading & shading(void) const;
 
         /**
          * The object to eye transformation across the shutter. placement() is its reference
@@ -91,7 +91,7 @@ class Primitive {
         glm::mat4x4 placement_ = glm::mat4x4(1.0F);
         glm::vec3 color_ = glm::vec3(1.0F);
         glm::vec3 normal_ = glm::vec3(0.0F);
-        Shading shading_;
+        state::Shading shading_;
         bool placed_ = false;
         /**
          * False until the first pass has measured the primitive against the grid size. An

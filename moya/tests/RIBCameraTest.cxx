@@ -9,8 +9,8 @@
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/render/offline/trace/Triangle.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -36,7 +36,7 @@ namespace {
  * buffer.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_test) {
  * sampled at the RI defaults.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
     BOOST_CHECK_CLOSE(handler.context().sampling().focalLength, 0.1F, 1.0e-4F);
     BOOST_CHECK_EQUAL(handler.context().sampling().focalDistance, 3.0F);
 
-    v3d::moya::RIBHandler silent;
+    v3d::moya::ri::RIBHandler silent;
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &silent));
     BOOST_CHECK_EQUAL(silent.context().sampling().samples.x, 2U);
     BOOST_CHECK_EQUAL(silent.context().sampling().samples.y, 2U);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sampling_test) {
  * Transposing and inverting a matrix gives back the same matrix only when it is a rotation.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     // the camera sits four units back along -z, so a quad at the world origin is four units
     // in front of it and inside the [1, 100] clip range
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_camera_transform_test) {
  * projection would make them the same size.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (planes->value(v3d::moya::Planes::RED, column, row) > 0.5F) {
+            if (planes->value(v3d::moya::state::Planes::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
 
     // the same quad twice as far away covers a quarter of the pixels under a perspective
     // projection, and the same pixels under an identity matrix
-    v3d::moya::RIBHandler distant;
+    v3d::moya::ri::RIBHandler distant;
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
         "Projection \"perspective\" \"fov\" 45\n"
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
     unsigned int distantCovered = 0;
     for (unsigned int row = 0; row < 48; row++) {
         for (unsigned int column = 0; column < 64; column++) {
-            if (distantPlanes->value(v3d::moya::Planes::RED, column, row) > 0.5F) {
+            if (distantPlanes->value(v3d::moya::state::Planes::RED, column, row) > 0.5F) {
                 distantCovered++;
             }
         }
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_perspective_test) {
  * the picture. A quad as wide as it is tall covers as many columns as rows.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -176,13 +176,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
 
     unsigned int columns = 0;
     for (unsigned int column = 0; column < 64; column++) {
-        if (planes->value(v3d::moya::Planes::RED, column, 24) > 0.5F) {
+        if (planes->value(v3d::moya::state::Planes::RED, column, 24) > 0.5F) {
             columns++;
         }
     }
     unsigned int rows = 0;
     for (unsigned int row = 0; row < 48; row++) {
-        if (planes->value(v3d::moya::Planes::RED, 32, row) > 0.5F) {
+        if (planes->value(v3d::moya::state::Planes::RED, 32, row) > 0.5F) {
             rows++;
         }
     }
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_test) {
  * does not restore the default.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "ScreenWindow -2 2 -2 2\n"
@@ -214,8 +214,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     // under a window of [-2, 2] the quad nearly fills the frame. The default [-4/3, 4/3] by
     // [-1, 1] would clip it at the top and bottom
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 1), 1.0F);
-    BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 32, 46), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 1), 1.0F);
+    BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 46), 1.0F);
 }
 
 /**
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_explicit_screen_window_test) {
  * names. The scene renders at the handler's size.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     handler.resolution(8, 4);
 
     BOOST_REQUIRE(read("Format 64 48 1\nWorldBegin\nWorldEnd\n", &handler));
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_override_test) {
  * refused. The scene's Format is used instead.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_CHECK(!handler.resolution(70000, 4));
     BOOST_CHECK(!handler.resolution(0, 4));
     BOOST_CHECK(!handler.resolution(8, -4));
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_resolution_refuses_a_side_out_of_range_test
  * A side above largestResolution is skipped, and the size already set is kept.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read("Format 64 0 1\nFormat 70000 16 1\nWorldBegin\nWorldEnd\n", &handler));
 
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_format_nonpositive_side_is_the_default_test
  * still frames the picture. A window from 0 to 2 puts a quad spanning -1 to 1 in the left half.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 64 1\n"
@@ -281,8 +281,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
-    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 16, 32), 0.5F);
-    BOOST_CHECK_LT(planes->value(v3d::moya::Planes::RED, 48, 32), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 16, 32), 0.5F);
+    BOOST_CHECK_LT(planes->value(v3d::moya::state::Planes::RED, 48, 32), 0.5F);
 }
 
 /**
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_screen_window_after_projection_test) {
  * angle there, which fails this case on the right, left, bottom and top faces.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     BOOST_REQUIRE(reader.read("data/spec-cube.rib", &handler));
 
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotations_build_the_specification_cube_test
  * An unknown projection is logged by name.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_an_unknown_projection_is_logged_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read("Projection \"fisheye\"\n", &handler));

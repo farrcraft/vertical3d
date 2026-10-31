@@ -12,6 +12,7 @@
 #include <api/render/offline/Textures.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Ray.h>
+#include <moya/libmoya/Hider.h>
 
 #include <vector>
 
@@ -19,9 +20,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-#include "Hider.h"
-
-namespace v3d::moya {
+namespace v3d::moya::raytrace {
 
 /**
  * The hider `Hider "raytrace"` selects: a primary ray through every sample, into the traced
@@ -31,7 +30,7 @@ namespace v3d::moya {
  * through, so the two hiders agree about where a pixel looks. The ray is then carried into
  * world space, where the traced scene is.
  **/
-class RayHider final : public Hider {
+class Hider final : public moya::Hider {
  public:
     bool traces() const override;
 
@@ -41,7 +40,7 @@ class RayHider final : public Hider {
      * With a PixelVariance above zero, a pixel whose samples' variance of the mean is above it
      * takes further sets of samples, up to four sets in all.
      **/
-    void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
+    void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
 
     /**
      * How many samples a pixel took in the last render: PixelSamples' count, or more where a
@@ -73,4 +72,4 @@ class RayHider final : public Hider {
     std::vector<unsigned int> taken_;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::raytrace

@@ -7,7 +7,7 @@
 
 #include <api/render/offline/MovingTransform.h>
 #include <api/type/geometry/AABBox.h>
-#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include "MicroPolygonGrid.h"
 
@@ -27,10 +27,10 @@ v3d::type::geometry::AABBox Primitive::bound(void) const {
     return v3d::type::geometry::AABBox();
 }
 
-void Primitive::split(Hider & /* hider */, RenderContext & /* rc */) {
+void Primitive::split(Hider & /* hider */, state::RenderContext & /* rc */) {
 }
 
-bool Primitive::dice(boost::shared_ptr<MicroPolygonGrid> & /* grid */, RenderContext & /* rc */) {
+bool Primitive::dice(boost::shared_ptr<MicroPolygonGrid> & /* grid */, state::RenderContext & /* rc */) {
     return false;
 }
 
@@ -43,7 +43,7 @@ bool Primitive::placed(void) const {
 }
 
 void Primitive::place(const glm::mat4x4 & toEye, const glm::vec3 & color,
-    const glm::vec3 & normal, const Shading & shading) {
+    const glm::vec3 & normal, const state::Shading & shading) {
     placement_ = toEye;
     color_ = color;
     normal_ = normal;
@@ -71,7 +71,7 @@ const glm::vec3 & Primitive::normal(void) const {
     return normal_;
 }
 
-const Shading & Primitive::shading(void) const {
+const state::Shading & Primitive::shading(void) const {
     return shading_;
 }
 

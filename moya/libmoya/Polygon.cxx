@@ -11,6 +11,7 @@
 #include <api/type/geometry/Plane.h>
 #include <moya/libmoya/reyes/Hider.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cassert>
@@ -24,7 +25,6 @@
 
 #include <boost/make_shared.hpp>
 
-#include "RenderContext.h"
 #include "Vertex.h"
 
 namespace v3d::moya {
@@ -371,7 +371,7 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     Cut the polygon into four by two planes through the centre of its bound. Both are
     perpendicular to the polygon's plane, and the second is perpendicular to the first.
 */
-void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
+void Polygon::split(reyes::Hider & hider, state::RenderContext & rc) {
     // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
@@ -442,7 +442,7 @@ void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
     reyes::Hider::add() moves a diceable polygon's vertices into eye space, so the
     grid is built in eye space. The hider projects it to raster space.
 */
-bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
+bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) {
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
         side has n - 1 micropolygons a side. reyes::Hider::add() marks for splitting

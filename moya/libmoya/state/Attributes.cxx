@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 void Attributes::illuminate(const std::string & handle, bool on) {
     const std::vector<std::string>::iterator found = std::find(lit.begin(), lit.end(), handle);
@@ -24,4 +24,4 @@ bool Attributes::shines(const std::string & handle) const {
     return std::find(lit.begin(), lit.end(), handle) != lit.end();
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

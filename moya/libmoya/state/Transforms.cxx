@@ -13,7 +13,7 @@
 
 #include <glm/mat4x4.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 v3d::render::offline::MovingTransform & Transforms::current() {
     return current_;
@@ -85,4 +85,4 @@ bool Transforms::space(const std::string & name, const v3d::render::offline::Cam
     return true;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

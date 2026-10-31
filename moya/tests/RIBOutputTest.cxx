@@ -5,8 +5,8 @@
 
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -31,7 +31,7 @@ namespace {
  * A picture the image factory cannot write is reported through the context's own logger.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_failed_write_is_logged_test) {
  * The renderer reads no display parameter, so each one a scene gives is logged as not used.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_display_parameter_is_logged_test) {
  * given. RI renders the columns from ceil(8 * 0) to ceil(8 * 0.5) - 1, so columns 0 to 3.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> cropped(const std::string & hider) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Format 8 6 1\n"
         "PixelSamples 1 1\n"
@@ -82,8 +82,8 @@ void checkCropped(const v3d::render::offline::FrameBuffer & planes) {
         for (unsigned int column = 0; column < planes.width(); column++) {
             const bool inside = column < 4;
             BOOST_TEST_CONTEXT("pixel " << column << ", " << row) {
-                BOOST_TEST((planes.value(v3d::moya::Planes::RED, column, row) > 0.5F) == inside);
-                BOOST_TEST((planes.value(v3d::moya::Planes::COVERAGE, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::state::Planes::RED, column, row) > 0.5F) == inside);
+                BOOST_TEST((planes.value(v3d::moya::state::Planes::COVERAGE, column, row) > 0.5F) == inside);
             }
         }
     }
@@ -124,7 +124,7 @@ std::string covered(const char* hider) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT(hider) {
-            v3d::moya::RIBHandler handler;
+            v3d::moya::ri::RIBHandler handler;
             std::vector<float> told;
             handler.context().progress([&told](float done) {
                 told.push_back(done);
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
             BOOST_CHECK(std::is_sorted(told.begin(), told.end()));
             BOOST_CHECK_CLOSE(told.back(), 1.0F, 0.001F);
             BOOST_CHECK(!handler.context().stopped());
-            BOOST_CHECK_EQUAL(handler.context().picture()->value(v3d::moya::Planes::RED, 60, 44), 1.0F);
+            BOOST_CHECK_EQUAL(handler.context().picture()->value(v3d::moya::state::Planes::RED, 60, 44), 1.0F);
         }
     }
 }
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_progress_test) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT(hider) {
-            v3d::moya::RIBHandler handler;
+            v3d::moya::ri::RIBHandler handler;
             unsigned int told = 0;
             handler.context().progress([&told](float /*done*/) {
                 told++;
@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_stop_test) {
             BOOST_CHECK_EQUAL(told, 1U);
             BOOST_CHECK(handler.context().stopped());
             const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::RED, 60, 44), 0.0F);
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 60, 44), 0.0F);
         }
     }
 }

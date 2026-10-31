@@ -4,8 +4,8 @@
  **/
 
 #include <api/render/offline/FrameBuffer.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 
 #include <string>
 
@@ -23,7 +23,7 @@ namespace {
  * 32 and y = 0 is row 24, with y up.
  **/
 boost::shared_ptr<v3d::render::offline::FrameBuffer> render(const std::string & hider, const std::string & world) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"" + hider + "\"\n"
         "Format 64 48 1\n"
@@ -38,7 +38,7 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> render(const std::string & 
 }
 
 float red(const boost::shared_ptr<v3d::render::offline::FrameBuffer> & planes, unsigned int column, unsigned int row) {
-    return planes->value(v3d::moya::Planes::RED, column, row);
+    return planes->value(v3d::moya::state::Planes::RED, column, row);
 }
 
 BOOST_AUTO_TEST_SUITE(moya_curves)
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(a_ribbon_wider_than_a_grid_is_diced) {
  * A curve whose counts reach past its points draws nothing past them, and says so.
  **/
 BOOST_AUTO_TEST_CASE(counts_past_the_points_draw_nothing) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"

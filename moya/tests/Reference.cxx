@@ -14,11 +14,11 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -35,7 +35,7 @@
 
 namespace v3d::moya::reference {
 
-void pixelCentres(v3d::moya::RenderContext & rc) {
+void pixelCentres(v3d::moya::state::RenderContext & rc) {
     rc.sampling().samples = glm::uvec2(1, 1);
     rc.sampling().filter = v3d::render::offline::Filter::Box;
     rc.sampling().width = glm::vec2(1.0F, 1.0F);
@@ -47,7 +47,7 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
     return v;
 }
 
-void scene(v3d::moya::RenderContext & rc) {
+void scene(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     // the defaults are RI_EPSILON and RI_INFINITY, which leave the orthographic depth
@@ -73,7 +73,7 @@ v3d::moya::Vertex shaded(float x, float y, float z, const glm::vec3 & normal) {
     return v;
 }
 
-void quad(v3d::moya::RenderContext & rc, float left, float right,
+void quad(v3d::moya::state::RenderContext & rc, float left, float right,
     const glm::vec3 & outer, const glm::vec3 & inner) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     polygon->addVertex(shaded(left, -0.8F, 5.0F, outer));
@@ -90,7 +90,7 @@ void put(v3d::render::offline::rib::ParameterList* list, const std::string & nam
         std::vector<std::string>());
 }
 
-void shadedScene(v3d::moya::RenderContext & rc) {
+void shadedScene(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
@@ -127,7 +127,7 @@ void shadedScene(v3d::moya::RenderContext & rc) {
     rc.attributeEnd();
 }
 
-void focusScene(v3d::moya::RenderContext & rc, bool lens) {
+void focusScene(v3d::moya::state::RenderContext & rc, bool lens) {
     rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
     if (lens) {
@@ -181,7 +181,7 @@ float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render
     return worst;
 }
 
-void motionCamera(v3d::moya::RenderContext & rc) {
+void motionCamera(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(4, 4);
     rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
@@ -190,7 +190,7 @@ void motionCamera(v3d::moya::RenderContext & rc) {
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
 }
 
-void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]) {
+void quadAt(v3d::moya::state::RenderContext & rc, const glm::vec3 (&corners)[4]) {
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (const glm::vec3 & corner : corners) {
         polygon->addVertex(vertex(corner.x, corner.y, corner.z));
@@ -198,7 +198,7 @@ void quadAt(v3d::moya::RenderContext & rc, const glm::vec3 (&corners)[4]) {
     rc.addPolygon(polygon);
 }
 
-void motionScene(v3d::moya::RenderContext & rc) {
+void motionScene(v3d::moya::state::RenderContext & rc) {
     motionCamera(rc);
 
     rc.attributeBegin();
@@ -272,7 +272,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
 }
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     if (scene.hider != nullptr) {
         handler.context().hider(scene.hider);
     }
@@ -282,11 +282,11 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
     return handler.context().picture();
 }
 
-boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::RenderContext & rc) {
-    return rc.picture()->image(v3d::moya::Planes::CHANNELS);
+boost::shared_ptr<v3d::image::Image> picture(const v3d::moya::state::RenderContext & rc) {
+    return rc.picture()->image(v3d::moya::state::Planes::CHANNELS);
 }
 
-void raytraceCamera(v3d::moya::RenderContext & rc) {
+void raytraceCamera(v3d::moya::state::RenderContext & rc) {
     rc.hider("raytrace");
     rc.imageResolution({64, 48}, 1.0F);
     rc.clipping({.hither = 0.001F, .yon = 100.0F});
@@ -294,13 +294,13 @@ void raytraceCamera(v3d::moya::RenderContext & rc) {
     rc.setTransform(glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
 }
 
-void background(v3d::moya::RenderContext & rc, const glm::vec3 & colour) {
+void background(v3d::moya::state::RenderContext & rc, const glm::vec3 & colour) {
     v3d::render::offline::rib::ParameterList list;
     put(&list, "background", v3d::render::offline::rib::Declaration::Type::COLOR, { colour.r, colour.g, colour.b });
     rc.imager("background", list);
 }
 
-void triangleScene(v3d::moya::RenderContext & rc) {
+void triangleScene(v3d::moya::state::RenderContext & rc) {
     raytraceCamera(rc);
     pixelCentres(rc);
     background(rc, glm::vec3(0.15F, 0.25F, 0.45F));
@@ -314,7 +314,7 @@ void triangleScene(v3d::moya::RenderContext & rc) {
     rc.addPolygon(polygon);
 }
 
-void raytraceShadedScene(v3d::moya::RenderContext & rc) {
+void raytraceShadedScene(v3d::moya::state::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     raytraceCamera(rc);
     background(rc, glm::vec3(0.05F, 0.06F, 0.1F));
@@ -358,7 +358,7 @@ void raytraceShadedScene(v3d::moya::RenderContext & rc) {
     rc.attributeEnd();
 }
 
-void spheresScene(v3d::moya::RenderContext & rc) {
+void spheresScene(v3d::moya::state::RenderContext & rc) {
     typedef v3d::render::offline::rib::Declaration Declaration;
     rc.hider("raytrace");
     rc.imageResolution({64, 48}, 1.0F);
@@ -418,7 +418,7 @@ void spheresScene(v3d::moya::RenderContext & rc) {
     rc.attributeEnd();
 }
 
-void slidingQuad(v3d::moya::RenderContext & rc) {
+void slidingQuad(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(8, 8);
     rc.sampling().filter = v3d::render::offline::Filter::Box;

@@ -7,11 +7,11 @@
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/Shading.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/GridShader.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/RenderContext.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include <cmath>
 #include <string>
@@ -35,7 +35,7 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 /**
  * A context with a camera and nothing in it, ready for a shader and some lights.
  **/
-void prepare(v3d::moya::RenderContext* rc) {
+void prepare(v3d::moya::state::RenderContext* rc) {
     rc->imageResolution({64, 48}, 1.0F);
     rc->clipping({.hither = 1.0F, .yon = 100.0F});
     rc->prepareWorld();
@@ -86,11 +86,11 @@ v3d::moya::reyes::MicroPolygonGrid facing(const Surface & surface) {
  * camera faces the light head on.
  **/
 BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
     rc.surface("matte", ParameterList());
-    const v3d::moya::Shading shading = rc.shading();
+    const v3d::moya::state::Shading shading = rc.shading();
     BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
 
     v3d::moya::reyes::MicroPolygonGrid straight = facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(1.0F)});
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(moya_matte_under_one_light_test) {
  * leaves it out of the sum.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     ParameterList behind;
     // aimed back toward the camera, so it shines on the far side of a surface facing it
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_behind_the_surface_test) {
  * carried onto the grid. A scene that names no surface draws with it.
  **/
 BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.surface("constant", ParameterList());
 
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
     BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().b, 0.75F, 0.1F);
 
     // and a scene that names no surface at all draws the same thing
-    v3d::moya::RenderContext bare;
+    v3d::moya::state::RenderContext bare;
     prepare(&bare);
     v3d::moya::reyes::MicroPolygonGrid unnamed =
         facing({.normal = glm::vec3(0.0F, 0.0F, -1.0F), .colour = glm::vec3(0.25F, 0.5F, 0.75F)});
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(moya_constant_is_the_flat_colour_test) {
  * green and half as bright, so red comes from the first light alone and green from both.
  **/
 BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
 
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(moya_two_lights_test) {
  * is local to it.
  **/
 BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.lightSource({.shader = "distantlight", .handle = "key"}, ParameterList());
     rc.surface("matte", ParameterList());
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(moya_illuminate_is_an_attribute_test) {
  * where it was moved to, not from the origin.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     // two units in front of the surface, on the camera's side of it
     rc.translate(0.0F, 0.0F, 3.0F);
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_is_placed_test) {
  * block ends. The light outlives the block and can be switched on after it.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.attributeBegin();
     rc.translate(0.0F, 0.0F, 3.0F);
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(moya_a_light_runs_in_its_own_space_test) {
  * lower right corner is (1, 1).
  **/
 BOOST_AUTO_TEST_CASE(moya_ndc_runs_down_from_the_top_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     glm::mat4x4 raster(1.0F);
     glm::mat4x4 ndc(1.0F);
@@ -315,7 +315,7 @@ v3d::moya::reyes::MicroPolygonGrid plane() {
  * step between two neighbours that it gives the shader as du and dv.
  **/
 BOOST_AUTO_TEST_CASE(moya_the_grid_is_the_shape_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.surface("constant", ParameterList());
     v3d::moya::reyes::MicroPolygonGrid grid = plane();
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(moya_a_bumped_plane_test) {
         return 5.0F - (amplitude * std::sin(2.0F * pi * static_cast<float>(row) / 4.0F));
     };
 
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     ParameterList bumped;
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(moya_one_sample_of_a_small_area_light_is_a_point_light_test
     add(&bright, "intensity", Declaration::Type::FLOAT, { 3.0F });
     const glm::vec3 centre(0.5F, 0.5F, 3.0F);
 
-    v3d::moya::RenderContext area;
+    v3d::moya::state::RenderContext area;
     prepare(&area);
     area.attributeBegin();
     ParameterList once;
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(moya_one_sample_of_a_small_area_light_is_a_point_light_test
     v3d::moya::reyes::MicroPolygonGrid lit = facing(Surface());
     area.shader().shade(area.shading(), &lit);
 
-    v3d::moya::RenderContext point;
+    v3d::moya::state::RenderContext point;
     prepare(&point);
     point.pushTransform();
     point.translate(centre.x, centre.y, centre.z);
@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_CASE(moya_one_sample_of_a_small_area_light_is_a_point_light_test
  * shaded twice, with another grid shaded between, comes out the same both times.
  **/
 BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.areaLightSource({.shader = "arealight", .handle = "1"}, ParameterList());
     const boost::shared_ptr<v3d::moya::Polygon> panel = boost::make_shared<v3d::moya::Polygon>();
@@ -440,7 +440,7 @@ BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
     }
     rc.addPolygon(panel);
     rc.surface("matte", ParameterList());
-    const v3d::moya::Shading shading = rc.shading();
+    const v3d::moya::state::Shading shading = rc.shading();
 
     v3d::moya::reyes::MicroPolygonGrid first = plane();
     rc.shader().shade(shading, &first);
@@ -465,14 +465,14 @@ BOOST_AUTO_TEST_CASE(moya_an_area_light_samples_the_same_in_any_order_test) {
  * shader then runs on the moved grid.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_constant_displacement_moves_the_grid_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     ParameterList lifted;
     add(&lifted, "amount", Declaration::Type::FLOAT, { 0.25F });
     rc.displacement("lift", lifted);
     rc.surface("constant", ParameterList());
-    const v3d::moya::Shading shading = rc.shading();
+    const v3d::moya::state::Shading shading = rc.shading();
     BOOST_REQUIRE(shading.displacement.shader);
 
     v3d::moya::reyes::MicroPolygonGrid grid = plane();
@@ -492,7 +492,7 @@ BOOST_AUTO_TEST_CASE(moya_a_constant_displacement_moves_the_grid_test) {
  * A primitive with no displacement shader is left where it is.
  **/
 BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     v3d::moya::reyes::MicroPolygonGrid grid = plane();
     rc.shader().displace(rc.shading(), &grid);
@@ -505,7 +505,7 @@ BOOST_AUTO_TEST_CASE(moya_no_displacement_leaves_the_grid_test) {
  * Under a perspective camera the eye is the origin of camera space, so I is the point itself.
  **/
 BOOST_AUTO_TEST_CASE(moya_i_follows_the_projection_test) {
-    v3d::moya::RenderContext orthographic;
+    v3d::moya::state::RenderContext orthographic;
     prepare(&orthographic);
     orthographic.searchpath("data:&");
     orthographic.surface("incident", ParameterList());
@@ -516,7 +516,7 @@ BOOST_AUTO_TEST_CASE(moya_i_follows_the_projection_test) {
     BOOST_CHECK_SMALL(along.y, 0.0001F);
     BOOST_CHECK_CLOSE(along.z, 1.0F, 0.01F);
 
-    v3d::moya::RenderContext perspective;
+    v3d::moya::state::RenderContext perspective;
     perspective.projection("perspective");
     prepare(&perspective);
     perspective.searchpath("data:&");
@@ -535,7 +535,7 @@ BOOST_AUTO_TEST_CASE(moya_i_follows_the_projection_test) {
  * shader, so the two spaces differ.
  **/
 BOOST_AUTO_TEST_CASE(moya_object_space_is_the_primitives_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     rc.surface("objectspace", ParameterList());
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE(moya_object_space_is_the_primitives_test) {
  * decides. With N as its own reference, it would have stayed facing the camera.
  **/
 BOOST_AUTO_TEST_CASE(moya_faceforward_turns_by_ng_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     rc.surface("faceforwarded", ParameterList());
@@ -577,21 +577,21 @@ BOOST_AUTO_TEST_CASE(moya_faceforward_turns_by_ng_test) {
  * A surface reads an output parameter of the displacement shader that ran on its grid.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_surface_reads_its_displacement_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     rc.displacement("lifted", ParameterList());
     rc.surface("heightshown", ParameterList());
 
     v3d::moya::reyes::MicroPolygonGrid grid = facing({});
-    const v3d::moya::Shading shading = rc.shading();
+    const v3d::moya::state::Shading shading = rc.shading();
     rc.shader().displace(shading, &grid);
     rc.shader().shade(shading, &grid);
     BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.25F, 0.01F);
     BOOST_CHECK_SMALL(grid.vertex(1, 1).color().b, 0.0001F);
 
     // with no displacement shader there is nothing to read, and the surface says so in blue
-    v3d::moya::RenderContext bare;
+    v3d::moya::state::RenderContext bare;
     prepare(&bare);
     bare.searchpath("data:&");
     bare.surface("heightshown", ParameterList());
@@ -605,7 +605,7 @@ BOOST_AUTO_TEST_CASE(moya_a_surface_reads_its_displacement_test) {
  * running for. A light reads an output parameter of the surface it is lighting.
  **/
 BOOST_AUTO_TEST_CASE(moya_lights_and_surfaces_pass_messages_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     prepare(&rc);
     rc.searchpath("data:&");
     rc.lightSource({.shader = "messenger", .handle = "1"}, ParameterList());
@@ -614,7 +614,7 @@ BOOST_AUTO_TEST_CASE(moya_lights_and_surfaces_pass_messages_test) {
     rc.shader().shade(rc.shading(), &grid);
     BOOST_CHECK_CLOSE(grid.vertex(1, 1).color().r, 0.5F, 0.01F);
 
-    v3d::moya::RenderContext asked;
+    v3d::moya::state::RenderContext asked;
     prepare(&asked);
     asked.searchpath("data:&");
     asked.lightSource({.shader = "asker", .handle = "1"}, ParameterList());

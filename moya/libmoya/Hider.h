@@ -12,11 +12,14 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
+namespace v3d::moya::state {
+class RenderContext;
+};  // namespace v3d::moya::state
+
 namespace v3d::moya {
 
 class Curve;
 class Polygon;
-class RenderContext;
 
 /**
  * How moya decides what the camera sees. A scene picks the hider with the `Hider` request.
@@ -35,21 +38,21 @@ class Hider {
     virtual bool traces() const = 0;
 
     /** The world begins, and the camera is fixed. **/
-    virtual void begin(RenderContext* context) {
+    virtual void begin(state::RenderContext* context) {
         (void)context;
     }
     /**
      * A placed polygon for a hider that buckets what it draws. A hider that traces sees the
      * traced scene instead, and is given nothing.
      **/
-    virtual void add(const boost::shared_ptr<Polygon> & poly, RenderContext* context) {
+    virtual void add(const boost::shared_ptr<Polygon> & poly, state::RenderContext* context) {
         (void)poly;
         (void)context;
     }
     /**
      * A placed curve segment for a hider that buckets what it draws, as a polygon is given.
      **/
-    virtual void add(const boost::shared_ptr<Curve> & curve, RenderContext* context) {
+    virtual void add(const boost::shared_ptr<Curve> & curve, state::RenderContext* context) {
         (void)curve;
         (void)context;
     }
@@ -62,7 +65,7 @@ class Hider {
      * Draw the frame the context has gathered into its planes: colour from RED, then
      * COVERAGE and DEPTH.
      **/
-    virtual void render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) = 0;
+    virtual void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) = 0;
 
     /**
      * How many samples a pixel took in the last render, or zero for a hider that takes what

@@ -12,7 +12,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 boost::shared_ptr<v3d::render::offline::FrameBuffer> Planes::make(unsigned int width, unsigned int height) {
     auto planes = boost::make_shared<v3d::render::offline::FrameBuffer>(width, height, COVERAGE + 1);
@@ -21,4 +21,4 @@ boost::shared_ptr<v3d::render::offline::FrameBuffer> Planes::make(unsigned int w
     return planes;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

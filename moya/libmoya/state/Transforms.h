@@ -14,7 +14,7 @@
 
 #include <glm/mat4x4.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * The current transformation, the transformations TransformBegin saved, and the coordinate
@@ -58,4 +58,4 @@ class Transforms final {
     std::map<std::string, glm::mat4x4> named_;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

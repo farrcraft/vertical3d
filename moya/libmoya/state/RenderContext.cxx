@@ -21,6 +21,11 @@
 #include <api/render/offline/sl/Types.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
+#include <moya/libmoya/Curve.h>
+#include <moya/libmoya/Hider.h>
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/raytrace/Hider.h>
+#include <moya/libmoya/raytrace/Scene.h>
 #include <moya/libmoya/reyes/GridShader.h>
 #include <moya/libmoya/reyes/Hider.h>
 
@@ -40,19 +45,14 @@
 #include <glm/mat3x3.hpp>
 #include <glm/matrix.hpp>
 
-#include "Curve.h"
 #include "Display.h"
 #include "Planes.h"
-#include "Hider.h"
 #include "Lights.h"
-#include "Polygon.h"
 #include "Progress.h"
-#include "RayHider.h"
 #include "Shaders.h"
 #include "Shading.h"
-#include "TracedScene.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 glm::vec3 project(const glm::mat4x4 & matrix, const glm::vec3 & point) {
     return v3d::render::offline::sl::project(matrix, point);
@@ -166,7 +166,7 @@ void RenderContext::hider(const std::string & name) {
     if (name == "hidden") {
         hider_ = boost::make_shared<reyes::Hider>();
     } else if (name == "raytrace") {
-        hider_ = boost::make_shared<RayHider>();
+        hider_ = boost::make_shared<raytrace::Hider>();
     } else {
         logger_->get()->warn("moya has no hider named '{}', so it keeps the one it had", name);
     }
@@ -349,7 +349,6 @@ void RenderContext::scale(float sx, float sy, float sz) {
     transforms_.current().concat(glm::scale(glm::mat4x4(1.0F), glm::vec3(sx, sy, sz)));
 }
 
-
 void RenderContext::surface(const std::string & name,
     const v3d::render::offline::rib::ParameterList & parameters) {
     attributes_.surface.shader = shaders_->instance(name, v3d::render::offline::sl::ShaderType::SURFACE, parameters);
@@ -487,8 +486,8 @@ v3d::render::offline::trace::Scene & RenderContext::traced() {
     return traced_.scene();
 }
 
-TracedScene::Submission RenderContext::submission(const Shading & state) {
-    TracedScene::Submission with;
+raytrace::Scene::Submission RenderContext::submission(const Shading & state) {
+    raytrace::Scene::Submission with;
     with.transform = &transforms_.current();
     with.colour = attributes_.color;
     with.area = attributes_.areaLight.get();
@@ -575,7 +574,7 @@ void RenderContext::addCurves(const v3d::render::offline::rib::Curves & request,
     const float everywhere = constant.empty() ? 1.0F : constant.front();
     const v3d::render::offline::rib::Basis & basis = attributes_.basis;
     const Shading state = shading();
-    const TracedScene::Submission with = submission(state);
+    const raytrace::Scene::Submission with = submission(state);
     std::size_t first = 0;
     std::size_t widths = 0;
     for (const unsigned int count : request.vertices) {
@@ -675,4 +674,4 @@ void RenderContext::render() {
     display_.finish(planes_.get(), logger_);
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

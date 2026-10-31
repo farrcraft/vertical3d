@@ -5,7 +5,7 @@
 
 #include "Progress.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 void Progress::callback(const Callback & told) {
     told_ = told;
@@ -26,4 +26,4 @@ bool Progress::stopped() const noexcept {
     return stopped_;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

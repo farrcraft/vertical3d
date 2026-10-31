@@ -118,7 +118,7 @@ beside it:
 | odyssey | `out/build/x64-Debug/demos/odyssey/odyssey.exe` |
 | diorama | `out/build/x64-Debug/demos/diorama/diorama.exe` |
 | vertical3d (the editor) | `out/build/x64-Debug/vertical3d/vertical3d.exe` |
-| moya | `out/build/x64-Debug/moya/moya/moya.exe` |
+| moya | `out/build/x64-Debug/moya/moya.exe` |
 | imagetool | `out/build/x64-Debug/imagetool/imagetool.exe` |
 
 Each app writes a log, and [api/engine/README.md](../api/engine/README.md#logging) says where.
@@ -130,7 +130,7 @@ to this log. A run with no validation messages is a clean run.
 moya renders a RIB file from the command line. Run it from its own directory:
 
 ```
-cd out/build/x64-Debug/moya/moya
+cd out/build/x64-Debug/moya
 moya.exe --file data/raytrace-scene.rib --output scene.png
 ```
 

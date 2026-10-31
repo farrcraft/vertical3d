@@ -8,8 +8,8 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -29,7 +29,7 @@ namespace v3d::moya::handling {
  * counting what a frame covered, and hearing what the context logged.
  */
 
-inline bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
+inline bool read(const std::string & source, v3d::moya::ri::RIBHandler * handler) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
@@ -42,7 +42,7 @@ inline unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < planes.height(); row++) {
         for (unsigned int column = 0; column < planes.width(); column++) {
-            if (planes.value(v3d::moya::Planes::RED, column, row) > 0.5F) {
+            if (planes.value(v3d::moya::state::Planes::RED, column, row) > 0.5F) {
                 covered++;
             }
         }
@@ -97,7 +97,7 @@ class Heard {
  **/
 inline boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
     const std::string & varying) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"limits\" \"gridsize\" [" + std::to_string(grid) + "]\n"
         "Format 64 48 1\n"

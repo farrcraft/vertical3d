@@ -7,7 +7,7 @@
 
 #include <functional>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * What a render tells of how far it has got, and whether it was asked to stop.
@@ -43,4 +43,4 @@ class Progress final {
     bool stopped_ = false;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

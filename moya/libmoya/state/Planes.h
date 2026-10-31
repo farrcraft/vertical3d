@@ -11,7 +11,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * The image planes a render writes, which either hider fills and the film resolves samples
@@ -46,4 +46,4 @@ class Planes final {
     static boost::shared_ptr<v3d::render::offline::FrameBuffer> make(unsigned int width, unsigned int height);
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

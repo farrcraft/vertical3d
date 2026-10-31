@@ -8,13 +8,13 @@
 #include <api/type/geometry/AABBox.h>
 #include <moya/libmoya/reyes/Hider.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <utility>
 
-#include "RenderContext.h"
 #include "Vertex.h"
 
 #include <boost/make_shared.hpp>
@@ -101,7 +101,7 @@ v3d::type::geometry::AABBox Curve::bound(void) const {
     return box;
 }
 
-void Curve::split(reyes::Hider & hider, RenderContext & rc) {
+void Curve::split(reyes::Hider & hider, state::RenderContext & rc) {
     if (splits_ >= MOST_SPLITS) {
         return;
     }
@@ -123,7 +123,7 @@ void Curve::split(reyes::Hider & hider, RenderContext & rc) {
     }
 }
 
-bool Curve::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
+bool Curve::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) {
     // reyes::Hider::add() splits anything wider or taller than one grid, so one grid covers
     // what reaches here
     const auto across = static_cast<unsigned int>(std::sqrt(static_cast<float>(rc.gridSize())));  // checked: the root of a count is finite and no larger

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include "RayHider.h"
+#include "Hider.h"
 
 #include <api/render/offline/Camera.h>
 #include <api/render/offline/Film.h>
@@ -12,6 +12,8 @@
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/trace/Tracer.h>
 #include <api/type/geometry/Ray.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -21,10 +23,7 @@
 #include <glm/geometric.hpp>
 #include <glm/matrix.hpp>
 
-#include "Planes.h"
-#include "RenderContext.h"
-
-namespace v3d::moya {
+namespace v3d::moya::raytrace {
 
 namespace {
 
@@ -89,7 +88,7 @@ class Pass final {
  * @param depth the raster depth of a world space point, for the depth plane
  * @return false when every pixel had settled, so that nothing was cast
  **/
-bool cast(const RayHider & hider, v3d::render::offline::trace::Tracer* tracer, const v3d::render::offline::Sampler & sampler,
+bool cast(const Hider & hider, v3d::render::offline::trace::Tracer* tracer, const v3d::render::offline::Sampler & sampler,
     const v3d::render::offline::Sampling & sampling, const Pass & at, const std::function<float(const glm::vec3 &)> & depth,
     std::vector<Pixel>* pixels) {
     std::vector<v3d::render::offline::trace::Tracer::Look> looks;
@@ -143,16 +142,16 @@ bool cast(const RayHider & hider, v3d::render::offline::trace::Tracer* tracer, c
 
 };  // namespace
 
-bool RayHider::traces() const {
+bool Hider::traces() const {
     return true;
 }
 
-void RayHider::camera(const v3d::render::offline::Camera & camera) {
+void Hider::camera(const v3d::render::offline::Camera & camera) {
     camera_ = camera;
     toWorld_ = glm::inverse(camera.view);
 }
 
-glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
+glm::vec3 Hider::unproject(const glm::vec2 & raster, float z) const {
     // a raster position is (matrix * p).xy / (matrix * p).w. With p's z fixed, the numerator
     // and w are both linear in p's x and y, which gives two equations in two unknowns. Solving
     // them at a depth keeps the answer clear of the projection's depth terms. RI's default
@@ -173,7 +172,7 @@ glm::vec3 RayHider::unproject(const glm::vec2 & raster, float z) const {
     return glm::vec3(((b0 * a11) - (a01 * b1)) / determinant, ((a00 * b1) - (b0 * a10)) / determinant, z);
 }
 
-v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Sample & at,
+v3d::type::geometry::Ray Hider::ray(const v3d::render::offline::Sampler::Sample & at,
     const v3d::render::offline::Sampling & sampling) const {
     const glm::vec2 & raster = at.raster;
     const glm::vec2 & lens = at.lens;
@@ -201,16 +200,16 @@ v3d::type::geometry::Ray RayHider::ray(const v3d::render::offline::Sampler::Samp
     return v3d::type::geometry::Ray({.origin = glm::vec3(toWorld_ * glm::vec4(origin, 1.0F)), .direction = glm::vec3(toWorld_ * glm::vec4(direction, 0.0F))});
 }
 
-void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
+void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
     v3d::render::offline::Camera camera = context->camera();
     camera.width = planes->width();
     camera.height = planes->height();
     this->camera(camera);
 
     const v3d::render::offline::Sampling & sampling = context->sampling();
-    const unsigned int colour = Planes::RED;
-    const unsigned int coverage = Planes::COVERAGE;
-    const unsigned int depth = Planes::DEPTH;
+    const unsigned int colour = state::Planes::RED;
+    const unsigned int coverage = state::Planes::COVERAGE;
+    const unsigned int depth = state::Planes::DEPTH;
     const unsigned int width = camera_.width;
     const unsigned int height = camera_.height;
     taken_.assign(static_cast<std::size_t>(width) * height, 0);
@@ -227,7 +226,7 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     // the depth plane holds raster space z, as the reyes hider's does
     const std::function<float(const glm::vec3 &)> rasterDepth = [this](const glm::vec3 & point) {
         const glm::vec3 eye(camera_.view * glm::vec4(point, 1.0F));
-        return project(camera_.raster, eye).z;
+        return state::project(camera_.raster, eye).z;
     };
     /*
         A row is cast pass by pass, every unsettled pixel's set of samples as one batch. Each
@@ -256,11 +255,11 @@ void RayHider::render(RenderContext* context, v3d::render::offline::FrameBuffer*
     film.resolve(planes, colour, coverage, static_cast<int>(depth));
 }
 
-unsigned int RayHider::samplesTaken(const glm::uvec2 & pixel) const {
+unsigned int Hider::samplesTaken(const glm::uvec2 & pixel) const {
     if (pixel.x >= camera_.width || pixel.y >= camera_.height || taken_.empty()) {
         return 0;
     }
     return taken_[(static_cast<std::size_t>(pixel.y) * camera_.width) + pixel.x];
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::raytrace

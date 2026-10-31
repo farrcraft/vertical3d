@@ -27,7 +27,7 @@
 #  - readability-make-member-function-const reports Menu::next and Menu::previous, which move
 #    the active item of the level they lock out of a weak_ptr. Nothing in *this* changes, so
 #    the check is right about the physics and wrong about the meaning.
-#  - readability-non-const-parameter reports the RI entry points in moya's RenderMan.cxx.
+#  - readability-non-const-parameter reports the RI entry points in moya's ri/RenderMan.cxx.
 #    RtToken is char*, and the signature is the standard's rather than this tree's to choose.
 #  - readability-container-contains cannot be satisfied for the two command line tools.
 #    boost::program_options::variables_map inherits contains() from std::map, but the built

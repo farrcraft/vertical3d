@@ -9,8 +9,8 @@
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Ray.h>
 #include <api/render/offline/trace/Sphere.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -35,7 +35,7 @@ namespace {
  * The polygon a file names reaches RenderContext::addPolygon(), which files it in a bucket.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_polygon_test) {
  * and logs a warning. The ray hider draws spheres.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_sphere_is_skipped_test) {
  * what it traces.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -97,9 +97,9 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
         "WorldEnd\n", &handler));
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 32, 24), 1.0F, 0.01F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, 32, 24), 1.0e-6F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::BLUE, 32, 24), 1.0e-6F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 32, 24), 1.0e-6F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::BLUE, 32, 24), 1.0e-6F);
 }
 
 /**
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_mirror_traces_test) {
  * left out of the traced scene. A sphere with a positive radius in the same scene is drawn.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_sphere_with_no_size_is_skipped_test) {
  * to x = 0.79. A bound built from those two corners alone culls a quad that is on screen.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
     // the centre of column 56, row 7 is near x = 1.02 and y = 0.69, which is inside the quad
-    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 56, 7), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 56, 7), 0.5F);
 }
 
 /**
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_rotated_polygon_is_not_culled_test) {
  * first edge with a length, and a polygon too large to dice is drawn rather than lost.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
 
     BOOST_REQUIRE(read(
         "Format 64 48 1\n"
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_repeated_head_polygon_splits_test) {
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_GT(coverage(*planes), 0U);
-    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 24), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 32, 24), 0.5F);
 }
 
 /**
@@ -193,10 +193,10 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_colour_test) {
     }
     // the colours vary across the quad, so the comparison is not of two flat pictures. The
     // lower left corner is red and the upper right blue
-    BOOST_TEST(split->value(v3d::moya::Planes::RED, 14, 40) > 0.8F);
-    BOOST_TEST(split->value(v3d::moya::Planes::BLUE, 14, 40) < 0.2F);
-    BOOST_TEST(split->value(v3d::moya::Planes::BLUE, 50, 8) > 0.8F);
-    BOOST_TEST(split->value(v3d::moya::Planes::RED, 50, 8) < 0.2F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::RED, 14, 40) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::BLUE, 14, 40) < 0.2F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::BLUE, 50, 8) > 0.8F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::RED, 50, 8) < 0.2F);
 }
 
 /**
@@ -217,13 +217,13 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
 
     for (const auto & pixel : INSIDE) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
-            BOOST_CHECK_SMALL(split->value(v3d::moya::Planes::RED, pixel[0], pixel[1]) -
-                whole->value(v3d::moya::Planes::RED, pixel[0], pixel[1]), 0.04F);
+            BOOST_CHECK_SMALL(split->value(v3d::moya::state::Planes::RED, pixel[0], pixel[1]) -
+                whole->value(v3d::moya::state::Planes::RED, pixel[0], pixel[1]), 0.04F);
         }
     }
     // the left edge leans away from the light and the right faces it
-    BOOST_TEST(split->value(v3d::moya::Planes::RED, 14, 24) < 0.7F);
-    BOOST_TEST(split->value(v3d::moya::Planes::RED, 50, 24) > 0.9F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::RED, 14, 24) < 0.7F);
+    BOOST_TEST(split->value(v3d::moya::state::Planes::RED, 50, 24) > 0.9F);
 }
 
 /**
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_split_carries_normal_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
     const auto render = [](const std::string & bound) {
-        v3d::moya::RIBHandler handler;
+        v3d::moya::ri::RIBHandler handler;
         BOOST_REQUIRE(read(
             "Format 64 48 1\n"
             "PixelSamples 1 1\n"
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_bound_is_not_culled_test) {
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_test) {
     for (const char* hider : { "hidden", "raytrace" }) {
         BOOST_TEST_CONTEXT("under " << hider) {
-            v3d::moya::RIBHandler handler;
+            v3d::moya::ri::RIBHandler handler;
             BOOST_REQUIRE(read(
                 "Format 16 16 1\n"
                 "Hider \"" + std::string(hider) + "\"\n"
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displaced_shadow_follows_the_moved_shape_
  * A polygon sent before WorldBegin has no camera to be placed by, so it is logged and dropped.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     const Heard heard(handler.context().logger()->get());
 
     BOOST_REQUIRE(read(
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_polygon_before_the_world_is_dropped_test)
  * the first four corners, the hexagon's upper half, and the lower half is not drawn.
  **/
 BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"limits\" \"gridsize\" [4096]\n"
         "Format 64 48 1\n"
@@ -330,8 +330,8 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_hexagon_is_diced_whole_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
 
     // y = 0.4 and y = -0.4 in screen space fall on rows 14 and 33, both inside the hexagon
-    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 14), 0.5F);
-    BOOST_CHECK_GT(planes->value(v3d::moya::Planes::RED, 32, 33), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 32, 14), 0.5F);
+    BOOST_CHECK_GT(planes->value(v3d::moya::state::Planes::RED, 32, 33), 0.5F);
 }
 
 };  // namespace

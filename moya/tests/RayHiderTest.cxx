@@ -12,13 +12,13 @@
 #include <api/render/offline/trace/Sphere.h>
 #include <api/render/offline/trace/Triangle.h>
 #include <api/type/geometry/Ray.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RayHider.h>
-#include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/RenderMan.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/raytrace/Hider.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/ri/RenderMan.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <array>
 #include <sstream>
@@ -33,7 +33,7 @@
 
 namespace {
 
-typedef v3d::moya::Planes Planes;
+typedef v3d::moya::state::Planes Planes;
 
 /**
  * A 16 by 16 frame of an orthographic camera looking down +z from z = -1. The frame is
@@ -42,7 +42,7 @@ typedef v3d::moya::Planes Planes;
  **/
 const unsigned int SIZE = 16;
 
-void frame(v3d::moya::RenderContext & rc) {
+void frame(v3d::moya::state::RenderContext & rc) {
     rc.hider("raytrace");
     rc.imageResolution({SIZE, SIZE}, 1.0F);
     rc.clipping({.hither = 0.001F, .yon = 100.0F});
@@ -54,7 +54,7 @@ void frame(v3d::moya::RenderContext & rc) {
     rc.sampling().width = glm::vec2(1.0F, 1.0F);
 }
 
-void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & corners, const glm::vec3 & colour) {
+void triangle(v3d::moya::state::RenderContext & rc, const std::array<glm::vec3, 3> & corners, const glm::vec3 & colour) {
     rc.color(colour);
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
     for (const glm::vec3 & corner : corners) {
@@ -69,7 +69,7 @@ void triangle(v3d::moya::RenderContext & rc, const std::array<glm::vec3, 3> & co
  * A right triangle with its vertical edge at x = edge and its horizontal one at y = -0.5. At
  * the default edge of 0.5, the pixel centres either side of each edge are half a pixel from it.
  **/
-void rightTriangle(v3d::moya::RenderContext & rc, float edge = 0.5F) {
+void rightTriangle(v3d::moya::state::RenderContext & rc, float edge = 0.5F) {
     triangle(rc, {glm::vec3(-1.5F, -0.5F, 1.0F), glm::vec3(edge, -0.5F, 1.0F), glm::vec3(edge, 1.5F, 1.0F)}, glm::vec3(1.0F, 0.0F, 0.0F));
 }
 
@@ -82,7 +82,7 @@ void checkPixel(const v3d::render::offline::FrameBuffer & planes,
     }
 }
 
-bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
+bool read(const std::string & source, v3d::moya::ri::RIBHandler * handler) {
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
     std::istringstream stream(source);
     return reader.read(stream, handler);
@@ -92,7 +92,7 @@ bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
  * The frame at the RI defaults with a PixelVariance, and a triangle whose vertical edge falls
  * through the middle of column 12 rather than between two columns.
  **/
-void adaptive(v3d::moya::RenderContext & rc) {
+void adaptive(v3d::moya::state::RenderContext & rc) {
     frame(rc);
     rc.sampling() = v3d::render::offline::Sampling();
     rc.sampling().variance = 0.001F;
@@ -106,7 +106,7 @@ void adaptive(v3d::moya::RenderContext & rc) {
  * hider as it was, so a scene written for another renderer still renders.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     BOOST_CHECK(!rc.raytracing());
     rc.hider("raytrace");
     BOOST_CHECK(rc.raytracing());
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(rayhider_hider_is_chosen_by_name_test) {
 BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
     RiBegin(RI_NULL);
     RiHider(const_cast<char*>("raytrace"), RI_NULL);
-    BOOST_CHECK(static_cast<v3d::moya::RIBHandler*>(RiGetContext())->context().raytracing());
+    BOOST_CHECK(static_cast<v3d::moya::ri::RIBHandler*>(RiGetContext())->context().raytracing());
     RiEnd();
 }
 
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(rayhider_renderman_hider_test) {
  * tell a pixel the scene never reached from a black one.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(rc);
     rc.prepareWorld();
     rc.render();
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(rayhider_empty_scene_test) {
 }
 
 BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(rc);
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(rayhider_triangle_test) {
  * bucketed.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(rc);
     rc.prepareWorld();
     rightTriangle(rc);
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(rayhider_buckets_nothing_test) {
 }
 
 BOOST_AUTO_TEST_CASE(rayhider_nearest_hit_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(rc);
     rc.prepareWorld();
     rc.surface("constant", v3d::render::offline::rib::ParameterList());
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
     float depth[2] = { 0.0F, 0.0F };
     const char* const hiders[2] = { "hidden", "raytrace" };
     for (unsigned int i = 0; i < 2; i++) {
-        v3d::moya::RenderContext rc;
+        v3d::moya::state::RenderContext rc;
         frame(rc);
         rc.hider(hiders[i]);
         rc.prepareWorld();
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(rayhider_depth_matches_reyes_test) {
  * wide, so the samples of the pixels either side reach it. One well inside is covered whole.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(rc);
     rc.sampling() = v3d::render::offline::Sampling();
     rc.prepareWorld();
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sampled_edge_coverage_test) {
  * whose samples are red and black, takes more, up to four times the first set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     adaptive(rc);
     rc.render();
 
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
     BOOST_CHECK_LE(rc.samplesTaken({12, 8}), 16U);
 
     // and a variance of zero, the default, takes the first set everywhere
-    v3d::moya::RenderContext plain;
+    v3d::moya::state::RenderContext plain;
     adaptive(plain);
     plain.sampling().variance = 0.0F;
     plain.render();
@@ -264,10 +264,10 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_sampling_test) {
  * one scene are the same.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
-    v3d::moya::RenderContext first;
+    v3d::moya::state::RenderContext first;
     adaptive(first);
     first.render();
-    v3d::moya::RenderContext second;
+    v3d::moya::state::RenderContext second;
     adaptive(second);
     second.render();
 
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE(rayhider_adaptive_is_repeatable_test) {
  * [0, 2], and a quad at x in [0, 1] fills the left half of the picture.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -311,7 +311,7 @@ BOOST_AUTO_TEST_CASE(rayhider_off_centre_screen_window_test) {
  * screen.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 16 16 1\n"
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE(rayhider_scaling_camera_test) {
  * polygon restores what it saved, so only the translation after the block moves the polygon.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -361,7 +361,7 @@ BOOST_AUTO_TEST_CASE(rayhider_polygon_is_fanned_test) {
  * "N" is the shading normal and overrides it, and Ng stays the plane.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normals_test) {
  * normal leans the opposite way to the points.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE(rayhider_normal_inverse_transpose_test) {
  * current, and is met where the transformation put it.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(rayhider_sphere_test) {
  * two primitives lights them differently. Primitives made under the same lights share one set.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Hider \"raytrace\"\n"
         "Format 32 16 1\n"
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(rayhider_lights_per_primitive_test) {
  * the middle of an uncentred screen window. The ray starts on the near plane.
  **/
 BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.imageResolution({32, 16}, 1.0F);
     rc.screenWindow({.left = -0.5F, .right = 1.5F, .bottom = -1.0F, .top = 1.0F});
     rc.clipping({.hither = 0.1F, .yon = 100.0F});
@@ -475,13 +475,13 @@ BOOST_AUTO_TEST_CASE(rayhider_inverts_the_projection_test) {
     rc.prepareWorld();
 
     const v3d::render::offline::Camera & camera = rc.camera();
-    v3d::moya::RayHider hider;
+    v3d::moya::raytrace::Hider hider;
     hider.camera(camera);
 
     for (const glm::vec2 & raster : { glm::vec2(3.5F, 2.5F), glm::vec2(30.0F, 14.0F), glm::vec2(16.0F, 8.0F) }) {
         const v3d::type::geometry::Ray ray = hider.ray({.raster = raster, .lens = glm::vec2(0.0F)}, rc.sampling());
         BOOST_CHECK_CLOSE(ray.origin().z, 0.1F, 0.01F);
-        const glm::vec3 projected = v3d::moya::project(camera.raster, ray.origin() + ray.direction() * 5.0F);
+        const glm::vec3 projected = v3d::moya::state::project(camera.raster, ray.origin() + ray.direction() * 5.0F);
         BOOST_CHECK_CLOSE(projected.x, raster.x, 0.01F);
         BOOST_CHECK_CLOSE(projected.y, raster.y, 0.01F);
     }
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE(rayhider_vertex_colours_test) {
     const char* const hiders[2] = { "hidden", "raytrace" };
     glm::vec3 seen[2][2];
     for (unsigned int i = 0; i < 2; i++) {
-        v3d::moya::RenderContext rc;
+        v3d::moya::state::RenderContext rc;
         frame(rc);
         rc.hider(hiders[i]);
         rc.prepareWorld();
@@ -545,7 +545,7 @@ BOOST_AUTO_TEST_CASE(rayhider_motion_from_nothing_test) {
     const char* hiders[2] = { "hidden", "raytrace" };
     for (const char* hider : hiders) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::RIBHandler handler;
+            v3d::moya::ri::RIBHandler handler;
             BOOST_REQUIRE(read(
                 std::string("Hider \"") + hider + "\"\n"
                 "Format 16 16 1\n"

@@ -15,7 +15,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 /**
  * The attributes a primitive is submitted under: everything RiAttributeBegin saves and
@@ -54,4 +54,4 @@ class Attributes final {
     bool shines(const std::string & handle) const;
 };
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

@@ -17,7 +17,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 
 Shaders::Shaders(const boost::shared_ptr<v3d::log::Logger> & logger) :
     library_(boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger)),
@@ -58,4 +58,4 @@ v3d::render::offline::Textures & Shaders::textures() {
     return *textures_;
 }
 
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state

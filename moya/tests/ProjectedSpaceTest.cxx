@@ -15,10 +15,10 @@
 #include <api/render/offline/trace/Tracer.h>
 #include <api/type/geometry/Ray.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RayHider.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
+#include <moya/libmoya/raytrace/Hider.h>
 #include <moya/libmoya/reyes/GridShader.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <sstream>
 #include <string>
@@ -105,7 +105,7 @@ Answers run(v3d::render::offline::sl::runtime::Renderer* renderer) {
  * origin so that world and camera space differ. The ray hider's scene holds a wall four units
  * in front of the camera, for a hit to shade at.
  **/
-void frame(v3d::moya::RenderContext* rc) {
+void frame(v3d::moya::state::RenderContext* rc) {
     rc->hider("raytrace");
     rc->imageResolution({64, 48}, 1.0F);
     rc->clipping({.hither = 0.1F, .yon = 100.0F});
@@ -127,7 +127,7 @@ void frame(v3d::moya::RenderContext* rc) {
 /**
  * The hit the camera's central ray makes on the wall.
  **/
-v3d::render::offline::trace::Hit centre(v3d::moya::RenderContext* rc) {
+v3d::render::offline::trace::Hit centre(v3d::moya::state::RenderContext* rc) {
     const v3d::type::geometry::Ray ray({.origin = glm::vec3(-0.5F, 0.0F, -2.0F), .direction = glm::vec3(0.0F, 0.0F, 1.0F)});
     v3d::render::offline::trace::Hit hit;
     BOOST_REQUIRE_MESSAGE(rc->traced().nearest(ray, 0.0F, &hit), "the ray missed the wall");
@@ -143,7 +143,7 @@ v3d::render::offline::trace::Hit centre(v3d::moya::RenderContext* rc) {
  * and raster y is (1 + 0.1) / 2 * 48 = 26.4, counted down from the top.
  **/
 BOOST_AUTO_TEST_CASE(moya_raster_space_divides_by_w_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(&rc);
     const Answers answers = run(&rc.shader());
 
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(moya_raster_space_divides_by_w_test) {
     BOOST_CHECK_CLOSE(answers.raster.y, 26.4F, 0.01F);
 
     // the ray the ray hider casts through that raster position passes through the point
-    v3d::moya::RayHider hider;
+    v3d::moya::raytrace::Hider hider;
     hider.camera(rc.camera());
     const v3d::type::geometry::Ray ray = hider.ray(
         {.raster = glm::vec2(answers.raster), .lens = glm::vec2(0.0F)}, rc.sampling());
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(moya_raster_space_divides_by_w_test) {
  * and 1 at the far one. The screen matrix's z and w are divided here by hand.
  **/
 BOOST_AUTO_TEST_CASE(moya_depth_divides_by_w_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(&rc);
     const Answers answers = run(&rc.shader());
 
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(moya_depth_divides_by_w_test) {
  * A cast from raster space is the same inverse.
  **/
 BOOST_AUTO_TEST_CASE(moya_raster_space_round_trips_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(&rc);
     const Answers answers = run(&rc.shader());
 
@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(moya_raster_space_round_trips_test) {
  * space, which this camera moves off camera space.
  **/
 BOOST_AUTO_TEST_CASE(moya_projected_spaces_agree_between_the_hiders_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(&rc);
     const Answers grid = run(&rc.shader());
 
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(moya_projected_spaces_agree_between_the_hiders_test) {
  * point moved back by that translate.
  **/
 BOOST_AUTO_TEST_CASE(moya_a_named_space_answers_under_both_hiders_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     frame(&rc);
     rc.translate(1.0F, 2.0F, 3.0F);
     rc.saveCoordinateSystem("lamp");
