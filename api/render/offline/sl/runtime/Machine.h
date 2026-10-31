@@ -311,6 +311,28 @@ class Machine final {
 
     /** One pass over a range of the instructions, used by both run() and initialise(). **/
     bool execute(const Program & program, const Range & range);
+    /** Empty the stacks and what the last run printed, with every lane live and lit. **/
+    void begin();
+    /**
+     * Run a jump, a branch, or a mask's push or pop.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t branch(const Instruction & instruction, std::size_t pc);
+    /**
+     * Run an instruction that opens, tests, restores, ends or leaves a loop.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t iterate(const Instruction & instruction, std::size_t pc);
+    /** Run the entry to, the exit from, or a return out of an inlined function body. **/
+    void inlined(const Instruction & instruction);
+    /**
+     * Run an instruction of an illuminance loop, or a light shader's illuminate or solar.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t illuminance(const Instruction & instruction, std::size_t pc);
 
     bool live(unsigned int point) const;
     bool anyLive() const;

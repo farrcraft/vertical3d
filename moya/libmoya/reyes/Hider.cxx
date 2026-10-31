@@ -145,6 +145,56 @@ void Hider::add(const boost::shared_ptr<Curve> & curve, state::RenderContext* co
     buckets_->add(curve, bound);
 }
 
+Hider::Bound Hider::rasterBound(const glm::mat4x4 & screen, const Bound & grown, const Bound & surface, Primitive* primitive,
+    Bound* measured) {
+    // all eight corners of the eye space bound are projected, because under a perspective
+    // projection the raster extremes need not lie at two diagonal corners. A corner at or
+    // behind the eye has no raster position. It is left out, and the primitive is split. The
+    // test on w is the one project() makes before it divides
+    glm::vec3 raster_min(std::numeric_limits<float>::max());
+    glm::vec3 raster_max(std::numeric_limits<float>::lowest());
+    glm::vec3 measured_min(std::numeric_limits<float>::max());
+    glm::vec3 measured_max(std::numeric_limits<float>::lowest());
+    bool projected = false;
+    for (int k = 0; k < 8; k++) {
+        const glm::vec3 corner = boxCorner(grown.min, grown.max, k);
+        if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
+            primitive->diceable(false);
+            continue;
+        }
+        const glm::vec3 point = state::project(screen, corner);
+        raster_min = glm::min(raster_min, point);
+        raster_max = glm::max(raster_max, point);
+        projected = true;
+        const glm::vec3 inner = state::project(screen, boxCorner(surface.min, surface.max, k));
+        measured_min = glm::min(measured_min, inner);
+        measured_max = glm::max(measured_max, inner);
+    }
+    if (!projected) {
+        // no corner is in front of the eye. The primitive is split, and its pieces are
+        // bucketed again, so the first bucket holds it until then
+        raster_min = glm::vec3(0.0F);
+        raster_max = glm::vec3(0.0F);
+    }
+    measured->min = measured_min;
+    measured->max = measured_max;
+    return Bound{.min = raster_min, .max = raster_max};
+}
+
+void Hider::sizeTest(const Bound & measured, const state::RenderContext & context, Primitive* primitive) {
+    // a primitive already marked for splitting needs no size test
+    if (primitive->diceable()) {
+        // a raster bound wider or taller than one grid's side is split. A grid has context->gridSize()
+        // micropolygons, and RI states the shading rate as the area of one in pixels, so a
+        // side is sqrt(context->gridSize() * context->shadingRate()) pixels
+        const float size = std::sqrt(static_cast<float>(context.gridSize()) * context.shadingRate());
+        const glm::vec3 bound_size = measured.max - measured.min;
+        if ((bound_size[0] > size) || (bound_size[1] > size)) {
+            primitive->diceable(false);
+        }
+    }
+}
+
 bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & objectBound, state::RenderContext* context,
     v3d::type::geometry::AABBox* raster, float reach) {
     const v3d::render::offline::Camera & camera = context->camera();
@@ -216,51 +266,12 @@ bool Hider::measure(Primitive & primitive, const v3d::type::geometry::AABBox & o
     // raster applies after screen, so it is on the left: a matrix applies to what is on its
     // right
     const glm::mat4x4 screen = camera.raster;
-    // all eight corners of the eye space bound are projected, because under a perspective
-    // projection the raster extremes need not lie at two diagonal corners. A corner at or
-    // behind the eye has no raster position. It is left out, and the primitive is split. The
-    // test on w is the one project() makes before it divides
-    glm::vec3 raster_min(std::numeric_limits<float>::max());
-    glm::vec3 raster_max(std::numeric_limits<float>::lowest());
-    glm::vec3 measured_min(std::numeric_limits<float>::max());
-    glm::vec3 measured_max(std::numeric_limits<float>::lowest());
-    bool projected = false;
-    for (int k = 0; k < 8; k++) {
-        const glm::vec3 corner = boxCorner(bound_min, bound_max, k);
-        if ((screen * glm::vec4(corner, 1.0F)).w <= v3d::render::offline::sl::SMALLEST_W) {
-            primitive.diceable(false);
-            continue;
-        }
-        const glm::vec3 point = state::project(screen, corner);
-        raster_min = glm::min(raster_min, point);
-        raster_max = glm::max(raster_max, point);
-        projected = true;
-        const glm::vec3 inner = state::project(screen, boxCorner(surface_min, surface_max, k));
-        measured_min = glm::min(measured_min, inner);
-        measured_max = glm::max(measured_max, inner);
-    }
-    if (!projected) {
-        // no corner is in front of the eye. The primitive is split, and its pieces are
-        // bucketed again, so the first bucket holds it until then
-        raster_min = glm::vec3(0.0F);
-        raster_max = glm::vec3(0.0F);
-    }
-    bound_min = raster_min;
-    bound_max = raster_max;
+    Bound measured;
+    const Bound projected = rasterBound(screen, Bound{.min = bound_min, .max = bound_max},
+        Bound{.min = surface_min, .max = surface_max}, &primitive, &measured);
+    bound.extents(projected.min, projected.max);
 
-    bound.extents(bound_min, bound_max);
-
-    // a primitive already marked for splitting needs no size test
-    if (primitive.diceable()) {
-        // a raster bound wider or taller than one grid's side is split. A grid has context->gridSize()
-        // micropolygons, and RI states the shading rate as the area of one in pixels, so a
-        // side is sqrt(context->gridSize() * context->shadingRate()) pixels
-        const float size = std::sqrt(static_cast<float>(context->gridSize()) * context->shadingRate());
-        const glm::vec3 bound_size = measured_max - measured_min;
-        if ((bound_size[0] > size) || (bound_size[1] > size)) {
-            primitive.diceable(false);
-        }
-    }
+    sizeTest(measured, *context, &primitive);
     *raster = bound;
     return true;
 }

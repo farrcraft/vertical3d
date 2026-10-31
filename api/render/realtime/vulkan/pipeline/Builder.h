@@ -238,6 +238,20 @@ class Builder final {
     std::vector<VkDynamicState> dynamics() const;
 
  private:
+    /**
+     * Check that the builder was given what every pipeline needs: a shader stage, a defined
+     * format for each colour attachment, and a depth format when depth is tested or written.
+     * @throw std::runtime_error naming what is missing
+     **/
+    void validate() const;
+    /**
+     * Create a pipeline layout from the descriptor set layouts and the push constant range.
+     * The caller owns it.
+     * @throw std::runtime_error if Vulkan cannot create it
+     **/
+    VkPipelineLayout createLayout() const;
+    VkPipelineDepthStencilStateCreateInfo depthStencil() const;
+
     boost::shared_ptr<device::Device> device_;
     std::string name_;
 

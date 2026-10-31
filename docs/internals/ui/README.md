@@ -200,7 +200,7 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
   writes the dressing every frame turns the cache off.
 - `lookup(theme, class, name)` returns the named style, or the first style of the class when
   the name is empty.
-- Button skins are not cached. `ComponentRenderer::skin()` walks the theme's button styles of
+- Button skins are not cached. `paint::internal::Skin::draw()` walks the theme's button styles of
   the component's style name and picks the one whose `style::Button::State` matches `look()`.
 - `style::Button::State` is the theme's own enum (normal, hover, press, disabled).
   `component::Button::ButtonState` is the cursor's transient state. `look()` in

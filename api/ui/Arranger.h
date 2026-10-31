@@ -32,6 +32,9 @@ class Resolver;
 namespace component {
 class Box;
 class Button;
+class CheckBox;
+class Label;
+class SelectList;
 class TabBar;
 class Toolbar;
 };  // namespace component
@@ -197,6 +200,26 @@ class Arranger final {
     float row(const component::menu::Item* item) const;
 
  private:
+    /**
+     * A label's natural size: the width of its text, and a line, or the rows it wraps into
+     * when it is given a width.
+     **/
+    glm::vec2 labelSize(const component::Label& label, const v3d::type::geometry::Bound2D& room) const;
+
+    /**
+     * A check box's or a radio button's natural size: the mark, the gap after it and the
+     * label, on a row as tall as the taller of the mark and a line of text.
+     **/
+    glm::vec2 markSize(const component::CheckBox& box) const;
+
+    /**
+     * A select list's natural size. Its width is its widest row. Its height is the room it is
+     * offered, and that decides how many rows it shows.
+     *
+     * The list is not const because it caches the width of its widest row.
+     **/
+    glm::vec2 listSize(component::SelectList* list, const v3d::type::geometry::Bound2D& room) const;
+
     /**
      * @return the serial the next arranger takes. It starts at one because a list that has never
      *      been measured holds zero

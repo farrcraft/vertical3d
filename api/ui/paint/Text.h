@@ -67,4 +67,15 @@ typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)
  **/
 std::vector<std::string> wrap(std::string_view line, float width, const Measure& measure);
 
+/**
+ * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
+ **/
+inline constexpr float WIDGET_BASELINE = 0.7F;
+
+/**
+ * How far down a line of text its baseline sits, as a fraction of the line height. The rest
+ * is room for descenders.
+ **/
+inline constexpr float LINE_BASELINE = 0.75F;
+
 };  // namespace v3d::ui::paint

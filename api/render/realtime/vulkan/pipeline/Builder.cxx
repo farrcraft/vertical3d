@@ -246,7 +246,7 @@ std::vector<VkDynamicState> Builder::dynamics() const {
 
 /**
  **/
-Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
+void Builder::validate() const {
     if (stages_.empty()) {
         std::stringstream msg;
         msg << "The " << name_ << " pipeline was built with no shader stages";
@@ -266,6 +266,45 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
         msg << "The " << name_ << " pipeline tests or writes depth but was built with no depth format";
         throw std::runtime_error(msg.str());
     }
+}
+
+/**
+ **/
+VkPipelineLayout Builder::createLayout() const {
+    VkPushConstantRange push{};
+    push.stageFlags = pushStages_;
+    push.offset = 0;
+    push.size = pushBytes_;
+
+    VkPipelineLayoutCreateInfo layout{};
+    layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layout.setLayoutCount = static_cast<uint32_t>(sets_.size());
+    layout.pSetLayouts = sets_.empty() ? nullptr : sets_.data();
+    layout.pushConstantRangeCount = pushBytes_ > 0 && pushStages_ != 0 ? 1 : 0;
+    layout.pPushConstantRanges = layout.pushConstantRangeCount != 0 ? &push : nullptr;
+
+    VkPipelineLayout created = VK_NULL_HANDLE;
+    const VkResult result = vkCreatePipelineLayout(device_->handle(), &layout, nullptr, &created);
+    device::check(result, "Unable to create the " + name_ + " pipeline layout");
+    return created;
+}
+
+/**
+ **/
+VkPipelineDepthStencilStateCreateInfo Builder::depthStencil() const {
+    VkPipelineDepthStencilStateCreateInfo depth{};
+    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth.depthTestEnable = depthTest_ ? VK_TRUE : VK_FALSE;
+    depth.depthWriteEnable = depthWrite_ ? VK_TRUE : VK_FALSE;
+    depth.depthCompareOp = depthCompare_;
+    depth.maxDepthBounds = 1.0F;
+    return depth;
+}
+
+/**
+ **/
+Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
+    validate();
 
     VkDevice device = device_->handle();
 
@@ -283,24 +322,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     // destroys it, so the failure path below frees a layout only when this builder made it
     const bool ownsLayout = layout_ == VK_NULL_HANDLE;
 
-    VkPushConstantRange push{};
-    push.stageFlags = pushStages_;
-    push.offset = 0;
-    push.size = pushBytes_;
-
-    VkPipelineLayoutCreateInfo layout{};
-    layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layout.setLayoutCount = static_cast<uint32_t>(sets_.size());
-    layout.pSetLayouts = sets_.empty() ? nullptr : sets_.data();
-    layout.pushConstantRangeCount = built.pushStages != 0 ? 1 : 0;
-    layout.pPushConstantRanges = built.pushStages != 0 ? &push : nullptr;
-
-    if (ownsLayout) {
-        const VkResult result = vkCreatePipelineLayout(device, &layout, nullptr, &built.layout);
-        device::check(result, "Unable to create the " + name_ + " pipeline layout");
-    } else {
-        built.layout = layout_;
-    }
+    built.layout = ownsLayout ? createLayout() : layout_;
 
     VkPipelineVertexInputStateCreateInfo input{};
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -324,12 +346,7 @@ Pipeline Builder::build(const boost::shared_ptr<Cache>& cache) const {
     multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    VkPipelineDepthStencilStateCreateInfo depth{};
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.depthTestEnable = depthTest_ ? VK_TRUE : VK_FALSE;
-    depth.depthWriteEnable = depthWrite_ ? VK_TRUE : VK_FALSE;
-    depth.depthCompareOp = depthCompare_;
-    depth.maxDepthBounds = 1.0F;
+    const VkPipelineDepthStencilStateCreateInfo depth = depthStencil();
 
     const VkPipelineColorBlendAttachmentState attachment = colourBlend();
 

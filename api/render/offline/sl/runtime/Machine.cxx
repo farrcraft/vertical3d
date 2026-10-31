@@ -597,9 +597,7 @@ bool Machine::run() {
     return true;
 }
 
-bool Machine::execute(const Program & program, const Range & range) {
-    const std::size_t from = range.from;
-    const std::size_t until = range.until;
+void Machine::begin() {
     error_.clear();
     printed_.clear();
     masks_.assign(1, std::vector<char>(batch_, 1));
@@ -609,10 +607,136 @@ bool Machine::execute(const Program & program, const Range & range) {
     // every point is lit until an illuminate or a solar narrows the set, so a light shader
     // with neither lights the whole batch
     lit_.assign(batch_, 1);
+}
 
-    std::size_t pc = from;
+std::size_t Machine::branch(const Instruction & instruction, std::size_t pc) {
+    switch (instruction.opcode) {
+        case Opcode::JUMP:
+            return static_cast<std::size_t>(instruction.target);
+        case Opcode::JUMP_IF_ZERO:
+            if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0F) {
+                return static_cast<std::size_t>(instruction.target);
+            }
+            break;
+        case Opcode::MASK:
+        case Opcode::MASK_NOT:
+            mask(instruction, instruction.opcode == Opcode::MASK);
+            // an arm that no lane took is skipped after the push
+            if (!anyLive()) {
+                return static_cast<std::size_t>(instruction.target);
+            }
+            break;
+        default:
+            masks_.pop_back();
+            break;
+    }
+    return pc + 1;
+}
+
+std::size_t Machine::iterate(const Instruction & instruction, std::size_t pc) {
+    switch (instruction.opcode) {
+        case Opcode::LOOP: {
+            Loop loop;
+            loop.lanes = masks_.back();
+            loop.depth = masks_.size();
+            loop.exit = instruction.target;
+            loops_.push_back(loop);
+            masks_.push_back(loops_.back().lanes);
+            break;
+        }
+        case Opcode::LOOP_TEST:
+            narrow(instruction);
+            if (!anyLive()) {
+                return static_cast<std::size_t>(loops_.back().exit);
+            }
+            break;
+        case Opcode::LOOP_RESTORE:
+            masks_.back() = loops_.back().lanes;
+            if (!anyLive()) {
+                return static_cast<std::size_t>(loops_.back().exit);
+            }
+            break;
+        case Opcode::LOOP_END:
+            // a lane that took a continue comes back for the next iteration. A lane that
+            // took a break does not, because break cleared it from the loop's own lanes
+            masks_.back() = loops_.back().lanes;
+            return static_cast<std::size_t>(anyLive() ? instruction.target : loops_.back().exit);
+        case Opcode::POP_LOOP:
+            masks_.pop_back();
+            loops_.pop_back();
+            break;
+        case Opcode::BREAK:
+            leave(true);
+            break;
+        default:
+            leave(false);
+            break;
+    }
+    return pc + 1;
+}
+
+void Machine::inlined(const Instruction & instruction) {
+    switch (instruction.opcode) {
+        case Opcode::ENTER: {
+            Frame frame;
+            frame.masks = masks_.size();
+            frame.loops = loops_.size();
+            frames_.push_back(frame);
+            masks_.push_back(masks_.back());
+            break;
+        }
+        case Opcode::LEAVE:
+            // the lanes that returned are live again, because they have finished the
+            // function and not the shader
+            masks_.resize(frames_.back().masks);
+            loops_.resize(frames_.back().loops);
+            frames_.pop_back();
+            break;
+        default:
+            // like a break, a return does not jump. It clears its lanes from every mask
+            // and loop inside the function body. The rest of the body runs with those
+            // lanes off, and LEAVE makes them live again
+            finish();
+            break;
+    }
+}
+
+std::size_t Machine::illuminance(const Instruction & instruction, std::size_t pc) {
+    switch (instruction.opcode) {
+        case Opcode::ILLUMINANCE: {
+            Loop loop;
+            loop.lanes = masks_.back();
+            loop.depth = masks_.size();
+            loop.exit = instruction.target;
+            loops_.push_back(loop);
+            Illumination round;
+            round.loop = loops_.size() - 1;
+            round.direction = instruction.left;
+            round.colour = instruction.right;
+            round.arguments = instruction.arguments;
+            illuminations_.push_back(round);
+            break;
+        }
+        case Opcode::POP_ILLUMINANCE:
+            illuminations_.pop_back();
+            loops_.pop_back();
+            break;
+        default:
+            // each narrows the batch to the points one light reaches, and skips the
+            // body when the light reaches none of them
+            if (!admit(instruction)) {
+                return static_cast<std::size_t>(instruction.target);
+            }
+            break;
+    }
+    return pc + 1;
+}
+
+bool Machine::execute(const Program & program, const Range & range) {
+    begin();
+    std::size_t pc = range.from;
     std::size_t steps = 0;
-    while (pc < until) {
+    while (pc < range.until) {
         if (++steps > LIMIT) {
             error_ = "the shader '" + program.name + "' ran without end";
             at_ = nullptr;
@@ -658,114 +782,33 @@ bool Machine::execute(const Program & program, const Range & range) {
                 builtin(instruction);
                 break;
             case Opcode::JUMP:
-                pc = static_cast<std::size_t>(instruction.target);
-                continue;
             case Opcode::JUMP_IF_ZERO:
-                if (file_[static_cast<std::size_t>(instruction.left)].number(0) == 0.0F) {
-                    pc = static_cast<std::size_t>(instruction.target);
-                    continue;
-                }
-                break;
             case Opcode::MASK:
             case Opcode::MASK_NOT:
-                mask(instruction, instruction.opcode == Opcode::MASK);
-                // an arm that no lane took is skipped after the push
-                if (!anyLive()) {
-                    pc = static_cast<std::size_t>(instruction.target);
-                    continue;
-                }
-                break;
             case Opcode::POP_MASK:
-                masks_.pop_back();
-                break;
-            case Opcode::LOOP: {
-                Loop loop;
-                loop.lanes = masks_.back();
-                loop.depth = masks_.size();
-                loop.exit = instruction.target;
-                loops_.push_back(loop);
-                masks_.push_back(loops_.back().lanes);
-                break;
-            }
-            case Opcode::LOOP_TEST:
-                narrow(instruction);
-                if (!anyLive()) {
-                    pc = static_cast<std::size_t>(loops_.back().exit);
-                    continue;
-                }
-                break;
-            case Opcode::LOOP_RESTORE:
-                masks_.back() = loops_.back().lanes;
-                if (!anyLive()) {
-                    pc = static_cast<std::size_t>(loops_.back().exit);
-                    continue;
-                }
-                break;
-            case Opcode::LOOP_END:
-                // a lane that took a continue comes back for the next iteration. A lane that
-                // took a break does not, because break cleared it from the loop's own lanes
-                masks_.back() = loops_.back().lanes;
-                pc = static_cast<std::size_t>(anyLive() ? instruction.target : loops_.back().exit);
+                pc = branch(instruction, pc);
                 continue;
+            case Opcode::LOOP:
+            case Opcode::LOOP_TEST:
+            case Opcode::LOOP_RESTORE:
+            case Opcode::LOOP_END:
             case Opcode::POP_LOOP:
-                masks_.pop_back();
-                loops_.pop_back();
-                break;
             case Opcode::BREAK:
-                leave(true);
-                break;
             case Opcode::CONTINUE:
-                leave(false);
-                break;
-            case Opcode::ENTER: {
-                Frame frame;
-                frame.masks = masks_.size();
-                frame.loops = loops_.size();
-                frames_.push_back(frame);
-                masks_.push_back(masks_.back());
-                break;
-            }
+                pc = iterate(instruction, pc);
+                continue;
+            case Opcode::ENTER:
             case Opcode::LEAVE:
-                // the lanes that returned are live again, because they have finished the
-                // function and not the shader
-                masks_.resize(frames_.back().masks);
-                loops_.resize(frames_.back().loops);
-                frames_.pop_back();
+            case Opcode::RETURN:
+                inlined(instruction);
                 break;
-            case Opcode::ILLUMINANCE: {
-                Loop loop;
-                loop.lanes = masks_.back();
-                loop.depth = masks_.size();
-                loop.exit = instruction.target;
-                loops_.push_back(loop);
-                Illumination round;
-                round.loop = loops_.size() - 1;
-                round.direction = instruction.left;
-                round.colour = instruction.right;
-                round.arguments = instruction.arguments;
-                illuminations_.push_back(round);
-                break;
-            }
+            case Opcode::ILLUMINANCE:
             case Opcode::ILLUMINANCE_NEXT:
             case Opcode::ILLUMINATE:
             case Opcode::SOLAR:
-                // each narrows the batch to the points one light reaches, and skips the
-                // body when the light reaches none of them
-                if (!admit(instruction)) {
-                    pc = static_cast<std::size_t>(instruction.target);
-                    continue;
-                }
-                break;
             case Opcode::POP_ILLUMINANCE:
-                illuminations_.pop_back();
-                loops_.pop_back();
-                break;
-            case Opcode::RETURN:
-                // like a break, a return does not jump. It clears its lanes from every mask
-                // and loop inside the function body. The rest of the body runs with those
-                // lanes off, and LEAVE makes them live again
-                finish();
-                break;
+                pc = illuminance(instruction, pc);
+                continue;
         }
         pc++;
     }

@@ -73,6 +73,9 @@ CheckOptions:
   # author wrote: a straight run of assertions with no branch in it reaches 37. Nothing in this
   # tree's own macros branches, so counting them buys nothing anywhere else either.
   readability-function-cognitive-complexity.IgnoreMacros: 'true'
+  # A function longer than 100 lines does several steps, and each step deserves a name. The
+  # check sets no limit on lines unless it is given one.
+  readability-function-size.LineThreshold: '100'
   # The check already ignores std::bad_alloc, since running out of memory is not a defect in the
   # function that allocates. MSVC's debug library throws std::bad_array_new_length, a kind of
   # bad_alloc, from the size check of every allocation, including the proxy that moving a string

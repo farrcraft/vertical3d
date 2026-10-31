@@ -81,10 +81,11 @@ scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics sta
 
 **The RI C entry points in `ri/RenderMan.cxx` are an adapter over `RIBHandler`.** Each converts
 its arguments into the request the handler takes and passes it on, so a C call and a file's
-request follow the same rules. The conversion is all an entry point does: RI_NULL becomes the
-empty name, a filter function becomes a `Filter`, and the untyped parameter arrays become a list
-typed by the handler's declarations. The reader cannot call the C entry points instead, because
-most take varargs and a `va_list` cannot be built at run time.
+request follow the same rules. The conversion is all an entry point does. `ri::internal::Converter`
+holds each conversion: RI_NULL becomes the empty name, a filter function becomes a `Filter`, and
+the untyped parameter arrays become a list typed by the handler's declarations. Arguments the RIB
+reader would refuse in a file skip the request. The reader cannot call the C entry points instead,
+because most take varargs and a `va_list` cannot be built at run time.
 
 - `moya::ri::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
   pops it. The active handler receives every call, and `RiGetContext`'s handle is the handler.

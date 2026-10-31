@@ -128,7 +128,7 @@ class Resolver final {
     /**
      * The active theme's style of a class, as style::lookup() finds it. Not cached.
      *
-     * A button's skin is chosen by state as well as by name, so ComponentRenderer searches
+     * A button's skin is chosen by state as well as by name, so the renderer's skin searches
      * the theme for it directly. Class::Button resolves only a button's focus ring. Like
      * every other class, it takes the first matching style of the class, because the ring
      * shows keyboard focus, not the button's state.
@@ -167,6 +167,24 @@ class Resolver final {
      * Work out one class's answer from a style, over the base.
      **/
     paint::Dressing dress(Class className, const std::string_view& name) const;
+
+    /**
+     * Read the properties one class names from its style over a dressing. The focus ring,
+     * which every class reads, is left to dress().
+     **/
+    void readClass(Class className, const boost::shared_ptr<Style>& style, paint::Dressing* into) const;
+
+    /**
+     * Read a size from a style, when it names one, multiplied by scale(). A theme gives sizes
+     * in logical pixels.
+     **/
+    void metric(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const;
+
+    /**
+     * Read an outline's width from a style, when it names one, scaled the way
+     * Dressing::outline() scales one.
+     **/
+    void width(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const;
 
     boost::shared_ptr<Theme> theme_;
     paint::Dressing base_;

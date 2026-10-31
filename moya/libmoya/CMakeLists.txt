@@ -7,6 +7,7 @@ add_library("v3dlib_moya"
 	"ri/RenderMan.h" "ri/RenderMan.cxx"
 	"ri/RIBHandler.h" "ri/RIBHandler.cxx"
 	"ri/Renderer.h" "ri/Renderer.cxx"
+	"ri/internal/Converter.h" "ri/internal/Converter.cxx"
 
 	"state/Attributes.h" "state/Attributes.cxx"
 	"state/Display.h" "state/Display.cxx"

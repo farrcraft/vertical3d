@@ -8,28 +8,23 @@
 #include "Renderer.h"
 
 #include <api/render/offline/Sampling.h>
-#include <api/render/offline/rib/Arguments.h>
-#include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
-#include <moya/libmoya/state/RenderContext.h>
+#include <moya/libmoya/ri/internal/Converter.h>
 
 #include <stdarg.h>
 
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include <glm/gtc/type_ptr.hpp>
-
 /*
     Each entry point turns its arguments into the request rib::Handler takes, and passes it to
     the active handler. The handler applies RI's rules, the same ones it applies to a file. An
-    entry point converts and nothing more: RI_NULL becomes the empty name, a C filter function
-    becomes a Filter, and untyped parameter arrays become a typed list.
+    entry point converts its arguments with Converter and does nothing more.
 */
+
+using v3d::moya::ri::internal::Converter;
 
 namespace {
 
@@ -45,52 +40,9 @@ v3d::moya::ri::RIBHandler& handler() {
     return renderer().active();
 }
 
-/**
- * A name as the handler takes it. RI_NULL is the empty name, which the handler ignores
- * wherever RI needs a name, and reads as RI's meaning for null elsewhere.
- **/
-std::string text(const char* token) {
-    return token != RI_NULL ? std::string(token) : std::string();
-}
-
-/**
- * Read a variadic parameter list into the two arrays the vector form takes.
- *
- * RI terminates the list with RI_NULL, because a va_list carries no count. A variadic entry
- * point that calls this has no body of its own. It hands the arrays to its vector form, so
- * the two forms of a request cannot drift apart.
- **/
-void collect(va_list arguments, std::vector<RtToken>* tokens, std::vector<RtPointer>* parms) {
-    for (;;) {
-        RtToken token = va_arg(arguments, RtToken);
-        if (token == RI_NULL) {
-            return;
-        }
-        tokens->push_back(token);
-        parms->push_back(va_arg(arguments, RtPointer));
-    }
-}
-
-/**
- * A parameter list, typed by what the active handler has declared.
- *
- * @param vertices how many vertices the request's primitive has, which bounds a varying or a
- *        vertex array. A request that is not geometry has one, because a uniform value is one
- *        element whatever it is attached to
- **/
-v3d::render::offline::rib::ParameterList parameters(RtInt n, RtToken tokens[], RtPointer parms[],
-    unsigned int vertices = 1) {
-    v3d::moya::ri::RIBHandler & active = handler();
-    v3d::render::offline::rib::ParameterList list;
-    std::vector<std::string> unresolved;
-    v3d::render::offline::rib::arguments(active.declarations(), n, tokens, parms, vertices, &list,
-        &unresolved);
-    for (const std::string & name : unresolved) {
-        // a name with no declaration has no length either, so it is dropped rather than
-        // read past, as the RIB reader does for a file
-        active.context().logger()->get()->warn("RI parameter '{}' was not declared and was skipped", name);
-    }
-    return list;
+/** The conversions of an entry point's arguments, reading the active handler. **/
+Converter converter() {
+    return Converter(renderer());
 }
 
 /**
@@ -114,22 +66,13 @@ RtLightHandle light(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[], 
         nothing on or off.
     */
     const std::string handle = std::to_string(renderer().nextLight());
-    const v3d::render::offline::rib::LightSource request = {.shader = text(name), .handle = handle};
+    const v3d::render::offline::rib::LightSource request = {.shader = Converter::text(name), .handle = handle};
     if (area) {
-        handler().areaLightSource(request, parameters(n, tokens, parms));
+        handler().areaLightSource(request, converter().parameters(n, tokens, parms));
     } else {
-        handler().lightSource(request, parameters(n, tokens, parms));
+        handler().lightSource(request, converter().parameters(n, tokens, parms));
     }
     return keep(handle);
-}
-
-/*
-    An RtMatrix is sixteen floats in RI's row major order under a row vector convention;
-    glm stores column major under a column vector one, so reading them in order is the
-    change of convention and a transpose would undo it.
-*/
-glm::mat4x4 matrix(RtMatrix transform) {
-    return glm::make_mat4(&transform[0][0]);
 }
 
 };  // namespace
@@ -298,13 +241,13 @@ RtVoid RiContext(RtContextHandle handle) {
 
 // RI returns the token the name now stands for. In this renderer the token is the name
 RtToken RiDeclare(char * name, char * declaration) {
-    handler().declare({.name = text(name), .type = text(declaration)});
+    handler().declare({.name = Converter::text(name), .type = Converter::text(declaration)});
     return name;
 }
 
 // RiBegin pushes a new context and makes it active
 RtVoid RiBegin(RtToken name) {
-    renderer().begin(text(name));
+    renderer().begin(Converter::text(name));
 }
 
 // RiEnd pops the active context, and the one beneath it becomes active. With no context
@@ -331,13 +274,9 @@ RtVoid RiWorldEnd(void) {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-    // a side the RIB reader would refuse is refused here too, and the request is skipped
-    const std::optional<uint32_t> width = v3d::render::offline::formatSide(static_cast<float>(xres));
-    const std::optional<uint32_t> height = v3d::render::offline::formatSide(static_cast<float>(yres));
-    if (!width || !height) {
-        return;
+    if (const std::optional<v3d::render::offline::rib::Format> request = Converter::format(glm::ivec2(xres, yres), aspect)) {
+        handler().format(*request);
     }
-    handler().format({.width = *width, .height = *height, .pixelAspect = aspect});
 }
 
 RtVoid RiFrameAspectRatio(RtFloat aspect) {
@@ -358,13 +297,13 @@ RtVoid RiProjection(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiProjectionV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().projection(text(name), parameters(n, tokens, parms));
+    handler().projection(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiClipping(RtFloat hither, RtFloat yon) {
@@ -394,27 +333,9 @@ RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
 }
 
 RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-    // the C interface names a filter by its function, and only the filters RI declares are
-    // known. Any other function skips the request
-    v3d::render::offline::Filter filter = v3d::render::offline::Filter::Gaussian;
-    if (filterfunc == RiBoxFilter) {
-        filter = v3d::render::offline::Filter::Box;
-    } else if (filterfunc == RiTriangleFilter) {
-        filter = v3d::render::offline::Filter::Triangle;
-    } else if (filterfunc == RiCatmullRomFilter) {
-        filter = v3d::render::offline::Filter::CatmullRom;
-    } else if (filterfunc == RiGaussianFilter) {
-        filter = v3d::render::offline::Filter::Gaussian;
-    } else if (filterfunc == RiSincFilter) {
-        filter = v3d::render::offline::Filter::Sinc;
-    } else {
-        return;
+    if (const std::optional<v3d::render::offline::Filter> filter = Converter::filter(filterfunc, xwidth, ywidth)) {
+        handler().pixelFilter(*filter, xwidth, ywidth);
     }
-    // a width the RIB reader would refuse is refused here too, and the request is skipped
-    if (!v3d::render::offline::filterWidth(glm::vec2(xwidth, ywidth))) {
-        return;
-    }
-    handler().pixelFilter(filter, xwidth, ywidth);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -426,13 +347,13 @@ RtVoid RiImager(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiImagerV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().imager(text(name), parameters(n, tokens, parms));
+    handler().imager(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -444,14 +365,14 @@ RtVoid RiDisplay(char *name, RtToken type, RtToken mode, ...) {
     va_start(arguments, mode);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiDisplayV(name, type, mode, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiDisplayV(char *name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().display({.name = text(name), .type = text(type), .mode = text(mode)}, parameters(n, tokens, parms));
+    handler().display({.name = Converter::text(name), .type = Converter::text(type), .mode = Converter::text(mode)}, converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiHider(RtToken type, ...) {
@@ -459,13 +380,13 @@ RtVoid RiHider(RtToken type, ...) {
     va_start(arguments, type);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiHiderV(type, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().hider(text(type), parameters(n, tokens, parms));
+    handler().hider(Converter::text(type), converter().parameters(n, tokens, parms));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -480,13 +401,13 @@ RtVoid RiOption(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiOptionV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().option(text(name), parameters(n, tokens, parms));
+    handler().option(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiAttributeBegin(void) {
@@ -515,7 +436,7 @@ RtLightHandle RiLightSource(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     return RiLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
@@ -529,7 +450,7 @@ RtLightHandle RiAreaLightSource(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     return RiAreaLightSourceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
@@ -539,7 +460,7 @@ RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPoin
 }
 
 RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
-    handler().illuminate(text(static_cast<const char*>(light)), onoff != RI_FALSE);
+    handler().illuminate(Converter::text(static_cast<const char*>(light)), onoff != RI_FALSE);
 }
 
 RtVoid RiSurface(RtToken name, ...) {
@@ -547,13 +468,13 @@ RtVoid RiSurface(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiSurfaceV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().surface(text(name), parameters(n, tokens, parms));
+    handler().surface(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiAtmosphere(RtToken name, ...) {
@@ -611,11 +532,11 @@ RtVoid RiIdentity(void) {
 }
 
 RtVoid RiTransform(RtMatrix transform) {
-    handler().transform(matrix(transform));
+    handler().transform(Converter::matrix(transform));
 }
 
 RtVoid RiConcatTransform(RtMatrix transform) {
-    handler().concatTransform(matrix(transform));
+    handler().concatTransform(Converter::matrix(transform));
 }
 
 RtVoid RiPerspective(RtFloat fov) {
@@ -649,21 +570,21 @@ RtVoid RiDisplacement(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiDisplacementV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().displacement(text(name), parameters(n, tokens, parms));
+    handler().displacement(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiCoordinateSystem(RtToken space) {
-    handler().coordinateSystem(text(space));
+    handler().coordinateSystem(Converter::text(space));
 }
 
 RtVoid RiCoordSysTransform(RtToken space) {
-    handler().coordSysTransform(text(space));
+    handler().coordSysTransform(Converter::text(space));
 }
 
 RtPoint * RiTransformPoints(RtToken /* fromspace */, RtToken /* tospace */, RtInt /* n */, RtPoint /* points */[]) {
@@ -683,13 +604,13 @@ RtVoid RiAttribute(RtToken name, ...) {
     va_start(arguments, name);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiAttributeV(name, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
 RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().attribute(text(name), parameters(n, tokens, parms));
+    handler().attribute(Converter::text(name), converter().parameters(n, tokens, parms));
 }
 
 RtVoid RiPolygon(RtInt nverts, ...) {
@@ -697,7 +618,7 @@ RtVoid RiPolygon(RtInt nverts, ...) {
     va_start(arguments, nverts);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiPolygonV(nverts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
@@ -706,7 +627,7 @@ RtVoid RiPolygon(RtInt nverts, ...) {
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
     const unsigned int vertices = static_cast<unsigned int>(std::max(nverts, 0));
-    handler().polygon(vertices, parameters(n, tokens, parms, vertices));
+    handler().polygon(vertices, converter().parameters(n, tokens, parms, vertices));
 }
 
 RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {
@@ -720,32 +641,16 @@ RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
     va_start(arguments, verts);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiPointsPolygonsV(npolys, nverts, verts, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-// a vertex or varying value is one element per point the faces index, so the arrays are as
-// long as the largest index plus one. A count or an index below zero skips the request
 RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
-    v3d::render::offline::rib::PointsPolygons request;
-    std::size_t total = 0;
-    for (RtInt each = 0; each < npolys; each++) {
-        if (nverts[each] < 0) {
-            return;
-        }
-        request.counts.push_back(static_cast<unsigned int>(nverts[each]));
-        total += static_cast<std::size_t>(nverts[each]);
-    }
     unsigned int points = 0;
-    for (std::size_t each = 0; each < total; each++) {
-        if (verts[each] < 0) {
-            return;
-        }
-        request.indices.push_back(static_cast<unsigned int>(verts[each]));
-        points = std::max(points, request.indices.back() + 1);
+    if (const std::optional<v3d::render::offline::rib::PointsPolygons> request = Converter::pointsPolygons(npolys, nverts, verts, &points)) {
+        handler().pointsPolygons(*request, converter().parameters(n, tokens, parms, points));
     }
-    handler().pointsPolygons(request, parameters(n, tokens, parms, points));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -756,23 +661,10 @@ RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtI
 RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
 }
 
-// RI's own order is row by row, and a Basis holds a matrix the same way. A step outside 1 to 4 is
-// not one a basis has, and the request is dropped
 RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
-    if (ustep < 1 || ustep > 4 || vstep < 1 || vstep > 4) {
-        handler().context().logger()->get()->warn("RiBasis steps by {} and {}, and a basis steps by 1 to 4", ustep, vstep);
-        return;
+    if (const std::optional<v3d::render::offline::rib::Basis> request = converter().basis(ubasis, ustep, vbasis, vstep)) {
+        handler().basis(*request);
     }
-    v3d::render::offline::rib::Basis request;
-    for (std::size_t row = 0; row < 4; row++) {
-        for (std::size_t column = 0; column < 4; column++) {
-            request.u[(row * 4) + column] = ubasis[row][column];
-            request.v[(row * 4) + column] = vbasis[row][column];
-        }
-    }
-    request.ustep = static_cast<unsigned int>(ustep);
-    request.vstep = static_cast<unsigned int>(vstep);
-    handler().basis(request);
 }
 
 RtVoid RiPatch(RtToken type, ...) {
@@ -810,7 +702,7 @@ RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
 // a quadric has a varying value at each of the four corners of its parameter space
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    handler().sphere({.radius = radius, .zmin = zmin, .zmax = zmax, .thetamax = tmax}, parameters(n, tokens, parms, 4));
+    handler().sphere({.radius = radius, .zmin = zmin, .zmax = zmax, .thetamax = tmax}, converter().parameters(n, tokens, parms, 4));
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -873,42 +765,16 @@ RtVoid RiCurves(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, .
     va_start(arguments, wrap);
     std::vector<RtToken> tokens;
     std::vector<RtPointer> parms;
-    collect(arguments, &tokens, &parms);
+    Converter::collect(arguments, &tokens, &parms);
     va_end(arguments);
     RiCurvesV(type, nvcurves, nvertices, wrap, static_cast<RtInt>(tokens.size()), tokens.data(), parms.data());
 }
 
-// Only "P" and "constantwidth" are read. How many values a varying parameter holds depends on
-// the basis's step, and the arrays here carry no length, so any other parameter is skipped
-// rather than read past
 RtVoid RiCurvesV(RtToken type, RtInt nvcurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[], RtPointer parms[]) {
-    const std::string kind = text(type);
-    const std::string wrapping = text(wrap);
-    if ((kind != "linear" && kind != "cubic") || (wrapping != "periodic" && wrapping != "nonperiodic")) {
-        handler().context().logger()->get()->warn("RiCurves takes linear or cubic and periodic or nonperiodic, not {} and {}", kind, wrapping);
-        return;
-    }
-    v3d::render::offline::rib::Curves request{ .cubic = kind == "cubic", .periodic = wrapping == "periodic" };
     unsigned int total = 0;
-    for (RtInt each = 0; each < nvcurves; each++) {
-        if (nvertices[each] < 0) {
-            return;
-        }
-        request.vertices.push_back(static_cast<unsigned int>(nvertices[each]));
-        total += static_cast<unsigned int>(nvertices[each]);
+    if (const std::optional<v3d::render::offline::rib::Curves> request = converter().curves(type, nvcurves, nvertices, wrap, &total)) {
+        handler().curves(*request, converter().curveParameters(n, tokens, parms, total));
     }
-    std::vector<RtToken> kept;
-    std::vector<RtPointer> values;
-    for (RtInt each = 0; each < n; each++) {
-        const std::string name = text(tokens[each]);
-        if (name == "P" || name == "constantwidth") {
-            kept.push_back(tokens[each]);
-            values.push_back(parms[each]);
-        } else {
-            handler().context().logger()->get()->warn("RiCurves reads \"P\" and \"constantwidth\", and skips '{}'", name);
-        }
-    }
-    handler().curves(request, parameters(static_cast<RtInt>(kept.size()), kept.data(), values.data(), total));
 }
 
 RtVoid RiPoints(RtInt nverts, ...) {
@@ -954,14 +820,10 @@ RtVoid RiObjectInstance(RtObjectHandle handle) {
 }
 
 RtVoid RiMotionBegin(RtInt n, ...) {
-    // n times follow, each promoted to a double on its way through the ellipsis
+    // n times follow
     va_list arguments;
     va_start(arguments, n);
-    std::vector<float> times;
-    times.reserve(static_cast<std::size_t>(std::max(n, 0)));
-    for (RtInt i = 0; i < n; i++) {
-        times.push_back(static_cast<float>(va_arg(arguments, double)));
-    }
+    const std::vector<float> times = Converter::times(arguments, n);
     va_end(arguments);
     handler().motionBegin(times);
 }

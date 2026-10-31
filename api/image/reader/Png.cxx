@@ -42,6 +42,31 @@ void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
     cursor->at += wanted;
 }
 
+/**
+ * Register the transformations that turn any png into 8 bits a channel, in RGB or RGBA.
+ *
+ * Nothing here owns memory, so a png_error in it can longjmp past this frame.
+ **/
+void expandToRgb(png_structp png, png_infop info) {
+    const int bpp = png_get_bit_depth(png, info);
+    const int colors = png_get_color_type(png, info);
+    if (bpp == 16) {
+        png_set_strip_16(png);
+    }
+    if (colors == PNG_COLOR_TYPE_PALETTE) {
+        png_set_expand(png);
+    }
+    if (bpp < 8) {
+        png_set_expand(png);
+    }
+    if (png_get_valid(png, info, PNG_INFO_tRNS) != 0) {
+        png_set_expand(png);
+    }
+    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
+        png_set_gray_to_rgb(png);
+    }
+}
+
 };  // namespace
 
 /**
@@ -101,34 +126,16 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     // read all PNG info up to image data
     png_read_info(png_ptr, info_ptr);
 
-    // get width, height, bit-depth and color-type
-    png_uint_32 width;
-    png_uint_32 height;
-    int bpp;
-    int colors;
-    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
-
-    // convert to 3x8 RGB if necessary
-    if (bpp == 16) {
-        png_set_strip_16(png_ptr);
-    }
-    if (colors == PNG_COLOR_TYPE_PALETTE) {
-        png_set_expand(png_ptr);
-    }
-    if (bpp < 8) {
-        png_set_expand(png_ptr);
-    }
-    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0) {
-        png_set_expand(png_ptr);
-    }
-    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
-        png_set_gray_to_rgb(png_ptr);
-    }
+    expandToRgb(png_ptr, info_ptr);
 
     // after the transformations have been registered update info_ptr data
     png_read_update_info(png_ptr, info_ptr);
 
     // get width, height and the new bit-depth and color-type
+    png_uint_32 width;
+    png_uint_32 height;
+    int bpp;
+    int colors;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
     // row_bytes is the width x number of channels

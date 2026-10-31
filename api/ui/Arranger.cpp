@@ -104,19 +104,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
     switch (component.type()) {
         case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
-            if (label == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            const float line = measure_(label->text());
-            // a label given a width wraps to it. Its natural height is then the height of the
-            // rows it wraps into, which an Auto height resolves to
-            if (component.layout().width.unit() == Length::Unit::Auto) {
-                return glm::vec2(line, styles_.base().lineHeight);
-            }
-            const float width = component.layout().width.resolve({.extent = room.size().x, .own = line});
-            const std::size_t rows = paint::wrap(label->text(), width, measure_).size();
-            return glm::vec2(line,
-                styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
+            return label == nullptr ? glm::vec2(0.0F, 0.0F) : labelSize(*label, room);
         }
         case component::Type::Icon:
             // an icon given no size is a square the height of a strip
@@ -128,43 +116,12 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
         }
         case component::Type::CheckBox:
         case component::Type::RadioButton: {
-            // the mark, the gap after it and the label, on a row as tall as the taller of
-            // the mark and a line of text
             const auto* box = dynamic_cast<const component::CheckBox*>(&component);
-            if (box == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            // measured with its own style class, because the mark is drawn at the size that
-            // class sets, which can differ from the base
-            const paint::Dressing& dress = styles_.resolve(
-                component.type() == component::Type::RadioButton
-                    ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
-                component.style());
-            const float text = box->label().empty() ? 0.0F
-                : (dress.padding * 0.5F) + measure_(box->label());
-            return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
+            return box == nullptr ? glm::vec2(0.0F, 0.0F) : markSize(*box);
         }
         case component::Type::SelectList: {
-            // a list's natural width is its widest row. Its height is the room it is offered,
-            // and that decides how many rows it shows
             auto* list = dynamic_cast<component::SelectList*>(&component);
-            if (list == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            // this measures every row, and the result changes only when the rows or the
-            // measure do. The list caches it against this arranger's serial, because an
-            // arranger holds one measure, and drops it when it is given new rows
-            float widest = list->widest(serial_);
-            if (widest < 0.0F) {
-                widest = 0.0F;
-                for (const std::string& item : list->items()) {
-                    widest = std::max(widest, measure_(item));
-                }
-                list->widest({.width = widest, .measure = serial_});
-            }
-            return glm::vec2(
-                widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,
-                room.size().y);
+            return list == nullptr ? glm::vec2(0.0F, 0.0F) : listSize(list, room);
         }
         case component::Type::TextBox: {
             // a text box is as wide as the room it is in and as tall as one line. Its text
@@ -205,6 +162,54 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
     // every enumerator is handled above and the switch carries no default, so C4062 names
     // this function when a component type is added
     return room.size();
+}
+
+/**
+ **/
+glm::vec2 Arranger::labelSize(const component::Label& label, const v3d::type::geometry::Bound2D& room) const {
+    const float line = measure_(label.text());
+    // a label given a width wraps to it. Its natural height is then the height of the
+    // rows it wraps into, which an Auto height resolves to
+    if (label.layout().width.unit() == Length::Unit::Auto) {
+        return glm::vec2(line, styles_.base().lineHeight);
+    }
+    const float width = label.layout().width.resolve({.extent = room.size().x, .own = line});
+    const std::size_t rows = paint::wrap(label.text(), width, measure_).size();
+    return glm::vec2(line,
+        styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
+}
+
+/**
+ **/
+glm::vec2 Arranger::markSize(const component::CheckBox& box) const {
+    // measured with its own style class, because the mark is drawn at the size that
+    // class sets, which can differ from the base
+    const paint::Dressing& dress = styles_.resolve(
+        box.type() == component::Type::RadioButton
+            ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
+        box.style());
+    const float text = box.label().empty() ? 0.0F
+        : (dress.padding * 0.5F) + measure_(box.label());
+    return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
+}
+
+/**
+ **/
+glm::vec2 Arranger::listSize(component::SelectList* list, const v3d::type::geometry::Bound2D& room) const {
+    // this measures every row, and the result changes only when the rows or the
+    // measure do. The list caches it against this arranger's serial, because an
+    // arranger holds one measure, and drops it when it is given new rows
+    float widest = list->widest(serial_);
+    if (widest < 0.0F) {
+        widest = 0.0F;
+        for (const std::string& item : list->items()) {
+            widest = std::max(widest, measure_(item));
+        }
+        list->widest({.width = widest, .measure = serial_});
+    }
+    return glm::vec2(
+        widest + styles_.resolve(style::Resolver::Class::List, list->style()).padding,
+        room.size().y);
 }
 
 /**

@@ -12,6 +12,7 @@
 #include <api/ui/style/Resolver.h>
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -64,6 +65,12 @@ class Menu;
 };  // namespace v3d::ui
 
 namespace v3d::ui::paint {
+
+namespace internal {
+class Easing;
+class MenuRenderer;
+class Skin;
+};  // namespace internal
 
 /**
  * Draws the ui onto a canvas of quads.
@@ -303,12 +310,6 @@ class ComponentRenderer {
      **/
     static glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour);
     /**
-     * The colour a menu item's label is written in, in a centred menu and in a dropped panel
-     * alike. An item that cannot be used, or one in a menu that cannot be, is written in the
-     * disabled colour even while it is the active one, because navigation does not activate it.
-     **/
-    static glm::vec4 itemInk(const boost::shared_ptr<component::menu::Item>& item, const Dressing& dress, bool selected);
-    /**
      * How many segments a radio button's disc is drawn with. Small enough to cost little at
      * the size a mark is drawn, large enough that the rim does not read as a polygon.
      **/
@@ -319,61 +320,9 @@ class ComponentRenderer {
      **/
     static constexpr float markFill = 0.5F;
     /**
-     * How far in from the edge of a skinned button the corner images reach, when the
-     * style names no corner of its own. A texture carries no size a handle can be asked
-     * for, so this is a number rather than something measured.
-     **/
-    static constexpr float defaultCorner = 8.0F;
-    /**
-     * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
-     **/
-    static constexpr float widgetBaseline = 0.7F;
-    /**
-     * How far down a line of text its baseline sits, as a fraction of the line height. The rest
-     * is room for descenders.
-     **/
-    static constexpr float lineBaseline = 0.75F;
-    /**
-     * The half side of the square that marks a checked menu item, as a fraction of a line.
-     **/
-    static constexpr float checkMarkScale = 0.15F;
-    /**
-     * The radius of the arrow that marks a submenu, as a fraction of a line.
-     **/
-    static constexpr float submenuArrowScale = 0.18F;
-    /**
      * How far a tooltip's text sits in from its edges, as a fraction of a line.
      **/
     static constexpr float tooltipInset = 0.4F;
-
-    /**
-     * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark
-     * or icon, its submenu arrow, its label and its shortcut.
-     *
-     * @param panel the panel's box, which the row spans
-     * @param keys the item's shortcut, or empty for none
-     **/
-    void entry(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Item>& item,
-        const v3d::type::geometry::Bound2D& panel, bool selected, const std::string& keys) const;
-
-    /**
-     * Draw a separator: a rule across a menu at a height, between two edges.
-     **/
-    void rule(v3d::render::realtime::canvas::Canvas* canvas, float left, float right, float middle) const;
-
-    /**
-     * Draw the shadow a menu's box casts, moved down by the dressing's offset.
-     **/
-    void cast(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max) const;
-
-    /**
-     * Draw one dropped panel of a menu bar, leaving every item holding its own row.
-     *
-     * @param origin where the panel's top left corner would go, before it is moved to
-     *      keep it on the canvas
-     **/
-    void panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu,
-        const glm::vec2& origin) const;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is
@@ -390,50 +339,20 @@ class ComponentRenderer {
         const boost::shared_ptr<Component>& component) const;
 
     /**
-     * Draw the nine images a button style names over the button's box - the four corners
-     * at their own size, the four edges stretched along it, and the centre over the rest.
-     *
-     * @return false when the theme names no image for that button in that state, and a
-     *      flat button is drawn instead
-     **/
-    bool skin(v3d::render::realtime::canvas::Canvas* canvas, const component::Button& button,
-        const glm::vec2& min, const glm::vec2& max) const;
-
-    /**
      * The colours and metrics before any component's own style class is applied over
      * them. The parts of the ui with no style class of their own are drawn with these:
-     * a menu panel, a toolbar strip, a label.
+     * a toolbar strip, a label, a tooltip.
      **/
     const Dressing& base() const noexcept;
-
-    /**
-     * Ease a colour toward what is asked for, or fade it out in its own colour when nothing
-     * is, over the hover duration.
-     **/
-    glm::vec4 toward(Transition* transition, const glm::vec4& target) const;
-    glm::vec4 away(Transition* transition) const;
-
-    /**
-     * How far open something is, from 0 to 1, easing out so it slows as it lands.
-     **/
-    float opened(Opening* opening) const;
-
-    /**
-     * Draw a menu's panel, and everything in it, faded and lifted by how far it has opened.
-     * Every begin() is matched by an end().
-     **/
-    void begin(v3d::render::realtime::canvas::Canvas* canvas, float open) const;
-    static void end(v3d::render::realtime::canvas::Canvas* canvas);
 
     Measure measure_;
     Write write_;
     style::Resolver styles_;
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;
-    Clock clock_;
-    Shortcut shortcut_;
-    // whether clock() has been called, without which nothing eases
-    bool timed_;
+    std::unique_ptr<internal::Easing> easing_;
+    std::unique_ptr<internal::Skin> skin_;
+    std::unique_ptr<internal::MenuRenderer> menus_;
 };
 
 };  // namespace v3d::ui::paint

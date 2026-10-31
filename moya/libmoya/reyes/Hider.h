@@ -111,6 +111,23 @@ class Hider final : public moya::Hider {
     static void fillVertices(Polygon* poly);
 
     /**
+     * Project the eight corners of two eye space bounds into raster space. A corner at or
+     * behind the eye marks the primitive for splitting.
+     *
+     * @param grown the bound the primitive is culled and bucketed by
+     * @param surface the bound before it was grown, whose raster bound is written to measured
+     * @return the raster bound of grown, which is zero when no corner is in front of the eye
+     **/
+    static Bound rasterBound(const glm::mat4x4 & screen, const Bound & grown, const Bound & surface, Primitive* primitive,
+        Bound* measured);
+
+    /**
+     * Mark a primitive for splitting when its raster bound is wider or taller than one grid.
+     * A primitive already marked is left as it is.
+     **/
+    static void sizeTest(const Bound & measured, const state::RenderContext & context, Primitive* primitive);
+
+    /**
      * Measure a placed primitive by its bound in object space: cull it, mark whether it can be
      * diced, and give its bound in raster space.
      *

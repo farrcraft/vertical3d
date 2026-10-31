@@ -67,6 +67,10 @@ jobs:
     - name: File-local code
       if: ${{ !cancelled() }}
       run: node scripts/filelocal.ts
+    # no C++ file but a test is longer than 1000 lines
+    - name: File length
+      if: ${{ !cancelled() }}
+      run: node scripts/filelength.ts
     - name: Prose
       if: ${{ !cancelled() }}
       run: node scripts/prose.ts --base "$GATE_BASE"

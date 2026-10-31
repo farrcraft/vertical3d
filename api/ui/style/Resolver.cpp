@@ -174,22 +174,32 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
     if (!style) {
         return dressing;
     }
-    // a theme gives sizes in logical pixels, which the screen's scale multiplies
-    const auto metric = [this](const boost::shared_ptr<Style>& from, const std::string& key, float* into) {
-        if (from->property(key, "number")) {
-            float read = 0.0F;
-            readMetric(from, key, &read);
-            *into = read * scale_;
-        }
-    };
-    const auto width = [this](const boost::shared_ptr<Style>& from, const std::string& key, float* into) {
-        if (from->property(key, "number")) {
-            float read = 0.0F;
-            readMetric(from, key, &read);
-            *into = paint::Dressing::outline(read, scale_);
-        }
-    };
+    readClass(className, style, &dressing);
+    // every class may override the focus ring, so it is read once here for all of them.
+    // A class naming neither property draws the base's ring
+    readColour(style, "focus", &dressing.focus);
+    width(style, "focus-width", &dressing.focusWidth);
+    return dressing;
+}
 
+void Resolver::metric(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const {
+    if (from->property(key, "number")) {
+        float read = 0.0F;
+        readMetric(from, key, &read);
+        *into = read * scale_;
+    }
+}
+
+void Resolver::width(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const {
+    if (from->property(key, "number")) {
+        float read = 0.0F;
+        readMetric(from, key, &read);
+        *into = paint::Dressing::outline(read, scale_);
+    }
+}
+
+void Resolver::readClass(Class className, const boost::shared_ptr<Style>& style, paint::Dressing* into) const {
+    paint::Dressing& dressing = *into;
     switch (className) {
         case Class::Panel:
             readColour(style, "background", &dressing.panel);
@@ -269,14 +279,9 @@ paint::Dressing Resolver::dress(Class className, const std::string_view& name) c
             break;
         case Class::Button:
             // a button's fill comes from its skin and its label colour from the base, so
-            // the ring below is all it reads as a Dressing
+            // the ring dress() reads is all it reads as a Dressing
             break;
     }
-    // every class may override the focus ring, so it is read once here for all of them.
-    // A class naming neither property draws the base's ring
-    readColour(style, "focus", &dressing.focus);
-    width(style, "focus-width", &dressing.focusWidth);
-    return dressing;
 }
 
 const paint::Dressing& Resolver::resolve(Class className, const std::string_view& name) const {

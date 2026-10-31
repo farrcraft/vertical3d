@@ -142,6 +142,16 @@ class TextureFont {
     bool pack(const std::u32string& charcodes);
 
     /**
+     * Rasterize one code point and pack it. The face has to be loaded, and is released when
+     * this fails.
+     *
+     * @param sdf whether the glyph is rendered as a distance field
+     * @param missed counts the glyph when it does not fit the atlas, which is not a failure
+     * @return false when FreeType fails to load, render or stroke the glyph
+     **/
+    bool packGlyph(char32_t charcode, bool sdf, unsigned int* missed);
+
+    /**
      * Divide code points between this face and its fallback, leaving out any this face has
      * already packed. The face has to be loaded.
      *

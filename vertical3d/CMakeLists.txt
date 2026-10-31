@@ -2,6 +2,17 @@
 # rather than each compiling their own.
 add_library("v3dlib_editor"
 	"src/Controller.h" "src/Controller.cxx"
+
+	"src/app/AreaCommands.h" "src/app/AreaCommands.cxx"
+	"src/app/CommandTable.h" "src/app/CommandTable.cxx"
+	"src/app/Context.h" "src/app/Context.cxx"
+	"src/app/EditCommands.h" "src/app/EditCommands.cxx"
+	"src/app/PlaybackCommands.h" "src/app/PlaybackCommands.cxx"
+	"src/app/ProjectFiles.h" "src/app/ProjectFiles.cxx"
+	"src/app/RenderCommands.h" "src/app/RenderCommands.cxx"
+	"src/app/ToolCommands.h" "src/app/ToolCommands.cxx"
+	"src/app/ViewCommands.h" "src/app/ViewCommands.cxx"
+	"src/app/WorkspaceSwitcher.h" "src/app/WorkspaceSwitcher.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 
 	"src/document/Document.h" "src/document/Document.cxx"

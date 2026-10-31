@@ -83,7 +83,8 @@ a higher one is in the wrong place.
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
 | `src/control/` | The controllers for playback, the Render menu, the routing of the mouse, the areas' headers, the top bar and the workspaces, the command search, the icon sheet, the outliner and the properties editor, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
-| `src/Controller.*` | The app: startup, the table of commands, and the dialogs that ask before a project is replaced | any |
+| `src/app/` | The commands: the `Context` they act on, the `CommandTable` they register in, a class of commands for each part of the editor, the project's files and the questions asked about them, and the workspace shown | every directory above it here |
+| `src/Controller.*` | The app: building the parts, the ui that shows them, the routing of input, and the command search | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |
 | `src/main.cxx` | `main`, which calls `v3d::engine::run<Controller>` | `Controller.h` |
 

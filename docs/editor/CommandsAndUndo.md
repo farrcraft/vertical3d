@@ -18,8 +18,8 @@ and says why.
   `key(items, frame)` take the items. `createCamera(at, projection)` takes the view's camera
   profile. The modelling operations act on the scene's selected parts, as `splitEdges()` says.
   None of them reads the select tool, the active view or the pane under the cursor.
-- **The command table supplies the arguments.** Each handler in `registerCommands()` reads the
-  selection, the frame or the active view and passes them in. The select mask is a rule of the
+- **The command table supplies the arguments.** Each handler reads the selection, the frame or
+  the active view from the `Context` and passes them in. The select mask is a rule of the
   ui, not of the document, so the handler checks it before a modelling operation runs.
 - **A gesture is not an operation.** A tool changes the document while the cursor moves, and
   records the gesture in `Document::history()` when it ends.
@@ -27,7 +27,7 @@ and says why.
   pending edit to a keyed property, and records nothing.
 
 Opening, saving, the autosave and recovery are on the document too. What asks the user first,
-the file chooser and the save prompt, stays in `Controller`.
+the file chooser and the save prompt, is in `ProjectFiles` in `src/app/`.
 
 ## Undo
 
@@ -110,19 +110,39 @@ example `create::poly::cube` or `transform::rotate`. This is the string `event::
 returns.
 
 **The registry.** The engine's `event::Commands` maps each command string to a handler, and
-runs the handler each command names. `Controller::registerCommands()` registers every handler
-from the controller's constructor:
+runs the handler each command names. The engine requires every command to be registered in the
+app's constructor, before `start()` builds what the handlers act on. Each part of the editor
+has a class in `src/app/` that registers that part's commands from the constructor, through a
+`CommandTable`. A handler reads what it acts on from the `Context` when it runs, and the
+controller fills the context in at start.
 
-- `addPress(name, handler)` registers a handler that runs on the press only. A release of the
+| Class | Commands |
+|---|---|
+| `EditCommands` | `create::*`, `timeline::set`, `transform::poly::*`, `edit::undo` and `edit::redo` |
+| `ToolCommands` | `select::mask::*`, `select::add`, `camera::*`, `transform::<mode>` and the held `view::camera::*` |
+| `ViewCommands` | How a view draws: `view::shade::*`, `view::cull::*`, `view::rendermode::*`, `view::show::*` and the fixed views |
+| `AreaCommands` | `area::*` |
+| `WorkspaceSwitcher` | `workspace::*` |
+| `ProjectFiles` | `project::*`, with the file chooser's and the prompt's |
+| `PlaybackCommands` | `timeline::playback::*` |
+| `RenderCommands` | `render::*` |
+| `Controller` | `search::open`, `search::run` and `view::drag` |
+
+The table registers a handler in one of three ways:
+
+- `press(name, handler)` registers a handler that runs on the press only. A release of the
   same binding is still accepted, and does nothing, and so is a held key's repeat, so holding a
   key runs its action once.
-- `add(name, handler)` registers a handler that receives the whole event, so it can tell a
+- `hold(name, handler)` registers a handler that receives the whole event, so it can tell a
   press from a release. The camera modifiers use it, because a camera mode lasts while its key
   is held.
+- `add(name, handler)` registers a handler that receives the whole event and is not followed
+  by the read back below. The area and workspace commands use it, and give the views their
+  regions again instead.
 
-Each handler calls `syncUi()` after it runs. That sets the check marks on menu items and
-toolbar toggles from the editor's state: the active view's show flags, the select mask and the
-transform mode.
+A command registered with `press()` or `hold()` is followed by `syncUi()`. That sets the check
+marks on menu items and toolbar toggles from the editor's state: the active view's show flags,
+the select mask and the transform mode.
 
 **How a command arrives.** Three sources produce the same `event::Event`, so all three reach
 the same handler:
@@ -168,10 +188,11 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 
 1. If it changes the document, add an operation to `Document` that applies itself, records
    itself and returns an `Outcome`.
-2. Register a handler in `Controller::registerCommands()` with `press()` or `hold()`. A handler
-   that runs an operation passes it what it acts on, and reports its `Outcome`. `report()` logs
-   the message and shows it as a notice, and `refuse()` does the same for a request the
-   handler turns down itself.
+2. Register a handler in the `registerCommands()` of the part's class in `src/app/`, with
+   `press()` or `hold()`. A handler that runs an operation passes it what it acts on, and
+   reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
+   `Context::refuse()` does the same for a request the handler turns down itself. A command for
+   a part with no class yet gets a class of its own.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
    with the same context and name. A command on a menu can be searched for.
 4. If it describes on/off state, mark it in `syncUi()`.
