@@ -162,6 +162,18 @@ struct Scrolled {
 };
 
 /**
+ * The body of a window or a region: the id that holds its scroll and content, the id its
+ * scrollbar is hit tested under, its box, and where the part below any title bar starts.
+ **/
+struct Body {
+    Id id = 0;
+    Id scroll = 0;
+    glm::vec2 min{0.0F};
+    glm::vec2 max{0.0F};
+    float top = 0.0F;
+};
+
+/**
  * Everything an Immediate holds, and the steps its widgets share.
  *
  * Immediate's header carries only what an app calls. This is the rest: what the layer keeps
@@ -252,6 +264,20 @@ class Context final {
     void focus(Id field);
 
     /**
+     * Start writing into the body of a window or a region: rows go inside it, clipped to it and
+     * scrolled, and the wheel over it scrolls it.
+     *
+     * @param shown false for a folded window, which takes the rows' margins and nothing else
+     **/
+    void openBody(const Body& body, bool shown);
+
+    /**
+     * Draw the line a field is editing between two corners, with the selection behind it and
+     * the caret, slid left as far as the caret needs. The caller clips to the corners.
+     **/
+    void drawEdit(const glm::vec2& low, const glm::vec2& high);
+
+    /**
      * Close a scrolled region, a window's body or a table: measure what was drawn into it,
      * draw its scrollbar down the right of the body, and turn the wheel over it into scroll.
      **/
@@ -328,6 +354,7 @@ class Context final {
 
     Id typing;            /**< the text field that holds the keyboard, or nothing **/
     bool letGo;           /**< a return, tab or escape asked the field to give it up **/
+    bool escaped;         /**< and it was escape, which a number field takes as no change **/
     bool typingDrawn;     /**< whether that field has been drawn this frame **/
     std::string written;  /**< what the field last wrote to the caller's string **/
     input::LineEdit edit;
@@ -337,6 +364,7 @@ class Context final {
     glm::vec2 itemMin;  /**< the box of the item placed last, which itemHovered() asks about **/
     glm::vec2 itemMax;
     Id itemOwner;       /**< what has to have held the cursor for that item to be hovered **/
+    bool itemFinished;  /**< whether an edit of that item ended this frame **/
 
     Popup popup;
 };

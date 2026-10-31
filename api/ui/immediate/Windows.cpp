@@ -93,46 +93,75 @@ bool Immediate::window(const std::string& title, const v3d::type::geometry::Boun
         context_->hovering = id;
     }
 
-    context_->window.open = true;
-    context_->window.margin = context_->row.margin;
-    context_->window.right = context_->row.right;
-    context_->window.id = id;
-    context_->window.scroll = context_->identify(title + " scrollbar");
-    context_->row.margin = min.x + context_->dressing.padding;
-    context_->row.right = max.x - context_->dressing.padding;
-    context_->row.penY = barMax.y + context_->dressing.spacing;
-    context_->row.sameLine = false;
-    context_->window.clipped = false;
-    context_->window.scrolls = false;
-    if (retained.collapsed) {
-        return false;
+    context_->openBody({.id = id, .scroll = context_->identify(title + " scrollbar"), .min = min, .max = max, .top = barMax.y},
+        !retained.collapsed);
+    return !retained.collapsed;
+}
+
+void Immediate::region(const std::string& name, const v3d::type::geometry::Bound2D::Area& area, float alpha) {
+    if (context_->canvas == nullptr) {
+        return;
+    }
+    const Id id = context_->identify(name);
+    const glm::vec2 min = area.position;
+    const glm::vec2 max = area.position + area.size;
+    if (alpha > 0.0F) {
+        glm::vec4 background = context_->dressing.panel;
+        background.a *= std::min(alpha, 1.0F);
+        paint::fillBox(context_->canvas, min, max, 0.0F, background);
+    }
+    // a region takes the cursor from what was drawn before it, as a window does
+    if (paint::inside(min, max, context_->input.cursor)) {
+        context_->hovering = id;
+    }
+    context_->openBody({.id = id, .scroll = context_->identify(name + " scrollbar"), .min = min, .max = max, .top = min.y}, true);
+}
+
+void Immediate::endRegion() {
+    endWindow();
+}
+
+void immediate::Context::openBody(const Body& body, bool shown) {
+    window.open = true;
+    window.margin = row.margin;
+    window.right = row.right;
+    window.id = body.id;
+    window.scroll = body.scroll;
+    row.margin = body.min.x + dressing.padding;
+    row.right = body.max.x - dressing.padding;
+    row.penY = body.top + dressing.spacing;
+    row.sameLine = false;
+    window.clipped = false;
+    window.scrolls = false;
+    if (!shown) {
+        return;
     }
 
-    context_->window.bodyMin = glm::vec2(min.x + context_->dressing.borderWidth, barMax.y);
-    context_->window.bodyMax = glm::vec2(max.x - context_->dressing.borderWidth, max.y - context_->dressing.borderWidth);
-    context_->window.contentTop = barMax.y + context_->dressing.spacing;
+    Retained& retained = retain(body.id);
+    window.bodyMin = glm::vec2(body.min.x + dressing.borderWidth, body.top);
+    window.bodyMax = glm::vec2(body.max.x - dressing.borderWidth, body.max.y - dressing.borderWidth);
+    window.contentTop = body.top + dressing.spacing;
 
     // whether there is a bar is decided by what the frame before this one drew, because how
     // tall the content is is only known once it has been drawn
-    const float view = std::max(context_->window.bodyMax.y - context_->window.contentTop, 0.0F);
-    context_->window.scrolls = retained.content > view;
-    if (context_->window.scrolls) {
-        context_->row.right -= context_->dressing.scrollbarWidth + context_->dressing.spacing;
+    const float view = std::max(window.bodyMax.y - window.contentTop, 0.0F);
+    window.scrolls = retained.content > view;
+    if (window.scrolls) {
+        row.right -= dressing.scrollbarWidth + dressing.spacing;
         retained.scroll = std::clamp(retained.scroll, 0.0F, retained.content - view);
     } else {
         retained.scroll = 0.0F;
     }
 
-    context_->row.penY = context_->window.contentTop - retained.scroll;
-    context_->canvas->clip(context_->window.bodyMin, context_->window.bodyMax);
-    context_->window.clipped = true;
+    row.penY = window.contentTop - retained.scroll;
+    canvas->clip(window.bodyMin, window.bodyMax);
+    window.clipped = true;
 
-    // the wheel turns the window the cursor is over, and a window drawn later is over one
-    // drawn before it, so the last to claim the cursor keeps it
-    if (paint::inside(min, max, context_->input.cursor)) {
-        context_->wheeled = id;
+    // the wheel turns the region the cursor is over, and one drawn later is over one drawn
+    // before it, so the last to claim the cursor keeps it
+    if (paint::inside(body.min, body.max, input.cursor)) {
+        wheeled = body.id;
     }
-    return true;
 }
 
 void Immediate::endWindow() {

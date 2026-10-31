@@ -120,16 +120,19 @@ Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     wheeled(0),
     typing(0),
     letGo(false),
+    escaped(false),
     typingDrawn(false),
     itemMin(0.0F, 0.0F),
     itemMax(0.0F, 0.0F),
-    itemOwner(0) {
+    itemOwner(0),
+    itemFinished(false) {
 }
 
 void Context::focus(Id field) {
     const bool was = typing != 0;
     typing = field;
     letGo = false;
+    escaped = false;
     if (field == 0) {
         written.clear();
     }
@@ -186,6 +189,7 @@ glm::vec2 Context::place(const glm::vec2& size) {
     itemMin = corner;
     itemMax = corner + size;
     itemOwner = window.open ? window.id : 0;
+    itemFinished = false;
     return corner;
 }
 

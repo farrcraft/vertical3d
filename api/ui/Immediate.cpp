@@ -57,6 +57,13 @@ const float bulletScale = 0.28F;
 const unsigned int bulletSides = 8;
 
 /**
+ * How far a tree row's fold mark reaches from its middle, and how thick its strokes are, as
+ * fractions of a line.
+ **/
+const float foldScale = 0.18F;
+const float foldWidth = 0.08F;
+
+/**
  * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
  **/
 const float tickInset = 0.25F;
@@ -287,6 +294,48 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     return reaction.clicked;
 }
 
+bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
+    if (context_->canvas == nullptr) {
+        return false;
+    }
+    const float line = context_->dressing.lineHeight;
+    const glm::vec2 size(context_->itemWidth(), line);
+    const glm::vec2 min = context_->place(size);
+    const glm::vec2 max = min + size;
+    const Id id = context_->identify(label);
+    const immediate::Reaction reaction = context_->interact(id, min, max);
+
+    // the mark is offered after the row, so the cursor on it is the mark's and not the row's
+    const glm::vec2 markMin(min.x + (line * static_cast<float>(row.depth)), min.y);
+    const glm::vec2 markMax = markMin + glm::vec2(line, line);
+    immediate::Reaction fold;
+    if (row.open != nullptr) {
+        fold = context_->interact(context_->identify(label + " fold"), markMin, markMax);
+        if (fold.clicked) {
+            *row.open = !*row.open;
+        }
+    }
+
+    if (row.selected) {
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.highlight);
+    } else if (reaction.hovered || fold.hovered) {
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
+    }
+    const glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
+    if (row.open != nullptr) {
+        const glm::vec2 centre = (markMin + markMax) * 0.5F;
+        const float reach = line * foldScale;
+        const float width = std::max(line * foldWidth, 1.0F);
+        const glm::vec2 tip = *row.open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
+        const glm::vec2 side = *row.open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
+        const glm::vec2 back = *row.open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
+        context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
+        context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
+    }
+    context_->label(label, glm::vec2(markMax.x, min.y), glm::vec2(max.x - markMax.x, line), ink);
+    return reaction.clicked;
+}
+
 bool Immediate::dragInt(const std::string& label, int* value, int low, int high) {
     if (context_->canvas == nullptr || value == nullptr) {
         return false;
@@ -371,6 +420,10 @@ bool Immediate::sliderFloat(const std::string& label, float* value, float low, f
 
 bool Immediate::itemHovered() const noexcept {
     return paint::inside(context_->itemMin, context_->itemMax, context_->input.cursor) && context_->hovered == context_->itemOwner;
+}
+
+bool Immediate::itemFinished() const noexcept {
+    return context_->itemFinished;
 }
 
 void Immediate::progressBar(float fraction, const std::string& overlay) {

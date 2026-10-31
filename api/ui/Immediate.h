@@ -193,6 +193,19 @@ class Immediate {
     void endWindow();
 
     /**
+     * Open a region at a place the caller decides: a window with no title bar, which does not
+     * move or fold. An app draws one as a panel that fills part of its own layout.
+     *
+     * What goes in it is clipped to its edges and scrolls as a window's does, and it takes the
+     * cursor from what was drawn before it. Pair every call with endRegion().
+     *
+     * @param name the region's id, which is not drawn
+     * @param alpha what its background is drawn at, 0 to draw none
+     **/
+    void region(const std::string& name, const v3d::type::geometry::Bound2D::Area& area, float alpha);
+    void endRegion();
+
+    /**
      * One line of text at the pen.
      **/
     void text(const std::string& line);
@@ -231,12 +244,44 @@ class Immediate {
     bool selectable(const std::string& label, bool selected);
 
     /**
+     * How a row of a tree sits: how deep it is, whether it folds, and whether it is chosen.
+     **/
+    struct TreeRow final {
+        unsigned int depth = 0;  /**< how many levels down, each indenting the row by a line **/
+        bool* open = nullptr;    /**< read and written - whether what is beneath it shows, or null for a row with nothing beneath it **/
+        bool selected = false;   /**< drawn highlighted **/
+    };
+
+    /**
+     * A row of a tree that spans the width, indented by its depth. A row with something
+     * beneath it has a mark before its label, pointing right while folded and down while open,
+     * and a click on the mark folds or opens it.
+     *
+     * @return whether the row was clicked anywhere but its mark
+     **/
+    bool treeRow(const std::string& label, const TreeRow& row);
+
+    /**
      * An integer scrubbed by dragging across it.
      *
      * @param value read and written; left alone when nothing dragged
      * @return whether the value changed this frame
      **/
     bool dragInt(const std::string& label, int* value, int low, int high);
+
+    /**
+     * A number scrubbed by dragging across it, or typed into after a click that does not drag.
+     * The label is drawn at the left in secondary text and the value at the right.
+     *
+     * A drag starts once the press has travelled a few pixels, and moves the value by speed
+     * for each pixel. A typed value is taken when the field gives up the keyboard, as a text
+     * field does, unless escape gave it up or what was typed is not a finite number.
+     *
+     * @param value read and written; left alone when nothing changed it
+     * @param speed how far the value moves for each pixel the cursor travels
+     * @return whether the value changed this frame
+     **/
+    bool dragFloat(const std::string& label, float* value, float speed);
 
     /**
      * A filled track spanning the width, with a line of text over it.
@@ -342,6 +387,13 @@ class Immediate {
      * answers as text does, so a tooltip can say why it is disabled.
      **/
     bool itemHovered() const noexcept;
+
+    /**
+     * Whether an edit of the item just drawn ended this frame: a drag of a number was let go,
+     * or a field gave up the keyboard. A caller that applies each change as it comes records
+     * the whole edit as one change here.
+     **/
+    bool itemFinished() const noexcept;
 
     /**
      * A key went down. A text field that holds the keyboard edits its line with it.

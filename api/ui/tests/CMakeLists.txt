@@ -12,6 +12,7 @@ v3d_add_test(ui
 	"GameMenuTest.cpp"
 	"ImageTest.cpp"
 	"ImmediateInputTest.cpp"
+	"ImmediatePanelTest.cpp"
 	"ImmediatePopupTest.cpp"
 	"ImmediateTableTest.cpp"
 	"ImmediateTest.cpp"
