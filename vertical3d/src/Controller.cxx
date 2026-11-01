@@ -502,8 +502,9 @@ control::Status Controller::status() const {
     const bool perspective = view && view->camera() && !view->camera()->orthographic();
     made.buttons = control::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
     made.selection = control::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
-    made.frame = "Frame " + std::to_string(context_.document->scene()->timeline().frame);
+    made.frame = control::StatusBar::frame(context_.document->scene()->timeline());
     made.rate = control::StatusBar::rate(statistics().mean());
+    made.health = control::StatusBar::health({ .mean = statistics().mean(), .refresh = window()->refreshRate() });
     return made;
 }
 

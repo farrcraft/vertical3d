@@ -263,15 +263,17 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 7 — The status bar
 
-**Open.** Needs step 4.
+**Closed.**
 
-- Each button's action is a mouse with that button lit, a chip for any modifier it needs, and
-  the action.
-- One selected item shows its name, and a mesh its vertices and faces. Several show their
-  count by kind. A component selection counts what is selected under the mask.
-- The frame shows as a frame of the range.
-- The frame rate is green at the display's rate or near it, amber below that, and red below
-  half.
+- Each button's action is a mouse with that button lit and the action. While the left button
+  only selects, Shift, Alt and Ctrl follow it on chips, with what each does. The bar's text is
+  11 pixels.
+- One selected item is named, with a mesh's vertices and faces. Several are counted by kind.
+- The frame reads "Frame 24 of 120".
+- The frame rate is green at nine tenths of the monitor's rate or more, amber below that, and
+  red below half. `api/window` gains `Window::refreshRate()`.
+- The status bar suite covers the modifiers, the icons, the selection, the frame and the
+  health. The editor was photographed with a cube selected.
 
 ### Step 8 — Notices
 

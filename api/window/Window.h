@@ -119,6 +119,13 @@ class Window final {
     float displayScale() const;
 
     /**
+     * How many times a second the monitor the window is on shows a new picture.
+     *
+     * @return the rate in hertz, or 0 while there is no window or the rate cannot be read
+     **/
+    float refreshRate() const;
+
+    /**
      * Fill the display the window is on, or go back to a window.
      *
      * The display keeps its own mode, so the change is a resize as far as the swapchain is

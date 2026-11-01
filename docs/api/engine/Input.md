@@ -31,7 +31,8 @@ On a resize the engine updates the window's size and publishes
 released while the window is unfocused never arrives, so an app that tracks held keys itself
 should drop them when focus is lost. When the monitor's scale changes, or the window moves to a
 monitor with another, it publishes `event::kind::DisplayScale` with `Window::displayScale()`,
-which the shell passes to its screen.
+which the shell passes to its screen. `Window::refreshRate()` gives the rate in hertz of the
+monitor the window is on, or 0 when it cannot be read.
 
 Rules for `onEvent()`:
 

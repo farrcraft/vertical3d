@@ -586,15 +586,23 @@ and the drawing.
 the toolbar down the left. The areas are laid out above it. It is drawn in the theme's `bar`,
 with a `hairline` along its top. `StatusBar` in `src/control/` says what it shows:
 
-- On the left, what each mouse button does in the active view. The left button names the
-  camera move held or latched, such as Truck or Orbit. Without one it says Select, or Add or
-  remove while Shift is held, and adds what the transform mode's handles do, as in "Select, or
-  drag a handle to rotate". The middle button says Orbit in a perspective view, and is left out
-  of an orthographic one, where it does nothing.
+- Its text is 11 pixels at a scale of one, a step below the ui's.
+- On the left, what each mouse button does in the active view, each as a mouse with that button
+  lit and the action. The left button names the camera move held or latched, such as Truck or
+  Orbit. Without one it says Select, or Add or remove while Shift is held, and adds what the
+  transform mode's handles do, as in "Select, or drag a handle to rotate". While it only
+  selects, the keys held with it follow, each on a chip: Shift adds or removes, Alt dollies and
+  Ctrl trucks. The middle button says Orbit in a perspective view, and is left out of an
+  orthographic one, where it does nothing.
 - On the right, what is selected, the frame and the frame rate. Under a mask that selects whole
-  items the count is of items. Under a part mask it is of the parts of every item, and an edge
-  counts once whichever of its halves are selected. Nothing selected says so. The frame rate is
-  from the engine's mean frame time.
+  items, one item is named with a mesh's vertices and faces, as in "Cube · Vertices 8 · Faces 6".
+  Several are counted by kind, as in "2 meshes · 1 light". Under a part mask the
+  count is of the parts of every item, and an edge counts once whichever of its halves are
+  selected. Nothing selected says so. The frame is given of the timeline's last, as in "Frame 24
+  of 120".
+- The frame rate is from the engine's mean frame time. It is green at nine tenths of the
+  monitor's refresh rate or more, amber below that, and red below half. A monitor whose rate is
+  not known is taken to show 60 a second.
 
 **Notices.** What an operation says, done or refused, shows as a notice at the foot of the active
 area, 16 pixels above its edge and centred. The message starts with a capital, on a plate in the

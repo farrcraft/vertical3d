@@ -124,6 +124,17 @@ float Window::displayScale() const {
 
 /**
  **/
+float Window::refreshRate() const {
+    if (window_ == nullptr) {
+        return 0.0F;
+    }
+    // SDL gives 0 for a display whose rate cannot be read
+    const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(window_));
+    return mode != nullptr && mode->refresh_rate > 0.0F ? mode->refresh_rate : 0.0F;
+}
+
+/**
+ **/
 bool Window::fullscreen(bool on) {
     if (window_ == nullptr) {
         return false;

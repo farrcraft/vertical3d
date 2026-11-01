@@ -9,10 +9,13 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControl.h>
 #include <vertical3d/src/tool/Select.h>
@@ -21,8 +24,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/pointer_cast.hpp>
@@ -35,17 +40,26 @@ namespace v3d::editor::control {
 std::vector<Status::Button> StatusBar::buttons(const tool::CameraControl& camera, const tool::Transform& transform, const tool::Select& select,
     bool perspective) {
     std::vector<Status::Button> made;
+    const auto left = [&made](const std::string& action, const std::string& modifier) {
+        made.push_back({ .name = "Left", .action = action, .icon = std::string(LEFT_ICON), .modifier = modifier });
+    };
     if (const std::optional<std::string> driven = cameraMove(camera.mode())) {
-        made.push_back({ .name = "Left", .action = *driven });
+        left(*driven, std::string());
     } else {
         std::string action = select.adding() ? "Add or remove" : "Select";
         if (const std::optional<std::string> verb = handles(transform.mode())) {
             action += ", or drag a handle to " + *verb;
         }
-        made.push_back({ .name = "Left", .action = action });
+        left(action, std::string());
+        // the keys held with it, while nothing is held
+        if (!select.adding()) {
+            left("Add or remove", "Shift");
+            left("Dolly", "Alt");
+            left("Truck", "Ctrl");
+        }
     }
     if (perspective) {
-        made.push_back({ .name = "Middle", .action = "Orbit" });
+        made.push_back({ .name = "Middle", .action = "Orbit", .icon = std::string(MIDDLE_ICON), .modifier = std::string() });
     }
     return made;
 }
@@ -61,8 +75,7 @@ std::string StatusBar::count(std::size_t number, const std::string& one, const s
 std::string StatusBar::selection(const scene::Scene& scene, selection::SelectMask mask) {
     const std::optional<scene::Component> kind = componentOf(mask);
     if (!kind) {
-        const std::size_t items = scene.selection().size();
-        return items == 0 ? "Nothing selected" : count(items, "item", "items");
+        return items(scene.selection());
     }
     std::size_t number = 0;
     for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
@@ -82,6 +95,55 @@ std::string StatusBar::selection(const scene::Scene& scene, selection::SelectMas
             break;
     }
     return count(number, "handle", "handles");
+}
+
+/**
+ **/
+std::string StatusBar::items(const scene::Items& selected) {
+    if (selected.empty()) {
+        return "Nothing selected";
+    }
+    if (selected.size() == 1) {
+        const scene::Item& item = *selected.front();
+        std::string made = Outliner::label(item);
+        const auto* mesh = dynamic_cast<const scene::Mesh*>(&item);
+        if (mesh != nullptr && mesh->geometry()) {
+            made += std::string(PART_GAP) + "Vertices " + std::to_string(mesh->geometry()->vertexCount()) + std::string(PART_GAP) + "Faces " +
+                std::to_string(mesh->geometry()->faceCount());
+        }
+        return made;
+    }
+    // several are counted by kind, in the order kinds are declared
+    std::map<scene::Item::Kind, std::size_t> kinds;
+    for (const boost::shared_ptr<scene::Item>& item : selected) {
+        kinds[item->kind()]++;
+    }
+    std::string made;
+    for (const auto& [kind, number] : kinds) {
+        const std::string one = lower(Outliner::kind(kind));
+        made += (made.empty() ? "" : std::string(PART_GAP)) + count(number, one, one == "mesh" ? "meshes" : one + "s");
+    }
+    return made;
+}
+
+/**
+ **/
+std::string StatusBar::frame(const scene::Timeline& timeline) {
+    return "Frame " + std::to_string(timeline.frame) + " of " + std::to_string(timeline.end);
+}
+
+/**
+ **/
+Status::Health StatusBar::health(const Timing& timing) {
+    if (timing.mean == 0) {
+        return Status::Health::Good;
+    }
+    const double framesPerSecond = SECOND / static_cast<double>(timing.mean);
+    const double target = timing.refresh > 0.0 ? timing.refresh : ASSUMED_REFRESH;
+    if (framesPerSecond >= target * GOOD_SHARE) {
+        return Status::Health::Good;
+    }
+    return framesPerSecond >= target * POOR_SHARE ? Status::Health::Low : Status::Health::Poor;
 }
 
 /**

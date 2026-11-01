@@ -242,6 +242,41 @@ class Renderer final {
     static constexpr float GRID_AXIS = 0.75F;
 
     /**
+     * The status bar's text against the ui's, 11 pixels beside 12, and its mouse icons against
+     * its text.
+     **/
+    static constexpr float STATUS_TEXT = 11.0F / 12.0F;
+    static constexpr float STATUS_ICON = 1.4F;
+
+    /**
+     * A modifier's chip on the status bar: half its height against the text, the gap inside it
+     * either side against the padding, and the gaps after a chip and after a mouse against the
+     * text.
+     **/
+    static constexpr float STATUS_CHIP = 0.7F;
+    static constexpr float STATUS_CHIP_INSET = 0.25F;
+    static constexpr float STATUS_AFTER_CHIP = 0.4F;
+    static constexpr float STATUS_AFTER_ICON = 0.3F;
+
+    /**
+     * The frame rate's colour when it keeps up with the monitor, falls behind, and falls below
+     * half.
+     **/
+    static constexpr glm::vec4 HEALTH_GOOD{ 0.498F, 0.698F, 0.416F, 1.0F };
+    static constexpr glm::vec4 HEALTH_LOW{ 0.949F, 0.639F, 0.227F, 1.0F };
+    static constexpr glm::vec4 HEALTH_POOR{ 0.851F, 0.349F, 0.373F, 1.0F };
+
+    /**
+     * @return the image an icon of the sheet resolves to, or an unset one
+     **/
+    v3d::ui::Image icon(const std::string& source) const;
+
+    /**
+     * @return the colour the frame rate is written in
+     **/
+    static glm::vec4 healthColour(control::Status::Health health);
+
+    /**
      * What separates the parts of the right side of the status bar.
      **/
     static constexpr const char* STATUS_GAP = "     ";

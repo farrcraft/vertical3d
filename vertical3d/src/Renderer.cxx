@@ -190,8 +190,8 @@ void Renderer::icons(const control::IconSheet& sheet) {
 /**
  **/
 v3d::ui::Image Renderer::image(const std::string& source) {
-    if (const std::optional<v3d::ui::Image::Corners> corners = icons_.corners(source)) {
-        return iconTexture_.valid() ? v3d::ui::Image(iconTexture_, *corners) : v3d::ui::Image();
+    if (icons_.corners(source)) {
+        return icon(source);
     }
     return texture(source);
 }
@@ -460,26 +460,72 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     canvas->rect(glm::vec2(left, top), glm::vec2(width, bottom), dress.bar);
     canvas->rect(glm::vec2(left, top), glm::vec2(width, top + v3d::ui::paint::Dressing::outline(1.0F, screen_->factor())), dress.hairline);
 
-    const float size = screen_->size();
+    // the bar's text is a step smaller than the ui's, as secondary text is
+    const float size = screen_->size() * STATUS_TEXT;
     const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
     const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
-    const float baseline = top + (dress.barHeight / 2.0F) + (size * BASELINE);
-    // a button's name, then what it does, then a wider gap before the next button
+    const float middle = top + (dress.barHeight / 2.0F);
+    const float baseline = middle + (size * BASELINE);
+    // for each button: the key held with it on a chip, the mouse with the button lit, and what
+    // it does, then a wider gap before the next
     float x = left + dress.padding;
     for (const control::Status::Button& button : status_.buttons) {
-        write(button.name, glm::vec2(x, baseline), dress.secondaryText);
-        x += measure(button.name) + (size / 2.0F);
+        if (!button.modifier.empty()) {
+            const float chip = measure(button.modifier) + (dress.padding * STATUS_CHIP_INSET * 2.0F);
+            v3d::ui::paint::fillBox(canvas, glm::vec2(x, middle - (size * STATUS_CHIP)), glm::vec2(x + chip, middle + (size * STATUS_CHIP)), dress.radius,
+                dress.widget);
+            write(button.modifier, glm::vec2(x + (dress.padding * STATUS_CHIP_INSET), baseline), dress.text);
+            x += chip + (size * STATUS_AFTER_CHIP);
+        }
+        const v3d::ui::Image mouse = icon(button.icon);
+        if (mouse.valid()) {
+            const float side = size * STATUS_ICON;
+            canvas->rect(glm::vec2(x, middle - (side / 2.0F)), glm::vec2(x + side, middle + (side / 2.0F)), mouse.uv0, mouse.uv1, dress.secondaryText,
+                mouse.texture);
+            x += side + (size * STATUS_AFTER_ICON);
+        } else {
+            write(button.name, glm::vec2(x, baseline), dress.secondaryText);
+            x += measure(button.name) + (size / 2.0F);
+        }
         write(button.action, glm::vec2(x, baseline), dress.text);
         x += measure(button.action) + dress.padding;
     }
 
+    // the selection and the frame, then the frame rate in the colour of how it stands
     std::string right;
-    for (const std::string* part : { &status_.selection, &status_.frame, &status_.rate }) {
+    for (const std::string* part : { &status_.selection, &status_.frame }) {
         if (!part->empty()) {
             right += (right.empty() ? "" : STATUS_GAP) + *part;
         }
     }
-    write(right, glm::vec2(width - dress.padding - measure(right), baseline), dress.secondaryText);
+    float end = width - dress.padding;
+    if (!status_.rate.empty()) {
+        end -= measure(status_.rate);
+        write(status_.rate, glm::vec2(end, baseline), healthColour(status_.health));
+        end -= measure(STATUS_GAP);
+    }
+    write(right, glm::vec2(end - measure(right), baseline), dress.secondaryText);
+}
+
+/**
+ **/
+v3d::ui::Image Renderer::icon(const std::string& source) const {
+    const std::optional<v3d::ui::Image::Corners> corners = icons_.corners(source);
+    return corners && iconTexture_.valid() ? v3d::ui::Image(iconTexture_, *corners) : v3d::ui::Image();
+}
+
+/**
+ **/
+glm::vec4 Renderer::healthColour(control::Status::Health health) {
+    switch (health) {
+        case control::Status::Health::Good:
+            return HEALTH_GOOD;
+        case control::Status::Health::Low:
+            return HEALTH_LOW;
+        case control::Status::Health::Poor:
+            return HEALTH_POOR;
+    }
+    return HEALTH_GOOD;
 }
 
 /**
