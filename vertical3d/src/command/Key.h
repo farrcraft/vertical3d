@@ -9,6 +9,7 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -19,7 +20,7 @@
 namespace v3d::editor::command {
 
 /**
- * A key on every property of each of a set of items, at one frame.
+ * A key on properties of a set of items, at one frame.
  *
  * Each value is the one an evaluation of the current frame shows, so a pending edit is what the
  * key records. A rotation's Euler angles are the ones closest to its curves' values at that
@@ -32,9 +33,22 @@ namespace v3d::editor::command {
 class Key final : public Command {
  public:
     /**
-     * @param items what to key. An item the scene does not hold is skipped
+     * An item and the properties of it to key. A path its kind does not declare is skipped.
      **/
-    Key(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& items, float frame);
+    struct Target {
+        boost::shared_ptr<scene::Item> item;
+        std::set<std::string> paths;
+    };
+
+    /**
+     * @return a target for every property of each item
+     **/
+    static std::vector<Target> every(const scene::Items& items);
+
+    /**
+     * @param targets what to key. An item the scene does not hold is skipped
+     **/
+    Key(const boost::shared_ptr<scene::Scene>& scene, const std::vector<Target>& targets, float frame);
 
     void undo() override;
     void redo() override;

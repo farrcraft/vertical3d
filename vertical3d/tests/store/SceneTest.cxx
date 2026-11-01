@@ -643,7 +643,7 @@ BOOST_AUTO_TEST_CASE(store_animation_round_trip_test) {
     fade.set(12.0F, 0.0F);
     BOOST_REQUIRE(written->curve(kinds[0]->id(), "translation.y", shaped));
     BOOST_REQUIRE(written->curve(kinds[2]->id(), "emission.intensity", fade));
-    written->timeline({ .rate = 30.0F, .start = 2, .end = 48, .frame = 7 });
+    written->timeline({ .rate = 30.0F, .start = 2, .end = 48, .frame = 7, .autoKey = true });
 
     v3d::editor::store::Scene store(logger());
     BOOST_REQUIRE(store.write(scratch.path(), *written));

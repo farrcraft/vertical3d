@@ -104,6 +104,12 @@ class Document final {
     Outcome key(const scene::Items& items, int frame);
 
     /**
+     * Turn auto key on or off. While it is on, an edit to a number a curve can drive keys that
+     * number at the current frame, in the same change. Setting it as it is changes nothing.
+     **/
+    Outcome autoKey(bool on);
+
+    /**
      * Take new render settings. The same settings change nothing.
      **/
     Outcome settings(const scene::RenderSettings& settings);

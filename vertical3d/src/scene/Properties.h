@@ -8,6 +8,7 @@
 #include <api/type/Transform.h>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,13 @@ std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm
  * The value of every property an item declares, as the item holds them.
  **/
 std::map<std::string, float> values(const Item& item, const glm::vec3& near);
+
+/**
+ * The properties whose values differ from one set of an item's values to a second, each as
+ * values() gives them. A path the first set lacks has changed. A rotation is changed whole,
+ * because its angles are read from one quaternion and a turn about one axis can change all three.
+ **/
+std::set<std::string> changed(const std::map<std::string, float>& first, const std::map<std::string, float>& second);
 
 /**
  * A pose with some of its properties set. A property that is not named keeps its value, and a

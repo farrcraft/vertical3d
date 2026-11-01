@@ -80,8 +80,9 @@ Background: [ADR-0120](../adr/0120-editor-a-frame-is-evaluated-not-posed-into-it
 
 ## The timeline
 
-A document's `Timeline` holds its frame rate, the range of frames that plays, and the current
-frame. The default is 24 frames a second over frames 1 to 120. Keys sit on frames, so a change
+A document's `Timeline` holds its frame rate, the range of frames that plays, the current
+frame, and whether auto key is on. The default is 24 frames a second over frames 1 to 120, with
+auto key off. Keys sit on frames, so a change
 of rate leaves every key where it is and changes how fast they play. The window's caption shows
 the current frame.
 
@@ -90,6 +91,7 @@ The Animate menu:
 | Item | Command | Effect |
 |---|---|---|
 | Set Key | `timeline::set` | Key every property of each selected item at the current frame, through the history, so one undo takes the keys away |
+| Auto Key | `timeline::auto_key` | Turn auto key on or off. The item is checked while it is on |
 | Play, Stop | `timeline::playback::play`, `stop` | Start and stop playback. While playing, `simulate()` steps the frame at the frame rate and starts again from the first frame after the last |
 | Next Frame, Previous Frame | `timeline::playback::next`, `previous` | Step one frame, held within the range |
 | First Frame, Last Frame | `timeline::playback::first`, `last` | Go to either end of the range |
@@ -98,5 +100,19 @@ The Animate menu:
 
 The keyed frames are those of the selection, or of every item when nothing is selected. Each
 move to a frame sets the frame, which drops every pending edit.
+
+**Auto key keys an edit as it is recorded.** While it is on, an edit to a number a curve can
+drive keys that number at the current frame, and the edit and its keys are one change, which one
+undo takes back.
+
+- Only the properties the edit changed are keyed, on each item it changed. A rotation is keyed
+  whole, as it is pending whole. An edit that changes nothing a curve drives, such as a rename,
+  sets no key.
+- A manipulator's gesture and an edit in the properties editor are keyed. A gesture on
+  components moves geometry, which no curve drives, so it sets no key.
+- `command::Keyed::record()` makes the key when an edit is recorded, and returns the edit alone
+  when auto key is off.
+- Turning auto key on or off is a change to the document, which undo takes back. The project
+  saves it.
 
 Background: [ADR-0105](../adr/0105-editor-animation-is-scalar-curves-on-item-properties.md)

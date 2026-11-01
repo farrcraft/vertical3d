@@ -362,6 +362,8 @@ void Controller::syncUi() {
     mark("camera::pan", latched == tool::CameraControl::CAMERA_MODE_PAN);
     mark("camera::pitch", latched == tool::CameraControl::CAMERA_MODE_PITCH);
 
+    mark("timeline::auto_key", context_.document->scene()->timeline().autoKey);
+
     const tool::Transform::Mode mode = context_.transformTool->mode();
     mark("transform::select", mode == tool::Transform::Mode::None);
     mark("transform::translate", mode == tool::Transform::Mode::Translate);

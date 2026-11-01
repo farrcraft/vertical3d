@@ -679,8 +679,9 @@ and edits them. `PropertiesEditor` in `src/control/` draws it.
   hundredth of a unit a pixel, and an angle half a degree.
 - An edit is written into the item as it happens, so the views follow a drag. When it ends, or
   its item stops being the one shown, it is one change in the history, which
-  [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. An edit to a keyed number is pending
-  until the frame is set, as a manipulator's is.
+  [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. While auto key is on, the numbers it
+  changed are keyed at the current frame in the same change. Otherwise an edit to a keyed number
+  is pending until the frame is set, as a manipulator's is.
 - A value that would make a lens, an emission or a curve item's style invalid is not written.
 
 ## Shaded views

@@ -385,6 +385,35 @@ BOOST_AUTO_TEST_CASE(transform_tool_history_test) {
     BOOST_CHECK_CLOSE(cube->translation().x, 0.5F, 0.5F);
 }
 
+BOOST_AUTO_TEST_CASE(transform_tool_auto_key_test) {
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    cube->selected(true);
+    scene->add(cube);
+    scene->timeline({ .frame = 12, .autoKey = true });
+
+    const boost::shared_ptr<v3d::editor::command::Stack> history = boost::make_shared<v3d::editor::command::Stack>();
+    const boost::shared_ptr<v3d::editor::tool::Transform> transform = tool(scene);
+    transform->commands(history);
+    transform->activate("translate");
+
+    // with auto key on, a gesture keys what it moved at the current frame, in the same change
+    transform->button(1, true, glm::vec2(centre.x + 45.0F, centre.y));
+    transform->motion(glm::vec2(centre.x + 145.0F, centre.y));
+    transform->button(1, false, glm::vec2(centre.x + 145.0F, centre.y));
+    BOOST_CHECK_EQUAL(history->undoDepth(), 1U);
+    const v3d::editor::scene::Curves curves = scene->curves(cube->id());
+    BOOST_REQUIRE(curves.contains("translation.x"));
+    BOOST_CHECK(!curves.contains("scale.x"));
+    BOOST_CHECK_EQUAL(curves.at("translation.x").keys()[0].frame, 12.0F);
+    BOOST_CHECK_CLOSE(curves.at("translation.x").keys()[0].value, 0.5F, 0.5F);
+
+    // one undo takes back the key and the move
+    BOOST_CHECK_EQUAL(history->undo()->name(), "translate");
+    BOOST_CHECK(scene->curves(cube->id()).empty());
+    BOOST_CHECK_SMALL(cube->translation().x, 0.001F);
+}
+
 BOOST_AUTO_TEST_CASE(transform_tool_no_gesture_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
     const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());

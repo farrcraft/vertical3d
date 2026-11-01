@@ -44,7 +44,7 @@ glm::vec3 shown(const v3d::editor::scene::Scene& scene, const v3d::editor::scene
  * Key the items at the scene's frame, as Set Key does.
  **/
 void key(const boost::shared_ptr<v3d::editor::scene::Scene>& scene, const v3d::editor::scene::Items& items) {
-    v3d::editor::command::Key command(scene, items, static_cast<float>(scene->timeline().frame));
+    v3d::editor::command::Key command(scene, v3d::editor::command::Key::every(items), static_cast<float>(scene->timeline().frame));
     command.redo();
 }
 
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(key_nothing_test) {
     // there is nothing to key in an empty set, or in items the scene does not hold
     const v3d::editor::command::Key none(scene, {}, 1.0F);
     BOOST_CHECK(none.empty());
-    BOOST_CHECK(v3d::editor::command::Key(scene, { emptyMesh() }, 1.0F).empty());
+    BOOST_CHECK(v3d::editor::command::Key(scene, v3d::editor::command::Key::every({ emptyMesh() }), 1.0F).empty());
     BOOST_CHECK_EQUAL(none.name(), "set key");
 }
 
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(key_sets_and_undoes_test) {
     scene->add(mesh);
 
     // a key is set on every property the item declares, at the frame, with the item's value
-    v3d::editor::command::Key command(scene, { mesh }, 10.0F);
+    v3d::editor::command::Key command(scene, v3d::editor::command::Key::every({ mesh }), 10.0F);
     BOOST_CHECK(!command.empty());
     command.redo();
     const v3d::editor::scene::Curves curves = scene->curves(mesh->id());
@@ -80,6 +80,23 @@ BOOST_AUTO_TEST_CASE(key_sets_and_undoes_test) {
     BOOST_CHECK(scene->curves(mesh->id()).empty());
     command.redo();
     BOOST_CHECK(scene->curves(mesh->id()) == curves);
+}
+
+BOOST_AUTO_TEST_CASE(key_named_paths_test) {
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    mesh->translation(glm::vec3(1.0F, 2.0F, 3.0F));
+    scene->add(mesh);
+
+    // a target keys only the paths it names, and a path its kind does not declare is skipped
+    v3d::editor::command::Key command(scene, { { .item = mesh, .paths = { "translation.y", "lens.fov" } } }, 4.0F);
+    command.redo();
+    const v3d::editor::scene::Curves curves = scene->curves(mesh->id());
+    BOOST_REQUIRE_EQUAL(curves.size(), 1U);
+    BOOST_CHECK_EQUAL(curves.at("translation.y").keys()[0].value, 2.0F);
+
+    // a target that names nothing keys nothing
+    BOOST_CHECK(v3d::editor::command::Key(scene, { { .item = mesh } }, 4.0F).empty());
 }
 
 BOOST_AUTO_TEST_CASE(key_plays_back_between_test) {
@@ -111,7 +128,7 @@ BOOST_AUTO_TEST_CASE(key_plays_back_between_test) {
     goTo(scene.get(), 1);
     BOOST_CHECK_EQUAL(shown(*scene, *mesh).x, 0.0F);
     mesh->translation(glm::vec3(4.0F, 0.0F, 0.0F));
-    v3d::editor::command::Key change(scene, { mesh }, 1.0F);
+    v3d::editor::command::Key change(scene, v3d::editor::command::Key::every({ mesh }), 1.0F);
     change.redo();
     goTo(scene.get(), 21);
     goTo(scene.get(), 1);

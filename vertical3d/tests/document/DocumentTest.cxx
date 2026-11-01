@@ -226,6 +226,30 @@ BOOST_AUTO_TEST_CASE(going_to_a_frame_holds_it_in_the_range) {
 }
 
 /**
+ * Auto key is turned on and off as a change to the document, which undo takes back. Asking for
+ * it as it is changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(auto_key_is_a_change) {
+    const Scratch scratch("auto_key");
+    v3d::editor::document::Document edited = document(scratch.path());
+    BOOST_CHECK(!edited.scene()->timeline().autoKey);
+
+    const v3d::editor::document::Outcome on = edited.autoKey(true);
+    BOOST_CHECK(on.done);
+    BOOST_CHECK(on.undoable);
+    BOOST_CHECK_EQUAL(on.message, "turned auto key on");
+    BOOST_CHECK(edited.scene()->timeline().autoKey);
+    BOOST_CHECK(edited.dirty());
+
+    const v3d::editor::document::Outcome again = edited.autoKey(true);
+    BOOST_CHECK(!again.done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
+
+    edited.undo();
+    BOOST_CHECK(!edited.scene()->timeline().autoKey);
+}
+
+/**
  * A glTF file comes in as one change: its nodes become items with their hierarchy, its
  * triangles are joined back into quads, and its keys become curves. Undo takes every item out,
  * and redo brings back the items with their parents and curves.

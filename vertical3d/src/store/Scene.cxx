@@ -440,6 +440,8 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
         loaded->timeline.end = static_cast<int>(meta.integer(1));
     } else if (key == "frame") {
         loaded->timeline.frame = static_cast<int>(meta.integer(1));
+    } else if (key == "auto_key") {
+        loaded->timeline.autoKey = meta.integer(1) != 0;
     } else if (key == "render_hider") {
         const std::string hider = meta.text(1);
         if (hider != "hidden" && hider != "raytrace") {
@@ -475,7 +477,7 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
  **/
 bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, std::string* problem) {
     v3d::database::Statement meta = database->prepare(
-        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', "
+        "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', 'auto_key', "
         "'render_width', 'render_height', 'render_samples', 'render_hider', 'length_unit')");
     if (!meta.valid()) {
         *problem = database->error();
@@ -625,6 +627,7 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         Binder(&meta).text("start").integer(timeline.start).run() &&
         Binder(&meta).text("end").integer(timeline.end).run() &&
         Binder(&meta).text("frame").integer(timeline.frame).run() &&
+        Binder(&meta).text("auto_key").integer(timeline.autoKey ? 1 : 0).run() &&
         Binder(&meta).text("render_width").integer(render.size.x).run() &&
         Binder(&meta).text("render_height").integer(render.size.y).run() &&
         Binder(&meta).text("render_samples").integer(render.samples).run() &&

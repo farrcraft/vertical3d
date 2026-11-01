@@ -215,6 +215,7 @@
               "label": "Animate",
               "items": [
                 { "label": "Set Key", "type": "action", "context": "timeline", "command": "set" },
+                { "label": "Auto Key", "type": "check", "context": "timeline", "command": "auto_key" },
                 { "type": "separator" },
                 { "label": "Play", "type": "action", "context": "timeline", "command": "playback::play" },
                 { "label": "Stop", "type": "action", "context": "timeline", "command": "playback::stop" },

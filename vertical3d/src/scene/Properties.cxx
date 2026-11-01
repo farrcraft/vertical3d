@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -146,6 +147,24 @@ std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm
  **/
 std::map<std::string, float> values(const Item& item, const glm::vec3& near) {
     return values(item.kind(), pose(item), near);
+}
+
+/**
+ **/
+std::set<std::string> changed(const std::map<std::string, float>& first, const std::map<std::string, float>& second) {
+    std::set<std::string> found;
+    bool turned = false;
+    for (const auto& [path, value] : second) {
+        const auto was = first.find(path);
+        if (was == first.end() || was->second != value) {
+            found.insert(path);
+            turned = turned || path.starts_with("rotation.");
+        }
+    }
+    if (turned) {
+        found.insert({ "rotation.x", "rotation.y", "rotation.z" });
+    }
+    return found;
 }
 
 /**

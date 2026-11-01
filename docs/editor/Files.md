@@ -53,7 +53,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 
 | Table | Column | Holds |
 |---|---|---|
-| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing |
+| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `auto_key`: 1 when an edit sets a key, and off when it is 0 or missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
 | | `kind` | `mesh`, `camera`, `light`, `group` or `curve` |

@@ -11,6 +11,7 @@
 #include <api/interchange/usd/Usd.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
+#include <vertical3d/src/command/AutoKey.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/Create.h>
 #include <vertical3d/src/command/Group.h>
@@ -169,13 +170,23 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
 }
 
 Outcome Document::key(const scene::Items& items, int frame) {
-    const boost::shared_ptr<command::Key> command = boost::make_shared<command::Key>(scene_, items, static_cast<float>(frame));
+    const boost::shared_ptr<command::Key> command = boost::make_shared<command::Key>(scene_, command::Key::every(items), static_cast<float>(frame));
     if (command->empty()) {
         return { .done = false, .message = "a key is set on items, and none was given" };
     }
     command->redo();
     history_->push(command);
     return { .done = true, .message = "set a key at frame " + std::to_string(frame), .undoable = true };
+}
+
+Outcome Document::autoKey(bool on) {
+    if (scene_->timeline().autoKey == on) {
+        return { .done = false, .message = on ? "auto key is already on" : "auto key is already off" };
+    }
+    const boost::shared_ptr<command::AutoKey> command = boost::make_shared<command::AutoKey>(scene_, on);
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = on ? "turned auto key on" : "turned auto key off", .undoable = true };
 }
 
 Outcome Document::settings(const scene::RenderSettings& settings) {

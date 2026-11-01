@@ -465,24 +465,11 @@ boost::shared_ptr<Item> Scene::document(std::int64_t id) const {
 /**
  **/
 std::set<std::string> Scene::edited(const Item& item) const {
-    std::set<std::string> found;
     const auto settled = settled_.find(item.documentId());
     if (settled == settled_.end()) {
-        return found;
+        return std::set<std::string>();
     }
-    bool turned = false;
-    for (const auto& [path, value] : values(item, glm::vec3(0.0F))) {
-        const auto was = settled->second.find(path);
-        if (was == settled->second.end() || was->second != value) {
-            found.insert(path);
-            turned = turned || path.starts_with("rotation.");
-        }
-    }
-    // the angles are read from one quaternion, so a turn about one axis can change all three
-    if (turned) {
-        found.insert({ "rotation.x", "rotation.y", "rotation.z" });
-    }
-    return found;
+    return changed(settled->second, values(item, glm::vec3(0.0F)));
 }
 
 /**

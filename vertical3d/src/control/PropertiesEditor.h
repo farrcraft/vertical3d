@@ -36,9 +36,10 @@ namespace v3d::editor::control {
  *
  * An edit is written into the item as it happens, so the views follow a drag of a number. When
  * the edit ends, or its item stops being the one shown, it is recorded in the history as one
- * change, which undo takes back whole. An edit to a keyed number is pending until the frame is
- * set, as a manipulator's is. A lens, an emission or a style an edit would make invalid is not
- * written.
+ * change, which undo takes back whole. While auto key is on, the numbers it changed are keyed at
+ * the current frame in the same change. Otherwise an edit to a keyed number is pending until the
+ * frame is set, as a manipulator's is. A lens, an emission or a style an edit would make invalid
+ * is not written.
  **/
 class PropertiesEditor final {
  public:
@@ -110,6 +111,7 @@ class PropertiesEditor final {
      * An edit that has begun and not ended: the item, and its values when it began.
      **/
     struct Pending final {
+        boost::shared_ptr<scene::Scene> scene;  /**< the scene the item is in, where auto key sets its key **/
         boost::shared_ptr<scene::Item> item;
         command::Edit::Values before;
         std::string what;   /**< the name of the change, such as "rename" **/
@@ -161,6 +163,8 @@ class PropertiesEditor final {
     void finish();
 
     boost::shared_ptr<command::Stack> history_;
+    // the scene last drawn, which a new edit is made in
+    boost::shared_ptr<scene::Scene> scene_;
     std::optional<Pending> pending_;
     // the item the angles were last shown for, and the angles
     boost::shared_ptr<scene::Item> turned_;

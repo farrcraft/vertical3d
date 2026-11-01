@@ -305,11 +305,20 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 10 — Auto key
 
-**Open.**
+**Closed.**
 
-- A setting on the timeline, saved with the project. While it is on, an edit to a number a
-  curve can drive sets a key at the current frame, in the same undo step as the edit.
-- The Animate menu shows it as a toggle.
+- The timeline holds `autoKey`, saved in the meta table as `auto_key`. Turning it on or off is a
+  change in the history.
+- While it is on, a manipulator's gesture and an edit in the properties editor key the numbers
+  they changed at the current frame. `command::Keyed` holds the edit and its key as one change.
+  Only the changed properties are keyed, with a rotation keyed whole.
+- `command::Key` takes the properties to key for each item, and `Key::every()` names them all,
+  as Set Key does.
+- The Animate menu shows Auto Key as a check.
+- The key, keyed and properties suites cover keying only the named paths, the joined change,
+  the rotation, an edit no curve drives, and the toggle. The transform tool suite covers a
+  keyed gesture, the document suite the toggle as a change, and the store suite its round trip.
+  The menu's check is not photographed, because the harness cannot open a menu.
 
 ### Step 11 — The timeline
 

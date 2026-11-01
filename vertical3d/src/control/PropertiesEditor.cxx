@@ -8,6 +8,7 @@
 #include <api/brep/BRep.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/command/Edit.h>
+#include <vertical3d/src/command/Keyed.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Units.h>
 #include <vertical3d/src/control/Outliner.h>
@@ -66,6 +67,7 @@ PropertiesEditor::PropertiesEditor(const boost::shared_ptr<command::Stack>& hist
 /**
  **/
 void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, std::size_t editor, const glm::vec4& region) {
+    scene_ = scene;
     const std::string id = "properties " + std::to_string(editor);
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     ui->pushId(id);
@@ -293,7 +295,7 @@ void PropertiesEditor::begin(const boost::shared_ptr<scene::Item>& item, const s
         finish();
     }
     if (!pending_) {
-        pending_ = Pending{ .item = item, .before = command::Edit::of(*item), .what = what };
+        pending_ = Pending{ .scene = scene_, .item = item, .before = command::Edit::of(*item), .what = what };
     }
 }
 
@@ -304,7 +306,8 @@ void PropertiesEditor::finish() {
         return;
     }
     if (!command::Edit::same(pending_->before, command::Edit::of(*pending_->item)) && history_) {
-        history_->push(boost::make_shared<command::Edit>(pending_->item, pending_->before, pending_->what));
+        const command::Keyed::Change change{ .item = pending_->item, .before = pending_->before.pose, .after = scene::pose(*pending_->item) };
+        history_->push(command::Keyed::record(pending_->scene, boost::make_shared<command::Edit>(pending_->item, pending_->before, pending_->what), { change }));
     }
     pending_.reset();
 }

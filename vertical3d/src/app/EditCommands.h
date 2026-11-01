@@ -11,8 +11,8 @@
 namespace v3d::editor::app {
 
 /**
- * The commands that change the document: making items, grouping them, keying them, the
- * modelling operations and undo. Each one reports what the document said.
+ * The commands that change the document: making items, grouping them, keying them, auto key,
+ * the modelling operations and undo. Each one reports what the document said.
  **/
 class EditCommands final {
  public:

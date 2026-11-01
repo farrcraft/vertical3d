@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -40,6 +41,24 @@ BOOST_AUTO_TEST_CASE(properties_declared_test) {
     BOOST_CHECK(v3d::editor::scene::declares(v3d::editor::scene::Item::Kind::Camera, "lens.fov"));
     BOOST_CHECK(!v3d::editor::scene::declares(v3d::editor::scene::Item::Kind::Mesh, "lens.fov"));
     BOOST_CHECK(!v3d::editor::scene::declares(v3d::editor::scene::Item::Kind::Light, "rotation"));
+}
+
+BOOST_AUTO_TEST_CASE(properties_changed_test) {
+    const std::map<std::string, float> before{ { "translation.x", 0.0F }, { "rotation.x", 0.0F }, { "rotation.y", 0.0F }, { "rotation.z", 0.0F } };
+    std::map<std::string, float> after = before;
+
+    // nothing is changed between equal values
+    BOOST_CHECK(v3d::editor::scene::changed(before, after).empty());
+
+    // a changed value is named, and a path the first set lacks has changed
+    after["translation.x"] = 1.0F;
+    after["scale.x"] = 1.0F;
+    BOOST_CHECK(v3d::editor::scene::changed(before, after) == std::set<std::string>({ "translation.x", "scale.x" }));
+
+    // a changed angle names the whole rotation
+    after = before;
+    after["rotation.y"] = 10.0F;
+    BOOST_CHECK(v3d::editor::scene::changed(before, after) == std::set<std::string>({ "rotation.x", "rotation.y", "rotation.z" }));
 }
 
 BOOST_AUTO_TEST_CASE(properties_values_test) {
