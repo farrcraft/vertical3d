@@ -16,6 +16,12 @@
     "entt",
     "freetype",
     "glm",
+    {
+      "name": "harfbuzz",
+      "features": [
+        "freetype"
+      ]
+    },
     "libjpeg-turbo",
     "libpng",
     "nanosvg",

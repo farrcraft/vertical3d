@@ -8,6 +8,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <hb-ft.h>
+#include <hb.h>
+
 namespace v3d::font::internal {
 
 FaceHandle::FaceHandle(FT_Library library, const char* filename) {
@@ -18,10 +21,16 @@ FaceHandle::FaceHandle(FT_Library library, const char* filename) {
     if (FT_Select_Charmap(face, FT_ENCODING_UNICODE) != 0) {
         FT_Done_Face(face);
         face = nullptr;
+        return;
     }
+    // the HarfBuzz face takes a reference of its own on the FreeType face
+    shaping = hb_ft_face_create_referenced(face);
 }
 
 FaceHandle::~FaceHandle() {
+    if (shaping != nullptr) {
+        hb_face_destroy(shaping);
+    }
     if (face != nullptr) {
         FT_Done_Face(face);
     }

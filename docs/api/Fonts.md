@@ -35,6 +35,37 @@ atlas and the drawing of text. See [ui/](ui/README.md).
   glyph from the first of those faces that has the code point. A code point no
   face has is the first face's missing glyph. A chain with no families finds a null face.
 
+## Shaping
+
+Text is shaped by HarfBuzz, over the faces a `FallbackChain` holds. Shaping applies a font's
+kerning, mark positioning, ligatures and contextual forms, and any OpenType feature asked for.
+
+- **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features)`** shapes a
+  UTF-8 string at a `FaceStyle` and a size in pixels, and returns its runs in the string's
+  order. An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain
+  with no faces gives no runs.
+- **Runs.** A character stays in the run before it when that run's face has it, or is the face
+  the chain finds for it. Otherwise it starts a run in the face the chain finds. A run also ends
+  where the script changes. A character with no script of its own, such as a space, a digit or
+  a combining mark, takes the script of its run, or of the first character after it that has
+  one. Text with no script at all is shaped as Latin.
+- **Direction.** Each run's direction is its script's: right to left for scripts such as Arabic
+  and Hebrew, and left to right otherwise. Embedding levels are not resolved, so a number inside
+  Arabic text takes the Arabic run's direction.
+- **`ShapedRun`** holds its `face`, its `script` as an ISO 15924 code such as `"Latn"`, its
+  `direction`, the byte range `start` to `end` it came from, its `glyphs`, and the sum of their
+  advances. Its glyphs are in visual order, left to right, whatever its direction.
+- **`ShapedGlyph`** holds the glyph's `index` in the run's face, its `advance`, the `offset` it
+  is drawn at from the pen, and its `cluster`: the byte offset of the first character it came
+  from. Every measure is in pixels at the size shaped, with y growing downwards. A combining
+  mark takes no advance, and keeps its own character's cluster.
+- Advances come from the face's metrics, unhinted, so they match a distance field glyph's.
+- **`Feature`** turns an OpenType feature on or off across the whole string: `{ "tnum" }` for
+  tabular figures, `{ "kern", 0 }` for no kerning. A feature that chooses among alternates takes
+  the alternate's number as its value. A tag that is not four letters is left out.
+
+Background: [ADR-0141](../adr/0141-text-opentype-shaping-with-harfbuzz.md)
+
 ## Texture fonts
 
 - **`TextureFont(face, size, logger, spread)`** draws one face at one size.

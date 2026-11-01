@@ -67,7 +67,7 @@ set(V3D_API_event_PACKAGES glm EnTT)
 
 set(V3D_API_font_PATH "font")
 set(V3D_API_font_REQUIRES log image)
-set(V3D_API_font_PACKAGES Freetype glm)
+set(V3D_API_font_PACKAGES Freetype harfbuzz glm)
 
 set(V3D_API_grid_PATH "grid")
 set(V3D_API_grid_REQUIRES)
@@ -139,6 +139,7 @@ set(V3D_PACKAGE_TARGETS
 	"SDL3::SDL3=SDL3"
 	"SDL3_mixer::SDL3_mixer=SDL3_mixer"
 	"Freetype::Freetype=Freetype"
+	"harfbuzz::harfbuzz=harfbuzz"
 	"PNG::PNG=PNG"
 	"JPEG::JPEG=JPEG"
 	"NanoSVG::nanosvg=NanoSVG"

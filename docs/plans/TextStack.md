@@ -171,15 +171,22 @@ ADR.
 
 ### Step 3 — Shaping
 
-**Open.** Decide the shaping library.
+**Closed.** ADR-0141 decided it, after weighing kb_text_shape, FreeType's GPOS kerning and the
+platforms' shapers.
 
-- Text is split into runs by face, by script and by direction, and each run is shaped.
-- A shaped run holds each glyph's index, advance, offset and source cluster. Kerning, marks,
-  ligatures and contextual alternates are applied as the font defines them.
-- A style turns OpenType features on or off: `tnum`, `case`, `ss01` and the rest.
-- The manifests name the library's port.
-- The shaping suite covers Inter's kerning of a known pair, `tnum` giving digits one width, a
-  combining mark placed over its base, and an Arabic word joined.
+- `font::Shaper` shapes a string through HarfBuzz over a fallback chain's faces. It splits the
+  string into runs where the face or the script changes, keeping a space or a mark in the run
+  before it. Each run's direction is its script's, until step 5 resolves embedding levels.
+- A `font::ShapedRun` holds its face, script, direction, byte range and glyphs in visual order.
+  A `font::ShapedGlyph` holds its index, advance, offset and source cluster.
+- A `font::Feature` turns an OpenType feature on or off across a string.
+- Both manifests name HarfBuzz with its FreeType feature. A face holds a HarfBuzz face over its
+  FreeType face.
+- Shaped text is not drawn yet. A substitution gives a glyph index no code point names, and the
+  glyph store of step 8 packs glyphs by index.
+- The shaper suite covers a kerned pair, tabular figures, a mark on its base, contextual
+  alternates, runs split by face and script, and the sizes that shape nothing. The tree ships no
+  Arabic face, so an Arabic word joined is checked in step 16 with the script faces.
 
 ### Step 4 — Unicode text boundaries
 
@@ -311,4 +318,5 @@ ADR.
 
 - The fallback chain ships faces for Arabic, Hebrew, Devanagari, Thai and CJK, under licences
   the tree can carry.
+- The shaping suite covers an Arabic word joined and a Devanagari syllable reordered.
 - The device suite compares a line of each script against a reference image.

@@ -8,11 +8,14 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <hb.h>
+
 namespace v3d::font::internal {
 
 /**
- * Owns one FreeType face from construction to destruction. face is null when the file could
- * not be opened or has no Unicode character map.
+ * Owns one FreeType face from construction to destruction, and the HarfBuzz face that shapes
+ * text over it. face and shaping are null when the file could not be opened or has no Unicode
+ * character map.
  **/
 class FaceHandle final {
  public:
@@ -41,6 +44,7 @@ class FaceHandle final {
     static constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
 
     FT_Face face = nullptr;
+    hb_face_t* shaping = nullptr;
 
  private:
     // the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel

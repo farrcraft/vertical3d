@@ -33,6 +33,7 @@ content went. Numbers are never reused.
 | [0012](0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 |
 | [0031](0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 |
 | [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | accepted |
+| [0141](0141-text-opentype-shaping-with-harfbuzz.md) | Text: OpenType shaping with HarfBuzz | accepted |
 | [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
 | [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
 | 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |

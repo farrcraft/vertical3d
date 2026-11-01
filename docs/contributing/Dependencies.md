@@ -34,6 +34,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | entt | |
 | freetype | |
 | glm | |
+| harfbuzz | `v3dlib_font` shapes text through it, over the faces FreeType holds open. **It must have its `freetype` feature**, which builds the integration with FreeType. It is the `harfbuzz::harfbuzz` target of the `harfbuzz` config package, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
