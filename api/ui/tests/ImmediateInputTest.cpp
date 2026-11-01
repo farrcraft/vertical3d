@@ -170,6 +170,46 @@ BOOST_AUTO_TEST_CASE(a_surface_reports_its_press) {
 }
 
 /**
+ * A surface given the room below fills the rest of its region without making it scroll, and
+ * reads the wheel only while the cursor is on it.
+ **/
+BOOST_AUTO_TEST_CASE(a_surface_fills_the_room_below) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    v3d::ui::Immediate::Surface seen;
+    float width = 0.0F;
+    float outside = -1.0F;
+    const auto panel = [&]() {
+        outside = ui.roomBelow();
+        ui.region("panel", { .position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(300.0F, 200.0F) }, 1.0F);
+        ui.button("Above");
+        width = ui.rowWidth();
+        seen = ui.surface("plot", ui.roomBelow());
+        ui.endRegion();
+    };
+    v3d::ui::Immediate::Input turned = hover(glm::vec2(100.0F, 150.0F));
+    turned.wheel = 2.0F;
+
+    frame(&ui, &canvas, turned, panel);
+    const float before = width;
+    frame(&ui, &canvas, turned, panel);
+    frame(&ui, &canvas, turned, panel);
+    BOOST_CHECK_EQUAL(outside, 0.0F);
+    BOOST_CHECK(seen.max.y > 150.0F);
+    BOOST_CHECK(seen.max.y <= 200.0F);
+    // a region that scrolled would have taken its bar's width out of the row
+    BOOST_CHECK_EQUAL(width, before);
+    BOOST_CHECK(seen.hovered);
+    BOOST_CHECK_EQUAL(seen.wheel, 2.0F);
+
+    turned.cursor = glm::vec2(350.0F, 150.0F);
+    frame(&ui, &canvas, turned, panel);
+    frame(&ui, &canvas, turned, panel);
+    BOOST_CHECK_EQUAL(seen.wheel, 0.0F);
+}
+
+/**
  * A surface's shapes and text are drawn where they are asked for, and a shape with nothing to
  * fill draws nothing.
  **/

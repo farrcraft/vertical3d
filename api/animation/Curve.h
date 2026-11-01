@@ -47,6 +47,14 @@ class Curve final {
     };
 
     /**
+     * The slopes a key arrives and leaves with, in value per frame.
+     **/
+    struct Slopes final {
+        float in = 0.0F;
+        float out = 0.0F;
+    };
+
+    /**
      * Two frames closer than this are the same frame, so a key set there replaces the key on it.
      **/
     static constexpr float SAME_FRAME = 1e-4F;
@@ -87,6 +95,14 @@ class Curve final {
      * @return how many keys moved. An offset that is not finite moves none
      **/
     std::size_t shift(const std::vector<float>& frames, float offset);
+
+    /**
+     * Give the key on a frame slopes of its own. It stops being automatic, so its slopes are
+     * no longer worked out from its neighbours.
+     *
+     * @return whether there was a key on that frame. Slopes that are not finite change nothing
+     **/
+    bool slopes(float frame, const Slopes& given);
 
     bool empty() const noexcept;
 

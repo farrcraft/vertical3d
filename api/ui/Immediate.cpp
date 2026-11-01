@@ -175,6 +175,15 @@ float Immediate::rowWidth() const noexcept {
     return std::max(context_->row.right - context_->row.margin, 0.0F);
 }
 
+float Immediate::roomBelow() const noexcept {
+    if (!context_->window.open) {
+        return 0.0F;
+    }
+    // a row is followed by the gap between rows, and a window whose content ends past its body
+    // scrolls, so the gap is kept inside the body too
+    return std::max(context_->window.bodyMax.y - context_->dressing.spacing - context_->row.penY, 0.0F);
+}
+
 void Immediate::text(const std::string& line) {
     if (context_->canvas == nullptr) {
         return;
@@ -466,6 +475,7 @@ Immediate::Surface Immediate::surface(const std::string& id, float height) {
     made.pressed = reaction.held && reaction.hovered && context_->input.pressed;
     made.released = reaction.held && context_->input.released;
     made.pressAt = reaction.held ? context_->pressAt : made.cursor;
+    made.wheel = made.hovered ? context_->input.wheel : 0.0F;
     return made;
 }
 

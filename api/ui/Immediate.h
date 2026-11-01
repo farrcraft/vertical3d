@@ -338,6 +338,7 @@ class Immediate {
         bool pressed = false;       /**< a press went down on it this frame **/
         bool held = false;          /**< a press went down on it and has not come up **/
         bool released = false;      /**< the press it held came up this frame, wherever the cursor is **/
+        float wheel = 0.0F;         /**< notches the wheel turned while the cursor was on it, away from the reader first **/
     };
 
     /**
@@ -392,6 +393,13 @@ class Immediate {
      *         them from it first
      **/
     float rowWidth() const noexcept;
+
+    /**
+     * @return how tall the next row can be and still end inside the window or region it is in,
+     *         so a widget given that height fills the rest of it without making it scroll. 0
+     *         outside a window, or when there is no room left
+     **/
+    float roomBelow() const noexcept;
 
     /**
      * Whether the cursor is over something this layer drew, or is dragging something it

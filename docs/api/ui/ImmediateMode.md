@@ -65,6 +65,8 @@ Layout helpers:
 - `measure(line)` is how wide a line of text is drawn, for laying out widgets beside it.
 - `rowWidth()` is the width a row has from its margin to its right edge. A caller dividing a row
   between widgets takes the spacing between them out of it first.
+- `roomBelow()` is how tall the next row can be and still end inside its window or region, so a
+  widget given that height fills the rest without making it scroll. It is 0 outside a window.
 - `beginDisabled()` / `endDisabled()` draw everything between them dimmed and unresponsive.
   The scopes nest.
 - A click on a tab takes effect at `endTabBar()`, so the old tab answers for the whole frame
@@ -105,6 +107,8 @@ timeline. The caller draws into it and acts on what its `Surface` reports.
 - `held` stays true from that press until it comes up, wherever the cursor goes, so a drag that
   leaves the surface keeps acting on it. `released` is true on the frame the held press comes
   up. `pressAt` is where the press went down.
+- `wheel` is the notches the wheel turned while the cursor was on it, away from the reader
+  first, and 0 while the cursor is elsewhere.
 - `fill(min, max, colour)`, `line(from, to, width, colour)`, `diamond(centre, radius, colour)`
   and `textAt(line, at, colour)` draw at the points given, clipped as the widgets around them
   are, and take no place in the row. A diamond is a square stood on its corner.

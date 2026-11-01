@@ -151,6 +151,28 @@ BOOST_AUTO_TEST_CASE(curve_shift_test) {
     BOOST_CHECK_EQUAL(curve.keys()[0].frame, 7.0F);
 }
 
+BOOST_AUTO_TEST_CASE(curve_slopes_test) {
+    Curve curve({ { .frame = 0.0F, .value = 0.0F }, { .frame = 10.0F, .value = 10.0F }, { .frame = 20.0F, .value = 0.0F } });
+
+    // the peak is flat while automatic, and keeps the slopes it is given after
+    BOOST_CHECK_EQUAL(curve.keys()[1].out, 0.0F);
+    BOOST_CHECK(curve.slopes(10.0F, { .in = 2.0F, .out = -1.0F }));
+    BOOST_CHECK(!curve.keys()[1].automatic);
+    BOOST_CHECK_EQUAL(curve.keys()[1].in, 2.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].out, -1.0F);
+
+    // a change to the keys around it works out the automatic keys again, and leaves it alone
+    curve.set(20.0F, 5.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].in, 2.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].out, -1.0F);
+    BOOST_CHECK_CLOSE(curve.sample(11.0F), 9.0F, 5.0F);
+
+    // a frame with no key, or a slope that is not finite, changes nothing
+    BOOST_CHECK(!curve.slopes(5.0F, { .in = 1.0F, .out = 1.0F }));
+    BOOST_CHECK(!curve.slopes(0.0F, { .in = std::numeric_limits<float>::quiet_NaN(), .out = 1.0F }));
+    BOOST_CHECK(curve.keys()[0].automatic);
+}
+
 BOOST_AUTO_TEST_CASE(curve_rejects_bad_keys_test) {
     BOOST_CHECK_THROW(Curve({ { .frame = 2.0F }, { .frame = 1.0F } }), std::invalid_argument);
     BOOST_CHECK_THROW(Curve({ { .frame = 1.0F }, { .frame = 1.0F } }), std::invalid_argument);

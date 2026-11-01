@@ -132,6 +132,23 @@ std::size_t Curve::shift(const std::vector<float>& frames, float offset) {
 
 /**
  **/
+bool Curve::slopes(float frame, const Slopes& given) {
+    if (!std::isfinite(given.in) || !std::isfinite(given.out)) {
+        return false;
+    }
+    const auto at = std::find_if(keys_.begin(), keys_.end(),
+        [frame](const Key& key) { return std::fabs(key.frame - frame) <= SAME_FRAME; });
+    if (at == keys_.end()) {
+        return false;
+    }
+    at->in = given.in;
+    at->out = given.out;
+    at->automatic = false;
+    return true;
+}
+
+/**
+ **/
 bool Curve::empty() const noexcept {
     return keys_.empty();
 }

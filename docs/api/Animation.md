@@ -68,6 +68,8 @@ an in and an out slope, in value per frame.
 - `shift(frames, offset)` moves the keys on those frames along by the offset, each keeping its
   value, interpolation and slopes. A key that stays on a frame a moved key lands on is replaced.
   An offset that is not finite moves nothing.
+- `slopes(frame, { .in, .out })` gives the key on that frame slopes of its own, and it stops being
+  automatic. Slopes that are not finite change nothing.
 - Construction throws for keys that are not finite or do not rise in frame.
 
 ### SpriteClip and Track
