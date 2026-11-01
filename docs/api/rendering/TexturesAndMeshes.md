@@ -33,6 +33,19 @@ textures->release(sprite);                                            // see Rel
 - `white()` is the 1×1 white texture. It is never released.
 - An upload returns without waiting for the copy, and the texture is drawn from the next frame
   on.
+- **`update(handle, at, pixels)` copies pixels into a region of a texture** made by
+  `texture()`, or by `request()` once its image has arrived, while frames are drawing it:
+
+  ```cpp
+  textures->update(atlas, glm::uvec2(x, y), { .data = glyph, .width = w, .height = h, .channels = 1 });
+  ```
+
+  It returns without waiting. The frames submitted before it draw what the texture held, and
+  the device waits for them to finish sampling it before it copies. The frame being recorded and
+  every later one draw the new pixels. The rest of the texture is kept, and so is its slot. The
+  pixels have the texture's channels: 1 for a coverage mask, 3 or 4 for colour. It returns false
+  and copies nothing for the white texture, a render target's image, a request still waiting, a
+  handle unset or released, or a region not inside the texture.
 - **Every texture is a slot in one array**, bound at set 1, which holds a few thousand textures
   or as many as the device allows, whichever is fewer. `capacity()` says how many. Registering
   one more than that throws.

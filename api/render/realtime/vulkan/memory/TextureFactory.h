@@ -32,8 +32,9 @@ class Buffer;
  *
  * Every texture is uploaded through a staging buffer and the Uploader, which submits the copy
  * and returns without waiting. The copy ends in a barrier that leaves the image ready for a
- * fragment shader to sample in any later submission. The image is new, so no frame is reading
- * it.
+ * fragment shader to sample in any later submission. A new image has no frame reading it. A
+ * region update copies into an image frames may be sampling, so its copy first waits on the
+ * device for the fragment shaders of the frames submitted before it.
  *
  * A single channel image is given a view that swizzles its one channel into alpha and
  * ones into rgb. A coverage mask then samples as white with its coverage in alpha. A glyph
@@ -100,6 +101,27 @@ class TextureFactory final {
         const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
 
     /**
+     * @return whether pixels can be copied into an image at a place: the image is a 2D colour
+     *         texture this factory made, the pixels lie inside it, and they have its channels.
+     *         1 channel fits a coverage mask, and 3 or 4 fit a colour texture
+     **/
+    static bool fits(const Image& image, const Pixels& source, uint32_t x, uint32_t y);
+
+    /**
+     * Copy pixels into a region of a texture this factory made, which frames may be sampling.
+     *
+     * The copy is submitted at once and returns without waiting. On the device it waits for the
+     * frames submitted before it to finish sampling the texture, so those draw what it held
+     * before. The frame being recorded and every later one draw the new pixels. The rest of the
+     * texture is kept.
+     *
+     * @param x and y where the region's top left texel goes
+     * @throw std::runtime_error if the pixels do not fit the image, as fits() decides, or the
+     *        upload fails
+     **/
+    void update(const Image& image, const Pixels& source, uint32_t x, uint32_t y) const;
+
+    /**
      * A 3D texture, read as it is stored, because it is a lookup table and not an authored
      * colour.
      * @param texels four bytes a texel, rows then slices
@@ -112,6 +134,12 @@ class TextureFactory final {
      * Copy what is staged into the whole of an image, leaving it ready to sample.
      **/
     void upload(const boost::shared_ptr<Buffer>& staging, const Image& image, const VkExtent3D& extent) const;
+
+    /**
+     * @return a staging buffer holding pixels as the image takes them, with three channels
+     *         widened to four
+     **/
+    boost::shared_ptr<Buffer> stage(const Pixels& source) const;
 
     /**
      * @return the sampler made for a spec, made now if no texture has named that spec before

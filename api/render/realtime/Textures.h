@@ -27,6 +27,7 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 
 namespace v3d::render::realtime {
 
@@ -88,6 +89,23 @@ class Textures final {
      **/
     TextureHandle texture(const unsigned char* pixels, uint32_t width, uint32_t height, uint32_t channels,
         const vulkan::pipeline::Sampler::Spec& sampler = vulkan::pipeline::Sampler::Spec());
+
+    /**
+     * Copy pixels into a region of a texture, which frames may be drawing.
+     *
+     * The copy is submitted at once, and the host does not wait. The frames submitted before it
+     * draw what the texture held, and the device waits for them to finish sampling it before it
+     * copies. The frame being recorded and every later one draw the new pixels. The rest of the
+     * texture is kept, and the texture keeps its slot.
+     *
+     * @param at where the region's top left texel goes
+     * @param pixels tightly packed rows of width * channels bytes, with the texture's channels:
+     *        1 for a coverage mask, and 3 or 4 for colour
+     * @return whether the pixels were copied. Nothing is copied into the white texture, a render
+     *         target's image, a request still waiting for its image, or a handle unset or
+     *         released, nor when the region is not inside the texture
+     **/
+    bool update(const TextureHandle& handle, const glm::uvec2& at, const vulkan::memory::TextureFactory::Pixels& pixels);
 
     /**
      * Where request() reads an image from and decodes it: the asset manager a path is relative

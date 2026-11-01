@@ -255,11 +255,17 @@ shared cache, a cache with no object, and one style for each text.
 
 ### Step 7 — Partial texture updates
 
-**Open.**
+**Closed.**
 
-- `api/render/realtime` updates a region of a texture that is in use, after the frames reading
-  it have finished, without waiting for the device to go idle.
-- The device suite covers a region updated while the texture is drawn.
+- `Textures::update()` copies pixels into a region of a texture that frames may be drawing,
+  and the texture keeps its slot. The copy waits on the device for the fragment shaders of the
+  frames submitted before it, through a barrier out of `SHADER_READ_ONLY_OPTIMAL` that keeps the
+  rest of the texture. The host never waits.
+- It refuses the white texture, a render target's image, a request still waiting, a released
+  handle, a region outside the texture, and pixels with other channels.
+- The device suite covers a region updated while a frame drawing the texture is in flight: that
+  frame draws the old texels and the next draws the new region beside the kept rest. It also
+  covers each update that is refused.
 
 ### Step 8 — The glyph store
 

@@ -124,6 +124,11 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
   texture's leaves it in `SHADER_READ_ONLY_OPTIMAL` for the fragment shader.
 - An upload does not mean any frame has finished. An object a frame may still read is retired
   through the ring.
+- **An upload copies into an object no frame is reading, unless it waits for the readers on the
+  device.** Every upload copies into a buffer or an image just made, except a texture's region
+  update. Its copy begins with `forRegionUpload`, a barrier whose first scope is the fragment
+  shaders of every submission made before it on the queue. The device waits for them, and the
+  host never does.
 - Nothing an upload holds is freed until frames are begun, so code that uploads and never draws,
   such as a test, holds every staging buffer until the context is destroyed.
 - Command buffers are reused once their frame has finished, from a pool the retirements share,

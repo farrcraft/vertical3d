@@ -31,9 +31,10 @@ namespace v3d::render::realtime::vulkan::memory {
  * The copy is ordered before every later submission on the queue, so a frame submitted after it
  * sees its result if the copy ends with a barrier that makes its writes visible. Every upload in
  * the api ends with one. A finished upload does not mean that a frame in flight has finished, so
- * an object a frame may still read is retired through the Ring, not destroyed. The caller must
- * not record a copy into an object a frame may be reading. Every upload in the api copies into a
- * buffer or image it has just made.
+ * an object a frame may still read is retired through the Ring, not destroyed. A copy into an
+ * object a frame may be reading begins with a barrier whose first scope is those reads, which
+ * reaches every submission made before it on the queue. Otherwise it copies into a buffer or an
+ * image just made, as every upload in the api but a texture's region update does.
  *
  * Nothing an upload holds is freed until frames are begun, so a caller that uploads without
  * drawing holds every staging buffer until the Ring is destroyed.

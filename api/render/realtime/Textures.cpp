@@ -24,6 +24,7 @@
 #include "Handle.h"
 #include "UploadQueue.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -31,6 +32,7 @@
 #include <string>
 
 #include <boost/make_shared.hpp>
+#include <glm/vec2.hpp>
 
 namespace v3d::render::realtime {
 
@@ -67,6 +69,22 @@ TextureHandle Textures::texture(const unsigned char* pixels, uint32_t width, uin
     const vulkan::pipeline::Sampler::Spec& sampler) {
     return add(factory_->create({.data = pixels, .width = width, .height = height, .channels = channels},
         vulkan::memory::TextureFactory::Encoding::Display, sampler));
+}
+
+/**
+ **/
+bool Textures::update(const TextureHandle& handle, const glm::uvec2& at, const vulkan::memory::TextureFactory::Pixels& pixels) {
+    // a request still waiting shares the white texture's image, as the white texture does
+    // with every untextured draw
+    const auto request = requests_.find(handle);
+    const bool waiting = request != requests_.end() && request->second.pending;
+    const bool target = std::any_of(targets_.begin(), targets_.end(), [&handle](const auto& registered) { return registered.second == handle; });
+    const vulkan::pipeline::Texture* texture = resources_->texture(handle);
+    if (handle == white_ || waiting || target || texture == nullptr || !vulkan::memory::TextureFactory::fits(*texture->image, pixels, at.x, at.y)) {
+        return false;
+    }
+    factory_->update(*texture->image, pixels, at.x, at.y);
+    return true;
 }
 
 /**

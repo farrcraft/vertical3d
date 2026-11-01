@@ -173,10 +173,12 @@ cannot disagree. Add a function there rather than writing a barrier inline.
 | `depthForDrawing` | `UNDEFINED` → `DEPTH_ATTACHMENT_OPTIMAL` | depth before the first pass |
 | `depthForSampling` | `DEPTH_ATTACHMENT_OPTIMAL` → `DEPTH_READ_ONLY_OPTIMAL` | sampled depth after its last writer |
 | `forUpload`, `uploadedForSampling` | `UNDEFINED` → `TRANSFER_DST` → `SHADER_READ_ONLY_OPTIMAL` | texture uploads |
+| `forRegionUpload`, `uploadedForSampling` | `SHADER_READ_ONLY_OPTIMAL` → `TRANSFER_DST` → `SHADER_READ_ONLY_OPTIMAL` | a region of a texture frames may be sampling, keeping the rest |
 | `forReadback`, `afterReadback` | any → `TRANSFER_SRC` → back | frame capture |
 | `record(commands, {...})` | | records several as one dependency |
 
 Every transition into an attachment layout starts from `UNDEFINED` and discards the contents.
+A region upload starts from `SHADER_READ_ONLY_OPTIMAL` and keeps them.
 Nothing carries between frames, so the first pass to use an image in a frame must clear it.
 
 **A target costs one pair of barriers per frame** however many passes draw into it: opened before
