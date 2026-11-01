@@ -184,10 +184,9 @@ ADR.
 
 **Closed.**
 
-- `api/ui`: a menu bar has an `opacity` that its strip is drawn at, and each of its menus may
-  show an `icon` in place of its label, a `drop` mark after it, and `emphasis`, which sets the
-  title in the chosen item's weight on a pill of the widget colour. A title's icon and mark take
-  the label's colour.
+- `api/ui`: a menu bar has an `opacity` that its strip is drawn at. Each of its menus may show an
+  `icon` in place of its label and a `drop` mark after it. `emphasis` sets a title in the chosen
+  item's weight on a pill of the widget colour. A title's icon and mark take the label's colour.
 - A header is drawn at 80% over the view. Its editor menu shows the kind's icon, every menu has
   a drop mark, and the active view's camera name is set apart. `AreaChrome::sync()` takes the
   active area, so the emphasis moves without a rebuild.

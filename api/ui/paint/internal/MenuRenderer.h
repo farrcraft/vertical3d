@@ -188,9 +188,9 @@ class MenuRenderer final {
     Title titled(const component::menu::Menu& menu, const std::string& label, float height) const;
 
     /**
-     * Draw one menu's title on a bar, from a corner, and tell the bar where it lies: any pill
-     * that sets it apart, its highlight while open or under the cursor, its icon or label, and
-     * its drop mark.
+     * Draw one menu's title on a bar, from a corner, and tell the bar where it lies. The title
+     * is any pill that sets it apart, its highlight while open or under the cursor, its icon or
+     * label, and its drop mark.
      *
      * @return how wide the title is, or nothing for a menu the bar does not hold
      **/
