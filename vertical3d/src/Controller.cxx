@@ -450,7 +450,10 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         case tool::CameraControl::CAMERA_MODE_DOLLY:
             navigate = control::GraphEditor::Navigate::Zoom;
             break;
-        default:
+        // turning the camera has no meaning in a graph, so a drag there moves a key
+        case tool::CameraControl::CAMERA_MODE_PAN:
+        case tool::CameraControl::CAMERA_MODE_PITCH:
+        case tool::CameraControl::CAMERA_MODE_NONE:
             break;
     }
     std::vector<std::size_t> outliners;
