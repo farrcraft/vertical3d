@@ -77,7 +77,7 @@ Outcome Document::create(const boost::shared_ptr<scene::Item>& item, const std::
     const boost::shared_ptr<command::Create> command = boost::make_shared<command::Create>(scene_, item, name);
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "created a " + name + " - " + items(scene_->count()) };
+    return { .done = true, .message = "created a " + name + " - " + items(scene_->count()), .undoable = true };
 }
 
 Outcome Document::createPrimitive(Primitive primitive) {
@@ -128,7 +128,7 @@ Outcome Document::group(const scene::Items& items) {
     }
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "grouped " + Document::items(items.size()) + " - " + Document::items(scene_->count()) };
+    return { .done = true, .message = "grouped " + Document::items(items.size()) + " - " + Document::items(scene_->count()), .undoable = true };
 }
 
 Outcome Document::importScene(const boost::filesystem::path& file) {
@@ -165,7 +165,7 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     if (left > 0) {
         message += " - " + std::to_string(left) + " things left out, which the log lists";
     }
-    return { .done = true, .message = message };
+    return { .done = true, .message = message, .undoable = true };
 }
 
 Outcome Document::key(const scene::Items& items, int frame) {
@@ -175,7 +175,7 @@ Outcome Document::key(const scene::Items& items, int frame) {
     }
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "set a key at frame " + std::to_string(frame) };
+    return { .done = true, .message = "set a key at frame " + std::to_string(frame), .undoable = true };
 }
 
 Outcome Document::settings(const scene::RenderSettings& settings) {
@@ -185,7 +185,7 @@ Outcome Document::settings(const scene::RenderSettings& settings) {
     const boost::shared_ptr<command::Settings> command = boost::make_shared<command::Settings>(scene_, settings);
     command->redo();
     history_->push(command);
-    return { .done = true, .message = "changed the render settings" };
+    return { .done = true, .message = "changed the render settings", .undoable = true };
 }
 
 Outcome Document::splitEdges() {
@@ -228,7 +228,7 @@ Outcome Document::redo() {
     if (!command) {
         return { .done = false, .message = "nothing to redo" };
     }
-    return { .done = true, .message = "redo " + command->name() };
+    return { .done = true, .message = "redo " + command->name(), .undoable = true };
 }
 
 void Document::goTo(int frame) {
@@ -329,7 +329,7 @@ Outcome Document::record(command::Stack* history, const boost::shared_ptr<comman
         return { .done = false, .message = said.refused };
     }
     history->push(command);
-    return { .done = true, .message = said.done };
+    return { .done = true, .message = said.done, .undoable = true };
 }
 
 };  // namespace v3d::editor::document

@@ -606,9 +606,12 @@ with a `hairline` along its top. `StatusBar` in `src/control/` says what it show
 
 **Notices.** What an operation says, done or refused, shows as a notice at the foot of the active
 area, 16 pixels above its edge and centred. The message starts with a capital, on a plate in the
-theme's `panel` and `border`, with a menu's shadow. Undo and redo say the name of what they undid
-or redid. A notice shows for 2.5 seconds on the ui's clock, from the first frame it is drawn, and
-fades in and out over 0.15 seconds of that. A new notice replaces the one showing. `Notices` in
+theme's `panel` and `border`, with a menu's shadow. A green check before it says the operation
+was done, and a red cross that it was refused. A change undo takes back, the operation's
+`Outcome::undoable`, ends with the undo key, as in "Ctrl+Z to undo", in secondary text. Undo and
+redo say the name of what they undid or redid, and a redo can itself be undone. A notice shows
+for 2.5 seconds on the ui's clock, from the first frame it is drawn, and fades in and out over
+0.15 seconds of that. A new notice replaces the one showing. `Notices` in
 `src/control/` times it.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe

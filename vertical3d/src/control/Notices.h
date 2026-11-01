@@ -30,13 +30,25 @@ class Notices final {
     struct Shown final {
         std::string text;
         float alpha = 1.0F;
+        bool done = true;       /**< marked with a check when it was done, and a cross when refused **/
+        bool undoable = false;  /**< whether it says how to undo the change **/
+    };
+
+    /**
+     * A notice to post: what an operation said, whether it was done, and whether undo takes it
+     * back.
+     **/
+    struct Note final {
+        std::string text;
+        bool done = true;
+        bool undoable = false;
     };
 
     /**
      * Show a notice in place of any showing. Its first letter is made a capital, since an
-     * operation's message is written to start a log line. An empty one is ignored.
+     * operation's message is written to start a log line. One with no text is ignored.
      **/
-    void post(const std::string& text);
+    void post(const Note& note);
 
     /**
      * @param now the ui clock's time
@@ -46,6 +58,8 @@ class Notices final {
 
  private:
     std::string text_;
+    bool done_ = true;
+    bool undoable_ = false;
     // when the notice was first drawn, or nothing before then
     std::optional<float> start_;
 };

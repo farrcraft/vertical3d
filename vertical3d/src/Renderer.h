@@ -35,6 +35,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -235,6 +236,15 @@ class Renderer final {
     static constexpr float NOTICE_MARGIN = 16.0F;
 
     /**
+     * A notice's marks for done and refused, the gap between its parts against the text, and the
+     * command whose key it names to undo a change.
+     **/
+    static constexpr std::string_view NOTICE_DONE = "icon:check";
+    static constexpr std::string_view NOTICE_REFUSED = "icon:cross";
+    static constexpr float NOTICE_GAP = 0.8F;
+    static constexpr std::string_view UNDO_COMMAND = "edit::undo";
+
+    /**
      * How much stronger an emphasised grid line is than an ordinary one, and how strongly the
      * lines through the origin show their axis colours.
      **/
@@ -368,7 +378,8 @@ class Renderer final {
 
     /**
      * Draw the notice showing, if there is one, on a plate centred at the foot of the active
-     * area and kept inside the areas, faded as far as it has faded.
+     * area and kept inside the areas, faded as far as it has faded. It is marked with a check
+     * when done and a cross when refused, and a change undo takes back names the undo key.
      **/
     void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
 

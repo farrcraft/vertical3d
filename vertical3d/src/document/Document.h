@@ -33,6 +33,7 @@ namespace v3d::editor::document {
 struct Outcome final {
     bool done = false;    /**< whether it did what it was asked, rather than refusing **/
     std::string message;  /**< what to tell the user, whether it changed or not **/
+    bool undoable = false;  /**< whether it is a change undo takes back **/
 };
 
 /**

@@ -72,21 +72,28 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
 
     const v3d::editor::document::Outcome made = edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
     BOOST_CHECK(made.done);
+    BOOST_CHECK(made.undoable);
     BOOST_CHECK_EQUAL(made.message, "created a cube - 1 item");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
     BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "Cube");
     BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
     BOOST_CHECK(edited.dirty());
 
+    // an undo is not itself undone, and a redo is
     const v3d::editor::document::Outcome undone = edited.undo();
     BOOST_CHECK(undone.done);
+    BOOST_CHECK(!undone.undoable);
     BOOST_CHECK_EQUAL(undone.message, "undo create cube");
     BOOST_CHECK_EQUAL(edited.scene()->count(), 0U);
     BOOST_CHECK(!edited.dirty());
 
-    BOOST_CHECK(edited.redo().done);
+    const v3d::editor::document::Outcome redone = edited.redo();
+    BOOST_CHECK(redone.done);
+    BOOST_CHECK(redone.undoable);
     BOOST_CHECK_EQUAL(edited.scene()->count(), 1U);
-    BOOST_CHECK(!edited.redo().done);
+    const v3d::editor::document::Outcome nothing = edited.redo();
+    BOOST_CHECK(!nothing.done);
+    BOOST_CHECK(!nothing.undoable);
 }
 
 /**

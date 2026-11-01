@@ -30,7 +30,7 @@ void Context::report(const document::Outcome& outcome) const {
     if (!outcome.message.empty()) {
         logger->get()->info("{}", outcome.message);
         if (notices) {
-            notices->post(outcome.message);
+            notices->post({ .text = outcome.message, .done = outcome.done, .undoable = outcome.undoable });
         }
     }
 }

@@ -277,10 +277,14 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 8 — Notices
 
-**Open.**
+**Closed.**
 
-- A notice shows a check when the operation was done and a cross when it was refused.
-- A notice from an undoable operation shows the undo shortcut in secondary text.
+- A notice shows a green check when the operation was done and a red cross when it was refused.
+- `document::Outcome` gains `undoable`, which every operation that records a change sets, redo
+  among them. A notice from one ends with the undo key, looked up from the bindings, in
+  secondary text.
+- The notices suite covers a notice keeping both, and the document suite which outcomes can be
+  undone. The editor was photographed with a cube's notice showing.
 
 ### Step 9 — The top bar and the dividers
 

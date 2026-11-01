@@ -7,6 +7,7 @@
 
 #include <api/asset/File.h>
 #include <api/asset/Manager.h>
+#include <api/event/Event.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
@@ -544,7 +545,15 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
     const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
 
-    const glm::vec2 plate(measure(shown->text) + (dress.padding * 2.0F), dress.barHeight);
+    // a mark for done or refused, the message, and how to undo a change that can be undone
+    const v3d::ui::Image mark = icon(shown->done ? std::string(NOTICE_DONE) : std::string(NOTICE_REFUSED));
+    const float side = mark.valid() ? size : 0.0F;
+    const float gap = size * NOTICE_GAP;
+    const std::string keys = shown->undoable ? screen_->shortcut(v3d::event::Event(std::string(UNDO_COMMAND))) : std::string();
+    const std::string hint = keys.empty() ? std::string() : keys + " to undo";
+    const float hintWidth = hint.empty() ? 0.0F : gap + measure(hint);
+    const float markWidth = side > 0.0F ? side + gap : 0.0F;
+    const glm::vec2 plate(markWidth + measure(shown->text) + hintWidth + (dress.padding * 2.0F), dress.barHeight);
     // centred on the area, and moved in from the edge of the areas when the area is narrower
     // than the plate
     const float margin = NOTICE_MARGIN * screen_->factor();
@@ -557,7 +566,18 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     const glm::vec2 drop(0.0F, dress.shadowOffset);
     v3d::ui::paint::shadowBox(canvas, min + drop, max + drop, { .radius = dress.radius, .reach = dress.shadowSize, .colour = dress.shadow });
     v3d::ui::paint::plateBox(canvas, min, max, dress.radius, dress.borderWidth, { .inside = dress.panel, .outline = dress.border });
-    write(shown->text, glm::vec2(min.x + dress.padding, min.y + (plate.y / 2.0F) + (size * BASELINE)), dress.text);
+    const float middle = min.y + (plate.y / 2.0F);
+    const float baseline = middle + (size * BASELINE);
+    float pen = min.x + dress.padding;
+    if (mark.valid()) {
+        canvas->rect(glm::vec2(pen, middle - (side / 2.0F)), glm::vec2(pen + side, middle + (side / 2.0F)), mark.uv0, mark.uv1,
+            shown->done ? HEALTH_GOOD : HEALTH_POOR, mark.texture);
+        pen += markWidth;
+    }
+    write(shown->text, glm::vec2(pen, baseline), dress.text);
+    if (!hint.empty()) {
+        write(hint, glm::vec2(pen + measure(shown->text) + gap, baseline), dress.secondaryText);
+    }
     canvas->unfade();
 }
 
