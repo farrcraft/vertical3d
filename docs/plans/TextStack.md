@@ -269,18 +269,20 @@ shared cache, a cache with no object, and one style for each text.
 
 ### Step 8 — The glyph store
 
-**Open.** ADR-0144 decided the atlas, after weighing one atlas cleared when full, pages that
-only grow, and evicting single glyphs. `font::GlyphStore` is in. The ui's text renderer moves to
-it next, which removes the charset.
+**Closed.** ADR-0144 decided the atlas, after weighing one atlas cleared when full, pages that
+only grow, and evicting single glyphs.
 
-- A glyph is rasterized or encoded the first time it is drawn. It is keyed by face, glyph index,
-  size, sub-pixel step, mode and variable font axes.
-- New glyphs reach the device through step 7's updates.
-- The store follows the atlas decision when it fills, and no text stops drawing because one
-  glyph did not fit.
-- The charset option is removed.
-- The glyph suite covers a glyph made once, a full store, and a glyph drawn after the store
-  frees room.
+- `font::GlyphStore` makes a glyph the first time it is drawn, keyed by face, glyph index,
+  size, sub-pixel step, mode and variable font coordinates, and packs it into pages of plots.
+- A full store adds a page up to its limit, then empties the plot used longest ago that the
+  frame being built does not use. When that frame uses every plot, a page is added past the
+  limit and let go once a frame uses nothing in it, so no text stops drawing for want of room.
+- `ui::paint::GlyphPages` keeps a texture for each page, and copies each changed plot into it
+  through step 7's updates.
+- The charset belongs to the old atlas the ui draws from, and goes with it in step 13.
+- The glyph store suite covers a glyph made once, a full store emptying the plot used longest
+  ago, a glyph drawn this frame kept, changed plots given once, and glyphs that cannot fit. The
+  glyph pages suite covers a page made and its plots copied, and a page let go released.
 
 ### Step 9 — Coverage text
 
@@ -331,6 +333,7 @@ it next, which removes the charset.
 - A text field places its caret, moves it by grapheme cluster, and draws its selection through
   its text object. An input method's composition is shaped and drawn in place.
 - `wrap()` is replaced by layout.
+- The charset option goes with the old atlas, since every glyph is made when it is drawn.
 - The editor and every demo move to the new path. Counters and frame rates use `tnum`.
 - The ui suites cover the text field through kerned and right-to-left text. The editor and each
   demo are photographed.

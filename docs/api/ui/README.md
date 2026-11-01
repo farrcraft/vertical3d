@@ -99,6 +99,30 @@ charset, and may need a larger atlas to hold them. A `Screen` builds its text re
 `api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
 can supply its own `Upload`.
 
+### Glyph pages
+
+`paint::GlyphPages` keeps the device's copy of a `font::GlyphStore`'s pages, one texture for
+each. `sync(store)` is called once a frame, after the frame's glyphs have been asked of the
+store and before the frame is submitted:
+
+- A page the store added becomes a texture, made whole from its pixels.
+- A plot the store changed is copied into its page's texture. Earlier frames may still draw the
+  page, and draw what it held before.
+- A page the store let go has its texture released.
+
+`texture(page)` gives a page's texture, and an unset handle for a page not yet synced. Like
+`Upload`, the device is reached through three callbacks, so the ui names no renderer. With a
+context's `Textures`:
+
+```cpp
+GlyphPages pages(
+    [textures](const unsigned char* pixels, uint32_t side) { return textures->texture(pixels, side, side, 1); },
+    [textures](const TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
+        textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = 1 });
+    },
+    [textures](const TextureHandle& page) { textures->release(page); });
+```
+
 ## Commands
 
 A control sends a command when it is activated. In the document, a command is the pair

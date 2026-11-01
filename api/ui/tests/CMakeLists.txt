@@ -10,6 +10,7 @@ v3d_add_test(ui
 	"FileChooserTest.cpp"
 	"FocusTest.cpp"
 	"GameMenuTest.cpp"
+	"GlyphPagesTest.cpp"
 	"ImageTest.cpp"
 	"ImmediateInputTest.cpp"
 	"ImmediatePanelTest.cpp"
@@ -42,6 +43,7 @@ v3d_add_test(ui
 
 target_link_libraries(v3dtest_ui PRIVATE
 	v3dlib_ui
+	v3dlib_font
 	v3dlib_render
 	v3dlib_log
 	v3dlib_image
