@@ -506,11 +506,11 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
             right += (right.empty() ? "" : STATUS_GAP) + *part;
         }
     }
+    // the rate keeps a slot wider than it needs, so the text before it does not move as it changes
     float end = width - dress.padding;
     if (!status_.rate.empty()) {
-        end -= measure(status_.rate);
-        write(status_.rate, glm::vec2(end, baseline), healthColour(status_.health));
-        end -= measure(STATUS_GAP);
+        write(status_.rate, glm::vec2(end - measure(status_.rate), baseline), healthColour(status_.health));
+        end -= control::StatusBar::rateRoom(measure, status_.rate) + measure(STATUS_GAP);
     }
     write(right, glm::vec2(end - measure(right), baseline), dress.secondaryText);
 }

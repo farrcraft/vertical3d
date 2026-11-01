@@ -9,6 +9,7 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Topology.h>
+#include <api/ui/paint/Text.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/Components.h>
@@ -21,6 +22,7 @@
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -152,7 +154,21 @@ std::string StatusBar::rate(std::uint64_t nanoseconds) {
     if (nanoseconds == 0) {
         return {};
     }
-    return std::to_string(std::lround(SECOND / static_cast<double>(nanoseconds))) + " fps";
+    return std::to_string(std::lround(SECOND / static_cast<double>(nanoseconds))) + std::string(RATE_UNIT);
+}
+
+/**
+ **/
+float StatusBar::rateRoom(const v3d::ui::paint::Measure& measure, const std::string& rate) {
+    if (!measure) {
+        return 0.0F;
+    }
+    // the digits need not all be as wide as each other, so each is tried
+    float room = measure(rate);
+    for (char digit = '0'; digit <= '9'; digit++) {
+        room = std::max(room, measure(std::string(RATE_DIGITS, digit) + std::string(RATE_UNIT)));
+    }
+    return room;
 }
 
 /**
