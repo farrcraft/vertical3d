@@ -38,6 +38,7 @@
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
+#include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/RenderWindow.h>
 #include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/control/TopBar.h>
@@ -245,6 +246,8 @@ bool Controller::buildUi() {
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     uiKeys_->immediate(renderer_->immediate());
     properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
+    context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
+        [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
@@ -447,6 +450,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
             outliners.push_back(editor.id);
         } else if (editor.kind == control::PropertiesEditor::KIND) {
             properties_->draw(layer, context_.document->scene(), editor.id, region);
+        } else if (editor.kind == control::TimelineEditor::KIND && context_.timeline) {
+            context_.timeline->draw(layer, editor.id, region);
         }
     }
     layer->end();

@@ -11,15 +11,16 @@
 #include <api/interchange/usd/Usd.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/command/AutoKey.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/Create.h>
 #include <vertical3d/src/command/Group.h>
 #include <vertical3d/src/command/Import.h>
 #include <vertical3d/src/command/Key.h>
+#include <vertical3d/src/command/Keys.h>
 #include <vertical3d/src/command/Modelling.h>
 #include <vertical3d/src/command/Settings.h>
 #include <vertical3d/src/command/Stack.h>
+#include <vertical3d/src/command/Timeline.h>
 #include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/render/Shot.h>
@@ -40,6 +41,7 @@
 #include <cstddef>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
@@ -183,10 +185,55 @@ Outcome Document::autoKey(bool on) {
     if (scene_->timeline().autoKey == on) {
         return { .done = false, .message = on ? "auto key is already on" : "auto key is already off" };
     }
-    const boost::shared_ptr<command::AutoKey> command = boost::make_shared<command::AutoKey>(scene_, on);
+    scene::Timeline wanted = scene_->timeline();
+    wanted.autoKey = on;
+    const boost::shared_ptr<command::Timeline> command = boost::make_shared<command::Timeline>(scene_, wanted, on ? "auto key on" : "auto key off");
     command->redo();
     history_->push(command);
     return { .done = true, .message = on ? "turned auto key on" : "turned auto key off", .undoable = true };
+}
+
+Outcome Document::timing(float rate, int start, int end) {
+    scene::Timeline wanted = scene_->timeline();
+    if (wanted.rate == rate && wanted.start == start && wanted.end == end) {
+        return { .done = false, .message = "the frame rate and range are unchanged" };
+    }
+    wanted.rate = rate;
+    wanted.start = start;
+    wanted.end = end;
+    wanted.frame = start;
+    if (!wanted.valid()) {
+        return { .done = false, .message = "a frame rate is a positive number, and a range runs forwards" };
+    }
+    const boost::shared_ptr<command::Timeline> command = boost::make_shared<command::Timeline>(scene_, wanted, "frame range");
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "set frames " + std::to_string(start) + " to " + std::to_string(end), .undoable = true };
+}
+
+Outcome Document::moveKeys(const std::vector<scene::FrameKey>& keys, int offset) {
+    if (offset == 0) {
+        return { .done = false, .message = "the keys are already there" };
+    }
+    const boost::shared_ptr<command::Keys> command = command::Keys::shift(scene_, keys, static_cast<float>(offset));
+    if (command->empty()) {
+        return { .done = false, .message = "a key is moved when one is chosen, and none was" };
+    }
+    command->redo();
+    history_->push(command);
+    const int frames = offset < 0 ? -offset : offset;
+    return { .done = true, .message = "moved " + Document::keys(command->count()) + " " + std::to_string(frames) +
+        (frames == 1 ? " frame " : " frames ") + (offset < 0 ? "earlier" : "later"), .undoable = true };
+}
+
+Outcome Document::deleteKeys(const std::vector<scene::FrameKey>& keys) {
+    const boost::shared_ptr<command::Keys> command = command::Keys::remove(scene_, keys);
+    if (command->empty()) {
+        return { .done = false, .message = "a key is deleted when one is chosen, and none was" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "deleted " + Document::keys(command->count()), .undoable = true };
 }
 
 Outcome Document::settings(const scene::RenderSettings& settings) {
@@ -321,6 +368,10 @@ Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type
 
 std::string Document::items(std::size_t count) {
     return std::to_string(count) + (count == 1 ? " item" : " items");
+}
+
+std::string Document::keys(std::size_t count) {
+    return std::to_string(count) + (count == 1 ? " key" : " keys");
 }
 
 std::string Document::titled(const std::string& kind) {

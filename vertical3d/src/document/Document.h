@@ -15,6 +15,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 
 #include <cstddef>
@@ -108,6 +109,20 @@ class Document final {
      * number at the current frame, in the same change. Setting it as it is changes nothing.
      **/
     Outcome autoKey(bool on);
+
+    /**
+     * Take a new frame rate and range. The frame stays where it is, held within the new range.
+     * The same rate and range change nothing, and a rate that is not a positive number or a
+     * range that runs backwards is refused.
+     **/
+    Outcome timing(float rate, int start, int end);
+
+    /**
+     * Move keys along by whole frames, or delete them. A key is every key one item has on one
+     * frame. A key no curve has is skipped, and with none left nothing changes.
+     **/
+    Outcome moveKeys(const std::vector<scene::FrameKey>& keys, int offset);
+    Outcome deleteKeys(const std::vector<scene::FrameKey>& keys);
 
     /**
      * Take new render settings. The same settings change nothing.
@@ -205,6 +220,11 @@ class Document final {
      * @return a count of items, singular for one: "1 item", "3 items"
      **/
     static std::string items(std::size_t count);
+
+    /**
+     * @return a count of keys, singular for one: "1 key", "3 keys"
+     **/
+    static std::string keys(std::size_t count);
 
     /**
      * @return a kind's name with each word begun in capitals, as a new item is named: "point light"

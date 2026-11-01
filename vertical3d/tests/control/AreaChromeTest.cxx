@@ -384,6 +384,9 @@ BOOST_FIXTURE_TEST_CASE(the_area_menu_marks_the_kind_shown, Chrome) {
 
     BOOST_CHECK(!header(1)->find("area::editor::viewport")->checked());
     BOOST_CHECK(header(1)->find("area::editor::outliner")->checked());
+
+    // a timeline is one of the kinds offered
+    BOOST_CHECK(header(0)->find("area::editor::timeline"));
 }
 
 /**

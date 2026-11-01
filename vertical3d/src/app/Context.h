@@ -16,6 +16,7 @@
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -101,6 +102,8 @@ struct Context final {
     boost::shared_ptr<tool::Transform> transformTool;
     boost::shared_ptr<control::Pointer> pointer;
     boost::shared_ptr<control::Playback> playback;
+    // every timeline editor, which share the chosen keys
+    boost::shared_ptr<control::TimelineEditor> timeline;
     boost::shared_ptr<control::RenderWindow> renderWindow;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser;
     boost::shared_ptr<v3d::ui::shell::Prompt> prompt;

@@ -18,6 +18,7 @@
 #include <api/ui/component/menu/Item.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
+#include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -247,6 +248,7 @@ const std::vector<AreaChrome::Kind>& AreaChrome::kinds() {
         { .kind = std::string(view::AreaViews::KIND), .label = "Viewport" },
         { .kind = std::string(Outliner::KIND), .label = "Outliner" },
         { .kind = std::string(PropertiesEditor::KIND), .label = "Properties" },
+        { .kind = std::string(TimelineEditor::KIND), .label = "Timeline" },
     };
     return each;
 }

@@ -38,6 +38,7 @@ v3d_add_test(vertical3d
 	"control/NoticesTest.cxx"
 	"control/OutlinerTest.cxx"
 	"control/PropertiesEditorTest.cxx"
+	"control/TimelineEditorTest.cxx"
 	"control/StatusBarTest.cxx"
 	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"
@@ -46,6 +47,8 @@ v3d_add_test(vertical3d
 	"command/GroupTest.cxx"
 	"command/KeyTest.cxx"
 	"command/KeyedTest.cxx"
+	"command/KeysTest.cxx"
+	"command/TimelineTest.cxx"
 	"command/SettingsTest.cxx"
 	"command/UnitsTest.cxx"
 

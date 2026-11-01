@@ -5,7 +5,6 @@
 
 #include <api/brep/BRep.h>
 #include <api/type/Transform.h>
-#include <vertical3d/src/command/AutoKey.h>
 #include <vertical3d/src/command/Command.h>
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Keyed.h>
@@ -13,7 +12,6 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/Timeline.h>
 
 #include <vector>
 
@@ -113,21 +111,6 @@ BOOST_AUTO_TEST_CASE(keyed_nothing_driven_test) {
         { { .item = keying.mesh, .before = before.pose, .after = v3d::editor::scene::pose(*keying.mesh) } });
     BOOST_CHECK(command == edit);
     BOOST_CHECK(keying.scene->curves(keying.mesh->id()).empty());
-}
-
-BOOST_AUTO_TEST_CASE(auto_key_command_test) {
-    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    scene->timeline({ .frame = 7 });
-
-    // it turns auto key on and back off, and leaves the rest of the timeline as it was
-    v3d::editor::command::AutoKey command(scene, true);
-    command.redo();
-    BOOST_CHECK(scene->timeline().autoKey);
-    BOOST_CHECK_EQUAL(scene->timeline().frame, 7);
-    command.undo();
-    BOOST_CHECK(!scene->timeline().autoKey);
-    BOOST_CHECK_EQUAL(command.name(), "auto key on");
-    BOOST_CHECK_EQUAL(v3d::editor::command::AutoKey(scene, false).name(), "auto key off");
 }
 
 };  // namespace

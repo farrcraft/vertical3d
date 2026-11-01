@@ -37,6 +37,11 @@ void EditCommands::registerCommands(CommandTable* table) const {
     table->press("timeline::set", [&context]() {
         context.report(context.document->key(context.document->scene()->selection(), context.document->scene()->timeline().frame));
     });
+    table->press("timeline::delete_keys", [&context]() {
+        if (context.timeline) {
+            context.timeline->deleteChosen();
+        }
+    });
     table->press("timeline::auto_key", [&context]() {
         context.report(context.document->autoKey(!context.document->scene()->timeline().autoKey));
     });

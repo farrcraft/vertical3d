@@ -322,14 +322,28 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 11 — The timeline
 
-**Open.**
+**Closed.**
 
-- A timeline is a kind of editor an area can hold.
-- Its controls play, stop, step and jump through the keys as the Animate menu does. Its fields
-  edit the frame, the range and the rate.
-- A row per selected item shows its keys as diamonds, the chosen keys in the selection's amber.
-  A click moves the playhead there. A drag along the frames scrubs.
-- A key can be chosen, moved along the frames and deleted, with undo.
+- A timeline, `TimelineEditor`, is a kind of editor an area can hold, and Shift+F12 shows one.
+- Its controls go to the first frame, the previous key, play or stop, the next key and the last
+  frame, as words rather than icons. Its fields edit the frame, the range and the rate, and a
+  check turns auto key on. The range and the rate are one change, `Document::timing()`, when a
+  field's edit ends.
+- A ruler labels the range's first frame and steps of 1, 2 or 5 times a power of ten. A row per
+  selected item shows its keys as diamonds, the chosen keys in the selection's amber, and the
+  playhead runs down them in the accent. A press on the ruler or a row away from its keys moves
+  the frame there, and a drag scrubs.
+- A key, every key one item has on one frame, is chosen by a press and moved by a drag, as one
+  change. Delete Keys on the Animate menu, and the Delete key, deletes the chosen keys.
+  `command::Keys` moves and deletes them, and `command::Timeline` replaced the auto key command.
+- `api/animation`: `Curve::shift()` moves keys along, keeping their values, interpolation and
+  slopes. `api/ui`: `Immediate::surface()` gives a caller a box to draw into with `fill()`,
+  `line()`, `diamond()` and `textAt()`, with its press held across a drag, and `measure()` the
+  width of a line.
+- The curve, ui, keys, timeline and document suites cover the shift, the surface, the commands
+  and the operations. The timeline editor suite covers the span, the rows, scrubbing, choosing,
+  moving and deleting keys, and the controls. The editor was photographed with a cube keyed on
+  frames 1 and 120.
 
 ### Step 12 — The graph editor
 

@@ -339,6 +339,28 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f12",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::timeline"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "delete",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "delete_keys"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+pagedown",
         "state": "pressed"
       },

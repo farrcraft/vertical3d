@@ -92,6 +92,7 @@ The Animate menu:
 |---|---|---|
 | Set Key | `timeline::set` | Key every property of each selected item at the current frame, through the history, so one undo takes the keys away |
 | Auto Key | `timeline::auto_key` | Turn auto key on or off. The item is checked while it is on |
+| Delete Keys | `timeline::delete_keys`, Delete | Delete the keys chosen in the timeline editor, as one change, and choose none |
 | Play, Stop | `timeline::playback::play`, `stop` | Start and stop playback. While playing, `simulate()` steps the frame at the frame rate and starts again from the first frame after the last |
 | Next Frame, Previous Frame | `timeline::playback::next`, `previous` | Step one frame, held within the range |
 | First Frame, Last Frame | `timeline::playback::first`, `last` | Go to either end of the range |
@@ -100,6 +101,36 @@ The Animate menu:
 
 The keyed frames are those of the selection, or of every item when nothing is selected. Each
 move to a frame sets the frame, which drops every pending edit.
+
+## The timeline editor
+
+An area can hold a timeline, the `timeline` editor, which `TimelineEditor` draws in the
+immediate layer.
+
+- **The controls** go to the first frame, the previous key, play or stop, the next key and the
+  last frame, as the Animate menu's items do.
+- **The fields** set the frame, the first and last frames of the range, and the rate, and a
+  check turns auto key on or off. The frame moves as its field is dragged, and is not a change.
+  The range and the rate are one change, `frame range`, recorded when a field's drag or typing
+  ends. `Document::timing()` refuses a rate that is not a positive number and a range that runs
+  backwards. A new range holds the frame within it.
+- **The ruler** counts frames in steps of 1, 2 or 5 times a power of ten, the smallest that
+  leaves room for each number. The range's first frame sits half a frame in from the left of the
+  tracks, and its last half a frame in from the right.
+- **A row** for each selected item shows its keys as diamonds. A key here is every key the item
+  has on one frame, across its curves, a `scene::FrameKey`. The chosen keys are drawn in the
+  selection's amber, and the playhead runs down the ruler and every row in the theme's
+  highlight.
+- **A press on the ruler**, or on a row away from its keys, chooses no key and moves the frame
+  to where it landed. A drag scrubs.
+- **A press on a key** chooses it, unless it is chosen already. A drag moves every chosen key
+  along by whole frames, drawn where it will land, and moves them when it is let go. The move is
+  one change, `move keys`, which `Document::moveKeys()` makes. A moved key keeps its value,
+  interpolation and slopes, and replaces a key it lands on.
+- **Delete Keys** deletes the chosen keys through `Document::deleteKeys()`, as one change,
+  `delete keys`. A curve left with no keys is removed.
+- The chosen keys are shared by every timeline editor. A key stops being chosen when its item
+  stops being selected or its frame is no longer keyed.
 
 **Auto key keys an edit as it is recorded.** While it is on, an edit to a number a curve can
 drive keys that number at the current frame, and the edit and its keys are one change, which one

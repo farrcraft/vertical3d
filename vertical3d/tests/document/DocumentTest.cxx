@@ -20,6 +20,7 @@
 
 #include <string>
 #include <variant>
+#include <vector>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -247,6 +248,56 @@ BOOST_AUTO_TEST_CASE(auto_key_is_a_change) {
 
     edited.undo();
     BOOST_CHECK(!edited.scene()->timeline().autoKey);
+}
+
+/**
+ * The rate and range are set as one change, and one that cannot be a timeline is refused.
+ **/
+BOOST_AUTO_TEST_CASE(the_range_is_a_change) {
+    const Scratch scratch("timing");
+    v3d::editor::document::Document edited = document(scratch.path());
+
+    const v3d::editor::document::Outcome set = edited.timing(30.0F, 10, 50);
+    BOOST_CHECK(set.done);
+    BOOST_CHECK(set.undoable);
+    BOOST_CHECK_EQUAL(set.message, "set frames 10 to 50");
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().rate, 30.0F);
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().frame, 10);
+
+    BOOST_CHECK(!edited.timing(30.0F, 10, 50).done);
+    BOOST_CHECK(!edited.timing(30.0F, 50, 10).done);
+    BOOST_CHECK(!edited.timing(0.0F, 1, 10).done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), 1U);
+
+    edited.undo();
+    BOOST_CHECK_EQUAL(edited.scene()->timeline().end, v3d::editor::scene::Timeline::DEFAULT_END);
+}
+
+/**
+ * Keys are moved and deleted as one change each, and with nothing to act on nothing changes.
+ **/
+BOOST_AUTO_TEST_CASE(keys_are_moved_and_deleted) {
+    const Scratch scratch("keys");
+    v3d::editor::document::Document edited = document(scratch.path());
+    edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    const unsigned int cube = edited.scene()->items()[0]->id();
+    edited.key(edited.scene()->items(), 5);
+
+    const v3d::editor::document::Outcome moved = edited.moveKeys({ { .item = cube, .frame = 5.0F } }, -2);
+    BOOST_CHECK(moved.done);
+    BOOST_CHECK_EQUAL(moved.message, "moved 1 key 2 frames earlier");
+    BOOST_CHECK(edited.scene()->keyedFrames(edited.scene()->items()) == std::vector<float>({ 3.0F }));
+    BOOST_CHECK(!edited.moveKeys({ { .item = cube, .frame = 3.0F } }, 0).done);
+    BOOST_CHECK(!edited.moveKeys({ { .item = cube, .frame = 9.0F } }, 1).done);
+
+    const v3d::editor::document::Outcome deleted = edited.deleteKeys({ { .item = cube, .frame = 3.0F } });
+    BOOST_CHECK(deleted.done);
+    BOOST_CHECK(deleted.undoable);
+    BOOST_CHECK(edited.scene()->curves(cube).empty());
+    BOOST_CHECK(!edited.deleteKeys({}).done);
+
+    edited.undo();
+    BOOST_CHECK(edited.scene()->keyedFrames(edited.scene()->items()) == std::vector<float>({ 3.0F }));
 }
 
 /**
