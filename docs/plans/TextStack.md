@@ -108,7 +108,7 @@ features, the variable font axes, the decorations, and the effects.
 |---|---|
 | Text: how glyphs are drawn. Open: coverage beside curves, coverage beside a multi-channel distance field, or all three. It amends ADR-0036. | 9, 10 |
 | Text: how effects are drawn. Open: from the curves, from a distance field kept for them, or from a coverage pass of a stroked glyph. | 11 |
-| Text: the glyph atlas. Open: pages that grow and drop unused glyphs, or one fixed atlas cleared when it fills. | 8 |
+| Text: the glyph atlas. Decided by ADR-0144: pages of plots, the plot used longest ago reused first. | 8 |
 | Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
 | Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
 | Text: the text object the ui and the games hold, and how it is cached. Decided by ADR-0143: a paragraph with style ranges over a shared shaping cache. | 6 |
@@ -269,7 +269,9 @@ shared cache, a cache with no object, and one style for each text.
 
 ### Step 8 — The glyph store
 
-**Open.** Decide the atlas.
+**Open.** ADR-0144 decided the atlas, after weighing one atlas cleared when full, pages that
+only grow, and evicting single glyphs. `font::GlyphStore` is in. The ui's text renderer moves to
+it next, which removes the charset.
 
 - A glyph is rasterized or encoded the first time it is drawn. It is keyed by face, glyph index,
   size, sub-pixel step, mode and variable font axes.

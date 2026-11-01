@@ -220,6 +220,38 @@ clusters, such as a ligature, is shared between them evenly.
 
 Background: [ADR-0143](../adr/0143-text-styled-paragraphs-over-a-shared-shaping-cache.md)
 
+## The glyph store
+
+A `GlyphStore` holds the glyphs text is drawn from. A glyph is made the first time it is drawn
+and packed into pages of one byte pixels, which a renderer copies to the device. It needs no GPU.
+
+- **`GlyphKey`** tells one glyph from another: its `face`, its `index` there, its `size` in
+  pixels, the `subpixel` step its pen was at, its `mode` (`Coverage` or `Distance`), and a
+  variable font's normalized `coordinates`. A key names its face by address, so a face the store
+  holds glyphs from stays open while the store is used.
+- **`glyph(key, rasterize)`** gives the `StoredGlyph`: its `page`, the `position` of its top
+  left texel there, its `size`, and its `bearing`, the top left pixel from the pen with y
+  downwards. The first time a key is asked for, `rasterize` makes its `GlyphBitmap` and the
+  store packs it. A glyph with no pixels, such as a space, is stored with no size. A glyph wider
+  or taller than a plot with its padding is not stored, nor is a bitmap whose pixels do not match
+  its size. `made()` counts the glyphs made rather than found.
+- **Pages and plots.** `Spec` gives each page's `pageSize` (1024 unless given), each plot's
+  `plotSize` (256), the `pages` kept (4), and the `padding` around each glyph (1). A page is
+  cut into square plots, and a plot holds glyphs on shelves, each as tall as its first glyph.
+- **When it fills.** A glyph goes into a plot with room, then an empty plot, then a new page up
+  to the limit. With none of those, the plot used longest ago is emptied and used again, and
+  every glyph in it is made again the next time it is drawn.
+- **Frames.** `beginFrame()` starts a frame. A plot holding a glyph asked for in the current
+  frame is never emptied, because the frame being built draws from it. When every plot is in
+  that use, a page is added past the limit. A page past the limit is let go at the start of the
+  frame after one that used nothing in it.
+- **Reaching the device.** `pixels(page)` gives a page's pixels. `regions()` gives the plots
+  changed since it was last called, each as a `GlyphRegion`, and a page added is changed whole.
+  A renderer copies them with `Textures::update()`. It compares `pages()` with the textures it
+  holds to find a page added or let go.
+
+Background: [ADR-0144](../adr/0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md)
+
 ## Texture fonts
 
 - **`TextureFont(face, size, logger, spread)`** draws one face at one size.

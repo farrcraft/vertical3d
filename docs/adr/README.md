@@ -36,6 +36,7 @@ content went. Numbers are never reused.
 | [0141](0141-text-opentype-shaping-with-harfbuzz.md) | Text: OpenType shaping with HarfBuzz | accepted |
 | [0142](0142-text-bidi-and-segmentation-with-icu.md) | Text: bidi and segmentation with ICU | accepted |
 | [0143](0143-text-styled-paragraphs-over-a-shared-shaping-cache.md) | Text: styled paragraphs over a shared shaping cache | accepted |
+| [0144](0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md) | Text: glyph pages of plots, reused least recently used first | accepted |
 | [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
 | [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
 | 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |
