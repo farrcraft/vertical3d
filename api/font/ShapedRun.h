@@ -19,7 +19,7 @@ namespace v3d::font {
 class Face;
 
 /**
- * A stretch of text in one face, one script and one direction, shaped into glyphs.
+ * A stretch of text in one face, one script and one embedding level, shaped into glyphs.
  *
  * The glyphs are in visual order, left to right, whatever the direction. A right-to-left run's
  * first glyph came from its last characters.
@@ -32,7 +32,8 @@ struct ShapedRun final {
 
     boost::shared_ptr<Face> face;
     std::string script;           /**< its ISO 15924 code, such as "Latn" or "Arab" **/
-    Direction direction = Direction::LeftToRight;
+    Direction direction = Direction::LeftToRight;  /**< right to left when its level is odd **/
+    std::uint8_t level = 0;       /**< its embedding level, by which a line's runs are drawn in order **/
     std::size_t start = 0;        /**< the byte offset in the string where it starts **/
     std::size_t end = 0;          /**< and one past where it ends **/
     std::vector<ShapedGlyph> glyphs;

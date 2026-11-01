@@ -37,17 +37,17 @@ jobs:
           sudo apt-get install -y clang-20 ninja-build
           clang++-20 --version
 
-      # The key names what vcpkg hashes into a package's ABI that this job can vary: the ports
-      # and the registry baseline that fixes their versions. Anything else on the image that
-      # changes an ABI makes every archive miss, so the key ends in the run id and a restore
-      # takes the newest archive under the prefix.
+      # The key names what vcpkg hashes into a package's ABI that this job can vary: the ports,
+      # the registry baseline that fixes their versions, and the overlay ports in ports/.
+      # Anything else on the image that changes an ABI makes every archive miss, so the key ends
+      # in the run id and a restore takes the newest archive under the prefix.
       - name: Restore the vcpkg binaries
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-
 
       - name: Make the vcpkg cache directory
         run: |
@@ -100,7 +100,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
 
       - name: Build
         run: cmake --build "$BUILD_DIR"

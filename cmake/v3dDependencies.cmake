@@ -39,6 +39,10 @@ macro(v3d_find_packages)
 			# on their own include path, because the vcpkg include directory is not on a global
 			# include path.
 			find_path(V3D_CGLTF_INCLUDE_DIR NAMES "cgltf.h" REQUIRED)
+		elseif(v3d_package STREQUAL "ICU")
+			# FindICU, wrapped by vcpkg, makes one target per ICU library asked for. uc is the
+			# common library, and data the library its rules and dictionaries are built into.
+			find_package(ICU REQUIRED COMPONENTS uc data)
 		elseif(v3d_package STREQUAL "JPEG")
 			find_package(JPEG REQUIRED)
 			# vcpkg's jpeg port is libjpeg-turbo, and its config carries the import libraries

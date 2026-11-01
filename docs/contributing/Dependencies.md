@@ -35,6 +35,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | freetype | |
 | glm | |
 | harfbuzz | `v3dlib_font` shapes text through it, over the faces FreeType holds open. **It must have its `freetype` feature**, which builds the integration with FreeType. It is the `harfbuzz::harfbuzz` target of the `harfbuzz` config package, linked PRIVATE because no public header includes it |
+| icu | `v3dlib_font` finds grapheme clusters, words and line breaks through it. It comes from the tree's [overlay port](#the-icu-overlay-port), not vcpkg's own. It is the `ICU::uc` and `ICU::data` targets of `find_package(ICU COMPONENTS uc data)`, linked PRIVATE because no public header includes it |
 | libjpeg-turbo | |
 | libpng | |
 | nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
@@ -56,6 +57,23 @@ uses. Include `<boost/system/error_code.hpp>` and `<boost/system/system_error.hp
 `boost::system::error_code` and is the example to copy.
 
 There is no OpenGL, and no package for it.
+
+### The ICU overlay port
+
+ICU's data holds every locale's formats, collations and conversions, and is about 30 MB. The
+font library reads only the break rules, the character properties they read, the word
+dictionaries and the normalization tables, and every app that draws text ships the data. The
+tree therefore builds ICU through its own port, in [ports/icu/](../../ports/icu/), which both
+[vcpkg-configuration.json](../../vcpkg-configuration.json) files name in `overlay-ports`.
+
+- The port is vcpkg's own, from the baseline commit, with one change to its portfile. It
+  downloads ICU's data sources beside the source archive and builds the data from them, filtered
+  by [data-filter.json](../../ports/icu/data-filter.json). The source archive's prebuilt data is
+  deleted, because ICU uses a prebuilt archive whatever filter it is given.
+- The filter is additive: a category ICU's data build names is left out unless the filter
+  includes it. Reading a new kind of ICU data, such as collation, means adding its category.
+- When the baseline moves ICU to a new version, copy the new port over `ports/icu/`, apply the
+  change again, and update the data archive's SHA512 from the release's `SHASUM512.txt`.
 
 Background: [ADR-0021](../adr/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/0091-platform-sdl3-replaces-sdl2.md),

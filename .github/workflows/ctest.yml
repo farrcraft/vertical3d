@@ -221,11 +221,11 @@ jobs:
       # vcpkg builds boost from source, which is most of an hour cold. The binary cache
       # makes a second run cheap. vcpkg refuses a cache directory that is not there.
       #
-      # The key names everything vcpkg hashes into a package's ABI that this job can vary. That
-      # is vcpkg.json for the ports and the baseline that fixes their versions,
-      # vcpkg-configuration.json for the registries, and the toolset that compiles them. An
-      # archive restored under a key missing any of them is not a cheaper build, it is a
-      # download whose every entry misses.
+      # The key names everything vcpkg hashes into a package's ABI that this job can vary.
+      # vcpkg.json names the ports and the baseline that fixes their versions, and
+      # vcpkg-configuration.json the registries and the overlays. ports/ holds the overlay ports
+      # themselves, and the toolset compiles them all. An archive restored under a key missing
+      # any of them is not a cheaper build, it is a download whose every entry misses.
       #
       # There is no rung below the toolset in restore-keys for the same reason: a cache built
       # by another compiler cannot be reused by this one, so fetching it only costs time.
@@ -239,9 +239,9 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+            vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-
             vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-
 
       # The archives restored are listed, so that the step after the configure can tell which
@@ -344,7 +344,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}
 
       - name: Build
         shell: cmd

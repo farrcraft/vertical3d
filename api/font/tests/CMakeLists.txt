@@ -1,6 +1,8 @@
 v3d_add_test(font
 	"TestMain.cxx"
+	"BidiTest.cxx"
 	"FallbackChainTest.cxx"
+	"SegmenterTest.cxx"
 	"ShaperTest.cxx"
 	"TextureFontCacheTest.cxx"
 	"TextureFontTest.cxx"

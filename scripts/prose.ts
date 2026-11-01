@@ -68,8 +68,8 @@ const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-
 // The escapes git's C-style quoting of a path uses, other than an octal byte.
 const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
 
-// Historical records, and third-party or generated trees.
-const EXCLUDED_PREFIXES = ['vendor/', 'demos/voxel/src/noise/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
+// Historical records, and third-party or generated trees. ports/ holds vcpkg's own ports, overlaid.
+const EXCLUDED_PREFIXES = ['vendor/', 'ports/', 'demos/voxel/src/noise/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
     'docs/audits/'];
 // An accepted ADR's body is not edited, so only a new ADR file is checked.
 const ADR_BODY = /^docs\/adr\/\d{4}-[^/]*\.md$/;

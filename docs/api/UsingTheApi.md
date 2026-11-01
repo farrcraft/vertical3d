@@ -93,6 +93,10 @@ needs.
   package's version. A boost library's file name includes its version, so a different baseline
   gives a different boost, and the result is a link error far from its cause. Nothing checks that
   your baseline matches vertical3d's.
+- **Point `overlay-ports` at vertical3d's `ports/`.** The copied file names `ports`, a path
+  relative to your root. Set it to the path of vertical3d's `ports/` from your root, such as
+  `vertical3d/ports`. Without it, ICU is built from vcpkg's own port, and every app that draws
+  text ships about 30 MB of ICU data rather than a few.
 
 ## 3. The CMakeLists
 
@@ -339,7 +343,8 @@ two files:
 
 - **`vcpkg.json`.** If vertical3d's baseline or package list changed, update yours. Yours is
   the one that is installed.
-- **`vcpkg-configuration.json`.** If vertical3d's registries changed, copy it again.
+- **`vcpkg-configuration.json`.** If vertical3d's registries or overlay ports changed, copy it
+  again and point `overlay-ports` back at vertical3d's `ports/`.
 
 The api is still changing, so expect to update a call site now and then.
 

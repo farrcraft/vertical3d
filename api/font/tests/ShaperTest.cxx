@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/Bidi.h>
 #include <api/font/Face.h>
 #include <api/font/Family.h>
 #include <api/font/FallbackChain.h>
@@ -146,6 +147,26 @@ BOOST_AUTO_TEST_CASE(runs_split_by_face_and_script) {
     BOOST_CHECK(shaped[2].direction == v3d::font::ShapedRun::Direction::RightToLeft);
     BOOST_CHECK(shaped[2].face == inter);
     BOOST_CHECK_EQUAL(shaped[2].end, text.size());
+}
+
+/**
+ * A number in an Arabic sentence is a run of its own, shaped left to right at a higher level
+ * than the Arabic either side of it.
+ **/
+BOOST_AUTO_TEST_CASE(a_number_in_arabic_is_shaped_left_to_right) {
+    // adad, a space, 123, a space, huna
+    const std::vector<v3d::font::ShapedRun> shaped = runs("\xD8\xB9\xD8\xAF\xD8\xAF 123 \xD9\x87\xD9\x86\xD8\xA7");
+    BOOST_REQUIRE_EQUAL(shaped.size(), 3U);
+    BOOST_CHECK(shaped[0].direction == v3d::font::ShapedRun::Direction::RightToLeft);
+    BOOST_CHECK_EQUAL(shaped[1].start, 7U);
+    BOOST_CHECK_EQUAL(shaped[1].end, 10U);
+    BOOST_CHECK(shaped[1].direction == v3d::font::ShapedRun::Direction::LeftToRight);
+    BOOST_CHECK_EQUAL(static_cast<int>(shaped[1].level), 2);
+    BOOST_CHECK(shaped[2].direction == v3d::font::ShapedRun::Direction::RightToLeft);
+    // in a paragraph read right to left, Latin is at level 2
+    const std::vector<v3d::font::ShapedRun> forced = shaper.shape("abc", {}, kSize, {}, v3d::font::BaseDirection::RightToLeft);
+    BOOST_REQUIRE_EQUAL(forced.size(), 1U);
+    BOOST_CHECK_EQUAL(static_cast<int>(forced.front().level), 2);
 }
 
 /**

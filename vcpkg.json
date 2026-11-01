@@ -22,6 +22,7 @@
         "freetype"
       ]
     },
+    "icu",
     "libjpeg-turbo",
     "libpng",
     "nanosvg",

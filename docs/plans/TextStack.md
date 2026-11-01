@@ -109,8 +109,8 @@ features, the variable font axes, the decorations, and the effects.
 | Text: how glyphs are drawn. Open: coverage beside curves, coverage beside a multi-channel distance field, or all three. It amends ADR-0036. | 9, 10 |
 | Text: how effects are drawn. Open: from the curves, from a distance field kept for them, or from a coverage pass of a stroked glyph. | 11 |
 | Text: the glyph atlas. Open: pages that grow and drop unused glyphs, or one fixed atlas cleared when it fills. | 8 |
-| Text: the shaping library. Open: HarfBuzz, or kb_text_shape. | 3 |
-| Text: the bidi and segmentation libraries. Open: SheenBidi with libunibreak, raqm, or ICU. | 4, 5 |
+| Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
+| Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
 | Text: the text object the ui and the games hold, and how it is cached. Open. | 6 |
 | Text: how coverage is blended. Open: as it lands in a display space target, with a contrast curve, or in linear space with stem darkening. | 12 |
 | Text: which colour glyph formats are read. Open: COLR v0 and v1, CBDT, sbix and SVG. | 14 |
@@ -190,22 +190,38 @@ platforms' shapers.
 
 ### Step 4 — Unicode text boundaries
 
-**Open.** Decide the segmentation library.
+**Closed.** ADR-0142 decided it with step 5's library, after weighing SheenBidi with
+libunibreak, Raqm and ICU4X.
 
-- Text is split into grapheme clusters, words and line break opportunities, as UAX #29 and
-  UAX #14 define them.
-- The segmentation suite covers an accented letter and an emoji sequence as one cluster, a break
-  after a hyphen, and no break before a closing bracket.
+- `font::Segmenter` splits UTF-8 text into grapheme clusters, words and line break
+  opportunities through ICU, as UAX #29 and UAX #14 define them, in a locale given as a BCP 47
+  tag. Every offset is a byte offset, because ICU reads the UTF-8 in place.
+- Thai, Lao, Khmer and Myanmar lines break between the words ICU's dictionaries find.
+- ICU comes from an overlay of the vcpkg port in `ports/icu/`, which builds its data from source
+  filtered to the break rules and the properties they read, the dictionaries and
+  normalization. Both manifests name it, and
+  CI's vcpkg cache keys hash the overlay.
+- The segmentation suite covers an accented letter, an emoji sequence and a flag as one cluster.
+  It covers a break after a hyphen, no break before a closing bracket, a mandatory break after a
+  newline, and Thai words split by the dictionary. It also covers words told from punctuation,
+  and malformed and empty strings.
 
 ### Step 5 — Bidirectional text
 
-**Open.** Decide the bidi library, with step 4's.
+**Closed.** ADR-0142 decided its library: ICU, with step 4's.
 
-- A paragraph's embedding levels are found as UAX #9 defines them. Each line's runs are
-  reordered from logical to visual order.
-- A caret at a direction boundary has an affinity, so it is drawn on the side it was moved to.
-- The bidi suite covers Hebrew in an English sentence, a number in an Arabic sentence, and the
-  caret at each boundary.
+- `font::Bidi` resolves a text's embedding levels through ICU, as UAX #9 defines them, with each
+  paragraph read in a base direction given or found from its first strong character.
+- `line()` reorders one line's runs from logical to visual order, with trailing space at the
+  paragraph's level.
+- `caret()` takes an affinity, upstream or downstream, and gives the character and the edge the
+  caret is drawn against. Step 6 turns that edge into a position, and step 13 sets the affinity
+  from the way the caret moved.
+- The shaper splits runs where the level changes, and a run's direction is its level's. A
+  `ShapedRun` holds its level, by which step 6 orders a line's runs.
+- The bidi suite covers Hebrew in an English sentence, a number in an Arabic sentence, the caret
+  either side of each boundary, trailing space in a paragraph read right to left, and
+  paragraphs resolved apart. The shaper suite covers a number in Arabic shaped as its own run.
 
 ### Step 6 — The text object and layout
 

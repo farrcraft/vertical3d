@@ -49,9 +49,10 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   where the script changes. A character with no script of its own, such as a space, a digit or
   a combining mark, takes the script of its run, or of the first character after it that has
   one. Text with no script at all is shaped as Latin.
-- **Direction.** Each run's direction is its script's: right to left for scripts such as Arabic
-  and Hebrew, and left to right otherwise. Embedding levels are not resolved, so a number inside
-  Arabic text takes the Arabic run's direction.
+- **Direction.** A run also ends where the embedding level changes, as [Bidi](#bidi) resolves
+  it. A run's `level` is that level, and its direction is right to left when the level is odd,
+  so a number inside Arabic text is a run of its own, shaped left to right. The last argument of
+  `shape` is the `BaseDirection` each paragraph is read in, `Auto` unless given.
 - **`ShapedRun`** holds its `face`, its `script` as an ISO 15924 code such as `"Latn"`, its
   `direction`, the byte range `start` to `end` it came from, its `glyphs`, and the sum of their
   advances. Its glyphs are in visual order, left to right, whatever its direction.
@@ -65,6 +66,62 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   the alternate's number as its value. A tag that is not four letters is left out.
 
 Background: [ADR-0141](../adr/0141-text-opentype-shaping-with-harfbuzz.md)
+
+## Segmentation
+
+`Segmenter` divides UTF-8 text where Unicode divides it: into grapheme clusters and words as
+UAX #29 defines them, and at the line break opportunities UAX #14 defines. ICU supplies the
+rules, and a dictionary for the scripts that mark no word boundaries.
+
+- **`Segmenter(locale, logger)`** loads the rules for a BCP 47 language tag, such as `"ja"`.
+  An empty tag uses Unicode's rules untailored. A segmenter is used from one thread.
+- **`valid()`** says whether the rules loaded. When they did not, which is logged, every code
+  point is its own cluster, the whole string is one word segment, and a line ends only at its
+  end.
+- **`graphemes(utf8)`** gives the offsets a caret may stop at: 0, the start of every grapheme
+  cluster, and the string's size. A cluster is what a reader sees as one character, such as a
+  letter and its accents, a Hangul syllable, an emoji joined by zero width joiners, or a flag.
+  An empty string gives only 0.
+- **`words(utf8)`** divides the string at its word boundaries into `WordSegment`s, which cover
+  it in order with no gap. A segment's `word` is true when it holds letters, digits or
+  ideographs, and false for spaces and punctuation.
+- **`lineBreaks(utf8)`** gives each place a line may end as a `LineBreak`: the `offset` where
+  the next line would start, and whether the break is `mandatory`, after a newline or a
+  paragraph separator. The last is the string's size. A line may break after a space or a
+  hyphen, never before closing punctuation, and between the Thai, Lao, Khmer and Myanmar words
+  a dictionary finds.
+- Every offset is a byte offset at the start of a character. A malformed byte is a cluster of
+  its own. An empty string gives no words and no line breaks.
+
+Background: [ADR-0142](../adr/0142-text-bidi-and-segmentation-with-icu.md)
+
+## Bidi
+
+`Bidi` resolves a UTF-8 text's embedding levels as UAX #9 does, through ICU. Every character
+gets a level: even reads left to right and odd right to left. Explicit embeddings, overrides and
+isolates are applied. Every offset is a byte offset, and the text is not held after the `Bidi`
+is made.
+
+- **`Bidi(utf8, base)`** divides the text into paragraphs at each paragraph separator, such as
+  a newline. Each paragraph is read in the `BaseDirection` given: `LeftToRight`, `RightToLeft`,
+  or `Auto`, the direction of its first strong character, left to right when it has none.
+- **`runs()`** gives the text's maximal `LevelRun`s of one level, in the text's order, covering
+  it with no gap. A run's `rightToLeft()` says whether its level is odd.
+- **`level(offset)`** gives a character's level. **`rightToLeft(offset)`** says whether the
+  paragraph holding it reads right to left.
+- **`line(start, end)`** gives one line's runs in the order they are drawn, left to right.
+  Spaces at the line's end, and before a tab, take the paragraph's level, so a space where a
+  line wraps sits at the paragraph's end edge. A line that is empty, runs past the text, or
+  crosses from one paragraph into the next gives none.
+- **`caret(offset, affinity)`** gives the `CaretEdge` a caret is drawn against: a character
+  and whether it is that character's right edge. Where two runs of different direction meet,
+  the characters either side of a caret are drawn apart, so the caret has an `Affinity`.
+  `Upstream` goes with the character before it, at that character's end edge, and is what typing
+  or moving forwards gives. `Downstream` goes with the character after it, at its start edge.
+  At the text's start or end there is only one character, and that one is taken. An empty text
+  gives the paragraph's start edge.
+
+Background: [ADR-0142](../adr/0142-text-bidi-and-segmentation-with-icu.md)
 
 ## Texture fonts
 

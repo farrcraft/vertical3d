@@ -24,7 +24,7 @@ is SDL3.
 |---|---|
 | Anything, for the first time | [docs/api/README.md](docs/api/README.md): the libraries, how they fit, and a glossary |
 | Building, CMake, linking a target | [docs/contributing/Build.md](docs/contributing/Build.md) |
-| A dependency, vcpkg, the Vulkan SDK | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
+| A dependency, vcpkg, the Vulkan SDK, the overlay ports in `ports/` | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
 | Tests, or verifying a rendering change | [docs/contributing/Testing.md](docs/contributing/Testing.md) |
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
