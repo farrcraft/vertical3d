@@ -256,6 +256,7 @@ void Renderer::draw() {
 
     static const std::vector<boost::shared_ptr<view::ViewPort>> none;
     const std::vector<boost::shared_ptr<view::ViewPort>>& views = views_ ? views_->shown() : none;
+    retire(frame.get(), views);
     canvases_.resize(views.size());
     overlays_.resize(views.size());
     for (std::size_t index = 0; index < views.size(); index++) {
@@ -371,6 +372,34 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());
+}
+
+/**
+ **/
+void Renderer::retire(v3d::render::realtime::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views) {
+    std::vector<std::string> names;
+    for (const boost::shared_ptr<view::ViewPort>& view : views) {
+        if (view) {
+            names.push_back(view->name());
+        }
+    }
+    if (names == viewPasses_) {
+        return;
+    }
+    bool added = false;
+    for (const std::string& name : names) {
+        added = added || std::ranges::find(viewPasses_, name) == viewPasses_.end();
+    }
+    for (const std::string& name : viewPasses_) {
+        if (std::ranges::find(names, name) == names.end()) {
+            frame->remove(name);
+            frame->remove(name + handleSuffix);
+        }
+    }
+    if (added) {
+        frame->remove(uiPass);
+    }
+    viewPasses_ = std::move(names);
 }
 
 /**

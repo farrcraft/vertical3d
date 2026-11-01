@@ -43,6 +43,13 @@ clears to the colour set with `WindowRenderer::clearColour()`. A 2D app usually 
 there is none. More drawing means more passes, not a different kind of frame. An editor draws
 one pass per viewport of the same scene; a shadow map is a pass into an offscreen target.
 
+A pass stays in the frame until `Frame::remove(name)` takes it out. A pass in the frame is
+recorded every frame, even when nothing was submitted to it, so a pass that clears goes on
+clearing its viewport. When what a pass drew goes away, such as a closed viewport, remove its
+pass. A pass created later is recorded after every pass already in the frame. A pass that has
+to stay last, such as a ui drawn over the views, is therefore removed and asked for again
+whenever a new pass is added.
+
 A pass has these settings:
 
 | Call | Effect | Default |

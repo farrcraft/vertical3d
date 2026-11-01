@@ -288,6 +288,14 @@ class Renderer final {
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
 
     /**
+     * Keep the frame's passes to the views shown. A pass stays in the frame and clears its
+     * region every frame until it is removed, so the passes of a view no longer shown are
+     * removed. A new view's pass is added after the ui pass, so the ui pass is removed too, and
+     * is made again after every view's.
+     **/
+    void retire(v3d::render::realtime::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views);
+
+    /**
      * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
      * each button does on the left, and the selection, the frame and the frame rate on the right.
      **/
@@ -321,6 +329,8 @@ class Renderer final {
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
     // one more canvas per view for the handles, which are drawn in a pass of their own
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
+    // the names of the views the frame holds passes for
+    std::vector<std::string> viewPasses_;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;

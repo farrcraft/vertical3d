@@ -62,6 +62,51 @@ BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
 }
 
 /**
+ * A removed pass is no longer in the frame, and the others keep their order.
+ **/
+BOOST_AUTO_TEST_CASE(a_removed_pass_leaves_the_frame) {
+    v3d::render::realtime::Frame frame;
+    frame.pass("left");
+    frame.pass("right");
+    frame.pass("ui");
+
+    BOOST_CHECK(frame.remove("right"));
+
+    BOOST_REQUIRE_EQUAL(frame.passes().size(), 2);
+    BOOST_CHECK_EQUAL(frame.passes()[0]->name(), "left");
+    BOOST_CHECK_EQUAL(frame.passes()[1]->name(), "ui");
+}
+
+/**
+ * Removing a name the frame does not hold changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(removing_an_unknown_pass_changes_nothing) {
+    v3d::render::realtime::Frame frame;
+    frame.pass("scene");
+
+    BOOST_CHECK(!frame.remove("missing"));
+    BOOST_CHECK_EQUAL(frame.passes().size(), 1);
+}
+
+/**
+ * Asking for a removed name again makes a new pass at the end, so a pass can be moved last.
+ **/
+BOOST_AUTO_TEST_CASE(a_pass_asked_for_after_removal_is_new_and_last) {
+    v3d::render::realtime::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::Pass> first = frame.pass("ui");
+    first->keepColour();
+    frame.pass("view");
+
+    frame.remove("ui");
+    const boost::shared_ptr<v3d::render::realtime::Pass> again = frame.pass("ui");
+
+    BOOST_CHECK(again != first);
+    BOOST_CHECK(again->clears());
+    BOOST_REQUIRE_EQUAL(frame.passes().size(), 2);
+    BOOST_CHECK_EQUAL(frame.passes()[1]->name(), "ui");
+}
+
+/**
  * A pass clears by default, so a frame whose first pass was never configured still starts
  * from a known image rather than from whatever was last presented.
  **/

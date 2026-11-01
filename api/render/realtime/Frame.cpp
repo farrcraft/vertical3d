@@ -33,6 +33,12 @@ boost::shared_ptr<Pass> Frame::pass(const std::string& name) {
 
 /**
  **/
+bool Frame::remove(const std::string& name) {
+    return std::erase_if(passes_, [&name](const boost::shared_ptr<Pass>& pass) { return pass->name() == name; }) > 0;
+}
+
+/**
+ **/
 const std::vector<boost::shared_ptr<Pass>>& Frame::passes() const noexcept {
     return passes_;
 }

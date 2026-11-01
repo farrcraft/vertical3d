@@ -25,9 +25,17 @@ class Frame {
  public:
     /**
      * The pass of that name, added to the end of the list if the frame has none.
-     * @return the pass, which stays valid until the frame is destroyed
+     * @return the pass, which stays in the frame until it is removed or the frame is destroyed
      **/
     boost::shared_ptr<Pass> pass(const std::string& name);
+
+    /**
+     * Take the pass of that name out of the frame, so it is no longer recorded. A pass kept in a
+     * frame is recorded every frame, clearing its region if it clears, whether or not anything
+     * was submitted to it. Asking for the name again creates a new pass at the end of the list.
+     * @return whether the frame held a pass of that name
+     **/
+    bool remove(const std::string& name);
 
     /**
      * @return the passes, in the order they were created
