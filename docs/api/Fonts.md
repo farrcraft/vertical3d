@@ -13,6 +13,9 @@ atlas and the drawing of text. See [ui/](ui/README.md).
     and text at any other size is drawn as a ratio of it. `spread` is how many pixels either side
     of an edge the field runs. A larger spread lets a glyph scale up further before its edge
     softens, and costs `2 × spread` extra texels per axis of every glyph.
+  - A distance field is built from the unhinted outline. A coverage glyph is hinted by the
+    face's own instructions. A glyph's advance comes from the same load as its bitmap.
+  - The face is opened by the constructor and stays open until the font is destroyed.
 - **`atlas(textureAtlas)`** sets the atlas the glyphs pack into, and **`loadGlyphs(utf8)`**
   rasterizes and packs each character of a UTF-8 string. **Check its result.** It returns
   false when any glyph did not fit. Text drawn with a partly packed font is missing characters
@@ -40,3 +43,9 @@ atlas and the drawing of text. See [ui/](ui/README.md).
   lines and background need `SOLID` packed too. A `Markup` sets the size, colours, gamma,
   underline, overline, strikethrough and the font. A size of zero or less, which is a new
   markup's, means the font's own size.
+  - y grows downwards and the pen sits on the baseline. Each line's baseline is the pen's y
+    rounded to a whole pixel, once. Every glyph on the line is placed at its exact scaled
+    position and size from it, so the line's glyphs share one baseline. x is not rounded.
+  - A newline moves the pen down by the font's `height()` and back to the first pen's x.
+  - A background is one quad behind each line, drawn before its glyphs. An underline, an
+    overline and a strikethrough are each one quad along the line, drawn after them.

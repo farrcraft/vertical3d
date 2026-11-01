@@ -3,10 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/TextureFont.h>
 #include <api/font/TextureFontCache.h>
 #include <api/font/TextureTextBuffer.h>
 #include <api/log/Logger.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <string>
@@ -128,7 +130,8 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_quad_scales_and_the_atlas_does_not_test) 
 }
 
 /**
- * A newline in a markup with no size moves the pen down one line at the font's own size.
+ * A newline in a markup with no size moves the pen down one line at the font's own size. The
+ * font's height is the whole line, from one baseline to the next.
  *
  * A new markup's size is zero, which means the font's own size, so it lays out the same
  * lines as a markup set to the base size. Each line starts back at the pen's first x.
@@ -142,7 +145,7 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_newline_in_a_default_markup_moves_one_lin
     font->atlas(cache.atlas());
     BOOST_REQUIRE_EQUAL(font->loadGlyphs("ab"), true);
 
-    const float line = font->height() - font->descender();
+    const float line = font->height();
     BOOST_REQUIRE(line > 0.0F);
 
     v3d::font::TextureTextBuffer unsized;
@@ -160,6 +163,72 @@ BOOST_AUTO_TEST_CASE(texturetextbuffer_newline_in_a_default_markup_moves_one_lin
     sized.addText(&sizedPen, baseMarkup, "a\nb");
 
     BOOST_CHECK_CLOSE(unsizedPen.y, sizedPen.y, 0.01F);
+}
+
+/**
+ * Every glyph of a line sits on one baseline, the pen's y rounded to a whole pixel, and each
+ * quad is its glyph's bitmap at the markup's size exactly, at a fractional size and pen.
+ **/
+BOOST_AUTO_TEST_CASE(texturetextbuffer_glyphs_share_one_baseline_test) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(512, 512, 1, logger);
+
+    const boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
+    font->atlas(cache.atlas());
+    const std::string line = "Hamburgefonstiv";
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs(line), true);
+
+    const float size = 12.3F;
+    const float scale = size / kBase;
+    v3d::font::TextureTextBuffer buffer;
+    glm::vec2 pen(3.0F, 100.4F);
+    buffer.addText(&pen, plain(font, size), line);
+    BOOST_REQUIRE_EQUAL(buffer.vertices().size(), line.size() * 4U);
+
+    for (std::size_t index = 0; index < line.size(); index++) {
+        const boost::shared_ptr<v3d::font::TextureFont::Glyph> glyph = font->packed(static_cast<char32_t>(line[index]));
+        BOOST_REQUIRE(glyph);
+        // a quad's first vertex is its bottom left, and its second its top left
+        const float bottom = buffer.vertices()[index * 4].y;
+        const float top = buffer.vertices()[(index * 4) + 1].y;
+        const float baseline = bottom - ((static_cast<float>(glyph->height_) - static_cast<float>(glyph->offset_.y)) * scale);
+        BOOST_CHECK_SMALL(baseline - 100.0F, 1e-3F);
+        BOOST_CHECK_CLOSE(bottom - top, static_cast<float>(glyph->height_) * scale, 0.01F);
+    }
+}
+
+/**
+ * A background is one quad behind a whole line, drawn before its glyphs, and an underline is
+ * one quad along it, drawn after them below the baseline. A newline starts both again.
+ **/
+BOOST_AUTO_TEST_CASE(texturetextbuffer_lines_are_drawn_per_line_test) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(512, 512, 1, logger);
+
+    const boost::shared_ptr<v3d::font::TextureFont> font =
+        boost::make_shared<v3d::font::TextureFont>(std::string(kTypeface), kBase, logger, kSpread);
+    font->atlas(cache.atlas());
+    BOOST_REQUIRE_EQUAL(font->loadGlyphs("abc"), true);
+    BOOST_REQUIRE(font->glyph(v3d::font::TextureFont::SOLID));
+
+    v3d::font::TextureTextBuffer::Markup markup = plain(font, kBase);
+    markup.backgroundColor_ = glm::vec4(0.0F, 0.0F, 1.0F, 1.0F);
+    markup.underline_ = true;
+    markup.underlineColor_ = glm::vec4(0.0F, 1.0F, 0.0F, 1.0F);
+    v3d::font::TextureTextBuffer buffer;
+    glm::vec2 pen(10.0F, 100.0F);
+    buffer.addText(&pen, markup, "abc\nab");
+
+    // a background, three glyphs and an underline, then a background, two glyphs and an underline
+    BOOST_REQUIRE_EQUAL(buffer.vertices().size(), (5U + 4U) * 4U);
+    const float width = font->width("abc");
+    BOOST_CHECK_CLOSE(buffer.vertices()[2].x - buffer.vertices()[0].x, width, 0.01F);
+    BOOST_CHECK(buffer.colors()[0] == markup.backgroundColor_);
+    const std::size_t underline = std::size_t{ 4 } * 4;
+    BOOST_CHECK_CLOSE(buffer.vertices()[underline + 2].x - buffer.vertices()[underline].x, width, 0.01F);
+    BOOST_CHECK(std::min(buffer.vertices()[underline].y, buffer.vertices()[underline + 1].y) > 100.0F);
+    BOOST_CHECK(buffer.colors()[underline] == markup.underlineColor_);
 }
 
 /**

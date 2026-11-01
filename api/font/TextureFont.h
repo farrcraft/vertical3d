@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
@@ -169,12 +170,13 @@ class TextureFont {
     static constexpr std::size_t LCD_FILTER_TAPS = 5;
 
     std::vector<boost::shared_ptr<Glyph> > glyphs_;
+    // the packed glyphs by code point, as glyphs_ holds them
+    std::unordered_map<char32_t, boost::shared_ptr<Glyph>> index_;
     boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
     boost::shared_ptr<TextureFont> fallback_;
     std::string filename_;
     float size_;
     unsigned int spread_;
-    int hinting_;
     OutlineType outline_;
     float outlineThickness_;
     int lcdFiltering_;

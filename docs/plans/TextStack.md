@@ -133,17 +133,21 @@ ADR.
 
 ### Step 1 — Today's path drawn correctly
 
-**Open.**
+**Closed.**
 
-- Each line's baseline is cut to a whole pixel once. Each glyph is placed at its exact position
-  from that baseline, at its exact size.
-- The shader blends across one pixel, measured as the length of the distance's screen gradient.
-- A glyph's bitmap and its advance come from one load, with the face's own hinting.
-- A newline moves down by the line height.
-- An underline, an overline or a strikethrough is one quad for each run of a line.
-- Glyphs are looked up by a map. A face's FreeType library is opened once.
-- The text suite covers glyphs on one baseline, quad heights at fractional sizes, and the
-  newline. The editor is photographed at 12 pixels and magnified.
+- Each line's baseline is the pen's y rounded to a whole pixel, once. Each glyph is placed at
+  its exact scaled position and size from that baseline.
+- The quad shader ramps coverage across one pixel. A pixel's width is the length of the
+  distance's screen gradient, so a diagonal edge is no wider than a straight one.
+- A glyph's bitmap and its advance come from one load. A distance field is built from the
+  unhinted outline, and a coverage glyph is hinted by the face's own instructions.
+- A newline moves down by the font's line height.
+- A background is one quad behind each line, and an underline, an overline or a strikethrough
+  one quad along it. They are measured downwards from the baseline, as glyphs are.
+- Glyphs are looked up by a map. A face is opened by its font's constructor and stays open.
+- The text buffer suite covers glyphs on one baseline, quad heights at a fractional size and
+  pen, the newline, and the background and underline per line. The editor was photographed at
+  12 pixels and magnified beside the same text before the change.
 
 ### Step 2 — Fonts held open, with a fallback chain
 

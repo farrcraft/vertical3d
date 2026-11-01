@@ -37,7 +37,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
-| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
+| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, their SDF atlas, and the callbacks over them |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
 | `style::Resolver` | [style/Resolver.h](../../../api/ui/style/Resolver.h) | turns a theme into a cached `Dressing` per class and style name |
 | `input::Cursor` | [input/Cursor.h](../../../api/ui/input/Cursor.h) | routes mouse points: hover, press, drag, focus, caret placement |

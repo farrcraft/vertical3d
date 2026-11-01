@@ -17,9 +17,9 @@
 namespace v3d::font::internal {
 
 /**
- * The FreeType library and face a font is read through, open only while it is being read.
- * release() closes whatever is open, and so do loadFace() and the destructor. A load that
- * fails part way therefore never has to track which of the two it opened.
+ * The FreeType library and face a font is read through, open from loadFace() until the font
+ * is destroyed. release() closes whatever is open, and so do loadFace() and the destructor.
+ * A load that fails part way therefore never has to track which of the two it opened.
  **/
 class Freetype final {
  public:

@@ -5,6 +5,7 @@
 
 #include "TextureTextBuffer.h"
 
+#include <cmath>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -18,102 +19,72 @@
 
 namespace v3d::font {
 
-TextureTextBuffer::TextureTextBuffer() :
-    lineStart_(0) {
-}
+TextureTextBuffer::TextureTextBuffer() = default;
 
-void TextureTextBuffer::addCharacter(glm::vec2* pen, const Markup& markup, char32_t current) {
-    if (current == U'\n') {
-        pen->x = origin_.x;
-        // the same ratio as a glyph's metrics, so a markup with no size moves down one line
-        // at the font's own size
-        const float lineScale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
-        pen->y += (markup.font_->height() - markup.font_->descender()) * lineScale;
-        lineStart_ = items_.size();
-        // newlines don't actually generate any vertex data
-        return;
-    }
-    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->packed(current);
-    const boost::shared_ptr<TextureFont::Glyph> black = markup.font_->packed(TextureFont::SOLID);
-    if (!glyph) {
-        return;
-    }
-    // the lines and the background are drawn with the white square. A full atlas may have no
-    // room for it, and then the glyph is drawn without them
-    const bool lines = black != nullptr;
-
+void TextureTextBuffer::addLine(glm::vec2* pen, const Markup& markup, std::u32string_view line) {
     // every metric below is in pixels of the size the face was rasterized at, so another
     // size scales them by the ratio. A markup that sets no size, or the font's own, leaves
     // this at one
     const float scale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
-    const float advance = glyph->advance_.x * scale;
-    const float height = markup.font_->height() * scale;
-    const float descender = markup.font_->descender() * scale;
+    const float baseline = std::round(pen->y);
+    const float start = pen->x;
+    float end = start;
+    for (const char32_t charcode : line) {
+        if (const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->packed(charcode)) {
+            end += glyph->advance_.x * scale;
+        }
+    }
+
+    // y grows downwards, so a metric above the baseline is taken from it
     const float ascender = markup.font_->ascender() * scale;
-    const float linegap = markup.font_->linegap() * scale;
-    const float underlinePosition = markup.font_->underlinePosition() * scale;
-    const float underlineThickness = markup.font_->underlineThickness() * scale;
-    unsigned int vcount = 0;
-    unsigned int icount = 0;
-    const size_t istart = indices().size();
-    const size_t vstart = vertices().size();
-
-    if (lines && markup.backgroundColor_.a > 0.0F) {
-        const glm::vec2 xy0(pen->x, pen->y + descender);
-        const glm::vec2 xy1(pen->x + advance, xy0.y + height + linegap);
-
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.backgroundColor_, markup.gamma_);
-
-        vcount += 4;
-        icount += QUAD_INDICES;
+    const float thickness = markup.font_->underlineThickness() * scale;
+    if (end > start && markup.backgroundColor_.a > 0.0F) {
+        addSolid(glm::vec2(start, baseline - ascender), glm::vec2(end, baseline - ascender + (markup.font_->height() * scale)), markup,
+            markup.backgroundColor_);
     }
-
-    if (lines && markup.underline_) {
-        const glm::vec2 xy0(pen->x, pen->y + underlinePosition);
-        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
-
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.underlineColor_, markup.gamma_);
-
-        vcount += 4;
-        icount += QUAD_INDICES;
+    for (const char32_t charcode : line) {
+        addGlyph(*pen, baseline, scale, markup, charcode);
+        if (const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->packed(charcode)) {
+            pen->x += glyph->advance_.x * scale;
+        }
     }
-
-    if (lines && markup.overline_) {
-        const glm::vec2 xy0(pen->x, pen->y + ascender);
-        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
-
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.overlineColor_, markup.gamma_);
-
-        vcount += 4;
-        icount += QUAD_INDICES;
+    if (end <= start) {
+        return;
     }
-
-    if (lines && markup.strikethrough_) {
-        const glm::vec2 xy0(pen->x, pen->y + (ascender * .33f));
-        const glm::vec2 xy1(pen->x + advance, xy0.y + underlineThickness);
-
-        addQuad(xy0, xy1, black->st_[0], black->st_[1], markup.strikethroughColor_, markup.gamma_);
-
-        vcount += 4;
-        icount += QUAD_INDICES;
+    // the underline position is below the baseline when it is negative, as the face gives it
+    if (markup.underline_) {
+        const float top = baseline - (markup.font_->underlinePosition() * scale);
+        addSolid(glm::vec2(start, top), glm::vec2(end, top + thickness), markup, markup.underlineColor_);
     }
+    if (markup.overline_) {
+        addSolid(glm::vec2(start, baseline - ascender), glm::vec2(end, baseline - ascender + thickness), markup, markup.overlineColor_);
+    }
+    if (markup.strikethrough_) {
+        const float top = baseline - (ascender * STRIKETHROUGH);
+        addSolid(glm::vec2(start, top), glm::vec2(end, top + thickness), markup, markup.strikethroughColor_);
+    }
+}
 
-    // the glyph itself. y grows downwards and the pen sits on the baseline. The quad's bottom
-    // is as far below the baseline as the bitmap reaches, its height less its top bearing, and
-    // its top is one bitmap height above that
+void TextureTextBuffer::addGlyph(const glm::vec2& pen, float baseline, float scale, const Markup& markup, char32_t charcode) {
+    const boost::shared_ptr<TextureFont::Glyph> glyph = markup.font_->packed(charcode);
+    if (!glyph) {
+        return;
+    }
+    // the quad's bottom is as far below the baseline as the bitmap reaches, its height less its
+    // top bearing, and its top is one bitmap height above that
     const float glyphWidth = static_cast<float>(glyph->width_) * scale;
     const float glyphHeight = static_cast<float>(glyph->height_) * scale;
-    const float bottom = pen->y + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale);
-    const glm::vec2 xy0(pen->x + (static_cast<float>(glyph->offset_.x) * scale), static_cast<float>(static_cast<int>(bottom)));
-    const glm::vec2 xy1(xy0.x + glyphWidth, static_cast<float>(static_cast<int>(xy0.y - glyphHeight)));
-
+    const glm::vec2 xy0(pen.x + (static_cast<float>(glyph->offset_.x) * scale), baseline + glyphHeight - (static_cast<float>(glyph->offset_.y) * scale));
+    const glm::vec2 xy1(xy0.x + glyphWidth, xy0.y - glyphHeight);
     addQuad(xy0, xy1, glyph->st_[0], glyph->st_[1], markup.foregroundColor_, markup.gamma_);
+}
 
-    vcount += 4;
-    icount += QUAD_INDICES;
-
-    pen->x += advance;
-    items_.push_back(glm::ivec4(vstart, vcount, istart, icount));
+void TextureTextBuffer::addSolid(const glm::vec2& xy0, const glm::vec2& xy1, const Markup& markup, const glm::vec4& color) {
+    // a full atlas may have no room for the white square, and then nothing is drawn
+    const boost::shared_ptr<TextureFont::Glyph> solid = markup.font_->packed(TextureFont::SOLID);
+    if (solid) {
+        addQuad(xy0, xy1, solid->st_[0], solid->st_[1], color, markup.gamma_);
+    }
 }
 
 void TextureTextBuffer::addQuad(const glm::vec2& xy0, const glm::vec2& xy1, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& color, float gamma) {
@@ -147,28 +118,20 @@ void TextureTextBuffer::addText(glm::vec2* pen, const Markup& markup, std::strin
     if (vertices().empty()) {
         origin_ = *pen;
     }
-    /*
-    if (markup.font_->ascender() > ascender_)
-    {
-        float dy = markup.font_->ascender() - ascender_;
-        for (unsigned int i = lineStart_; i < items_.size(); ++i)
-        {
-            for (int j = items_[i][0]; j < items_[i][0] + items_[i][1]; ++j)
-            {
-                xyz_[j].y -= dy;
-            }
+    const std::u32string text = decode(utf8);
+    std::size_t from = 0;
+    while (true) {
+        const std::size_t newline = text.find(U'\n', from);
+        addLine(pen, markup, std::u32string_view(text).substr(from, newline == std::u32string::npos ? std::u32string::npos : newline - from));
+        if (newline == std::u32string::npos) {
+            return;
         }
-        ascender_ = markup.font_->ascender();
-        pen.y -= dy;
-    }
-    if (markup.font_->descender() < descender_)
-    {
-        descender_ = markup.font_->descender();
-    }
-    */
-    std::size_t index = 0;
-    while (index < utf8.size()) {
-        addCharacter(pen, markup, next(utf8, &index));
+        // the same ratio as a glyph's metrics, so a markup with no size moves down one line
+        // at the font's own size. The line height already holds the descender and the gap
+        const float scale = markup.size_ > 0.0F && markup.font_->size() > 0.0F ? markup.size_ / markup.font_->size() : 1.0F;
+        pen->x = origin_.x;
+        pen->y += markup.font_->height() * scale;
+        from = newline + 1;
     }
 }
 
@@ -177,7 +140,6 @@ void TextureTextBuffer::clear() {
     TextBuffer::clear();
     shift_.clear();
     gamma_.clear();
-    items_.clear();
 }
 
 

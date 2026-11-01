@@ -44,12 +44,12 @@ void main() {
 
     if (push.text != 0u) {
         // the glyph's edge is where the distance crosses the midpoint the field was built
-        // around. Blending across one pixel of it, rather than cutting at it, makes the edge
-        // smooth. The pixel's width comes from how fast the distance changes on screen, so the
-        // blend stays one pixel wide however far the glyph has been scaled
+        // around. Coverage ramps from 0 to 1 across one pixel centred on it. A pixel's width
+        // in distance is the length of the distance's screen gradient, so the ramp stays one
+        // pixel wide at any scale and on a diagonal edge
         float distance = texel.a;
-        float width = fwidth(distance);
-        float coverage = smoothstep(0.5 - width, 0.5 + width, distance);
+        float width = max(length(vec2(dFdx(distance), dFdy(distance))), 1e-5);
+        float coverage = clamp(((distance - 0.5) / width) + 0.5, 0.0, 1.0);
         outColour = vec4(fragmentColour.rgb, fragmentColour.a * coverage);
     } else {
         outColour = fragmentColour * texel;
