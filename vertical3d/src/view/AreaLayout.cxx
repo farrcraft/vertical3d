@@ -295,6 +295,12 @@ void AreaLayout::place(Node* node, const glm::vec4& region) {
 
 /**
  **/
+const glm::vec4& AreaLayout::region() const noexcept {
+    return region_;
+}
+
+/**
+ **/
 const std::vector<AreaLayout::Area>& AreaLayout::areas() const noexcept {
     return areas_;
 }

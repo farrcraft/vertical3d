@@ -155,6 +155,11 @@ class AreaLayout final {
     void resize(const glm::vec4& region);
 
     /**
+     * @return the region the areas divide, as it was last given to resize()
+     **/
+    const glm::vec4& region() const noexcept;
+
+    /**
      * @return the areas, in the order a depth first walk of the tree meets them
      **/
     const std::vector<Area>& areas() const noexcept;

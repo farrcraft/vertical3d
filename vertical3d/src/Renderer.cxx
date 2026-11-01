@@ -453,8 +453,13 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
 
     const glm::vec2 plate(measure(shown->text) + (dress.padding * 2.0F), dress.barHeight);
-    const glm::vec2 min(std::round(content.x + ((content.z - plate.x) / 2.0F)),
-        std::round(content.y + content.w - (NOTICE_MARGIN * screen_->factor()) - plate.y));
+    // centred on the area, and moved in from the edge of the areas when the area is narrower
+    // than the plate
+    const float margin = NOTICE_MARGIN * screen_->factor();
+    const glm::vec4& room = views_->layout()->region();
+    const float centred = content.x + ((content.z - plate.x) / 2.0F);
+    const float left = std::max(room.x + margin, std::min(centred, room.x + room.z - margin - plate.x));
+    const glm::vec2 min(std::round(left), std::round(content.y + content.w - margin - plate.y));
     const glm::vec2 max = min + plate;
     canvas->fade(shown->alpha);
     const glm::vec2 drop(0.0F, dress.shadowOffset);

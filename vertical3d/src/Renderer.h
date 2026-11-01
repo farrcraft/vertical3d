@@ -303,7 +303,7 @@ class Renderer final {
 
     /**
      * Draw the notice showing, if there is one, on a plate centred at the foot of the active
-     * area, faded as far as it has faded.
+     * area and kept inside the areas, faded as far as it has faded.
      **/
     void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
 

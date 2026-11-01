@@ -130,6 +130,14 @@ BOOST_AUTO_TEST_CASE(one_area_needs_no_split) {
     BOOST_CHECK(layout.areas()[0].region == glm::vec4(3.0F, 3.0F, 794.0F, 594.0F));
 }
 
+BOOST_AUTO_TEST_CASE(the_region_is_what_resize_was_given) {
+    AreaLayout layout(logger());
+    BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));
+    layout.resize(glm::vec4(40.0F, 30.0F, 800.0F, -5.0F));
+    // a negative extent is held as none
+    BOOST_CHECK(layout.region() == glm::vec4(40.0F, 30.0F, 800.0F, 0.0F));
+}
+
 BOOST_AUTO_TEST_CASE(a_layout_that_cannot_be_read_is_refused) {
     AreaLayout layout(logger());
     const std::initializer_list<std::string> refused = {
