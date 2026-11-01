@@ -90,6 +90,27 @@ BOOST_AUTO_TEST_CASE(a_shared_fallback_packs_a_code_point_once) {
     BOOST_CHECK(before == after);
 }
 
+/**
+ * Code points drawn with one glyph pack it once. Two code points no font in the chain has are
+ * both the first face's missing glyph.
+ **/
+BOOST_AUTO_TEST_CASE(code_points_drawn_with_one_glyph_pack_it_once) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::font::TextureFontCache cache(1024, 1024, 1, logger);
+
+    const boost::shared_ptr<v3d::font::TextureFont> noto = face(kNoto, &cache, logger);
+    const boost::shared_ptr<v3d::font::TextureFont> inter = face(kInter, &cache, logger);
+    inter->fallback(noto);
+    // two CJK ideographs, U+4E00 and U+4E01, as UTF-8. Neither face has them
+    BOOST_REQUIRE(inter->loadGlyphs("\xE4\xB8\x80\xE4\xB8\x81"));
+
+    const boost::shared_ptr<v3d::font::TextureFont::Glyph> first = inter->packed(0x4E00);
+    BOOST_REQUIRE(first);
+    BOOST_CHECK(inter->packed(0x4E01) == first);
+    BOOST_CHECK_EQUAL(first->index_, 0U);
+    BOOST_CHECK(!noto->packed(0x4E00));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

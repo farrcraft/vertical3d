@@ -151,15 +151,23 @@ ADR.
 
 ### Step 2 — Fonts held open, with a fallback chain
 
-**Open.**
+**Closed.**
 
-- A face holds its FreeType face open while it is in use, and one FreeType library serves
-  every face.
-- A font family names its faces by weight and style. A fallback chain lists the families to try
-  in order, for each code point the ones before it lack.
-- Glyphs are named by face and glyph index, not by code point.
-- The font suite covers the chain's order, a code point no face has, and a face that will not
-  open.
+- `font::Library` is one FreeType library. `font::Face` holds a font file open, with its family,
+  style, OS/2 weight and italic flag, and finds a code point's glyph index.
+- `font::Family` chooses a face by weight and style as CSS does. `font::FallbackChain` tries its
+  families in order, and a code point none has is the first face's missing glyph.
+- `TextureFont` draws one face. It keeps glyphs by their index in the face, so code points drawn
+  with one glyph pack it once. Its fallback is a chain of fonts, and a code point no font down
+  it has is its own face's missing glyph.
+- `ui::paint::TextRenderer` opens its faces through one library into a chain of two families.
+  Each weight's fonts follow the chain, with one font for each face, so both weights share the
+  fallback.
+- A face's underline is read in its design units, so its distance below the baseline matches
+  the face.
+- The fallback chain suite covers a face's names, weight and glyphs, a face that will not open,
+  CSS's choice of weight, the chain's order, and a code point no face has. The font suite
+  covers code points sharing one glyph.
 
 ### Step 3 — Shaping
 

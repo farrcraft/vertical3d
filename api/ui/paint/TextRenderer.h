@@ -31,8 +31,9 @@ namespace v3d::ui::paint {
 /**
  * One typeface in two weights, packed into one atlas, and the text drawn with it.
  *
- * The regular and the semibold face each pack the charset. A code point either lacks is packed
- * from a third face, the fallback, which both share, so a string mixing the faces lays out as
+ * The regular and the semibold face are one family, and the fallback face is the next in a
+ * font::FallbackChain. Each weight packs the charset. A code point a weight's face lacks is
+ * packed from the fallback, which both weights share, so a string mixing the faces lays out as
  * one font.
  *
  * A glyph is a batched quad sampling that atlas, so a line of text joins whatever canvas

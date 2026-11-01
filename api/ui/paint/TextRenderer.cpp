@@ -6,6 +6,11 @@
 #include "TextRenderer.h"
 
 #include <api/asset/Manager.h>
+#include <api/font/Face.h>
+#include <api/font/FaceStyle.h>
+#include <api/font/Family.h>
+#include <api/font/FallbackChain.h>
+#include <api/font/Library.h>
 #include <api/font/TextureFont.h>
 #include <api/font/TextureFontCache.h>
 #include <api/font/TextureTextBuffer.h>
@@ -16,6 +21,7 @@
 #include "Text.h"
 
 #include <cstddef>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -23,6 +29,15 @@
 #include <boost/make_shared.hpp>
 
 namespace v3d::ui::paint {
+
+namespace {
+
+/**
+ * The weight semibold text is drawn at.
+ **/
+constexpr unsigned int SEMIBOLD_WEIGHT = 600;
+
+};  // namespace
 
 const char* const TextRenderer::ascii =
 " !\"#$%&'()*+,-./0123456789:;<=>?"
@@ -67,30 +82,49 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
 
     // each face is opened here, not loaded as an asset, because this renderer chooses the
     // size it is rasterized at. The manager only supplies the file's path
+    const boost::shared_ptr<v3d::font::Library> library = boost::make_shared<v3d::font::Library>();
     const auto open = [&](const std::string& file) {
-        const boost::shared_ptr<v3d::font::TextureFont> opened =
-            boost::make_shared<v3d::font::TextureFont>(assetManager->path(file), size_, logger, spread);
-        opened->atlas(cache_->atlas());
-        return opened;
+        return file.empty() ? boost::shared_ptr<v3d::font::Face>() : v3d::font::Face::open(library, assetManager->path(file), logger);
+    };
+    // the regular and semibold faces are one family, and the fallback the next in the chain
+    const boost::shared_ptr<v3d::font::Family> primary = boost::make_shared<v3d::font::Family>("primary");
+    primary->add(open(faces.regular));
+    primary->add(open(faces.semiBold));
+    const boost::shared_ptr<v3d::font::Family> fallback = boost::make_shared<v3d::font::Family>("fallback");
+    fallback->add(open(faces.fallback));
+    if (!faces.fallback.empty() && fallback->empty()) {
+        logger->get()->warn("{} could not be loaded, so a character the faces lack draws as their missing glyph", faces.fallback);
+    }
+    v3d::font::FallbackChain chain;
+    chain.add(primary);
+    chain.add(fallback);
+
+    // one font for each face, so a weight that falls back to a face another weight draws from
+    // packs no glyph twice
+    std::map<const v3d::font::Face*, boost::shared_ptr<v3d::font::TextureFont>> fonts;
+    const auto weighted = [&](unsigned int weight) {
+        boost::shared_ptr<v3d::font::TextureFont> next;
+        const std::vector<boost::shared_ptr<v3d::font::Face>> chained = chain.faces({ .weight = weight });
+        for (auto face = chained.rbegin(); face != chained.rend(); ++face) {
+            boost::shared_ptr<v3d::font::TextureFont>& font = fonts[face->get()];
+            if (!font) {
+                font = boost::make_shared<v3d::font::TextureFont>(*face, size_, logger, spread);
+                font->atlas(cache_->atlas());
+            }
+            font->fallback(next);
+            next = font;
+        }
+        return next;
     };
 
-    boost::shared_ptr<v3d::font::TextureFont> fallback;
-    if (!faces.fallback.empty()) {
-        fallback = open(faces.fallback);
-        // packing nothing opens the file, so a fallback that will not load is found here
-        // rather than as glyphs that are silently missing
-        if (!fallback->loadGlyphs(std::string_view())) {
-            logger->get()->warn("{} could not be loaded, so a character the faces lack draws as their missing glyph", faces.fallback);
-            fallback.reset();
-        }
+    if (primary->empty()) {
+        logger->get()->error("{} could not be opened, so nothing drawn through it will have text", faces.regular);
+        return;
     }
-
-    regular_ = open(faces.regular);
-    regular_->fallback(fallback);
+    regular_ = weighted(v3d::font::FaceStyle::REGULAR);
     if (!regular_->loadGlyphs(charset)) {
-        // a face that would not open packs nothing, and one that opened into an atlas too
-        // small packs only some glyphs. Either way nothing is drawn, so no text is shown
-        // with characters missing
+        // a face that opened into an atlas too small packs only some glyphs. Nothing is
+        // drawn, so no text is shown with characters missing
         logger->get()->error("{} could not be packed at size {}, so nothing drawn through it will have text", faces.regular, size_);
         regular_.reset();
         return;
@@ -100,15 +134,15 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     regular_->glyph(v3d::font::TextureFont::SOLID);
     cache_->add(regular_);
 
-    if (!faces.semiBold.empty()) {
-        semiBold_ = open(faces.semiBold);
-        semiBold_->fallback(fallback);
-        if (semiBold_->loadGlyphs(charset)) {
-            semiBold_->glyph(v3d::font::TextureFont::SOLID);
-            cache_->add(semiBold_);
+    // a family with no semibold face draws semibold text in the regular face
+    const boost::shared_ptr<v3d::font::TextureFont> semiBold = weighted(SEMIBOLD_WEIGHT);
+    if (semiBold != regular_) {
+        if (semiBold->loadGlyphs(charset)) {
+            semiBold->glyph(v3d::font::TextureFont::SOLID);
+            cache_->add(semiBold);
+            semiBold_ = semiBold;
         } else {
             logger->get()->warn("{} could not be packed at size {}, so semibold text is drawn in {}", faces.semiBold, size_, faces.regular);
-            semiBold_.reset();
         }
     }
     markup_.font_ = regular_;
