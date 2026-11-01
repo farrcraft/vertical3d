@@ -44,18 +44,18 @@ std::string TopBar::title(const std::string& project, bool dirty) {
 /**
  **/
 boost::json::object TopBar::document(const std::vector<std::string>& workspaces) {
-    boost::json::array tabs;
+    // the tabs lie on one plate, drawn first so that it is under them
+    boost::json::array components = {
+        boost::json::object{ { "type", "panel" }, { "name", "workspaces" } },
+    };
     for (std::size_t index = 0; index < workspaces.size(); index++) {
-        tabs.emplace_back(boost::json::object{ { "type", "button" }, { "name", "workspace-" + std::to_string(index) },
+        components.emplace_back(boost::json::object{ { "type", "button" }, { "name", "workspace-" + std::to_string(index) },
             { "label", workspaces[index] }, { "toggle", true }, { "context", "workspace" }, { "command", "show" },
             { "data", workspaces[index] } });
     }
-    boost::json::array components = {
-        boost::json::object{ { "type", "hbox" }, { "name", "workspaces" }, { "children", std::move(tabs) } },
-        boost::json::object{ { "type", "label" }, { "name", "project" }, { "label", "" } },
-        boost::json::object{ { "type", "button" }, { "name", "search" }, { "label", SEARCH }, { "tooltip", "Search the commands" },
-            { "context", "search" }, { "command", "open" } },
-    };
+    components.emplace_back(boost::json::object{ { "type", "label" }, { "name", "project" }, { "label", "" } });
+    components.emplace_back(boost::json::object{ { "type", "button" }, { "name", "search" }, { "label", SEARCH },
+        { "tooltip", "Search the commands" }, { "context", "search" }, { "command", "open" } });
     boost::json::array containers = {
         boost::json::object{ { "name", NAME }, { "visible", true }, { "components", std::move(components) } },
     };
@@ -92,15 +92,23 @@ void TopBar::sync(const State& state, const glm::vec4& band) {
         label->text(named);
         box(label.get(), glm::vec4(right - search - name, band.y, name, band.w));
     }
-    if (const boost::shared_ptr<v3d::ui::Component> tabs = container->get("workspaces")) {
-        box(tabs.get(), glm::vec4(band.x + pad, band.y, std::max(0.0F, band.z - search - name - (pad * 2.0F)), band.w));
-        for (std::size_t index = 0; index < state.workspaces.size(); index++) {
-            const boost::shared_ptr<v3d::ui::component::Button> tab =
-                boost::dynamic_pointer_cast<v3d::ui::component::Button>(container->get("workspace-" + std::to_string(index)));
-            if (tab) {
-                tab->checked(state.workspaces[index] == state.shown);
-            }
+    // the tabs sit side by side on their plate, each its label and a gap either side, inset
+    // from the bar's top and foot
+    const float inset = band.w * TAB_INSET;
+    const float start = band.x + pad;
+    float at = start + inset;
+    for (std::size_t index = 0; index < state.workspaces.size(); index++) {
+        const boost::shared_ptr<v3d::ui::component::Button> tab =
+            boost::dynamic_pointer_cast<v3d::ui::component::Button>(container->get("workspace-" + std::to_string(index)));
+        if (tab) {
+            const float wide = width(state.workspaces[index]) + pad;
+            box(tab.get(), glm::vec4(at, band.y + inset, wide, band.w - (inset * 2.0F)));
+            tab->checked(state.workspaces[index] == state.shown);
+            at += wide;
         }
+    }
+    if (const boost::shared_ptr<v3d::ui::Component> plate = container->get("workspaces")) {
+        box(plate.get(), glm::vec4(start, band.y + (inset / 2.0F), at + inset - start, band.w - inset));
     }
 }
 

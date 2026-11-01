@@ -173,6 +173,10 @@ bool Pointer::cancel() {
     return true;
 }
 
+bool Pointer::holding() const {
+    return views_->layout()->grabbed();
+}
+
 std::optional<view::AreaLayout::Divider> Pointer::lit() const {
     const view::AreaLayout& layout = *views_->layout();
     if (layout.grabbed()) {

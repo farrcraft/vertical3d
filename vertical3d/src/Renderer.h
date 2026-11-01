@@ -20,6 +20,7 @@
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/control/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
@@ -245,6 +246,11 @@ class Renderer final {
     static constexpr std::string_view UNDO_COMMAND = "edit::undo";
 
     /**
+     * How far a divider's hint sits from the cursor, right and down, at a scale of one.
+     **/
+    static constexpr glm::vec2 HINT_OFFSET{ 16.0F, 20.0F };
+
+    /**
      * How much stronger an emphasised grid line is than an ordinary one, and how strongly the
      * lines through the origin show their axis colours.
      **/
@@ -383,6 +389,11 @@ class Renderer final {
      **/
     void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
 
+    /**
+     * Draw a lit divider's hint beside the cursor once it is due, on a tooltip's plate.
+     **/
+    void drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
     boost::shared_ptr<v3d::asset::Manager> assetManager_;
@@ -400,6 +411,7 @@ class Renderer final {
     boost::shared_ptr<control::Pointer> pointer_;
     control::Status status_;
     boost::shared_ptr<control::Notices> notices_;
+    control::DividerHint dividerHint_;
     // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;

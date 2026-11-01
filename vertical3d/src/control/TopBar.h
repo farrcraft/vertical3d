@@ -25,8 +25,8 @@ namespace v3d::editor::control {
  *
  * They are a ui container, built as the editor runs and listed after the editor's own so they
  * are drawn over the menu bar's band, which takes no press beside its labels. The tabs follow
- * the menus, and the name and the button sit at the right end. A tab sends workspace::show with
- * the workspace's name, and the one shown is checked.
+ * the menus, side by side on one plate, and the name and the button sit at the right end. A tab
+ * sends workspace::show with the workspace's name, and the one shown is checked.
  *
  * sync() builds the container again when the workspaces change, and otherwise moves it and
  * writes the name.
@@ -79,6 +79,12 @@ class TopBar final {
      * What the search button says.
      **/
     static constexpr const char* SEARCH = "Search";
+
+    /**
+     * How far the workspace tabs sit in from the bar's top and foot, as a share of its height.
+     * Their plate is in half as far.
+     **/
+    static constexpr float TAB_INSET = 0.15F;
 
     /**
      * What follows a project's name while it has unsaved changes.

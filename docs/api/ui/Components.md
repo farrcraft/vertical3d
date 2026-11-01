@@ -25,7 +25,7 @@ reads besides the common ones:
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
-| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false) and `emphasis` (false); `docked` (true); `opacity` (1) | yes / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false), `emphasis` (false) and `accent` (false); `docked` (true); `opacity` (1) | yes / no |
 | `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
 Notes on individual components:
@@ -70,8 +70,9 @@ Notes on individual components:
   a radio item are marked by the app, the same as a check box. Radio items are drawn with the
   same square mark as check items.
 - **A `menu::Bar`'s title** is its menu's label, or the menu's `icon` once that is resolved,
-  tinted the colour the label would be. A title with `drop` is followed by a chevron pointing
-  down. A title with `emphasis` is written in the chosen item's weight, semibold where the
+  tinted the colour the label would be, or the theme's accent with `accent`, as an app's mark
+  is. A title with `drop` is followed by a chevron pointing down. A title with `emphasis` is
+  written in the chosen item's weight, semibold where the
   screen gives one, on a pill of the `widget` colour. An app sets it as the editor sets its
   active view's name. A bar's `opacity` multiplies the strip's alpha, so a bar can lie over a
   view and let it show through. The titles are drawn whole.

@@ -31,6 +31,7 @@
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/control/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Pointer.h>
@@ -49,6 +50,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -381,6 +383,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
             landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
     }
     drawNotice(&canvas);
+    drawDividerHint(&canvas);
     drawStatus(&canvas);
     // the statistics overlay draws onto the same canvas, so this runs even when there is no
     // ui to draw
@@ -506,6 +509,37 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
         end -= measure(STATUS_GAP);
     }
     write(right, glm::vec2(end - measure(right), baseline), dress.secondaryText);
+}
+
+/**
+ **/
+void Renderer::drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas) {
+    if (!pointer_ || !dividerHint_.due({ .lit = pointer_->lit().has_value(), .held = pointer_->holding() }, screen_->clock().now)) {
+        return;
+    }
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    const float size = screen_->size();
+    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
+    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+    float wide = 0.0F;
+    for (const std::string_view line : control::DividerHint::LINES) {
+        wide = std::max(wide, measure(line));
+    }
+    const glm::vec2 plate(wide + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(control::DividerHint::LINES.size())) + dress.padding);
+    // beside the cursor, and kept on the canvas
+    const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
+    const glm::vec2 offset = glm::vec2(HINT_OFFSET) * screen_->factor();
+    const glm::vec2 min = glm::round(glm::clamp(pointer_->cursor() + offset, glm::vec2(0.0F), glm::max(room - plate, glm::vec2(0.0F))));
+    const glm::vec2 max = min + plate;
+    const glm::vec2 drop(0.0F, dress.shadowOffset);
+    v3d::ui::paint::shadowBox(canvas, min + drop, max + drop, { .radius = dress.radius, .reach = dress.shadowSize, .colour = dress.shadow });
+    v3d::ui::paint::plateBox(canvas, min, max, dress.radius, dress.borderWidth, { .inside = dress.panel, .outline = dress.border });
+    float top = min.y + (dress.padding / 2.0F);
+    for (std::size_t index = 0; index < control::DividerHint::LINES.size(); index++) {
+        write(control::DividerHint::LINES[index], glm::vec2(min.x + dress.padding, top + (dress.lineHeight / 2.0F) + (size * BASELINE)),
+            index == 0 ? dress.text : dress.secondaryText);
+        top += dress.lineHeight;
+    }
 }
 
 /**

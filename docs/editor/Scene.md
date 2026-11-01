@@ -345,6 +345,9 @@ dividers meet, the outer split's is taken.
 - Escape or a right click puts the divider back where it was taken.
 - The second press of a double click on a divider gives the two children beside it the same
   room.
+- A divider lit for half a second, and not held, shows a hint beside the cursor on a tooltip's
+  plate: "Drag to resize", then how a double click, Escape and Ctrl act on it. It goes when the
+  divider is held or no longer lit. `DividerHint` in `src/control/` times it.
 
 The shares are saved with the rest of the layout, as [Workspaces](#workspaces) describes.
 

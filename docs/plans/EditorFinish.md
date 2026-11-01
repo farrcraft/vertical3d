@@ -288,12 +288,20 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 9 — The top bar and the dividers
 
-**Open.**
+**Closed.**
 
-- The top bar leads with the app's mark, in the accent.
-- The workspaces are one group of tabs, the chosen one on the control colour and semibold.
-- A divider under the cursor shows a tooltip after the usual delay: drag to resize, double
-  click to even, Escape to cancel, and Ctrl to snap to tenths.
+- The menu bar leads with the editor's mark in the accent. It is a menu, as Blender's is, holding
+  the command search and Quit. `api/ui`: a bar menu with `accent` tints its icon the theme's
+  accent, as an app's mark is.
+- The workspace tabs lie side by side on one plate, placed by the top bar rather than a box. The
+  chosen one keeps the accent fill every checked toggle in the ui has, rather than the design's
+  control colour and semibold, so the tools and the workspaces mark a choice alike.
+- A divider lit for the tooltip's half second, and not held, shows a hint beside the cursor: drag
+  to resize, then how a double click, Escape and Ctrl act on it. `DividerHint` times it, and
+  `Pointer::holding()` says when a divider is held.
+- The menu bar and document suites cover the accent, the top bar suite the plate, and the hint
+  suite its wait and its end. The editor was photographed with the top bar. The hint needs the
+  cursor on a divider, which the harness cannot place, so it rests on its tests.
 
 ### Step 10 — Auto key
 

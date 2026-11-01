@@ -462,6 +462,7 @@ boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost
         }
         menu->drop(optionalFlag(*logger_, *menuEntry, "drop", false));
         menu->emphasis(optionalFlag(*logger_, *menuEntry, "emphasis", false));
+        menu->accent(optionalFlag(*logger_, *menuEntry, "accent", false));
         bar->add(*label, menu);
     }
     return bar;

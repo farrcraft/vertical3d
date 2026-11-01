@@ -108,6 +108,11 @@ class Pointer final {
     bool cancel();
 
     /**
+     * @return whether a divider is held
+     **/
+    bool holding() const;
+
+    /**
      * @return the divider to light: the one held, or else the one a press would take, unless
      *         the ui has the cursor or a tool is dragging
      **/

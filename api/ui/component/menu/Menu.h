@@ -202,6 +202,13 @@ class Menu : public Component {
     void emphasis(bool set) noexcept;
     bool emphasis() const noexcept;
 
+    /**
+     * As a menu bar's menu, whether its title's icon is tinted the theme's accent rather than the
+     * colour of a label, as an app's mark is.
+     **/
+    void accent(bool tinted) noexcept;
+    bool accent() const noexcept;
+
  private:
     /**
      * Move the active item on past any separators, in the direction of a step of 1 or -1,
@@ -224,6 +231,7 @@ class Menu : public Component {
     v3d::ui::Image image_;
     bool drop_ = false;
     bool emphasis_ = false;
+    bool accent_ = false;
 };
 
 };  // namespace v3d::ui::component::menu

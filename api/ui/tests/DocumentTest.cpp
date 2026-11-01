@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(a_menu_bar_reads_its_opacity_and_its_titles) {
         "containers": [ { "name": "hud", "visible": true, "components": [
             { "type": "menubar", "name": "header", "docked": false, "opacity": 0.8, "menus": [
                 { "label": "Viewport", "icon": "icon:editor-viewport", "drop": true, "items": [] },
-                { "label": "Front", "emphasis": true, "items": [] },
+                { "label": "Front", "emphasis": true, "accent": true, "items": [] },
                 { "label": "Flat", "items": [] }
             ] }
         ] } ]
@@ -133,6 +133,8 @@ BOOST_AUTO_TEST_CASE(a_menu_bar_reads_its_opacity_and_its_titles) {
     BOOST_CHECK(bar->menu(0)->drop());
     BOOST_CHECK(!bar->menu(0)->emphasis());
     BOOST_CHECK(bar->menu(1)->emphasis());
+    BOOST_CHECK(bar->menu(1)->accent());
+    BOOST_CHECK(!bar->menu(0)->accent());
     BOOST_CHECK(bar->menu(2)->icon().empty());
     BOOST_CHECK(!bar->menu(2)->drop());
 }

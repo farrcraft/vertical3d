@@ -58,11 +58,12 @@ Left Ctrl is also the truck modifier, so truck mode is on while a Ctrl chord is 
 drives the camera only during a drag, so the chord is unaffected. Save As and RIB export are on
 the File menu only.
 
-The menu bar holds File, Edit, Create, Select, Modify, View, Animate, Render, Window and Help.
-Beside it are a tab for each workspace, the project's name, and a Search button. While a menu is
-open, the arrow keys walk it, as [api/ui/Components.md](../api/ui/Components.md) describes. The
-tool shelf down the left holds the transform tools and the modelling operations, each with a
-tooltip beside it.
+The menu bar leads with the editor's mark in the accent, a menu holding the command search and
+Quit, then File, Edit, Create, Select, Modify, View, Animate, Render, Window and Help. Beside it
+are a tab for each workspace, together on one plate, the project's name, and a Search button.
+While a menu is open, the arrow keys walk it, as
+[api/ui/Components.md](../api/ui/Components.md) describes. The tool shelf down the left holds the
+transform tools and the modelling operations, each with a tooltip beside it.
 
 **Icons.** Each icon is an SVG file in `data/icons/`, drawn in white, and `data/icons.json` names
 them. The renderer draws every icon into one image, each scaled to fit a square cell at the ui's

@@ -15,6 +15,16 @@
           "type": "menubar",
           "menus": [
             {
+              "label": "Vertical3D",
+              "icon": "icon:logo",
+              "accent": true,
+              "items": [
+                { "label": "Search Commands", "type": "action", "context": "search", "command": "open" },
+                { "type": "separator" },
+                { "label": "Quit", "type": "action", "context": "ui", "command": "quit" }
+              ]
+            },
+            {
               "label": "File",
               "items": [
                 { "label": "Open", "type": "action", "context": "project", "command": "load" },

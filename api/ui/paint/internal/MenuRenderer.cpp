@@ -356,7 +356,8 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
     const v3d::ui::Image& picture = menu->image();
     if (picture.valid()) {
         const glm::vec2 corner(left, at.y + ((height - room.content) * 0.5F));
-        canvas->rect(corner, corner + glm::vec2(room.content, room.content), picture.uv0, picture.uv1, ink, picture.texture);
+        canvas->rect(corner, corner + glm::vec2(room.content, room.content), picture.uv0, picture.uv1, menu->accent() ? base().fill : ink,
+            picture.texture);
     } else {
         const Write& inked = menu->emphasis() && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
         inked(label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);

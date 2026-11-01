@@ -214,6 +214,14 @@ bool Menu::emphasis() const noexcept {
     return emphasis_;
 }
 
+void Menu::accent(bool tinted) noexcept {
+    accent_ = tinted;
+}
+
+bool Menu::accent() const noexcept {
+    return accent_;
+}
+
 size_t Menu::count() const {
     return items_.size();
 }

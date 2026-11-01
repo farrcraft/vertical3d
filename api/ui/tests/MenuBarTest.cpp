@@ -224,6 +224,25 @@ BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
 }
 
 /**
+ * A title's icon takes the label's colour, or the accent when the menu asks for it.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::TextureHandle(3)));
+    const glm::vec4 accent = fixture.renderer.dressing().fill;
+    const auto tinted = [&fixture, &accent]() {
+        return std::ranges::any_of(fixture.canvas.vertices(), [&accent](const auto& vertex) { return vertex.colour == accent; });
+    };
+    fixture.draw();
+    BOOST_CHECK(!tinted());
+
+    fixture.bar->menu(0)->accent(true);
+    fixture.draw();
+    BOOST_CHECK(tinted());
+}
+
+/**
  * A title set apart is written by the chosen item's writer, on a pill of the widget colour.
  **/
 BOOST_AUTO_TEST_CASE(a_title_set_apart_is_semibold_on_a_pill) {

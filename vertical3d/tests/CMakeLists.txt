@@ -34,6 +34,7 @@ v3d_add_test(vertical3d
 	"control/AreaChromeTest.cxx"
 	"control/CommandSearchTest.cxx"
 	"control/IconSheetTest.cxx"
+	"control/DividerHintTest.cxx"
 	"control/NoticesTest.cxx"
 	"control/OutlinerTest.cxx"
 	"control/PropertiesEditorTest.cxx"

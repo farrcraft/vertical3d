@@ -120,6 +120,14 @@ BOOST_FIXTURE_TEST_CASE(the_name_and_the_search_sit_at_the_right, Bar) {
     BOOST_CHECK_EQUAL(project->position().x + project->size().x, search->position().x);
     BOOST_CHECK_GE(get("workspaces")->position().x, 300.0F);
 
+    // the tabs lie side by side on their plate
+    const boost::shared_ptr<v3d::ui::Component> plate = get("workspaces");
+    BOOST_REQUIRE(tab(0) && tab(1));
+    BOOST_CHECK_GT(tab(0)->position().x, plate->position().x);
+    BOOST_CHECK_CLOSE(tab(0)->position().x + tab(0)->size().x, tab(1)->position().x, 0.001F);
+    BOOST_CHECK_LT(tab(1)->position().x + tab(1)->size().x, plate->position().x + plate->size().x);
+    BOOST_CHECK_GT(tab(0)->position().y, plate->position().y);
+
     state.dirty = false;
     sync();
     BOOST_CHECK_EQUAL(project->text(), "house");
