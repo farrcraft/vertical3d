@@ -37,6 +37,11 @@ namespace v3d::editor::control {
 namespace {
 
 /**
+ * A line between two points.
+ **/
+using Line = std::array<glm::vec2, 2>;
+
+/**
  * The furthest from frame 0 a frame the graph is asked for may be.
  **/
 constexpr std::int32_t FRAME_LIMIT = 1000000;
@@ -136,11 +141,6 @@ std::string number(double value, double step) {
     const double shown = std::fabs(value) < step * 1e-3 ? 0.0 : value;
     return std::format("{:.{}f}", shown, static_cast<int>(places));
 }
-
-/**
- * A line between two points.
- **/
-using Line = std::array<glm::vec2, 2>;
 
 /**
  * Cut a line to the part of it inside a box.
@@ -264,26 +264,6 @@ void trace(v3d::ui::Immediate* ui, const GraphEditor::View& view, const v3d::ani
 }
 
 /**
- * What a zoom multiplies the frames and the values a view shows by.
- **/
-struct Shown final {
-    float frames = 1.0F;
-    float values = 1.0F;
-};
-
-/**
- * Show more or less of a view about a point in it, holding that point where it is.
- **/
-void zoom(GraphEditor::View* view, const glm::vec2& about, const Shown& shown) {
-    const glm::vec2 held = view->point(about);
-    view->frames = std::clamp(view->frames * shown.frames, FEWEST_FRAMES, MOST_FRAMES);
-    view->values = std::clamp(view->values * shown.values, LEAST_VALUE, MOST_VALUE);
-    const glm::vec2 moved = view->point(about);
-    view->frame += held.x - moved.x;
-    view->value += held.y - moved.y;
-}
-
-/**
  * @return whether a point is inside the graph
  **/
 bool inside(const GraphEditor::View& view, const glm::vec2& at) {
@@ -331,6 +311,17 @@ glm::vec2 GraphEditor::View::point(const glm::vec2& at) const {
 
 /**
  **/
+void GraphEditor::View::zoom(const glm::vec2& about, const Scale& scale) {
+    const glm::vec2 held = point(about);
+    frames = std::clamp(frames * scale.frames, FEWEST_FRAMES, MOST_FRAMES);
+    values = std::clamp(values * scale.values, LEAST_VALUE, MOST_VALUE);
+    const glm::vec2 moved = point(about);
+    frame += held.x - moved.x;
+    value += held.y - moved.y;
+}
+
+/**
+ **/
 GraphEditor::GraphEditor(const boost::shared_ptr<document::Document>& document, const Report& report) :
     document_(document),
     report_(report) {
@@ -364,7 +355,7 @@ void GraphEditor::draw(v3d::ui::Immediate* ui, std::size_t editor, const glm::ve
         follow(plot, &state);
     } else if (plot.wheel != 0.0F) {
         const float shown = std::pow(WHEEL_ZOOM, -plot.wheel);
-        zoom(&state.view, plot.cursor, { .frames = shown, .values = shown });
+        state.view.zoom(plot.cursor, { .frames = shown, .values = shown });
     }
 
     ui->fill(plot.min, plot.max, dress.track);
@@ -570,7 +561,7 @@ void GraphEditor::follow(const v3d::ui::Immediate::Surface& plot, State* state) 
             break;
         case Drag::Zoom:
             // a drag right or up shows less
-            zoom(&view, plot.pressAt, { .frames = std::exp(-moved.x * DRAG_ZOOM), .values = std::exp(moved.y * DRAG_ZOOM) });
+            view.zoom(plot.pressAt, { .frames = std::exp(-moved.x * DRAG_ZOOM), .values = std::exp(moved.y * DRAG_ZOOM) });
             break;
         case Drag::Key:
         case Drag::In:

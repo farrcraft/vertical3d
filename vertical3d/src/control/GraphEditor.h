@@ -83,6 +83,14 @@ class GraphEditor final {
         float values = 1.0F;    /**< how much value the height shows **/
 
         /**
+         * What a zoom multiplies the frames and the values shown by.
+         **/
+        struct Scale final {
+            float frames = 1.0F;
+            float values = 1.0F;
+        };
+
+        /**
          * @return where a frame and a value are drawn
          * @param place the frame in x and the value in y
          **/
@@ -92,6 +100,12 @@ class GraphEditor final {
          * @return the frame and the value a point is at
          **/
         glm::vec2 point(const glm::vec2& at) const;
+
+        /**
+         * Show more or less about a point, holding that point where it is. The frames and the
+         * values shown are each kept within what a view can show.
+         **/
+        void zoom(const glm::vec2& about, const Scale& scale);
     };
 
     GraphEditor(const boost::shared_ptr<document::Document>& document, const Report& report);
