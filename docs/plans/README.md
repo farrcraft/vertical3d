@@ -22,6 +22,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
+| [TextStack](TextStack.md) | Text, UI, realtime rendering, editor, demos | Text shaped by OpenType's rules, laid out in lines in any direction, rasterized at its exact size on the pixel grid or drawn from its curves elsewhere, with effects, colour glyphs and variable fonts, held by the ui and games as one text object |
 | [EditorFinish](EditorFinish.md) | Editor, UI | The editor's views, headers, outliner, properties, status bar and notices as designed; a timeline, graph editor, console, render view and render settings as area editors; and the Animation, Shading and Rendering workspaces |
 
 ## Completed plans
