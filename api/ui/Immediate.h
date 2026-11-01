@@ -327,6 +327,56 @@ class Immediate {
     void separator();
 
     /**
+     * What a surface did with the cursor this frame, and where it is.
+     **/
+    struct Surface final {
+        glm::vec2 min{ 0.0F };      /**< its top left corner **/
+        glm::vec2 max{ 0.0F };      /**< its bottom right corner **/
+        glm::vec2 cursor{ 0.0F };   /**< where the cursor is, inside it or not **/
+        glm::vec2 pressAt{ 0.0F };  /**< where the press it holds went down **/
+        bool hovered = false;       /**< the cursor is on it, and on nothing drawn over it **/
+        bool pressed = false;       /**< a press went down on it this frame **/
+        bool held = false;          /**< a press went down on it and has not come up **/
+        bool released = false;      /**< the press it held came up this frame, wherever the cursor is **/
+    };
+
+    /**
+     * A box the width of the row that draws nothing of its own, for a caller that draws into it
+     * with fill(), line(), diamond() and textAt(), and acts on the cursor itself. A press that
+     * goes down on it holds it until the press comes up, wherever the cursor goes.
+     *
+     * @param id the surface's id within the scope
+     * @param height how tall it is
+     **/
+    Surface surface(const std::string& id, float height);
+
+    /**
+     * Draw a filled rectangle, clipped as the widgets around it are.
+     **/
+    void fill(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour);
+
+    /**
+     * Draw a straight line of a width, centred on the two points and with square ends.
+     **/
+    void line(const glm::vec2& from, const glm::vec2& to, float width, const glm::vec4& colour);
+
+    /**
+     * Draw a filled diamond: a square on its corner, reaching radius from its centre each way.
+     **/
+    void diamond(const glm::vec2& centre, float radius, const glm::vec4& colour);
+
+    /**
+     * Draw a line of text with its top left corner at a point, one line tall. It takes no place
+     * in the row.
+     **/
+    void textAt(const std::string& line, const glm::vec2& at, const glm::vec4& colour);
+
+    /**
+     * @return how wide a line of text is drawn, for a caller laying out widgets around it
+     **/
+    float measure(const std::string& line) const;
+
+    /**
      * How wide the next widget should be, instead of the rest of the row.
      *
      * Only the next widget uses it, so it is set again before each one. Two scrubbers can

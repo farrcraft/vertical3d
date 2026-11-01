@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -77,6 +78,15 @@ class Curve final {
      * @return whether there was a key on that frame to remove
      **/
     bool remove(float frame);
+
+    /**
+     * Shift the keys on some frames along by an offset. Each moved key keeps its value, its
+     * interpolation and its slopes. A key that stays where it is and lies on a frame a moved
+     * key lands on is replaced by the moved one.
+     *
+     * @return how many keys moved. An offset that is not finite moves none
+     **/
+    std::size_t shift(const std::vector<float>& frames, float offset);
 
     bool empty() const noexcept;
 

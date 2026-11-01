@@ -64,6 +64,10 @@ an in and an out slope, in value per frame.
   given.
 - `set(frame, value)` replaces the value of the key on that frame, keeping its interpolation and
   slopes, or adds an automatic Bezier key. Two frames within `SAME_FRAME` are one frame.
+- `remove(frame)` takes away the key on that frame.
+- `shift(frames, offset)` moves the keys on those frames along by the offset, each keeping its
+  value, interpolation and slopes. A key that stays on a frame a moved key lands on is replaced.
+  An offset that is not finite moves nothing.
 - Construction throws for keys that are not finite or do not rise in frame.
 
 ### SpriteClip and Track

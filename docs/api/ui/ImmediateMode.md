@@ -55,12 +55,14 @@ default-constructed `Input` is no cursor at all.
 | `separator()` | a rule across the width | |
 | `tabBar(id)` / `tab(label)` / `endTabBar()` | a strip of tabs | `tab()` is true for the selected tab |
 | `table(id, { .columns, .height })` / `column` / `headerRow` / `nextRow` / `nextColumn` / `endTable` | a table | |
+| `surface(id, height)` | nothing: a box the width of the row for the caller to draw into | a `Surface`: its box, the cursor, and its press |
 
 Layout helpers:
 
 - `sameLine()` puts the next widget beside the last one.
 - `nextItemWidth(width)` sets the width of the next widget only. Without it, a widget takes
   the rest of the row. A separator always takes the whole row.
+- `measure(line)` is how wide a line of text is drawn, for laying out widgets beside it.
 - `rowWidth()` is the width a row has from its margin to its right edge. A caller dividing a row
   between widgets takes the spacing between them out of it first.
 - `beginDisabled()` / `endDisabled()` draw everything between them dimmed and unresponsive.
@@ -94,6 +96,18 @@ own and a unit written straight after the value, so a unit set apart by a space 
   it. The keys and the keyboard work as a text field's do.
 - What was typed is taken when the field gives up the keyboard, unless escape gave it up or the
   text is not a finite number. Then the value stays as it was.
+
+A **surface** is for a widget the layer does not have, such as a track of keys along a
+timeline. The caller draws into it and acts on what its `Surface` reports.
+
+- `hovered` is true while the cursor is on it and on nothing drawn over it. `pressed` is true
+  on the frame a press goes down on it.
+- `held` stays true from that press until it comes up, wherever the cursor goes, so a drag that
+  leaves the surface keeps acting on it. `released` is true on the frame the held press comes
+  up. `pressAt` is where the press went down.
+- `fill(min, max, colour)`, `line(from, to, width, colour)`, `diamond(centre, radius, colour)`
+  and `textAt(line, at, colour)` draw at the points given, clipped as the widgets around them
+  are, and take no place in the row. A diamond is a square stood on its corner.
 
 `itemFinished()` is true on the frame an edit of the item just drawn ends: a number's drag is
 let go, or a number or a text field gives up the keyboard. A caller that applies each change as

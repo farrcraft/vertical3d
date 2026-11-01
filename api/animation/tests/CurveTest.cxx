@@ -123,6 +123,34 @@ BOOST_AUTO_TEST_CASE(curve_set_and_remove_test) {
 /**
  * Keys out of order, on one frame, or not finite make no curve.
  **/
+/**
+ * Moving keys keeps each one's value and interpolation, keeps them in order, and replaces a key
+ * that stays on a frame a moved one lands on.
+ **/
+BOOST_AUTO_TEST_CASE(curve_shift_test) {
+    Curve curve({ { .frame = 1.0F, .value = 10.0F, .interpolation = Curve::Interpolation::Step },
+        { .frame = 5.0F, .value = 50.0F }, { .frame = 9.0F, .value = 90.0F } });
+
+    // the first key moves past the second, and the curve stays in rising frame
+    BOOST_CHECK_EQUAL(curve.shift({ 1.0F }, 6.0F), 1U);
+    BOOST_REQUIRE_EQUAL(curve.keys().size(), 3U);
+    BOOST_CHECK_EQUAL(curve.keys()[0].frame, 5.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].frame, 7.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].value, 10.0F);
+    BOOST_CHECK(curve.keys()[1].interpolation == Curve::Interpolation::Step);
+
+    // a moved key replaces the one that stays on the frame it lands on
+    BOOST_CHECK_EQUAL(curve.shift({ 5.0F }, 4.0F), 1U);
+    BOOST_REQUIRE_EQUAL(curve.keys().size(), 2U);
+    BOOST_CHECK_EQUAL(curve.keys()[1].frame, 9.0F);
+    BOOST_CHECK_EQUAL(curve.keys()[1].value, 50.0F);
+
+    // a frame with no key, or an offset that is not finite, moves nothing
+    BOOST_CHECK_EQUAL(curve.shift({ 3.0F }, 1.0F), 0U);
+    BOOST_CHECK_EQUAL(curve.shift({ 7.0F }, std::numeric_limits<float>::infinity()), 0U);
+    BOOST_CHECK_EQUAL(curve.keys()[0].frame, 7.0F);
+}
+
 BOOST_AUTO_TEST_CASE(curve_rejects_bad_keys_test) {
     BOOST_CHECK_THROW(Curve({ { .frame = 2.0F }, { .frame = 1.0F } }), std::invalid_argument);
     BOOST_CHECK_THROW(Curve({ { .frame = 1.0F }, { .frame = 1.0F } }), std::invalid_argument);

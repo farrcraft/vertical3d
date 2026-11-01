@@ -450,6 +450,54 @@ void Immediate::separator() {
     context_->canvas->rect(glm::vec2(min.x, middle), glm::vec2(min.x + size.x, middle + immediate::Context::ruleWidth), context_->dressing.rule);
 }
 
+Immediate::Surface Immediate::surface(const std::string& id, float height) {
+    Surface made;
+    if (context_->canvas == nullptr || !std::isfinite(height) || height <= 0.0F) {
+        return made;
+    }
+    const glm::vec2 size(context_->itemWidth(), height);
+    made.min = context_->place(size);
+    made.max = made.min + size;
+    const Id identity = context_->identify(id);
+    const immediate::Reaction reaction = context_->interact(identity, made.min, made.max);
+    made.cursor = context_->input.cursor;
+    made.hovered = reaction.hovered;
+    made.held = reaction.held;
+    made.pressed = reaction.held && reaction.hovered && context_->input.pressed;
+    made.released = reaction.held && context_->input.released;
+    made.pressAt = reaction.held ? context_->pressAt : made.cursor;
+    return made;
+}
+
+void Immediate::fill(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->canvas->rect(min, max, colour);
+    }
+}
+
+void Immediate::line(const glm::vec2& from, const glm::vec2& to, float width, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->canvas->segment({ .from = from, .to = to, .width = width }, colour);
+    }
+}
+
+void Immediate::diamond(const glm::vec2& centre, float radius, const glm::vec4& colour) {
+    if (context_->canvas != nullptr && std::isfinite(radius) && radius > 0.0F) {
+        // four sides from the right-hand point make a square stood on its corner
+        context_->canvas->circle(centre, radius, 4, colour);
+    }
+}
+
+void Immediate::textAt(const std::string& line, const glm::vec2& at, const glm::vec4& colour) {
+    if (context_->canvas != nullptr) {
+        context_->label(line, at, glm::vec2(context_->measure(line), context_->dressing.lineHeight), colour);
+    }
+}
+
+float Immediate::measure(const std::string& line) const {
+    return context_->measure(line);
+}
+
 void Immediate::sameLine() {
     context_->row.sameLine = true;
 }
