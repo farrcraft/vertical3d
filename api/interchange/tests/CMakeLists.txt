@@ -1,7 +1,8 @@
 # The interchange readers, run against fixture files. None of them needs a window or a device.
 v3d_add_test(interchange
 	"TestMain.cxx"
-	"GltfTest.cxx")
+	"GltfTest.cxx"
+	"RescaleTest.cxx")
 
 target_link_libraries(v3dtest_interchange PRIVATE v3dlib_interchange)
 

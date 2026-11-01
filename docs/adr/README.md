@@ -174,6 +174,7 @@ content went. Numbers are never reused.
 | [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
 | [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
 | [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
+| [0140](0140-editor-a-project-names-its-unit-of-length.md) | Editor: a project names its unit of length | accepted |
 
 ## Build, testing and code
 

@@ -22,6 +22,7 @@
 #include "Mesh.h"
 #include "RenderSettings.h"
 #include "Timeline.h"
+#include "Units.h"
 #include "Visitor.h"
 
 #include <boost/shared_ptr.hpp>
@@ -158,6 +159,12 @@ class Scene final {
      **/
     const RenderSettings& renderSettings() const noexcept;
     void renderSettings(const RenderSettings& settings) noexcept;
+
+    /**
+     * The unit of length the document measures in.
+     **/
+    Length length() const noexcept;
+    void length(Length unit) noexcept;
 
     /**
      * Evaluate the current frame, as the views show it: each keyed property takes its curve's
@@ -307,6 +314,7 @@ class Scene final {
     std::unordered_map<std::int64_t, std::map<std::string, float>> settled_;
     Timeline timeline_;
     RenderSettings renderSettings_;
+    Length length_ = Length::Metre;
     std::int64_t nextDocumentId_ = 1;
     Components components_;
 };

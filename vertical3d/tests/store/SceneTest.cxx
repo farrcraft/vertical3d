@@ -22,6 +22,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Scene.h>
@@ -689,6 +690,40 @@ BOOST_AUTO_TEST_CASE(store_render_settings_test) {
     v3d::editor::scene::Scene plain;
     BOOST_REQUIRE(store.read(scratch.path(), &plain));
     BOOST_CHECK(plain.renderSettings() == v3d::editor::scene::RenderSettings());
+}
+
+BOOST_AUTO_TEST_CASE(store_length_unit_test) {
+    const Scratch scratch("length_unit");
+    const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
+    written->length(v3d::editor::scene::Length::Centimetre);
+
+    // the unit comes back as it was written
+    v3d::editor::store::Scene store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    v3d::editor::scene::Scene read;
+    BOOST_REQUIRE(store.read(scratch.path(), &read));
+    BOOST_CHECK(read.length() == v3d::editor::scene::Length::Centimetre);
+
+    // a document that names none measures in metres
+    alter(scratch, "DELETE FROM meta WHERE key = 'length_unit'");
+    v3d::editor::scene::Scene plain;
+    BOOST_REQUIRE(store.read(scratch.path(), &plain));
+    BOOST_CHECK(plain.length() == v3d::editor::scene::Length::Metre);
+
+    // and one that names a unit this build does not have is refused
+    alter(scratch, "INSERT INTO meta (key, value) VALUES ('length_unit', 'furlong')");
+    v3d::editor::scene::Scene refused;
+    BOOST_CHECK(!store.read(scratch.path(), &refused));
+}
+
+BOOST_AUTO_TEST_CASE(store_length_unit_symbols_test) {
+    // every unit's symbol names it again, and its metres are exact
+    for (const v3d::editor::scene::Length unit : v3d::editor::scene::LENGTHS) {
+        BOOST_CHECK(v3d::editor::scene::lengthOf(v3d::editor::scene::symbol(unit)) == unit);
+    }
+    BOOST_CHECK(!v3d::editor::scene::lengthOf("furlong"));
+    BOOST_CHECK_EQUAL(v3d::editor::scene::metres(v3d::editor::scene::Length::Inch), 0.0254);
+    BOOST_CHECK_EQUAL(v3d::editor::scene::metres(v3d::editor::scene::Length::Foot), 0.3048);
 }
 
 BOOST_AUTO_TEST_CASE(store_changed_curve_alone_test) {

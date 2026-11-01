@@ -53,7 +53,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 
 | Table | Column | Holds |
 |---|---|---|
-| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing |
+| `meta` | `key`, `value` | `next_id`: the document id the next new item is given. `rate`, `start`, `end` and `frame`: the timeline, each of which keeps its default when it is missing. `length_unit`: the unit of length, by its symbol (`mm`, `cm`, `m`, `km`, `in` or `ft`), which is metres when it is missing |
 | `items` | `id` | The item's document id, the primary key |
 | | `position` | The item's place in the scene's order, from 0 |
 | | `kind` | `mesh`, `camera`, `light`, `group` or `curve` |
@@ -132,6 +132,7 @@ the scene untouched, if:
   interpolation that is not step, linear or Bezier
 - the timeline's rate is not a positive number, its range runs backwards, or its frame is
   outside the range
+- the unit of length is a symbol this build does not have
 
 **Writing.** `store::Scene::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
@@ -150,7 +151,7 @@ write to that document:
 - writes the row of each curve that is new or whose keys changed, and deletes the row of each
   curve the scene no longer has. A curve belongs to the scene rather than to its item, so a key
   does not move the item's revision
-- writes `next_id` and the timeline
+- writes `next_id`, the timeline, the render settings and the unit of length
 
 A write to any other path, a document the store has neither written nor read, is written whole:
 everything it held is deleted and every item is written. The next write after a write that
@@ -262,6 +263,11 @@ The file is read by `interchange::readGltf()` or `interchange::usd::read()`, des
   step keys keep their interpolation. A cubic spline becomes Bezier keys, with the file's
   tangents as slopes for a translation or a scale, and automatic slopes for a rotation. The
   timeline's range is not changed.
+- **Units.** A file is read in metres, a USD stage scaled by its own `metersPerUnit`. Every
+  length is then scaled into the document's unit of length by `interchange::rescale()`: points,
+  positions, translation keys, curves and their width, and a camera's clipping and extent.
+
+Background: [ADR-0140](../adr/0140-editor-a-project-names-its-unit-of-length.md)
 
 What the file holds that the editor cannot, such as a skin or a mesh of lines, is logged as a
 warning, one line each, and the outcome counts them. A file that cannot be read is refused, and

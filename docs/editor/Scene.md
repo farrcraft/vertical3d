@@ -645,12 +645,19 @@ in `src/control/` draws it.
 **The properties editor** (`properties`) shows the selected item's name, placement and settings,
 and edits them. `PropertiesEditor` in `src/control/` draws it.
 
-- It shows one item, when exactly one is selected. Otherwise it says how many are.
-- At the top are the item's kind and a field for its name.
-- Below them is each number a curve can drive, under a heading: Translation, Rotation and Scale
-  for every kind, Lens for a camera and Emission for a light. Each is shown as the current
-  frame shows it, so a keyed number follows playback. A rotation is shown as Euler angles in
-  degrees, kept closest to the angles last shown.
+- With nothing selected, it shows the scene's own settings: its unit of length, which a change
+  records in the history as `unit of length`. With more than one item selected, it says how many
+  are. With one, it shows that item under tabs.
+- The Item tab holds the item's kind and a field for its name. Below them is each number a curve
+  can drive, under a heading: Translation, Rotation and Scale for every kind, Lens for a camera
+  and Emission for a light. Each is shown as the current frame shows it, so a keyed number
+  follows playback. A rotation is shown as Euler angles in degrees, kept closest to the angles last
+  shown.
+- A heading of x, y and z is one row of three fields, each led by its axis's letter in the axis's
+  colour. A distance is shown in the scene's unit, an angle with a degree sign, and a light's
+  cone in radians. A value is shown to three places, without the zeros it does not need.
+- The Mesh tab, for a mesh, counts its vertices and faces. The Keys tab lists each curve the
+  item has, by the property it drives, with its count of keys.
 - A camera adds its projection, a light its type, and a curve item whether a render draws it
   and its width.
 - A number is dragged or typed into, as

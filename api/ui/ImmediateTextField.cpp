@@ -24,6 +24,24 @@
 
 namespace v3d::ui {
 
+namespace {
+
+/**
+ * @return a number as a field shows it: to three places, with the zeros and the point a whole
+ *         number does not need dropped, and nothing that reads as a negative zero
+ **/
+std::string numeral(float value) {
+    std::string shown = std::format("{:.3f}", value);
+    const std::size_t point = shown.find('.');
+    if (point != std::string::npos) {
+        const std::size_t last = shown.find_last_not_of('0');
+        shown.erase(last == point ? point : last + 1);
+    }
+    return shown == "-0" ? "0" : shown;
+}
+
+};  // namespace
+
 bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
     if (!typing() || key.empty()) {
         return false;
@@ -132,6 +150,10 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
 }
 
 bool Immediate::dragFloat(const std::string& label, float* value, float speed) {
+    return dragFloat(label, value, speed, NumberLook{});
+}
+
+bool Immediate::dragFloat(const std::string& label, float* value, float speed, const NumberLook& look) {
     if (context_->canvas == nullptr || value == nullptr) {
         return false;
     }
@@ -147,7 +169,8 @@ bool Immediate::dragFloat(const std::string& label, float* value, float speed) {
     } else {
         changed = context_->dragNumber(id, reaction, value, speed);
     }
-    context_->drawNumber({.id = id, .label = label, .value = *value, .min = min, .max = max}, reaction);
+    context_->drawNumber(
+        {.id = id, .label = label, .value = *value, .min = min, .max = max, .labelColour = look.labelColour, .unit = look.unit}, reaction);
     return changed;
 }
 
@@ -218,9 +241,11 @@ void immediate::Context::drawNumber(const Number& field, const Reaction& reactio
         drawEdit(low, high);
     } else {
         const glm::vec2 room(high.x - low.x, high.y - low.y);
-        label(field.label, low, room, ink(dressing.secondaryText));
-        const std::string shown = std::format("{:.3f}", field.value);
-        label(shown, glm::vec2(high.x - measure(shown), low.y), room, ink(dressing.text));
+        label(field.label, low, room, ink(field.labelColour.value_or(dressing.secondaryText)));
+        const std::string shown = numeral(field.value) + field.unit;
+        // the value sits at the right, and never starts before the label has ended
+        const float left = std::max(high.x - measure(shown), low.x + measure(field.label) + dressing.spacing);
+        label(shown, glm::vec2(left, low.y), room, ink(dressing.text));
     }
     canvas->unclip();
 }

@@ -171,6 +171,10 @@ void Immediate::nextItemWidth(float width) {
     context_->nextWidth = width;
 }
 
+float Immediate::rowWidth() const noexcept {
+    return std::max(context_->row.right - context_->row.margin, 0.0F);
+}
+
 void Immediate::text(const std::string& line) {
     if (context_->canvas == nullptr) {
         return;

@@ -19,6 +19,7 @@
 #include "Properties.h"
 #include "RenderSettings.h"
 #include "Timeline.h"
+#include "Units.h"
 #include "Visitor.h"
 
 #include <algorithm>
@@ -287,6 +288,18 @@ const RenderSettings& Scene::renderSettings() const noexcept {
  **/
 void Scene::renderSettings(const RenderSettings& settings) noexcept {
     renderSettings_ = settings;
+}
+
+/**
+ **/
+Length Scene::length() const noexcept {
+    return length_;
+}
+
+/**
+ **/
+void Scene::length(Length unit) noexcept {
+    length_ = unit;
 }
 
 /**

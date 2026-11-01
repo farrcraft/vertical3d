@@ -272,6 +272,12 @@ class Renderer final {
     static constexpr float fontSize = 12.0F * uiScale;
 
     /**
+     * The glyphs the editor draws beyond printable ascii: a degree sign, a middle dot, a
+     * multiplication sign, an en dash and an ellipsis.
+     **/
+    static constexpr const char* EXTRA_GLYPHS = "°·×–…";
+
+    /**
      * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 12 pixel
      * text.
      **/

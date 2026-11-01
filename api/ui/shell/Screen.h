@@ -91,6 +91,7 @@ class Screen final {
         Scaling scaling { Scaling::Display };  /**< what the ui's size follows **/
         float reference { referenceHeight };  /**< the window height Scaling::Height draws at a scale of one **/
         paint::ComponentRenderer::Shortcut shortcut;  /**< the shortcut a command shows in a menu and a tooltip. Empty shows none **/
+        std::string charset { paint::TextRenderer::ascii };  /**< the glyphs the text can draw, as UTF-8. A character outside it is not drawn **/
     };
 
     /**

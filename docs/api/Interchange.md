@@ -50,6 +50,12 @@ Up is +y.
   - Interpolation is step, linear or cubic spline. A cubic spline key also has a tangent on each
     side, in value per second.
 
+Both readers give a scene in metres. `interchange::rescale(scene, factor)` in `Rescale.h`
+multiplies every length by a factor, so a caller that measures in another unit can scale the
+scene into it. The lengths are mesh points, node positions, translation keys and their tangents,
+curve points, handles and widths, and a camera's clipping planes and orthographic extent.
+Rotations, scales, angles, a NURBS curve's weights and knots, and a light's power are kept.
+
 ## Reading glTF
 
 `interchange::readGltf(path)` ([api/interchange/Gltf.h](../../api/interchange/Gltf.h)) reads a

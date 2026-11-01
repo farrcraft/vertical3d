@@ -34,7 +34,8 @@ namespace v3d::editor::store {
  * its own as well, stored in its row. A read refuses any of them that is newer than this build.
  *
  * Each curve is a row of its own, which names its owner's row and the property it drives, with
- * its keys in a blob. The document's timeline is in its meta table.
+ * its keys in a blob. The document's timeline, render settings and unit of length are in its meta
+ * table, and a document that names no unit measures in metres.
  *
  * **A save writes only what changed.** The store remembers each item it last wrote or read,
  * with its revision, its place in the order and its parent, for the one document it last wrote

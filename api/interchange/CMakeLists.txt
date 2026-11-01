@@ -1,6 +1,7 @@
 v3d_add_api_library(interchange
 	"Scene.h"
 	"Placement.h" "Placement.cxx"
+	"Rescale.h" "Rescale.cxx"
 	"Gltf.h" "Gltf.cxx"
 	"CgltfImpl.cxx"
 	"internal/Reader.h" "internal/Reader.cxx")

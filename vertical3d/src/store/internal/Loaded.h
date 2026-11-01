@@ -9,6 +9,7 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/Units.h>
 
 #include <cstdint>
 #include <map>
@@ -31,6 +32,7 @@ struct Loaded {
     std::vector<Animated> curves;
     scene::Timeline timeline;
     scene::RenderSettings render;
+    scene::Length length = scene::Length::Metre;
     // each child's parent, both by document id
     std::map<std::int64_t, std::int64_t> parents;
     std::int64_t next = 1;

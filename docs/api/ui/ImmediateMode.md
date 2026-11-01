@@ -61,6 +61,8 @@ Layout helpers:
 - `sameLine()` puts the next widget beside the last one.
 - `nextItemWidth(width)` sets the width of the next widget only. Without it, a widget takes
   the rest of the row. A separator always takes the whole row.
+- `rowWidth()` is the width a row has from its margin to its right edge. A caller dividing a row
+  between widgets takes the spacing between them out of it first.
 - `beginDisabled()` / `endDisabled()` draw everything between them dimmed and unresponsive.
   The scopes nest.
 - A click on a tab takes effect at `endTabBar()`, so the old tab answers for the whole frame
@@ -81,7 +83,10 @@ folded and down while open. A click on the mark flips `*open` and is not a click
 caller draws the rows beneath an open row and skips those beneath a folded one.
 
 A **number** from `dragFloat()` draws its label at the left in `secondary-text` and its value
-at the right, to three places.
+at the right, to three places without the zeros it does not need: `1.5`, `0` and `0.123`. A
+value never starts before its label has ended. A `NumberLook` gives the label a colour of its
+own and a unit written straight after the value, so a unit set apart by a space starts with one:
+`{ .labelColour = red, .unit = " m" }`.
 
 - A press that travels more than 3 pixels across it drags the value, by `speed` for each pixel
   after those 3.

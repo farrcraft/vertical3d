@@ -17,6 +17,7 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/store/internal/Inserts.h>
 #include <vertical3d/src/store/internal/Loaded.h>
 #include <vertical3d/src/store/internal/Writes.h>
@@ -426,7 +427,8 @@ bool loadAnimation(v3d::database::Database* database, std::int32_t version, inte
 }
 
 /**
- * One row of the meta table that holds a part of the timeline or the render settings.
+ * One row of the meta table that holds a part of the timeline, the render settings or the unit
+ * of length.
  **/
 bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded, std::string* problem) {
     const std::string key = meta.text(0);
@@ -445,6 +447,13 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
             return false;
         }
         loaded->render.hider = hider == "raytrace" ? scene::RenderSettings::Hider::RayTrace : scene::RenderSettings::Hider::Hidden;
+    } else if (key == "length_unit") {
+        const std::optional<scene::Length> unit = scene::lengthOf(meta.text(1));
+        if (!unit) {
+            *problem = "its unit of length is one this build does not have";
+            return false;
+        }
+        loaded->length = *unit;
     } else {
         // a negative or oversized number is held just out of range, so valid() refuses it
         const auto number = static_cast<unsigned int>(
@@ -461,13 +470,13 @@ bool readSetting(const v3d::database::Statement& meta, internal::Loaded* loaded,
 }
 
 /**
- * A document's timeline and render settings, from its meta table. Each part a document does
- * not hold keeps its default.
+ * A document's timeline, render settings and unit of length, from its meta table. Each part a
+ * document does not hold keeps its default.
  **/
 bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, std::string* problem) {
     v3d::database::Statement meta = database->prepare(
         "SELECT key, value FROM meta WHERE key IN ('rate', 'start', 'end', 'frame', "
-        "'render_width', 'render_height', 'render_samples', 'render_hider')");
+        "'render_width', 'render_height', 'render_samples', 'render_hider', 'length_unit')");
     if (!meta.valid()) {
         *problem = database->error();
         return false;
@@ -619,7 +628,8 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         Binder(&meta).text("render_width").integer(render.size.x).run() &&
         Binder(&meta).text("render_height").integer(render.size.y).run() &&
         Binder(&meta).text("render_samples").integer(render.samples).run() &&
-        Binder(&meta).text("render_hider").text(render.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run();
+        Binder(&meta).text("render_hider").text(render.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden").run() &&
+        Binder(&meta).text("length_unit").text(std::string(scene::symbol(scene.length()))).run();
     return wrote || failed(meta);
 }
 
@@ -669,6 +679,7 @@ bool Scene::read(const std::string& path, scene::Scene* scene) {
     scene->nextDocumentId(loaded.next);
     scene->timeline(loaded.timeline);
     scene->renderSettings(loaded.render);
+    scene->length(loaded.length);
     scene->frame(loaded.timeline.frame);
 
     // the document holds what was just read, so the next write to it starts from here

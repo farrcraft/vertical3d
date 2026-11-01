@@ -226,6 +226,50 @@ BOOST_AUTO_TEST_CASE(text_in_a_colour_and_an_image_at_the_pen) {
 }
 
 /**
+ * A number dressed with a look writes its label in the look's colour and its unit straight
+ * after the value. One without a look writes its label in secondary text and the value alone.
+ **/
+BOOST_AUTO_TEST_CASE(a_number_shows_its_labels_colour_and_its_unit) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 red(0.85F, 0.35F, 0.37F, 1.0F);
+    float length = 1.5F;
+    float plain = 2.0F;
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.dragFloat("X", &length, 0.01F, {.labelColour = red, .unit = " m"});
+    ui.dragFloat("Y", &plain, 0.01F);
+    ui.end();
+
+    BOOST_CHECK(wrote(written, "1.5 m"));
+    BOOST_CHECK(wrote(written, "2"));
+
+    // a value is shown to three places with the zeros it does not need dropped, and a value
+    // that rounds to nothing is not shown as a negative zero
+    float fine = 1.25F;
+    float nothing = -0.0001F;
+    float many = 0.12345F;
+    written.clear();
+    ui.begin(&canvas, hover(nowhere));
+    ui.dragFloat("A", &fine, 0.01F);
+    ui.dragFloat("B", &nothing, 0.01F);
+    ui.dragFloat("C", &many, 0.01F);
+    ui.end();
+    BOOST_CHECK(wrote(written, "1.25"));
+    BOOST_CHECK(wrote(written, "0"));
+    BOOST_CHECK(wrote(written, "0.123"));
+    for (const Written& each : written) {
+        if (each.text == "X") {
+            BOOST_CHECK(each.colour == red);
+        } else if (each.text == "Y") {
+            BOOST_CHECK(each.colour == ui.dressing().secondaryText);
+        }
+    }
+}
+
+/**
  * Dragging across a number moves it by the speed for each pixel, once the press has travelled
  * a few pixels, and letting go finishes the edit.
  **/

@@ -31,6 +31,7 @@
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/store/Project.h>
 
 #include <algorithm>
@@ -146,7 +147,7 @@ Outcome Document::importScene(const boost::filesystem::path& file) {
     if (!read.scene) {
         return { .done = false, .message = "import: " + read.problem };
     }
-    const scene::Import imported = scene::importScene(*read.scene, scene_->timeline().rate);
+    const scene::Import imported = scene::importScene(*read.scene, { .rate = scene_->timeline().rate, .metres = scene::metres(scene_->length()) });
     for (const std::string& note : read.notes) {
         logger_->get()->warn("import {}: {}", name, note);
     }

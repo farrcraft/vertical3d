@@ -92,7 +92,8 @@ constructor, which defaults to printable ascii. Each weight packs them all. They
 uploaded once, and the atlas is not added to afterwards.
 Text is UTF-8, and `v3d::font` decodes it and lays it out. A code point outside the packed set
 measures as zero width and draws nothing. An app that shows other characters passes them in the
-charset, and may need a larger atlas to hold them.
+charset, and may need a larger atlas to hold them. A `Screen` builds its text renderer from
+`Screen::Options::charset`, which is printable ascii unless the app names more.
 
 `TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
 `api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer

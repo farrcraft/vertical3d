@@ -11,6 +11,7 @@
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/scene/Units.h>
 
 #include <cstddef>
 #include <map>
@@ -66,12 +67,25 @@ class PropertiesEditor final {
     explicit PropertiesEditor(const boost::shared_ptr<command::Stack>& history);
 
     /**
+     * @return what a property path's value is shown with. A distance takes the scene's unit of
+     *         length, a lens's angle or a rotation a degree sign, and a light's cone "rad". A
+     *         scale, an intensity or a colour takes nothing
+     **/
+    static std::string unit(const std::string& path, scene::Length length);
+
+    /**
      * Draw one properties editor into a region of the window, and write and record what it
      * edits.
      *
+     * With nothing selected it shows the scene's own settings: its unit of length. With one
+     * item selected it shows tabs. Item holds the item's name and every number and setting it
+     * has. Mesh, for a mesh, counts its vertices and faces. Keys lists the item's curves. A group
+     * of numbers along x, y and z is one row of three, each led by its axis's letter in the axis's
+     * colour.
+     *
      * @param editor the editor's id, which keeps its widgets apart from another's
      **/
-    void draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t editor, const glm::vec4& region);
+    void draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, std::size_t editor, const glm::vec4& region);
 
  private:
     /**
@@ -104,7 +118,30 @@ class PropertiesEditor final {
     /**
      * Draw the numbers a curve can drive, and write what is dragged or typed.
      **/
-    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown);
+    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown, scene::Length length);
+
+    /**
+     * Draw one number, and write it into the item when it is dragged or typed.
+     *
+     * @param now every number as shown, with the rotation's angles as they were last shown
+     **/
+    void number(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown,
+        const std::map<std::string, float>& now, const std::string& path, const v3d::ui::Immediate::NumberLook& look);
+
+    /**
+     * Draw the scene's own settings, and record a change to them.
+     **/
+    void sceneSettings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene);
+
+    /**
+     * Draw a mesh's counts of vertices and faces.
+     **/
+    static void meshCounts(v3d::ui::Immediate* ui, const scene::Item& item);
+
+    /**
+     * Draw each curve an item has: the property it drives and how many keys it holds.
+     **/
+    static void keys(v3d::ui::Immediate* ui, const scene::Scene& scene, const scene::Item& item);
 
     /**
      * Draw what a kind adds that is not a number: a camera's projection, a light's type, and a

@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -301,6 +302,20 @@ class Immediate {
     bool dragFloat(const std::string& label, float* value, float speed);
 
     /**
+     * How a number's field is dressed beyond its label and value.
+     **/
+    struct NumberLook final {
+        std::optional<glm::vec4> labelColour;  /**< the label's colour in place of secondary text, such as an axis's **/
+        std::string unit;                      /**< written straight after the value, so one set apart by a space starts with it **/
+    };
+
+    /**
+     * A number as the other dragFloat draws it, with its label in a colour of its own and its
+     * unit after the value. A typed value is the number alone.
+     **/
+    bool dragFloat(const std::string& label, float* value, float speed, const NumberLook& look);
+
+    /**
      * A filled track spanning the width, with a line of text over it.
      * @param fraction how full, clamped to 0..1
      **/
@@ -320,6 +335,13 @@ class Immediate {
      * @param width in pixels, or nothing at all to go back to the rest of the row
      **/
     void nextItemWidth(float width);
+
+    /**
+     * @return how wide a row is from its margin to its right edge, which a widget given no width
+     *         of its own fills. A caller dividing a row between widgets takes the spacing between
+     *         them from it first
+     **/
+    float rowWidth() const noexcept;
 
     /**
      * Whether the cursor is over something this layer drew, or is dragging something it

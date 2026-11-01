@@ -55,7 +55,8 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
                 return v3d::render::realtime::TextureHandle();
             }
             return engine->textures()->texture(atlas);
-        });
+        },
+        paint::TextRenderer::baseSize, paint::TextRenderer::Faces(), options_.charset);
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);
         if (engine != nullptr && engine->context()) {

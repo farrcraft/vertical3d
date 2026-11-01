@@ -134,7 +134,7 @@ view beside the properties. Rendering puts the render view beside the render set
 | Decision | Step |
 |---|---|
 | Editor: the ui's text size. Decided in ADR-0138: 12 pixels, with the scale preference for larger. | 1 |
-| Editor: the scene's unit of length. Open: no unit, metres, or a unit each project chooses. | 6 |
+| Editor: the scene's unit of length. Decided in ADR-0140: each project names its own, metres by default. | 6 |
 | Editor: what the console runs. Open: the editor's commands by name, or a scripting language. | 13 |
 | Editor: where a render is shown. Open: an editor in an area, a floating window, or both. | 14 |
 | Editor: how icons are made. Decided in ADR-0139: SVG files, drawn at the ui's scale. | 4 |
@@ -238,13 +238,28 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 6 — The properties editor
 
-**Open.** Needs step 4, and the unit decided.
+**Closed.** ADR-0140 decided the unit, after weighing a fixed metre and no unit.
 
-- Tabs for Item, Mesh, Shading and Keys. Each item kind shows the tabs that apply to it.
-- Location, rotation and scale are each one row of three fields, led by their letters in the
-  axis colours.
-- A length carries the unit decided. An angle carries a degree sign.
-- Keys lists the item's curves by path, with how many keys each holds.
+- A project names its unit of length: millimetres, centimetres, metres, kilometres, inches or
+  feet, and a new one metres. It is stored in the meta table as `length_unit`. Changing it moves
+  nothing, and is one change in the history.
+- `api/interchange` gains `rescale()`, which multiplies every length of an imported scene by a
+  factor. An import is scaled from metres into the document's unit.
+- With nothing selected, the properties editor shows the scene's unit as a list.
+- One item shows tabs for Item, Mesh for a mesh, and Keys. Shading was left out, because an item
+  has no shading of its own to show yet. Mesh counts vertices and faces, and Keys lists each
+  curve with its count of keys.
+- Translation, rotation and scale are each one row of three fields, led by their letters in the
+  axis colours. A distance carries the unit, an angle a degree sign, and a light's cone `rad`.
+- `api/ui`: a number field takes a `NumberLook` for its label's colour and its unit, shows its
+  value without the zeros it does not need, and never starts the value before the label ends.
+  `rowWidth()` gives a row's width for dividing it. `Screen::Options::charset` names the glyphs
+  beyond ascii, and the editor adds a degree sign, a middle dot, a multiplication sign, an en
+  dash and an ellipsis.
+- The interchange suite covers the rescale. The editor suites cover the unit's symbols, the
+  store's round trip and refusal, the command, the import's scale, the row of three, the units,
+  and the tabs. The ui suites cover the number's look and form, and the charset. The editor was
+  photographed with a cube selected.
 
 ### Step 7 — The status bar
 

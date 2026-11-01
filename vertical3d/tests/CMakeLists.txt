@@ -45,6 +45,7 @@ v3d_add_test(vertical3d
 	"command/GroupTest.cxx"
 	"command/KeyTest.cxx"
 	"command/SettingsTest.cxx"
+	"command/UnitsTest.cxx"
 
 	"render/DelegateTest.cxx"
 	"render/BatchTest.cxx"

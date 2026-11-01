@@ -444,7 +444,7 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
             outliner_.draw(layer, context_.document->scene().get(), editor.id, region, context_.selectTool->adding());
             outliners.push_back(editor.id);
         } else if (editor.kind == control::PropertiesEditor::KIND) {
-            properties_->draw(layer, context_.document->scene().get(), editor.id, region);
+            properties_->draw(layer, context_.document->scene(), editor.id, region);
         }
     }
     layer->end();
