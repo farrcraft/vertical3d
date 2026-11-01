@@ -276,6 +276,13 @@ class Pass final {
     void reset() noexcept;
 
  private:
+    /**
+     * A handle's slot as a key field. Slots that do not fit in sixteen bits, and an unset handle,
+     * share the last value. Items with those slots may cost extra binds, but the order of layers
+     * is unaffected.
+     **/
+    static uint16_t slot(uint32_t id) noexcept;
+
     std::string name_;
     glm::vec4 clearColour_;
     glm::vec4 viewport_;

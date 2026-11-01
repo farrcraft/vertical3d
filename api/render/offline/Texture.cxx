@@ -14,22 +14,11 @@
 
 namespace v3d::render::offline {
 
-namespace {
-
-/** A texel index along one axis, and how many texels the axis has. **/
-struct Axis {
-    int index = 0;
-    unsigned int size = 1;
-};
-
-/** A texel index wrapped into [0, size), negative ones included. **/
-int wrap(const Axis & axis) {
+int Texture::wrap(const Axis & axis) {
     const int span = static_cast<int>(axis.size);
     const int wrapped = axis.index % span;
     return wrapped < 0 ? wrapped + span : wrapped;
 }
-
-};  // namespace
 
 Texture::Texture(const v3d::image::Image & image) :
     width_(image.width()), height_(image.height()) {

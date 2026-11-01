@@ -64,6 +64,14 @@ class Area final {
     std::uint64_t key() const;
 
  private:
+    static constexpr float PI = 3.14159265358979F;
+
+    /**
+     * FNV-1a over the handle's bytes. It is written here rather than taken from std::hash, whose
+     * values differ between standard libraries, so a light's samples are the same everywhere.
+     **/
+    static std::uint64_t fnv(const std::string & text);
+
     struct Corners {
         glm::vec3 a;
         glm::vec3 b;

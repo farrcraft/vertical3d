@@ -5,7 +5,7 @@ made and recorded so it can be undone, and how the mouse reaches the tools.
 
 ## The document and its operations
 
-`v3d::editor::Document` is what the editor edits: the scene, its `CommandStack`, and the
+`v3d::editor::document::Document` is what the editor edits: the scene, its `command::Stack`, and the
 `Project` it is kept in, with the saved position, the autosave and the recovery that go with
 them. It is in `src/document/`.
 
@@ -18,8 +18,8 @@ and says why.
   `key(items, frame)` take the items. `createCamera(at, projection)` takes the view's camera
   profile. The modelling operations act on the scene's selected parts, as `splitEdges()` says.
   None of them reads the select tool, the active view or the pane under the cursor.
-- **The command table supplies the arguments.** Each handler in `registerCommands()` reads the
-  selection, the frame or the active view and passes them in. The select mask is a rule of the
+- **The command table supplies the arguments.** Each handler reads the selection, the frame or
+  the active view from the `Context` and passes them in. The select mask is a rule of the
   ui, not of the document, so the handler checks it before a modelling operation runs.
 - **A gesture is not an operation.** A tool changes the document while the cursor moves, and
   records the gesture in `Document::history()` when it ends.
@@ -27,44 +27,49 @@ and says why.
   pending edit to a keyed property, and records nothing.
 
 Opening, saving, the autosave and recovery are on the document too. What asks the user first,
-the file chooser and the save prompt, stays in `Controller`.
+the file chooser and the save prompt, is in `ProjectFiles` in `src/app/`.
 
 ## Undo
 
-`v3d::editor::Command` is a record of a change that has **already been made**. It has
-`undo()`, `redo()` and `name()`, and no `execute()`. `CommandStack::push` stores a command and
+`v3d::editor::command::Command` is a record of a change that has **already been made**. It has
+`undo()`, `redo()` and `name()`, and no `execute()`. `command::Stack::push` stores a command and
 never applies it.
 
 **One gesture is one command.** A manipulator drag changes the meshes on every motion event so
-the user sees them move. `TransformTool` records one `TransformCommand` when the drag ends,
+the user sees them move. `tool::Transform` records one `command::Transform` when the drag ends,
 holding each moved item's `Placement` (translation, rotation and scale) from the start and the
 end of the gesture. Undo puts every whole starting placement back, so one undo restores a whole
 set.
 
-A gesture on components records one `VertexCommand` instead. It holds each moved vertex's
+A gesture on components records one `command::Vertex` instead. It holds each moved vertex's
 position, and each recomputed face normal, from the start and the end of the gesture. Undo and
 redo write the stored values back rather than applying an inverse motion, so they restore the
 mesh exactly. A gesture that moved no vertex records nothing.
 
+An edit in the properties editor records one `command::Edit` when it ends: a drag of a number is
+let go, a field gives up the keyboard, or a choice is made. It holds the item's name, placement,
+lens, emission and style from the start and the end of the edit, and undo and redo write either
+end back whole. An edit that changed nothing records nothing.
+
 The rules:
 
 - **The first do goes through `redo()`** where the change is not interactive.
-  `Document::create()` builds a `CreateCommand`, calls `redo()` to add the item, and then pushes
-  it. Creating and redoing use the same code. A `CreateCommand` takes an item of any kind.
+  `Document::create()` builds a `command::Create`, calls `redo()` to add the item, and then pushes
+  it. Creating and redoing use the same code. A `command::Create` takes an item of any kind.
 - **A command puts back what a removal takes.** Removing an item takes its links and its curves
-  with it. An `ImportCommand` therefore holds the imported items' parents and curves, and sets
+  with it. A `command::Import` therefore holds the imported items' parents and curves, and sets
   them again each time it is redone. Undoing it removes the items at the top of the import,
   and everything beneath them goes too.
-- **Every path out of a drag records it.** `TransformTool::commit()` runs on release and on a
+- **Every path out of a drag records it.** `tool::Transform::commit()` runs on release and on a
   mode change. It pushes only if the placement actually changed, so a handle grabbed and
   released without moving records nothing.
 - **A command holds the mesh, not its id.** A mesh removed by an undo stays alive inside the
   command and returns with the same id. Later commands in the history still refer to it.
-- **Selection is not history.** Undo does not restore what was selected. `CreateCommand::undo`
+- **Selection is not history.** Undo does not restore what was selected. `command::Create::undo`
   clears the selection of the item it removes, its components with it, and leaves any other
   selected item selected. A topology command's undo and redo clear the component selection of
   every item that shows the mesh they restore.
-  `CreateCommand::redo` selects the new item and nothing else.
+  `command::Create::redo` selects the new item and nothing else.
 - **The stack has a capacity**, 64 by default. When it is full, the oldest command is dropped.
   An item held by a dropped command is freed then.
 - **A new push discards the redo side.**
@@ -72,11 +77,12 @@ The rules:
   drag under way without recording it.
 
 **A topology change is undone from snapshots.** An operation that changes which parts a mesh
-holds records a `TopologyCommand`. It holds the mesh's arrays from before the operation and from
-after it, and undo and redo put one back whole, so the numbering comes back exactly. A
-`TransformCommand` or `VertexCommand` deeper in the history therefore still names the right parts
-when it is undone. Undo and redo of a topology change clear that mesh's component selection,
-because after a renumbering an old flag could name another part. The object stays selected.
+holds records a `command::Topology`. It holds the mesh's arrays from before the operation and
+from after it, and undo and redo put one back whole, so the numbering comes back exactly. A
+`command::Transform` or `command::Vertex` deeper in the history therefore still names the
+right parts when it is undone. Undo and redo of a topology change clear that mesh's component
+selection, because after a renumbering an old flag could name another part. The object stays
+selected.
 
 Background: [ADR-0098](../adr/0098-editor-topology-changes-undone-from-snapshots.md)
 
@@ -84,8 +90,8 @@ Background: [ADR-0016](../adr/0016-editor-undo-records-completed-changes.md)
 
 ### The saved position
 
-`CommandStack` also records the position the history was at when the project was last saved.
-The project is dirty at any other position, and `CommandStack::dirty()` says so.
+`command::Stack` also records the position the history was at when the project was last saved.
+The project is dirty at any other position, and `command::Stack::dirty()` says so.
 
 - **Save and Save As call `markSaved()`** when the write succeeds. A failed write leaves the
   project dirty.
@@ -105,19 +111,39 @@ example `create::poly::cube` or `transform::rotate`. This is the string `event::
 returns.
 
 **The registry.** The engine's `event::Commands` maps each command string to a handler, and
-runs the handler each command names. `Controller::registerCommands()` registers every handler
-from the controller's constructor:
+runs the handler each command names. The engine requires every command to be registered in the
+app's constructor, before `start()` builds what the handlers act on. Each part of the editor
+has a class in `src/app/` that registers that part's commands from the constructor, through a
+`CommandTable`. A handler reads what it acts on from the `Context` when it runs, and the
+controller fills the context in at start.
 
-- `addPress(name, handler)` registers a handler that runs on the press only. A release of the
+| Class | Commands |
+|---|---|
+| `EditCommands` | `create::*`, `timeline::set`, `transform::poly::*`, `edit::undo` and `edit::redo` |
+| `ToolCommands` | `select::mask::*`, `select::add`, `camera::*`, `transform::<mode>` and the held `view::camera::*` |
+| `ViewCommands` | How a view draws: `view::shade::*`, `view::cull::*`, `view::rendermode::*`, `view::show::*` and the fixed views |
+| `AreaCommands` | `area::*` |
+| `WorkspaceSwitcher` | `workspace::*` |
+| `ProjectFiles` | `project::*`, with the file chooser's and the prompt's |
+| `PlaybackCommands` | `timeline::playback::*` |
+| `RenderCommands` | `render::*` |
+| `Controller` | `search::open`, `search::run` and `view::drag` |
+
+The table registers a handler in one of three ways:
+
+- `press(name, handler)` registers a handler that runs on the press only. A release of the
   same binding is still accepted, and does nothing, and so is a held key's repeat, so holding a
   key runs its action once.
-- `add(name, handler)` registers a handler that receives the whole event, so it can tell a
+- `hold(name, handler)` registers a handler that receives the whole event, so it can tell a
   press from a release. The camera modifiers use it, because a camera mode lasts while its key
   is held.
+- `add(name, handler)` registers a handler that receives the whole event and is not followed
+  by the read back below. The area and workspace commands use it, and give the views their
+  regions again instead.
 
-Each handler calls `syncUi()` after it runs. That sets the check marks on menu items and
-toolbar toggles from the editor's state: the active view's show flags, the select mask and the
-transform mode.
+A command registered with `press()` or `hold()` is followed by `syncUi()`. That sets the check
+marks on menu items and toolbar toggles from the editor's state: the active view's show flags,
+the select mask and the transform mode.
 
 **How a command arrives.** Three sources produce the same `event::Event`, so all three reach
 the same handler:
@@ -127,11 +153,15 @@ the same handler:
 - **A menu item** in `data/vgui.json`, with `context` and `command` fields.
 - **A toolbar button** in `data/vgui.json`, with the same two fields.
 
+A command on a menu can also be run from the command search, which sends it as its menu item
+would.
+
 **The order of events.** The engine handles each SDL event in this order:
 
-1. `Controller::onEvent()` receives the raw SDL event first. The editor passes keyboard events
-   to `ui::shell::Keyboard`, so a focused text box (such as the file chooser's name box) takes
-   its keys. An event it takes never reaches the bindings.
+1. `Controller::onEvent()` receives the raw SDL event first. While the command search is up it
+   takes the up and down arrows and Escape. The editor passes the other keyboard events to
+   `ui::shell::Keyboard`, so a focused text box (such as the file chooser's name box) takes its
+   keys. An event either takes never reaches the bindings.
 2. A key or button is published as an `event::Source` to every listener on `sink<Source>`. The
    editor does not listen there.
 3. Unless a listener consumed the source, the event router sends the commands bound to it on
@@ -159,31 +189,56 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 
 1. If it changes the document, add an operation to `Document` that applies itself, records
    itself and returns an `Outcome`.
-2. Register a handler in `Controller::registerCommands()` with `press()` or `hold()`. A handler
-   that runs an operation passes it what it acts on, and reports its `Outcome`.
+2. Register a handler in the `registerCommands()` of the part's class in `src/app/`, with
+   `press()` or `hold()`. A handler that runs an operation passes it what it acts on, and
+   reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
+   `Context::refuse()` does the same for a request the handler turns down itself. A command for
+   a part with no class yet gets a class of its own.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,
-   with the same context and name.
+   with the same context and name. A command on a menu can be searched for.
 4. If it describes on/off state, mark it in `syncUi()`.
 
 Playback, the Render menu and the mouse each have a controller in `src/control/`: `Playback`,
 `RenderWindow` and `Pointer`. A command for one of them calls it.
 
+### The command search
+
+F3 (`search::open`) puts up a panel over the views: a field the query is typed into, and a list
+of the commands that match it. `CommandSearch` in `src/control/` drives the `search` container
+of `data/vgui.json`.
+
+- **What it searches.** Every item of the editor's menu bar and of the active area's header that
+  sends a command, under its menu path, such as `Create > Poly > Cube`. A command on two menus is
+  listed once, from the menu bar. A held command, such as a camera move's modifier, and a dialog's
+  own buttons are on no menu and are not searched. Each row ends with the command's shortcut, the
+  one its menu item shows.
+- **Matching.** The query is words, matched without regard to case, and each has to be in the
+  path. Commands whose own label begins with the first word come first, then those where every
+  word begins a word of the path, then the rest, each in menu order. An empty query lists every
+  command.
+- **Keys.** Typing matches again and chooses the first row. The up and down arrows move the
+  choice, wrapping at either end. Enter, or a click on a row, takes the search down and runs the
+  command (`search::run`). Escape takes it down and runs nothing.
+
+A command run from the search carries no data, so an area's command acts on the active area,
+as a key's does.
+
 ## Tools
 
-`v3d::editor::Tool` is the interface for something that holds a gesture of the mouse open
+`v3d::editor::tool::Tool` is the interface for something that holds a gesture of the mouse open
 across events: `activate(name)` and `deactivate(name)`, `view(view)`, `takes(position)`,
-`dragging()`, `motion(position)` and `button(button, pressed, position)`. `CameraControlTool`,
-`SelectTool` and `TransformTool` implement it. `Tool` lives in the editor because no other app
+`dragging()`, `motion(position)` and `button(button, pressed, position)`. `tool::CameraControl`,
+`tool::Select` and `tool::Transform` implement it. `Tool` lives in the editor because no other app
 holds a gesture open across events.
 
-**`ToolRouter` gives the primary button to one tool at a time.** A press is offered to each tool
+**`tool::Router` gives the primary button to one tool at a time.** A press is offered to each tool
 in the order they were added, and the first whose `takes()` says yes has the gesture. The
 release goes to that tool alone. Every tool hears every motion and every change of view. The
 editor adds the camera tool, then the transform tool, then the select tool, so a new tool has a
 slot in that order. [PickingAndManipulators.md](PickingAndManipulators.md#picking) says what
 each one takes.
 
-`CommandStack` and `Tool` are in the editor rather than the api. No other app has a document
+`command::Stack` and `Tool` are in the editor rather than the api. No other app has a document
 to undo.
 
 Background: [ADR-0081](../adr/0081-input-key-events-and-commands-are-separate.md),

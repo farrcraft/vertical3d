@@ -19,12 +19,12 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
-Item::Kind GroupCodec::kind() const noexcept {
-    return Item::Kind::Group;
+scene::Item::Kind GroupCodec::kind() const noexcept {
+    return scene::Item::Kind::Group;
 }
 
 /**
@@ -41,14 +41,14 @@ std::int64_t GroupCodec::version() const noexcept {
 
 /**
  **/
-boost::json::object GroupCodec::payload(const Item& /*item*/) const {
+boost::json::object GroupCodec::payload(const scene::Item& /*item*/) const {
     return boost::json::object();
 }
 
 /**
  **/
-boost::shared_ptr<Item> GroupCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
-    return exactly(payload, {}, problem) ? boost::make_shared<Group>() : nullptr;
+boost::shared_ptr<scene::Item> GroupCodec::read(const boost::json::object& payload, const Blobs& /*blobs*/, std::string* problem) const {
+    return exactly(payload, {}, problem) ? boost::make_shared<scene::Group>() : nullptr;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

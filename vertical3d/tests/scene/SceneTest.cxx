@@ -15,8 +15,8 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
 #include <vertical3d/src/scene/Timeline.h>
+#include <vertical3d/src/scene/Visitor.h>
 
 #include <cmath>
 #include <cstdint>
@@ -36,36 +36,36 @@ namespace {
 /**
  * Records what it was handed, in the order it was handed it, and through which visit().
  **/
-class CountingVisitor final : public v3d::editor::SceneVisitor {
+class CountingVisitor final : public v3d::editor::scene::Visitor {
  public:
-    void visit(const boost::shared_ptr<v3d::editor::Mesh>& mesh, const v3d::editor::Placed& /*placed*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::scene::Mesh>& mesh, const v3d::editor::scene::Placed& /*placed*/) override {
         visited.push_back(mesh->id());
         kinds += "m";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Camera>& camera, const v3d::editor::Placed& /*placed*/,
-        const v3d::editor::Camera::Lens& /*lens*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::scene::Camera>& camera, const v3d::editor::scene::Placed& /*placed*/,
+        const v3d::editor::scene::Camera::Lens& /*lens*/) override {
         visited.push_back(camera->id());
         kinds += "c";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Light>& light, const v3d::editor::Placed& /*placed*/,
-        const v3d::editor::Light::Emission& /*emission*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::scene::Light>& light, const v3d::editor::scene::Placed& /*placed*/,
+        const v3d::editor::scene::Light::Emission& /*emission*/) override {
         visited.push_back(light->id());
         kinds += "l";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Group>& group, const v3d::editor::Placed& /*placed*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::scene::Group>& group, const v3d::editor::scene::Placed& /*placed*/) override {
         visited.push_back(group->id());
         kinds += "g";
     }
 
-    void visit(const boost::shared_ptr<v3d::editor::Curve>& curve, const v3d::editor::Placed& /*placed*/) override {
+    void visit(const boost::shared_ptr<v3d::editor::scene::Curve>& curve, const v3d::editor::scene::Placed& /*placed*/) override {
         visited.push_back(curve->id());
         kinds += "u";
     }
 
-    void leave(const boost::shared_ptr<v3d::editor::Item>& item) override {
+    void leave(const boost::shared_ptr<v3d::editor::scene::Item>& item) override {
         left.push_back(item->id());
     }
 
@@ -74,12 +74,29 @@ class CountingVisitor final : public v3d::editor::SceneVisitor {
     std::string kinds;
 };
 
-boost::shared_ptr<v3d::editor::Mesh> emptyMesh() {
-    return boost::make_shared<v3d::editor::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::Mesh> emptyMesh() {
+    return boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+}
+
+/**
+ * A curve of two keys, with the values given at frames 1 and 11.
+ **/
+v3d::animation::Curve between(float first, float second) {
+    v3d::animation::Curve curve;
+    curve.set(1.0F, first);
+    curve.set(11.0F, second);
+    return curve;
+}
+
+/**
+ * Where an evaluation puts an item, in its parent's space.
+ **/
+glm::vec3 position(const v3d::editor::scene::Evaluation& evaluation, const v3d::editor::scene::Item& item) {
+    return evaluation.pose(item).placement.position;
 }
 
 BOOST_AUTO_TEST_CASE(scene_empty_test) {
-    v3d::editor::Scene scene;
+    v3d::editor::scene::Scene scene;
 
     BOOST_CHECK_EQUAL(scene.count(), 0U);
     BOOST_CHECK_EQUAL(static_cast<bool>(scene.mesh(1)), false);
@@ -95,10 +112,10 @@ BOOST_AUTO_TEST_CASE(scene_empty_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_add_test) {
-    v3d::editor::Scene scene;
+    v3d::editor::scene::Scene scene;
 
-    const boost::shared_ptr<v3d::editor::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> second = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> second = emptyMesh();
 
     const unsigned int firstID = scene.add(first);
     const unsigned int secondID = scene.add(second);
@@ -115,7 +132,7 @@ BOOST_AUTO_TEST_CASE(scene_add_test) {
     BOOST_CHECK_EQUAL(static_cast<bool>(scene.mesh(firstID)), false);
 
     // an empty pointer is not an item, and adding one leaves the scene alone
-    BOOST_CHECK_EQUAL(scene.add(boost::shared_ptr<v3d::editor::Item>()), 0U);
+    BOOST_CHECK_EQUAL(scene.add(boost::shared_ptr<v3d::editor::scene::Item>()), 0U);
     BOOST_CHECK_EQUAL(scene.count(), 1U);
 
     scene.clear();
@@ -123,10 +140,10 @@ BOOST_AUTO_TEST_CASE(scene_add_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_kinds_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(camera);
     scene.add(mesh);
     scene.add(light);
@@ -146,9 +163,9 @@ BOOST_AUTO_TEST_CASE(scene_kinds_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_document_ids_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Camera> second = boost::make_shared<v3d::editor::Camera>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Camera> second = boost::make_shared<v3d::editor::scene::Camera>();
     BOOST_CHECK_EQUAL(first->documentId(), 0);
 
     // the scene gives each item the next document id as it is first added
@@ -161,7 +178,7 @@ BOOST_AUTO_TEST_CASE(scene_document_ids_test) {
     // an item taken out and put back, as an undone creation is redone, keeps its id, and the
     // id is not given to anything else meanwhile
     scene.remove(first->id());
-    const boost::shared_ptr<v3d::editor::Light> third = boost::make_shared<v3d::editor::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Light> third = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(third);
     scene.add(first);
     BOOST_CHECK_EQUAL(first->documentId(), 1);
@@ -173,12 +190,12 @@ BOOST_AUTO_TEST_CASE(scene_document_ids_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
-    v3d::editor::Scene scene;
+    v3d::editor::scene::Scene scene;
 
-    const boost::shared_ptr<v3d::editor::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
-    const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
-    const boost::shared_ptr<v3d::editor::Mesh> second = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> second = emptyMesh();
     scene.add(first);
     scene.add(light);
     scene.add(camera);
@@ -197,9 +214,9 @@ BOOST_AUTO_TEST_CASE(scene_visit_order_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_deselect_test) {
-    v3d::editor::Scene scene;
+    v3d::editor::scene::Scene scene;
 
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
     std::vector<glm::vec3> quad;
     quad.push_back(glm::vec3(0.0F, 0.0F, 0.0F));
     quad.push_back(glm::vec3(1.0F, 0.0F, 0.0F));
@@ -207,33 +224,33 @@ BOOST_AUTO_TEST_CASE(scene_deselect_test) {
     quad.push_back(glm::vec3(0.0F, 1.0F, 0.0F));
     mesh->geometry()->addFace(quad, glm::vec3(0.0F, 0.0F, 1.0F));
     mesh->selected(true);
-    scene.components().select(mesh->id(), v3d::editor::Component::Edge, 0, true);
+    scene.components().select(mesh->id(), v3d::editor::scene::Component::Edge, 0, true);
     scene.add(mesh);
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     light->selected(true);
     scene.add(light);
 
     scene.deselectComponents();
 
     // a component deselect leaves the objects selected
-    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::Component::Edge, 0), false);
+    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::scene::Component::Edge, 0), false);
     BOOST_CHECK_EQUAL(mesh->selected(), true);
 
-    scene.components().select(mesh->id(), v3d::editor::Component::Edge, 0, true);
+    scene.components().select(mesh->id(), v3d::editor::scene::Component::Edge, 0, true);
     scene.deselect();
 
     // a scene wide deselect clears the items of every kind, and the components too
     BOOST_CHECK_EQUAL(mesh->selected(), false);
     BOOST_CHECK_EQUAL(light->selected(), false);
-    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::Component::Edge, 0), false);
+    BOOST_CHECK_EQUAL(scene.components().selected(mesh->id(), v3d::editor::scene::Component::Edge, 0), false);
 }
 
 BOOST_AUTO_TEST_CASE(scene_selection_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Camera> camera = boost::make_shared<v3d::editor::Camera>();
-    const boost::shared_ptr<v3d::editor::Mesh> second = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> third = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> second = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> third = emptyMesh();
     scene.add(first);
     scene.add(camera);
     scene.add(second);
@@ -244,26 +261,26 @@ BOOST_AUTO_TEST_CASE(scene_selection_test) {
     third->selected(true);
     camera->selected(true);
     first->selected(true);
-    const v3d::editor::Items selection = scene.selection();
+    const v3d::editor::scene::Items selection = scene.selection();
     BOOST_REQUIRE_EQUAL(selection.size(), 3U);
     BOOST_CHECK(selection[0] == first);
     BOOST_CHECK(selection[1] == camera);
     BOOST_CHECK(selection[2] == third);
 
     // and of one kind, the selected items of that kind only
-    const v3d::editor::Meshes meshes = scene.selected<v3d::editor::Mesh>();
+    const v3d::editor::scene::Meshes meshes = scene.selected<v3d::editor::scene::Mesh>();
     BOOST_REQUIRE_EQUAL(meshes.size(), 2U);
     BOOST_CHECK(meshes[0] == first);
     BOOST_CHECK(meshes[1] == third);
-    BOOST_CHECK_EQUAL(scene.selected<v3d::editor::Camera>().size(), 1U);
-    BOOST_CHECK(scene.selected<v3d::editor::Light>().empty());
+    BOOST_CHECK_EQUAL(scene.selected<v3d::editor::scene::Camera>().size(), 1U);
+    BOOST_CHECK(scene.selected<v3d::editor::scene::Light>().empty());
 }
 
 BOOST_AUTO_TEST_CASE(scene_parent_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(mesh);
     scene.add(group);
     scene.add(light);
@@ -275,14 +292,14 @@ BOOST_AUTO_TEST_CASE(scene_parent_test) {
     BOOST_CHECK(scene.parent(mesh->id(), group->id()));
     BOOST_CHECK(scene.parent(group->id(), light->id()));
     BOOST_CHECK(scene.parent(mesh->id()) == group);
-    const v3d::editor::Items above = scene.ancestors(mesh->id());
+    const v3d::editor::scene::Items above = scene.ancestors(mesh->id());
     BOOST_REQUIRE_EQUAL(above.size(), 2U);
     BOOST_CHECK(above[0] == group);
     BOOST_CHECK(above[1] == light);
     BOOST_CHECK(scene.ancestors(light->id()).empty());
 
     // the items with no parent, and the items beneath one, come in the scene's order
-    const v3d::editor::Items roots = scene.children(0);
+    const v3d::editor::scene::Items roots = scene.children(0);
     BOOST_REQUIRE_EQUAL(roots.size(), 1U);
     BOOST_CHECK(roots[0] == light);
     BOOST_REQUIRE_EQUAL(scene.children(group->id()).size(), 1U);
@@ -292,8 +309,8 @@ BOOST_AUTO_TEST_CASE(scene_parent_test) {
     // item the scene does not hold is refused. Each refusal leaves the hierarchy as it was
     BOOST_CHECK(!scene.parent(group->id(), group->id()));
     BOOST_CHECK(!scene.parent(light->id(), mesh->id()));
-    BOOST_CHECK(!scene.parent(mesh->id(), boost::make_shared<v3d::editor::Group>()->id()));
-    BOOST_CHECK(!scene.parent(boost::make_shared<v3d::editor::Group>()->id(), group->id()));
+    BOOST_CHECK(!scene.parent(mesh->id(), boost::make_shared<v3d::editor::scene::Group>()->id()));
+    BOOST_CHECK(!scene.parent(boost::make_shared<v3d::editor::scene::Group>()->id(), group->id()));
     BOOST_CHECK(scene.parent(group->id()) == light);
     BOOST_CHECK(!scene.parent(light->id()));
 
@@ -310,11 +327,11 @@ BOOST_AUTO_TEST_CASE(scene_parent_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_remove_beneath_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> top = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Group> middle = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> bottom = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> apart = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> top = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Group> middle = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> bottom = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> apart = emptyMesh();
     scene.add(bottom);
     scene.add(top);
     scene.add(apart);
@@ -341,11 +358,11 @@ BOOST_AUTO_TEST_CASE(scene_remove_beneath_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> child = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> loose = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> child = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> loose = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(child);
     scene.add(loose);
     scene.add(group);
@@ -367,20 +384,10 @@ BOOST_AUTO_TEST_CASE(scene_visit_beneath_test) {
     BOOST_CHECK(visitor.left == left);
 }
 
-/**
- * A curve of two keys, with the values given at frames 1 and 11.
- **/
-v3d::animation::Curve between(float first, float second) {
-    v3d::animation::Curve curve;
-    curve.set(1.0F, first);
-    curve.set(11.0F, second);
-    return curve;
-}
-
 BOOST_AUTO_TEST_CASE(scene_curves_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(mesh);
     scene.add(light);
 
@@ -408,17 +415,10 @@ BOOST_AUTO_TEST_CASE(scene_curves_test) {
     BOOST_CHECK(scene.curves(light->id()).empty());
 }
 
-/**
- * Where an evaluation puts an item, in its parent's space.
- **/
-glm::vec3 position(const v3d::editor::Evaluation& evaluation, const v3d::editor::Item& item) {
-    return evaluation.pose(item).placement.position;
-}
-
 BOOST_AUTO_TEST_CASE(scene_evaluate_frame_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> still = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> still = emptyMesh();
     mesh->translation(glm::vec3(3.0F, 7.0F, 0.0F));
     still->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     scene.add(mesh);
@@ -429,7 +429,7 @@ BOOST_AUTO_TEST_CASE(scene_evaluate_frame_test) {
     // and every other item what they hold
     const std::uint64_t moving = mesh->revision();
     const std::uint64_t untouched = still->revision();
-    const v3d::editor::Evaluation late = scene.evaluate(11.0F);
+    const v3d::editor::scene::Evaluation late = scene.evaluate(11.0F);
     BOOST_CHECK(position(late, *mesh) == glm::vec3(10.0F, 7.0F, 0.0F));
     BOOST_CHECK(position(late, *still) == glm::vec3(4.0F, 0.0F, 0.0F));
     BOOST_CHECK(glm::vec3(late.placed(mesh->id()).world[3]) == glm::vec3(10.0F, 7.0F, 0.0F));
@@ -447,8 +447,8 @@ BOOST_AUTO_TEST_CASE(scene_evaluate_frame_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_pending_edit_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     scene.add(light);
     scene.curve(light->id(), "translation.x", between(0.0F, 10.0F));
     scene.curve(light->id(), "emission.intensity", between(1.0F, 3.0F));
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE(scene_pending_edit_test) {
     BOOST_CHECK_EQUAL(light->translation().x, 5.0F);
 
     // an item added after the frame was set has its edits pending from when it was added
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
     scene.add(mesh);
     scene.curve(mesh->id(), "scale.y", between(1.0F, 2.0F));
     BOOST_CHECK_EQUAL(scene.evaluate().pose(*mesh).placement.scale.y, 1.0F);
@@ -478,25 +478,25 @@ BOOST_AUTO_TEST_CASE(scene_pending_edit_test) {
 }
 
 BOOST_AUTO_TEST_CASE(scene_pending_rotation_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Mesh> mesh = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
     scene.add(mesh);
     scene.curve(mesh->id(), "rotation.z", between(0.0F, 90.0F));
     scene.frame(11);
 
     // a turn about x changes the angles the rotation reads as, so the whole rotation is
     // pending, the keyed angle about z with it
-    const glm::quat turned = v3d::editor::fromEuler(glm::vec3(30.0F, 0.0F, 0.0F));
+    const glm::quat turned = v3d::editor::scene::fromEuler(glm::vec3(30.0F, 0.0F, 0.0F));
     mesh->rotation(turned);
     BOOST_CHECK(scene.evaluate().pose(*mesh).placement.rotation == turned);
     scene.frame(11);
     const glm::quat keyed = scene.evaluate().pose(*mesh).placement.rotation;
-    BOOST_CHECK_SMALL(std::abs(glm::dot(keyed, v3d::editor::fromEuler(glm::vec3(30.0F, 0.0F, 90.0F)))) - 1.0F, 0.0001F);
+    BOOST_CHECK_SMALL(std::abs(glm::dot(keyed, v3d::editor::scene::fromEuler(glm::vec3(30.0F, 0.0F, 90.0F)))) - 1.0F, 0.0001F);
 }
 
 BOOST_AUTO_TEST_CASE(scene_timeline_test) {
-    v3d::editor::Scene scene;
-    BOOST_CHECK(scene.timeline() == v3d::editor::Timeline());
+    v3d::editor::scene::Scene scene;
+    BOOST_CHECK(scene.timeline() == v3d::editor::scene::Timeline());
     BOOST_CHECK(scene.timeline().valid());
 
     scene.timeline({ .rate = 30.0F, .start = 10, .end = 40, .frame = 12 });
@@ -504,22 +504,22 @@ BOOST_AUTO_TEST_CASE(scene_timeline_test) {
 
     // a closed document's timeline is the default one
     scene.clear();
-    BOOST_CHECK(scene.timeline() == v3d::editor::Timeline());
+    BOOST_CHECK(scene.timeline() == v3d::editor::scene::Timeline());
 
-    const v3d::editor::Timeline still{ .rate = 0.0F };
-    const v3d::editor::Timeline backwards{ .start = 5, .end = 4 };
-    const v3d::editor::Timeline outside{ .frame = 500 };
+    const v3d::editor::scene::Timeline still{ .rate = 0.0F };
+    const v3d::editor::scene::Timeline backwards{ .start = 5, .end = 4 };
+    const v3d::editor::scene::Timeline outside{ .frame = 500 };
     BOOST_CHECK(!still.valid());
     BOOST_CHECK(!backwards.valid());
     BOOST_CHECK(!outside.valid());
 }
 
 BOOST_AUTO_TEST_CASE(scene_uppermost_test) {
-    v3d::editor::Scene scene;
-    const boost::shared_ptr<v3d::editor::Group> group = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Group> inner = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> deep = emptyMesh();
-    const boost::shared_ptr<v3d::editor::Mesh> loose = emptyMesh();
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Group> inner = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> deep = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> loose = emptyMesh();
     scene.add(group);
     scene.add(inner);
     scene.add(deep);
@@ -528,13 +528,13 @@ BOOST_AUTO_TEST_CASE(scene_uppermost_test) {
     scene.parent(deep->id(), inner->id());
 
     // an item beneath another of the set, at any depth, is left out, and the order is kept
-    const v3d::editor::Items top = scene.uppermost({ deep, loose, group, boost::shared_ptr<v3d::editor::Item>() });
+    const v3d::editor::scene::Items top = scene.uppermost({ deep, loose, group, boost::shared_ptr<v3d::editor::scene::Item>() });
     BOOST_REQUIRE_EQUAL(top.size(), 2U);
     BOOST_CHECK(top[0] == loose);
     BOOST_CHECK(top[1] == group);
 
     // and an item whose ancestors are not in the set is kept
-    const v3d::editor::Items alone = scene.uppermost({ deep });
+    const v3d::editor::scene::Items alone = scene.uppermost({ deep });
     BOOST_REQUIRE_EQUAL(alone.size(), 1U);
     BOOST_CHECK(alone[0] == deep);
 }

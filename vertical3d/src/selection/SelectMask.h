@@ -12,7 +12,7 @@
 #include <optional>
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::selection {
 
 /**
  * What a click selects.
@@ -44,7 +44,7 @@ bool selectsItems(SelectMask mask);
 /**
  * @return whether the mask selects whole items of this kind
  **/
-bool takes(SelectMask mask, Item::Kind kind);
+bool takes(SelectMask mask, scene::Item::Kind kind);
 
 /**
  * @param name one of "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve" or
@@ -63,6 +63,6 @@ const char* selectMaskName(SelectMask mask);
  * @return the kind of part a component mask selects, or nothing for a mask that selects whole
  *         items
  **/
-std::optional<Component> componentOf(SelectMask mask);
+std::optional<scene::Component> componentOf(SelectMask mask);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::selection

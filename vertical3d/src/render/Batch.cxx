@@ -33,21 +33,15 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
-
-namespace {
+namespace v3d::editor::render {
 
 /**
- * A frame's file name: the camera's name and the frame, four digits wide so that the files
- * sort in frame order.
  **/
-std::string frameName(const std::string& camera, int frame, const char* extension) {
+std::string Batch::frameName(const std::string& camera, int frame, const char* extension) {
     std::ostringstream name;
     name << camera << "." << std::setw(4) << std::setfill('0') << frame << extension;
     return name.str();
 }
-
-};  // namespace
 
 /**
  **/
@@ -64,7 +58,7 @@ Batch::~Batch() {
 
 /**
  **/
-std::vector<Batch::Job> Batch::start(const Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
+std::vector<Batch::Job> Batch::start(const scene::Scene* scene, const v3d::type::camera::Profile& view, const scene::RenderSettings& settings,
     const boost::filesystem::path& directory) {
     cancel();
     if (scene == nullptr) {
@@ -72,22 +66,22 @@ std::vector<Batch::Job> Batch::start(const Scene* scene, const v3d::type::camera
     }
 
     // each camera is named by its document id, which no other camera of the document has
-    std::vector<std::pair<std::string, boost::shared_ptr<Camera>>> sources;
-    for (const boost::shared_ptr<Item>& item : scene->items()) {
-        const boost::shared_ptr<Camera> camera = as<Camera>(item);
+    std::vector<std::pair<std::string, boost::shared_ptr<scene::Camera>>> sources;
+    for (const boost::shared_ptr<scene::Item>& item : scene->items()) {
+        const boost::shared_ptr<scene::Camera> camera = as<scene::Camera>(item);
         if (camera) {
             sources.emplace_back("camera" + std::to_string(camera->documentId()), camera);
         }
     }
     if (sources.empty()) {
-        sources.emplace_back("view", boost::shared_ptr<Camera>());
+        sources.emplace_back("view", boost::shared_ptr<scene::Camera>());
     }
 
-    const Timeline timeline = scene->timeline();
+    const scene::Timeline timeline = scene->timeline();
     std::vector<Job> jobs;
     bool written = true;
     for (int frame = timeline.start; frame <= timeline.end && written; frame++) {
-        const Evaluation evaluation = scene->evaluate(static_cast<float>(frame));
+        const scene::Evaluation evaluation = scene->evaluate(static_cast<float>(frame));
         for (const auto& [name, camera] : sources) {
             const boost::filesystem::path folder = directory / name;
             boost::system::error_code error;
@@ -154,4 +148,4 @@ void Batch::run(const std::vector<Job>& jobs, const std::stop_token& stop) {
     status_.running = false;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

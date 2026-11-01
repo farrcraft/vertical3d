@@ -7,18 +7,11 @@
 
 #include <api/log/Logger.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 
 namespace v3d::window {
-
-namespace {
-
-// the size a window reports before it is created
-constexpr int DEFAULT_WIDTH = 300;
-constexpr int DEFAULT_HEIGHT = 200;
-
-};  // namespace
 
 /**
  **/
@@ -59,6 +52,12 @@ bool Window::created() const noexcept {
 /**
  **/
 void Window::destroy() {
+    for (SDL_Cursor*& made : pointers_) {
+        if (made != nullptr) {
+            SDL_DestroyCursor(made);
+            made = nullptr;
+        }
+    }
     SDL_DestroyWindow(window_);
     window_ = nullptr;
     created_ = false;
@@ -112,6 +111,15 @@ bool Window::focused() const {
         return false;
     }
     return (SDL_GetWindowFlags(window_) & SDL_WINDOW_INPUT_FOCUS) != 0;
+}
+
+float Window::displayScale() const {
+    if (window_ == nullptr) {
+        return 1.0F;
+    }
+    // SDL answers 0 when it cannot read the scale
+    const float scale = SDL_GetWindowDisplayScale(window_);
+    return scale > 0.0F ? scale : 1.0F;
 }
 
 /**
@@ -189,6 +197,43 @@ void Window::cursor(bool state) {
  **/
 void Window::warpCursor(int x, int y) {
     SDL_WarpMouseInWindow(window_, static_cast<float>(x), static_cast<float>(y));
+}
+
+/**
+ **/
+void Window::pointer(Pointer shape) {
+    if (shape == shape_) {
+        return;
+    }
+    const std::size_t index = static_cast<std::size_t>(shape);
+    if (pointers_.at(index) == nullptr) {
+        pointers_.at(index) = SDL_CreateSystemCursor(systemCursor(shape));
+        if (pointers_.at(index) == nullptr) {
+            logger_->get()->warn("The pointer's shape could not be made: {}", SDL_GetError());
+            return;
+        }
+    }
+    if (SDL_SetCursor(pointers_.at(index))) {
+        shape_ = shape;
+    }
+}
+
+/**
+ **/
+Window::Pointer Window::pointer() const noexcept {
+    return shape_;
+}
+
+SDL_SystemCursor Window::systemCursor(Window::Pointer shape) noexcept {
+    switch (shape) {
+    case Window::Pointer::Columns:
+        return SDL_SYSTEM_CURSOR_EW_RESIZE;
+    case Window::Pointer::Rows:
+        return SDL_SYSTEM_CURSOR_NS_RESIZE;
+    case Window::Pointer::Arrow:
+        break;
+    }
+    return SDL_SYSTEM_CURSOR_DEFAULT;
 }
 
 };  // namespace v3d::window

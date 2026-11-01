@@ -6,6 +6,8 @@
 #include "Shadow.h"
 
 #include <api/render/realtime/component/Mesh.h>
+#include <api/render/realtime/lighting/internal/Basis.h>
+#include <api/render/realtime/lighting/internal/Volume.h>
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
@@ -31,18 +33,8 @@ namespace {
 // how far the light's projection reaches along its view, in radii of the bounds it covers
 constexpr float DEPTH_RADII = 4.0F;
 
-/**
- * The light's own axes: its right, its up, and the direction it looks along, which is +z of its
- * basis as a camera's is.
- **/
-struct Basis final {
-    glm::vec3 right;
-    glm::vec3 up;
-    glm::vec3 along;
-};
-
-Basis basis(const glm::vec3& towards) {
-    Basis out;
+internal::Basis basis(const glm::vec3& towards) {
+    internal::Basis out;
     out.along = -glm::normalize(towards);
     // an up parallel to the view has no right to cross into, which a light straight overhead
     // would give
@@ -57,22 +49,11 @@ bool finite(const glm::vec3& value) {
 }
 
 /**
- * The camera's view volume: the four edges from a near corner to the far corner behind it, and
- * the view direction from the middle of the near plane.
- **/
-struct Volume final {
-    std::array<glm::vec3, 4> near;
-    std::array<glm::vec3, 4> far;
-    glm::vec3 centre;  /**< the middle of the near plane **/
-    glm::vec3 axis;    /**< the view direction, normalised **/
-};
-
-/**
  * The view volume of an invertible view projection, or nothing when one of its corners is not
  * finite.
  **/
-std::optional<Volume> volume(const glm::mat4& inverse) {
-    Volume out;
+std::optional<internal::Volume> volume(const glm::mat4& inverse) {
+    internal::Volume out;
     std::size_t next = 0;
     glm::vec3 farCentre(0.0F);
     out.centre = glm::vec3(0.0F);
@@ -140,7 +121,7 @@ std::optional<ShadowBounds> snapped(std::span<const glm::vec3> points, const glm
     const float slack = 2.0F * std::sqrt(2.0F) / static_cast<float>(texels);
     bounds.radius = std::max(spread / (1.0F - slack), minimumShadowRadius);
 
-    const Basis axes = basis(towards);
+    const internal::Basis axes = basis(towards);
     const float texel = 2.0F * bounds.radius / static_cast<float>(texels);
     const float across = glm::dot(bounds.centre, axes.right);
     const float up = glm::dot(bounds.centre, axes.up);
@@ -163,7 +144,7 @@ glm::mat4 shadowLight(const glm::vec3& towards, const ShadowBounds& bounds, type
     const glm::vec3& centre = bounds.centre;
     const float radius = bounds.radius;
     // the light looks from the light towards the centre
-    const Basis axes = basis(towards);
+    const internal::Basis axes = basis(towards);
     const glm::vec3 z = axes.along;
     const glm::vec3 eye = centre - z * (radius * 2.0F);
     const glm::vec3 y = axes.up;
@@ -297,7 +278,7 @@ std::optional<Cascades> fitCascades(const glm::mat4& viewProjection, std::span<c
     if (!inverse) {
         return std::nullopt;
     }
-    const std::optional<Volume> view = volume(*inverse);
+    const std::optional<internal::Volume> view = volume(*inverse);
     if (!view) {
         return std::nullopt;
     }
@@ -339,7 +320,7 @@ std::optional<Cascades> fitCascades(const glm::mat4& viewProjection, std::span<c
 bool casts(const ShadowBounds& cascade, const glm::vec3& towards, const ShadowBounds& caster) {
     // the box shadowLight() draws through: a radius either side across the light, and from two
     // radii towards the light to two radii away from it
-    const Basis axes = basis(towards);
+    const internal::Basis axes = basis(towards);
     const glm::vec3 offset = caster.centre - cascade.centre;
     const float across = cascade.radius + caster.radius;
     const float deep = (2.0F * cascade.radius) + caster.radius;

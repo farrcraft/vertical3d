@@ -61,7 +61,18 @@ const uint32_t width = 256;
 const uint32_t height = 256;
 
 // a strip bound to three joints, two units wide and three long, with a bend among its clips
-const char* STRIP = "bending_strip.glb";
+const char* const STRIP = "bending_strip.glb";
+
+/**
+ * A strip laid on its back at a position on x, a quarter turn about x taking its length along
+ * -z, and part way through its bend. The bend swings the strip's far end towards -x.
+ **/
+struct Laid {
+    float x = 0.0F;          /**< where it lies on x **/
+    uint32_t bend = 0;       /**< the clip it plays **/
+    float duration = 1.0F;   /**< how long the clip lasts **/
+    float through = 0.0F;    /**< how far into the clip it stands, as a fraction **/
+};
 
 boost::shared_ptr<v3d::asset::Manager> assets(const v3d::test::Headless& headless) {
     boost::shared_ptr<v3d::asset::Manager> manager =
@@ -80,17 +91,6 @@ entt::entity stand(entt::registry* registry, const MeshHandle& mesh, const glm::
     registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
     return entity;
 }
-
-/**
- * A strip laid on its back at a position on x, a quarter turn about x taking its length along
- * -z, and part way through its bend. The bend swings the strip's far end towards -x.
- **/
-struct Laid {
-    float x = 0.0F;          /**< where it lies on x **/
-    uint32_t bend = 0;       /**< the clip it plays **/
-    float duration = 1.0F;   /**< how long the clip lasts **/
-    float through = 0.0F;    /**< how far into the clip it stands, as a fraction **/
-};
 
 void lay(entt::registry* registry, const MeshHandle& strip, const Laid& laid) {
     const float x = laid.x;

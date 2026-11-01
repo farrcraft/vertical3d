@@ -86,12 +86,21 @@ class Toolbar : public Component {
     void leave();
 
     /**
-     * The primary button went down. A press on a button sends that button's command.
+     * The primary button went down. A press on a button sends that button's command, and the
+     * button is drawn pressed until the press comes up.
      *
      * @param cursor where the cursor is
      * @return whether the strip took the press, which a press anywhere on it does
      **/
     bool press(const glm::vec2& cursor);
+
+    /**
+     * The primary button came up. A button drawn pressed goes back to hovered when the cursor
+     * is still on it, and to normal when it is not.
+     *
+     * @param cursor where the cursor is
+     **/
+    void release(const glm::vec2& cursor);
 
     /**
      * Find a button by the command it sends, so that whatever handles a command can mark
@@ -101,12 +110,12 @@ class Toolbar : public Component {
      **/
     boost::shared_ptr<Button> find(const std::string& command) const;
 
- private:
     /**
      * @return the button the cursor is on, or null
      **/
     boost::shared_ptr<Button> buttonAt(const glm::vec2& cursor) const;
 
+ private:
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector<boost::shared_ptr<Button>> buttons_;
     Edge edge_;

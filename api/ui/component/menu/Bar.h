@@ -9,19 +9,27 @@
 #include <api/ui/Component.h>
 
 #include <cstddef>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Menu.h"
 #include "Item.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::ui::component::menu {
 
 /**
- * A row of named menus along the top of the window, driven by the cursor.
+ * A row of named menus, driven by the cursor.
+ *
+ * A docked bar, which is the default, runs along the top of the window and takes that strip
+ * from what is laid out below it. A bar that is not docked is laid out by its Layout like
+ * any other component, as a header over part of the window, and takes nothing from the rest.
+ * Either drops its panels from its own bottom edge.
  *
  * One of the menus may be open, and under it any depth of submenu the cursor has
  * descended into. panels() is that stack, outermost first. A renderer draws it, and the
@@ -117,17 +125,52 @@ class Bar : public Component {
     bool motion(const glm::vec2& cursor);
 
     /**
+     * How long the cursor has to rest on a submenu's item before the submenu opens, in
+     * seconds. A press on the item opens it at once, and moving onto an item with no submenu
+     * closes any deeper panel at once. Zero, the default, opens a submenu as soon as the
+     * cursor reaches its item.
+     **/
+    void delay(float seconds) noexcept;
+
+    /**
+     * Whether the bar runs along the top of the window, or is laid out by its Layout.
+     **/
+    void docked(bool along) noexcept;
+    bool docked() const noexcept;
+
+    /**
+     * Open the submenu the cursor has rested on for the delay. Called once a frame with the
+     * ui's time. The first call after the cursor reaches an item starts its wait.
+     **/
+    void settle(float now);
+
+    /**
      * The primary button went down.
      *
      * A press on a menu opens or closes it, one on a submenu item descends, and one on
      * any other item sends that item's command and closes the bar. A press anywhere else
      * while the bar is open closes it and is consumed, so the click that dismisses a menu
-     * does nothing else.
+     * does nothing else. A press on the bar beside its labels is not taken while it is closed.
      *
      * @param cursor where the cursor is
      * @return whether the bar took the press
      **/
     bool press(const glm::vec2& cursor);
+
+    /**
+     * A key went down while the bar is open. The deepest panel open is the one walked.
+     *
+     * The down and up arrows choose the next and the previous item, stepping over separators
+     * and wrapping. The right arrow opens the chosen item's submenu at once, or opens the next
+     * menu when the item has none. The left arrow closes the deepest submenu, or opens the
+     * previous menu from the first panel. A menu opened from the keys chooses its first item.
+     * Return and space act on the chosen item as a press would. Escape closes the deepest
+     * submenu, or the bar from the first panel.
+     *
+     * @param key the name api/input gives it
+     * @return whether the bar took it, which a closed bar never does
+     **/
+    bool key(std::string_view key);
 
     /**
      * Find an item anywhere in the bar by the command it sends, so that whatever handles
@@ -138,6 +181,22 @@ class Bar : public Component {
     boost::shared_ptr<Item> find(const std::string& command) const;
 
  private:
+    /**
+     * A submenu's item the cursor has reached, waiting out the delay before it opens.
+     **/
+    struct Pending final {
+        std::size_t depth = 0;            /**< the panel the item belongs to **/
+        boost::weak_ptr<Item> item;
+        float since = 0.0F;               /**< when the wait began, once settle() has seen it **/
+        bool started = false;
+    };
+
+    /**
+     * The cursor reached an item of a panel: open its submenu, or wait to, or close what is
+     * under the panel when it has none.
+     **/
+    void reach(std::size_t depth, const boost::shared_ptr<Item>& item);
+
     /**
      * @return the index of the menu whose label the cursor is on, or -1
      **/
@@ -152,6 +211,17 @@ class Bar : public Component {
      * @return whether a component's drawn bounds contain the cursor
      **/
     static bool within(const Component& component, const glm::vec2& cursor);
+
+    /**
+     * Choose the item a number of steps from the one a panel has chosen, stepping over
+     * separators and wrapping. A panel with nothing chosen starts before its first item.
+     **/
+    static void step(const boost::shared_ptr<Menu>& panel, int by);
+
+    /**
+     * Open a menu and choose its first item.
+     **/
+    void openFirst(int index);
 
     /**
      * Leave the panel stack this many deep, closing anything under it.
@@ -175,6 +245,9 @@ class Bar : public Component {
     std::vector<boost::shared_ptr<Menu>> panels_;
     int hover_;  // the menu the cursor is over, or -1
     int open_;   // the open menu, or -1
+    float delay_;
+    bool docked_ = true;
+    std::optional<Pending> pending_;
 };
 
 };  // namespace v3d::ui::component::menu

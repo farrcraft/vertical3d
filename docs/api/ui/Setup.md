@@ -44,16 +44,64 @@ engine_.quads()->submit(screen_->canvas(), pass.get());
   canvas to the frame, and clears it. It returns false when the window is minimised or there is
   no renderer. A null ui keeps the theme drawn with. The theme is applied before anything draws,
   so a theme change shows in full on the next frame.
+- `draw(ui, statistics)` draws the ui, then the statistics, then the tooltip of what the cursor
+  rests on over both. See [Tooltips](Components.md#tooltips).
+- `Options::shortcut` is how a command's shortcut is shown, as `"Ctrl+Z"`, in a dropped panel
+  and a tooltip. `shell::Shell::present()` fills it when it is empty, with the command's first
+  keyboard binding printed by `event::printed()`. Left empty without a shell, nothing shows a
+  shortcut.
+- `begin(ui)` also moves the ui's clock on by the real time since the last frame began, and
+  hands it to the component renderer and the immediate layer. Transitions are measured on it.
+  It follows real time rather than the simulation, so a menu eases open over a paused game. An
+  app that draws a `ComponentRenderer` or an `Immediate` without a screen gives each a
+  `ui::Clock` through `clock()`, and one never given a clock draws every change at once.
+  `Screen::clock()` reads the clock, for anything else an app animates over the ui. It starts
+  at zero.
+- `shortcut(command)` gives the shortcut a menu shows for a command, through
+  `Options::shortcut`, for an app that lists commands somewhere other than a menu.
 - `resized()` is true on the first frame and on any frame whose size differs from the last.
   The app resizes its own resources then.
 - The passes, the draw order and where the canvas is submitted stay the app's.
 - `Options::dress` is a function `void(paint::Dressing*, float size)` that fills in the
   dressing (colours and metrics, see [Themes and styles](Themes.md#themes-and-styles)) for a text
   size. When it is empty, the line height is set to 1.4 times the size.
-- `scale(factor)` redraws text larger or smaller. It rebuilds everything that depends on the
-  font size, calls `dress` again, and applies the theme again.
+- A centred menu's title is set semibold at `Screen::titleScale`, 1.75 times the text size, and
+  its chosen item semibold at the text size, through `ComponentRenderer::emphasis()`. A
+  component renderer built without a screen sets both as its body text.
+- `scale(factor)` draws the ui larger or smaller, as a user's preference does. It multiplies the
+  scale the screen follows, described below.
 
-Do not keep a reference to `components()` across frames. `scale()` replaces it, and an old
+### Scaling to the monitor and the window
+
+A screen draws every size at `factor()`, which is `scale()` times what `Options::scaling`
+follows:
+
+| `Options::scaling` | Follows | For |
+|---|---|---|
+| `Scaling::Display`, the default | the monitor's scale: 1 at 100%, 1.5 at 150% | a tool, whose text should be the same physical size on any monitor |
+| `Scaling::Height` | the window's height divided by `Options::reference`, which defaults to 1080 | a game, whose menu should fill the same share of its window at any size |
+
+Before the first frame there is no window height, and a `Height` screen follows nothing.
+
+- **Everything is multiplied.** The text is drawn at `Options::size` times the factor. The
+  component renderer's and the immediate layer's dressings start from the built-in sizes times
+  the factor, before `dress` is called with the scaled text size. A theme's sizes are logical
+  pixels, and are multiplied by the factor too.
+- **Outlines stay sharp.** An outline's width is multiplied, rounded down to whole device pixels,
+  and never less than one, so a one pixel border is one pixel at 150% and two at 200%.
+- **The screen rebuilds itself.** A change of factor rebuilds everything that depends on the size,
+  calls `dress` again and applies the theme again. A `Height` screen rebuilds when `begin()` finds
+  the window a new height. A `Display` screen rebuilds when it is given a new monitor scale through
+  `display(scale)`.
+- **The shell passes the monitor's scale on.** `Shell::present()` gives the screen the window's
+  scale, and gives it the new one each time the engine publishes `event::kind::DisplayScale`.
+  An app that builds a `Screen` itself calls `display()` the same way.
+- **The cursor is not scaled.** Mouse points, the canvas and every box are device pixels, so hit
+  testing is the same at every scale.
+
+Background: [ADR-0131](../../adr/0131-ui-tools-scale-with-the-monitor-games-with-the-window.md)
+
+Do not keep a reference to `components()` across frames. A rescale replaces it, and an old
 reference points at an object that is no longer drawn. `immediate()` and `text()` are the same
 objects across a rescale, given the new size, so the immediate layer keeps where its windows
 were dragged, what is folded and how far each list is scrolled.
@@ -77,6 +125,17 @@ vgui_->resolveImages(resolver);   // once the renderer exists; see Images
 `Interface::load()` reads the themes and containers. It returns false and logs the reason when
 the document is malformed. `container(name)` returns a loaded container, and
 `Container::get(name)` finds a component anywhere inside it.
+
+An app that builds part of its ui as it runs adds containers to a loaded ui:
+
+- `Interface::add(document, before)` reads a document holding only `containers`, and puts them
+  before the container named `before`, or after every container when `before` is empty or not
+  held. Containers draw in the order they are held, so what is added before a container draws
+  under it. They draw in the active theme. A document that does not read, or that names a
+  container already held, adds nothing. Resolve the images of what was added with
+  `resolveComponentImages()`.
+- `Interface::remove(name)` takes a container out. A component in it that held the focus or the
+  cursor's rest stops holding it.
 
 ### The keyboard adapter
 

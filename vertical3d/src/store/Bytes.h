@@ -5,18 +5,18 @@
 
 #pragma once
 
+#include <vertical3d/src/store/Blob.h>
+
 #include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <span>
 #include <string>
 #include <vector>
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 static_assert(std::endian::native == std::endian::little, "scene blobs are little-endian");
 
@@ -35,38 +35,6 @@ void put(std::vector<std::byte>* bytes, T value) {
 void put(std::vector<std::byte>* bytes, const glm::vec3& value);
 
 /**
- * Reads a blob's numbers in the order they were written. The caller has checked that the blob
- * holds every number it reads.
- **/
-class Cursor final {
- public:
-    explicit Cursor(std::span<const std::byte> bytes);
-
-    template <typename T>
-    T next() {
-        std::array<std::byte, sizeof(T)> raw{};
-        std::memcpy(raw.data(), bytes_.subspan(offset_, sizeof(T)).data(), sizeof(T));
-        offset_ += sizeof(T);
-        return std::bit_cast<T>(raw);
-    }
-
-    glm::vec3 vector();
-
- private:
-    std::span<const std::byte> bytes_;
-    std::size_t offset_ = 0;
-};
-
-/**
- * One blob as a row of the buffers table holds it: how many entries the row says it holds, and
- * its bytes.
- **/
-struct Blob {
-    std::int64_t count = 0;
-    std::vector<std::byte> data;
-};
-
-/**
  * @return whether a blob holds exactly its count of entries of a size, and no more than a mesh
  *         index can number. A blob that does not names its role in the problem
  **/
@@ -77,4 +45,4 @@ bool sized(const Blob& blob, std::size_t size, const char* role, std::string* pr
  **/
 bool finite(const glm::vec3& value);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

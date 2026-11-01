@@ -7,24 +7,20 @@
 
 #include <api/type/Transform.h>
 
+#include <atomic>
 #include <cstdint>
+#include <string>
 
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
-
-namespace {
-
-unsigned int lastId = 0;
-
-};  // namespace
+namespace v3d::editor::scene {
 
 /**
  **/
 Item::Item() :
-    id_(++lastId),
+    id_(nextId()),
     selected_(false),
     documentId_(0) {
 }
@@ -32,6 +28,13 @@ Item::Item() :
 /**
  **/
 Item::~Item() {
+}
+
+/**
+ **/
+unsigned int Item::nextId() noexcept {
+    static std::atomic<unsigned int> last{ 0 };  // process-wide: a run-unique id counter, so ids stay unique whichever scene holds an item
+    return ++last;
 }
 
 /**
@@ -50,6 +53,19 @@ const v3d::type::Transform& Item::placement() const noexcept {
  **/
 void Item::placement(const v3d::type::Transform& placement) noexcept {
     placement_ = placement;
+    changed();
+}
+
+/**
+ **/
+const std::string& Item::name() const noexcept {
+    return name_;
+}
+
+/**
+ **/
+void Item::name(const std::string& name) {
+    name_ = name;
     changed();
 }
 
@@ -141,4 +157,4 @@ void Item::selected(bool selected) noexcept {
     selected_ = selected;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

@@ -11,6 +11,8 @@
 #include <api/event/kind/MouseMotion.h>
 #include <api/event/kind/MouseWheel.h>
 
+#include "Keyboard.h"
+
 #include <algorithm>
 #include <initializer_list>
 #include <string>
@@ -70,14 +72,16 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         const glm::vec2 position(event.button.x, event.button.y);
         state_(position);
         dispatcher()->trigger<v3d::event::kind::MouseButton>(
-            v3d::event::kind::MouseButton(buttonName, position, context(), pressed));
+            v3d::event::kind::MouseButton(buttonName, position, context(), pressed, event.button.clicks));
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         const glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
+        // a motion event carries no modifiers of its own, so they are read as they stand now
         dispatcher()->trigger<v3d::event::kind::MouseMotion>(
-            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel)}, context()));
+            v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel),
+                .modifiers = modifiers(SDL_GetModState())}, context()));
         return true;  // motion has no discrete name, so it is not a bindable source event
     }
     case SDL_EVENT_MOUSE_WHEEL: {
@@ -95,8 +99,10 @@ bool Mouse::handleEvent(const SDL_Event& event) {
 
     // publish a source event for the bindings to map, as the keyboard does. The edge is the
     // event's state, not its data.
-    v3d::event::publish(*dispatcher(), v3d::event::Source(buttonName, context(),
-        pressed ? v3d::event::State::Pressed : v3d::event::State::Released));
+    v3d::event::Source source(buttonName, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
+    // a button event carries no modifiers of its own, so they are read as they stand now
+    source.modifiers(modifiers(SDL_GetModState()));
+    v3d::event::publish(*dispatcher(), source);
 
     return true;
 }

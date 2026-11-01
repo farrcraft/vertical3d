@@ -6,7 +6,13 @@ v3d_add_api_library(asset_media
 	"kind/Image.h" "kind/Image.cpp"
 	"kind/Model.h" "kind/Model.cpp"
 	"loader/Gltf.h" "loader/Gltf.cpp"
-	"loader/Image.h" "loader/Image.cpp")
+	"loader/Image.h" "loader/Image.cpp"
+	"internal/Attributes.h"
+	"internal/Bucket.h"
+	"internal/Dropped.h"
+	"internal/Placed.h"
+	"internal/Rig.h"
+	"internal/Span.h")
 
 # PUBLIC: the kinds derive from asset::Asset and the loaders from asset::Loader, and each kind
 # names the payload it carries - an image::Image or a model::Model. glm, because SpriteSheet.h
@@ -17,7 +23,8 @@ target_link_libraries(v3dlib_asset_media PUBLIC v3dlib_log v3dlib_asset v3dlib_i
 # apart from the model that holds them.
 target_link_libraries(v3dlib_asset_media PRIVATE v3dlib_animation)
 
-# PRIVATE: only the gltf loader includes the header, and no header here names a cgltf type.
+# PRIVATE: only the gltf loader includes the header. No public header here names a cgltf type.
+# The internal/ headers do, and only this library's own sources include them.
 # cgltf's implementation is compiled once for every program, in interchange, which this
 # library links for it.
 target_include_directories(v3dlib_asset_media PRIVATE "${V3D_CGLTF_INCLUDE_DIR}")

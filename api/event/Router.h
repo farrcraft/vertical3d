@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
+#include "Chord.h"
 #include "Context.h"
 #include "Source.h"
 
@@ -48,6 +49,10 @@ class Router {
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::map<std::string, boost::shared_ptr<Mapper>> mappers_;
     std::vector<boost::shared_ptr<Context>> contexts_;
+    // the modifiers each key held down was pressed with, by "context::name". Its repeats and
+    // its release match against these, so a chord's release reaches the binding its press did
+    // whichever key comes up first
+    std::map<std::string, Modifiers> pressed_;
     // declared after dispatcher_, so it is destroyed first and disconnects while the
     // dispatcher still exists
     entt::scoped_connection source_;

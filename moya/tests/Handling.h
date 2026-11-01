@@ -8,8 +8,8 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -28,27 +28,6 @@ namespace v3d::moya::handling {
  * What the cases that read RIB through moya::RIBHandler share: reading a source into a handler,
  * counting what a frame covered, and hearing what the context logged.
  */
-
-inline bool read(const std::string & source, v3d::moya::RIBHandler * handler) {
-    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
-    std::istringstream stream(source);
-    return reader.read(stream, handler);
-}
-
-/**
- * The number of pixels whose red is more than half.
- **/
-inline unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
-    unsigned int covered = 0;
-    for (unsigned int row = 0; row < planes.height(); row++) {
-        for (unsigned int column = 0; column < planes.width(); column++) {
-            if (planes.value(v3d::moya::Planes::RED, column, row) > 0.5F) {
-                covered++;
-            }
-        }
-    }
-    return covered;
-}
 
 /**
  * Collects the lines a logger writes while this object exists. It adds a ring buffer sink to
@@ -87,6 +66,36 @@ class Heard {
 };
 
 /**
+ * Pixels inside the quad, spread over it.
+ **/
+inline constexpr unsigned int INSIDE[][2] = {
+    { 14, 8 }, { 32, 8 }, { 50, 8 },
+    { 14, 24 }, { 22, 24 }, { 32, 24 }, { 42, 24 },
+    { 14, 40 }, { 42, 40 }, { 50, 40 }
+};
+
+inline bool read(const std::string & source, v3d::moya::ri::RIBHandler * handler) {
+    v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
+    std::istringstream stream(source);
+    return reader.read(stream, handler);
+}
+
+/**
+ * The number of pixels whose red is more than half.
+ **/
+inline unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
+    unsigned int covered = 0;
+    for (unsigned int row = 0; row < planes.height(); row++) {
+        for (unsigned int column = 0; column < planes.width(); column++) {
+            if (planes.value(v3d::moya::state::Planes::RED, column, row) > 0.5F) {
+                covered++;
+            }
+        }
+    }
+    return covered;
+}
+
+/**
  * A quad 1.8 units across facing the camera, at one sample a pixel under a one pixel box, with
  * the grid size given. At 64 by 48 the quad is 43 pixels across. A grid of 16 is 4 a side, so
  * the quad is split four times over, into 256 pieces under 3 pixels across. A grid of 4096 is
@@ -97,7 +106,7 @@ class Heard {
  **/
 inline boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
     const std::string & varying) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"limits\" \"gridsize\" [" + std::to_string(grid) + "]\n"
         "Format 64 48 1\n"
@@ -110,14 +119,5 @@ inline boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int gr
         "WorldEnd\n", &handler));
     return handler.context().picture();
 }
-
-/**
- * Pixels inside the quad, spread over it.
- **/
-inline constexpr unsigned int INSIDE[][2] = {
-    { 14, 8 }, { 32, 8 }, { 50, 8 },
-    { 14, 24 }, { 22, 24 }, { 32, 24 }, { 42, 24 },
-    { 14, 40 }, { 42, 40 }, { 50, 40 }
-};
 
 };  // namespace v3d::moya::handling

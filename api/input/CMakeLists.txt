@@ -6,7 +6,8 @@ v3d_add_api_library(input
 	"KeyState.h" "KeyState.cpp"
 	"Mouse.h" "Mouse.cpp"
 	"MouseState.h" "MouseState.cpp"
- "DeviceType.h")
+ "DeviceType.h"
+	"internal/Named.h")
 
 # PUBLIC: Device.h and Devices.h name SDL event types, and both dispatch through the event
 # engine.

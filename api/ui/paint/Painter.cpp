@@ -8,6 +8,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 
 #include <algorithm>
+#include <cmath>
 
 namespace v3d::ui::paint {
 
@@ -31,6 +32,21 @@ const float quarterTurn = 1.5707963267948966F;
 const float noTurn = 0.0F;
 const float halfTurn = quarterTurn * 2.0F;
 const float threeQuarterTurn = quarterTurn * 3.0F;
+
+/**
+ * How many bands a shadow's fade is drawn in. Each blends in a straight line, and three are
+ * enough to follow the curve without a visible step.
+ **/
+const unsigned int fadeBands = 3;
+
+/**
+ * How much of a shadow's colour is left at a share of the way out across its fade. All of it is
+ * left at the box's edge and none at the far end, and it falls fastest in the middle. It is half
+ * a turn of a cosine, lifted to run from one down to zero.
+ **/
+float fade(float share) noexcept {
+    return 0.5F + (0.5F * std::cos(halfTurn * share));
+}
 
 /**
  * A rectangle between two corners in any order, and nothing at all when they make no box.
@@ -140,6 +156,55 @@ void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& mi
     strokeBox(canvas, min, max, radius, width, outline);
     const glm::vec2 inset(width, width);
     fillBox(canvas, min + inset, max - inset, std::max(0.0F, radius - width), inside);
+}
+
+void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    const Shadow& shadow) {
+    const float width = shadow.reach;
+    const glm::vec4& colour = shadow.colour;
+    const glm::vec2 size = max - min;
+    if (canvas == nullptr || size.x <= 0.0F || size.y <= 0.0F || colour.a <= 0.0F) {
+        return;
+    }
+    const float corner = std::max(0.0F, std::min(shadow.radius, std::min(size.x, size.y) * 0.5F));
+    fillBox(canvas, min, max, corner, colour);
+    if (width <= 0.0F) {
+        return;
+    }
+
+    // each band runs from near to far past the box's edge. The straight runs stop where the
+    // corners' squares start, and the corners turn about the box's own corner centres, so no
+    // two pieces overlap
+    for (unsigned int band = 0; band < fadeBands; band++) {
+        const float from = static_cast<float>(band) / static_cast<float>(fadeBands);
+        const float to = static_cast<float>(band + 1) / static_cast<float>(fadeBands);
+        const float near = width * from;
+        const float far = width * to;
+        const glm::vec4 in(colour.r, colour.g, colour.b, colour.a * fade(from));
+        const glm::vec4 out(colour.r, colour.g, colour.b, colour.a * fade(to));
+
+        if (size.x > corner * 2.0F) {
+            canvas->rect(glm::vec2(min.x + corner, min.y - far), glm::vec2(max.x - corner, min.y - near),
+                {.topLeft = out, .topRight = out, .bottomRight = in, .bottomLeft = in});
+            canvas->rect(glm::vec2(min.x + corner, max.y + near), glm::vec2(max.x - corner, max.y + far),
+                {.topLeft = in, .topRight = in, .bottomRight = out, .bottomLeft = out});
+        }
+        if (size.y > corner * 2.0F) {
+            canvas->rect(glm::vec2(min.x - far, min.y + corner), glm::vec2(min.x - near, max.y - corner),
+                {.topLeft = out, .topRight = in, .bottomRight = in, .bottomLeft = out});
+            canvas->rect(glm::vec2(max.x + near, min.y + corner), glm::vec2(max.x + far, max.y - corner),
+                {.topLeft = in, .topRight = out, .bottomRight = out, .bottomLeft = in});
+        }
+
+        const auto bend = [&](const glm::vec2& centre, float start) {
+            canvas->ring({.centre = centre, .outer = corner + far, .inner = corner + near, .sides = cornerSides, .start = start, .sweep = quarterTurn},
+                {.inner = in, .outer = out});
+        };
+        bend(glm::vec2(min.x + corner, min.y + corner), halfTurn);
+        bend(glm::vec2(max.x - corner, min.y + corner), threeQuarterTurn);
+        bend(glm::vec2(max.x - corner, max.y - corner), noTurn);
+        bend(glm::vec2(min.x + corner, max.y - corner), quarterTurn);
+    }
 }
 
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept {

@@ -6,6 +6,8 @@
 #include "StatisticsOverlay.h"
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Painter.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <algorithm>
@@ -20,39 +22,6 @@
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-
-namespace {
-
-/**
- * The gap from the corner of the canvas to the box, and from the box to the text inside it.
- **/
-const float margin = 8.0F;
-const float padding = 6.0F;
-
-/**
- * A line's height as a multiple of the size the readout is drawn at.
- **/
-const float lineSpacing = 1.3F;
-
-/**
- * The background is translucent, so that the scene stays visible under the numbers.
- **/
-constexpr glm::vec4 background(0.0F, 0.0F, 0.0F, 0.6F);
-constexpr glm::vec4 foreground(0.9F, 0.9F, 0.9F, 1.0F);
-
-const double nanosecondsPerMillisecond = 1000000.0;
-const double nanosecondsPerSecond = 1000000000.0;
-
-/**
- * A duration in nanoseconds, as milliseconds to one decimal place.
- **/
-std::string milliseconds(std::uint64_t nanoseconds) {
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(1) << (static_cast<double>(nanoseconds) / nanosecondsPerMillisecond) << " ms";
-    return out.str();
-}
-
-};  // namespace
 
 namespace v3d::ui::shell {
 
@@ -150,7 +119,7 @@ std::vector<std::string> StatisticsOverlay::content(const Sample& sample) const 
 
 /**
  **/
-void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample) {
+void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample, const paint::Dressing& dress) {
     if (!visible_ || canvas == nullptr || !text_ || !text_->loaded()) {
         return;
     }
@@ -166,16 +135,24 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // the box goes on before the glyphs do: the canvas is drawn in the order it is filled,
     // so a background added after the text it backs would cover it
-    canvas->rect(glm::vec2(margin, margin),
+    glm::vec4 plate = dress.panel;
+    plate.a *= std::clamp(dress.plateOpacity, 0.0F, 1.0F);
+    paint::fillBox(canvas, glm::vec2(margin, margin),
         glm::vec2(margin + widest + (padding * 2.0F), margin + (lineHeight * static_cast<float>(content.size())) + (padding * 2.0F)),
-        background);
+        dress.radius, plate);
 
     // the pen is the baseline of the line, which sits one font size below the top of it
     float pen = margin + padding + size_;
     for (const std::string& line : content) {
-        text_->draw(canvas, line, glm::vec2(margin + padding, pen), foreground, size_);
+        text_->draw(canvas, line, glm::vec2(margin + padding, pen), dress.text, size_);
         pen += lineHeight;
     }
+}
+
+std::string StatisticsOverlay::milliseconds(std::uint64_t nanoseconds) {
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << (static_cast<double>(nanoseconds) / nanosecondsPerMillisecond) << " ms";
+    return out.str();
 }
 
 };  // namespace v3d::ui::shell

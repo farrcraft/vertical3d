@@ -119,6 +119,21 @@ class World final {
 
  private:
     /**
+     * The push constant block, laid out as world.vert and world.frag declare it. The tint is the
+     * vertex stage's and the texture's slot the fragment stage's.
+     **/
+    struct Push final {
+        glm::vec4 tint;
+        uint32_t texture;
+    };
+
+    /**
+     * What each buffer starts at, in bytes. They double from here when a canvas does not fit.
+     **/
+    static constexpr VkDeviceSize initialVertexBytes = 64ULL * 1024;
+    static constexpr VkDeviceSize initialIndexBytes = 16ULL * 1024;
+
+    /**
      * Compile the world quad pipeline for each blend twice: once for a pass with a depth
      * attachment and once for a pass without. Dynamic rendering matches a pipeline to the
      * attachments of the pass it draws into.

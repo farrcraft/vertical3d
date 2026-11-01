@@ -40,10 +40,11 @@ bool AppEngine::release() {
 - **The constructor declares the commands.** `Options::menu` declares the game menu's commands,
   and `Options::statistics` names the command that shows and hides the statistics overlay. A
   part not asked for declares nothing.
-- **`start(suspend)` builds the ui** and loads the `ui` config document into it. With
-  `Options::menu` it builds a `GameMenu` on the document's `game-menu` container, which calls
-  `suspend` as it opens and closes. An app with no `ui` document has a ui with nothing in it.
-  `start()` returns false when the document does not load.
+- **`start(suspend)` builds the ui** and loads the `ui` config document into it, with the
+  themes of `Options::theme` beneath its own. With `Options::menu` it builds a `GameMenu` on the
+  document's `game-menu` container, which calls `suspend` as it opens and closes. An app with no
+  `ui` document has a ui with nothing in it but that theme. `start()` returns false when either
+  document does not load.
 - **`present(renderer, options)` builds the `Screen`** over the app's `WindowRenderer`. The options
   are the screen's own: the text size, the dressing, and whether it builds an overlay or an
   immediate layer. [ui/Setup.md](../ui/Setup.md#screen-the-renderers-and-the-canvas) covers
@@ -52,6 +53,32 @@ bool AppEngine::release() {
   released, because the screen holds textures the renderer's device made.
 - A shell holds the address of its own members in the commands it declares, so it cannot be
   copied or moved. An app holds it as a member, not through a pointer it replaces.
+
+## The games' look
+
+Every game is drawn in one designed shell, and names only its title and its accent.
+
+- **The game theme** is `ui/game.json`, in the root `data/` directory that every game copies
+  beside its own data. `Options::theme` names it by default, and the shell puts it beneath the
+  game's own theme, as [ui/Themes.md](../ui/Themes.md#a-theme-beneath-another) describes. It
+  sets the panel 90% opaque, rounder corners, a 2 pixel focus ring, a larger shadow and a
+  menu that opens over 0.18 s. An app that keeps a theme of its own, as the editor does, sets
+  `Options::theme` empty.
+- **A game names its title and accent in its ui document**: the title as the game menu's
+  `title`, and the accent in a `ui` style named `default`:
+
+  ```json
+  { "class": "ui", "name": "default",
+    "colors": [ { "name": "accent", "value": [0.95, 0.55, 0.20, 1.0] } ] }
+  ```
+
+- **`Shell::game()` is the screen a game is drawn on**: body text 26 pixels high in a window
+  1080 pixels high, scaled with the window's height. A game passes it to `present()`, and may
+  change the parts it builds, as voxel does to drop the overlay and add an immediate layer.
+- **The game is paused while the menu is up**, through the `suspend` callback each game gives
+  `start()`.
+
+Background: [ADR-0130](../../adr/0130-shell-games-share-one-designed-shell-with-their-own-accent.md)
 
 ## Drawing
 

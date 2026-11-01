@@ -35,18 +35,27 @@
 namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
+
 typedef v3d::render::offline::rib::ParameterList ParameterList;
+
 typedef v3d::render::offline::trace::Scene Scene;
 
 /** What the derivatives fixture writes into Ci. **/
 enum class Chosen : std::uint8_t { DU_P, DV_P, NORMAL, STEPS };
+
+/** Where on the triangle a case looks, and how many pixels a unit its camera has. **/
+struct Look {
+    float pixels = 1.0F;
+    /** How far along each edge the point is. **/
+    float along = 0.25F;
+};
 
 /**
  * The derivatives fixture, writing one of its answers. It is a shader on the suite's search
  * path rather than a standard one.
  **/
 v3d::render::offline::sl::Placed derivatives(Chosen which) {
-    static v3d::render::offline::sl::ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
+    v3d::render::offline::sl::ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
     shaders.searchpath("data");
     ParameterList parameters;
     parameters.add("which", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1),
@@ -98,13 +107,6 @@ Scene triangle(Chosen which, float scale) {
     camera(&scene, scale);
     return scene;
 }
-
-/** Where on the triangle a case looks, and how many pixels a unit its camera has. **/
-struct Look {
-    float pixels = 1.0F;
-    /** How far along each edge the point is. **/
-    float along = 0.25F;
-};
 
 /** What the fixture writes at a point on the triangle the same way along each edge. **/
 glm::vec3 shadeTriangle(Chosen which, const Look & look) {

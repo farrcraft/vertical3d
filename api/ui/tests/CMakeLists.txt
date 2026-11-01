@@ -12,6 +12,7 @@ v3d_add_test(ui
 	"GameMenuTest.cpp"
 	"ImageTest.cpp"
 	"ImmediateInputTest.cpp"
+	"ImmediatePanelTest.cpp"
 	"ImmediatePopupTest.cpp"
 	"ImmediateTableTest.cpp"
 	"ImmediateTest.cpp"
@@ -21,6 +22,7 @@ v3d_add_test(ui
 	"LayoutTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
+	"PaletteTest.cpp"
 	"PromptTest.cpp"
 	"ResolverTest.cpp"
 	"ScreenTest.cpp"
@@ -34,6 +36,8 @@ v3d_add_test(ui
 	"TextRendererTest.cpp"
 	"ThemeTest.cpp"
 	"ToolbarTest.cpp"
+	"TooltipTest.cpp"
+	"TransitionTest.cpp"
 	"TypeTest.cpp")
 
 target_link_libraries(v3dtest_ui PRIVATE

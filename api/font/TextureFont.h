@@ -17,6 +17,10 @@
 #include <glm/glm.hpp>
 #include <boost/shared_ptr.hpp>
 
+namespace v3d::font::internal {
+class Freetype;
+};  // namespace v3d::font::internal
+
 namespace v3d::font {
 
 class TextureFont {
@@ -65,7 +69,8 @@ class TextureFont {
     boost::shared_ptr<Glyph> glyph(char32_t charcode);
 
     /**
-     * The glyph already packed for a charcode, or null.
+     * The glyph already packed for a charcode, or null. A charcode this face lacks is looked
+     * up in the fallback, when there is one.
      *
      * glyph() rasterizes and packs a charcode it has not seen. This never does, so the atlas
      * is unchanged. A caller that has uploaded the atlas looks glyphs up through this.
@@ -75,6 +80,19 @@ class TextureFont {
     /**
      **/
     void atlas(const boost::shared_ptr<v3d::image::TextureAtlas>& atlas);
+
+    /**
+     * Another face for the code points this one lacks.
+     *
+     * Packing gives the fallback each code point this face has no glyph for, and packed()
+     * looks there for it, so text that mixes the two lays out as one font. The fallback packs
+     * into its own atlas, which has to be this face's, and is rasterized at its own size,
+     * which has to match this face's. Several faces may share one fallback, and a code point
+     * is packed into it once.
+     *
+     * Without a fallback, a code point this face lacks is packed as the face's missing glyph.
+     **/
+    void fallback(const boost::shared_ptr<TextureFont>& font);
 
     /**
      * Rasterize each character of a UTF-8 string and pack it into the atlas.
@@ -123,11 +141,36 @@ class TextureFont {
      **/
     bool pack(const std::u32string& charcodes);
 
+    /**
+     * Rasterize one code point and pack it. The face has to be loaded, and is released when
+     * this fails.
+     *
+     * @param sdf whether the glyph is rendered as a distance field
+     * @param missed counts the glyph when it does not fit the atlas, which is not a failure
+     * @return false when FreeType fails to load, render or stroke the glyph
+     **/
+    bool packGlyph(char32_t charcode, bool sdf, unsigned int* missed);
+
+    /**
+     * Divide code points between this face and its fallback, leaving out any this face has
+     * already packed. The face has to be loaded.
+     *
+     * @param mine what this face packs, including a code point it lacks when it has no fallback
+     * @param lacking what the fallback packs
+     **/
+    void divide(const std::u32string& charcodes, std::u32string* mine, std::u32string* lacking) const;
+
+    /**
+     * The glyph this face packed for a charcode, not looking in the fallback.
+     **/
+    boost::shared_ptr<Glyph> own(char32_t charcode) const;
+
     /** The number of weights in the filter applied across subpixels. **/
     static constexpr std::size_t LCD_FILTER_TAPS = 5;
 
     std::vector<boost::shared_ptr<Glyph> > glyphs_;
     boost::shared_ptr<v3d::image::TextureAtlas> atlas_;
+    boost::shared_ptr<TextureFont> fallback_;
     std::string filename_;
     float size_;
     unsigned int spread_;
@@ -143,8 +186,7 @@ class TextureFont {
     float underlinePosition_;
     float underlineThickness_;
 
-    class Freetype;
-    boost::shared_ptr<Freetype> freetype_;
+    boost::shared_ptr<internal::Freetype> freetype_;
     boost::shared_ptr<v3d::log::Logger> logger_;
 };
 };  // namespace v3d::font

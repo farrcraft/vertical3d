@@ -19,8 +19,10 @@
 #include <variant>
 #include <vector>
 
+#include "Blob.h"
 #include "Bytes.h"
 #include "Codec.h"
+#include "Cursor.h"
 #include "Payload.h"
 
 #include <boost/json.hpp>
@@ -28,59 +30,22 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
-
-namespace {
+namespace v3d::editor::store {
 
 /**
- * The size of one entry of each blob. A curve is six 32 bit numbers, a point three floats, a
- * Bezier point's handle types two bytes, and a weight or a knot one float.
  **/
-constexpr std::size_t CURVE_SIZE = 6 * sizeof(std::uint32_t);
-constexpr std::size_t POINT_SIZE = 3 * sizeof(float);
-constexpr std::size_t HANDLE_SIZE = 2 * sizeof(std::uint8_t);
-constexpr std::size_t NUMBER_SIZE = sizeof(float);
-
-/**
- * The blobs a curve item writes: its curves, points, handles, weights and knots.
- **/
-constexpr std::size_t BLOBS = 5;
-
-/**
- * The most pieces a segment is drawn in. More would only slow the drawing.
- **/
-constexpr float MOST_PIECES = 1024.0F;
-
-/**
- * Each type's number in the curves blob.
- **/
-enum class Type : std::uint8_t { Poly = 0, Bezier = 1, CatmullRom = 2, Nurbs = 3 };
-
-/**
- * A curve's entry in the curves blob.
- **/
-struct Record {
-    Type type = Type::Poly;
-    bool closed = false;
-    bool weighted = false;
-    std::uint32_t order = 0;
-    std::uint32_t points = 0;
-    std::uint32_t knots = 0;
-};
-
-void put(std::vector<std::byte>* bytes, const Record& record) {
-    v3d::editor::put(bytes, static_cast<std::uint32_t>(record.type));
-    v3d::editor::put(bytes, static_cast<std::uint32_t>(record.closed ? 1 : 0));
-    v3d::editor::put(bytes, static_cast<std::uint32_t>(record.weighted ? 1 : 0));
-    v3d::editor::put(bytes, record.order);
-    v3d::editor::put(bytes, record.points);
-    v3d::editor::put(bytes, record.knots);
+void CurveCodec::put(std::vector<std::byte>* bytes, const Record& record) {
+    v3d::editor::store::put(bytes, static_cast<std::uint32_t>(record.type));
+    v3d::editor::store::put(bytes, static_cast<std::uint32_t>(record.closed ? 1 : 0));
+    v3d::editor::store::put(bytes, static_cast<std::uint32_t>(record.weighted ? 1 : 0));
+    v3d::editor::store::put(bytes, record.order);
+    v3d::editor::store::put(bytes, record.points);
+    v3d::editor::store::put(bytes, record.knots);
 }
 
 /**
- * Read every curve's entry, refusing one whose numbers no curve could have.
  **/
-bool records(const Blob& blob, std::vector<Record>* read, std::string* problem) {
+bool CurveCodec::records(const Blob& blob, std::vector<Record>* read, std::string* problem) {
     Cursor cursor(blob.data);
     for (std::int64_t entry = 0; entry < blob.count; entry++) {
         const auto type = cursor.next<std::uint32_t>();
@@ -102,16 +67,8 @@ bool records(const Blob& blob, std::vector<Record>* read, std::string* problem) 
 }
 
 /**
- * The entries each blob needs to hold for the curves recorded.
  **/
-struct Totals {
-    std::uint64_t points = 0;
-    std::uint64_t handles = 0;
-    std::uint64_t weights = 0;
-    std::uint64_t knots = 0;
-};
-
-Totals totals(const std::vector<Record>& read) {
+CurveCodec::Totals CurveCodec::totals(const std::vector<Record>& read) {
     Totals needed;
     for (const Record& record : read) {
         needed.points += record.type == Type::Bezier ? 3ULL * record.points : record.points;
@@ -122,7 +79,9 @@ Totals totals(const std::vector<Record>& read) {
     return needed;
 }
 
-std::vector<float> floats(Cursor* cursor, std::uint32_t count) {
+/**
+ **/
+std::vector<float> CurveCodec::floats(Cursor* cursor, std::uint32_t count) {
     std::vector<float> read;
     read.reserve(count);
     for (std::uint32_t each = 0; each < count; each++) {
@@ -131,7 +90,9 @@ std::vector<float> floats(Cursor* cursor, std::uint32_t count) {
     return read;
 }
 
-std::vector<glm::vec3> vectors(Cursor* cursor, std::uint32_t count) {
+/**
+ **/
+std::vector<glm::vec3> CurveCodec::vectors(Cursor* cursor, std::uint32_t count) {
     std::vector<glm::vec3> read;
     read.reserve(count);
     for (std::uint32_t each = 0; each < count; each++) {
@@ -141,20 +102,8 @@ std::vector<glm::vec3> vectors(Cursor* cursor, std::uint32_t count) {
 }
 
 /**
- * The cursors over the blobs a curve's numbers are read from.
  **/
-struct Cursors {
-    Cursor points;
-    Cursor handles;
-    Cursor weights;
-    Cursor knots;
-};
-
-/**
- * Make one curve from its entry and the blobs' next numbers, or nothing with the reason in
- * problem.
- **/
-bool make(const Record& record, Cursors* from, v3d::curve::Curve* curve, std::string* problem) {
+bool CurveCodec::make(const Record& record, Cursors* from, v3d::curve::Curve* curve, std::string* problem) {
     curve->closed = record.closed;
     switch (record.type) {
         case Type::Poly:
@@ -200,9 +149,8 @@ bool make(const Record& record, Cursors* from, v3d::curve::Curve* curve, std::st
 }
 
 /**
- * Build the curves from their five blobs.
  **/
-bool decode(const Blobs& blobs, v3d::curve::Curves* curves, std::string* problem) {
+bool CurveCodec::decode(const Blobs& blobs, v3d::curve::Curves* curves, std::string* problem) {
     if (blobs.size() != BLOBS || !blobs.contains("curves") || !blobs.contains("points") || !blobs.contains("handles") ||
         !blobs.contains("weights") || !blobs.contains("knots")) {
         *problem = "it does not have exactly its curves, points, handles, weights and knots";
@@ -248,12 +196,10 @@ bool decode(const Blobs& blobs, v3d::curve::Curves* curves, std::string* problem
     return true;
 }
 
-};  // namespace
-
 /**
  **/
-Item::Kind CurveCodec::kind() const noexcept {
-    return Item::Kind::Curve;
+scene::Item::Kind CurveCodec::kind() const noexcept {
+    return scene::Item::Kind::Curve;
 }
 
 /**
@@ -276,8 +222,8 @@ bool CurveCodec::buffered() const noexcept {
 
 /**
  **/
-boost::json::object CurveCodec::payload(const Item& item) const {
-    const Curve& curve = static_cast<const Curve&>(item);
+boost::json::object CurveCodec::payload(const scene::Item& item) const {
+    const scene::Curve& curve = static_cast<const scene::Curve&>(item);
     boost::json::object payload;
     payload["renders"] = curve.style().renders;
     payload["width"] = curve.style().width;
@@ -287,8 +233,8 @@ boost::json::object CurveCodec::payload(const Item& item) const {
 
 /**
  **/
-std::vector<Buffer> CurveCodec::buffers(const Item& item) const {
-    const v3d::curve::Curves& curves = *static_cast<const Curve&>(item).geometry();
+std::vector<Buffer> CurveCodec::buffers(const scene::Item& item) const {
+    const v3d::curve::Curves& curves = *static_cast<const scene::Curve&>(item).geometry();
     Buffer records{ .role = "curves", .count = curves.size() };
     Buffer points{ .role = "points" };
     Buffer handles{ .role = "handles" };
@@ -296,7 +242,7 @@ std::vector<Buffer> CurveCodec::buffers(const Item& item) const {
     Buffer knots{ .role = "knots" };
     auto vectors = [&points](const std::vector<glm::vec3>& from) {
         for (const glm::vec3& point : from) {
-            v3d::editor::put(&points.data, point);
+            v3d::editor::store::put(&points.data, point);
         }
         points.count += from.size();
     };
@@ -317,8 +263,8 @@ std::vector<Buffer> CurveCodec::buffers(const Item& item) const {
                     record.type = Type::Bezier;
                     for (const v3d::curve::BezierPoint& point : shape.points) {
                         vectors({ point.position, point.left, point.right });
-                        v3d::editor::put(&handles.data, static_cast<std::uint8_t>(point.leftType));
-                        v3d::editor::put(&handles.data, static_cast<std::uint8_t>(point.rightType));
+                        v3d::editor::store::put(&handles.data, static_cast<std::uint8_t>(point.leftType));
+                        v3d::editor::store::put(&handles.data, static_cast<std::uint8_t>(point.rightType));
                         handles.count++;
                     }
                 } else {
@@ -328,11 +274,11 @@ std::vector<Buffer> CurveCodec::buffers(const Item& item) const {
                     record.knots = static_cast<std::uint32_t>(shape.knots.size());
                     vectors(shape.points);
                     for (const float weight : shape.weights) {
-                        v3d::editor::put(&weights.data, weight);
+                        v3d::editor::store::put(&weights.data, weight);
                     }
                     weights.count += shape.weights.size();
                     for (const float knot : shape.knots) {
-                        v3d::editor::put(&knots.data, knot);
+                        v3d::editor::store::put(&knots.data, knot);
                     }
                     knots.count += shape.knots.size();
                 }
@@ -345,11 +291,11 @@ std::vector<Buffer> CurveCodec::buffers(const Item& item) const {
 
 /**
  **/
-boost::shared_ptr<Item> CurveCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
+boost::shared_ptr<scene::Item> CurveCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
     if (!exactly(payload, { "renders", "width", "resolution" }, problem)) {
         return nullptr;
     }
-    Curve::Style style;
+    scene::Curve::Style style;
     float resolution = 0.0F;
     if (!payload.at("renders").is_bool() || !numbers(payload.at("width"), 1, &style.width) ||
         !numbers(payload.at("resolution"), 1, &resolution)) {
@@ -371,9 +317,9 @@ boost::shared_ptr<Item> CurveCodec::read(const boost::json::object& payload, con
     if (!decode(blobs, geometry.get(), problem)) {
         return nullptr;
     }
-    const boost::shared_ptr<Curve> curve = boost::make_shared<Curve>(geometry);
+    const boost::shared_ptr<scene::Curve> curve = boost::make_shared<scene::Curve>(geometry);
     curve->style(style);
     return curve;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

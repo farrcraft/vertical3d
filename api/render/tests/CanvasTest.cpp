@@ -245,6 +245,59 @@ BOOST_AUTO_TEST_CASE(a_ring_with_no_hole_is_a_wedge) {
 }
 
 /**
+ * A rectangle given a colour per corner carries each to the vertex at that corner, and joins
+ * the untextured batch.
+ **/
+BOOST_AUTO_TEST_CASE(a_rectangle_blends_from_corner_to_corner) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
+    const glm::vec4 clear(0.0F, 0.0F, 0.0F, 0.0F);
+
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white);
+    canvas.rect(glm::vec2(10.0F, 20.0F), glm::vec2(30.0F, 50.0F),
+        {.topLeft = red, .topRight = green, .bottomRight = white, .bottomLeft = clear});
+
+    BOOST_CHECK_EQUAL(canvas.batches().size(), 1);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8);
+    for (std::size_t index = 4; index < 8; index++) {
+        const v3d::render::realtime::canvas::Canvas::Vertex& vertex = canvas.vertices()[index];
+        const bool left = vertex.position.x < 20.0F;
+        const bool top = vertex.position.y < 35.0F;
+        glm::vec4 expected = left ? clear : white;
+        if (top) {
+            expected = left ? red : green;
+        }
+        BOOST_CHECK(vertex.colour == expected);
+    }
+}
+
+/**
+ * A blended ring is its inner colour on its inner radius and its outer colour on its outer
+ * one. With no hole, its centre takes the inner colour and its rim the outer.
+ **/
+BOOST_AUTO_TEST_CASE(a_blended_ring_runs_from_its_inner_colour_to_its_outer) {
+    const glm::vec2 centre(50.0F, 50.0F);
+    const glm::vec4 clear(1.0F, 0.0F, 0.0F, 0.0F);
+
+    v3d::render::realtime::canvas::Canvas band;
+    band.ring({.centre = centre, .outer = 10.0F, .inner = 6.0F, .sides = 4, .start = 0.0F, .sweep = 1.5F}, {.inner = red, .outer = clear});
+    BOOST_REQUIRE_EQUAL(band.vertices().size(), 10);
+    for (const v3d::render::realtime::canvas::Canvas::Vertex& vertex : band.vertices()) {
+        const glm::vec2 offset = glm::vec2(vertex.position) - centre;
+        const float distance = std::sqrt((offset.x * offset.x) + (offset.y * offset.y));
+        BOOST_CHECK(vertex.colour == (distance < 8.0F ? red : clear));
+    }
+
+    v3d::render::realtime::canvas::Canvas wedge;
+    wedge.ring({.centre = centre, .outer = 10.0F, .inner = 0.0F, .sides = 4, .start = 0.0F, .sweep = 1.5F}, {.inner = red, .outer = clear});
+    BOOST_REQUIRE_EQUAL(wedge.vertices().size(), 6);
+    BOOST_CHECK(wedge.vertices()[0].colour == red);
+    for (std::size_t index = 1; index < wedge.vertices().size(); index++) {
+        BOOST_CHECK(wedge.vertices()[index].colour == clear);
+    }
+}
+
+/**
  * Too few sides to be a shape draws nothing rather than emitting degenerate triangles.
  **/
 BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
@@ -253,6 +306,49 @@ BOOST_AUTO_TEST_CASE(a_circle_of_fewer_than_three_sides_draws_nothing) {
     canvas.circle(glm::vec2(0.0F, 0.0F), 10.0F, 2, white);
 
     BOOST_CHECK(canvas.empty());
+}
+
+/**
+ * A fade multiplies the alpha of everything drawn under it, text included, and nested fades
+ * multiply. Unfading goes back to the opacity before, and unfading too far leaves it whole.
+ **/
+BOOST_AUTO_TEST_CASE(a_fade_multiplies_the_alpha_of_what_is_drawn_under_it) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const glm::vec2 low(0.0F, 0.0F);
+    const glm::vec2 high(1.0F, 1.0F);
+
+    canvas.fade(0.5F);
+    canvas.rect(low, high, red);
+    canvas.fade(0.5F);
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> glyph;
+    glyph.reserve(4);
+    for (int corner = 0; corner < 4; corner++) {
+        glyph.push_back({.position = glm::vec2(static_cast<float>(corner), 0.0F), .uv = glm::vec2(0.0F), .colour = white});
+    }
+    canvas.text(glyph, std::vector<uint32_t>{0, 2, 1, 0, 3, 2}, v3d::render::realtime::TextureHandle(4));
+    canvas.unfade();
+    canvas.rect(low, high, red);
+    canvas.unfade();
+    canvas.unfade();
+    canvas.rect(low, high, red);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.a, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[4].colour.a, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[8].colour.a, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(canvas.vertices()[12].colour.a, 1.0F, 0.001F);
+    // the colour itself is untouched
+    BOOST_CHECK_CLOSE(canvas.vertices()[0].colour.r, 1.0F, 0.001F);
+}
+
+/**
+ * Clearing the canvas drops any fade left open, so one frame's cannot dim the next.
+ **/
+BOOST_AUTO_TEST_CASE(clearing_drops_what_is_faded) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.fade(0.25F);
+    canvas.clear();
+    BOOST_CHECK_CLOSE(canvas.opacity(), 1.0F, 0.001F);
 }
 
 /**
@@ -536,6 +632,26 @@ BOOST_AUTO_TEST_CASE(a_pixel_maps_back_into_the_space) {
     BOOST_CHECK_CLOSE(centre.x, 400.0F, 0.001F);
     BOOST_CHECK_CLOSE(centre.y, 300.0F, 0.001F);
     BOOST_CHECK(canvas.toSpace(glm::vec2(100.0F, 450.0F)).x < 0.0F);
+}
+
+/**
+ * A point in the space lands in the canvas's pixels inside the viewport, so text drawn in
+ * pixels lines up with what the space holds. Mapped back, the pixel is the point again.
+ **/
+BOOST_AUTO_TEST_CASE(a_point_in_the_space_lands_in_its_pixels) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(1600, 900));
+    canvas.space(glm::vec2(800.0F, 600.0F), v3d::render::realtime::canvas::Canvas::Fit::Contain);
+
+    const glm::vec2 corner = canvas.toPixels(glm::vec2(0.0F, 0.0F));
+    BOOST_CHECK_CLOSE(corner.x, 200.0F, 0.001F);
+    BOOST_CHECK_SMALL(corner.y, 0.001F);
+    const glm::vec2 quarter = canvas.toPixels(glm::vec2(200.0F, 150.0F));
+    BOOST_CHECK_CLOSE(quarter.x, 500.0F, 0.001F);
+    BOOST_CHECK_CLOSE(quarter.y, 225.0F, 0.001F);
+    const glm::vec2 back = canvas.toSpace(quarter);
+    BOOST_CHECK_CLOSE(back.x, 200.0F, 0.001F);
+    BOOST_CHECK_CLOSE(back.y, 150.0F, 0.001F);
 }
 
 /**

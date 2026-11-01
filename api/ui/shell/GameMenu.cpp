@@ -9,6 +9,7 @@
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 
 #include <string>
@@ -45,7 +46,7 @@ void GameMenu::declare(v3d::event::Commands& commands, const boost::shared_ptr<G
             menu->toggle();
         }
     });
-    for (const char* const name : { "menuPrevious", "menuNext", "selectMenu" }) {
+    for (const char* const name : { "menuPrevious", "menuNext", "selectMenu", "menuLess", "menuMore" }) {
         commands.addPress(std::string("ui::") + name, [&menu, name]() {
             if (menu) {
                 menu->navigate(name);
@@ -92,6 +93,7 @@ void GameMenu::toggle() {
         if (suspend_) {
             suspend_(true);
         }
+        holder->backdrop(true);
         holder->visible(true);
         return;
     }
@@ -104,6 +106,13 @@ void GameMenu::toggle() {
     if (suspend_) {
         suspend_(false);
     }
+}
+
+/**
+ **/
+boost::shared_ptr<component::menu::Item> GameMenu::item(std::string_view command) const {
+    const boost::shared_ptr<component::menu::Menu> active = menu();
+    return active ? active->find(command) : nullptr;
 }
 
 /**
@@ -146,6 +155,10 @@ bool GameMenu::navigate(const std::string_view& command) {
         active->next();
     } else if (command == "selectMenu") {
         active->activate();
+    } else if (command == "menuLess") {
+        active->step(-1);
+    } else if (command == "menuMore") {
+        active->step(1);
     } else {
         return false;
     }

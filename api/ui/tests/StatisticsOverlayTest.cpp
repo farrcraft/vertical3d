@@ -3,7 +3,12 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Manager.h>
+#include <api/image/Image.h>
+#include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 
@@ -12,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -131,6 +137,37 @@ BOOST_AUTO_TEST_CASE(a_named_device_is_the_top_line) {
     BOOST_CHECK_EQUAL(content.front(), "Test GPU");
     BOOST_CHECK_EQUAL(content[1], frame.front());
     BOOST_CHECK_EQUAL(content.back(), "terrain 1.0 ms");
+}
+
+/**
+ * The readout is drawn in the dressing it is given: its plate in the panel's colour made as
+ * opaque as the plate opacity, and its text in the text colour.
+ **/
+BOOST_AUTO_TEST_CASE(the_readout_is_drawn_in_the_dressing_it_is_given) {
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", logger);
+    const v3d::ui::paint::TextRenderer::Upload upload = [](const boost::shared_ptr<v3d::image::Image>&) {
+        return v3d::render::realtime::TextureHandle(1);
+    };
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = boost::make_shared<v3d::ui::paint::TextRenderer>(
+        assets, logger, upload, v3d::ui::paint::TextRenderer::baseSize, v3d::ui::paint::TextRenderer::Faces(),
+        v3d::ui::paint::TextRenderer::ascii);
+    BOOST_REQUIRE(text->loaded());
+    v3d::ui::shell::StatisticsOverlay overlay(text, v3d::ui::shell::StatisticsOverlay::defaultSize);
+    overlay.visible(true);
+
+    v3d::ui::paint::Dressing dress;
+    dress.panel = glm::vec4(0.2F, 0.4F, 0.6F, 1.0F);
+    dress.plateOpacity = 0.5F;
+    dress.text = glm::vec4(0.9F, 0.8F, 0.1F, 1.0F);
+    dress.radius = 0.0F;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    overlay.draw(&canvas, v3d::ui::shell::StatisticsOverlay::Sample(), dress);
+
+    BOOST_REQUIRE(canvas.vertices().size() > 4);
+    BOOST_CHECK(canvas.vertices()[0].colour == glm::vec4(0.2F, 0.4F, 0.6F, 0.5F));
+    BOOST_CHECK(canvas.vertices().back().colour == dress.text);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

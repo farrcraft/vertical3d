@@ -22,6 +22,10 @@
 #include <api/ui/component/TabPage.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
@@ -293,6 +297,38 @@ BOOST_AUTO_TEST_CASE(a_button_in_a_tree_is_hovered_under_the_cursor) {
 }
 
 /**
+ * A press on a button draws it in the pressed colour until the press comes up. Let go on the
+ * button, it is hovered again. Let go off it, it is not, and moving back onto it lights it.
+ **/
+BOOST_AUTO_TEST_CASE(a_held_button_is_drawn_pressed) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::make_shared<v3d::ui::component::Button>();
+    button->label("Start");
+    fixture.place(button, glm::vec2(100.0F, 50.0F), glm::vec2(120.0F, 30.0F));
+    fixture.draw();
+
+    const glm::vec2 on(160.0F, 65.0F);
+    fixture.cursor->motion(on);
+    BOOST_CHECK(fixture.cursor->press(on));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_PRESS);
+    fixture.draw();
+    BOOST_REQUIRE(!fixture.canvas.vertices().empty());
+    BOOST_CHECK(fixture.canvas.vertices().front().colour == fixture.renderer.dressing().pressed);
+
+    BOOST_CHECK(fixture.cursor->release(on));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
+
+    BOOST_CHECK(fixture.cursor->press(on));
+    BOOST_CHECK(fixture.cursor->release(glm::vec2(400.0F, 400.0F)));
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_NORMAL);
+    BOOST_CHECK(!fixture.cursor->hovered());
+
+    fixture.cursor->motion(on);
+    BOOST_CHECK(button->state() == v3d::ui::component::Button::STATE_HOVER);
+}
+
+/**
  * Only one thing is hovered at a time, and it is the one a press would land on - so moving
  * between two overlapping buttons takes the highlight off the one underneath.
  **/
@@ -504,6 +540,44 @@ BOOST_AUTO_TEST_CASE(a_strip_takes_a_press_before_the_tree) {
 }
 
 /**
+ * An open menu bar takes a press before any container, so a panel it drops over a container
+ * listed before its own still gets the press that lands on it.
+ **/
+BOOST_AUTO_TEST_CASE(an_open_menu_takes_a_press_before_any_container) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = boost::make_shared<v3d::ui::component::menu::Menu>(fixture.dispatcher);
+    const boost::shared_ptr<v3d::ui::component::menu::Item> open =
+        boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Action, "Open");
+    open->event(v3d::event::Event("open", fixture.context));
+    file->addItem(open);
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::make_shared<v3d::ui::component::menu::Bar>();
+    bar->add("File", file);
+    fixture.container->add(bar);
+
+    // a container listed first, whose button covers everything under the bar
+    BOOST_REQUIRE(fixture.ui->add(boost::json::parse(R"({ "containers": [ { "name": "under", "visible": true, "components": [] } ] })").as_object(), "hud"));
+    BOOST_REQUIRE_EQUAL(fixture.ui->containers().front()->name(), "under");
+    const boost::shared_ptr<v3d::ui::Container> under = fixture.ui->containers().front();
+    const boost::shared_ptr<v3d::ui::component::Button> cover = boost::make_shared<v3d::ui::component::Button>();
+    cover->event(v3d::event::Event("cover", fixture.context));
+    const float below = fixture.renderer.dressing().barHeight + 1.0F;
+    cover->layout().y = v3d::ui::Length(below, v3d::ui::Length::Unit::Pixels);
+    cover->layout().width = v3d::ui::Length(800.0F, v3d::ui::Length::Unit::Pixels);
+    cover->layout().height = v3d::ui::Length(600.0F - below, v3d::ui::Length::Unit::Pixels);
+    under->add(cover);
+
+    bar->open(0);
+    fixture.canvas.clear();
+    fixture.renderer.draw(&fixture.canvas, *under);
+    fixture.draw();
+    BOOST_REQUIRE(open->position().y >= below);
+
+    BOOST_CHECK(fixture.cursor->press(open->position() + (open->size() * 0.5F)));
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::open");
+}
+
+/**
  * A strip set not pickable is offered nothing: a press on its empty run and on its button
  * both reach the tree under it, and the cursor moving over it lights nothing of the strip's.
  **/
@@ -533,6 +607,32 @@ BOOST_AUTO_TEST_CASE(a_strip_that_is_not_pickable_lets_a_press_through) {
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 2U);
     BOOST_CHECK_EQUAL(fixture.sent[0], "test::under");
     BOOST_CHECK_EQUAL(fixture.sent[1], "test::under");
+}
+
+/**
+ * What the cursor rests on is written on the ui for a tooltip: a component in the tree, or a
+ * toolbar's button. A press clears it until the cursor moves again.
+ **/
+BOOST_AUTO_TEST_CASE(the_cursor_says_what_it_rests_on) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Button> under = boost::make_shared<v3d::ui::component::Button>();
+    fixture.place(under, glm::vec2(0.0F, 200.0F), glm::vec2(100.0F, 100.0F));
+    const boost::shared_ptr<v3d::ui::component::Toolbar> strip =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Top);
+    const boost::shared_ptr<v3d::ui::component::Button> go = boost::make_shared<v3d::ui::component::Button>();
+    go->label("Go");
+    strip->add(go);
+    fixture.container->add(strip);
+    fixture.draw();
+
+    fixture.cursor->motion(glm::vec2(50.0F, 250.0F));
+    BOOST_CHECK(fixture.ui->hovered() == under);
+    fixture.cursor->motion(go->position() + go->size() * 0.5F);
+    BOOST_CHECK(fixture.ui->hovered() == go);
+    fixture.cursor->press(go->position() + go->size() * 0.5F);
+    BOOST_CHECK(!fixture.ui->hovered());
+    fixture.cursor->motion(glm::vec2(700.0F, 500.0F));
+    BOOST_CHECK(!fixture.ui->hovered());
 }
 
 /**

@@ -12,6 +12,7 @@
 #include <api/shell/Shell.h>
 #include <api/ui/shell/Screen.h>
 #include <demos/odyssey/src/engine/Player.h>
+#include <demos/odyssey/src/tile/Tile.h>
 #include <demos/odyssey/src/tile/World.h>
 
 #include <string>
@@ -66,6 +67,39 @@ class Renderer final {
     void shutdown();
 
  private:
+    /**
+     * The image file of the player's sprite, the only texture odyssey draws.
+     **/
+    static constexpr const char* spriteName = "sample.png";
+
+    static constexpr glm::vec4 clearColour{0.05F, 0.05F, 0.07F, 1.0F};
+    static constexpr glm::vec4 white{1.0F, 1.0F, 1.0F, 1.0F};
+
+    static constexpr glm::vec4 wallColour{0.35F, 0.35F, 0.40F, 1.0F};
+    static constexpr glm::vec4 crateColour{0.45F, 0.33F, 0.18F, 1.0F};
+    static constexpr glm::vec4 floorColour{0.14F, 0.15F, 0.18F, 1.0F};
+
+    /**
+     * How much of a tile's colour is left when it is drawn from memory rather than from sight.
+     *
+     * Dimmed rather than recoloured, so a remembered wall still looks like a wall but is
+     * visibly out of date.
+     **/
+    static constexpr float rememberedLight = 0.4F;
+
+    /**
+     * A hairline of the clear colour around each tile, so a board of flat quads reads as a
+     * grid rather than as one field of colour.
+     **/
+    static constexpr float tileGap = 1.0F;
+
+    /**
+     * A tile is drawn as its kind's colour. There is no tile artwork, so the kind is the only
+     * thing that tells tiles apart. An unset texture handle draws against the renderer's white
+     * texture, so the quad comes out as the colour alone.
+     **/
+    static glm::vec4 tileColour(odyssey::tile::Kind kind);
+
     /**
      * The loaded regions, one untextured quad per tile on screen. They are drawn first and the
      * pass is in submission order, so everything else lands on top of them.

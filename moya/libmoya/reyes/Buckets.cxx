@@ -6,7 +6,7 @@
 #include "Buckets.h"
 
 #include <api/type/geometry/AABBox.h>
-#include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cassert>
@@ -67,7 +67,7 @@ void Buckets::add(const boost::shared_ptr<Primitive> & primitive, const v3d::typ
     buckets_[column][row].addPrimitive(primitive);
 }
 
-void Buckets::render(Hider & hider, RenderContext & rc) {
+void Buckets::render(Hider & hider, state::RenderContext & rc) {
     // a primitive already diced yields no further grid, so a repeated pass costs only a visit
     // to each primitive. Splitting terminates, so this loop does. Progress reaches the whole
     // frame at the end of the first pass and holds there through any pass repeated after it

@@ -31,9 +31,11 @@ typedef v3d::render::offline::sl::ShaderType ShaderType;
 typedef v3d::render::offline::sl::runtime::Machine Machine;
 typedef v3d::render::offline::sl::runtime::Value Value;
 
-ShaderLibrary & library() {
-    static ShaderLibrary shaders(boost::make_shared<v3d::log::Logger>());
-    return shaders;
+/**
+ * A library of its own for each call. An instance owns its program, so it outlives the library.
+ **/
+ShaderLibrary library() {
+    return ShaderLibrary(boost::make_shared<v3d::log::Logger>());
 }
 
 /**

@@ -111,6 +111,8 @@ class Instance final {
     const std::string& firstWarning() const noexcept;
 
  private:
+    static constexpr const char* validationLayer = "VK_LAYER_KHRONOS_validation";
+
     /**
      * The messenger's callback. Counts what arrives and puts it through the logger at a
      * severity matching its own.

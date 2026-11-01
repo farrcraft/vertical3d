@@ -19,7 +19,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 /**
  * The handles that move, turn and resize the selection.
@@ -255,9 +255,18 @@ class Manipulator {
         const glm::vec3& at, float size, const glm::vec4& colour);
 
  private:
+    /**
+     * The three axis colours, and the colour a handle takes while it is the active one.
+     **/
+    static constexpr glm::vec4 xColour{ 0.90F, 0.28F, 0.32F, 1.0F };
+    static constexpr glm::vec4 yColour{ 0.42F, 0.82F, 0.35F, 1.0F };
+    static constexpr glm::vec4 zColour{ 0.32F, 0.55F, 0.95F, 1.0F };
+    static constexpr glm::vec4 centreColour{ 0.80F, 0.82F, 0.86F, 1.0F };
+    static constexpr glm::vec4 activeColour{ 1.0F, 0.86F, 0.25F, 1.0F };
+
     Axis axis_;
     bool active_;
     Space space_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

@@ -19,8 +19,10 @@
 #include <string_view>
 #include <vector>
 
+#include "Blob.h"
 #include "Bytes.h"
 #include "Codec.h"
+#include "Cursor.h"
 #include "Payload.h"
 
 #include <boost/json.hpp>
@@ -28,22 +30,11 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
-
-namespace {
+namespace v3d::editor::store {
 
 /**
- * The size of one entry of each of a mesh's three blobs. A vertex is its point. A half edge is
- * its vertex, face, pair and next. A face is its normal and its first half edge.
  **/
-constexpr std::size_t VERTEX_SIZE = 3 * sizeof(float);
-constexpr std::size_t EDGE_SIZE = 4 * sizeof(std::uint32_t);
-constexpr std::size_t FACE_SIZE = (3 * sizeof(float)) + sizeof(std::uint32_t);
-
-/**
- * Build a mesh from its three blobs, index for index.
- **/
-bool decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
+bool MeshCodec::decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
     if (blobs.size() != 3 || !blobs.contains("vertices") || !blobs.contains("edges") || !blobs.contains("faces")) {
         *problem = "it does not have exactly its vertices, edges and faces";
         return false;
@@ -90,12 +81,11 @@ bool decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* problem) {
     return mesh->validate(problem);
 }
 
-};  // namespace
 
 /**
  **/
-Item::Kind MeshCodec::kind() const noexcept {
-    return Item::Kind::Mesh;
+scene::Item::Kind MeshCodec::kind() const noexcept {
+    return scene::Item::Kind::Mesh;
 }
 
 /**
@@ -118,14 +108,14 @@ bool MeshCodec::buffered() const noexcept {
 
 /**
  **/
-boost::json::object MeshCodec::payload(const Item& /*item*/) const {
+boost::json::object MeshCodec::payload(const scene::Item& /*item*/) const {
     return boost::json::object();
 }
 
 /**
  **/
-std::vector<Buffer> MeshCodec::buffers(const Item& item) const {
-    const v3d::brep::BRep& mesh = *static_cast<const Mesh&>(item).geometry();
+std::vector<Buffer> MeshCodec::buffers(const scene::Item& item) const {
+    const v3d::brep::BRep& mesh = *static_cast<const scene::Mesh&>(item).geometry();
     Buffer vertices{ .role = "vertices", .count = mesh.vertexCount() };
     for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
         put(&vertices.data, mesh.vertex(id)->point());
@@ -149,7 +139,7 @@ std::vector<Buffer> MeshCodec::buffers(const Item& item) const {
 
 /**
  **/
-boost::shared_ptr<Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
+boost::shared_ptr<scene::Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
     if (!exactly(payload, {}, problem)) {
         return nullptr;
     }
@@ -157,7 +147,7 @@ boost::shared_ptr<Item> MeshCodec::read(const boost::json::object& payload, cons
     if (!decode(blobs, geometry.get(), problem)) {
         return nullptr;
     }
-    return boost::make_shared<Mesh>(geometry);
+    return boost::make_shared<scene::Mesh>(geometry);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

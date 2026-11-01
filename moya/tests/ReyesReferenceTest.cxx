@@ -10,10 +10,10 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -37,21 +37,21 @@ namespace {
  * at what they were allocated with.
  **/
 BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     scene(rc);
     rc.render();
 
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
-    BOOST_TEST(planes->value(v3d::moya::Planes::RED, 24, 16) == 1.0F);
-    BOOST_TEST(planes->value(v3d::moya::Planes::BLUE, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::state::Planes::RED, 24, 16) == 1.0F);
+    BOOST_TEST(planes->value(v3d::moya::state::Planes::BLUE, 24, 16) == 1.0F);
     // and nothing outside it
-    BOOST_TEST(planes->value(v3d::moya::Planes::RED, 55, 40) == 0.0F);
+    BOOST_TEST(planes->value(v3d::moya::state::Planes::RED, 55, 40) == 0.0F);
 
     // a covered pixel took a depth from the geometry rather than keeping the one it was
     // cleared to
-    BOOST_TEST(planes->value(v3d::moya::Planes::DEPTH, 24, 16) < 2.0F);
+    BOOST_TEST(planes->value(v3d::moya::state::Planes::DEPTH, 24, 16) < 2.0F);
 }
 
 /**
@@ -59,12 +59,12 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
  * so this runs on any machine.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     scene(rc);
     rc.render();
 
     const boost::shared_ptr<v3d::image::Image> rendered =
-        rc.picture()->image(v3d::moya::Planes::CHANNELS);
+        rc.picture()->image(v3d::moya::state::Planes::CHANNELS);
 
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -94,14 +94,14 @@ BOOST_AUTO_TEST_CASE(moya_reference_test) {
  * the two disagree, this case fails. A fault in the reader shows as a wrong picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(RIB_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
     const boost::shared_ptr<v3d::image::Image> rendered =
-        handler.context().picture()->image(v3d::moya::Planes::CHANNELS);
+        handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS);
 
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     v3d::image::Factory factory(logger);
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
     const char* output = "data_out/display.png";
     boost::filesystem::remove(output);
 
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     scene(rc);
     rc.display({.name = output, .type = "file", .mode = "rgb"});
     rc.render();
@@ -137,11 +137,11 @@ BOOST_AUTO_TEST_CASE(moya_display_writes_a_file_test) {
  * A context with no display leaves its samples in the planes.
  **/
 BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     scene(rc);
     rc.render();
 
-    BOOST_TEST(rc.picture()->value(v3d::moya::Planes::RED, 24, 16) == 1.0F);
+    BOOST_TEST(rc.picture()->value(v3d::moya::state::Planes::RED, 24, 16) == 1.0F);
 }
 
 /**
@@ -153,12 +153,12 @@ BOOST_AUTO_TEST_CASE(moya_no_display_writes_nothing_test) {
  * the renderer.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     shadedScene(rc);
     pixelCentres(rc);
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS),
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS),
         SHADED, SHADED_RENDERED);
 }
 
@@ -170,13 +170,13 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_test) {
  * shows here.
  **/
 BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(SHADED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         SHADED, SHADED_RIB_RENDERED);
 }
 
@@ -186,11 +186,11 @@ BOOST_AUTO_TEST_CASE(moya_shaded_reference_from_rib_test) {
  * are seeded by where the pixel is.
  **/
 BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     shadedScene(rc);
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS),
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS),
         SAMPLED, SAMPLED_RENDERED);
 }
 
@@ -198,13 +198,13 @@ BOOST_AUTO_TEST_CASE(moya_sampled_reference_test) {
  * The sampled scene said in RIB, which names no sampling and so gets the defaults.
  **/
 BOOST_AUTO_TEST_CASE(moya_sampled_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(SAMPLED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         SAMPLED, SAMPLED_RIB_RENDERED);
 }
 
@@ -212,16 +212,16 @@ BOOST_AUTO_TEST_CASE(moya_sampled_reference_from_rib_test) {
  * Two renders of the sampled scene are equal byte for byte.
  **/
 BOOST_AUTO_TEST_CASE(moya_sampled_render_is_repeatable_test) {
-    v3d::moya::RenderContext first;
+    v3d::moya::state::RenderContext first;
     shadedScene(first);
     first.render();
-    v3d::moya::RenderContext second;
+    v3d::moya::state::RenderContext second;
     shadedScene(second);
     second.render();
 
     const v3d::image::Difference difference = v3d::image::compare(
-        *first.picture()->image(v3d::moya::Planes::CHANNELS),
-        *second.picture()->image(v3d::moya::Planes::CHANNELS), 0);
+        *first.picture()->image(v3d::moya::state::Planes::CHANNELS),
+        *second.picture()->image(v3d::moya::state::Planes::CHANNELS), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
 
@@ -231,18 +231,18 @@ BOOST_AUTO_TEST_CASE(moya_sampled_render_is_repeatable_test) {
  * where the buckets fall does not show.
  **/
 BOOST_AUTO_TEST_CASE(moya_bucket_edges_do_not_show_test) {
-    v3d::moya::RenderContext small;
+    v3d::moya::state::RenderContext small;
     small.bucketSize(8, 8);
     shadedScene(small);
     small.render();
-    v3d::moya::RenderContext large;
+    v3d::moya::state::RenderContext large;
     large.bucketSize(64, 64);
     shadedScene(large);
     large.render();
 
     const v3d::image::Difference difference = v3d::image::compare(
-        *small.picture()->image(v3d::moya::Planes::CHANNELS),
-        *large.picture()->image(v3d::moya::Planes::CHANNELS), 0);
+        *small.picture()->image(v3d::moya::state::Planes::CHANNELS),
+        *large.picture()->image(v3d::moya::state::Planes::CHANNELS), 0);
     BOOST_CHECK_MESSAGE(difference.match, difference.description());
 }
 
@@ -250,21 +250,21 @@ BOOST_AUTO_TEST_CASE(moya_bucket_edges_do_not_show_test) {
  * Two quads at two depths through a lens focused on the nearer one.
  **/
 BOOST_AUTO_TEST_CASE(moya_focus_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     focusScene(rc, true);
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), FOCUS, FOCUS_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), FOCUS, FOCUS_RENDERED);
 }
 
 BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(FOCUS_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         FOCUS, FOCUS_RIB_RENDERED);
 }
 
@@ -276,11 +276,11 @@ BOOST_AUTO_TEST_CASE(moya_focus_reference_from_rib_test) {
 BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::RenderContext pinhole;
+            v3d::moya::state::RenderContext pinhole;
             pinhole.hider(hider);
             focusScene(pinhole, false);
             pinhole.render();
-            v3d::moya::RenderContext lens;
+            v3d::moya::state::RenderContext lens;
             lens.hider(hider);
             focusScene(lens, true);
             lens.render();
@@ -302,20 +302,20 @@ BOOST_AUTO_TEST_CASE(moya_in_focus_is_sharp_test) {
 BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::RenderContext pinhole;
+            v3d::moya::state::RenderContext pinhole;
             pinhole.hider(hider);
             focusScene(pinhole, false);
             pinhole.sampling().filter = v3d::render::offline::Filter::Box;
             pinhole.sampling().width = glm::vec2(1.0F);
             pinhole.render();
-            v3d::moya::RenderContext lens;
+            v3d::moya::state::RenderContext lens;
             lens.hider(hider);
             focusScene(lens, true);
             lens.sampling().filter = v3d::render::offline::Filter::Box;
             lens.sampling().width = glm::vec2(1.0F);
             lens.render();
 
-            const unsigned int coverage = v3d::moya::Planes::COVERAGE;
+            const unsigned int coverage = v3d::moya::state::Planes::COVERAGE;
             const unsigned int sharp = partial(*pinhole.picture(), coverage, {.row = 24, .from = 30, .to = 45});
             const unsigned int blurred = partial(*lens.picture(), coverage, {.row = 24, .from = 30, .to = 45});
             BOOST_CHECK_LE(sharp, 2U);
@@ -329,21 +329,21 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
  * A quad sliding and a quad turning while the shutter is open.
  **/
 BOOST_AUTO_TEST_CASE(moya_motion_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     motionScene(rc);
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), MOTION, MOTION_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), MOTION, MOTION_RENDERED);
 }
 
 BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(MOTION_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         MOTION, MOTION_RIB_RENDERED);
 }
 
@@ -355,12 +355,12 @@ BOOST_AUTO_TEST_CASE(moya_motion_reference_from_rib_test) {
 BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            v3d::moya::RenderContext rc;
+            v3d::moya::state::RenderContext rc;
             rc.hider(hider);
             slidingQuad(rc);
             rc.render();
 
-            checkRamp(*rc.picture(), v3d::moya::Planes::COVERAGE, 24);
+            checkRamp(*rc.picture(), v3d::moya::state::Planes::COVERAGE, 24);
         }
     }
 }
@@ -384,16 +384,16 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
                 for (unsigned int down = 0; down < 4; down++) {
                     const unsigned int column = 20 + (8 * across);
                     const unsigned int row = 12 + (8 * down);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::RED, column, row) - (85.0F * across / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::RED, column, row) - (85.0F * across / 255.0F),
                         1.0F / 255.0F);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, column, row) - (85.0F * down / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, column, row) - (85.0F * down / 255.0F),
                         1.0F / 255.0F);
-                    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::BLUE, column, row) - (128.0F / 255.0F),
+                    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::BLUE, column, row) - (128.0F / 255.0F),
                         1.0F / 255.0F);
                 }
             }
             // and outside the quad is the background
-            BOOST_CHECK_EQUAL(planes->value(v3d::moya::Planes::BLUE, 4, 4), 0.0F);
+            BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::BLUE, 4, 4), 0.0F);
         }
     }
 }
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
-    check(planes->image(v3d::moya::Planes::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
+    check(planes->image(v3d::moya::state::Planes::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
         The two hiders also agree on the same file away from the edges, where the reyes hider's
@@ -429,11 +429,11 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
  * micropolygon's motion afresh, and draws the same picture as one that caches them.
  **/
 BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
-    v3d::moya::RenderContext cached;
+    v3d::moya::state::RenderContext cached;
     motionScene(cached);
     cached.render();
 
-    v3d::moya::RenderContext uncached;
+    v3d::moya::state::RenderContext uncached;
     uncached.motionCache(0);
     motionScene(uncached);
     uncached.render();

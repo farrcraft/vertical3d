@@ -13,16 +13,26 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
+#include <api/ui/Image.h>
+#include <api/ui/Immediate.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/tool/SelectTool.h>
-#include <vertical3d/src/tool/TransformTool.h>
+#include <vertical3d/src/control/IconSheet.h>
+#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/tool/Transform.h>
+#include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -47,6 +57,7 @@ namespace v3d::editor {
  * because the manipulator is an overlay.
  *
  * One more pass follows all of them. It covers the whole window, not one view, and draws
+ * each view's axis marker and gizmo, the frame around the areas, a notice, the status bar and
  * the ui. It draws quads, not lines, because panels and glyphs both go through the batched
  * quad pipeline.
  */
@@ -69,30 +80,68 @@ class Renderer final {
     Renderer& operator=(const Renderer&) = delete;
 
     /**
-     * The views to draw, in the order their passes are recorded.
+     * The views to draw. Each frame draws the ones shown, in the order their areas are.
      **/
-    void views(const std::vector<boost::shared_ptr<ViewPort>>& views);
+    void views(const boost::shared_ptr<view::AreaViews>& views);
+
+    /**
+     * What decides the frame drawn around the areas: the active area and the lit divider. The
+     * frame is drawn under the ui and over the views.
+     **/
+    void pointer(const boost::shared_ptr<control::Pointer>& pointer);
+
+    /**
+     * What the status bar along the foot of the window says this frame.
+     **/
+    void status(const control::Status& status);
+
+    /**
+     * The notices drawn at the foot of the active area, or null for none.
+     **/
+    void notices(const boost::shared_ptr<control::Notices>& notices);
 
     /**
      * The one scene every view draws.
      **/
-    void scene(const boost::shared_ptr<Scene>& scene);
+    void scene(const boost::shared_ptr<scene::Scene>& scene);
 
     /**
      * The transform tool, whose manipulator every view that shows handles draws about what
      * the tool would move. It draws none in the mode that has no manipulator.
      **/
-    void transformTool(const boost::shared_ptr<TransformTool>& transform);
+    void transformTool(const boost::shared_ptr<tool::Transform>& transform);
 
     /**
      * The select tool, whose rubber band is drawn over the views while one is dragged.
      **/
-    void selectTool(const boost::shared_ptr<SelectTool>& select);
+    void selectTool(const boost::shared_ptr<tool::Select>& select);
+
+    /**
+     * The sheet an image source naming an icon is resolved from. Set it before the ui, whose
+     * images are resolved when it arrives.
+     **/
+    void icons(const control::IconSheet& sheet);
 
     /**
      * The ui drawn over every view, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
+
+    /**
+     * Draws the panels of the areas that show no view into the ui canvas, through the
+     * immediate layer, under the frame around the areas and the ui.
+     **/
+    typedef std::function<void(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas)> Panels;
+
+    /**
+     * What draws the panels each frame, or empty for none.
+     **/
+    void panels(const Panels& draw);
+
+    /**
+     * @return the immediate layer the panels draw through, which the keyboard offers keys to
+     **/
+    v3d::ui::Immediate* immediate() const noexcept;
 
     /**
      * How wide a run of text is at the size the ui is drawn in.
@@ -108,6 +157,29 @@ class Renderer final {
      * laid out in the rest. Left in x and top in y.
      **/
     glm::vec2 insets() const;
+
+    /**
+     * @return how much larger than its logical size the ui is drawn
+     **/
+    float scale() const noexcept;
+
+    /**
+     * @return how tall a menu bar, a toolbar, a tab or the status bar is, at the scale the ui
+     *         is drawn
+     **/
+    float barHeight() const;
+
+    /**
+     * @return where each view's axis marker and gizmo sit, at the scale the ui is drawn and
+     *         under a header
+     **/
+    view::OverlayMetrics overlay() const;
+
+    /**
+     * Resolve the images of a component added to the ui after it was handed over. Each image
+     * is uploaded once, however often it is asked for.
+     **/
+    void resolve(const boost::shared_ptr<v3d::ui::Component>& component);
 
     /**
      * Draw one frame: two passes per view, then the ui pass.
@@ -128,9 +200,104 @@ class Renderer final {
 
  private:
     /**
+     * What every viewport clears to.
+     **/
+    static constexpr glm::vec4 background = glm::vec4(0.16F, 0.17F, 0.19F, 1.0F);
+
+    /**
+     * The outline of a rubber band.
+     **/
+    static constexpr glm::vec4 bandColour = glm::vec4(0.9F, 0.9F, 0.9F, 1.0F);
+
+    /**
+     * How opaque the accent laid over where a dragged tab would land is.
+     **/
+    static constexpr float landingAlpha = 0.25F;
+
+    /**
+     * Where a line of text's baseline sits below the middle of the band it is centred in, as a
+     * share of the text's size.
+     **/
+    static constexpr float BASELINE = 0.35F;
+
+    /**
+     * How far a notice sits above the foot of its area, at a ui scale of 1.
+     **/
+    static constexpr float NOTICE_MARGIN = 16.0F;
+
+    /**
+     * What separates the parts of the right side of the status bar.
+     **/
+    static constexpr const char* STATUS_GAP = "     ";
+
+    /**
+     * What a view's handle pass is called, on the end of the view's own name.
+     **/
+    static constexpr const char* handleSuffix = " handles";
+
+    /**
+     * The pass that belongs to no view, drawn over all of them.
+     **/
+    static constexpr const char* uiPass = "ui";
+
+    /**
+     * How large the whole ui is drawn, as a multiple of the size it was laid out at. The screen
+     * multiplies it by the monitor's scale.
+     *
+     * Every metric below is a multiple of the text size, and the text size is a multiple of
+     * this, so the editor scales by one number. Glyphs are distance fields, so a new scale
+     * does not need a rebuilt atlas.
+     **/
+    static constexpr float uiScale = 1.0F;
+
+    /**
+     * The size the ui text is drawn at, and what the bar and its rows are sized from.
+     **/
+    static constexpr float fontSize = 15.0F * uiScale;
+
+    /**
+     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 15 pixel
+     * text.
+     **/
+    static constexpr float iconScale = 1.2F;
+
+    /**
+     * The ui's spacing, each a multiple of the text size.
+     **/
+    static constexpr float lineHeightScale = 1.5F;
+    static constexpr float paddingScale = 1.4F;
+    static constexpr float barHeightScale = 1.8F;
+    static constexpr float panelPaddingScale = 0.3F;
+
+    /**
+     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
+     *         Any other source is the whole of the image it names, or nothing when the image
+     *         cannot be loaded
+     **/
+    v3d::ui::Image image(const std::string& source);
+
+    /**
+     * @return the texture an image becomes, uploading it the first time it is asked for, or an
+     *         unset handle when the image cannot be loaded
+     **/
+    v3d::render::realtime::TextureHandle texture(const std::string& source);
+
+    /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+
+    /**
+     * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
+     * each button does on the left, and the selection, the frame and the frame rate on the right.
+     **/
+    void drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const;
+
+    /**
+     * Draw the notice showing, if there is one, on a plate centred at the foot of the active
+     * area, faded as far as it has faded.
+     **/
+    void drawNotice(v3d::render::realtime::canvas::Canvas* canvas);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     // kept for the images a ui theme names, which are resolved when the ui arrives
@@ -140,19 +307,26 @@ class Renderer final {
     // context that owns the device is
     v3d::render::realtime::WindowRenderer engine_;
     // the meshes' surfaces, built once the engine has a device
-    boost::shared_ptr<ShadedPass> shaded_;
+    boost::shared_ptr<view::ShadedPass> shaded_;
 
-    boost::shared_ptr<Scene> scene_;
-    boost::shared_ptr<TransformTool> transform_;
-    boost::shared_ptr<SelectTool> select_;
-    std::vector<boost::shared_ptr<ViewPort>> views_;
-    // one canvas per view. Each view fills its own and submits it before the next view
+    boost::shared_ptr<scene::Scene> scene_;
+    boost::shared_ptr<tool::Transform> transform_;
+    boost::shared_ptr<tool::Select> select_;
+    boost::shared_ptr<view::AreaViews> views_;
+    boost::shared_ptr<control::Pointer> pointer_;
+    control::Status status_;
+    boost::shared_ptr<control::Notices> notices_;
+    // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
     // one more canvas per view for the handles, which are drawn in a pass of their own
     std::vector<v3d::render::realtime::canvas::Line> overlays_;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
+    Panels panels_;
+    control::IconSheet icons_;
+    // the textures the ui's images became, by source, so a component built again reuses them
+    std::map<std::string, v3d::render::realtime::TextureHandle> images_;
     v3d::shell::Shell* shell_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;

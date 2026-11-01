@@ -20,7 +20,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * Every frame of the timeline's range, rendered from each scene camera, by moya.exe.
@@ -70,7 +70,7 @@ class Batch final {
      *        a scene camera takes
      * @return the jobs, or none when a file could not be written, in which case nothing runs
      **/
-    std::vector<Job> start(const Scene* scene, const v3d::type::camera::Profile& view, const RenderSettings& settings,
+    std::vector<Job> start(const scene::Scene* scene, const v3d::type::camera::Profile& view, const scene::RenderSettings& settings,
         const boost::filesystem::path& directory);
 
     /**
@@ -81,6 +81,12 @@ class Batch final {
     Status status() const;
 
  private:
+    /**
+     * A frame's file name: the camera's name and the frame, four digits wide so that the files
+     * sort in frame order.
+     **/
+    static std::string frameName(const std::string& camera, int frame, const char* extension);
+
     void run(const std::vector<Job>& jobs, const std::stop_token& stop);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
@@ -90,4 +96,4 @@ class Batch final {
     std::jthread worker_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

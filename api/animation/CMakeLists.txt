@@ -7,6 +7,7 @@ v3d_add_api_library(animation
 	"Skeleton.h" "Skeleton.cxx"
 	"SpriteClip.h" "SpriteClip.cxx"
 	"Track.h"
+	"internal/Segment.h"
 )
 
 # PUBLIC: every header here holds glm values.

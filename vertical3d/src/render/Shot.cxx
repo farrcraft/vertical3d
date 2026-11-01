@@ -21,18 +21,18 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  **/
-v3d::type::camera::Profile shotFrom(const Scene& scene, const v3d::type::camera::Profile& view) {
-    const std::vector<boost::shared_ptr<Camera>> cameras = scene.selected<Camera>();
+v3d::type::camera::Profile shotFrom(const scene::Scene& scene, const v3d::type::camera::Profile& view) {
+    const std::vector<boost::shared_ptr<scene::Camera>> cameras = scene.selected<scene::Camera>();
     return cameras.size() == 1 ? shotFrom(scene.evaluate(), cameras.front(), view) : view;
 }
 
 /**
  **/
-v3d::type::camera::Profile shotFrom(const Evaluation& evaluation, const boost::shared_ptr<Camera>& camera,
+v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::Camera>& camera,
     const v3d::type::camera::Profile& view) {
     if (!camera) {
         return view;
@@ -42,7 +42,7 @@ v3d::type::camera::Profile shotFrom(const Evaluation& evaluation, const boost::s
 
 /**
  **/
-void shoot(v3d::render::offline::rib::Handler* handler, const Scene& scene, const Evaluation& evaluation,
+void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scene, const scene::Evaluation& evaluation,
     const v3d::type::camera::Profile& from, const RIBExportVisitor::Output& output) {
     if (handler == nullptr) {
         return;
@@ -62,7 +62,7 @@ void shoot(v3d::render::offline::rib::Handler* handler, const Scene& scene, cons
 
 /**
  **/
-void writeShot(std::ostream* stream, const Scene& scene, const Evaluation& evaluation,
+void writeShot(std::ostream* stream, const scene::Scene& scene, const scene::Evaluation& evaluation,
     const v3d::type::camera::Profile& from, const RIBExportVisitor::Output& output) {
     if (stream == nullptr) {
         return;
@@ -72,4 +72,4 @@ void writeShot(std::ostream* stream, const Scene& scene, const Evaluation& evalu
     shoot(&writer, scene, evaluation, from, output);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

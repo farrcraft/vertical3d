@@ -8,16 +8,19 @@ moya is three CMake targets, and it is built on one api library:
 
 | Directory | Target | Contents |
 |---|---|---|
-| `moya/libmoya` | `v3dlib_moya` | The renderer: graphics state, both hiders, the RI C API, and the polygons both hiders draw. Namespace `v3d::moya` |
+| `moya/libmoya` | `v3dlib_moya` | The renderer. At its root, what both hiders share: the `Hider` base, and the polygons, vertices and curves they draw. Namespace `v3d::moya` |
+| `moya/libmoya/ri` | `v3dlib_moya` | The RenderMan Interface: the RI C API, the handler RIB requests and C calls reach, and the C interface's stack of handlers. Namespace `v3d::moya::ri` |
+| `moya/libmoya/state` | `v3dlib_moya` | The graphics state: the render context and each part of the state it holds. Namespace `v3d::moya::state` |
+| `moya/libmoya/raytrace` | `v3dlib_moya` | The ray hider and the scene its rays meet. Namespace `v3d::moya::raytrace` |
 | `moya/libmoya/reyes` | `v3dlib_moya` | The reyes hider's pipeline: buckets, dicing, grid shading and the samples. Namespace `v3d::moya::reyes` |
-| `moya/moya` | `moya` | The command-line driver |
+| `moya` | `moya` | The command-line driver, `moya.cxx`, and its demo scenes in `moya/data/` |
 | `moya/tests` | `v3dtest_moya` | The test suite, ctest name `moya` |
 | `api/render/offline` | `v3dlib_render_offline` | The RIB reader and writer, the shading language, sampling and the film, textures and the ray tracer. Namespace `v3d::render::offline` |
 
 Run the driver from its own build directory:
 
 ```
-cd out/build/x64-Debug/moya/moya
+cd out/build/x64-Debug/moya
 moya.exe --file data/raytrace-scene.rib --output scene.png
 ```
 
@@ -34,7 +37,7 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
 
 - **Run moya from its own directory.** Started anywhere else, Windows cannot find its DLLs and
   shows a modal dialog. The process then waits on the dialog and uses no CPU.
-- **Two demo scenes are copied beside the executable** at build time, from `moya/moya/data/`:
+- **Two demo scenes are copied beside the executable** at build time, from `moya/data/`:
   `test-scene-01.rib` (two quads under the reyes hider) and `raytrace-scene.rib` (a metal and a
   glass sphere under the ray hider). Neither names a `Display`, so pass `--output` to get a file.
 - **moya writes a file only when one is named**, by `--output` or by
@@ -52,7 +55,7 @@ moya.exe --file data/raytrace-scene.rib --output scene.png
   failure code. Any exception is printed to stderr.
 - A Debug build is slow. A 256 by 192 ray traced scene takes about a minute.
 
-moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/RIBHandler.h` explains
+moya is not RenderMan compliant, and does not aim to be. `moya/libmoya/ri/RIBHandler.h` explains
 why: a second API beside the RI C API breaks the standard's "one true API" clause. The first
 handler a process makes prints Pixar's copyright notice, as a program that is not compliant
 must.

@@ -36,12 +36,6 @@ const uint32_t vertexShader[] =
 #include "shaders/fullscreen.vert.inc"
 ;  // NOLINT(whitespace/semicolon)
 
-/**
- * How many sources each descriptor pool holds before DescriptorPool adds another. A source is
- * made when a target is created or resized, so a few cover most programs.
- **/
-const uint32_t setsPerPool = 8;
-
 };  // namespace
 
 /**

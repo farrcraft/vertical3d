@@ -162,22 +162,22 @@ v3d::type::camera::Camera camera(bool orthographic) {
     return result;
 }
 
-std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, const v3d::editor::RIBExportVisitor::Output & output) {
+std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & scene, const v3d::editor::render::RIBExportVisitor::Output & output) {
     std::ostringstream stream;
     v3d::render::offline::rib::Writer writer(&stream);
-    v3d::editor::RIBExportVisitor visitor(&writer);
+    v3d::editor::render::RIBExportVisitor visitor(&writer);
     visitor.begin(camera(false), output);
     scene->accept(&visitor);
     visitor.end();
     return stream.str();
 }
 
-std::string exportScene(const boost::shared_ptr<v3d::editor::Scene> & scene, bool orthographic) {
+std::string exportScene(const boost::shared_ptr<v3d::editor::scene::Scene> & scene, bool orthographic) {
     std::ostringstream stream;
     v3d::render::offline::rib::Writer writer(&stream);
-    v3d::editor::RIBExportVisitor visitor(&writer);
+    v3d::editor::render::RIBExportVisitor visitor(&writer);
     const v3d::type::camera::Camera view = camera(orthographic);
-    v3d::editor::RIBExportVisitor::Output output;
+    v3d::editor::render::RIBExportVisitor::Output output;
     output.settings.size = glm::uvec2(320, 240);
     visitor.begin(view, output);
     scene->accept(&visitor);
@@ -195,8 +195,8 @@ bool reimport(const std::string & source, ImportHandler * handler) {
  * A cube out of the editor comes back as six faces of four corners, inside one world block.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_round_trip_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
 
     const std::string exported = exportScene(scene, false);
 
@@ -231,8 +231,8 @@ BOOST_AUTO_TEST_CASE(ribexport_concave_face_test) {
     const boost::shared_ptr<v3d::brep::BRep> shape = boost::make_shared<v3d::brep::BRep>();
     shape->addFace({ glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 2.0F, 0.0F), glm::vec3(1.0F, 2.0F, 0.0F),
         glm::vec3(1.0F, 1.0F, 0.0F), glm::vec3(2.0F, 1.0F, 0.0F), glm::vec3(2.0F, 0.0F, 0.0F) }, glm::vec3(0.0F, 0.0F, 1.0F));
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(shape));
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(shape));
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
@@ -255,11 +255,11 @@ BOOST_AUTO_TEST_CASE(ribexport_concave_face_test) {
  * Two meshes are two attribute blocks, each with its own placement.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Mesh> first = boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> first = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(3.0F, 4.0F, 5.0F));
     scene->add(first);
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane()));
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(ribexport_placement_test) {
  * left for a reader to derive from the frame aspect.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
 
     ImportHandler orthographic;
     BOOST_REQUIRE(reimport(exportScene(scene, true), &orthographic));
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(ribexport_camera_test) {
  * An empty scene is still a valid file: a header, a camera and an empty world block.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
@@ -317,26 +317,26 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane()));
 
-    const boost::shared_ptr<v3d::editor::Light> point = boost::make_shared<v3d::editor::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Light> point = boost::make_shared<v3d::editor::scene::Light>();
     point->translation(glm::vec3(1.0F, 2.0F, 3.0F));
-    point->emission({ .type = v3d::editor::Light::Type::Point, .intensity = 12.0F });
+    point->emission({ .type = v3d::editor::scene::Light::Type::Point, .intensity = 12.0F });
     scene->add(point);
 
     // a spot turned a quarter about y shines along +x
-    const boost::shared_ptr<v3d::editor::Light> spot = boost::make_shared<v3d::editor::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Light> spot = boost::make_shared<v3d::editor::scene::Light>();
     spot->translation(glm::vec3(0.0F, 5.0F, 0.0F));
     spot->rotation(glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 1.0F, 0.0F)));
-    spot->emission({ .type = v3d::editor::Light::Type::Spot, .cone = 0.4F, .delta = 0.05F });
+    spot->emission({ .type = v3d::editor::scene::Light::Type::Spot, .cone = 0.4F, .delta = 0.05F });
     scene->add(spot);
-    scene->add(boost::make_shared<v3d::editor::Light>());
+    scene->add(boost::make_shared<v3d::editor::scene::Light>());
     scene->items().back()->rotation(glm::angleAxis(glm::radians(180.0F), glm::vec3(1.0F, 0.0F, 0.0F)));
-    v3d::editor::as<v3d::editor::Light>(scene->items().back())->emission({ .type = v3d::editor::Light::Type::Distant });
+    v3d::editor::scene::as<v3d::editor::scene::Light>(scene->items().back())->emission({ .type = v3d::editor::scene::Light::Type::Distant });
 
     // a camera item is not written: the export renders from the camera it is given
-    scene->add(boost::make_shared<v3d::editor::Camera>());
+    scene->add(boost::make_shared<v3d::editor::scene::Camera>());
 
     ImportHandler handler;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
@@ -358,12 +358,12 @@ BOOST_AUTO_TEST_CASE(ribexport_lights_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
-    v3d::editor::RIBExportVisitor::Output output;
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane()));
+    v3d::editor::render::RIBExportVisitor::Output output;
     output.settings.size = glm::uvec2(200, 100);
     output.settings.samples = 3;
-    output.settings.hider = v3d::editor::RenderSettings::Hider::RayTrace;
+    output.settings.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
     output.file = "C:/renders/frame.png";
 
     // the settings give the picture's size, its samples and its hider, and the display
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
 
     // with no file the picture stays in the renderer
     output.file.clear();
-    output.settings.hider = v3d::editor::RenderSettings::Hider::Hidden;
+    output.settings.hider = v3d::editor::scene::RenderSettings::Hider::Hidden;
     ImportHandler kept;
     BOOST_REQUIRE(reimport(exportScene(scene, output), &kept));
     BOOST_CHECK_EQUAL(kept.display_.type, "framebuffer");
@@ -388,8 +388,8 @@ BOOST_AUTO_TEST_CASE(ribexport_picture_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane()));
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane()));
 
     // a scene with no light is lit from the camera, the way it looks, before every mesh
     ImportHandler handler;
@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
     BOOST_CHECK_SMALL(glm::distance(handler.tos_[0], glm::vec3(0.0F, 0.0F, -7.0F)), 0.0001F);
 
     // and a scene with a light of its own gets none of the camera's
-    scene->add(boost::make_shared<v3d::editor::Light>());
+    scene->add(boost::make_shared<v3d::editor::scene::Light>());
     ImportHandler lit;
     BOOST_REQUIRE(reimport(exportScene(scene, false), &lit));
     BOOST_REQUIRE_EQUAL(lit.lights_.size(), 1U);
@@ -409,12 +409,12 @@ BOOST_AUTO_TEST_CASE(ribexport_default_light_test) {
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Group> outer = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Mesh> held = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
-    const boost::shared_ptr<v3d::editor::Mesh> inner = boost::make_shared<v3d::editor::Mesh>(v3d::brep::plane());
-    const boost::shared_ptr<v3d::editor::Group> empty = boost::make_shared<v3d::editor::Group>();
-    const boost::shared_ptr<v3d::editor::Light> light = boost::make_shared<v3d::editor::Light>();
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Group> outer = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Mesh> held = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::scene::Mesh> inner = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::scene::Group> empty = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
     outer->translation(glm::vec3(0.0F, 10.0F, 0.0F));
     held->translation(glm::vec3(2.0F, 0.0F, 0.0F));
     light->translation(glm::vec3(0.0F, 0.0F, 3.0F));
@@ -455,8 +455,8 @@ BOOST_AUTO_TEST_CASE(ribexport_hierarchy_test) {
  * basis and wrap is one request, after a Basis when they are cubic, at the style's width.
  **/
 BOOST_AUTO_TEST_CASE(ribexport_curves_test) {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    const boost::shared_ptr<v3d::editor::Curve> guide = v3d::editor::create_curve(v3d::editor::CurveType::Bezier);
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Curve> guide = v3d::editor::scene::create_curve(v3d::editor::scene::CurveType::Bezier);
     scene->add(guide);
     BOOST_CHECK(exportScene(scene, false).find("Curves") == std::string::npos);
 
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(ribexport_curves_test) {
     BOOST_REQUIRE(curves->add({ .shape = v3d::curve::CatmullRom{ points } }).empty());
     BOOST_REQUIRE(curves->add({ .shape = v3d::curve::CatmullRom{ points } }).empty());
     BOOST_REQUIRE(curves->add({ .shape = v3d::curve::Poly{ points }, .closed = true }).empty());
-    const boost::shared_ptr<v3d::editor::Curve> hair = boost::make_shared<v3d::editor::Curve>(curves);
+    const boost::shared_ptr<v3d::editor::scene::Curve> hair = boost::make_shared<v3d::editor::scene::Curve>(curves);
     hair->style({ .renders = true, .width = 0.25F });
     scene->add(hair);
 

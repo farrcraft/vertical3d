@@ -210,6 +210,16 @@ class Engine {
     bool held(std::string_view command) const;
 
     /**
+     * The bindings the binding config installed, for an app's controls screen: what a command
+     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
+     * the overrides. A change made through them is saved as rebind() saves one. The shell reads
+     * them for the shortcuts its menus show.
+     *
+     * @return null when the app has no binding config
+     **/
+    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
+
+    /**
      * Every command the app handles, by "context::name". The engine handles a command event
      * only by running the handler registered here under its name.
      *
@@ -311,15 +321,6 @@ class Engine {
     bool rebind(const std::string& command, const std::string& key);
 
     /**
-     * The bindings the binding config installed, for an app's controls screen: what a command
-     * is bound to now, what a key already fires, a rebind of one key of several, a reset, and
-     * the overrides. A change made through them is saved as rebind() saves one.
-     *
-     * @return null when the app has no binding config
-     **/
-    boost::shared_ptr<v3d::event::Bindings> bindings() const noexcept;
-
-    /**
      * What the player changed, in the document kept under the app's identity. The engine
      * keeps the player's key bindings here, under "bindings". An app keeps its own settings
      * beside them, and saves after each change.
@@ -357,6 +358,21 @@ class Engine {
     void route(const SDL_Event& event);
 
  private:
+     /** The settings key the player's key bindings are kept under. **/
+     static constexpr const char* BINDINGS = "bindings";
+
+     /**
+      * The player's key bindings as the settings keep them: a list of overrides, each the command,
+      * the source it replaces, and the name it binds instead.
+      **/
+     static boost::json::array saveBindings(const std::vector<v3d::event::Bindings::Override>& overrides);
+
+     /**
+      * The overrides a settings document holds. An entry of another shape, from a hand edit, is
+      * left out.
+      **/
+     static std::vector<v3d::event::Bindings::Override> readBindings(const boost::json::value& saved);
+
      /**
       * Handle one event the input devices did not take: a quit, a resize, a focus change or
       * a window minimized or restored.

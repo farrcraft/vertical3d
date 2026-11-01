@@ -7,6 +7,7 @@
 
 #include <api/image/Image.h>
 #include <api/image/Reader.h>
+#include <api/image/reader/internal/Cursor.h>
 #include <api/log/Logger.h>
 
 #pragma pack(push, 1)
@@ -26,28 +27,44 @@ namespace v3d::image::reader {
 namespace {
 
 /**
- * How far libpng has read into the buffer. libpng reads in order and never seeks.
- **/
-struct Cursor final {
-    const unsigned char* data;
-    std::size_t size;
-    std::size_t at;
-};
-
-/**
  * libpng's own read, over memory instead of a FILE.
  *
  * A read past the end of the buffer calls png_error, which longjmps out of the decode. No
  * row is then filled from memory past the end of the buffer.
  **/
 void readFromBuffer(png_structp png, png_bytep into, png_size_t wanted) {
-    Cursor* cursor = static_cast<Cursor*>(png_get_io_ptr(png));
+    internal::Cursor* cursor = static_cast<internal::Cursor*>(png_get_io_ptr(png));
     if (cursor == nullptr || cursor->at + wanted > cursor->size) {
         png_error(png, "the png ended before it said it would");
         return;
     }
     memcpy(into, cursor->data + cursor->at, wanted);
     cursor->at += wanted;
+}
+
+/**
+ * Register the transformations that turn any png into 8 bits a channel, in RGB or RGBA.
+ *
+ * Nothing here owns memory, so a png_error in it can longjmp past this frame.
+ **/
+void expandToRgb(png_structp png, png_infop info) {
+    const int bpp = png_get_bit_depth(png, info);
+    const int colors = png_get_color_type(png, info);
+    if (bpp == 16) {
+        png_set_strip_16(png);
+    }
+    if (colors == PNG_COLOR_TYPE_PALETTE) {
+        png_set_expand(png);
+    }
+    if (bpp < 8) {
+        png_set_expand(png);
+    }
+    if (png_get_valid(png, info, PNG_INFO_tRNS) != 0) {
+        png_set_expand(png);
+    }
+    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
+        png_set_gray_to_rgb(png);
+    }
 }
 
 };  // namespace
@@ -67,7 +84,7 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     if (encoded == nullptr || size < 8 || png_sig_cmp(encoded, 0, 8) != 0) {
         return empty_ptr;
     }
-    Cursor cursor{ encoded, size, 8 };
+    internal::Cursor cursor{ encoded, size, 8 };
 
     png_structp png_ptr = 0;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
@@ -109,34 +126,16 @@ boost::shared_ptr<Image> Png::read(const unsigned char* encoded, std::size_t siz
     // read all PNG info up to image data
     png_read_info(png_ptr, info_ptr);
 
-    // get width, height, bit-depth and color-type
-    png_uint_32 width;
-    png_uint_32 height;
-    int bpp;
-    int colors;
-    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
-
-    // convert to 3x8 RGB if necessary
-    if (bpp == 16) {
-        png_set_strip_16(png_ptr);
-    }
-    if (colors == PNG_COLOR_TYPE_PALETTE) {
-        png_set_expand(png_ptr);
-    }
-    if (bpp < 8) {
-        png_set_expand(png_ptr);
-    }
-    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0) {
-        png_set_expand(png_ptr);
-    }
-    if (colors == PNG_COLOR_TYPE_GRAY || colors == PNG_COLOR_TYPE_GRAY_ALPHA) {
-        png_set_gray_to_rgb(png_ptr);
-    }
+    expandToRgb(png_ptr, info_ptr);
 
     // after the transformations have been registered update info_ptr data
     png_read_update_info(png_ptr, info_ptr);
 
     // get width, height and the new bit-depth and color-type
+    png_uint_32 width;
+    png_uint_32 height;
+    int bpp;
+    int colors;
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bpp, &colors, 0, 0, 0);
 
     // row_bytes is the width x number of channels

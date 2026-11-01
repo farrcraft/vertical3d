@@ -6,6 +6,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -73,6 +74,38 @@ BOOST_AUTO_TEST_CASE(a_button_answers_a_press_and_a_release_on_it) {
     ui.begin(&canvas, hover(on));
     BOOST_CHECK(!ui.button("Go"));
     ui.end();
+}
+
+/**
+ * A widget's fill eases toward its hover colour over the hover duration, kept by its id from
+ * one frame to the next.
+ **/
+BOOST_AUTO_TEST_CASE(a_hovered_button_eases_its_fill) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    ui.dressing().hoverDuration = 0.1F;
+    const glm::vec4 widget = ui.dressing().widget;
+    const glm::vec4 hover = ui.dressing().hover;
+    const glm::vec2 on(20.0F, 10.0F);
+
+    const auto frame = [&](float now, std::uint64_t count, const glm::vec2& cursor) {
+        canvas.clear();
+        ui.clock({.now = now, .frame = count});
+        ui.begin(&canvas, v3d::ui::layer::hover(cursor));
+        ui.button("Go");
+        ui.end();
+        return canvas.vertices().front().colour;
+    };
+
+    BOOST_CHECK(frame(0.0F, 1, glm::vec2(-1.0F, -1.0F)) == widget);
+    // the frame that finds the cursor, which the next one uses
+    frame(1.0F, 2, on);
+    BOOST_CHECK(frame(1.0F, 3, on) == widget);
+    const glm::vec4 halfway = frame(1.05F, 4, on);
+    BOOST_CHECK_CLOSE(halfway.r, (widget.r + hover.r) * 0.5F, 0.1F);
+    BOOST_CHECK(frame(1.2F, 5, on) == hover);
 }
 
 /**

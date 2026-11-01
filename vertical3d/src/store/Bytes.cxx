@@ -10,13 +10,14 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <string>
 #include <vector>
 
+#include "Blob.h"
+
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -24,21 +25,6 @@ void put(std::vector<std::byte>* bytes, const glm::vec3& value) {
     put(bytes, value.x);
     put(bytes, value.y);
     put(bytes, value.z);
-}
-
-/**
- **/
-Cursor::Cursor(std::span<const std::byte> bytes) :
-    bytes_(bytes) {
-}
-
-/**
- **/
-glm::vec3 Cursor::vector() {
-    const float x = next<float>();
-    const float y = next<float>();
-    const float z = next<float>();
-    return glm::vec3(x, y, z);
 }
 
 /**
@@ -58,4 +44,4 @@ bool finite(const glm::vec3& value) {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

@@ -1,0 +1,152 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2022 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include <api/log/Logger.h>
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Reader.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
+#include <iostream>
+#include <string>
+
+#include <boost/make_shared.hpp>
+#include <boost/program_options.hpp>
+
+namespace {
+
+/**
+ * The picture, grid and bucket sizes the command line names, each checked before it is used.
+ * A size the renderer refuses is reported, and the scene's own size or the default is kept.
+ **/
+void sizes(const boost::program_options::variables_map& var_map, v3d::moya::ri::RIBHandler* handler) {
+    const bool width = var_map.count("width") > 0;
+    const bool height = var_map.count("height") > 0;
+    // a picture within the largest side can still be larger than memory holds. main catches
+    // and reports the allocation that fails
+    if (width && height) {
+        const int x = var_map["width"].as<int>();
+        const int y = var_map["height"].as<int>();
+        if (!handler->resolution(x, y)) {
+            std::cout << "--width and --height have to be between 1 and " << v3d::render::offline::largestResolution
+                << ", so the scene's Format is used" << "\n";
+        }
+    } else if (width || height) {
+        std::cout << "--width and --height have to be given together, so the scene's Format is used" << "\n";
+    }
+    // the command line pins the grid and bucket sizes before the scene is read, so a scene
+    // that names its own with Option "limits" keeps the command line's
+    const unsigned int largest = v3d::moya::ri::RIBHandler::largestLimit;
+    if (var_map.count("grid") != 0) {
+        const int grid = var_map["grid"].as<int>();
+        if (grid < 1 || static_cast<unsigned int>(grid) > largest) {
+            std::cout << "--grid has to be between 1 and " << largest << ", so the default is used" << "\n";
+        } else {
+            handler->context().pinGridSize(static_cast<unsigned int>(grid));
+        }
+    }
+    if (var_map.count("bucket") != 0) {
+        const int bucket = var_map["bucket"].as<int>();
+        if (bucket < 1 || static_cast<unsigned int>(bucket) > largest) {
+            std::cout << "--bucket has to be between 1 and " << largest << ", so the default is used" << "\n";
+        } else {
+            handler->context().pinBucketSize(static_cast<unsigned int>(bucket), static_cast<unsigned int>(bucket));
+        }
+    }
+}
+
+int run(int argc, char *argv[]) {
+    boost::program_options::options_description opts_desc("Allowed options");
+    opts_desc.add_options()
+        ("help", "produce help message")
+        ("version", "display version info")
+        ("file", boost::program_options::value<std::string>(), "input filename to be rendered")
+        ("output", boost::program_options::value<std::string>(), "filename to be written")
+        ("width", boost::program_options::value<int>(), "image width, replacing the scene's Format; needs --height")
+        ("height", boost::program_options::value<int>(), "image height, replacing the scene's Format; needs --width")
+        ("silent", "print no progress line")
+        ("grid", boost::program_options::value<int>(),
+            "micropolygon grid size, used whatever size the scene's Option \"limits\" names")
+        ("bucket", boost::program_options::value<int>(),
+            "square bucket size in pixels, used whatever size the scene's Option \"limits\" names");
+
+    boost::program_options::variables_map var_map;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, opts_desc), var_map);
+    boost::program_options::notify(var_map);
+
+    if (var_map.count("help") != 0) {
+        std::cout << opts_desc << "\n";
+        exit(EXIT_SUCCESS);
+    }
+
+    if (var_map.count("version") != 0) {
+        std::cout << "Moya v0.0.1" << "\n";
+        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                     "Copyright 1988, 1989, Pixar" << "\n" <<
+                     "All Rights Reserved" << "\n";
+
+        exit(EXIT_SUCCESS);
+    }
+
+    std::string infile;
+    std::string outfile;
+
+    if (var_map.count("file") != 0) {
+        infile = var_map["file"].as<std::string>();
+    }
+    if (var_map.count("output") != 0) {
+        outfile = var_map["output"].as<std::string>();
+    }
+
+    if (infile.empty()) {
+        std::cout << opts_desc << "\n";
+        exit(EXIT_SUCCESS);
+    }
+
+    // RiBegin and RiEnd have no RIB equivalent. The handler's life is the span between them
+    const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
+    v3d::moya::ri::RIBHandler handler;
+
+    if (!outfile.empty()) {
+        handler.output(outfile);
+    }
+    sizes(var_map, &handler);
+
+    // flushed rather than left to the buffer: the render that follows takes the rest of the
+    // run, and the progress line has to appear before it starts
+    if (var_map.count("silent") == 0) {
+        std::cout << "Rendering scene file: " << infile << "\n" << std::flush;
+    }
+
+    v3d::render::offline::rib::Reader reader(logger);
+    if (!reader.read(infile, &handler)) {
+        std::cout << "error reading rib file - " << reader.error() << "\n";
+        exit(EXIT_FAILURE);
+    }
+
+    // the picture was written by RiWorldEnd, as the RI standard specifies
+    return EXIT_SUCCESS;
+}
+
+};  // namespace
+
+int main(int argc, char *argv[]) {
+    // the option parser reports an error by throwing, and so does a failed allocation. An
+    // exception leaving main aborts with no message. The catch blocks write through stdio,
+    // not std::cout, because a last-resort handler must not throw
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fputs("error: ", stderr);
+        std::fputs(error.what(), stderr);
+        std::fputs("\n", stderr);
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::fputs("error: unrecognised failure\n", stderr);
+        return EXIT_FAILURE;
+    }
+}

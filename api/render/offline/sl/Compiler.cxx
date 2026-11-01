@@ -48,101 +48,6 @@ namespace {
 
 typedef Signature::Argument Argument;
 
-const unsigned int SURFACE = 1U << 0;
-const unsigned int LIGHT = 1U << 1;
-const unsigned int IMAGER = 1U << 2;
-const unsigned int DISPLACEMENT = 1U << 3;
-
-/**
- * A shader global: which shader types have it, and which of them may write it.
- *
- * The table follows the standard. A name in the table is reported as belonging to the
- * shader types that have it. A light shader that mentions `Ci` is told that `Ci` belongs to
- * a surface and an imager shader, not that it is undeclared.
- **/
-class Global final {
- public:
-    const char* name;
-    Type type;
-    Storage storage;
-    unsigned int shaders;
-    unsigned int writable;
-    /**
-     * Readable only inside a lighting construct, in a shader that cannot write it. In a
-     * surface shader, L and Cl are set by the light the illuminance body is running for.
-     **/
-    bool lighting;
-};
-
-const Global GLOBALS[] = {
-    // a displacement shader moves the surface, so it writes P and N, and reads where it is
-    { "P", Type::POINT, Storage::VARYING, SURFACE | LIGHT | IMAGER | DISPLACEMENT, DISPLACEMENT, false },
-    { "N", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, DISPLACEMENT, false },
-    { "Ng", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "I", Type::VECTOR, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "E", Type::POINT, Storage::UNIFORM, SURFACE | DISPLACEMENT, 0, false },
-    { "Cs", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
-    { "Os", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
-    { "s", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "t", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "u", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "v", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "du", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "dv", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
-    { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
-    { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
-    { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
-    // an imager reads and writes alpha. A pixel it paints counts as covered, and the
-    // "background" imager writes alpha to record that
-    { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
-    // a light writes these. A surface reads them, and only inside an illuminance body
-    { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
-    { "Cl", Type::COLOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true }
-};
-
-unsigned int bit(ShaderType type) {
-    switch (type) {
-        case ShaderType::SURFACE:
-            return SURFACE;
-        case ShaderType::LIGHT:
-            return LIGHT;
-        case ShaderType::IMAGER:
-            return IMAGER;
-        case ShaderType::DISPLACEMENT:
-            return DISPLACEMENT;
-        case ShaderType::VOLUME:
-            return 0;
-    }
-    return 0;
-}
-
-/**
- * Which shader types a global belongs to, as prose for a diagnostic.
- **/
-std::string owners(unsigned int shaders) {
-    std::vector<std::string> names;
-    if ((shaders & SURFACE) != 0) {
-        names.push_back("a surface");
-    }
-    if ((shaders & LIGHT) != 0) {
-        names.push_back("a light");
-    }
-    if ((shaders & IMAGER) != 0) {
-        names.push_back("an imager");
-    }
-    if ((shaders & DISPLACEMENT) != 0) {
-        names.push_back("a displacement");
-    }
-    std::string text;
-    for (std::size_t i = 0; i < names.size(); i++) {
-        if (i > 0) {
-            text += i + 1 == names.size() ? " and " : ", ";
-        }
-        text += names[i];
-    }
-    return text;
-}
-
 const char* construct(syntax::Lighting::Construct which) {
     switch (which) {
         case syntax::Lighting::Construct::ILLUMINANCE:
@@ -153,10 +58,6 @@ const char* construct(syntax::Lighting::Construct which) {
             return "solar";
     }
     return "";
-}
-
-std::string article(ShaderType type) {
-    return type == ShaderType::IMAGER ? "an " + std::string(name(type)) : "a " + std::string(name(type));
 }
 
 bool accepts(Argument wanted, Type given) {
@@ -186,11 +87,53 @@ bool accepts(Argument wanted, Type given) {
     return false;
 }
 
-/**
- * The type a call's arguments promote to, as an arithmetic operator promotes its operands.
- * Void when two of them have no arithmetic between them, such as a colour and a point.
- **/
-Type promoted(const std::vector<Type> & given) {
+};  // namespace
+
+unsigned int Compiler::bit(ShaderType type) {
+    switch (type) {
+        case ShaderType::SURFACE:
+            return SURFACE;
+        case ShaderType::LIGHT:
+            return LIGHT;
+        case ShaderType::IMAGER:
+            return IMAGER;
+        case ShaderType::DISPLACEMENT:
+            return DISPLACEMENT;
+        case ShaderType::VOLUME:
+            return 0;
+    }
+    return 0;
+}
+
+std::string Compiler::owners(unsigned int shaders) {
+    std::vector<std::string> names;
+    if ((shaders & SURFACE) != 0) {
+        names.push_back("a surface");
+    }
+    if ((shaders & LIGHT) != 0) {
+        names.push_back("a light");
+    }
+    if ((shaders & IMAGER) != 0) {
+        names.push_back("an imager");
+    }
+    if ((shaders & DISPLACEMENT) != 0) {
+        names.push_back("a displacement");
+    }
+    std::string text;
+    for (std::size_t i = 0; i < names.size(); i++) {
+        if (i > 0) {
+            text += i + 1 == names.size() ? " and " : ", ";
+        }
+        text += names[i];
+    }
+    return text;
+}
+
+std::string Compiler::article(ShaderType type) {
+    return type == ShaderType::IMAGER ? "an " + std::string(name(type)) : "a " + std::string(name(type));
+}
+
+Type Compiler::promoted(const std::vector<Type> & given) {
     Type result = Type::FLOAT;
     for (const Type type : given) {
         result = arithmetic(result, type);
@@ -198,10 +141,7 @@ Type promoted(const std::vector<Type> & given) {
     return result;
 }
 
-/**
- * Whether one way of calling a standard library function takes these argument types.
- **/
-bool suits(const Signature & signature, const std::vector<Type> & given) {
+bool Compiler::suits(const Signature & signature, const std::vector<Type> & given) {
     const bool arity = signature.variadic ?
         given.size() >= signature.arguments.size() : given.size() == signature.arguments.size();
     if (!arity) {
@@ -216,18 +156,12 @@ bool suits(const Signature & signature, const std::vector<Type> & given) {
     return !unmixable;
 }
 
-bool defines(const std::vector<syntax::Function> & functions, const std::string & name) {
+bool Compiler::defines(const std::vector<syntax::Function> & functions, const std::string & name) {
     return std::ranges::any_of(functions,
         [&name](const syntax::Function & function) { return function.name == name; });
 }
 
-void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called);
-
-/**
- * Every name an expression calls, added once. adopt() collects these from the tree before
- * any name has been resolved.
- **/
-void gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* called) {
+void Compiler::gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* called) {
     if (!expression) {
         return;
     }
@@ -240,7 +174,7 @@ void gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* 
     syntax::forEachChild(*expression, [called](const syntax::ExpressionPtr & child) { gather(child, called); });
 }
 
-void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called) {
+void Compiler::gather(const syntax::StatementPtr & statement, std::vector<std::string>* called) {
     if (!statement) {
         return;
     }
@@ -248,8 +182,6 @@ void gather(const syntax::StatementPtr & statement, std::vector<std::string>* ca
         [called](const syntax::ExpressionPtr & child) { gather(child, called); },
         [called](const syntax::StatementPtr & child) { gather(child, called); });
 }
-
-};  // namespace
 
 Compiler::Compiler(const syntax::ShaderPtr & shader) : shader_(shader) {
 }

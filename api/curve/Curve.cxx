@@ -5,6 +5,8 @@
 
 #include "Curve.h"
 
+#include <api/curve/internal/Neighbours.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -163,19 +165,10 @@ std::vector<glm::vec3> evaluate(const Nurbs& nurbs, bool closed, unsigned int re
 }
 
 /**
- * The points either side of a handle's point: toward is the one on the handle's side, and
- * across the one on the other side. Either is null at an open curve's end.
- **/
-struct Neighbours {
-    const glm::vec3* toward = nullptr;
-    const glm::vec3* across = nullptr;
-};
-
-/**
  * Place a handle by its type. A handle with no neighbour on its side, and a Free or Aligned
  * one, is left where it is.
  **/
-void place(Handle type, const glm::vec3& position, Neighbours neighbours, glm::vec3* handle) {
+void place(Handle type, const glm::vec3& position, internal::Neighbours neighbours, glm::vec3* handle) {
     if (neighbours.toward == nullptr || (type != Handle::Vector && type != Handle::Automatic)) {
         return;
     }

@@ -9,7 +9,7 @@
 
 #include "Item.h"
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -43,4 +43,4 @@ void Camera::lens(const Lens& lens) noexcept {
     changed();
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

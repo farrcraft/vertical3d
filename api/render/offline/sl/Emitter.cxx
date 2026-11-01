@@ -43,9 +43,7 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-runtime::Opcode binaryOpcode(const std::string & op) {
+runtime::Opcode Emitter::binaryOpcode(const std::string & op) {
     if (op == "+") {
         return runtime::Opcode::ADD;
     }
@@ -88,11 +86,7 @@ runtime::Opcode binaryOpcode(const std::string & op) {
     return runtime::Opcode::OR;
 }
 
-/**
- * The index of the ctransform that names both spaces, from and to, or -1 when the table has
- * none.
- **/
-int conversion() {
+int Emitter::conversion() {
     const std::vector<Signature> & table = builtins();
     for (std::size_t i = 0; i < table.size(); i++) {
         const bool twoSpaces = table[i].body == Signature::Body::CTRANSFORM && table[i].arguments.size() == 3;
@@ -102,8 +96,6 @@ int conversion() {
     }
     return -1;
 }
-
-};  // namespace
 
 Emitter::Emitter(const syntax::ShaderPtr & shader, const std::vector<Symbol> & symbols) :
     shader_(shader),

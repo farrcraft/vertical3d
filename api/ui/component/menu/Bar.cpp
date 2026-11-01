@@ -16,13 +16,14 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace v3d::ui::component::menu {
 
 /**
  **/
-Bar::Bar() : Component(component::Type::MenuBar), hover_(-1), open_(-1) {
+Bar::Bar() : Component(component::Type::MenuBar), hover_(-1), open_(-1), delay_(0.0F) {
     // pickable unless a document sets it otherwise, and a menu bar that is not pickable lets
     // a press through
     pickable(true);
@@ -96,6 +97,7 @@ int Bar::open() const noexcept {
  **/
 void Bar::open(int index) {
     panels_.clear();
+    pending_.reset();
     if (index < 0 || static_cast<std::size_t>(index) >= menus_.size()) {
         open_ = -1;
         return;
@@ -150,11 +152,102 @@ int Bar::itemAt(const boost::shared_ptr<Menu>& panel, const glm::vec2& cursor) {
     for (std::size_t index = 0; index < panel->count(); index++) {
         const boost::shared_ptr<Item>& item = (*panel)[index];
         // an item that cannot be used is not offered the cursor, like a disabled toolbar button
-        if (item && usable(*item) && within(*item, cursor)) {
+        if (item && !item->separator() && usable(*item) && within(*item, cursor)) {
             return static_cast<int>(index);
         }
     }
     return -1;
+}
+
+/**
+ **/
+void Bar::step(const boost::shared_ptr<Menu>& panel, int by) {
+    const int count = static_cast<int>(panel->count());
+    if (count == 0) {
+        return;
+    }
+    int at = -1;
+    const boost::shared_ptr<Item> chosen = panel->active();
+    for (int index = 0; index < count; index++) {
+        if ((*panel)[static_cast<std::size_t>(index)] == chosen && chosen) {
+            at = index;
+        }
+    }
+    // nothing chosen steps down onto the first item, or up onto the last
+    if (at < 0) {
+        at = by > 0 ? -1 : count;
+    }
+    for (int tries = 1; tries <= count; tries++) {
+        const int index = (((at + (by * tries)) % count) + count) % count;
+        const boost::shared_ptr<Item>& item = (*panel)[static_cast<std::size_t>(index)];
+        if (item && !item->separator()) {
+            panel->active(index);
+            return;
+        }
+    }
+}
+
+/**
+ **/
+void Bar::openFirst(int index) {
+    open(index);
+    if (!panels_.empty()) {
+        step(panels_.front(), 1);
+    }
+}
+
+/**
+ **/
+bool Bar::key(std::string_view key) {
+    if (!active() || panels_.empty()) {
+        return false;
+    }
+    const std::size_t depth = panels_.size() - 1;
+    const boost::shared_ptr<Menu> panel = panels_.back();
+    const int menus = static_cast<int>(menus_.size());
+    if (key == "arrow_down" || key == "arrow_up") {
+        pending_.reset();
+        step(panel, key == "arrow_down" ? 1 : -1);
+        return true;
+    }
+    const boost::shared_ptr<Item> item = panel->active();
+    const bool submenu = item && item->itemType() == menu::ItemType::Submenu && item->submenu() && usable(*item);
+    if (key == "arrow_right") {
+        if (submenu) {
+            descend(depth, item);
+            step(panels_.back(), 1);
+        } else {
+            openFirst((open_ + 1) % menus);
+        }
+        return true;
+    }
+    if (key == "arrow_left") {
+        if (depth > 0) {
+            truncate(depth);
+        } else {
+            openFirst((open_ + menus - 1) % menus);
+        }
+        return true;
+    }
+    if (key == "return" || key == "space") {
+        if (submenu) {
+            descend(depth, item);
+            step(panels_.back(), 1);
+        } else if (item && !item->separator() && usable(*item)) {
+            panel->dispatch(item);
+            close();
+        }
+        return true;
+    }
+    if (key == "escape") {
+        if (depth > 0) {
+            truncate(depth);
+        } else {
+            close();
+        }
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -190,7 +283,7 @@ bool Bar::motion(const glm::vec2& cursor) {
         const int index = itemAt(panel, cursor);
         panel->active(index);
         if (index >= 0) {
-            descend(depth - 1, (*panel)[static_cast<std::size_t>(index)]);
+            reach(depth - 1, (*panel)[static_cast<std::size_t>(index)]);
         }
         return true;
     }
@@ -214,6 +307,67 @@ bool Bar::motion(const glm::vec2& cursor) {
 
 /**
  **/
+void Bar::reach(std::size_t depth, const boost::shared_ptr<Item>& item) {
+    const bool submenu = item->itemType() == menu::ItemType::Submenu && item->submenu();
+    if (!submenu || delay_ <= 0.0F) {
+        pending_.reset();
+        descend(depth, item);
+        return;
+    }
+    // already open: the cursor came back to it from its own flyout
+    if (panels_.size() > depth + 1 && panels_[depth + 1] == item->submenu()) {
+        pending_.reset();
+        return;
+    }
+    // the same item again waits on from where it was, rather than starting over
+    if (pending_ && pending_->depth == depth && pending_->item.lock() == item) {
+        return;
+    }
+    pending_ = Pending{.depth = depth, .item = item, .since = 0.0F, .started = false};
+}
+
+/**
+ **/
+void Bar::delay(float seconds) noexcept {
+    delay_ = seconds;
+}
+
+/**
+ **/
+void Bar::docked(bool along) noexcept {
+    docked_ = along;
+}
+
+/**
+ **/
+bool Bar::docked() const noexcept {
+    return docked_;
+}
+
+/**
+ **/
+void Bar::settle(float now) {
+    if (!pending_) {
+        return;
+    }
+    if (!pending_->started) {
+        pending_->since = now;
+        pending_->started = true;
+    }
+    if (now - pending_->since < delay_) {
+        return;
+    }
+    const boost::shared_ptr<Item> item = pending_->item.lock();
+    const std::size_t depth = pending_->depth;
+    pending_.reset();
+    // the cursor may have left the item's panel while it waited
+    if (item && depth < panels_.size() && panels_[depth]->active() == item) {
+        descend(depth, item);
+    }
+}
+
+/**
+ **/
 bool Bar::press(const glm::vec2& cursor) {
     for (std::size_t depth = panels_.size(); depth > 0; depth--) {
         const boost::shared_ptr<Menu>& panel = panels_[depth - 1];
@@ -228,6 +382,7 @@ bool Bar::press(const glm::vec2& cursor) {
         // a press can arrive without a motion having crossed the item first, so the
         // highlight and the flyout's placement are set here rather than assumed
         panel->active(index);
+        pending_.reset();
         if (item->itemType() == menu::ItemType::Submenu) {
             descend(depth - 1, item);
         } else {
@@ -241,8 +396,10 @@ bool Bar::press(const glm::vec2& cursor) {
         const int index = labelAt(cursor);
         if (index >= 0) {
             open(index == open_ ? -1 : index);
+            return true;
         }
-        return true;
+        // the rest of a closed bar is room for what an app puts beside the labels
+        return active();
     }
 
     if (active()) {

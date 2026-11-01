@@ -71,16 +71,18 @@ const uint32_t skinnedShadowShader[] =
 #include "shaders/skinned_shadow.vert.inc"
 ;  // NOLINT(whitespace/semicolon)
 
+};  // namespace
+
+/**
+ **/
 template <std::size_t N>
-std::vector<uint32_t> words(const uint32_t (&code)[N]) {
+std::vector<uint32_t> Lit::words(const uint32_t (&code)[N]) {
     return std::vector<uint32_t>(std::begin(code), std::end(code));
 }
 
 /**
- * Sets 0 to 2, which every lit pipeline declares alike so that the sets a pass binds stay bound
- * across a switch between them.
  **/
-void declare(vulkan::pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
+void Lit::declare(vulkan::pipeline::Builder* builder, VkDescriptorSetLayout camera, VkDescriptorSetLayout material,
     VkDescriptorSetLayout scene) {
     builder->set(camera)
         .set(material)
@@ -88,20 +90,8 @@ void declare(vulkan::pipeline::Builder* builder, VkDescriptorSetLayout camera, V
 }
 
 /**
- * The attributes a lit vertex stage reads. A pipeline declares exactly these, because the
- * validation layer warns about an attribute that is declared and not read.
  **/
-enum class Reads : uint8_t {
-    Position,  /**< a depth only stage **/
-    Normal,    /**< the position and the normal, which the outline pushes out along **/
-    Surface    /**< the position, the normal and the uv **/
-};
-
-/**
- * The vertex a pipeline reads: a model's, and for a skinned one its influence after it, the
- * layout MeshRegistry uploads a skinned model in.
- **/
-void vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads) {
+void Lit::vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads) {
     using Vertex = model::Model::Vertex;
     using Influence = model::Model::Influence;
     builder->vertexBinding({.binding = 0, .stride = static_cast<uint32_t>(skinned ? sizeof(Vertex) + sizeof(Influence) : sizeof(Vertex))})
@@ -117,19 +107,6 @@ void vertex(vulkan::pipeline::Builder* builder, bool skinned, Reads reads) {
             .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = sizeof(Vertex) + offsetof(Influence, weights)});
     }
 }
-
-/**
- * The palette's starting room, in matrices: enough for a handful of characters before the
- * first grow.
- **/
-const std::size_t initialJoints = 256;
-
-/**
- * The object buffer's starting room: a scene of a few hundred objects before the first grow.
- **/
-const std::size_t initialObjects = 256;
-
-};  // namespace
 
 /**
  **/

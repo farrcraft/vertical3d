@@ -21,15 +21,15 @@ namespace {
 
 typedef v3d::render::offline::Filter Filter;
 
-float weight(Filter kind, float x, float y, float width) {
-    return v3d::render::offline::filter(kind, glm::vec2(x, y), glm::vec2(width));
-}
-
 /** How many samples a box filter takes along each axis, and how wide it is. **/
 struct Box {
     unsigned int samples = 1;
     float width = 1.0F;
 };
+
+float weight(Filter kind, float x, float y, float width) {
+    return v3d::render::offline::filter(kind, glm::vec2(x, y), glm::vec2(width));
+}
 
 v3d::render::offline::Sampling box(const Box & filter) {
     v3d::render::offline::Sampling sampling;

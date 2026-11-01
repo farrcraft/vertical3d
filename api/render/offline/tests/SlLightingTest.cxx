@@ -33,30 +33,14 @@
 namespace {
 
 typedef v3d::render::offline::sl::runtime::Machine Machine;
+
 typedef v3d::render::offline::sl::runtime::Program Program;
+
 typedef v3d::render::offline::sl::runtime::Value Value;
+
 typedef v3d::render::offline::sl::runtime::Opcode Opcode;
 
-bool build(const std::string & source, Program* program, std::string* error) {
-    std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    if (shaders.size() != 1) {
-        *error = parser.error();
-        return false;
-    }
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
-    if (!compiler.compile()) {
-        *error = compiler.error();
-        return false;
-    }
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
-    if (!emitter.emit(program)) {
-        *error = emitter.error();
-        return false;
-    }
-    return true;
-}
+bool build(const std::string & source, Program* program, std::string* error);
 
 /**
  * One light shader, compiled and ready to run over a batch.
@@ -187,7 +171,50 @@ light overhead() {
         Cl = color (1, 1, 1);
     }
 }
+
 )";
+
+bool build(const std::string & source, Program* program, std::string* error) {
+    std::istringstream stream(source);
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
+    if (shaders.size() != 1) {
+        *error = parser.error();
+        return false;
+    }
+    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    if (!compiler.compile()) {
+        *error = compiler.error();
+        return false;
+    }
+    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    if (!emitter.emit(program)) {
+        *error = emitter.error();
+        return false;
+    }
+    return true;
+}
+
+/**
+ * The L a solar light with an angle lights a point from, given the cone the point's surface
+ * gathers from. Its axis travels along -z, so L is around +z, half a radian either way.
+ **/
+glm::vec3 solarFrom(const std::vector<glm::vec3> & gathering) {
+    std::string error;
+    Program program;
+    BOOST_REQUIRE_MESSAGE(build(
+        "light wide() {\n"
+        "    solar(vector (0, 0, -1), 0.5) {\n"
+        "        Cl = color (1, 1, 1);\n"
+        "    }\n"
+        "}\n", &program, &error), error);
+    Machine machine;
+    machine.prepare(program, 1);
+    machine.gather(gathering, std::vector<float>(gathering.size(), 1.5707963F));
+    BOOST_REQUIRE(machine.run());
+    BOOST_CHECK(machine.reports().empty());
+    return machine.value(program.symbol("L")).triple(0);
+}
 
 /**
  * A light shader's `solar` sets L against the direction the light travels, so that L points
@@ -216,27 +243,6 @@ BOOST_AUTO_TEST_CASE(sllighting_solar_test) {
     BOOST_CHECK_CLOSE(colour.triple(2).r, 1.0F, 0.01F);
     BOOST_REQUIRE_EQUAL(reached.size(), 3U);
     BOOST_CHECK(reached[0] != 0 && reached[2] != 0);
-}
-
-/**
- * The L a solar light with an angle lights a point from, given the cone the point's surface
- * gathers from. Its axis travels along -z, so L is around +z, half a radian either way.
- **/
-glm::vec3 solarFrom(const std::vector<glm::vec3> & gathering) {
-    std::string error;
-    Program program;
-    BOOST_REQUIRE_MESSAGE(build(
-        "light wide() {\n"
-        "    solar(vector (0, 0, -1), 0.5) {\n"
-        "        Cl = color (1, 1, 1);\n"
-        "    }\n"
-        "}\n", &program, &error), error);
-    Machine machine;
-    machine.prepare(program, 1);
-    machine.gather(gathering, std::vector<float>(gathering.size(), 1.5707963F));
-    BOOST_REQUIRE(machine.run());
-    BOOST_CHECK(machine.reports().empty());
-    return machine.value(program.symbol("L")).triple(0);
 }
 
 /**

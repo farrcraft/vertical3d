@@ -14,7 +14,7 @@
 #include <boost/json.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::store {
 
 /**
  **/
@@ -65,4 +65,4 @@ boost::json::array vector(const glm::vec3& value) {
     return boost::json::array{ value.x, value.y, value.z };
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

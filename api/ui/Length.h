@@ -51,6 +51,11 @@ class Length final {
     float resolve(const Basis& basis) const noexcept;
 
  private:
+    /**
+     * What a percentage is multiplied by to give a fraction.
+     **/
+    static constexpr float PERCENT_TO_FRACTION = 0.01F;
+
     float value_;
     Unit unit_;
 };

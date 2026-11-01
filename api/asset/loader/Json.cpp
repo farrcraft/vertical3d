@@ -18,15 +18,15 @@
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 
-namespace v3d::asset {
+namespace v3d::asset::loader {
 /**
  **/
-loader::Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(typeid(v3d::asset::kind::Json), logger) {
+Json::Json(const boost::shared_ptr<v3d::log::Logger>& logger) : Loader(typeid(v3d::asset::kind::Json), logger) {
 }
 
 /**
  **/
-boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
+boost::shared_ptr<Asset> Json::load(std::string_view name) {
     logger()->get()->info("Looking for json asset at: {}", name);
     const std::optional<std::string> text = readFile(name);
     if (!text) {
@@ -42,4 +42,4 @@ boost::shared_ptr<Asset> loader::Json::load(std::string_view name) {
     return boost::make_shared<v3d::asset::kind::Json>(std::string(name), document.as_object());
 }
 
-};  // namespace v3d::asset
+};  // namespace v3d::asset::loader

@@ -104,9 +104,10 @@ new one**.
 
 ## Style in one screen
 
-Use `boost::shared_ptr` and `boost::make_shared`, not the `std` equivalents. Headers are `.h`;
-implementations are `.cpp` **or** `.cxx`, mixed even within a directory, so match the immediate
-neighbours. Namespaces mirror the `api/` path and close with `};  // namespace <full name>`,
+Use `boost::shared_ptr` and `boost::make_shared`, not the `std` equivalents. Headers are `.h`.
+Implementations are `.cpp` **or** `.cxx`, mixed even within a directory, so match the immediate
+neighbours. Namespaces mirror the directory (`api/asset` is `v3d::asset`, `vertical3d/src/scene`
+is `v3d::editor::scene`), a gate checks it, and they close with `};  // namespace <full name>`,
 trailing semicolon included. A namespace body is not indented, and neither is a continuation
 line at namespace scope. 4-space indent, with access specifiers one space into the class body.
 Log through `logger_->get()->info("... {}", value)`, never the old `LOG_*` macros. LF line

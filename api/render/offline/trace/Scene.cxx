@@ -34,25 +34,14 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-/** How many steps a moving primitive's corners are followed through across its motion. **/
-constexpr int SWEEP_STEPS = 16;
-
-Hierarchy::Box still(const v3d::type::geometry::AABBox & stored) {
+Hierarchy::Box Scene::still(const v3d::type::geometry::AABBox & stored) {
     Hierarchy::Box box;
     box.extend(stored.min());
     box.extend(stored.max());
     return box;
 }
 
-/**
- * A box that holds a moving primitive at every time of its motion. The primitive at a time is
- * its stored box's corners through that time's pose, so the box follows those corners across
- * the motion. A rotation carries a corner along an arc between two steps, and the arc stays
- * within one step's length of either end. The box is grown by the longest step to hold it.
- **/
-Hierarchy::Box swept(const v3d::type::geometry::AABBox & stored, const v3d::render::offline::MovingTransform & motion) {
+Hierarchy::Box Scene::swept(const v3d::type::geometry::AABBox & stored, const v3d::render::offline::MovingTransform & motion) {
     glm::vec3 corners[8];
     stored.vertices(corners);
     const glm::mat4x4 back = glm::inverse(motion.reference());
@@ -76,8 +65,6 @@ Hierarchy::Box swept(const v3d::type::geometry::AABBox & stored, const v3d::rend
     box.max += glm::vec3(longest);
     return box;
 }
-
-};  // namespace
 
 Scene::Scene() {
 }

@@ -25,7 +25,7 @@
 #include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 namespace {
 
@@ -224,4 +224,4 @@ glm::vec3 eulerNear(const glm::quat& rotation, const glm::vec3& near) {
     return distance(two) < distance(one) ? two : one;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

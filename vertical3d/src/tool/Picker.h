@@ -16,7 +16,7 @@
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/scene/Visitor.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -28,7 +28,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::tool {
 
 /**
  * What a click at a screen point hit, found by a ray cast on the CPU, and what a rectangle
@@ -44,7 +44,7 @@ namespace v3d::editor {
  * before any of its components can be. The Vertex mask finds a curve's control points, and the
  * Handle mask its Bezier handles.
  **/
-class Picker final : public SceneVisitor {
+class Picker final : public scene::Visitor {
  public:
     /**
      * What one pick found.
@@ -61,7 +61,7 @@ class Picker final : public SceneVisitor {
         /**
          * Which kind of thing was hit. It is the mask the pick was made under.
          **/
-        SelectMask kind;
+        selection::SelectMask kind;
         /**
          * The index of the vertex, half edge or face within that mesh, or the part number of
          * the curve's control point or handle. Zero and meaningless when the mask selects
@@ -96,7 +96,7 @@ class Picker final : public SceneVisitor {
      * @param cursor where the click was, in window pixels
      * @param mask what kind of thing the click is looking for
      **/
-    Hit pick(const Scene& scene, const ViewPort& view, const glm::vec2& cursor, SelectMask mask);
+    Hit pick(const scene::Scene& scene, const view::ViewPort& view, const glm::vec2& cursor, selection::SelectMask mask);
 
     /**
      * Find everything a rectangle on the screen holds, as a rubber band selects it.
@@ -110,26 +110,32 @@ class Picker final : public SceneVisitor {
      * @param opposite the corner across from it. Either corner may be the smaller
      * @return one hit for each thing inside, in scene order
      **/
-    std::vector<Hit> inside(const Scene& scene, const ViewPort& view, const glm::vec2& corner,
-        const glm::vec2& opposite, SelectMask mask);
+    std::vector<Hit> inside(const scene::Scene& scene, const view::ViewPort& view, const glm::vec2& corner,
+        const glm::vec2& opposite, selection::SelectMask mask);
 
     /**
      * One item of the scene, during a pick. Public because the scene calls them through
-     * SceneVisitor. Only the scene calls them.
+     * scene::Visitor. Only the scene calls them.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
-    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
 
  private:
+    /**
+     * Where along a segment the closest point to a target is, as a fraction of it,
+     * clamped to the segment's ends. A degenerate segment returns zero, its start.
+     **/
+    static float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target);
+
     /**
      * An item drawn in lines in its own space and placed by a model matrix: a curve, or a
      * camera's, a light's or a group's glyph. It is hit when a segment is within tolerance of
      * the cursor, and inside a rectangle when every point of it is.
      **/
-    void lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
+    void lines(const scene::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn);
 
     /**
      * Points of the item being traversed, each named by its part number: hit within tolerance
@@ -178,7 +184,7 @@ class Picker final : public SceneVisitor {
      * Take the view's camera and region for one traversal.
      * @return false when the view has no camera or no area, and nothing can be found in it
      **/
-    bool begin(const ViewPort& view, SelectMask mask);
+    bool begin(const view::ViewPort& view, selection::SelectMask mask);
 
     /**
      * Where a point of the mesh lands on the screen, and whether it is in front of the
@@ -209,7 +215,7 @@ class Picker final : public SceneVisitor {
     float tolerance_;
 
     // the state of one pick, valid only while the scene is being traversed
-    SelectMask mask_;
+    selection::SelectMask mask_;
     v3d::type::geometry::Ray ray_;
     v3d::type::camera::Camera* camera_;
     int viewport_[4];
@@ -227,4 +233,4 @@ class Picker final : public SceneVisitor {
     std::vector<Hit> inside_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::tool

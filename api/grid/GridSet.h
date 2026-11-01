@@ -114,6 +114,18 @@ class GridSet final {
 
  private:
     /**
+     * How far a corner may sit from the tile lattice, as a fraction of a tile, and still be on it.
+     * A corner computed in floats lands a rounding error away from a whole number of tiles.
+     **/
+    static constexpr float LATTICE_TOLERANCE = 1.0e-3F;
+
+    /**
+     * How far apart two tile sizes may be, as a fraction of the larger, and still be the same. A
+     * size read from a file carries a rounding error.
+     **/
+    static constexpr float SIZE_TOLERANCE = 1.0e-6F;
+
+    /**
      * One grid of the set, where it sits in world tiles, and where its tiles start in the
      * set's index. The size is kept here, so index() and tile() read no grid.
      **/
@@ -133,6 +145,8 @@ class GridSet final {
 
     /** The world tile at a grid's tile (0, 0), or nothing when its corner is off the lattice. **/
     static std::optional<TileCoord> lattice(const TileGrid& grid);
+
+    static bool sameSize(float first, float second);
 
     std::vector<Placed> grids_;
     std::size_t count_ = 0;

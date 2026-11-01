@@ -1,0 +1,5 @@
+{
+  "image": "icons/icons.png",
+  "columns": 5,
+  "names": ["select", "move", "rotate", "scale", "extrude", "inset", "split-face", "split-edge", "merge", "maximise"]
+}

@@ -53,6 +53,12 @@ class Floor final : public v3d::render::offline::trace::Primitive {
     }
 };
 
+/** Whether a ray straight down the negative z axis from z = 10 meets the scene, and where. **/
+bool downward(const v3d::render::offline::trace::Scene & scene, float x, float y, v3d::render::offline::trace::Hit* hit) {
+    return scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, 10.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)}),
+        0.0F, hit);
+}
+
 BOOST_AUTO_TEST_CASE(scene_test) {
     v3d::render::offline::trace::Scene scene;
 
@@ -127,16 +133,6 @@ BOOST_AUTO_TEST_CASE(triangle_shading_normal_test) {
     BOOST_TEST(middle.x < leaning.x);
     BOOST_TEST(glm::length(middle) == 1.0F, boost::test_tools::tolerance(0.0001F));
 }
-
-namespace {
-
-/** Whether a ray straight down the negative z axis from z = 10 meets the scene, and where. **/
-bool downward(const v3d::render::offline::trace::Scene & scene, float x, float y, v3d::render::offline::trace::Hit* hit) {
-    return scene.nearest(v3d::type::geometry::Ray({.origin = glm::vec3(x, y, 10.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)}),
-        0.0F, hit);
-}
-
-};  // namespace
 
 /**
  * A sphere's silhouette is its radius, exactly, wherever it was placed: a ray just inside

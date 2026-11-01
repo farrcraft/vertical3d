@@ -8,24 +8,7 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 
-namespace v3d::editor {
-
-namespace {
-
-/**
- * How many lines apart the emphasised ones are, and how many lines the grid is across.
- **/
-constexpr unsigned int defaultIntervals = 10;
-constexpr unsigned int defaultLines = 60;
-
-/**
- * The colours of an ordinary line, an emphasised line and the lines through the origin.
- **/
-constexpr glm::vec4 minorColour(0.30F, 0.30F, 0.30F, 1.0F);
-constexpr glm::vec4 majorColour(0.42F, 0.42F, 0.52F, 1.0F);
-constexpr glm::vec4 originColour(0.65F, 0.65F, 0.70F, 1.0F);
-
-};  // namespace
+namespace v3d::editor::view {
 
 /**
  **/
@@ -114,4 +97,4 @@ void ConstructionPlane::draw(const v3d::type::camera::Camera& camera, v3d::rende
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

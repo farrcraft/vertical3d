@@ -95,6 +95,11 @@ content went. Numbers are never reused.
 | [0058](0058-ui-sdl-keyboard-adapter-in-ui-shell.md) | UI: SDL keyboard adapter in ui/shell | accepted |
 | [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
 | 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
+| [0128](0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted |
+| [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | accepted |
+| [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
+| [0131](0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted |
+| [0132](0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted |
 
 ## Engine, input and assets
 
@@ -115,6 +120,7 @@ content went. Numbers are never reused.
 | [0086](0086-loading-one-worker-thread-polled-from-the-main-thread.md) | Loading: one worker thread, polled from the main thread | accepted |
 | [0089](0089-paths-narrow-strings-are-utf-8-under-a-utf-8-code-page.md) | Paths: narrow strings are UTF-8, under a UTF-8 code page | accepted |
 | [0090](0090-input-commands-are-handled-through-one-registry.md) | Input: commands are handled through one registry | accepted |
+| [0133](0133-input-the-most-specific-chord-wins-a-key.md) | Input: the most specific chord wins a key | accepted |
 | [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
 | [0116](0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted |
 | [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |
@@ -162,6 +168,10 @@ content went. Numbers are never reused.
 | [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
 | [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
 | [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
+| [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | accepted |
+| [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
+| [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
+| [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
 
 ## Build, testing and code
 
@@ -175,6 +185,7 @@ content went. Numbers are never reused.
 | 0050 | *Merged into 0054* | removed |
 | [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
 | [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | accepted |
+| [0137](0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local | accepted |
 
 ## Process
 

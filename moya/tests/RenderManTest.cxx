@@ -5,11 +5,11 @@
 
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/Sampling.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
-#include <moya/libmoya/RenderMan.h>
-#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/ri/RenderMan.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include <cmath>
 #include <string>
@@ -24,11 +24,36 @@
 namespace {
 
 /**
+ * A quad that covers an 8 by 6 picture, coloured red at every corner through "Cs", at one
+ * sample a pixel. Only the colour a polygon's own parameter gives can make the picture red,
+ * because the colour in force is white.
+ **/
+const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
+
+const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
+
+/**
  * The context the C entry points write to. RiGetContext is RI's own query for it, and the
  * handle it returns is the handler that holds the context.
  **/
-v3d::moya::RenderContext & context() {
-    return static_cast<v3d::moya::RIBHandler*>(RiGetContext())->context();
+v3d::moya::state::RenderContext & context() {
+    return static_cast<v3d::moya::ri::RIBHandler*>(RiGetContext())->context();
+}
+
+void beginCovered() {
+    RiBegin(RI_NULL);
+    RiFormat(8, 6, 1.0F);
+    RiPixelSamples(1.0F, 1.0F);
+    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
+    RiClipping(1.0F, 100.0F);
+    RiWorldBegin();
+}
+
+void checkRed() {
+    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
+    BOOST_REQUIRE(planes);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 4, 3), 1.0F, 0.01F);
+    BOOST_CHECK_SMALL(planes->value(v3d::moya::state::Planes::GREEN, 4, 3), 0.001F);
 }
 
 /**
@@ -53,7 +78,7 @@ BOOST_AUTO_TEST_CASE(renderman_surface_and_lights_test) {
     RiSurface(const_cast<char*>("plastic"),
         const_cast<char*>("roughness"), &roughness, RI_NULL);
 
-    v3d::moya::Shading shading = context().shading();
+    v3d::moya::state::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "plastic");
     BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
@@ -79,7 +104,7 @@ BOOST_AUTO_TEST_CASE(renderman_declare_test) {
     RiSurface(const_cast<char*>("matte"), const_cast<char*>("squish"), &squish, RI_NULL);
 
     // matte declares no "squish", so the parameter is dropped and the surface is still matte
-    const v3d::moya::Shading shading = context().shading();
+    const v3d::moya::state::Shading shading = context().shading();
     BOOST_REQUIRE(shading.surface);
     BOOST_CHECK_EQUAL(shading.surface->name(), "matte");
     RiEnd();
@@ -183,7 +208,7 @@ BOOST_AUTO_TEST_CASE(renderman_an_area_light_keeps_its_geometry_test) {
     RiIlluminate(area, RI_TRUE);
     RiPolygon(4, const_cast<char*>("P"), static_cast<RtPointer>(quad), RI_NULL);
 
-    const v3d::moya::Shading shading = context().shading();
+    const v3d::moya::state::Shading shading = context().shading();
     BOOST_REQUIRE_EQUAL(shading.lights.size(), 1U);
     BOOST_REQUIRE(shading.lights[0].area);
     BOOST_CHECK_CLOSE(shading.lights[0].area->area(), 1.0F, 0.01F);
@@ -212,36 +237,12 @@ BOOST_AUTO_TEST_CASE(renderman_a_displacement_reaches_the_context_test) {
     RtString path = const_cast<char*>("data:&");
     RiOption(const_cast<char*>("searchpath"), const_cast<char*>("shader"), &path, RI_NULL);
     RiDisplacement(const_cast<char*>("lift"), const_cast<char*>("amount"), &amount, RI_NULL);
-    const v3d::moya::Shading shading = context().shading();
+    const v3d::moya::state::Shading shading = context().shading();
     BOOST_REQUIRE(shading.displacement.shader);
     BOOST_CHECK_EQUAL(shading.displacement.shader->name(), "lift");
     BOOST_CHECK_CLOSE(shading.displacementBound, 0.6F, 0.01F);
     RiWorldEnd();
     RiEnd();
-}
-
-/**
- * A quad that covers an 8 by 6 picture, coloured red at every corner through "Cs", at one
- * sample a pixel. Only the colour a polygon's own parameter gives can make the picture red,
- * because the colour in force is white.
- **/
-const RtPoint COVER[4] = { { -5.0F, -5.0F, 5.0F }, { 5.0F, -5.0F, 5.0F }, { 5.0F, 5.0F, 5.0F }, { -5.0F, 5.0F, 5.0F } };
-const RtPoint RED[4] = { { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F }, { 1.0F, 0.0F, 0.0F } };
-
-void beginCovered() {
-    RiBegin(RI_NULL);
-    RiFormat(8, 6, 1.0F);
-    RiPixelSamples(1.0F, 1.0F);
-    RiPixelFilter(RiBoxFilter, 1.0F, 1.0F);
-    RiClipping(1.0F, 100.0F);
-    RiWorldBegin();
-}
-
-void checkRed() {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = context().picture();
-    BOOST_REQUIRE(planes);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 4, 3), 1.0F, 0.01F);
-    BOOST_CHECK_SMALL(planes->value(v3d::moya::Planes::GREEN, 4, 3), 0.001F);
 }
 
 /**
@@ -326,7 +327,7 @@ BOOST_AUTO_TEST_CASE(renderman_sphere_draws_under_the_ray_hider_test) {
  * RiProjection reads "fov" as a pointer to a float, as RI passes every parameter value.
  **/
 BOOST_AUTO_TEST_CASE(renderman_projection_reads_its_fov_test) {
-    v3d::moya::RenderContext expected("");
+    v3d::moya::state::RenderContext expected("");
     expected.projection("perspective", 45.0F);
 
     RiBegin(RI_NULL);

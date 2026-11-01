@@ -2,15 +2,39 @@
 # rather than each compiling their own.
 add_library("v3dlib_editor"
 	"src/Controller.h" "src/Controller.cxx"
+
+	"src/app/AreaCommands.h" "src/app/AreaCommands.cxx"
+	"src/app/CommandTable.h" "src/app/CommandTable.cxx"
+	"src/app/Context.h" "src/app/Context.cxx"
+	"src/app/EditCommands.h" "src/app/EditCommands.cxx"
+	"src/app/PlaybackCommands.h" "src/app/PlaybackCommands.cxx"
+	"src/app/ProjectFiles.h" "src/app/ProjectFiles.cxx"
+	"src/app/RenderCommands.h" "src/app/RenderCommands.cxx"
+	"src/app/ToolCommands.h" "src/app/ToolCommands.cxx"
+	"src/app/ViewCommands.h" "src/app/ViewCommands.cxx"
+	"src/app/WorkspaceSwitcher.h" "src/app/WorkspaceSwitcher.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 
 	"src/document/Document.h" "src/document/Document.cxx"
 
 	"src/control/Playback.h" "src/control/Playback.cxx"
+	"src/control/AreaChrome.h" "src/control/AreaChrome.cxx"
+	"src/control/CommandSearch.h" "src/control/CommandSearch.cxx"
+	"src/control/IconSheet.h" "src/control/IconSheet.cxx"
+	"src/control/Notices.h" "src/control/Notices.cxx"
+	"src/control/Outliner.h" "src/control/Outliner.cxx"
 	"src/control/Pointer.h" "src/control/Pointer.cxx"
+	"src/control/PropertiesEditor.h" "src/control/PropertiesEditor.cxx"
 	"src/control/RenderWindow.h" "src/control/RenderWindow.cxx"
+	"src/control/StatusBar.h" "src/control/StatusBar.cxx"
+	"src/control/Text.h" "src/control/Text.cxx"
+	"src/control/TopBar.h" "src/control/TopBar.cxx"
+	"src/control/Workspaces.h" "src/control/Workspaces.cxx"
 
-	"src/view/ViewLayout.h" "src/view/ViewLayout.cxx"
+	"src/view/AreaLayout.h" "src/view/AreaLayout.cxx"
+	"src/view/AreaViews.h" "src/view/AreaViews.cxx"
+	"src/view/AreaFrame.h" "src/view/AreaFrame.cxx"
+	"src/view/ViewOverlay.h" "src/view/ViewOverlay.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
 	"src/view/Shading.h"
@@ -25,19 +49,26 @@ add_library("v3dlib_editor"
 	"src/scene/Curve.h" "src/scene/Curve.cxx"
 	"src/scene/CurveParts.h" "src/scene/CurveParts.cxx"
 	"src/scene/Import.h" "src/scene/Import.cxx"
+	"src/scene/Importer.h" "src/scene/Importer.cxx"
 	"src/scene/Evaluation.h" "src/scene/Evaluation.cxx"
 	"src/scene/Properties.h" "src/scene/Properties.cxx"
 	"src/scene/RenderSettings.h"
 	"src/scene/Timeline.h"
 	"src/scene/Scene.h" "src/scene/Scene.cxx"
-	"src/scene/SceneVisitor.h"
+	"src/scene/Visitor.h"
 	"src/scene/CreateItem.h" "src/scene/CreateItem.cxx"
 	"src/view/Glyphs.h" "src/view/Glyphs.cxx"
+	"src/view/Picture.h"
 	"src/view/WireframeVisitor.h" "src/view/WireframeVisitor.cxx"
 	"src/render/RIBExportVisitor.h" "src/render/RIBExportVisitor.cxx"
 	"src/store/Project.h" "src/store/Project.cxx"
-	"src/store/SceneStore.h" "src/store/SceneStore.cxx"
+	"src/store/Scene.h" "src/store/Scene.cxx"
+	"src/store/internal/Loaded.h"
+	"src/store/internal/Inserts.h"
+	"src/store/internal/Writes.h"
 	"src/store/Bytes.h" "src/store/Bytes.cxx"
+	"src/store/Blob.h"
+	"src/store/Cursor.h" "src/store/Cursor.cxx"
 	"src/store/Payload.h" "src/store/Payload.cxx"
 	"src/store/Codec.h" "src/store/Codec.cxx"
 	"src/store/MeshCodec.h" "src/store/MeshCodec.cxx"
@@ -51,34 +82,35 @@ add_library("v3dlib_editor"
 	"src/render/Delegate.h" "src/render/Delegate.cxx"
 	"src/render/MoyaDelegate.h" "src/render/MoyaDelegate.cxx"
 	"src/render/Process.h" "src/render/Process.cxx"
-	"src/render/RenderPanels.h" "src/render/RenderPanels.cxx"
+	"src/render/Panels.h" "src/render/Panels.cxx"
 	"src/render/Shot.h" "src/render/Shot.cxx"
 
 	"src/command/Command.h"
-	"src/command/CommandStack.h" "src/command/CommandStack.cxx"
-	"src/command/CreateCommand.h" "src/command/CreateCommand.cxx"
-	"src/command/GroupCommand.h" "src/command/GroupCommand.cxx"
-	"src/command/ImportCommand.h" "src/command/ImportCommand.cxx"
-	"src/command/KeyCommand.h" "src/command/KeyCommand.cxx"
-	"src/command/SettingsCommand.h" "src/command/SettingsCommand.cxx"
+	"src/command/Stack.h" "src/command/Stack.cxx"
+	"src/command/Create.h" "src/command/Create.cxx"
+	"src/command/Edit.h" "src/command/Edit.cxx"
+	"src/command/Group.h" "src/command/Group.cxx"
+	"src/command/Import.h" "src/command/Import.cxx"
+	"src/command/Key.h" "src/command/Key.cxx"
+	"src/command/Settings.h" "src/command/Settings.cxx"
 	"src/command/Placement.h" "src/command/Placement.cxx"
-	"src/command/TransformCommand.h" "src/command/TransformCommand.cxx"
-	"src/command/VertexCommand.h" "src/command/VertexCommand.cxx"
-	"src/command/TopologyCommand.h" "src/command/TopologyCommand.cxx"
+	"src/command/Transform.h" "src/command/Transform.cxx"
+	"src/command/Vertex.h" "src/command/Vertex.cxx"
+	"src/command/Topology.h" "src/command/Topology.cxx"
 
 	"src/tool/Tool.h"
-	"src/tool/ToolRouter.h" "src/tool/ToolRouter.cxx"
-	"src/tool/CameraControlTool.h" "src/tool/CameraControlTool.cxx"
+	"src/tool/Router.h" "src/tool/Router.cxx"
+	"src/tool/CameraControl.h" "src/tool/CameraControl.cxx"
 	"src/selection/SelectMask.h" "src/selection/SelectMask.cxx"
-	"src/tool/SelectTool.h" "src/tool/SelectTool.cxx"
-	"src/tool/TransformTool.h" "src/tool/TransformTool.cxx"
+	"src/tool/Select.h" "src/tool/Select.cxx"
+	"src/tool/Transform.h" "src/tool/Transform.cxx"
 	"src/tool/Picker.h" "src/tool/Picker.cxx"
 
 	"src/manipulator/Manipulator.h" "src/manipulator/Manipulator.cxx"
 	"src/manipulator/Target.h" "src/manipulator/Target.cxx"
-	"src/manipulator/TranslateManipulator.h" "src/manipulator/TranslateManipulator.cxx"
-	"src/manipulator/RotateManipulator.h" "src/manipulator/RotateManipulator.cxx"
-	"src/manipulator/ScaleManipulator.h" "src/manipulator/ScaleManipulator.cxx")
+	"src/manipulator/Translate.h" "src/manipulator/Translate.cxx"
+	"src/manipulator/Rotate.h" "src/manipulator/Rotate.cxx"
+	"src/manipulator/Scale.h" "src/manipulator/Scale.cxx")
 
 target_include_directories("v3dlib_editor" PUBLIC ${V3D_ROOT})
 target_link_libraries("v3dlib_editor" PUBLIC
@@ -99,9 +131,10 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_window)
 
 # PRIVATE: what only the editor's sources use. The renderer loads the ui's images, the project
-# store writes through the database, the document imports USD, and moya renders the render
-# window
-target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_interchange_usd v3dlib_moya)
+# store writes through the database, the document imports USD, moya renders the render window,
+# and the controller reads the mouse's held buttons
+target_link_libraries("v3dlib_editor" PRIVATE v3dlib_asset_media v3dlib_database v3dlib_input v3dlib_interchange_usd
+	v3dlib_moya)
 
 # the shaded pass's own stages, which a view draws its meshes' surfaces with
 v3d_add_shader("v3dlib_editor" "shaders/shaded.vert")

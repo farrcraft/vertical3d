@@ -20,26 +20,6 @@
 
 namespace v3d::grid {
 
-namespace {
-
-/**
- * How far a corner may sit from the tile lattice, as a fraction of a tile, and still be on it.
- * A corner computed in floats lands a rounding error away from a whole number of tiles.
- **/
-constexpr float LATTICE_TOLERANCE = 1.0e-3F;
-
-/**
- * How far apart two tile sizes may be, as a fraction of the larger, and still be the same. A size
- * read from a file carries a rounding error.
- **/
-constexpr float SIZE_TOLERANCE = 1.0e-6F;
-
-bool sameSize(float first, float second) {
-    return std::abs(first - second) <= SIZE_TOLERANCE * std::max(std::abs(first), std::abs(second));
-}
-
-};  // namespace
-
 GridSet GridSet::local(const TileGrid& grid) {
     GridSet set;
     set.tileSize_ = grid.tileSize();
@@ -171,6 +151,10 @@ std::optional<TileCoord> GridSet::lattice(const TileGrid& grid) {
         return std::nullopt;
     }
     return TileCoord{static_cast<int>(roundedX), static_cast<int>(roundedY)};
+}
+
+bool GridSet::sameSize(float first, float second) {
+    return std::abs(first - second) <= SIZE_TOLERANCE * std::max(std::abs(first), std::abs(second));
 }
 
 };  // namespace v3d::grid

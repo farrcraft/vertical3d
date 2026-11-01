@@ -27,10 +27,6 @@ using v3d::grid::tileCorners;
 
 namespace {
 
-constexpr TileCoord at(int x, int y) {
-    return TileCoord{ x, y };
-}
-
 struct Segment {
     glm::vec3 from;
     glm::vec3 to;
@@ -94,6 +90,10 @@ class QuadRecorder {
 constexpr glm::vec4 INTERIOR(0.3F, 0.3F, 0.3F, 1.0F);
 constexpr glm::vec4 BORDER(0.8F, 0.8F, 0.9F, 1.0F);
 constexpr glm::vec4 HIGHLIGHT(0.2F, 0.6F, 1.0F, 0.4F);
+
+constexpr TileCoord at(int x, int y) {
+    return TileCoord{ x, y };
+}
 
 BOOST_AUTO_TEST_CASE(overlay_tile_corners_bound_the_tile_test) {
     const TileGrid grid(4, 4);

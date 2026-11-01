@@ -11,6 +11,7 @@
 #include <api/image/Image.h>
 #include <api/image/Pack.h>
 #include <api/log/Logger.h>
+#include <imagetool/SheetRequest.h>
 
 #include <algorithm>
 #include <cctype>
@@ -71,20 +72,6 @@ std::vector<boost::filesystem::path> imageFiles(const std::vector<std::string> &
 bool plainName(const std::string & name) {
     return !name.empty() && name != "." && name != ".." && name.find_first_of("/\\:") == std::string::npos;
 }
-
-/** What a --pack or --unpack run was asked to do. **/
-class SheetRequest final {
- public:
-    /** The images, and directories of images, to pack. **/
-    std::vector<std::string> pack;
-    /** The sprites document to unpack. **/
-    std::string unpack;
-    /** The sheet to pack, or the one sheet to unpack. Empty unpacks every sheet. **/
-    std::string sheet;
-    /** Where a pack writes the sheet's image. Empty writes <sheet>.png. **/
-    std::string outfile;
-    bool silent = false;
-};
 
 /**
  * Pack the named images into one sheet, write it, and write where each sprite went into the
@@ -311,10 +298,9 @@ bool rectangle(const std::string& text, unsigned int* values) {
     return !(stream >> extra);
 }
 
-int run(int argc, char *argv[]) {
-    // setup option parser
-    boost::program_options::options_description opts_desc("Allowed options");
-    opts_desc.add_options()
+/** Declare every option the command line takes. **/
+void describeOptions(boost::program_options::options_description* opts_desc) {
+    opts_desc->add_options()
         ("help", "produce help message")
         ("info", "display image info")
         ("silent", "don't display any output")
@@ -326,6 +312,70 @@ int run(int argc, char *argv[]) {
         ("sheet", boost::program_options::value<std::string>(), "the name of the sheet to pack, or the one sheet to unpack")
         ("unpack", boost::program_options::value<std::string>(),
             "a sprites.json whose sprites are each cut out and written to <sheet>/<sprite>.png beside it");
+}
+
+/**
+ * Read the image a --file names, and print its size and depth when info is set. A file that
+ * cannot be read ends the process.
+ **/
+boost::shared_ptr<v3d::image::Image> readImage(v3d::image::Factory* factory, const std::string& infile, bool info,
+    bool silent) {
+    // silent covers the progress lines. Info was asked for by name and prints regardless
+    if (!silent) {
+        std::cout << "Reading: " << infile << "\n";
+    }
+    boost::shared_ptr<v3d::image::Image> image = factory->read(infile);
+    if (!image) {
+        std::cout << "error reading file!" << "\n";
+        exit(EXIT_FAILURE);
+    }
+
+    if (info) {
+        std::cout << "Source image width: " << image->width() << "\n";
+        std::cout << "Source image height: " << image->height() << "\n";
+        std::cout << "Source image bpp: " << static_cast<unsigned int>(image->bpp()) << "\n";
+    }
+    return image;
+}
+
+/**
+ * Cut a rectangle out of the image when cut is not null, then write the image to outfile when
+ * one is named. A file that cannot be written ends the process.
+ *
+ * @param cut x, y, width and height, or null for no crop
+ * @return the exit status
+ **/
+int writeImage(v3d::image::Factory* factory, boost::shared_ptr<v3d::image::Image> image, const unsigned int* cut,
+    const std::string& outfile, bool silent) {
+    if (cut != nullptr) {
+        if (!silent) {
+            std::cout << "Cropping: " << cut[2] << "x" << cut[3] << " at " << cut[0] << "," << cut[1] << "\n";
+        }
+        image = v3d::image::crop(*image, cut[0], cut[1], cut[2], cut[3]);
+        if (!image) {
+            std::cout << "error: that rectangle is not inside the image!" << "\n";
+            return EXIT_FAILURE;
+        }
+    }
+
+    if (!outfile.empty()) {
+        if (!silent) {
+            std::cout << "Writing: " << outfile << "\n";
+        }
+        const std::optional<std::string> encoded = factory->encode(image, v3d::image::Factory::kind(outfile));
+        if (!encoded || !v3d::asset::writeFile(outfile, *encoded)) {
+            std::cout << "error writing file!" << "\n";
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int run(int argc, char *argv[]) {
+    // setup option parser
+    boost::program_options::options_description opts_desc("Allowed options");
+    describeOptions(&opts_desc);
 
     // parse options
     boost::program_options::variables_map var_map;
@@ -380,49 +430,11 @@ int run(int argc, char *argv[]) {
     auto logger = boost::make_shared<v3d::log::Logger>();
 
     v3d::image::Factory factory(logger);
-    boost::shared_ptr<v3d::image::Image> image;
-
-    // silent covers the progress lines. Info was asked for by name and prints regardless
-    if (!silent) {
-        std::cout << "Reading: " << infile << "\n";
-    }
-    image = factory.read(infile);
-    if (!image) {
-        std::cout << "error reading file!" << "\n";
-        exit(EXIT_FAILURE);
-    }
-
-    if (info) {
-        std::cout << "Source image width: " << image->width() << "\n";
-        std::cout << "Source image height: " << image->height() << "\n";
-        std::cout << "Source image bpp: " << static_cast<unsigned int>(image->bpp()) << "\n";
-    }
+    const boost::shared_ptr<v3d::image::Image> image = readImage(&factory, infile, info, silent);
 
     // the crop happens after info, so that info describes the file that was read whatever
     // else the run does to it
-    if (cropping) {
-        if (!silent) {
-            std::cout << "Cropping: " << cut[2] << "x" << cut[3] << " at " << cut[0] << "," << cut[1] << "\n";
-        }
-        image = v3d::image::crop(*image, cut[0], cut[1], cut[2], cut[3]);
-        if (!image) {
-            std::cout << "error: that rectangle is not inside the image!" << "\n";
-            return EXIT_FAILURE;
-        }
-    }
-
-    if (!outfile.empty()) {
-        if (!silent) {
-            std::cout << "Writing: " << outfile << "\n";
-        }
-        const std::optional<std::string> encoded = factory.encode(image, v3d::image::Factory::kind(outfile));
-        if (!encoded || !v3d::asset::writeFile(outfile, *encoded)) {
-            std::cout << "error writing file!" << "\n";
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    return EXIT_SUCCESS;
+    return writeImage(&factory, image, cropping ? cut : nullptr, outfile, silent);
 }
 
 };  // namespace

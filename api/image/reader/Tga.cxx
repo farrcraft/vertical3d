@@ -17,13 +17,6 @@
 
 namespace v3d::image::reader {
 
-namespace {
-
-// the header byte that holds the image descriptor, whose bit 5 is the vertical origin
-constexpr std::size_t IMAGE_DESCRIPTOR = 5;
-
-};  // namespace
-
 /**
  **/
 Tga::Tga(const boost::shared_ptr<v3d::log::Logger>& logger) : Reader(logger) {

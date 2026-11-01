@@ -7,14 +7,19 @@
 #include <api/event/Event.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
+#include <api/ui/Layout.h>
+#include <api/ui/Length.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -38,6 +43,7 @@ const float characterWidth = 10.0F;
 struct Written final {
     std::string text;
     glm::vec2 pen;
+    glm::vec4 colour;
 };
 
 /**
@@ -51,10 +57,11 @@ struct Fixture final {
         bar(boost::make_shared<v3d::ui::component::menu::Bar>()),
         renderer(
             [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) {
+            [this](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
                 Written line;
                 line.text = text;
                 line.pen = pen;
+                line.colour = colour;
                 written.push_back(line);
             }) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
@@ -161,6 +168,35 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
 }
 
 /**
+ * A bar that is not docked is drawn where its layout puts it, its labels are hit there, and
+ * its panel drops from its own bottom edge.
+ **/
+BOOST_AUTO_TEST_CASE(an_undocked_bar_sits_where_its_layout_puts_it) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->docked(false);
+    v3d::ui::Layout& layout = fixture.bar->layout();
+    layout.x = v3d::ui::Length(100.0F, v3d::ui::Length::Unit::Pixels);
+    layout.y = v3d::ui::Length(200.0F, v3d::ui::Length::Unit::Pixels);
+    layout.width = v3d::ui::Length(300.0F, v3d::ui::Length::Unit::Pixels);
+    layout.height = v3d::ui::Length(28.0F, v3d::ui::Length::Unit::Pixels);
+    fixture.draw();
+
+    BOOST_CHECK(fixture.bar->position() == glm::vec2(100.0F, 200.0F));
+    BOOST_CHECK(fixture.bar->size() == glm::vec2(300.0F, 28.0F));
+    BOOST_CHECK_GT(fixture.bar->bound(0).position().x, 100.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->bound(0).position().y, 200.0F);
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 2U);
+    BOOST_CHECK_GT(fixture.written[0].pen.y, 200.0F);
+
+    BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0F, 10.0F)));
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(0)));
+    fixture.draw();
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK_GE(fixture.bar->panels()[0]->position().y, 228.0F);
+}
+
+/**
  * Nothing is hit until something has been drawn: the bounds a click is tested against are
  * what the last draw left on the components.
  **/
@@ -170,6 +206,23 @@ BOOST_AUTO_TEST_CASE(a_bar_that_has_not_been_drawn_takes_no_press) {
 
     BOOST_CHECK(!fixture.bar->press(glm::vec2(20.0F, 10.0F)));
     BOOST_CHECK(!fixture.bar->active());
+}
+
+/**
+ * A closed bar takes a press only on a label, so the rest of its band is left for what sits
+ * beside the labels. An open bar takes a press there.
+ **/
+BOOST_AUTO_TEST_CASE(a_closed_bar_takes_a_press_only_on_a_label) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+
+    const glm::vec2 beside = fixture.bar->position() + glm::vec2(fixture.bar->size().x - 2.0F, fixture.bar->size().y / 2.0F);
+    const v3d::type::geometry::Bound2D last = fixture.bar->bound(fixture.bar->count() - 1);
+    BOOST_REQUIRE_GT(beside.x, last.position().x + last.size().x);
+    BOOST_CHECK(!fixture.bar->press(beside));
+    BOOST_CHECK(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK(fixture.bar->press(beside));
 }
 
 /**
@@ -265,6 +318,137 @@ BOOST_AUTO_TEST_CASE(the_cursor_opens_a_flyout_from_a_submenu_item) {
     BOOST_CHECK(fixture.bar->press(Fixture::centre(*(*flyout)[0])));
     BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1);
     BOOST_CHECK_EQUAL(fixture.sent[0], "test::flat");
+}
+
+/**
+ * With a clock, a submenu waits for the cursor to rest on its item for the delay before it
+ * opens. The wait starts on the first frame drawn after the cursor arrives.
+ **/
+BOOST_AUTO_TEST_CASE(a_submenu_waits_for_the_cursor_to_rest) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.renderer.dressing().submenuDelay = 0.2F;
+    const auto drawAt = [&fixture](float now, std::uint64_t frame) {
+        fixture.renderer.clock({.now = now, .frame = frame});
+        fixture.draw();
+    };
+    drawAt(0.0F, 1);
+    fixture.bar->press(fixture.label(1));
+    drawAt(0.0F, 2);
+
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
+    fixture.bar->motion(Fixture::centre(*(*panel)[0]));
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    drawAt(1.0F, 3);
+    drawAt(1.15F, 4);
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    drawAt(1.25F, 5);
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 2U);
+}
+
+/**
+ * A press on a submenu's item opens it at once, whatever the delay.
+ **/
+BOOST_AUTO_TEST_CASE(a_press_opens_a_submenu_at_once) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.renderer.dressing().submenuDelay = 0.2F;
+    fixture.renderer.clock({.now = 0.0F, .frame = 1});
+    fixture.draw();
+    fixture.bar->press(fixture.label(1));
+    fixture.draw();
+
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
+    fixture.bar->press(Fixture::centre(*(*panel)[0]));
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 2U);
+}
+
+/**
+ * A separator takes half a row, draws a rule and no text, and the cursor passes over it
+ * without choosing it.
+ **/
+BOOST_AUTO_TEST_CASE(a_separator_is_a_rule_nothing_can_choose) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture.menu();
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Open", .name = "open"}));
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Separator, {.label = "", .name = ""}));
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Quit", .name = "quit"}));
+    fixture.bar->add("File", file);
+    fixture.draw();
+    fixture.bar->press(fixture.label(0));
+    fixture.draw();
+
+    const float line = fixture.renderer.dressing().lineHeight;
+    const boost::shared_ptr<v3d::ui::component::menu::Item> rule = (*file)[1];
+    BOOST_CHECK_CLOSE(rule->size().y, line * 0.5F, 0.01F);
+    BOOST_CHECK_CLOSE((*file)[2]->position().y, (*file)[0]->position().y + (line * 1.5F), 0.01F);
+    for (const Written& drawn : fixture.written) {
+        BOOST_CHECK(!drawn.text.empty());
+    }
+
+    fixture.bar->motion(Fixture::centre(*rule));
+    BOOST_CHECK(!file->active());
+    BOOST_CHECK(fixture.bar->press(Fixture::centre(*rule)));
+    BOOST_CHECK(fixture.sent.empty());
+}
+
+/**
+ * The keys step over a separator, at either end of the menu too.
+ **/
+BOOST_AUTO_TEST_CASE(the_keys_step_over_a_separator) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = fixture.menu();
+    menu->addItem(fixture.item(v3d::ui::component::menu::ItemType::Separator, {.label = "", .name = ""}));
+    menu->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "One", .name = "one"}));
+    menu->addItem(fixture.item(v3d::ui::component::menu::ItemType::Separator, {.label = "", .name = ""}));
+    menu->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Two", .name = "two"}));
+    menu->level(menu);
+    menu->active(1);
+
+    menu->next();
+    BOOST_CHECK_EQUAL(menu->active()->label(), "Two");
+    menu->next();
+    BOOST_CHECK_EQUAL(menu->active()->label(), "One");
+    menu->previous();
+    BOOST_CHECK_EQUAL(menu->active()->label(), "Two");
+    menu->previous();
+    BOOST_CHECK_EQUAL(menu->active()->label(), "One");
+}
+
+/**
+ * An item shows the shortcut of its command right-aligned against the arrow column, and the
+ * panel widens to make room for it.
+ **/
+BOOST_AUTO_TEST_CASE(an_item_shows_its_shortcut) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    fixture.bar->press(fixture.label(0));
+    fixture.draw();
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture.bar->panels().front();
+    const float narrow = static_cast<const v3d::ui::Component&>(*file).size().x;
+
+    fixture.renderer.shortcuts([](const v3d::event::Event& command) {
+        return command.str() == "test::open" ? std::string("Ctrl+O") : std::string();
+    });
+    fixture.draw();
+    const glm::vec2 corner = file->position();
+    const glm::vec2 size = static_cast<const v3d::ui::Component&>(*file).size();
+    BOOST_CHECK_GT(size.x, narrow);
+
+    const auto keys = std::ranges::find_if(fixture.written, [](const Written& line) { return line.text == "Ctrl+O"; });
+    BOOST_REQUIRE(keys != fixture.written.end());
+    const float column = fixture.renderer.dressing().lineHeight * v3d::ui::Arranger::markColumn;
+    BOOST_CHECK_CLOSE(keys->pen.x + (6.0F * characterWidth), corner.x + size.x - column, 0.01F);
+    BOOST_CHECK_CLOSE(keys->pen.y, (*file)[0]->position().y + (fixture.renderer.dressing().lineHeight * 0.75F), 0.01F);
+    BOOST_CHECK(keys->colour == fixture.renderer.dressing().secondaryText);
+
+    // on the chosen row it is drawn in the active text, which reads against the highlight
+    fixture.bar->motion(Fixture::centre(*(*file)[0]));
+    fixture.draw();
+    const auto chosen = std::ranges::find_if(fixture.written, [](const Written& line) { return line.text == "Ctrl+O"; });
+    BOOST_REQUIRE(chosen != fixture.written.end());
+    BOOST_CHECK(chosen->colour == fixture.renderer.dressing().activeText);
 }
 
 /**
@@ -480,6 +664,71 @@ BOOST_AUTO_TEST_CASE(a_replaced_submenu_is_let_go) {
         BOOST_TEST(static_cast<const v3d::ui::Component&>(*second).parent() == nullptr);
     }
     BOOST_TEST(v3d::ui::usable(*first));
+}
+
+/**
+ * The arrows walk an open bar. Down and up move through the deepest panel, stepping over a
+ * separator and wrapping. Right enters a submenu at once, and left comes back out of it and
+ * across to the other menu.
+ * Return sends the chosen item and closes the bar. A closed bar takes no key.
+ **/
+BOOST_AUTO_TEST_CASE(the_arrows_walk_an_open_bar) {
+    Fixture fixture;
+    build(&fixture);
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> file = fixture.bar->menu(0);
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Separator, {.label = "", .name = ""}));
+    file->addItem(fixture.item(v3d::ui::component::menu::ItemType::Action, {.label = "Quit", .name = "quit"}));
+    fixture.draw();
+    BOOST_CHECK(!fixture.bar->key("arrow_down"));
+
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(0)));
+    BOOST_CHECK(fixture.bar->key("arrow_down"));
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+    fixture.bar->key("arrow_down");
+    fixture.bar->key("arrow_down");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Quit");
+    fixture.bar->key("arrow_down");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+    fixture.bar->key("arrow_up");
+    BOOST_CHECK_EQUAL(file->active()->label(), "Quit");
+
+    // Quit has no submenu, so the right arrow moves to View and chooses its first item
+    BOOST_CHECK(fixture.bar->key("arrow_right"));
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 1);
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.bar->panels()[0]->active()->label(), "Shading");
+    fixture.bar->key("arrow_right");
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 2U);
+    BOOST_CHECK_EQUAL(fixture.bar->panels()[1]->active()->label(), "Flat");
+    fixture.bar->key("arrow_left");
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    fixture.bar->key("arrow_left");
+    BOOST_CHECK_EQUAL(fixture.bar->open(), 0);
+    BOOST_CHECK_EQUAL(file->active()->label(), "Open");
+
+    BOOST_CHECK(fixture.bar->key("return"));
+    BOOST_CHECK(!fixture.bar->active());
+    BOOST_REQUIRE_EQUAL(fixture.sent.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.sent[0], "test::open");
+}
+
+/**
+ * Escape closes the deepest submenu, and then the bar. A key that walks nothing is not taken.
+ **/
+BOOST_AUTO_TEST_CASE(escape_backs_out_of_an_open_bar) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    BOOST_REQUIRE(fixture.bar->press(fixture.label(1)));
+    fixture.bar->key("arrow_down");
+    fixture.bar->key("return");
+    BOOST_REQUIRE_EQUAL(fixture.bar->panels().size(), 2U);
+    BOOST_CHECK(!fixture.bar->key("a"));
+    BOOST_CHECK(fixture.bar->key("escape"));
+    BOOST_CHECK_EQUAL(fixture.bar->panels().size(), 1U);
+    BOOST_CHECK(fixture.bar->key("escape"));
+    BOOST_CHECK(!fixture.bar->active());
+    BOOST_CHECK(fixture.sent.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

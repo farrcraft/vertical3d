@@ -15,26 +15,6 @@
 
 namespace v3d::type::camera {
 
-namespace {
-
-constexpr glm::vec3 UP(0.0F, 1.0F, 0.0F);
-
-/**
- * A quarter turn per azimuth step.
- **/
-constexpr float QUARTER_TURN = 1.57079632679489661923F;
-
-/**
- * The step index reduced into [0, AZIMUTHS), for a negative index as well as a positive
- * one. The built in remainder keeps the sign of its left operand.
- **/
-int wrap(int index) {
-    const int remainder = index % Isometric::AZIMUTHS;
-    return remainder < 0 ? remainder + Isometric::AZIMUTHS : remainder;
-}
-
-};  // namespace
-
 Isometric::Isometric() : target_(0.0F, 0.0F, 0.0F) {
 }
 
@@ -144,6 +124,11 @@ void Isometric::apply(Camera* camera) const {
     // up before lookat(), which derives the other two normals and the rotation from it
     profile.up(UP);
     profile.lookat(target_);
+}
+
+int Isometric::wrap(int index) {
+    const int remainder = index % Isometric::AZIMUTHS;
+    return remainder < 0 ? remainder + Isometric::AZIMUTHS : remainder;
 }
 
 };  // namespace v3d::type::camera

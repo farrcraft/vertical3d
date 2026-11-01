@@ -19,15 +19,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
-    boost::json::value parsed = boost::json::parse(text);
-    return boost::make_shared<v3d::asset::kind::Json>("map", parsed.as_object());
-}
-
-boost::shared_ptr<odyssey::tile::Map> map() {
-    return boost::make_shared<odyssey::tile::Map>(boost::make_shared<v3d::log::Logger>());
-}
-
 /**
  * A room split by a wall with one gap at its foot. A route from one side to the other has to
  * go round through the gap, not straight across.
@@ -40,6 +31,15 @@ const char* const room =
 "\"#...#\","
 "\"#####\""
 "]}";
+
+boost::shared_ptr<v3d::asset::kind::Json> document(const std::string& text) {
+    boost::json::value parsed = boost::json::parse(text);
+    return boost::make_shared<v3d::asset::kind::Json>("map", parsed.as_object());
+}
+
+boost::shared_ptr<odyssey::tile::Map> map() {
+    return boost::make_shared<odyssey::tile::Map>(boost::make_shared<v3d::log::Logger>());
+}
 
 /**
  * The document is read as it is written: the first string is the northmost row, a

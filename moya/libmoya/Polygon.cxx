@@ -11,6 +11,7 @@
 #include <api/type/geometry/Plane.h>
 #include <moya/libmoya/reyes/Hider.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cassert>
@@ -24,27 +25,11 @@
 
 #include <boost/make_shared.hpp>
 
-#include "RenderContext.h"
 #include "Vertex.h"
 
 namespace v3d::moya {
 
-namespace {
-
-/**
- * The least length of the cross product of two edges from a polygon's first vertex that gives
- * the polygon a normal.
- **/
-constexpr float SMALLEST_SPANNED_AREA = 1.0e-8F;
-
-Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit);
-
-/**
- * Where an edge whose ends classify on opposite sides of a plane meets it. The two tests round
- * differently, so intersectEdge can find no meeting for an edge that ends a hair past the
- * plane. The edge then meets the plane at the end nearer to it.
- **/
-glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & start, const glm::vec3 & end) {
+glm::vec3 Polygon::meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & start, const glm::vec3 & end) {
     glm::vec3 hit;
     if (plane.intersectEdge(start, end, &hit)) {
         return hit;
@@ -52,12 +37,7 @@ glm::vec3 meeting(const v3d::type::geometry::Plane & plane, const glm::vec3 & st
     return std::abs(plane.signedDistance(start)) <= std::abs(plane.signedDistance(end)) ? start : end;
 }
 
-/**
- * A piece is worth handing back only if it bounds something and is strictly smaller
- * than what it came from on some axis. A split that does not shrink its input would be
- * measured as undiceable again and split again, without end.
- **/
-bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometry::AABBox & parent) {
+bool Polygon::progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometry::AABBox & parent) {
     if (piece->vertexCount() < 3) {
         return false;
     }
@@ -67,7 +47,87 @@ bool progress(const boost::shared_ptr<Polygon> & piece, const v3d::type::geometr
     return is[0] < was[0] || is[1] < was[1] || is[2] < was[2];
 }
 
-};  // namespace
+Vertex Polygon::carried(const Vertex & from) {
+    Vertex vert;
+    vert.point(from.point());
+    if (from.hasColor()) {
+        vert.color(from.color());
+    }
+    if (from.hasNormal()) {
+        vert.normal(from.normal());
+    }
+    if (from.hasTexCoord()) {
+        vert.st(from.st());
+    }
+    return vert;
+}
+
+bool Polygon::between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec3* normal) {
+    if (from == to) {
+        *normal = from;
+        return true;
+    }
+    // interpolating unit normals does not give a unit one back
+    const glm::vec3 mixed = from + (to - from) * along;
+    const float length = glm::length(mixed);
+    if (!(length > 0.0F)) {
+        return false;
+    }
+    *normal = mixed / length;
+    return true;
+}
+
+Vertex Polygon::crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit) {
+    Vertex vert;
+    vert.point(hit);
+    const float span = glm::length(end.point() - start.point());
+    const float along = span > 0.0F ? glm::length(hit - start.point()) / span : 0.0F;
+    if (start.hasColor() && end.hasColor()) {
+        vert.color(start.color() + (end.color() - start.color()) * along);
+    }
+    glm::vec3 normal(0.0F);
+    if (start.hasNormal() && end.hasNormal() && between(start.normal(), end.normal(), along, &normal)) {
+        vert.normal(normal);
+    }
+    if (start.hasTexCoord() && end.hasTexCoord()) {
+        vert.st(start.st() + (end.st() - start.st()) * along);
+    }
+    return vert;
+}
+
+void Polygon::addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
+    bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
+    if (first) {
+        if (side < 0) {
+            p1->addVertex(carried(start));
+        } else {
+            p2->addVertex(carried(start));
+        }
+    }
+
+    const Vertex shared = crossing(start, end, hit);
+    p1->addVertex(shared);
+    p2->addVertex(shared);
+
+    if (!last) {
+        if (side < 0) {
+            p2->addVertex(carried(end));
+        } else {
+            p1->addVertex(carried(end));
+        }
+    }
+}
+
+void Polygon::addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, bool last,
+    const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
+    const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
+    if (first) {
+        half->addVertex(carried(start));
+    }
+    if (!last) {
+        half->addVertex(carried(end));
+    }
+}
 
 boost::shared_ptr<Polygon> Polygon::build(const std::vector<glm::vec3> & points,
     const std::vector<glm::vec3> & colors, const std::vector<glm::vec3> & normals,
@@ -230,117 +290,6 @@ v3d::type::geometry::AABBox Polygon::bound(void) const {
     return bound;
 }
 
-namespace {
-
-/**
- * A corner of a piece: the vertex it came from, with the position, colour, shading normal and
- * texture coordinates that vertex has. A value the vertex was not given stays unset, so the
- * piece fills it from the primitive's state as its parent was filled.
- **/
-Vertex carried(const Vertex & from) {
-    Vertex vert;
-    vert.point(from.point());
-    if (from.hasColor()) {
-        vert.color(from.color());
-    }
-    if (from.hasNormal()) {
-        vert.normal(from.normal());
-    }
-    if (from.hasTexCoord()) {
-        vert.st(from.st());
-    }
-    return vert;
-}
-
-/**
- * The shading normal part of the way from one normal to another, as a unit vector. Two equal
- * normals give that normal back unchanged. Opposite normals meeting half way give zero, which
- * names no direction, so false is returned and the crossing is left without a normal of its own.
- **/
-bool between(const glm::vec3 & from, const glm::vec3 & to, float along, glm::vec3* normal) {
-    if (from == to) {
-        *normal = from;
-        return true;
-    }
-    // interpolating unit normals does not give a unit one back
-    const glm::vec3 mixed = from + (to - from) * along;
-    const float length = glm::length(mixed);
-    if (!(length > 0.0F)) {
-        return false;
-    }
-    *normal = mixed / length;
-    return true;
-}
-
-/**
- * Where an edge meets the plane. Colour, shading normal and texture coordinates are taken as
- * far along the edge as the point is, each only when both ends of the edge have one. The
- * normal is renormalised.
- **/
-Vertex crossing(const Vertex & start, const Vertex & end, const glm::vec3 & hit) {
-    Vertex vert;
-    vert.point(hit);
-    const float span = glm::length(end.point() - start.point());
-    const float along = span > 0.0F ? glm::length(hit - start.point()) / span : 0.0F;
-    if (start.hasColor() && end.hasColor()) {
-        vert.color(start.color() + (end.color() - start.color()) * along);
-    }
-    glm::vec3 normal(0.0F);
-    if (start.hasNormal() && end.hasNormal() && between(start.normal(), end.normal(), along, &normal)) {
-        vert.normal(normal);
-    }
-    if (start.hasTexCoord() && end.hasTexCoord()) {
-        vert.st(start.st() + (end.st() - start.st()) * along);
-    }
-    return vert;
-}
-
-/**
- * An edge that crosses the plane. hit is the vertex both halves share, so it goes into each
- * of them. The side start is on decides which half keeps start and which keeps end.
- **/
-void addCrossingEdge(const Vertex& start, const Vertex& end, const glm::vec3& hit, int side,
-    bool first, bool last, const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
-    if (first) {
-        if (side < 0) {
-            p1->addVertex(carried(start));
-        } else {
-            p2->addVertex(carried(start));
-        }
-    }
-
-    const Vertex shared = crossing(start, end, hit);
-    p1->addVertex(shared);
-    p2->addVertex(shared);
-
-    if (!last) {
-        if (side < 0) {
-            p2->addVertex(carried(end));
-        } else {
-            p1->addVertex(carried(end));
-        }
-    }
-}
-
-/**
- * An edge wholly on one side of the plane, so both its vertices go to the same half.
- *
- * Only the first edge contributes its start and only a non-final edge contributes its end:
- * every other vertex is the end of the edge before it.
- **/
-void addWholeEdge(const Vertex& start, const Vertex& end, int side, bool first, bool last,
-    const boost::shared_ptr<Polygon>& p1, const boost::shared_ptr<Polygon>& p2) {
-    const boost::shared_ptr<Polygon>& half = side <= 0 ? p1 : p2;
-    if (first) {
-        half->addVertex(carried(start));
-    }
-    if (!last) {
-        half->addVertex(carried(end));
-    }
-}
-
-};  // namespace
-
 /*
     Cut the polygon by a plane. p1 takes the negative side and p2 the positive, and both
     start empty. split() calls this three times to make four pieces.
@@ -371,7 +320,7 @@ void Polygon::split(const v3d::type::geometry::Plane& plane, const boost::shared
     Cut the polygon into four by two planes through the centre of its bound. Both are
     perpendicular to the polygon's plane, and the second is perpendicular to the first.
 */
-void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
+void Polygon::split(reyes::Hider & hider, state::RenderContext & rc) {
     // a polygon with fewer than three vertices has no area to divide
     if (vertices_.size() < 3) {
         return;
@@ -442,7 +391,7 @@ void Polygon::split(reyes::Hider & hider, RenderContext & rc) {
     reyes::Hider::add() moves a diceable polygon's vertices into eye space, so the
     grid is built in eye space. The hider projects it to raster space.
 */
-bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) {
+bool Polygon::dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) {
     /*
         The grid size is the number of micropolygons in a grid, and a grid of n vertices a
         side has n - 1 micropolygons a side. reyes::Hider::add() marks for splitting

@@ -5,6 +5,7 @@
 
 #include "Source.h"
 
+#include "Chord.h"
 #include "Context.h"
 #include "Event.h"
 #include "State.h"
@@ -27,6 +28,14 @@ void Source::consume() const noexcept {
 
 bool Source::consumed() const noexcept {
     return *consumed_;
+}
+
+void Source::modifiers(const Modifiers& held) noexcept {
+    modifiers_ = held;
+}
+
+const Modifiers& Source::modifiers() const noexcept {
+    return modifiers_;
 }
 
 void publish(entt::dispatcher& dispatcher, const Source& source) {

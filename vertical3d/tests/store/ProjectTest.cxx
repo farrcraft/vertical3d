@@ -24,10 +24,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
 /**
  * A project directory in the temporary directory, removed before and after the test.
  **/
@@ -54,13 +50,17 @@ class Scratch final {
     boost::filesystem::path path_;
 };
 
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
+
 /**
  * A scene of a cube and a light.
  **/
-boost::shared_ptr<v3d::editor::Scene> sample() {
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    scene->add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
-    scene->add(boost::make_shared<v3d::editor::Light>());
+boost::shared_ptr<v3d::editor::scene::Scene> sample() {
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    scene->add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
+    scene->add(boost::make_shared<v3d::editor::scene::Light>());
     return scene;
 }
 
@@ -76,19 +76,19 @@ void put(const boost::filesystem::path& path, const std::string& text) {
 
 BOOST_AUTO_TEST_CASE(project_save_makes_the_layout_test) {
     const Scratch scratch("layout");
-    v3d::editor::Project project(logger(), scratch.path());
+    v3d::editor::store::Project project(logger(), scratch.path());
     project.name("orrery");
     BOOST_REQUIRE(project.save(sample()));
 
     // every directory of a project, the scene in its place, and the manifest at the root
-    for (const std::string& part : v3d::editor::Project::layout()) {
+    for (const std::string& part : v3d::editor::store::Project::layout()) {
         BOOST_CHECK(boost::filesystem::is_directory(scratch.path() / part));
     }
     BOOST_CHECK(boost::filesystem::is_regular_file(scratch.path() / "scenes" / "main.v3d"));
     BOOST_CHECK(project.scene() == scratch.path() / "scenes" / "main.v3d");
 
-    const boost::json::value manifest = boost::json::parse(get(scratch.path() / v3d::editor::Project::MANIFEST));
-    BOOST_CHECK_EQUAL(manifest.at("version").as_int64(), v3d::editor::Project::VERSION);
+    const boost::json::value manifest = boost::json::parse(get(scratch.path() / v3d::editor::store::Project::MANIFEST));
+    BOOST_CHECK_EQUAL(manifest.at("version").as_int64(), v3d::editor::store::Project::VERSION);
     BOOST_CHECK_EQUAL(manifest.at("format").as_string(), "v3d-project");
     BOOST_CHECK_EQUAL(manifest.at("name").as_string(), "orrery");
     BOOST_REQUIRE_EQUAL(manifest.at("scenes").as_array().size(), 1U);
@@ -97,15 +97,15 @@ BOOST_AUTO_TEST_CASE(project_save_makes_the_layout_test) {
 
 BOOST_AUTO_TEST_CASE(project_open_test) {
     const Scratch scratch("open");
-    v3d::editor::Project saved(logger(), scratch.path());
+    v3d::editor::store::Project saved(logger(), scratch.path());
     saved.name("orrery");
     BOOST_REQUIRE(saved.save(sample()));
 
     // a project is opened by its manifest, and takes its directory and its name from it
     const Scratch elsewhere("elsewhere");
-    v3d::editor::Project opened(logger(), elsewhere.path());
-    const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-    BOOST_REQUIRE(opened.open(scratch.path() / v3d::editor::Project::MANIFEST, scene));
+    v3d::editor::store::Project opened(logger(), elsewhere.path());
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    BOOST_REQUIRE(opened.open(scratch.path() / v3d::editor::store::Project::MANIFEST, scene));
     BOOST_CHECK(opened.directory() == scratch.path());
     BOOST_CHECK_EQUAL(opened.name(), "orrery");
     BOOST_CHECK_EQUAL(scene->count(), 2U);
@@ -114,13 +114,13 @@ BOOST_AUTO_TEST_CASE(project_open_test) {
 BOOST_AUTO_TEST_CASE(project_save_as_test) {
     const Scratch first("first");
     const Scratch second("second");
-    v3d::editor::Project project(logger(), first.path());
+    v3d::editor::store::Project project(logger(), first.path());
     BOOST_REQUIRE(project.save(sample()));
 
     // a new project becomes the one a save writes to
     BOOST_REQUIRE(project.saveAs(second.path(), sample()));
     BOOST_CHECK(project.directory() == second.path());
-    BOOST_CHECK(boost::filesystem::exists(second.path() / v3d::editor::Project::MANIFEST));
+    BOOST_CHECK(boost::filesystem::exists(second.path() / v3d::editor::store::Project::MANIFEST));
 
     // and one cannot go where something already is
     BOOST_CHECK(!project.saveAs(first.path(), sample()));
@@ -139,33 +139,33 @@ BOOST_AUTO_TEST_CASE(project_refuses_a_bad_manifest_test) {
         "{\"version\": 1, \"format\": \"v3d-project\", \"name\": \"x\", \"scenes\": [\"scenes/missing.v3d\"]}",
     };
     const Scratch scratch("bad");
-    v3d::editor::Project saved(logger(), scratch.path());
+    v3d::editor::store::Project saved(logger(), scratch.path());
     BOOST_REQUIRE(saved.save(sample()));
     const Scratch elsewhere("unchanged");
 
     for (const std::string& text : manifests) {
         BOOST_TEST_CONTEXT(text) {
-            put(scratch.path() / v3d::editor::Project::MANIFEST, text);
+            put(scratch.path() / v3d::editor::store::Project::MANIFEST, text);
 
             // nothing changes, the scene and the project included
-            v3d::editor::Project project(logger(), elsewhere.path());
-            const boost::shared_ptr<v3d::editor::Scene> scene = boost::make_shared<v3d::editor::Scene>();
-            scene->add(boost::make_shared<v3d::editor::Light>());
-            BOOST_CHECK(!project.open(scratch.path() / v3d::editor::Project::MANIFEST, scene));
+            v3d::editor::store::Project project(logger(), elsewhere.path());
+            const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+            scene->add(boost::make_shared<v3d::editor::scene::Light>());
+            BOOST_CHECK(!project.open(scratch.path() / v3d::editor::store::Project::MANIFEST, scene));
             BOOST_CHECK(project.directory() == elsewhere.path());
             BOOST_CHECK_EQUAL(project.name(), "untitled");
             BOOST_CHECK_EQUAL(scene->count(), 1U);
         }
     }
 
-    v3d::editor::Project project(logger(), elsewhere.path());
-    BOOST_CHECK(!project.open(scratch.path() / "no_such_manifest.json", boost::make_shared<v3d::editor::Scene>()));
+    v3d::editor::store::Project project(logger(), elsewhere.path());
+    BOOST_CHECK(!project.open(scratch.path() / "no_such_manifest.json", boost::make_shared<v3d::editor::scene::Scene>()));
 }
 
 BOOST_AUTO_TEST_CASE(project_autosave_test) {
     const Scratch scratch("autosave");
-    v3d::editor::Project project(logger(), scratch.path());
-    const boost::shared_ptr<v3d::editor::Scene> scene = sample();
+    v3d::editor::store::Project project(logger(), scratch.path());
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = sample();
     BOOST_REQUIRE(project.save(scene));
     BOOST_CHECK(!project.recoverable());
 
@@ -174,9 +174,9 @@ BOOST_AUTO_TEST_CASE(project_autosave_test) {
     BOOST_REQUIRE(project.autosave(scene));
     BOOST_CHECK(boost::filesystem::is_regular_file(project.recovery()));
     BOOST_CHECK(project.recovery() == scratch.path() / "autosave" / "main.v3d");
-    v3d::editor::Project document(logger(), scratch.path());
-    const boost::shared_ptr<v3d::editor::Scene> saved = boost::make_shared<v3d::editor::Scene>();
-    BOOST_REQUIRE(document.open(scratch.path() / v3d::editor::Project::MANIFEST, saved));
+    v3d::editor::store::Project document(logger(), scratch.path());
+    const boost::shared_ptr<v3d::editor::scene::Scene> saved = boost::make_shared<v3d::editor::scene::Scene>();
+    BOOST_REQUIRE(document.open(scratch.path() / v3d::editor::store::Project::MANIFEST, saved));
     BOOST_CHECK(saved->items()[1]->translation() == glm::vec3(0.0F));
 
     // a second autosave writes only what changed since the first
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(project_autosave_test) {
     // the recovery database is newer than the document, so it is offered, and holds both changes
     boost::filesystem::last_write_time(project.recovery(), boost::filesystem::last_write_time(project.scene()) + 10);
     BOOST_CHECK(project.recoverable());
-    const boost::shared_ptr<v3d::editor::Scene> recovered = boost::make_shared<v3d::editor::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::Scene> recovered = boost::make_shared<v3d::editor::scene::Scene>();
     BOOST_REQUIRE(document.recover(recovered));
     BOOST_CHECK(recovered->items()[1]->translation() == glm::vec3(9.0F, 0.0F, 0.0F));
     BOOST_CHECK(recovered->items()[0]->translation() == glm::vec3(0.0F, 2.0F, 0.0F));
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(project_autosave_test) {
 
 BOOST_AUTO_TEST_CASE(project_recovery_without_a_document_test) {
     const Scratch scratch("unsaved");
-    v3d::editor::Project project(logger(), scratch.path());
+    v3d::editor::store::Project project(logger(), scratch.path());
 
     // a project never saved has only its autosave, which is offered
     BOOST_CHECK(!project.recoverable());
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(project_recovery_without_a_document_test) {
     // and discarding it removes it
     project.discardRecovery();
     BOOST_CHECK(!project.recoverable());
-    BOOST_CHECK(!project.recover(boost::make_shared<v3d::editor::Scene>()));
+    BOOST_CHECK(!project.recover(boost::make_shared<v3d::editor::scene::Scene>()));
 }
 
 };  // namespace

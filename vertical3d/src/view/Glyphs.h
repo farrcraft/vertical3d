@@ -13,7 +13,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * How far a glyph reaches along its item's +z axis, in world units. A line canvas draws in
@@ -46,7 +46,7 @@ glm::mat4 glyphPlacement(const glm::mat4& world);
  * angle of view. An orthographic camera is a box as tall as twice its extent, GLYPH_LENGTH deep.
  * A triangle above the far picture points up.
  **/
-void drawCamera(const Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+void drawCamera(const scene::Camera::Lens& lens, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 /**
  * A light, in its own space.
@@ -56,7 +56,7 @@ void drawCamera(const Camera::Lens& lens, const glm::vec4& colour, v3d::render::
  * position along +z, GLYPH_LENGTH along each side, with a ring at its edge and a second ring
  * where its soft edge begins.
  **/
-void drawLight(const Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
+void drawLight(const scene::Light::Emission& emission, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
 /**
  * A group, in its own space: a box GROUP_REACH from its origin along each axis.
@@ -68,4 +68,4 @@ void drawGroup(const glm::vec4& colour, v3d::render::realtime::canvas::Line* can
  **/
 void drawCurves(const v3d::curve::Curves& curves, const glm::vec4& colour, v3d::render::realtime::canvas::Line* canvas);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

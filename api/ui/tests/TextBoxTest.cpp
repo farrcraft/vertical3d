@@ -33,19 +33,19 @@ namespace {
 const float characterWidth = 10.0F;
 
 /**
- * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
- * cursor and the renderer are given the same one, so a click lands where the caret is
- * drawn.
- **/
-float measured(std::string_view text) {
-    return static_cast<float>(text.size()) * characterWidth;
-}
-
-/**
  * A ui::Interface holding one container, the renderer that places what it holds, and both
  * routers - the cursor that gives the focus and the keys that follow it.
  **/
 struct Fixture final {
+    /**
+     * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
+     * cursor and the renderer are given the same one, so a click lands where the caret is
+     * drawn.
+     **/
+    static float measured(std::string_view text) {
+        return static_cast<float>(text.size()) * characterWidth;
+    }
+
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),

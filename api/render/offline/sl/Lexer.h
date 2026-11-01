@@ -47,6 +47,23 @@ class Lexer final {
     const std::string & error() const;
 
  private:
+    /**
+     * The keywords: the shader types, the data types, the storage classes, the control flow,
+     * and the lighting constructs. Any other name is an identifier, so a shader may declare a
+     * variable called "output" or "noise".
+     **/
+    static constexpr const char* const KEYWORDS[] = {
+        "surface", "light", "displacement", "volume", "imager",
+        "float", "point", "vector", "normal", "color", "matrix", "string", "void",
+        "uniform", "varying",
+        "if", "else", "for", "while", "break", "continue", "return",
+        "illuminance", "illuminate", "solar"
+    };
+
+    static bool punctuation(int character);
+
+    static bool keyword(const std::string & name);
+
     Token scan();
     Token scanString(unsigned int line, unsigned int column);
     Token scanNumber(unsigned int line, unsigned int column);

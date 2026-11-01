@@ -5,9 +5,12 @@
 
 #include "Builder.h"
 
+#include <api/brep/internal/Candidate.h>
+#include <api/brep/internal/Faces.h>
+#include <api/brep/internal/Welder.h>
+
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -32,45 +35,11 @@ namespace v3d::brep {
 namespace {
 
 /**
- * A position's exact bits, for finding every point at it in one lookup.
- **/
-using PositionKey = std::array<std::uint32_t, 3>;
-
-/**
- * A float holding a small whole number has its low bits clear, and a table picks a bucket by
- * the low bits of the hash. The words are therefore folded together and handed to the
- * standard hash, which mixes every bit.
- **/
-struct PositionHash {
-    std::size_t operator()(const PositionKey& key) const noexcept {
-        const std::uint64_t folded = (static_cast<std::uint64_t>(key[0]) << 32U) ^ (static_cast<std::uint64_t>(key[1]) << 16U) ^ key[2];
-        return std::hash<std::uint64_t>{}(folded);
-    }
-};
-
-PositionKey positionKey(const glm::vec3& point) {
-    // adding zero turns -0 into 0, which compares equal to it but has other bits
-    return { std::bit_cast<std::uint32_t>(point.x + 0.0F), std::bit_cast<std::uint32_t>(point.y + 0.0F),
-        std::bit_cast<std::uint32_t>(point.z + 0.0F) };
-}
-
-/**
  * An edge in one direction, from one vertex to another.
  **/
 std::uint64_t edgeKey(Index from, Index to) {
     return (static_cast<std::uint64_t>(from) << 32U) | to;
 }
-
-/**
- * Two triangles that could be joined into a quad across the edge they share.
- **/
-struct Candidate {
-    float angle;
-    std::size_t first;
-    std::size_t second;
-    Index from;
-    Index to;
-};
 
 /**
  * A triangle's corners turned so that the one after `from` is `to`.
@@ -144,7 +113,7 @@ void joinTriangles(const std::vector<glm::vec3>& positions, std::vector<std::vec
         }
     }
 
-    std::vector<Candidate> candidates;
+    std::vector<internal::Candidate> candidates;
     for (const auto& [key, first] : triangleOf) {
         const Index from = static_cast<Index>(key >> 32U);
         const Index to = static_cast<Index>(key & 0xFFFFFFFFULL);
@@ -170,12 +139,12 @@ void joinTriangles(const std::vector<glm::vec3>& positions, std::vector<std::vec
         candidates.push_back({ angle, first, second, from, to });
     }
 
-    std::sort(candidates.begin(), candidates.end(), [](const Candidate& left, const Candidate& right) {
+    std::sort(candidates.begin(), candidates.end(), [](const internal::Candidate& left, const internal::Candidate& right) {
         return std::tie(left.angle, left.first, left.second) < std::tie(right.angle, right.first, right.second);
     });
 
     std::vector<bool> joined(loops->size(), false);
-    for (const Candidate& candidate : candidates) {
+    for (const internal::Candidate& candidate : candidates) {
         if (joined[candidate.first] || joined[candidate.second]) {
             continue;
         }
@@ -189,16 +158,6 @@ void joinTriangles(const std::vector<glm::vec3>& positions, std::vector<std::vec
         (*loops)[candidate.second].clear();
     }
 }
-
-/**
- * The faces as loops of welded vertices, each clockwise seen from outside.
- **/
-struct Faces {
-    std::vector<glm::vec3> positions;
-    std::vector<std::vector<Index>> loops;
-    std::size_t corners = 0;
-    std::size_t skipped = 0;
-};
 
 /**
  * Why the counts and the points cannot be read, or nothing when they can.
@@ -222,42 +181,13 @@ std::string checkInput(const Polygons& polygons) {
 }
 
 /**
- * Gives each position one vertex. Only the points a face uses become vertices.
- **/
-class Welder final {
- public:
-    Welder(const Polygons& polygons, std::vector<glm::vec3>* positions)
-        : polygons_(polygons), positions_(positions), vertexOf_(polygons.points.size(), INVALID_ID) {
-        vertexAt_.reserve(polygons.points.size());
-    }
-
-    Index vertex(std::uint32_t point) {
-        if (vertexOf_[point] == INVALID_ID) {
-            const auto [found, added] = vertexAt_.emplace(positionKey(polygons_.points[point]),
-                static_cast<Index>(positions_->size()));
-            if (added) {
-                positions_->push_back(polygons_.points[point]);
-            }
-            vertexOf_[point] = found->second;
-        }
-        return vertexOf_[point];
-    }
-
- private:
-    const Polygons& polygons_;
-    std::vector<glm::vec3>* positions_;
-    std::vector<Index> vertexOf_;
-    std::unordered_map<PositionKey, Index, PositionHash> vertexAt_;
-};
-
-/**
  * Read every face into a loop of vertices. A face with fewer than three distinct corners is
  * counted and left out.
  *
  * @return why a face cannot be read, or nothing when every face can
  **/
-std::string readFaces(const Polygons& polygons, Winding winding, Faces* faces) {
-    Welder welder(polygons, &faces->positions);
+std::string readFaces(const Polygons& polygons, Winding winding, internal::Faces* faces) {
+    internal::Welder welder(polygons, &faces->positions);
     faces->loops.reserve(polygons.counts.size());
     std::size_t next = 0;
     for (std::size_t face = 0; face < polygons.counts.size(); face++) {
@@ -301,7 +231,7 @@ std::string readFaces(const Polygons& polygons, Winding winding, Faces* faces) {
  *
  * @return why two faces cannot share an edge, or nothing when every edge is sound
  **/
-std::string linkFaces(const Faces& faces, BRep::Snapshot* parts) {
+std::string linkFaces(const internal::Faces& faces, BRep::Snapshot* parts) {
     parts->vertices.reserve(faces.positions.size());
     for (const glm::vec3& position : faces.positions) {
         parts->vertices.emplace_back(position);
@@ -348,7 +278,7 @@ Built build(const Polygons& polygons, const BuildOptions& options) {
     if (!built.problem.empty()) {
         return built;
     }
-    Faces faces;
+    internal::Faces faces;
     built.problem = readFaces(polygons, options.winding, &faces);
     if (!built.problem.empty()) {
         return built;

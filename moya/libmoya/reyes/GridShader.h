@@ -10,7 +10,7 @@
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/trace/Tracer.h>
-#include <moya/libmoya/Shading.h>
+#include <moya/libmoya/state/Shading.h>
 
 #include <map>
 #include <string>
@@ -20,9 +20,9 @@
 
 #include "MicroPolygonGrid.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 class RenderContext;
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state
 
 namespace v3d::moya::reyes {
 
@@ -46,7 +46,7 @@ namespace v3d::moya::reyes {
  **/
 class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
-    explicit GridShader(RenderContext* context);
+    explicit GridShader(state::RenderContext* context);
 
     /**
      * Shade every vertex of the grid, leaving `Ci` on each as its colour.
@@ -54,14 +54,14 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      * `Cs` is read off the vertex before it is written back over, so a primitive's own varying
      * "Cs" reaches the shader.
      */
-    void shade(const Shading & shading, MicroPolygonGrid* grid);
+    void shade(const state::Shading & shading, MicroPolygonGrid* grid);
 
     /**
      * Run the primitive's displacement shader over every vertex of the grid, and leave the P
      * and N it wrote on each. Nothing happens when the primitive has no displacement shader.
      * The surface shader runs afterwards, on the moved grid.
      **/
-    void displace(const Shading & shading, MicroPolygonGrid* grid);
+    void displace(const state::Shading & shading, MicroPolygonGrid* grid);
 
     // the callbacks the shading machine calls on its renderer
     bool space(const std::string & name, glm::mat4x4* matrix) override;
@@ -95,6 +95,8 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         v3d::render::offline::sl::runtime::Value* colour) override;
 
  private:
+    typedef v3d::render::offline::sl::runtime::Value Value;
+
     /**
      * A machine sized for one program and one batch, and that program's globals. Kept
      * between grids, for a light's program and a surface's alike.
@@ -116,9 +118,9 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
     /** SL's I at a shading point in camera space, for the context's projection. **/
     glm::vec3 incident(const glm::vec3 & point) const;
 
-    RenderContext* context_;
+    state::RenderContext* context_;
     /** What is being shaded, for the space table and for the lights. **/
-    const Shading* shading_ = nullptr;
+    const state::Shading* shading_ = nullptr;
     /**
      * The running shader's own space into camera space. It is the surface's, and a light's
      * while that light runs, so a light's `point "shader" (0, 0, 0)` lands where the scene

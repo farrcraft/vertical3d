@@ -9,7 +9,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * How a document's pictures are rendered: their size, how many samples each pixel takes along
@@ -44,4 +44,4 @@ struct RenderSettings final {
     bool operator==(const RenderSettings& other) const = default;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

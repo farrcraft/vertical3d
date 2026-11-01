@@ -8,6 +8,7 @@
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
 #include <api/image/format/JpegError.h>
+#include <api/image/writer/internal/Destination.h>
 #include <api/log/Logger.h>
 
 #include <array>
@@ -17,37 +18,29 @@
 #include <string>
 #include <vector>
 
+namespace v3d::image::writer {
+
 namespace {
 
-/**
- * Where libjpeg puts what it encodes. It fills the chunk, and each full chunk, and the part
- * of the last one it filled, go on the end of the string.
- **/
-struct Destination {
-    jpeg_destination_mgr manager;  // first, so the library's pointer to it is one of these
-    std::array<JOCTET, 4096> chunk;
-    std::string* bytes;
-};
-
-Destination* destination(j_compress_ptr cinfo) {
-    return reinterpret_cast<Destination*>(cinfo->dest);
+internal::Destination* destination(j_compress_ptr cinfo) {
+    return reinterpret_cast<internal::Destination*>(cinfo->dest);
 }
 
 void started(j_compress_ptr cinfo) {
-    Destination* into = destination(cinfo);
+    internal::Destination* into = destination(cinfo);
     into->manager.next_output_byte = into->chunk.data();
     into->manager.free_in_buffer = into->chunk.size();
 }
 
 boolean filled(j_compress_ptr cinfo) {
-    Destination* into = destination(cinfo);
+    internal::Destination* into = destination(cinfo);
     into->bytes->append(reinterpret_cast<const char*>(into->chunk.data()), into->chunk.size());
     started(cinfo);
     return TRUE;
 }
 
 void finished(j_compress_ptr cinfo) {
-    Destination* into = destination(cinfo);
+    internal::Destination* into = destination(cinfo);
     into->bytes->append(reinterpret_cast<const char*>(into->chunk.data()), into->chunk.size() - into->manager.free_in_buffer);
 }
 
@@ -64,7 +57,7 @@ void finished(j_compress_ptr cinfo) {
 #pragma warning(push)
 #pragma warning(disable : 4611)
 #endif
-bool compress(jpeg_compress_struct* cinfo, v3d::image::format::JpegError* error, Destination* into,
+bool compress(jpeg_compress_struct* cinfo, v3d::image::format::JpegError* error, internal::Destination* into,
     v3d::image::Image& img, unsigned char* row) {
     if (setjmp(error->setjmp_buffer)) {  // NOLINT(cert-err52-cpp) - libjpeg reports an error by longjmp
         return false;
@@ -113,8 +106,6 @@ bool compress(jpeg_compress_struct* cinfo, v3d::image::format::JpegError* error,
 #endif
 
 };  // namespace
-
-namespace v3d::image::writer {
 /**
  **/
 Jpeg::Jpeg(const boost::shared_ptr<v3d::log::Logger>& logger) : Writer(logger) {
@@ -133,7 +124,7 @@ std::optional<std::string> Jpeg::encode(const boost::shared_ptr<Image>& img) {
     jerr.pub.error_exit = format::jpegErrorExit;
 
     std::string encoded;
-    Destination into{};
+    internal::Destination into{};
     into.bytes = &encoded;
     std::vector<unsigned char> row(img->format() == Image::Format::RGBA ? static_cast<std::size_t>(img->width()) * 3 : 0);
 

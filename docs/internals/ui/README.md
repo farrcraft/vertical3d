@@ -13,6 +13,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 - [The layout rule: never read an earlier frame's box](#the-layout-rule-never-read-an-earlier-frames-box)
 - [Draw order and hit testing](#draw-order-and-hit-testing)
 - [Styles and the Resolver](#styles-and-the-resolver)
+- [Transitions](#transitions)
 - [Adding a component type](#adding-a-component-type)
 - [Known limitations](#known-limitations)
 
@@ -31,8 +32,10 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `component::*` | [component/](../../../api/ui/component) | one class per type, plus `Type`, `name()`, `parse()` and `traits()` in [Type.h](../../../api/ui/component/Type.h) |
 | `Arranger` | [Arranger.h](../../../api/ui/Arranger.h) | resolves every box in a tree and calls back to paint each one |
 | `paint::ComponentRenderer` | [paint/ComponentRenderer.h](../../../api/ui/paint/ComponentRenderer.h) | paints each component type; owns an `Arranger` and a `style::Resolver` |
+| `Clock`, `Transition`, `Opening`, `Motion` | [Transition.h](../../../api/ui/Transition.h) | the ui's time, a colour easing toward what is asked for, how far something has opened, and what a component or a widget keeps of them |
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
-| `paint::fillBox`, `strokeBox`, `plateBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models |
+| `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
+| `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | one font, one SDF atlas, and the callbacks over them |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
@@ -45,6 +48,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `immediate::Context` | [immediate/Context.h](../../../api/ui/immediate/Context.h) | everything an `Immediate` holds, and the layout, hit testing and drawing its widgets share |
 | `shell::Screen` | [shell/Screen.h](../../../api/ui/shell/Screen.h) | builds the text renderer, component renderer, overlay and immediate layer over an `WindowRenderer` |
 | `shell::Keyboard` | [shell/Keyboard.h](../../../api/ui/shell/Keyboard.h) | SDL adapter for `input::Keys`, and for an immediate layer's text field |
+| `shell::Tooltip` | [shell/Tooltip.h](../../../api/ui/shell/Tooltip.h) | when the tooltip of what the cursor rests on is due; the screen draws it |
 | `shell::GameMenu`, `shell::StatisticsOverlay`, `shell::FileChooser`, `shell::Prompt` | [shell/](../../../api/ui/shell) | shared game shell pieces |
 
 Boundaries the split keeps:
@@ -105,7 +109,8 @@ Strips are placed separately. `Arranger::stack()` returns each toolbar with its 
 container's menu bars, and the total insets. Both `ComponentRenderer::draw()` and
 `ComponentRenderer::insets()` call it, so the strips are drawn where the app was told they
 would be. `Arranger::strip()`, `panel()` and `centred()` place a toolbar, a dropped menu panel
-and a game menu level.
+and a game menu level. `centred()` and the menu renderer share `Arranger::heading()`, the height
+of a level's title band, so the title is written where the items were moved down to leave room.
 
 `Arranger::place()` takes a `Component&`, because `Menu::size()` is its item count and hides
 the base class's box size.
@@ -139,7 +144,8 @@ hit testing. None of these feed back into a box.
 ## Draw order and hit testing
 
 `ComponentRenderer::draw(canvas, engine)` draws each visible container in the order the
-document listed them. Within a container:
+document listed them. A container whose `backdrop()` is set first lays the dressing's backdrop
+over the whole canvas, which dims every container drawn before it. Within a container:
 
 1. Components in `Container::ordered()` order, which is by `depth` with insertion order kept
    between equal depths. The sort runs on every call, because a depth can change after a
@@ -183,7 +189,11 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
 - `chrome()` reads the theme's `ui` style into the base through `style::readBase()`.
   `Immediate::theme()` reads the `tools` style through the same function, so the two base
   classes cannot drift apart in their keys. A key added to `Dressing` is added to `readBase()`
-  and to the table in [Themes.md](../../api/ui/Themes.md#the-base-classes-ui-and-tools).
+  and to the table in [Themes.md](../../api/ui/Themes.md#the-base-classes-ui-and-tools). A
+  colour key is also given a step in `Palette::roles()`, and `Palette::roleCount` counts it.
+- `readBase()` derives every colour from a `Palette` first when the style names `base`,
+  `accent` or `contrast`, writing each through `Overlay::set()`. The roles the style names are
+  read after, so they win, and a theme switch undoes both through the same overlay.
 - `resolve(class, name)` returns the cached answer, or computes one with `dress()`: a copy of
   the base, overwritten by whatever that class's style names, plus `focus` and `focus-width`.
 - The cache is dropped when the theme changes and when the base is taken by non-const
@@ -191,7 +201,7 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
   writes the dressing every frame turns the cache off.
 - `lookup(theme, class, name)` returns the named style, or the first style of the class when
   the name is empty.
-- Button skins are not cached. `ComponentRenderer::skin()` walks the theme's button styles of
+- Button skins are not cached. `paint::internal::Skin::draw()` walks the theme's button styles of
   the component's style name and picks the one whose `style::Button::State` matches `look()`.
 - `style::Button::State` is the theme's own enum (normal, hover, press, disabled).
   `component::Button::ButtonState` is the cursor's transient state. `look()` in
@@ -202,6 +212,37 @@ was last drawn. `pick()` skips it by its `visible()` flag, not by its box.
 
 A theme property is found by two strings, its name and its class. A typo in either is a
 property silently not found.
+
+## Transitions
+
+A transition's state lives on what it animates. A retained `Component` holds a `Motion`, written
+as it is drawn: a `Transition` for its fill, one for its text, and an `Opening`. The immediate
+layer keeps a `Transition` for a widget's fill in the widget's `Retained` entry, through
+`Context::eased(id, colour)`. A transition outlives the component renderer, which a rescale
+rebuilds, and goes with its component or with its id when that ages out.
+
+- **A change of colour starts a transition.** Drawing code works out the colour to draw this
+  frame, exactly as it would without transitions, and passes it to `Transition::toward()`. When
+  it differs from the last colour asked for, the transition starts from the colour shown at that
+  moment. Nothing hooks the cursor, so a change made from the keyboard or by the app eases the
+  same way. `away()` eases out a fill that is no longer wanted, in its own colour.
+- **An opening is measured in frames.** `Opening::progress()` starts again when the thing was
+  not drawn on the frame before, so a menu eases in each time it opens. Closing needs nothing.
+  The renderer eases the progress out, then fades the panel through `Canvas::fade()` and lifts
+  it by `openDistance` through the transform, so text fades with it.
+- **The clock is real time.** `shell::Screen::begin()` advances a `Clock` by the time since the
+  last frame began, counts the frame, and hands it to `ComponentRenderer::clock()` and
+  `Immediate::clock()`. A renderer or layer never given a clock uses durations of zero, so a
+  test that does not set one sees every change at once.
+- **Layout never reads a transition.** A lifted panel's boxes stay where the arranger put them,
+  and only the drawing moves. The layout rule above holds unchanged.
+- **The durations are dressing values**, `hoverDuration` and `openDuration`, in seconds. They are
+  not multiplied by the scale, and `Dressing::resize()` copies them with the sizes.
+
+To animate something new, give its colour a `Transition` in `Motion` or in `Retained`, and pass
+the colour to draw each frame through it. A field added to `Motion` costs every component.
+
+Background: [ADR-0132](../../adr/0132-ui-transition-state-lives-on-what-it-animates.md)
 
 ## Parents and held items
 
@@ -296,6 +337,11 @@ Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
   line length. It runs per click, not per frame.
 - **Selected text keeps its colour.** The selection is a highlight behind a line drawn whole.
 - **Radio menu items use the same square mark as check items.**
+- **A tooltip hangs under its component**, so on a vertical toolbar it covers the next button.
+- **The immediate layer has no tooltips.** `Immediate::itemHovered()` says when one would be due,
+  and nothing draws it.
+- **A menu bar's panels take no keys.** Nothing walks a dropped panel from the keyboard, so a
+  submenu there opens on the cursor only.
 - **A button in the tree has a hover state, but no other tree component does.**
 - **`Immediate` stores one `Retained` per id**, so ids built from changing text churn the
   map until `retention` ages them out.

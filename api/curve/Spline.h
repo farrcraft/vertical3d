@@ -56,6 +56,13 @@ class Spline final {
     bool polynomial(void) const noexcept;
 
  private:
+    /**
+     * de Boor's algorithm over the degree + 1 points that shape one span.
+     *
+     * local holds the points span - degree to span, and knots is indexed as the points are.
+     **/
+    static glm::vec4 deBoor(std::vector<glm::vec4> local, const float* knots, std::size_t span, unsigned int degree, float u);
+
     glm::vec4 homogeneous(std::size_t span, float u) const;
     glm::vec4 homogeneousDerivative(std::size_t span, float u) const;
 

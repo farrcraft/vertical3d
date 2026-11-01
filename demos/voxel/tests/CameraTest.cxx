@@ -15,17 +15,17 @@
 
 namespace {
 
-void checkClose(const glm::vec3 & actual, const glm::vec3 & expected) {
-    BOOST_TEST_CONTEXT("actual (" << actual.x << ", " << actual.y << ", " << actual.z << ")") {
-        BOOST_CHECK_SMALL(glm::length(actual - expected), 0.0001F);
-    }
-}
-
 /** A controller with no motion, over a camera at the origin looking down -z with +y up. **/
 struct Fixture {
     v3d::type::camera::Camera camera;
     CameraController controller{&camera, CameraController::Motion()};
 };
+
+void checkClose(const glm::vec3 & actual, const glm::vec3 & expected) {
+    BOOST_TEST_CONTEXT("actual (" << actual.x << ", " << actual.y << ", " << actual.z << ")") {
+        BOOST_CHECK_SMALL(glm::length(actual - expected), 0.0001F);
+    }
+}
 
 /**
  * A positive heading turns the view to the right, about the world's up axis, by that many

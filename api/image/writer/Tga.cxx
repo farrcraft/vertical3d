@@ -8,6 +8,8 @@
 #include <api/image/Channels.h>
 #include <api/image/Image.h>
 #include <api/image/Writer.h>
+#include <api/image/writer/internal/TgaFooter.h>
+#include <api/image/writer/internal/TgaHeader.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>
@@ -19,44 +21,8 @@
 #include <string>
 #include <vector>
 
-namespace {
-
-#pragma pack(push, 1)
-
-struct tga_header {
-    unsigned char id_;
-    unsigned char colormap_;  // 0=none, 1=palette
-    unsigned char type_;  // 0=none, 1=indexed, 2=rgb, 3=grey, 4=rle
-
-    uint16_t cmap_start_;
-    uint16_t cmap_length_;
-    unsigned char cmap_bits_;  // 15, 16, 24, 32
-
-    uint16_t xorigin_;
-    uint16_t yorigin_;
-    uint16_t width_;
-    uint16_t height_;
-    unsigned char bpp_;  // 8, 16, 24, 32
-    unsigned char descriptor_;
-};
-
-struct tga_footer {
-    uint32_t extension_offset_;
-    uint32_t dev_dir_offset_;
-    char signature_[16];
-    unsigned char reserved_;
-    unsigned char terminator_;
-};
-
-#pragma pack(pop)
-
-/** TGA 2.0 fixes the footer at 26 bytes. **/
-constexpr std::size_t FOOTER_BYTES = 26;
-static_assert(sizeof(tga_footer) == FOOTER_BYTES);
-
-};  // namespace
-
 namespace v3d::image::writer {
+
 /**
  **/
 Tga::Tga(const boost::shared_ptr<v3d::log::Logger> & logger) : Writer(logger) {
@@ -83,14 +49,14 @@ std::optional<std::string> Tga::encode(const boost::shared_ptr<Image>& img) {
     std::string encoded;
     try {
         scratch.resize(size);
-        encoded.reserve(sizeof(tga_header) + size + sizeof(tga_footer));
+        encoded.reserve(sizeof(internal::tga_header) + size + sizeof(internal::tga_footer));
     } catch (const std::bad_alloc &) {
         logger()->get()->error("a {} by {} picture is too large to encode as a TGA", img->width(), img->height());
         return std::nullopt;
     }
 
-    tga_header fheader;
-    memset(&fheader, 0, sizeof(tga_header));
+    internal::tga_header fheader;
+    memset(&fheader, 0, sizeof(internal::tga_header));
 
     fheader.width_ = static_cast<uint16_t>(img->width());
     fheader.height_ = static_cast<uint16_t>(img->height());
@@ -114,8 +80,8 @@ std::optional<std::string> Tga::encode(const boost::shared_ptr<Image>& img) {
 
     encoded.append(reinterpret_cast<const char*>(scratch.data()), size);
 
-    tga_footer footer;
-    memset(&footer, 0, sizeof(tga_footer));
+    internal::tga_footer footer;
+    memset(&footer, 0, sizeof(internal::tga_footer));
 
     // The signature fills the field exactly, with no terminator. It is 16 bytes of a fixed
     // size record, not a C string.

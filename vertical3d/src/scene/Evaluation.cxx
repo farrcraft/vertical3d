@@ -16,7 +16,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -35,7 +35,7 @@ void Evaluation::place(unsigned int id, const Placed& placed) {
  **/
 Pose Evaluation::pose(const Item& item) const {
     const auto found = poses_.find(item.id());
-    return found == poses_.end() ? editor::pose(item) : found->second;
+    return found == poses_.end() ? scene::pose(item) : found->second;
 }
 
 /**
@@ -60,4 +60,4 @@ glm::mat4 withoutScale(const glm::mat4& matrix) {
     return glm::translate(glm::mat4(1.0F), glm::vec3(matrix[3])) * glm::mat4_cast(orientation(matrix));
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

@@ -7,7 +7,7 @@
 
 #include "Item.h"
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * An item that holds nothing of its own, and places the items beneath it.
@@ -24,4 +24,4 @@ class Group final : public Item {
     Kind kind() const noexcept override;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

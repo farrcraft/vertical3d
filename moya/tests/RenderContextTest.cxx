@@ -7,11 +7,11 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/trace/Scene.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RenderContext.h>
 #include <moya/libmoya/Vertex.h>
 #include <moya/libmoya/reyes/MicroPolygonGrid.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <cstddef>
 #include <string>
@@ -32,11 +32,34 @@ v3d::moya::Vertex vertex(float x, float y, float z) {
 }
 
 /**
+ * A triangle small enough that addPolygon() measures it as diceable, so its vertices are
+ * moved into eye space and it is not split. Its plane is (1, 1, 0) normalised, a normal that
+ * a scale of the x or y axis alone changes.
+ **/
+boost::shared_ptr<v3d::moya::Polygon> diagonal() {
+    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(0.01F, 0.0F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.0F));
+    polygon->addVertex(vertex(0.0F, 0.01F, 5.01F));
+    return polygon;
+}
+
+/** A quad in front of the camera, sent to a prepared context. **/
+void addQuad(v3d::moya::state::RenderContext* rc) {
+    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
+    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
+    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
+    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
+    rc->addPolygon(polygon);
+}
+
+/**
  * The defaults a context starts on, which stand in for the RiFormat and bucketing options a
  * RIB file would otherwise set.
  **/
 BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
-    const v3d::moya::RenderContext rc;
+    const v3d::moya::state::RenderContext rc;
 
     BOOST_TEST(rc.bucketWidth() == 16U);
     BOOST_TEST(rc.bucketHeight() == 16U);
@@ -48,7 +71,7 @@ BOOST_AUTO_TEST_CASE(render_context_defaults_test) {
 }
 
 BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
 
     rc.imageResolution({1024, 768}, 1.3F);
 
@@ -62,7 +85,7 @@ BOOST_AUTO_TEST_CASE(render_context_image_resolution_test) {
  * given, and is not itself an option.
  **/
 BOOST_AUTO_TEST_CASE(render_context_named_test) {
-    const v3d::moya::RenderContext rc(std::string("scene.rib"));
+    const v3d::moya::state::RenderContext rc(std::string("scene.rib"));
 
     BOOST_TEST(rc.imageWidth() == 320U);
     BOOST_TEST(rc.gridSize() == 256U);
@@ -72,7 +95,7 @@ BOOST_AUTO_TEST_CASE(render_context_named_test) {
  * Each predefined coordinate system is the identity until the camera is set up.
  **/
 BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     const glm::mat4x4 identity(1.0F);
 
     const char* reserved[] = { "object", "world", "camera", "screen", "raster", "NDC" };
@@ -86,7 +109,7 @@ BOOST_AUTO_TEST_CASE(render_context_reserved_coordinate_systems_test) {
  * picture's, (0, 0) at the upper left and (1, 1) at the lower right.
  **/
 BOOST_AUTO_TEST_CASE(render_context_ndc_is_raster_over_the_resolution_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.imageResolution({64, 48}, 1.0F);
     rc.projection("orthographic");
     rc.prepareWorld();
@@ -110,7 +133,7 @@ BOOST_AUTO_TEST_CASE(render_context_ndc_is_raster_over_the_resolution_test) {
  * name again replaces what it held.
  **/
 BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     const glm::mat4x4 scaled(3.0F);
 
     rc.setTransform(scaled);
@@ -132,7 +155,7 @@ BOOST_AUTO_TEST_CASE(render_context_coordinate_system_test) {
  * the camera set up.
  **/
 BOOST_AUTO_TEST_CASE(render_context_a_predefined_space_is_refused_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.setTransform(glm::mat4x4(3.0F));
 
     const char* predefined[] = { "object", "world", "camera", "screen", "raster", "NDC" };
@@ -147,7 +170,7 @@ BOOST_AUTO_TEST_CASE(render_context_a_predefined_space_is_refused_test) {
  * accumulate.
  **/
 BOOST_AUTO_TEST_CASE(render_context_translate_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
 
     rc.setIdentityTransform();
     rc.translate(1.0F, 2.0F, 3.0F);
@@ -162,7 +185,7 @@ BOOST_AUTO_TEST_CASE(render_context_translate_test) {
  * A rotate composes onto the current transform the way a translate does.
  **/
 BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
 
     rc.setIdentityTransform();
     rc.rotate(90.0F, {0.0F, 0.0F, 1.0F});
@@ -176,7 +199,7 @@ BOOST_AUTO_TEST_CASE(render_context_rotate_test) {
 }
 
 BOOST_AUTO_TEST_CASE(render_context_scale_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
 
     rc.setIdentityTransform();
     rc.scale(2.0F, 3.0F, 4.0F);
@@ -192,7 +215,7 @@ BOOST_AUTO_TEST_CASE(render_context_scale_test) {
  * bound.
  **/
 BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -212,7 +235,7 @@ BOOST_AUTO_TEST_CASE(render_context_buckets_a_polygon_test) {
  * would be split again without end.
  **/
 BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -232,29 +255,12 @@ BOOST_AUTO_TEST_CASE(render_context_split_terminates_test) {
     BOOST_TEST(rc.bucketed() == 256U);
 }
 
-namespace {
-
-/**
- * A triangle small enough that addPolygon() measures it as diceable, so its vertices are
- * moved into eye space and it is not split. Its plane is (1, 1, 0) normalised, a normal that
- * a scale of the x or y axis alone changes.
- **/
-boost::shared_ptr<v3d::moya::Polygon> diagonal() {
-    boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(0.01F, 0.0F, 5.0F));
-    polygon->addVertex(vertex(0.0F, 0.01F, 5.0F));
-    polygon->addVertex(vertex(0.0F, 0.01F, 5.01F));
-    return polygon;
-}
-
-};  // namespace
-
 /**
  * A polygon that says nothing about its normals gets its own plane on every vertex, as both Ng
  * and N, so such a surface is faceted.
  **/
 BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -278,7 +284,7 @@ BOOST_AUTO_TEST_CASE(render_context_face_normal_test) {
  * defines faceforward() and calculatenormal() in terms of the pair.
  **/
 BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -303,7 +309,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_override_test) {
  * the points.
  **/
 BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
     rc.scale(1.0F, 2.0F, 1.0F);
 
@@ -336,7 +342,7 @@ BOOST_AUTO_TEST_CASE(render_context_normal_inverse_transpose_test) {
  * normal is one value across the primitive and is copied rather than interpolated.
  **/
 BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -380,7 +386,7 @@ BOOST_AUTO_TEST_CASE(render_context_dice_interpolates_normal_test) {
  * shading normal of its own.
  **/
 BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.prepareWorld();
 
     const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
@@ -411,7 +417,7 @@ BOOST_AUTO_TEST_CASE(render_context_split_carries_the_normal_test) {
  * value.
  **/
 BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.imageResolution({64, 48}, 1.0F);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
     rc.prepareWorld();
@@ -435,11 +441,11 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 24, 16), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 24, 16), 1.0F, 0.01F);
     // and this is outside it, where the imager is the whole of the pixel
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::RED, 55, 40), 0.15F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::BLUE, 55, 40), 0.45F, 0.01F);
-    BOOST_CHECK_CLOSE(planes->value(v3d::moya::Planes::COVERAGE, 55, 40), 1.0F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 55, 40), 0.15F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::BLUE, 55, 40), 0.45F, 0.01F);
+    BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::COVERAGE, 55, 40), 1.0F, 0.01F);
 }
 
 /**
@@ -448,7 +454,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
  * matrix of zeros.
  **/
 BOOST_AUTO_TEST_CASE(render_context_unknown_coordinate_system_test) {
-    v3d::moya::RenderContext rc("");
+    v3d::moya::state::RenderContext rc("");
     rc.scale(2.0F, 2.0F, 2.0F);
     rc.setCoordinateSystem("nowhere");
     rc.saveCoordinateSystem("kept");
@@ -461,7 +467,7 @@ BOOST_AUTO_TEST_CASE(render_context_unknown_coordinate_system_test) {
  * An unknown projection is refused, and the projection named before it stays in force.
  **/
 BOOST_AUTO_TEST_CASE(render_context_unknown_projection_test) {
-    v3d::moya::RenderContext rc("");
+    v3d::moya::state::RenderContext rc("");
     rc.projection("perspective", 45.0F);
     const glm::mat4x4 screen = rc.coordinateSystem("screen");
 
@@ -477,7 +483,7 @@ BOOST_AUTO_TEST_CASE(render_context_unknown_projection_test) {
  * Read as a side length the rate would give 64 pixels, and two rounds.
  **/
 BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.shadingRate(4.0F);
     rc.prepareWorld();
 
@@ -492,23 +498,13 @@ BOOST_AUTO_TEST_CASE(render_context_shading_rate_is_an_area_test) {
     BOOST_TEST(rc.bucketed() == 64U);
 }
 
-/** A quad in front of the camera, sent to a prepared context. **/
-void addQuad(v3d::moya::RenderContext* rc) {
-    const boost::shared_ptr<v3d::moya::Polygon> polygon = boost::make_shared<v3d::moya::Polygon>();
-    polygon->addVertex(vertex(-0.5F, -0.5F, 5.0F));
-    polygon->addVertex(vertex(0.5F, -0.5F, 5.0F));
-    polygon->addVertex(vertex(0.5F, 0.5F, 5.0F));
-    polygon->addVertex(vertex(-0.5F, 0.5F, 5.0F));
-    rc->addPolygon(polygon);
-}
-
 /**
  * Under the reyes hider, a scene whose shaders trace no ray drops its traced triangles when
  * it renders. matte and ambientlight call neither trace nor transmission. An area light keeps
  * its own copy of its geometry, so it still has something to shine from.
  **/
 BOOST_AUTO_TEST_CASE(render_context_drops_the_traced_scene_when_nothing_traces_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.imageResolution({32, 24}, 1.0F);
     rc.prepareWorld();
     rc.surface("matte", v3d::render::offline::rib::ParameterList());
@@ -535,7 +531,7 @@ BOOST_AUTO_TEST_CASE(render_context_drops_the_traced_scene_when_nothing_traces_t
  * light still needs.
  **/
 BOOST_AUTO_TEST_CASE(render_context_keeps_the_traced_scene_for_a_shadowing_light_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     rc.imageResolution({32, 24}, 1.0F);
     rc.prepareWorld();
     rc.surface("matte", v3d::render::offline::rib::ParameterList());

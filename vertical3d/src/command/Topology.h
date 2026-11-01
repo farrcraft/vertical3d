@@ -1,0 +1,57 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/brep/BRep.h>
+#include <vertical3d/src/scene/Scene.h>
+
+#include <string>
+#include <vector>
+
+#include "Command.h"
+
+#include <boost/shared_ptr.hpp>
+
+namespace v3d::editor::command {
+
+/**
+ * An operation that changed which vertices, half edges and faces a mesh holds.
+ *
+ * It holds the mesh's arrays from before the operation and from after it, and undo and redo
+ * put one or the other back whole. The numbering comes back exactly, so a command deeper in
+ * the history that names a part by index still names the same part. The operation has already
+ * run when the command is made.
+ *
+ * Selection is not history, and after a renumbering an old index could name another part, so
+ * undo and redo clear the component selection of every item that shows a mesh they restore.
+ * The objects stay selected.
+ **/
+class Topology final : public Command {
+ public:
+    /** One mesh, and its arrays before the operation and after it. **/
+    struct Change {
+        boost::shared_ptr<v3d::brep::BRep> mesh;
+        v3d::brep::BRep::Snapshot before;
+        v3d::brep::BRep::Snapshot after;
+    };
+
+    /**
+     * @param scene the scene whose items show the meshes
+     * @param name what the operation is called, which is the name the command reports
+     **/
+    Topology(const boost::shared_ptr<scene::Scene>& scene, const std::vector<Change>& changes, const std::string& name);
+
+    void undo() override;
+    void redo() override;
+    std::string name() const override;
+
+ private:
+    boost::shared_ptr<scene::Scene> scene_;
+    std::vector<Change> changes_;
+    std::string name_;
+};
+
+};  // namespace v3d::editor::command

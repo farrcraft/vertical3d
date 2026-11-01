@@ -21,7 +21,7 @@
 
 #include <boost/make_shared.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  **/
@@ -119,7 +119,7 @@ ConstructionPlane& ViewPort::grid() noexcept {
 
 /**
  **/
-void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* canvas, SelectMask mask) {
+void ViewPort::draw(const scene::Scene& scene, v3d::render::realtime::canvas::Line* canvas, selection::SelectMask mask) {
     if (canvas == nullptr) {
         return;
     }
@@ -135,7 +135,7 @@ void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* can
     }
 
     // a curve's control points are shown while they can be picked
-    const bool controls = mask == SelectMask::Vertex || mask == SelectMask::Handle;
+    const bool controls = mask == selection::SelectMask::Vertex || mask == selection::SelectMask::Handle;
     const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
         .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
     if (shown.meshes || shown.cameras || shown.lights) {
@@ -144,4 +144,4 @@ void ViewPort::draw(const Scene& scene, v3d::render::realtime::canvas::Line* can
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

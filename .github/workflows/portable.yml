@@ -54,6 +54,21 @@ jobs:
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
           find "$VCPKG_DEFAULT_BINARY_CACHE" -name '*.zip' | sort > "$RUNNER_TEMP/vcpkg-restored.txt"
 
+      # The baseline in vcpkg.json is resolved against the vcpkg checkout that runs the install,
+      # and the image's checkout can be older than the baseline. The baseline commit alone is
+      # checked out instead and bootstrapped, and the configure uses it through
+      # VCPKG_INSTALLATION_ROOT. With no version overrides, that commit holds every port tree
+      # the install reads.
+      - name: Check vcpkg out at the baseline
+        run: |
+          baseline=$(jq -r '."builtin-baseline"' vcpkg.json)
+          root="$RUNNER_TEMP/vcpkg"
+          git init --quiet "$root"
+          git -C "$root" fetch --quiet --depth 1 https://github.com/microsoft/vcpkg.git "$baseline"
+          git -C "$root" checkout --quiet --detach FETCH_HEAD
+          "$root/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_INSTALLATION_ROOT=$root" >> "$GITHUB_ENV"
+
       # The manifest's default feature is the window, the device and the audio, which these
       # libraries do not use, so it is left out and SDL3 and Vulkan are never built.
       - name: Configure

@@ -92,6 +92,12 @@ class Line final {
 
  private:
     /**
+     * What each vertex buffer starts at, in bytes. The buffers double from here when a
+     * canvas does not fit.
+     **/
+    static constexpr VkDeviceSize initialVertexBytes = 64ULL * 1024;
+
+    /**
      * Compile the line pipeline twice: once for a pass with a depth attachment and once for
      * a pass without, because dynamic rendering matches a pipeline to the attachments of the
      * pass it draws into.

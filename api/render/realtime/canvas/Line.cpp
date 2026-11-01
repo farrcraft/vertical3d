@@ -12,12 +12,6 @@
 
 namespace v3d::render::realtime::canvas {
 
-namespace {
-
-const float twoPi = 6.283185307179586F;
-
-};  // namespace
-
 /**
  **/
 Line::Batch::Batch() noexcept :

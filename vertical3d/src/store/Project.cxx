@@ -17,32 +17,18 @@
 #include <string>
 #include <vector>
 
-#include "SceneStore.h"
+#include "Scene.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
-
-namespace {
+namespace v3d::editor::store {
 
 /**
- * What the manifest's "format" says, so a JSON file that is not a manifest is refused.
  **/
-const char* const FORMAT = "v3d-project";
-
-/**
- * The scene a new project has.
- **/
-const char* const FIRST_SCENE = "scenes/main.v3d";
-
-/**
- * Whether a path in the manifest names a file inside the project. An absolute path, or one
- * that climbs out with "..", would let a manifest write a scene anywhere.
- **/
-bool inside(const std::string& entry) {
+bool Project::inside(const std::string& entry) {
     const boost::filesystem::path path(entry);
     if (path.empty() || !path.is_relative() || path.has_root_name() || !path.has_filename()) {
         return false;
@@ -52,18 +38,8 @@ bool inside(const std::string& entry) {
 }
 
 /**
- * What a manifest holds.
  **/
-struct Manifest {
-    std::string name;
-    std::vector<std::string> scenes;
-};
-
-/**
- * Read a manifest.
- * @return nothing when it is not a manifest this build can read, with the problem logged
- **/
-std::optional<Manifest> readManifest(const boost::filesystem::path& path, const boost::shared_ptr<v3d::log::Logger>& logger) {
+std::optional<Project::Manifest> Project::readManifest(const boost::filesystem::path& path, const boost::shared_ptr<v3d::log::Logger>& logger) {
     const std::optional<std::string> text = v3d::asset::readFile(path.string());
     if (!text || text->empty()) {
         logger->get()->error("No project manifest to read at {}", path.string());
@@ -118,8 +94,6 @@ std::optional<Manifest> readManifest(const boost::filesystem::path& path, const 
     return manifest;
 }
 
-};  // namespace
-
 /**
  **/
 const int Project::VERSION = 1;
@@ -148,7 +122,7 @@ Project::Project(const boost::shared_ptr<v3d::log::Logger>& logger, const boost:
 
 /**
  **/
-bool Project::open(const boost::filesystem::path& manifest, const boost::shared_ptr<Scene>& scene) {
+bool Project::open(const boost::filesystem::path& manifest, const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -169,7 +143,7 @@ bool Project::open(const boost::filesystem::path& manifest, const boost::shared_
 
 /**
  **/
-bool Project::save(const boost::shared_ptr<Scene>& scene) {
+bool Project::save(const boost::shared_ptr<scene::Scene>& scene) {
     if (!write(directory_, scene)) {
         return false;
     }
@@ -180,7 +154,7 @@ bool Project::save(const boost::shared_ptr<Scene>& scene) {
 
 /**
  **/
-bool Project::saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) {
+bool Project::saveAs(const boost::filesystem::path& directory, const boost::shared_ptr<scene::Scene>& scene) {
     boost::system::error_code error;
     if (boost::filesystem::exists(directory, error)) {
         logger_->get()->error("A new project cannot go at {}, which is already there", directory.string());
@@ -196,7 +170,7 @@ bool Project::saveAs(const boost::filesystem::path& directory, const boost::shar
 
 /**
  **/
-bool Project::autosave(const boost::shared_ptr<Scene>& scene) {
+bool Project::autosave(const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -233,7 +207,7 @@ bool Project::recoverable() const {
 
 /**
  **/
-bool Project::recover(const boost::shared_ptr<Scene>& scene) {
+bool Project::recover(const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -254,7 +228,7 @@ void Project::discardRecovery() {
 
 /**
  **/
-const SceneStore::Written& Project::autosaved() const noexcept {
+const Scene::Written& Project::autosaved() const noexcept {
     return recoveryStore_.written();
 }
 
@@ -272,7 +246,7 @@ boost::filesystem::path Project::scene() const {
 
 /**
  **/
-const SceneStore::Written& Project::written() const noexcept {
+const Scene::Written& Project::written() const noexcept {
     return store_.written();
 }
 
@@ -290,7 +264,7 @@ void Project::name(const std::string& title) {
 
 /**
  **/
-bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<Scene>& scene) {
+bool Project::write(const boost::filesystem::path& directory, const boost::shared_ptr<scene::Scene>& scene) {
     if (!scene) {
         return false;
     }
@@ -326,4 +300,4 @@ bool Project::write(const boost::filesystem::path& directory, const boost::share
     return true;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::store

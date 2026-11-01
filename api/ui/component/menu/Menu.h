@@ -7,6 +7,8 @@
 
 #include <api/ui/Component.h>
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "Item.h"
@@ -112,6 +114,28 @@ class Menu : public Component {
      **/
     void cancel();
 
+    /**
+     * @return the item a capture is open on, or null when none is
+     **/
+    boost::shared_ptr<Item> captured() const;
+
+    /**
+     * Step the active item of the current level, when it is a slider, and send its event
+     * carrying the new value. Nothing moves while a capture is open, or on an item that cannot
+     * be used.
+     *
+     * @param direction above zero toward the slider's maximum, below zero toward its minimum
+     * @return whether the value changed. The event is sent only then
+     **/
+    bool step(int direction);
+
+    /**
+     * @return the first item, in this menu or any submenu under it, whose event is the named
+     *         command, or null when none is. An app finds an item this way to show the value
+     *         it holds for it
+     **/
+    boost::shared_ptr<Item> find(std::string_view command) const;
+
     void addItem(const boost::shared_ptr<Item>& item);
 
     /**
@@ -141,7 +165,22 @@ class Menu : public Component {
      **/
     bool hasParent() const;
 
+    /**
+     * The words shown above a centred menu's items, or empty for none. A dropped panel shows
+     * no title.
+     **/
+    void title(const std::string& words);
+    const std::string& title() const noexcept;
+
  private:
+    /**
+     * Move the active item on past any separators, in the direction of a step of 1 or -1,
+     * wrapping at either end.
+     *
+     * @return false when it wrapped
+     **/
+    bool skip(int step);
+
     boost::shared_ptr<entt::dispatcher> dispatcher_;
     std::vector< boost::shared_ptr<Item> > items_;
     int active_;  // the active item in this menu, or -1 when there is none
@@ -150,6 +189,7 @@ class Menu : public Component {
     // the item being captured into. Like level_, it is held on the root menu, not on the
     // level the item belongs to
     boost::shared_ptr<Item> capture_;
+    std::string title_;
 };
 
 };  // namespace v3d::ui::component::menu

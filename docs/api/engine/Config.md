@@ -32,7 +32,7 @@ reads these:
 | `ui` | `ui::Interface::DOCUMENT`. `ui::Interface::load()`, from the shell | Themes and containers. See [ui/](../ui/README.md). |
 | `sound` | `audio::Player::DOCUMENT`. `audio::Player::load()` | See [Audio](Audio.md#audio). |
 | `camera` | `engine::CameraProfiles::DOCUMENT` | `{"cameras": [...]}`, named camera profiles. See below. |
-| `layout` | The editor's `ViewLayout::DOCUMENT` | The editor's own format. See [editor/](../../editor/README.md). |
+| `layout` | The editor's `AreaLayout::DOCUMENT` | The editor's own format. See [editor/](../../editor/README.md). |
 | `sprite` | `asset::media::SpriteSheets::DOCUMENT` | See [Sprite sheets](#sprite-sheets). |
 
 **An app names kinds of its own the same way.** The manifest loads every entry alike. odyssey's

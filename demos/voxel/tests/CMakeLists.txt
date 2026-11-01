@@ -32,6 +32,7 @@ v3d_add_test(voxel
 	"../src/voxel/MeshBuilder.cxx"
 	"../src/voxel/MeshCache.cxx"
 	"../src/voxel/TerrainMap.cxx"
+	"../src/voxel/TerrainNoise.cxx"
 	"../src/voxel/Voxel.cxx"
 	"../src/voxel/World.cxx")
 

@@ -53,6 +53,8 @@ class Samples final {
         float opaque() const;
 
      private:
+        static bool solid(const glm::vec3 & opacity);
+
         std::vector<Layer> layers_;
         float opaque_ { std::numeric_limits<float>::max() };
     };

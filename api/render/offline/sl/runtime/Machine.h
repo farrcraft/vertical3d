@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,10 @@
 namespace v3d::render::offline::sl {
 class Signature;
 };  // namespace v3d::render::offline::sl
+
+namespace v3d::render::offline::sl::runtime::internal {
+class Site;
+};  // namespace v3d::render::offline::sl::runtime::internal
 
 namespace v3d::render::offline::sl::runtime {
 
@@ -183,8 +188,151 @@ class Machine final {
         std::size_t until = 0;
     };
 
+    /**
+     * The most instructions one run executes before it fails. A shader with an endless loop then
+     * fails with a reason instead of hanging the render.
+     **/
+    static constexpr std::size_t LIMIT = 4000000;
+
+    static float compare(Opcode opcode, float left, float right);
+
+    /**
+     * Component index of a value, read as if the value had wide components. A float fills every
+     * component, except that a float read as a matrix is the diagonal matrix. An assignment
+     * promotes a float the same way.
+     **/
+    static float promoted(const Value & value, unsigned int point, unsigned int index, unsigned int wide);
+
+    static float combine(Opcode opcode, float left, float right);
+
+    /**
+     * The direction inside a light's cone nearest a surface's axis: the axis itself when it lies
+     * inside the cone, and otherwise the cone's edge on the way from the light's axis to it. It has
+     * the length of the light's axis.
+     **/
+    static glm::vec3 nearest(const glm::vec3 & lightAxis, float lightAngle, const glm::vec3 & surfaceAxis);
+
+    static glm::vec3 unit(const glm::vec3 & value);
+
+    /**
+     * A direction turned to lie on the same side of the surface as the reference does, so a
+     * shader can handle a surface facing away without knowing which way it faces.
+     **/
+    static glm::vec3 faceforward(const glm::vec3 & normal, const glm::vec3 & incident,
+        const glm::vec3 & reference);
+
+    static glm::vec3 refract(const glm::vec3 & incident, const glm::vec3 & normal, float eta);
+
+    /**
+     * The unpolarised reflectance of a dielectric, the mean of its two polarisations, and the
+     * reflected and refracted directions with it.
+     *
+     * The incident direction and the normal are normalised first, and the normal is taken to
+     * face against the incident direction, as refract() takes it. Past the critical angle
+     * everything is reflected and the refracted direction is zero, as refract() returns it.
+     **/
+    static void fresnel(const internal::Site & site, unsigned int point);
+
+    /**
+     * The offsets each of three noise components is read at, so that a colour of noise is three
+     * patterns and not one grey one. The offsets are far apart and off the lattice.
+     **/
+    static constexpr float STREAMS[3][3] = {
+        { 0.0F, 0.0F, 0.0F }, { 31.416F, 47.853F, 12.793F }, { -73.218F, 9.631F, 58.437F }
+    };
+
+    static void pattern(const internal::Site & site, unsigned int point);
+
+    static void geometry(const internal::Site & site, unsigned int point);
+
+    static void component(const internal::Site & site, unsigned int point);
+
+    /**
+     * The built-ins that work through a named space. A cast to a space compiles to the TRANSFORM
+     * instruction instead, which Machine::transform() runs.
+     **/
+    static void spaces(const internal::Site & site, unsigned int point);
+
+    static void matrices(const internal::Site & site, unsigned int point);
+
+    /**
+     * The built-ins where each component of the result is the same function of that component of
+     * each argument. A one-component argument is read for every component, as RI promotes a
+     * float. The missing components are not read as zero.
+     **/
+    static void componentwise(const internal::Site & site, unsigned int point);
+
+    /** Along u or along v, for a derivative. **/
+    enum class Direction : std::uint8_t { U, V };
+
+    /**
+     * The step in u or v from a point to its neighbour: its stencil group's own, or the shape's
+     * du or dv.
+     **/
+    static float stride(const Renderer::Shape & shape, unsigned int point, Direction direction);
+
+    /**
+     * The two points a derivative at a point differences, and the step between them, or false
+     * where the shape gives the point no neighbour that way. On a grid the neighbour is the next
+     * point, or the previous one on the last row or column.
+     **/
+    static bool neighbours(const Renderer::Shape & shape, unsigned int point, Direction direction,
+        unsigned int* from, unsigned int* to, float* step);
+
+    /**
+     * One component of a value's derivative along u or v at a point. A uniform value is the same
+     * at every point, so its derivative is zero.
+     **/
+    static float slope(const Value & value, unsigned int component, const Renderer::Shape & shape, unsigned int point,
+        Direction direction);
+
+    /** A position's derivative along u or v at a point. **/
+    static glm::vec3 slope(const Value & value, const Renderer::Shape & shape, unsigned int point, Direction direction);
+
+    /**
+     * Du, Dv, Deriv, area and calculatenormal.
+     *
+     * Deriv(num, den) is RI's Du(num) / Du(den) + Dv(num) / Dv(den), with a term dropped where
+     * den does not change in that direction. area(P) is the area of the patch a step along u and
+     * a step along v span. calculatenormal(P) is Du(P) ^ Dv(P), which on a diced polygon points
+     * the way its Ng does.
+     **/
+    static void derivatives(const internal::Site & site, unsigned int point);
+
+    static void apply(const internal::Site & site, unsigned int point);
+
+    /**
+     * How a printf conversion prints its value. SL's conversions name types, not C's formats: %c
+     * is a colour, %p a point, %v a vector, %n a normal and %m a matrix.
+     **/
+    static std::string printed(char conversion, const Value & value, unsigned int point);
+
+    static std::string format(const std::vector<const Value*> & given, unsigned int point);
+
     /** One pass over a range of the instructions, used by both run() and initialise(). **/
     bool execute(const Program & program, const Range & range);
+    /** Empty the stacks and what the last run printed, with every lane live and lit. **/
+    void begin();
+    /**
+     * Run a jump, a branch, or a mask's push or pop.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t branch(const Instruction & instruction, std::size_t pc);
+    /**
+     * Run an instruction that opens, tests, restores, ends or leaves a loop.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t iterate(const Instruction & instruction, std::size_t pc);
+    /** Run the entry to, the exit from, or a return out of an inlined function body. **/
+    void inlined(const Instruction & instruction);
+    /**
+     * Run an instruction of an illuminance loop, or a light shader's illuminate or solar.
+     *
+     * @return the index of the next instruction to run
+     **/
+    std::size_t illuminance(const Instruction & instruction, std::size_t pc);
 
     bool live(unsigned int point) const;
     bool anyLive() const;

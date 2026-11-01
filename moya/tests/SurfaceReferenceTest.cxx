@@ -7,10 +7,10 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
-#include <moya/libmoya/Planes.h>
 #include <moya/libmoya/Polygon.h>
-#include <moya/libmoya/RIBHandler.h>
-#include <moya/libmoya/RenderContext.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
+#include <moya/libmoya/state/RenderContext.h>
 
 #include <algorithm>
 #include <cmath>
@@ -34,7 +34,7 @@ namespace {
     hider. A plane faces the camera, bumped by noise in its own space and lit low across its
     face, so the bumps show as light and shade. A plane with no bumps would be one flat colour.
 */
-void bumpScene(v3d::moya::RenderContext & rc, const char* hider) {
+void bumpScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     rc.hider(hider);
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
@@ -66,24 +66,24 @@ void bumpScene(v3d::moya::RenderContext & rc, const char* hider) {
  * each grid, so the shading follows the bumps.
  **/
 BOOST_AUTO_TEST_CASE(moya_bump_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     bumpScene(rc, "hidden");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), BUMP, BUMP_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), BUMP, BUMP_RENDERED);
 }
 
 /**
  * The same bumped plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(BUMP_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         BUMP, BUMP_RIB_RENDERED);
 }
 
@@ -93,24 +93,24 @@ BOOST_AUTO_TEST_CASE(moya_bump_reference_from_rib_test) {
  * picture is not compared with reference-bump.png.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     bumpScene(rc, "raytrace");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), TRACED_BUMP, TRACED_BUMP_RENDERED);
 }
 
 /**
  * The same traced bumped plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_BUMP_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         TRACED_BUMP, TRACED_BUMP_RIB_RENDERED);
 }
 
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_bump_reference_from_rib_test) {
     is sampled at 16 points for every shading point, so the box's shadow on the wall is soft.
     The light's quad is drawn too, in white.
 */
-void areaScene(v3d::moya::RenderContext & rc, const char* hider) {
+void areaScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     rc.hider(hider);
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
@@ -178,24 +178,24 @@ void areaScene(v3d::moya::RenderContext & rc, const char* hider) {
  * at 16 points on its quad, each with its own shadow ray, so the shadow's edge is a gradient.
  **/
 BOOST_AUTO_TEST_CASE(moya_area_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     areaScene(rc, "hidden");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), AREA, AREA_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), AREA, AREA_RENDERED);
 }
 
 /**
  * The same area light said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_area_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(AREA_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS), AREA, AREA_RIB_RENDERED);
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS), AREA, AREA_RIB_RENDERED);
 }
 
 /**
@@ -203,24 +203,24 @@ BOOST_AUTO_TEST_CASE(moya_area_reference_from_rib_test) {
  * hiders sample differently.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_area_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     areaScene(rc, "raytrace");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_AREA, TRACED_AREA_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), TRACED_AREA, TRACED_AREA_RENDERED);
 }
 
 /**
  * The traced area light said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_AREA_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         TRACED_AREA, TRACED_AREA_RIB_RENDERED);
 }
 
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(moya_traced_area_reference_from_rib_test) {
     of a checked plane, which is tilted away from the camera so its checks run across both x
     and z. The checks show through the quad, darkened by half and tinted.
 */
-void glassScene(v3d::moya::RenderContext & rc) {
+void glassScene(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
     rc.clipping({.hither = 1.0F, .yon = 100.0F});
@@ -268,24 +268,24 @@ void glassScene(v3d::moya::RenderContext & rc) {
  * it, and composites them front to back once the buckets are done.
  **/
 BOOST_AUTO_TEST_CASE(moya_glass_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     glassScene(rc);
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), GLASS, GLASS_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), GLASS, GLASS_RENDERED);
 }
 
 /**
  * The same translucent quad said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(GLASS_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS), GLASS, GLASS_RIB_RENDERED);
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS), GLASS, GLASS_RIB_RENDERED);
 }
 
 /*
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE(moya_glass_reference_from_rib_test) {
     the camera, and lit from the left. The plane's normal points away from the camera, so the
     amount is negative.
 */
-void displacedScene(v3d::moya::RenderContext & rc, const char* hider) {
+void displacedScene(v3d::moya::state::RenderContext & rc, const char* hider) {
     rc.hider(hider);
     rc.imageResolution({64, 48}, 1.0F);
     pixelCentres(rc);
@@ -331,24 +331,24 @@ void displacedScene(v3d::moya::RenderContext & rc, const char* hider) {
  * and shade across a plane that is flat in the scene.
  **/
 BOOST_AUTO_TEST_CASE(moya_displaced_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     displacedScene(rc, "hidden");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), DISPLACED, DISPLACED_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), DISPLACED, DISPLACED_RENDERED);
 }
 
 /**
  * The same displaced plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(DISPLACED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         DISPLACED, DISPLACED_RIB_RENDERED);
 }
 
@@ -358,24 +358,24 @@ BOOST_AUTO_TEST_CASE(moya_displaced_reference_from_rib_test) {
  * reference-displaced.png, because the hiders sample differently.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_test) {
-    v3d::moya::RenderContext rc;
+    v3d::moya::state::RenderContext rc;
     displacedScene(rc, "raytrace");
     rc.render();
 
-    check(rc.picture()->image(v3d::moya::Planes::CHANNELS), TRACED_DISPLACED, TRACED_DISPLACED_RENDERED);
+    check(rc.picture()->image(v3d::moya::state::Planes::CHANNELS), TRACED_DISPLACED, TRACED_DISPLACED_RENDERED);
 }
 
 /**
  * The same traced displaced plane said in RIB, against the same committed picture.
  **/
 BOOST_AUTO_TEST_CASE(moya_traced_displaced_reference_from_rib_test) {
-    v3d::moya::RIBHandler handler;
+    v3d::moya::ri::RIBHandler handler;
     v3d::render::offline::rib::Reader reader(boost::make_shared<v3d::log::Logger>());
 
     BOOST_REQUIRE(reader.read(TRACED_DISPLACED_SCENE, &handler));
     BOOST_CHECK_EQUAL(reader.error(), "");
 
-    check(handler.context().picture()->image(v3d::moya::Planes::CHANNELS),
+    check(handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS),
         TRACED_DISPLACED, TRACED_DISPLACED_RIB_RENDERED);
 }
 

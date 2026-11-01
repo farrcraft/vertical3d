@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Type.h>
+#include <api/ui/Transition.h>
 
 #include <string>
 #include <vector>
@@ -101,6 +102,13 @@ class Component {
      * @param str the new component name
      */
     void name(const std::string& str);
+
+    /**
+     * What the component says of itself when the cursor rests on it, shown with the shortcut of
+     * the command it sends. Empty, the default, shows nothing.
+     **/
+    std::string_view tooltip() const noexcept;
+    void tooltip(const std::string& text);
 
     /**
      * Get the component type
@@ -207,7 +215,19 @@ class Component {
     bool enabled() const;
     void enabled(bool on);
 
+    /**
+     * The transitions drawing has under way on this component: its fill, its text and its
+     * opening. Written as it is drawn, and never read by layout.
+     **/
+    Motion& motion() noexcept;
+
  private:
+    /**
+     * @return the next component id, unique across the run. A component may be built on any
+     *      thread
+     **/
+    static unsigned int nextId() noexcept;
+
     Layout layout_;
     std::vector<boost::shared_ptr<Component>> children_;
     Component* parent_;
@@ -217,6 +237,7 @@ class Component {
     unsigned int id_;
     std::string style_;
     std::string name_;
+    std::string tooltip_;
     bool visible_;
     bool enabled_;
     bool pickable_;
@@ -224,6 +245,7 @@ class Component {
     bool focused_;
     bool clip_;
     component::Type type_;
+    Motion motion_;
 };
 
 /**

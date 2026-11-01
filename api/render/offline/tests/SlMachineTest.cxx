@@ -23,11 +23,23 @@
 namespace {
 
 typedef v3d::render::offline::sl::runtime::Opcode Opcode;
+
 typedef v3d::render::offline::sl::runtime::Program Program;
+
 typedef v3d::render::offline::sl::runtime::Register Register;
+
 typedef v3d::render::offline::sl::runtime::Instruction Instruction;
+
 typedef v3d::render::offline::sl::Type Type;
+
 typedef v3d::render::offline::sl::Storage Storage;
+
+/** The registers an instruction writes and reads. -1 is none. **/
+struct Operands {
+    int target = -1;
+    int left = -1;
+    int right = -1;
+};
 
 /**
  * Read a shader, check it and emit it. The three passes are separate classes, and this suite
@@ -75,13 +87,6 @@ int constant(Program* program, float value) {
     program->registers.push_back(reg);
     return static_cast<int>(program->registers.size()) - 1;
 }
-
-/** The registers an instruction writes and reads. -1 is none. **/
-struct Operands {
-    int target = -1;
-    int left = -1;
-    int right = -1;
-};
 
 int put(Program* program, Opcode opcode, const Operands & operands) {
     Instruction instruction;

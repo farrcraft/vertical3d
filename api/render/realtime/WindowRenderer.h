@@ -166,6 +166,8 @@ class WindowRenderer final {
     boost::shared_ptr<DeviceContext> context();
 
  private:
+    static constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06F, 0.07F, 0.10F, 1.0F};
+
     /**
      * Drop what the frame collected, whether or not the frame was recorded.
      **/

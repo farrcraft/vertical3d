@@ -34,14 +34,10 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-Storage join(Storage left, Storage right) {
+Storage Inference::join(Storage left, Storage right) {
     return left == Storage::VARYING || right == Storage::VARYING ?
         Storage::VARYING : Storage::UNIFORM;
 }
-
-};  // namespace
 
 Inference::Inference(const syntax::ShaderPtr & shader, std::vector<Symbol>* symbols) :
     shader_(shader), symbols_(symbols) {

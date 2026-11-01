@@ -18,17 +18,6 @@
 
 namespace v3d::ui::immediate {
 
-namespace {
-
-/**
- * The seed and the multiplier of FNV-1a, which hashes a label into an id.
- * Any hash would do; this one is four lines and needs no table.
- **/
-const std::uint64_t hashSeed = 1469598103934665603ULL;
-const std::uint64_t hashPrime = 1099511628211ULL;
-
-};  // namespace
-
 Reaction::Reaction() noexcept :
 hovered(false),
 held(false),
@@ -104,6 +93,8 @@ clipped(false) {
 Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     measure(measurer),
     write(writer),
+    scale(1.0F),
+    timed(false),
     dressing(paint::Dressing::tools()),
     canvas(nullptr),
     previousCursor(0.0F, 0.0F),
@@ -118,16 +109,19 @@ Context::Context(const paint::Measure& measurer, const paint::Write& writer) :
     wheeled(0),
     typing(0),
     letGo(false),
+    escaped(false),
     typingDrawn(false),
     itemMin(0.0F, 0.0F),
     itemMax(0.0F, 0.0F),
-    itemOwner(0) {
+    itemOwner(0),
+    itemFinished(false) {
 }
 
 void Context::focus(Id field) {
     const bool was = typing != 0;
     typing = field;
     letGo = false;
+    escaped = false;
     if (field == 0) {
         written.clear();
     }
@@ -184,6 +178,7 @@ glm::vec2 Context::place(const glm::vec2& size) {
     itemMin = corner;
     itemMax = corner + size;
     itemOwner = window.open ? window.id : 0;
+    itemFinished = false;
     return corner;
 }
 
@@ -216,6 +211,10 @@ glm::vec4 Context::ink(const glm::vec4& colour) const {
     return disabled > 0 ? dressing.disabledText : colour;
 }
 
+glm::vec4 Context::eased(Id id, const glm::vec4& colour) {
+    return retain(id).face.toward(colour, clock, timed ? dressing.hoverDuration : 0.0F);
+}
+
 glm::vec4 Context::face(bool lit, bool under) const {
     if (disabled > 0) {
         return dressing.widget;
@@ -232,6 +231,16 @@ void Context::label(const std::string& line, const glm::vec2& min, const glm::ve
     // of the way down a box one line tall. A font with ordinary descenders looks centred there
     const glm::vec2 pen(min.x, min.y + ((size.y + (dressing.lineHeight * 0.5F)) * 0.5F));
     write(line, pen, colour);
+}
+
+void Context::title(const std::string& line, const glm::vec2& min, const glm::vec2& size,
+    const glm::vec4& colour) const {
+    if (!strong || paint::weight(dressing.titleWeight) != paint::Weight::SemiBold) {
+        label(line, min, size, colour);
+        return;
+    }
+    const glm::vec2 pen(min.x, min.y + ((size.y + (dressing.lineHeight * 0.5F)) * 0.5F));
+    strong(line, pen, colour);
 }
 
 };  // namespace v3d::ui::immediate

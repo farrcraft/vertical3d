@@ -108,6 +108,22 @@ class SpriteSheets final {
     boost::json::value document() const;
 
  private:
+    /**
+     * @return the value read, or the fallback if the entry is missing or not a whole number
+     **/
+    static int whole(const boost::json::object& entry, const char* key, int fallback);
+    /**
+     * @return the value read, or an empty string if the entry is missing or not a string
+     **/
+    static std::string text(const boost::json::object& entry, const char* key);
+    /**
+     * Read one sheet's sprites into it.
+     *
+     * @return whether every one of them was understood
+     **/
+    static bool readSprites(const boost::json::object& entry, SpriteSheet* sheet,
+        const boost::shared_ptr<v3d::log::Logger>& logger);
+
     boost::shared_ptr<v3d::log::Logger> logger_;
     std::map<std::string, SpriteSheet> sheets_;
     std::vector<std::string> names_;

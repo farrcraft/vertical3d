@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -30,6 +31,20 @@ namespace v3d::ui::paint {
  **/
 
 /**
+ * How heavy the face is that text is set in.
+ **/
+enum class Weight : std::uint8_t {
+    Regular,
+    SemiBold
+};
+
+/**
+ * The weight a theme's number names, as CSS numbers weights: below 500 is regular, and 500 and
+ * above is semibold.
+ **/
+Weight weight(float number) noexcept;
+
+/**
  * How wide a string will be when it is drawn, in pixels.
  **/
 typedef std::function<float(std::string_view)> Measure;
@@ -38,6 +53,24 @@ typedef std::function<float(std::string_view)> Measure;
  * Draw a string with its pen on the baseline at the given position.
  **/
 typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)> Write;
+
+/**
+ * Text set in another weight or at another size than the body text.
+ **/
+struct Setting final {
+    Measure measure;       /**< how wide a string is in it. Empty sets the text as the body text is set **/
+    Write write;
+    float scale { 1.0F };  /**< how large it is against the body text **/
+};
+
+/**
+ * What a centred menu sets apart from the text of its items: its title, and the label of the
+ * chosen item. A setting left empty is set as the body text is.
+ **/
+struct Emphasis final {
+    Setting title;
+    Setting chosen;
+};
 
 /**
  * Break a line at the spaces that do not fit a width.
@@ -51,5 +84,16 @@ typedef std::function<void(std::string_view, const glm::vec2&, const glm::vec4&)
  * @return one row per line, and no rows at all for a line holding nothing but spaces
  **/
 std::vector<std::string> wrap(std::string_view line, float width, const Measure& measure);
+
+/**
+ * How far down a widget the baseline of its text sits, as a fraction of the widget's height.
+ **/
+inline constexpr float WIDGET_BASELINE = 0.7F;
+
+/**
+ * How far down a line of text its baseline sits, as a fraction of the line height. The rest
+ * is room for descenders.
+ **/
+inline constexpr float LINE_BASELINE = 0.75F;
 
 };  // namespace v3d::ui::paint

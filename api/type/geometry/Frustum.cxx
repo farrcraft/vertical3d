@@ -12,26 +12,6 @@
 
 namespace v3d::type::geometry {
 
-namespace {
-
-/**
- * A frustum plane is a combination of the matrix's rows: its w row times one weight plus
- * one of its x, y or z rows times another.
- *
- * glm is column major, so row i component k is matrix[k][i]. Reading matrix[i][k] would
- * extract the planes of the transposed matrix. Unless the matrix is symmetric, that is a
- * different frustum.
- **/
-Plane rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float rowWeight) {
-    Plane plane;
-    for (glm::length_t k = 0; k < 4; k++) {
-        plane[k] = (wWeight * matrix[k][3]) + (rowWeight * matrix[k][static_cast<glm::length_t>(row)]);
-    }
-    return plane;
-}
-
-};  // namespace
-
 /*
     the plane extraction is described in: http://www2.ravensoft.com/users/ggribb/plane%20extraction.pdf
 
@@ -67,6 +47,14 @@ int Frustum::intersect(const AABBox& box) const {
 
 const std::array<Plane, Frustum::PLANE_COUNT>& Frustum::planes() const noexcept {
     return planes_;
+}
+
+Plane Frustum::rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float rowWeight) {
+    Plane plane;
+    for (glm::length_t k = 0; k < 4; k++) {
+        plane[k] = (wWeight * matrix[k][3]) + (rowWeight * matrix[k][static_cast<glm::length_t>(row)]);
+    }
+    return plane;
 }
 
 };  // namespace v3d::type::geometry

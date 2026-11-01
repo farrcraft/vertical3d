@@ -38,7 +38,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 namespace {
 
@@ -48,20 +48,13 @@ typedef v3d::render::offline::rib::ParameterList ParameterList;
 const Declaration UNIFORM_FLOAT(Declaration::Storage::UNIFORM, Declaration::Type::FLOAT, 1);
 const Declaration UNIFORM_POINT(Declaration::Storage::UNIFORM, Declaration::Type::POINT, 1);
 
-/** The version of RIB the export is written in. **/
-const float RIB_VERSION = 3.03F;
+};  // namespace
 
 /**
- * How many Bezier segments each span of a NURBS curve that is weighted, or above cubic, is
- * approximated by. Four keep a circle within 0.05% of its radius.
  **/
-constexpr unsigned int APPROXIMATION_PIECES = 4;
-
-std::vector<float> floats(const glm::vec3& value) {
+std::vector<float> RIBExportVisitor::floats(const glm::vec3& value) {
     return { value.x, value.y, value.z };
 }
-
-};  // namespace
 
 RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) : handler_(handler) {
 }
@@ -69,14 +62,14 @@ RIBExportVisitor::RIBExportVisitor(v3d::render::offline::rib::Handler* handler) 
 void RIBExportVisitor::begin(const v3d::type::camera::Camera& camera, const Output& output) {
     const v3d::type::camera::Profile& profile = camera.profile();
     const glm::vec2 clipping = profile.clipping();
-    const RenderSettings& settings = output.settings;
+    const scene::RenderSettings& settings = output.settings;
     eye_ = profile.eye();
     looks_ = profile.direction();
 
     handler_->version(RIB_VERSION);
     handler_->format({.width = settings.size.x, .height = settings.size.y, .pixelAspect = 1.0F});
     handler_->pixelSamples(glm::uvec2(settings.samples));
-    handler_->hider(settings.hider == RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
+    handler_->hider(settings.hider == scene::RenderSettings::Hider::RayTrace ? "raytrace" : "hidden", ParameterList());
     if (output.file.empty()) {
         handler_->display({.name = "vertical3d", .type = "framebuffer", .mode = "rgb"}, ParameterList());
     } else {
@@ -139,7 +132,7 @@ void RIBExportVisitor::open() {
     }
 }
 
-void RIBExportVisitor::leave(const boost::shared_ptr<Item>& /*item*/) {
+void RIBExportVisitor::leave(const boost::shared_ptr<scene::Item>& /*item*/) {
     if (blocks_.empty()) {
         return;
     }
@@ -149,7 +142,7 @@ void RIBExportVisitor::leave(const boost::shared_ptr<Item>& /*item*/) {
     blocks_.pop_back();
 }
 
-void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) {
     // the scene calls leave() for every item it visits, so every visit enters a block
     meshes_++;
     enter("mesh" + std::to_string(meshes_), placed.local);
@@ -178,21 +171,21 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Mesh>& item, const Placed& 
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Camera>& /*camera*/, const Placed& placed, const Camera::Lens& /*lens*/) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::Camera>& /*camera*/, const scene::Placed& placed, const scene::Camera::Lens& /*lens*/) {
     cameras_++;
     enter("camera" + std::to_string(cameras_), placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Group>& /*group*/, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::Group>& /*group*/, const scene::Placed& placed) {
     groups_++;
     enter("group" + std::to_string(groups_), placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) {
     curves_++;
     enter("curve" + std::to_string(curves_), placed.local);
     if (!curve || !curve->style().renders || curve->geometry()->empty()) {
@@ -241,7 +234,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Curve>& curve, const Placed
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) {
     lights_++;
     enter("light" + std::to_string(lights_), placed.local);
     if (!light) {
@@ -249,17 +242,17 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed
     }
     // a light is not scaled, so its direction is its world rotation alone
     const glm::vec3 from(placed.world[3]);
-    const glm::vec3 to = from + (orientation(placed.world) * glm::vec3(0.0F, 0.0F, 1.0F));
+    const glm::vec3 to = from + (scene::orientation(placed.world) * glm::vec3(0.0F, 0.0F, 1.0F));
 
     std::string shader;
     switch (emission.type) {
-        case Light::Type::Point:
+        case scene::Light::Type::Point:
             shader = "pointlight";
             break;
-        case Light::Type::Distant:
+        case scene::Light::Type::Distant:
             shader = "distantlight";
             break;
-        case Light::Type::Spot:
+        case scene::Light::Type::Spot:
             shader = "spotlight";
             break;
     }
@@ -267,14 +260,14 @@ void RIBExportVisitor::visit(const boost::shared_ptr<Light>& light, const Placed
     list.add("intensity", UNIFORM_FLOAT, { emission.intensity }, {});
     list.add("lightcolor", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1), floats(emission.colour), {});
     list.add("from", UNIFORM_POINT, floats(from), {});
-    if (emission.type != Light::Type::Point) {
+    if (emission.type != scene::Light::Type::Point) {
         list.add("to", UNIFORM_POINT, floats(to), {});
     }
-    if (emission.type == Light::Type::Spot) {
+    if (emission.type == scene::Light::Type::Spot) {
         list.add("coneangle", UNIFORM_FLOAT, { emission.cone }, {});
         list.add("conedeltaangle", UNIFORM_FLOAT, { emission.delta }, {});
     }
     handler_->lightSource({.shader = shader, .handle = std::to_string(lights_)}, list);
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

@@ -20,15 +20,6 @@
 
 namespace {
 
-boost::json::object config(const std::string& text) {
-    boost::json::value parsed = boost::json::parse(text);
-    return parsed.as_object();
-}
-
-boost::shared_ptr<v3d::log::Logger> logger() {
-    return boost::make_shared<v3d::log::Logger>();
-}
-
 /**
  * Two sheets. terrain is a 256 by 128 image holding two 64-pixel tiles and one larger sprite.
  **/
@@ -43,6 +34,15 @@ const char* const sheets =
 "{\"name\": \"actors\", \"image\": \"actors.png\", \"width\": 64, \"height\": 64,"
 " \"sprites\": [{\"name\": \"player\", \"x\": 0, \"y\": 0, \"width\": 32, \"height\": 64}]}"
 "]}";
+
+boost::json::object config(const std::string& text) {
+    boost::json::value parsed = boost::json::parse(text);
+    return parsed.as_object();
+}
+
+boost::shared_ptr<v3d::log::Logger> logger() {
+    return boost::make_shared<v3d::log::Logger>();
+}
 
 BOOST_AUTO_TEST_CASE(sprite_sheets_load_test) {
     v3d::asset::media::SpriteSheets loaded(logger());

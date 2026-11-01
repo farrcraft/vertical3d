@@ -24,24 +24,7 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-/**
- * How far along the geometric normal a ray leaving a surface starts.
- *
- * **This is a trap.** A shadow ray that starts exactly on the surface hits the surface it
- * left, and every lit pixel comes out black. The pattern looks like a fault in the normals
- * rather than a numerical one. The offset is along the normal rather than along the ray,
- * because an offset along a ray nearly parallel to the surface stays on the surface.
- **/
-const float EPSILON = 1.0e-4F;
-
-/**
- * Whether two primitives can be shaded by one run: the same surface shader in the same
- * placement, the same object space and the same lights. Everything else a hit reads is a
- * point of the batch.
- **/
-bool shareable(const Primitive & one, const Primitive & other) {
+bool Tracer::shareable(const Primitive & one, const Primitive & other) {
     if (&one == &other) {
         return true;
     }
@@ -49,13 +32,7 @@ bool shareable(const Primitive & one, const Primitive & other) {
         one.object() == other.object() && one.lights() == other.lights();
 }
 
-/**
- * Put a surface behind what a ray has seen in front of it: C += (1 - A) Ci and
- * A += (1 - A) Oi, with Ci already premultiplied.
- *
- * @return whether the ray is now opaque, so that nothing behind can show
- **/
-bool composite(Tracer::Seen* seen, const glm::vec3 & colour, const glm::vec3 & opacity, float distance) {
+bool Tracer::composite(Tracer::Seen* seen, const glm::vec3 & colour, const glm::vec3 & opacity, float distance) {
     if (!seen->hit) {
         seen->hit = true;
         seen->distance = distance;
@@ -64,8 +41,6 @@ bool composite(Tracer::Seen* seen, const glm::vec3 & colour, const glm::vec3 & o
     seen->opacity += (glm::vec3(1.0F) - seen->opacity) * opacity;
     return std::min(seen->opacity.r, std::min(seen->opacity.g, seen->opacity.b)) >= 1.0F;
 }
-
-};  // namespace
 
 Tracer::Tracer(const Scene* scene, v3d::render::offline::Textures* textures) :
     scene_(scene), textures_(textures) {

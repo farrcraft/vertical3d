@@ -139,6 +139,24 @@ class GameBoard {
         unsigned int checkCompletedRows();
 
  private:
+        /**
+         * Points for clearing one row.
+         **/
+        static constexpr unsigned int rowScore = 100;
+
+        static constexpr unsigned int boardRows = 20;
+        static constexpr unsigned int boardColumns = 10;
+
+        /**
+         * Seconds a tetrad rests on each row.
+         **/
+        static constexpr float fallRate = 0.8F;
+
+        /**
+         * Lines of the shapes file that describe one tetrad: four bitmap rows and a texture name.
+         **/
+        static constexpr size_t linesPerShape = 5;
+
         std::vector< std::vector<Piece> > pieces_;  // [rows][cols]
         unsigned int rows_;
         unsigned int cols_;

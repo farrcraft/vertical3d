@@ -6,12 +6,13 @@
 #pragma once
 
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/scene/Timeline.h>
 
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::control {
 
 /**
  * Plays the timeline, and steps through it a frame or a key at a time.
@@ -22,7 +23,7 @@ namespace v3d::editor {
  **/
 class Playback final {
  public:
-    explicit Playback(const boost::shared_ptr<Document>& document);
+    explicit Playback(const boost::shared_ptr<document::Document>& document);
 
     void play();
     void stop();
@@ -49,20 +50,25 @@ class Playback final {
      * Go to the nearest key after the current frame, or before it, or to the first or last
      * key. The keys are those of the items given, or of every item when none is.
      **/
-    void nextKey(const Items& items, bool forwards);
-    void firstKey(const Items& items);
-    void lastKey(const Items& items);
+    void nextKey(const scene::Items& items, bool forwards);
+    void firstKey(const scene::Items& items);
+    void lastKey(const scene::Items& items);
 
  private:
     /**
+     * A keyed frame as a whole frame within the timeline's range, rounded up or down.
+     **/
+    static int wholeFrame(float frame, const scene::Timeline& timeline, bool up);
+
+    /**
      * The frames the items have keys on, or every item's when there are none.
      **/
-    std::vector<float> keyed(const Items& items) const;
+    std::vector<float> keyed(const scene::Items& items) const;
 
-    boost::shared_ptr<Document> document_;
+    boost::shared_ptr<document::Document> document_;
     bool playing_;
     // seconds played since the current frame began
     float played_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::control

@@ -17,7 +17,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * The rotation that turns an item's own axes to a view's. An item made from a view then faces
@@ -66,4 +66,4 @@ enum class CurveType : std::uint8_t { Poly, Bezier, CatmullRom, Nurbs };
  **/
 boost::shared_ptr<Curve> create_curve(CurveType type);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

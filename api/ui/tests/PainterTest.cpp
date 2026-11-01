@@ -8,6 +8,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
 
@@ -61,6 +64,31 @@ bool anythingInside(const v3d::render::realtime::canvas::Canvas& canvas, const g
         [&](const v3d::render::realtime::canvas::Canvas::Vertex& vertex) {
             return within(min, max, radius, glm::vec2(vertex.position));
         });
+}
+
+/**
+ * @return how far a point lies outside a rounded box, or zero inside it
+ **/
+float beyond(const glm::vec2& min, const glm::vec2& max, float radius, const glm::vec2& point) {
+    const glm::vec2 centre(std::clamp(point.x, min.x + radius, max.x - radius),
+        std::clamp(point.y, min.y + radius, max.y - radius));
+    const glm::vec2 offset = point - centre;
+    return std::max(0.0F, std::sqrt((offset.x * offset.x) + (offset.y * offset.y)) - radius);
+}
+
+/**
+ * @return the area the canvas's triangles cover, counting any overlap twice
+ **/
+float covered(const v3d::render::realtime::canvas::Canvas& canvas) {
+    float area = 0.0F;
+    const std::vector<std::uint32_t>& indices = canvas.indices();
+    for (std::size_t index = 0; index + 2 < indices.size(); index += 3) {
+        const glm::vec2 first = canvas.vertices()[indices[index]].position;
+        const glm::vec2 along = glm::vec2(canvas.vertices()[indices[index + 1]].position) - first;
+        const glm::vec2 across = glm::vec2(canvas.vertices()[indices[index + 2]].position) - first;
+        area += std::abs((along.x * across.y) - (across.x * along.y)) * 0.5F;
+    }
+    return area;
 }
 
 BOOST_AUTO_TEST_SUITE(painter_test)
@@ -157,6 +185,61 @@ BOOST_AUTO_TEST_CASE(a_plate_with_no_border_is_one_shape) {
     v3d::ui::paint::plateBox(&canvas, low, high, 0.0F, 0.0F, {.inside = translucent, .outline = white});
 
     BOOST_CHECK_EQUAL(canvas.indices().size(), 6U);
+}
+
+/**
+ * A shadow is its colour over the box and at the box's edge, and fades to nothing at its reach.
+ * The fade is half a turn of a cosine, so it falls slowly at both ends and fastest in the middle.
+ **/
+BOOST_AUTO_TEST_CASE(a_shadow_fades_from_the_box_to_nothing) {
+    const float radius = 8.0F;
+    const float reach = 12.0F;
+    const float alpha = 0.5F;
+    v3d::render::realtime::canvas::Canvas canvas;
+    v3d::ui::paint::shadowBox(&canvas, low, high, {.radius = radius, .reach = reach, .colour = glm::vec4(0.0F, 0.0F, 0.0F, alpha)});
+
+    BOOST_REQUIRE(!canvas.empty());
+    for (const v3d::render::realtime::canvas::Canvas::Vertex& vertex : canvas.vertices()) {
+        const float share = beyond(low, high, radius, glm::vec2(vertex.position)) / reach;
+        BOOST_CHECK_LE(share, 1.0F + 0.001F);
+        const float expected = alpha * (0.5F + (0.5F * std::cos(3.14159265F * share)));
+        BOOST_CHECK_SMALL(vertex.colour.a - expected, 0.001F);
+    }
+}
+
+/**
+ * A shadow's pieces cover its reach once each, square or rounded, so its translucent colour
+ * nowhere doubles up. The area they cover is the box grown by the reach, its corners cut to the
+ * polygon a turn is drawn with.
+ **/
+BOOST_AUTO_TEST_CASE(a_shadow_covers_its_reach_once) {
+    const float reach = 12.0F;
+    const glm::vec2 size = high - low;
+    for (const float radius : {0.0F, 8.0F}) {
+        BOOST_TEST_CONTEXT("radius " << radius) {
+            v3d::render::realtime::canvas::Canvas canvas;
+            v3d::ui::paint::shadowBox(&canvas, low, high, {.radius = radius, .reach = reach, .colour = translucent});
+
+            // a quarter turn of six sides inscribed in the outermost corner
+            const float corner = radius + reach;
+            const float turn = 0.5F * corner * corner * 6.0F * std::sin(1.5707963F / 6.0F);
+            const float expected = ((size.x + (2.0F * reach)) * (size.y + (2.0F * reach))) - (4.0F * ((corner * corner) - turn));
+            BOOST_CHECK_CLOSE(covered(canvas), expected, 0.01F);
+        }
+    }
+}
+
+/**
+ * A shadow with no reach is the box it is cast by, filled.
+ **/
+BOOST_AUTO_TEST_CASE(a_shadow_with_no_reach_is_its_box) {
+    v3d::render::realtime::canvas::Canvas shadow;
+    v3d::ui::paint::shadowBox(&shadow, low, high, {.radius = 6.0F, .reach = 0.0F, .colour = translucent});
+    v3d::render::realtime::canvas::Canvas box;
+    v3d::ui::paint::fillBox(&box, low, high, 6.0F, translucent);
+
+    BOOST_CHECK_EQUAL(shadow.vertices().size(), box.vertices().size());
+    BOOST_CHECK_EQUAL(shadow.indices().size(), box.indices().size());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

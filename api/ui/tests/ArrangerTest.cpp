@@ -33,15 +33,21 @@ namespace {
 
 const float characterWidth = 10.0F;
 
-v3d::ui::paint::Measure measure() {
-    return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
-}
-
 /** A label's name, and the text it shows. **/
 struct Labelled {
     std::string name;
     std::string text;
 };
+
+/** How wide a wrapping row is, and how many cells it holds. **/
+struct Row {
+    float width = 0.0F;
+    std::size_t cells = 0;
+};
+
+v3d::ui::paint::Measure measure() {
+    return [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; };
+}
 
 boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
     boost::shared_ptr<v3d::ui::component::Label> made =
@@ -68,12 +74,6 @@ boost::shared_ptr<v3d::ui::component::Panel> cell(const glm::vec2& size) {
 /**
  * A row that wraps, at a width, holding a number of 48 pixel cells 8 pixels apart.
  **/
-/** How wide a wrapping row is, and how many cells it holds. **/
-struct Row {
-    float width = 0.0F;
-    std::size_t cells = 0;
-};
-
 boost::shared_ptr<v3d::ui::component::HorizontalBox> grid(const Row& row,
     std::vector<boost::shared_ptr<v3d::ui::component::Panel>>* made) {
     const float width = row.width;
@@ -471,6 +471,18 @@ BOOST_AUTO_TEST_CASE(a_list_measures_its_rows_again_under_a_new_measure) {
 
     // the widest row is six characters, and the padding is the same under both
     BOOST_CHECK_CLOSE(after - before, 6.0F * characterWidth, 0.001F);
+}
+
+/**
+ * The safe area is a share of the width in from each side and a share of the height in from
+ * the top and the bottom.
+ **/
+BOOST_AUTO_TEST_CASE(the_safe_area_keeps_clear_of_the_edges) {
+    const v3d::type::geometry::Bound2D area = v3d::ui::Arranger::safe(glm::vec2(1000.0F, 500.0F));
+    BOOST_CHECK_CLOSE(area.position().x, 50.0F, 0.001F);
+    BOOST_CHECK_CLOSE(area.position().y, 20.0F, 0.001F);
+    BOOST_CHECK_CLOSE(area.size().x, 900.0F, 0.001F);
+    BOOST_CHECK_CLOSE(area.size().y, 460.0F, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

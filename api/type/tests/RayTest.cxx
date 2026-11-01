@@ -17,6 +17,15 @@
 
 namespace {
 
+/**
+ * The ground at height y, facing up.
+ **/
+v3d::type::geometry::Plane ground(float y) {
+    v3d::type::geometry::Plane plane;
+    plane.calculate(glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(0.0F, y, 0.0F));
+    return plane;
+}
+
 BOOST_AUTO_TEST_CASE(ray_direction_test) {
     // the constructor normalises, so a distance along the ray is in the units its origin
     // and direction were given in
@@ -149,19 +158,6 @@ BOOST_AUTO_TEST_CASE(ray_box_test) {
     const v3d::type::geometry::Ray away({.origin = glm::vec3(0.0F, 0.0F, -5.0F), .direction = glm::vec3(0.0F, 0.0F, -1.0F)});
     BOOST_CHECK_EQUAL(away.intersects(box, nullptr), false);
 }
-
-namespace {
-
-/**
- * The ground at height y, facing up.
- **/
-v3d::type::geometry::Plane ground(float y) {
-    v3d::type::geometry::Plane plane;
-    plane.calculate(glm::vec3(0.0F, 1.0F, 0.0F), glm::vec3(0.0F, y, 0.0F));
-    return plane;
-}
-
-};  // namespace
 
 BOOST_AUTO_TEST_CASE(ray_plane_test) {
     float distance = 0.0F;

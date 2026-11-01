@@ -11,10 +11,12 @@
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <boost/json/object.hpp>
+#include <boost/json/value.hpp>
 #include <boost/shared_ptr.hpp>
 #include <entt/entt.hpp>
 
@@ -42,6 +44,7 @@ class Toolbar;
 
 namespace v3d::ui::component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace v3d::ui::component::menu
 
@@ -78,6 +81,12 @@ class ComponentReader final {
     std::vector<boost::shared_ptr<Container>>& containers() noexcept;
 
  private:
+    /**
+     * Read one length: a number is pixels, and a string ending in % is a fraction of the parent.
+     * @return the length, or nothing when the value is neither
+     **/
+    static std::optional<Length> length(const boost::json::value& value);
+
     /**
      * Read one container and the components in it.
      **/
@@ -166,6 +175,12 @@ class ComponentReader final {
      * @return the event, or one with no context when the entry omits either of the two
      **/
     v3d::event::Event readCommand(const boost::json::object& entry);
+
+    /**
+     * Read what a settings item shows: a slider's range and starting value, and the command
+     * an item binds, whose key it shows.
+     **/
+    void readSetting(const boost::json::object& entry, component::menu::Item* item);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Router> router_;

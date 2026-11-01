@@ -18,13 +18,6 @@
 
 namespace v3d::font {
 
-namespace {
-
-// two triangles
-constexpr unsigned int QUAD_INDICES = 6;
-
-};  // namespace
-
 TextureTextBuffer::TextureTextBuffer() :
     lineStart_(0) {
 }

@@ -22,27 +22,6 @@
 
 namespace v3d::engine {
 
-namespace {
-
-/**
- * The document within userPath(). One name for every app, because the directory is already
- * this app's.
- **/
-const char* const DOCUMENT = "settings.json";
-
-/**
- * The top level key the settings sit under. They are kept off the root so that the format's
- * "version" key cannot collide with an app setting called version.
- **/
-const char* const ENTRIES = "settings";
-
-/**
- * The key the format's version sits under, which asset::readForward() reads.
- **/
-const char* const FORMAT = "version";
-
-};  // namespace
-
 /**
  **/
 const int Settings::VERSION = 1;

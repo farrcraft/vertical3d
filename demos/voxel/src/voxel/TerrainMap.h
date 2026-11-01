@@ -9,6 +9,8 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 
+class TerrainNoise;
+
 /**
  * The world's heightmap - libnoise perlin over a 256x256 plane, read back per column.
  *
@@ -28,7 +30,5 @@ class TerrainMap {
     virtual float height(const glm::uvec2& column);
 
  private:
-    // pimpl
-    class Noise;
-    boost::shared_ptr<Noise> noise_;
+    boost::shared_ptr<TerrainNoise> noise_;
 };

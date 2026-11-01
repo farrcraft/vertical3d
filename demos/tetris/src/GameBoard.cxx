@@ -19,28 +19,6 @@
 #include <string>
 #include <vector>
 
-namespace {
-
-/**
- * Points for clearing one row.
- **/
-const unsigned int rowScore = 100;
-
-const unsigned int boardRows = 20;
-const unsigned int boardColumns = 10;
-
-/**
- * Seconds a tetrad rests on each row.
- **/
-constexpr float fallRate = 0.8F;
-
-/**
- * Lines of the shapes file that describe one tetrad: four bitmap rows and a texture name.
- **/
-const size_t linesPerShape = 5;
-
-};  // namespace
-
 GameBoard::GameBoard(const boost::shared_ptr<v3d::log::Logger>& logger) :
                         rows_(boardRows), cols_(boardColumns), fallRate_(fallRate),
                         fastFallMultiplier_(8), fastFall_(false), nextMove_(fallRate),

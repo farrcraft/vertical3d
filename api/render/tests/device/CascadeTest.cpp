@@ -68,28 +68,11 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_SRGB;
 const uint32_t size = 256;
 const uint32_t mapSize = 512;
 
-void place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale, bool castsShadow) {
-    const entt::entity entity = registry->create();
-    Transform transform;
-    transform.position = position;
-    transform.scale = scale;
-    registry->emplace<Transform>(entity, transform);
-    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
-}
-
 /** A cube standing on the ground, the near, middle and far one each in a cascade of its own. **/
 struct Standing final {
     glm::vec3 position;
     float scale;
 };
-
-std::array<Standing, 3> standing() {
-    return {{
-        {.position = glm::vec3(0.0F, 0.5F, -7.0F), .scale = 1.0F},
-        {.position = glm::vec3(-3.0F, 1.0F, -22.0F), .scale = 2.0F},
-        {.position = glm::vec3(4.0F, 2.0F, -60.0F), .scale = 4.0F},
-    }};
-}
 
 /** Where each cascade ends, from the camera's near plane. **/
 const std::array<float, 3> splits = {18.0F, 40.0F, 100.0F};
@@ -103,6 +86,95 @@ struct Drawn final {
     std::vector<bool> layered;
     std::vector<Timings::Timing> spans;
 };
+
+/** The same frame drawn with its shadow ignored and with it. **/
+struct Pictures final {
+    boost::shared_ptr<v3d::image::Image> without;
+    boost::shared_ptr<v3d::image::Image> with;
+};
+
+void place(entt::registry* registry, const MeshHandle& mesh, const glm::vec3& position, const glm::vec3& scale, bool castsShadow) {
+    const entt::entity entity = registry->create();
+    Transform transform;
+    transform.position = position;
+    transform.scale = scale;
+    registry->emplace<Transform>(entity, transform);
+    registry->emplace<v3d::render::realtime::component::Mesh>(entity, v3d::render::realtime::component::Mesh{mesh, castsShadow});
+}
+
+std::array<Standing, 3> standing() {
+    return {{
+        {.position = glm::vec3(0.0F, 0.5F, -7.0F), .scale = 1.0F},
+        {.position = glm::vec3(-3.0F, 1.0F, -22.0F), .scale = 2.0F},
+        {.position = glm::vec3(4.0F, 2.0F, -60.0F), .scale = 4.0F},
+    }};
+}
+
+/** The cubes and the long ground they stand on. Only the cubes cast a shadow. **/
+void populate(entt::registry* registry, const MeshHandle& crate, const MeshHandle& ground) {
+    for (const Standing& cube : standing()) {
+        place(registry, crate, cube.position, glm::vec3(cube.scale), true);
+    }
+    // thin, topped at zero, and casting nothing
+    place(registry, ground, glm::vec3(0.0F, -0.05F, -55.0F), glm::vec3(30.0F, 0.1F, 120.0F), false);
+}
+
+/**
+ * Record and submit a frame, then read its target back into drawn's picture and spans. The
+ * picture is also written to path.
+ **/
+void drawAndRead(v3d::test::Headless* headless, const Frame& frame, const RenderTarget& target, const std::string& path,
+    Drawn* drawn) {
+    // a slot's spans are read when the slot is begun again, so one full round of the ring is
+    // recorded before the frame that is kept
+    Timings& timings = headless->context->ring()->timings();
+    const uint32_t frames = headless->context->ring()->framesInFlight() + 1;
+    for (uint32_t index = 0; index + 1 < frames; ++index) {
+        VkCommandBuffer commands = headless->context->ring()->begin();
+        Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
+            headless->context->frameUniforms().get(), &timings);
+        headless->submitAndWait(commands);
+    }
+    VkCommandBuffer commands = headless->context->ring()->begin();
+    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
+        headless->context->frameUniforms().get(), &timings);
+
+    Capture capture(headless->device, headless->context->ring(), headless->logger);
+    Capture::Source source;
+    source.image = target.image();
+    source.extent = target.extent();
+    source.format = target.format();
+    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    capture.record(commands, source);
+    headless->submitAndWait(commands);
+    drawn->spans = timings.last();
+    if (capture.write(path)) {
+        v3d::image::reader::Png png(headless->logger);
+        drawn->picture = png.read(path);
+    }
+}
+
+/** For each layer of a shadow map, whether a caster's depth landed anywhere in it. **/
+std::vector<bool> layersWritten(v3d::test::Headless* headless, const RenderTarget& map, uint32_t count) {
+    std::vector<bool> layered;
+    // each layer read back on its own, for a caster's depth anywhere in it
+    for (uint32_t cascade = 0; map.depthFormat() == VK_FORMAT_D32_SFLOAT && cascade < count; cascade++) {
+        Capture layer(headless->device, headless->context->ring(), headless->logger);
+        Capture::Source depth;
+        depth.image = map.depthImage();
+        depth.extent = map.extent();
+        depth.format = map.depthFormat();
+        depth.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+        depth.depth = true;
+        depth.layer = cascade;
+        VkCommandBuffer reading = headless->context->ring()->begin();
+        layer.record(reading, depth);
+        headless->submitAndWait(reading);
+        const std::vector<float> depths = layer.depth();
+        layered.push_back(std::ranges::any_of(depths, [](float stored) { return stored < 1.0F; }));
+    }
+    return layered;
+}
 
 /**
  * A long white ground and three red cubes down it, seen from above one end, after a shadow pass
@@ -128,11 +200,7 @@ Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::str
     Lit lit(*headless->context, Lit::Spec{.colour = colourFormat, .depth = target->depthFormat(), .shadow = map->depthFormat()});
 
     entt::registry registry;
-    for (const Standing& cube : standing()) {
-        place(&registry, crate, cube.position, glm::vec3(cube.scale), true);
-    }
-    // thin, topped at zero, and casting nothing
-    place(&registry, ground, glm::vec3(0.0F, -0.05F, -55.0F), glm::vec3(30.0F, 0.1F, 120.0F), false);
+    populate(&registry, crate, ground);
 
     lighting::Settings settings;
     settings.outline = 0.0F;
@@ -173,50 +241,8 @@ Drawn drawLongView(v3d::test::Headless* headless, float strength, const std::str
     pass->scene(scene);
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, settings.outline, pass.get());
 
-    // a slot's spans are read when the slot is begun again, so one full round of the ring is
-    // recorded before the frame that is kept
-    Timings& timings = headless->context->ring()->timings();
-    const uint32_t frames = headless->context->ring()->framesInFlight() + 1;
-    for (uint32_t index = 0; index + 1 < frames; ++index) {
-        VkCommandBuffer commands = headless->context->ring()->begin();
-        Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-            headless->context->frameUniforms().get(), &timings);
-        headless->submitAndWait(commands);
-    }
-    VkCommandBuffer commands = headless->context->ring()->begin();
-    Recorder::record(commands, frame, Recorder::Target(), *headless->context->resources(),
-        headless->context->frameUniforms().get(), &timings);
-
-    Capture capture(headless->device, headless->context->ring(), headless->logger);
-    Capture::Source source;
-    source.image = target->image();
-    source.extent = target->extent();
-    source.format = target->format();
-    source.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    capture.record(commands, source);
-    headless->submitAndWait(commands);
-    drawn.spans = timings.last();
-    if (capture.write(path)) {
-        v3d::image::reader::Png png(headless->logger);
-        drawn.picture = png.read(path);
-    }
-
-    // each layer read back on its own, for a caster's depth anywhere in it
-    for (uint32_t cascade = 0; map->depthFormat() == VK_FORMAT_D32_SFLOAT && cascade < cascades->count; cascade++) {
-        Capture layer(headless->device, headless->context->ring(), headless->logger);
-        Capture::Source depth;
-        depth.image = map->depthImage();
-        depth.extent = map->extent();
-        depth.format = map->depthFormat();
-        depth.layout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-        depth.depth = true;
-        depth.layer = cascade;
-        VkCommandBuffer reading = headless->context->ring()->begin();
-        layer.record(reading, depth);
-        headless->submitAndWait(reading);
-        const std::vector<float> depths = layer.depth();
-        drawn.layered.push_back(std::ranges::any_of(depths, [](float stored) { return stored < 1.0F; }));
-    }
+    drawAndRead(headless, frame, *target, path, &drawn);
+    drawn.layered = layersWritten(headless, *map, cascades->count);
     return drawn;
 }
 
@@ -237,12 +263,6 @@ v3d::type::camera::Camera longView() {
     camera.createView();
     return camera;
 }
-
-/** The same frame drawn with its shadow ignored and with it. **/
-struct Pictures final {
-    boost::shared_ptr<v3d::image::Image> without;
-    boost::shared_ptr<v3d::image::Image> with;
-};
 
 /**
  * Whether the ground went from white to grey anywhere within a few pixels of a point.

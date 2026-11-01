@@ -19,15 +19,11 @@ struct Tile {
     int x = 0;
 };
 
-};  // namespace
-
 // the positions can be drawn between steps and a tile cannot. interpolated<Tile> fails to
 // compile instead of snapping
 static_assert(v3d::ecs::Interpolable<positions::Position1D>);
 static_assert(v3d::ecs::Interpolable<positions::Position2D>);
 static_assert(!v3d::ecs::Interpolable<Tile>);
-
-namespace {
 
 /**
  * A snapshot then a move is drawn at the snapshot at alpha 0, at the move at alpha 1, and

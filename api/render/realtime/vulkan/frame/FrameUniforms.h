@@ -85,6 +85,12 @@ class FrameUniforms final {
 
  private:
     /**
+     * How many sets each descriptor pool holds. Each pass of each frame in flight takes one set,
+     * and DescriptorPool adds another pool when one fills.
+     **/
+    static constexpr uint32_t poolSize = 32;
+
+    /**
      * A uniform buffer and the set that points at it, one per pass per frame.
      **/
     struct Slot {

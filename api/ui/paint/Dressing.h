@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <array>
+
 #include <glm/vec4.hpp>
 
 namespace v3d::ui::paint {
@@ -21,9 +23,10 @@ namespace v3d::ui::paint {
  * because a hud is read at a glance and a tool panel is read closely: the default
  * constructor gives the retained ui's values, and tools() gives the immediate layer's.
  *
- * A theme's "ui" style sets the retained defaults, and its "tools" style sets the immediate
- * ones. A component's own style class sets what differs from the "ui" values. A value that
- * no style sets keeps its default, so an empty theme changes nothing.
+ * The default colours are a Palette's, built from its built-in base and accent. A theme's "ui"
+ * style sets the retained defaults, and its "tools" style sets the immediate ones. A component's
+ * own style class sets what differs from the "ui" values. A value that no style sets keeps its
+ * default, so an empty theme changes nothing.
  **/
 struct Dressing final {
     Dressing() noexcept;
@@ -32,6 +35,25 @@ struct Dressing final {
      * @return the defaults the immediate layer starts from
      **/
     static Dressing tools() noexcept;
+
+    /**
+     * The same dressing drawn larger or smaller. Every size is multiplied by the factor, except
+     * that an outline's width goes through outline(). Colours, durations and the title weight
+     * are kept.
+     **/
+    Dressing scaled(float factor) const noexcept;
+
+    /**
+     * Take every size, every duration, the title weight and the plate's opacity from another
+     * dressing, keeping this one's colours.
+     **/
+    void resize(const Dressing& from) noexcept;
+
+    /**
+     * How wide an outline is at a scale, in whole device pixels: the width times the factor,
+     * rounded down, and never less than one. An outline of no width stays none.
+     **/
+    static float outline(float width, float factor) noexcept;
 
     float lineHeight;      /**< the height of one line of text: a menu item, a list row, a label row **/
     float padding;         /**< the gap between the text and the panel or widget around it **/
@@ -45,6 +67,18 @@ struct Dressing final {
     float focusWidth;      /**< how thick the ring around the focused component is **/
     float radius;          /**< how far a panel's or a window's corners are rounded, 0 for square **/
     float indent;          /**< how far a bullet pushes its text in **/
+    float titleWeight;     /**< how heavy a window's title and a table's header are set, as CSS numbers weights **/
+    float shadowSize;      /**< how far past a menu's edge its shadow fades out **/
+    float shadowOffset;    /**< how far down a menu's shadow is moved, as if lit from above **/
+    float openDistance;    /**< how far above its place a menu starts as it opens, sliding down into it **/
+    float hoverDuration;   /**< how long a change of fill or text colour eases over, in seconds. 0 changes at once **/
+    float openDuration;    /**< how long a menu takes to open, in seconds. 0 opens at once **/
+    float submenuDelay;    /**< how long the cursor rests on a submenu's item before it opens, in seconds **/
+    float tooltipDelay;    /**< how long the cursor rests on a component before its tooltip shows, in seconds **/
+    float tooltipQuickDelay;  /**< the same, when the cursor has just moved on from a tooltip showing **/
+    float plateOpacity;    /**< how opaque the panel is behind text drawn over the scene, from 0 to 1 **/
+    glm::vec4 gap;           /**< what shows between two areas that tile a window **/
+    glm::vec4 bar;           /**< a strip along an edge: a menu bar, a status bar, a strip of tabs **/
     glm::vec4 panel;         /**< the background of a panel, a window, a menu, a list or a text box **/
     glm::vec4 border;        /**< an outline **/
     glm::vec4 titleBar;      /**< the band across the top of a window, and a table's header **/
@@ -57,12 +91,60 @@ struct Dressing final {
     glm::vec4 tab;           /**< a tab that is not the chosen one **/
     glm::vec4 widget;        /**< the face of an immediate button, field or check box at rest **/
     glm::vec4 rule;          /**< a separator, and the line under an immediate tab strip **/
+    glm::vec4 hairline;      /**< a faint line that divides without drawing the eye, such as the edge of an area **/
     glm::vec4 text;          /**< ordinary text **/
     glm::vec4 activeText;    /**< the text of the chosen or hovered item: a menu item, a row, a tab, a button **/
-    glm::vec4 disabledText;  /**< the text of a control that cannot be used, and secondary text **/
+    glm::vec4 secondaryText; /**< text that says less than the text beside it, such as a shortcut **/
+    glm::vec4 disabledText;  /**< the text of a control that cannot be used, and a placeholder **/
     glm::vec4 highlight;     /**< what is drawn behind the chosen item, and behind selected text **/
+    glm::vec4 selected;      /**< what is drawn behind an item that is chosen, under ordinary text **/
     glm::vec4 hover;         /**< what is drawn behind the item the cursor is on **/
+    glm::vec4 pressed;       /**< the face of a button or an item while a press on it is held **/
     glm::vec4 focus;         /**< the ring around whatever the keyboard is on **/
+    glm::vec4 shadow;        /**< the shadow a menu casts, at its darkest **/
+    glm::vec4 backdrop;      /**< what is laid over everything behind a container that dims it **/
+
+ private:
+    // the sizes the retained ui starts with, in pixels
+    static constexpr float LINE_HEIGHT = 34.0F;
+    static constexpr float PADDING = 24.0F;
+    static constexpr float SPACING = 4.0F;
+    static constexpr float BAR_HEIGHT = 28.0F;
+    static constexpr float ICON_SIZE = 22.0F;
+    static constexpr float PANEL_PADDING = 4.0F;
+    static constexpr float SCROLLBAR_WIDTH = 12.0F;
+    static constexpr float MARK_SIZE = 16.0F;
+    static constexpr float FOCUS_WIDTH = 2.0F;
+    static constexpr float INDENT = 14.0F;
+    /** semibold, as CSS numbers it **/
+    static constexpr float TITLE_WEIGHT = 600.0F;
+    static constexpr float SHADOW_SIZE = 12.0F;
+    static constexpr float SHADOW_OFFSET = 4.0F;
+    static constexpr float OPEN_DISTANCE = 4.0F;
+    // how long a hover and an opening menu take, in seconds
+    static constexpr float HOVER_DURATION = 0.1F;
+    static constexpr float OPEN_DURATION = 0.12F;
+    // how long the cursor rests before a submenu opens and before a tooltip shows, in seconds
+    static constexpr float SUBMENU_DELAY = 0.2F;
+    static constexpr float TOOLTIP_DELAY = 0.5F;
+    static constexpr float TOOLTIP_QUICK_DELAY = 0.1F;
+    // text over the scene keeps the scene visible under its plate
+    static constexpr float PLATE_OPACITY = 0.6F;
+
+    // the sizes the immediate layer starts with where they differ, in pixels
+    static constexpr float TOOLS_LINE_HEIGHT = 18.0F;
+    static constexpr float TOOLS_PADDING = 6.0F;
+    static constexpr float TOOLS_BAR_HEIGHT = 22.0F;
+    static constexpr float TOOLS_SCROLLBAR_WIDTH = 10.0F;
+    static constexpr float TOOLS_RADIUS = 3.0F;
+
+    /**
+     * every size a scale multiplies, which leaves out the outlines, the durations and the title
+     * weight
+     **/
+    static constexpr std::array SIZES{&Dressing::lineHeight, &Dressing::padding, &Dressing::spacing, &Dressing::barHeight,
+        &Dressing::iconSize, &Dressing::panelPadding, &Dressing::scrollbarWidth, &Dressing::markSize, &Dressing::radius,
+        &Dressing::indent, &Dressing::shadowSize, &Dressing::shadowOffset, &Dressing::openDistance};
 };
 
 };  // namespace v3d::ui::paint

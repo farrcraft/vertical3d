@@ -17,15 +17,6 @@
 
 namespace v3d::grid {
 
-namespace {
-
-std::string describe(TileCoord tile, int width, int height) {
-    return "tile (" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ") is not on a " +
-        std::to_string(width) + "x" + std::to_string(height) + " grid";
-}
-
-};  // namespace
-
 std::string_view toString(Cover cover) {
     switch (cover) {
         case Cover::None:
@@ -131,6 +122,11 @@ void TileGrid::setCover(TileCoord tile, Cover cover) {
 
 std::size_t TileGrid::index(TileCoord tile) const {
     return (static_cast<std::size_t>(tile.y) * static_cast<std::size_t>(width_)) + static_cast<std::size_t>(tile.x);
+}
+
+std::string TileGrid::describe(TileCoord tile, int width, int height) {
+    return "tile (" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ") is not on a " +
+        std::to_string(width) + "x" + std::to_string(height) + " grid";
 }
 
 };  // namespace v3d::grid

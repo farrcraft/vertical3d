@@ -29,53 +29,8 @@
 namespace {
 
 typedef v3d::render::offline::sl::syntax::Expression Expression;
+
 typedef v3d::render::offline::sl::syntax::Statement Statement;
-
-std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string & source,
-    std::string * error = nullptr) {
-    std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
-    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
-    if (error != nullptr) {
-        *error = parser.error();
-    }
-    return shaders;
-}
-
-/**
- * The only statement of a shader whose body holds exactly one, as an expression. The
- * precedence cases check its shape.
- **/
-v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & expression) {
-    std::string error;
-    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
-        parse("surface s() { Ci = " + expression + "; }", &error);
-    BOOST_REQUIRE_EQUAL(error, "");
-    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
-    BOOST_REQUIRE_EQUAL(shaders[0]->body->statements.size(), 1U);
-    const Statement & statement = *shaders[0]->body->statements[0];
-    BOOST_REQUIRE(statement.kind == Statement::Kind::ASSIGNMENT);
-    return static_cast<const v3d::render::offline::sl::syntax::Assignment &>(statement).value;
-}
-
-/**
- * The operator of a binary node, or empty when the node is not one, so a failure shows an
- * empty operator rather than the result of a wrong cast.
- **/
-std::string binary(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
-    if (!expression || expression->kind != Expression::Kind::BINARY) {
-        return "";
-    }
-    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).op;
-}
-
-v3d::render::offline::sl::syntax::ExpressionPtr left(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
-    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).left;
-}
-
-v3d::render::offline::sl::syntax::ExpressionPtr right(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
-    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).right;
-}
 
 /**
  * Four of the standard surface shaders and the four standard lights, as the RI specification
@@ -150,6 +105,52 @@ const char* const SPOTLIGHT =
 "        Cl = atten * intensity * lightcolor;\n"
 "    }\n"
 "}\n";
+
+std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string & source,
+    std::string * error = nullptr) {
+    std::istringstream stream(source);
+    v3d::render::offline::sl::Parser parser(stream);
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
+    if (error != nullptr) {
+        *error = parser.error();
+    }
+    return shaders;
+}
+
+/**
+ * The only statement of a shader whose body holds exactly one, as an expression. The
+ * precedence cases check its shape.
+ **/
+v3d::render::offline::sl::syntax::ExpressionPtr only(const std::string & expression) {
+    std::string error;
+    std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders =
+        parse("surface s() { Ci = " + expression + "; }", &error);
+    BOOST_REQUIRE_EQUAL(error, "");
+    BOOST_REQUIRE_EQUAL(shaders.size(), 1U);
+    BOOST_REQUIRE_EQUAL(shaders[0]->body->statements.size(), 1U);
+    const Statement & statement = *shaders[0]->body->statements[0];
+    BOOST_REQUIRE(statement.kind == Statement::Kind::ASSIGNMENT);
+    return static_cast<const v3d::render::offline::sl::syntax::Assignment &>(statement).value;
+}
+
+/**
+ * The operator of a binary node, or empty when the node is not one, so a failure shows an
+ * empty operator rather than the result of a wrong cast.
+ **/
+std::string binary(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
+    if (!expression || expression->kind != Expression::Kind::BINARY) {
+        return "";
+    }
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).op;
+}
+
+v3d::render::offline::sl::syntax::ExpressionPtr left(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).left;
+}
+
+v3d::render::offline::sl::syntax::ExpressionPtr right(const v3d::render::offline::sl::syntax::ExpressionPtr & expression) {
+    return static_cast<const v3d::render::offline::sl::syntax::Binary &>(*expression).right;
+}
 
 /**
  * Four of the standard surface shaders parse, so a renderer can resolve `Surface "matte"` with

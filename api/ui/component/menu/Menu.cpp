@@ -15,6 +15,8 @@
 
 #include <cassert>
 #include <cstddef>
+#include <string>
+#include <string_view>
 
 namespace v3d::ui::component::menu {
 Menu::Menu(const boost::shared_ptr<entt::dispatcher>& dispatcher) :
@@ -81,9 +83,10 @@ bool Menu::next() {
     lvl->active_++;
     if (lvl->active_ < 0 || static_cast<size_t>(lvl->active_) >= lvl->items_.size()) {  // wrap around
         lvl->active_ = 0;
+        lvl->skip(1);
         return false;
     }
-    return true;
+    return lvl->skip(1);
 }
 
 bool Menu::previous() {
@@ -104,7 +107,29 @@ bool Menu::previous() {
     } else {
         lvl->active_ = static_cast<int>(lvl->items_.size()) - 1;
     }
-    return true;
+    return lvl->skip(-1);
+}
+
+bool Menu::skip(int step) {
+    // a level of nothing but separators leaves the choice where it landed, rather than
+    // circling for ever
+    const int count = static_cast<int>(items_.size());
+    bool wrapped = false;
+    for (int tries = 0; tries < count; tries++) {
+        const boost::shared_ptr<Item>& item = items_[static_cast<std::size_t>(active_)];
+        if (!item || !item->separator()) {
+            break;
+        }
+        active_ += step;
+        if (active_ >= count) {
+            active_ = 0;
+            wrapped = true;
+        } else if (active_ < 0) {
+            active_ = count - 1;
+            wrapped = true;
+        }
+    }
+    return !wrapped;
 }
 
 bool Menu::up() {
@@ -145,6 +170,14 @@ bool Menu::down() {
     return false;
 }
 
+void Menu::title(const std::string& words) {
+    title_ = words;
+}
+
+const std::string& Menu::title() const noexcept {
+    return title_;
+}
+
 size_t Menu::count() const {
     return items_.size();
 }
@@ -178,6 +211,49 @@ bool Menu::capturing() const {
  **/
 void Menu::cancel() {
     capture_.reset();
+}
+
+/**
+ **/
+boost::shared_ptr<Item> Menu::captured() const {
+    return capture_;
+}
+
+/**
+ **/
+bool Menu::step(int direction) {
+    if (capture_) {
+        return false;
+    }
+    const boost::shared_ptr<Menu> lvl = level();
+    if (!lvl) {
+        return false;
+    }
+    const boost::shared_ptr<Item> item = lvl->active();
+    if (!item || !usable(*item) || !item->step(direction)) {
+        return false;
+    }
+    dispatch(item);
+    return true;
+}
+
+/**
+ **/
+boost::shared_ptr<Item> Menu::find(std::string_view command) const {
+    for (const boost::shared_ptr<Item>& item : items_) {
+        if (!item) {
+            continue;
+        }
+        if (item->event().context() && item->event().name() == command) {
+            return item;
+        }
+        if (const boost::shared_ptr<Menu> sub = item->submenu()) {
+            if (boost::shared_ptr<Item> found = sub->find(command)) {
+                return found;
+            }
+        }
+    }
+    return nullptr;
 }
 
 /**

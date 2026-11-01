@@ -18,20 +18,44 @@ namespace v3d::ui::input {
 namespace {
 
 /**
- * The top two bits of a utf-8 byte, which say whether it is a continuation, and the value
- * they hold in one.
+ * Carry out a control chord on a line: copy, cut, paste and select all, and no other. Any other
+ * chord goes on to the app, so a ctrl-s still saves while the line has the focus.
+ *
+ * @return whether the chord is one of the four, which is taken whether or not it changed
+ *      anything, so it never also reaches a binding
  **/
-constexpr unsigned int CONTINUATION_MASK = 0xC0U;
-constexpr unsigned int CONTINUATION_TAG = 0x80U;
-
-/**
- * Whether a byte is a utf-8 continuation - the ones a character boundary is never on.
- **/
-bool continuation(char byte) noexcept {
-    return (static_cast<unsigned char>(byte) & CONTINUATION_MASK) == CONTINUATION_TAG;
+bool chord(LineEdit* line, std::string_view key, const Clipboard& clipboard) {
+    if (key == "c") {
+        if (clipboard.write && line->selected()) {
+            // an empty copy never replaces what the clipboard holds
+            clipboard.write(line->selection());
+        }
+    } else if (key == "x") {
+        // the run is written to the clipboard before it is removed, and is not removed at all
+        // when there is no write callback, so a cut never loses text
+        if (clipboard.write && line->selected()) {
+            clipboard.write(line->selection());
+            line->removeSelection();
+        }
+    } else if (key == "v") {
+        if (clipboard.read) {
+            // insert() replaces the selection, so a paste and a typed character land the same
+            // way
+            line->insert(clipboard.read());
+        }
+    } else if (key == "a") {
+        line->selectAll();
+    } else {
+        return false;
+    }
+    return true;
 }
 
 };  // namespace
+
+bool LineEdit::continuation(char byte) noexcept {
+    return (static_cast<unsigned char>(byte) & CONTINUATION_MASK) == CONTINUATION_TAG;
+}
 
 LineEdit::LineEdit() noexcept :
     caret_(0),
@@ -250,44 +274,6 @@ std::size_t LineEdit::at(float into, const paint::Measure& measure) const {
     }
     return found;
 }
-
-namespace {
-
-/**
- * Carry out a control chord on a line: copy, cut, paste and select all, and no other. Any other
- * chord goes on to the app, so a ctrl-s still saves while the line has the focus.
- *
- * @return whether the chord is one of the four, which is taken whether or not it changed
- *      anything, so it never also reaches a binding
- **/
-bool chord(LineEdit* line, std::string_view key, const Clipboard& clipboard) {
-    if (key == "c") {
-        if (clipboard.write && line->selected()) {
-            // an empty copy never replaces what the clipboard holds
-            clipboard.write(line->selection());
-        }
-    } else if (key == "x") {
-        // the run is written to the clipboard before it is removed, and is not removed at all
-        // when there is no write callback, so a cut never loses text
-        if (clipboard.write && line->selected()) {
-            clipboard.write(line->selection());
-            line->removeSelection();
-        }
-    } else if (key == "v") {
-        if (clipboard.read) {
-            // insert() replaces the selection, so a paste and a typed character land the same
-            // way
-            line->insert(clipboard.read());
-        }
-    } else if (key == "a") {
-        line->selectAll();
-    } else {
-        return false;
-    }
-    return true;
-}
-
-};  // namespace
 
 bool edit(LineEdit* line, std::string_view key, bool shifted, bool controlled, const Clipboard& clipboard) {
     if (line == nullptr) {

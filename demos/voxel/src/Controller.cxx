@@ -29,11 +29,6 @@
 namespace {
 
 /**
- * The button the immediate layer responds to, named as a binding config names it.
- **/
-const char* const primaryButton = "left";
-
-/**
  * The movement commands, which simulate() reads by whether their keys are held now.
  **/
 const std::pair<const char*, Player::Movement> MOVES[] = {

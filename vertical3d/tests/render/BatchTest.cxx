@@ -63,17 +63,17 @@ class Scratch final {
  **/
 struct Shots {
     Shots() :
-        mesh(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube())) {
+        mesh(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())) {
         scene.add(mesh);
         scene.timeline({ .start = 1, .end = 2, .frame = 1 });
         settings.size = glm::uvec2(32, 24);
         settings.samples = 1;
     }
 
-    v3d::editor::Scene scene;
-    boost::shared_ptr<v3d::editor::Mesh> mesh;
+    v3d::editor::scene::Scene scene;
+    boost::shared_ptr<v3d::editor::scene::Mesh> mesh;
     v3d::type::camera::Profile view{ "front" };
-    v3d::editor::RenderSettings settings;
+    v3d::editor::scene::RenderSettings settings;
 };
 
 /**
@@ -86,7 +86,7 @@ boost::filesystem::path moya() {
 /**
  * Wait for a batch to end, for as long as a few small frames could take on a slow machine.
  **/
-v3d::editor::Batch::Status settle(const v3d::editor::Batch& batch) {
+v3d::editor::render::Batch::Status settle(const v3d::editor::render::Batch& batch) {
     constexpr std::chrono::milliseconds pause{ 20 };
     constexpr int tries = 3000;
     for (int attempt = 0; attempt < tries && batch.status().running; attempt++) {
@@ -107,11 +107,11 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
     slide.set(2.0F, 0.5F);
     BOOST_REQUIRE(scene.curve(mesh->id(), "translation.x", slide));
     const std::uint64_t revision = mesh->revision();
-    v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
+    v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
 
     // with no scene camera, every frame is seen through the view, as a RIB file and the
     // picture moya.exe writes from it
-    const std::vector<v3d::editor::Batch::Job> jobs = batch.start(&scene, view, settings, scratch.path());
+    const std::vector<v3d::editor::render::Batch::Job> jobs = batch.start(&scene, view, settings, scratch.path());
     BOOST_REQUIRE_EQUAL(jobs.size(), 2U);
     BOOST_CHECK_EQUAL(jobs[0].rib.filename().string(), "view.0001.rib");
     BOOST_CHECK_EQUAL(jobs[1].picture.filename().string(), "view.0002.png");
@@ -123,7 +123,7 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
     BOOST_CHECK_EQUAL(mesh->translation().x, 0.0F);
     BOOST_CHECK_EQUAL(mesh->revision(), revision);
 
-    const v3d::editor::Batch::Status status = settle(batch);
+    const v3d::editor::render::Batch::Status status = settle(batch);
     BOOST_CHECK(!status.running);
     BOOST_CHECK_EQUAL(status.done, 2U);
     BOOST_CHECK_EQUAL(status.failed, 0U);
@@ -133,16 +133,16 @@ BOOST_FIXTURE_TEST_CASE(batch_renders_each_frame_test, Shots) {
 
 BOOST_FIXTURE_TEST_CASE(batch_each_camera_test, Shots) {
     const Scratch scratch("cameras");
-    const boost::shared_ptr<v3d::editor::Camera> first =
-        v3d::editor::create_camera(view, v3d::editor::Camera::Projection::Orthographic);
-    const boost::shared_ptr<v3d::editor::Camera> second =
-        v3d::editor::create_camera(view, v3d::editor::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::scene::Camera> first =
+        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Orthographic);
+    const boost::shared_ptr<v3d::editor::scene::Camera> second =
+        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Perspective);
     scene.add(first);
     scene.add(second);
-    v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
+    v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
 
     // every scene camera renders every frame, each into a directory of its own
-    const std::vector<v3d::editor::Batch::Job> jobs = batch.start(&scene, view, settings, scratch.path());
+    const std::vector<v3d::editor::render::Batch::Job> jobs = batch.start(&scene, view, settings, scratch.path());
     BOOST_REQUIRE_EQUAL(jobs.size(), 4U);
     BOOST_CHECK_EQUAL(jobs[0].rib.parent_path().filename().string(), "camera" + std::to_string(first->documentId()));
     BOOST_CHECK_EQUAL(jobs[1].rib.parent_path().filename().string(), "camera" + std::to_string(second->documentId()));
@@ -154,28 +154,28 @@ BOOST_FIXTURE_TEST_CASE(batch_cancel_test, Shots) {
     scene.timeline({ .start = 1, .end = 50, .frame = 1 });
     settings.size = glm::uvec2(2048, 2048);
     settings.samples = 8;
-    settings.hider = v3d::editor::RenderSettings::Hider::RayTrace;
-    v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
+    settings.hider = v3d::editor::scene::RenderSettings::Hider::RayTrace;
+    v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), moya());
 
     // a stop ends the frame being rendered and starts no other
     BOOST_REQUIRE_EQUAL(batch.start(&scene, view, settings, scratch.path()).size(), 50U);
     batch.cancel();
-    const v3d::editor::Batch::Status status = batch.status();
+    const v3d::editor::render::Batch::Status status = batch.status();
     BOOST_CHECK(!status.running);
     BOOST_CHECK_LT(status.done, 50U);
 }
 
 BOOST_AUTO_TEST_CASE(batch_missing_program_test) {
     const Scratch scratch("missing");
-    v3d::editor::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::Mesh>(v3d::brep::cube()));
+    v3d::editor::scene::Scene scene;
+    scene.add(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube()));
     scene.timeline({ .start = 1, .end = 1, .frame = 1 });
-    v3d::editor::Batch batch(boost::make_shared<v3d::log::Logger>(), scratch.path() / "no-such-program.exe");
+    v3d::editor::render::Batch batch(boost::make_shared<v3d::log::Logger>(), scratch.path() / "no-such-program.exe");
 
     // a renderer that cannot be started fails each frame, and the batch still ends
-    BOOST_REQUIRE_EQUAL(batch.start(&scene, v3d::type::camera::Profile("front"), v3d::editor::RenderSettings(),
+    BOOST_REQUIRE_EQUAL(batch.start(&scene, v3d::type::camera::Profile("front"), v3d::editor::scene::RenderSettings(),
         scratch.path()).size(), 1U);
-    const v3d::editor::Batch::Status status = settle(batch);
+    const v3d::editor::render::Batch::Status status = settle(batch);
     BOOST_CHECK(!status.running);
     BOOST_CHECK_EQUAL(status.failed, 1U);
 }

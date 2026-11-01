@@ -23,7 +23,8 @@ namespace {
 
 /**
  * What run<T> built its engine with. run<T> builds the engine on the stack, and it is gone by
- * the time the call returns. The constructor therefore records its arguments here.
+ * the time the call returns. A case therefore hands the engine one of these, and the engine
+ * records into it what it was built and named with.
  **/
 struct Built final {
     std::string path;
@@ -33,41 +34,63 @@ struct Built final {
     bool namedFirst = false;
 };
 
-Built* built = nullptr;
-
 /**
  * What run<T> requires of an engine: a constructor, identity(), initialize(), eventLoop() and
  * shutdown(). It does not require a v3d::engine::Engine, which cannot run its loop in a test.
  **/
 struct StubEngine final {
-    StubEngine(const std::string& path, int option = 0, std::string label = std::string()) {
-        if (built != nullptr) {
-            built->path = path;
-            built->option = option;
-            built->label = std::move(label);
-        }
+    StubEngine(const std::string& path, Built* built, int option = 0, std::string label = std::string()) :
+        built_(built) {
+        built_->path = path;
+        built_->option = option;
+        built_->label = std::move(label);
     }
 
-    static void identity(const v3d::engine::Identity& identity) {
-        if (built != nullptr) {
-            built->identity = identity;
-            built->namedFirst = !initialized;
-        }
+    void identity(const v3d::engine::Identity& identity) {
+        built_->identity = identity;
+        built_->namedFirst = !initialized_;
     }
 
-    static bool initialize() {
-        initialized = true;
+    bool initialize() {
+        initialized_ = true;
         return true;
     }
 
-    // whether initialize() has run, so a case can tell the order run<T> calls them in
-    static inline bool initialized = false;
     static bool eventLoop() {
         return true;
     }
     static bool shutdown() {
         return true;
     }
+
+ private:
+    Built* built_;
+    // whether initialize() has run, so a case can tell the order run<T> calls them in
+    bool initialized_ = false;
+};
+
+/**
+ * An engine whose constructor takes the path and nothing else, as most apps' engines do.
+ * run<T> forwarding anything more would not compile.
+ **/
+struct PathOnlyEngine final {
+    explicit PathOnlyEngine(const std::string& path) : path_(path) {
+    }
+
+    static void identity(const v3d::engine::Identity& /*identity*/) {
+    }
+    bool initialize() const {
+        return !path_.empty();
+    }
+    static bool eventLoop() {
+        return true;
+    }
+    static bool shutdown() {
+        return true;
+    }
+
+ private:
+    std::string path_;
 };
 
 /** The identity the cases run the stub under. **/
@@ -151,10 +174,8 @@ BOOST_AUTO_TEST_CASE(a_user_path_is_per_app) {
  **/
 BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
     Built record;
-    built = &record;
 
-    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), 7, std::string("scene.gltf")) == EXIT_SUCCESS);
-    built = nullptr;
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), &record, 7, std::string("scene.gltf")) == EXIT_SUCCESS);
 
     BOOST_CHECK_EQUAL(record.option, 7);
     BOOST_CHECK_EQUAL(record.label, "scene.gltf");
@@ -167,11 +188,8 @@ BOOST_AUTO_TEST_CASE(run_forwards_what_the_engine_is_built_from) {
  **/
 BOOST_AUTO_TEST_CASE(run_names_the_engine_before_it_starts) {
     Built record;
-    built = &record;
-    StubEngine::initialized = false;
 
-    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub()) == EXIT_SUCCESS);
-    built = nullptr;
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), &record) == EXIT_SUCCESS);
 
     BOOST_CHECK_EQUAL(record.identity.organization, "vertical3d_tests");
     BOOST_CHECK_EQUAL(record.identity.application, "stub");
@@ -179,19 +197,11 @@ BOOST_AUTO_TEST_CASE(run_names_the_engine_before_it_starts) {
 }
 
 /**
- * An app whose engine takes only the path passes no further arguments.
+ * An app whose engine takes only the path passes no further arguments, and the engine is built
+ * from a path that is not empty.
  **/
 BOOST_AUTO_TEST_CASE(run_still_takes_a_path_alone) {
-    Built record;
-    record.option = 9;
-    record.label = "stale";
-    built = &record;
-
-    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub()) == EXIT_SUCCESS);
-    built = nullptr;
-
-    BOOST_CHECK_EQUAL(record.option, 0);
-    BOOST_CHECK(record.label.empty());
+    BOOST_TEST(v3d::engine::run<PathOnlyEngine>("stub.exe", stub()) == EXIT_SUCCESS);
 }
 
 /**
@@ -213,9 +223,7 @@ BOOST_AUTO_TEST_CASE(a_path_outside_the_ansi_code_page_is_written_and_read) {
     }
 
     Built record;
-    built = &record;
-    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), stub()) == EXIT_SUCCESS);
-    built = nullptr;
+    BOOST_TEST(v3d::engine::run<StubEngine>((narrow + "/stub.exe").c_str(), stub(), &record) == EXIT_SUCCESS);
 
     BOOST_TEST(boost::filesystem::exists(directory / L"v3d.log"));
 

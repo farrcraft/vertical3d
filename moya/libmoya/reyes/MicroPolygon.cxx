@@ -12,17 +12,6 @@
 
 namespace v3d::moya::reyes {
 
-MicroPolygon::MicroPolygon() {
-}
-
-MicroPolygon::~MicroPolygon() {
-}
-
-Vertex & MicroPolygon::operator[] (unsigned int index) {
-    assert(index < 4);
-    return points_[index];
-}
-
 namespace {
 
 /**
@@ -51,6 +40,17 @@ bool triangle(const glm::vec3 & p0, const glm::vec3 & p1, const glm::vec3 & p2, 
 }
 
 };  // namespace
+
+MicroPolygon::MicroPolygon() {
+}
+
+MicroPolygon::~MicroPolygon() {
+}
+
+Vertex & MicroPolygon::operator[] (unsigned int index) {
+    assert(index < 4);
+    return points_[index];
+}
 
 bool covers(const std::array<glm::vec3, 4> & corners, const glm::vec2 & point, float * depth) {
     return triangle(corners[0], corners[1], corners[2], point, depth) ||

@@ -224,6 +224,70 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     int frame_ = 0;
 };
 
+/**
+ * Takes the curves and the bases a reader hands it.
+ **/
+class CurveHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void basis(const v3d::render::offline::rib::Basis & request) override {
+        bases_.push_back(request);
+    }
+    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        curves_.push_back(request);
+        points_.push_back(parameters.floats("P").size() / 3);
+        widths_.push_back(parameters.floats("constantwidth"));
+    }
+    std::vector<v3d::render::offline::rib::Basis> bases_;
+    std::vector<v3d::render::offline::rib::Curves> curves_;
+    std::vector<std::size_t> points_;
+    std::vector<std::vector<float>> widths_;
+};
+
+/**
+ * A handler that overrides the Handler defaults to sample an area light, make a texture, and
+ * build a primitive that deforms.
+ **/
+class CapableHandler final : public v3d::render::offline::rib::Handler {
+ public:
+    void areaLightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        area_ = request.shader + "|" + request.handle;
+    }
+    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)request;
+        (void)parameters;
+        lights_++;
+    }
+    void makeTexture(const v3d::render::offline::rib::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        made_ = request.picture + "|" + request.texture + "|" + request.swrap + "|" + request.twrap + "|" + request.filter + "|" +
+            std::to_string(static_cast<int>(request.swidth)) + "|" + std::to_string(static_cast<int>(request.twidth));
+    }
+    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+        (void)parameters;
+        vertices_.push_back(vertices);
+    }
+    Handler* deformation() override {
+        return &later_;
+    }
+
+    /** Receives the later poses, kept apart from the first. **/
+    class Later final : public v3d::render::offline::rib::Handler {
+     public:
+        void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
+            (void)parameters;
+            vertices_.push_back(vertices);
+        }
+        std::vector<unsigned int> vertices_;
+    };
+
+    std::string area_;
+    std::string made_;
+    unsigned int lights_ = 0;
+    std::vector<unsigned int> vertices_;
+    Later later_;
+};
+
 bool read(const std::string & source, v3d::render::offline::rib::Handler * handler, v3d::render::offline::rib::Reader * reader) {
     std::istringstream stream(source);
     return reader->read(stream, handler);
@@ -531,25 +595,6 @@ BOOST_AUTO_TEST_CASE(ribreader_graphics_state_test) {
 }
 
 /**
- * Takes the curves and the bases a reader hands it.
- **/
-class CurveHandler final : public v3d::render::offline::rib::Handler {
- public:
-    void basis(const v3d::render::offline::rib::Basis & request) override {
-        bases_.push_back(request);
-    }
-    void curves(const v3d::render::offline::rib::Curves & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        curves_.push_back(request);
-        points_.push_back(parameters.floats("P").size() / 3);
-        widths_.push_back(parameters.floats("constantwidth"));
-    }
-    std::vector<v3d::render::offline::rib::Basis> bases_;
-    std::vector<v3d::render::offline::rib::Curves> curves_;
-    std::vector<std::size_t> points_;
-    std::vector<std::vector<float>> widths_;
-};
-
-/**
  * A basis is a name RI defines or sixteen numbers, each followed by its step, and a curve is
  * its type, its counts, its wrap and its parameters.
  **/
@@ -777,55 +822,6 @@ BOOST_AUTO_TEST_CASE(ribreader_deforming_motion_test) {
     BOOST_CHECK_EQUAL(reader.unsupported()[0], "deforming Polygon");
     BOOST_CHECK_EQUAL(handler.count("Color"), 1U);
 }
-
-namespace {
-
-/**
- * A handler that overrides the Handler defaults to sample an area light, make a texture, and
- * build a primitive that deforms.
- **/
-class CapableHandler final : public v3d::render::offline::rib::Handler {
- public:
-    void areaLightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)parameters;
-        area_ = request.shader + "|" + request.handle;
-    }
-    void lightSource(const v3d::render::offline::rib::LightSource & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)request;
-        (void)parameters;
-        lights_++;
-    }
-    void makeTexture(const v3d::render::offline::rib::MakeTexture & request, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)parameters;
-        made_ = request.picture + "|" + request.texture + "|" + request.swrap + "|" + request.twrap + "|" + request.filter + "|" +
-            std::to_string(static_cast<int>(request.swidth)) + "|" + std::to_string(static_cast<int>(request.twidth));
-    }
-    void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
-        (void)parameters;
-        vertices_.push_back(vertices);
-    }
-    Handler* deformation() override {
-        return &later_;
-    }
-
-    /** Receives the later poses, kept apart from the first. **/
-    class Later final : public v3d::render::offline::rib::Handler {
-     public:
-        void polygon(unsigned int vertices, const v3d::render::offline::rib::ParameterList & parameters) override {
-            (void)parameters;
-            vertices_.push_back(vertices);
-        }
-        std::vector<unsigned int> vertices_;
-    };
-
-    std::string area_;
-    std::string made_;
-    unsigned int lights_ = 0;
-    std::vector<unsigned int> vertices_;
-    Later later_;
-};
-
-};  // namespace
 
 /**
  * A handler decides what it supports: an area light, a texture to make and a

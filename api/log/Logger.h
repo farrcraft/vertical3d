@@ -46,6 +46,19 @@ class Logger final {
         std::shared_ptr<spdlog::logger> get() const;
 
  private:
+    /** The name the log is registered under in spdlog's registry. **/
+    static constexpr const char* NAME = "v3d-logger";
+    /** The file the log is written to when open() has not been called. **/
+    static constexpr const char* DEFAULT_PATH = "v3d.log";
+
+    /**
+     * Creates the log in the file path names. When that file cannot be opened, the log goes to
+     * stderr, so a directory that is not writable does not stop the app from starting.
+     *
+     * @param opened set to whether the file was opened
+     **/
+    static std::shared_ptr<spdlog::logger> create(const std::string& path, bool* opened);
+
      std::shared_ptr<spdlog::logger> logger_;
 };
 

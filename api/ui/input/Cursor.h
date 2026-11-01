@@ -7,6 +7,8 @@
 
 #include <api/ui/paint/Text.h>
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -21,7 +23,12 @@ class Interface;
 
 namespace component {
 class TextBox;
+class Toolbar;
 };  // namespace component
+
+namespace component::menu {
+class Bar;
+};  // namespace component::menu
 
 };  // namespace v3d::ui
 
@@ -79,6 +86,9 @@ class Cursor final {
      * to where the button came up, as it would on a motion(), so a slider whose value changes
      * there sends its command. Nothing else is sent, because a command is sent when the press
      * lands, as on a toolbar.
+     *
+     * A button drawn pressed, in the tree or on a toolbar, goes back to hovered when the cursor
+     * is still on it, and to normal when it is not.
      * @return whether the ui took it
      **/
     bool release(const glm::vec2& point);
@@ -94,6 +104,28 @@ class Cursor final {
     boost::shared_ptr<Component> hovered() const;
 
  private:
+    /**
+     * Collect a container's menu bars and toolbars. The cursor offers a point to the menu bars
+     * before the toolbars, the reverse of the draw order, because an open menu drops a panel
+     * over a toolbar.
+     *
+     * A strip that is hidden, disabled or not pickable is left out, as Container::pick() leaves
+     * out such a component.
+     **/
+    static void strips(const boost::shared_ptr<Container>& container,
+        std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
+        std::vector<boost::shared_ptr<component::Toolbar>>* toolbars);
+    /**
+     * Set a component's hover state on or off.
+     *
+     * A button is the only component with a hover state. A Toolbar writes the same state onto
+     * its buttons, so a button in the tree is highlighted the same way as one on a toolbar.
+     *
+     * A button that cannot be used is left alone in both directions, so a transient hover never
+     * overwrites its disabled look.
+     **/
+    static void lit(const boost::shared_ptr<Component>& component, bool on);
+
     /**
      * Highlight one component and clear the highlight on the one before it.
      *

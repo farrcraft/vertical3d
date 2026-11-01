@@ -35,21 +35,7 @@
 
 namespace odyssey::tile {
 
-namespace {
-
-/**
- * The largest corner or size a world document may give, in tiles. Each number is converted
- * through a float, which holds every whole number up to 2^24 exactly.
- **/
-constexpr int32_t largest = 1 << 20;
-
-/**
- * Read an "x" and "y" pair of whole numbers from a member of an object.
- *
- * @return the pair, or nothing when the member is absent, either number is missing, not a
- *         whole number, or outside [minimum, largest]
- **/
-std::optional<v3d::grid::TileCoord> readPair(const boost::json::object& object, std::string_view key, int32_t minimum) {
+std::optional<v3d::grid::TileCoord> World::readPair(const boost::json::object& object, std::string_view key, int32_t minimum) {
     const boost::json::object* pair = v3d::asset::readObject(object, key);
     if (pair == nullptr) {
         return std::nullopt;
@@ -69,15 +55,10 @@ std::optional<v3d::grid::TileCoord> readPair(const boost::json::object& object, 
     return v3d::grid::TileCoord{*values[0], *values[1]};
 }
 
-/**
- * @return whether two rectangles of tiles share a tile
- **/
-bool overlap(v3d::grid::TileCoord cornerA, v3d::grid::TileCoord sizeA, v3d::grid::TileCoord cornerB, v3d::grid::TileCoord sizeB) {
+bool World::overlap(v3d::grid::TileCoord cornerA, v3d::grid::TileCoord sizeA, v3d::grid::TileCoord cornerB, v3d::grid::TileCoord sizeB) {
     return cornerA.x < cornerB.x + sizeB.x && cornerB.x < cornerA.x + sizeA.x &&
         cornerA.y < cornerB.y + sizeB.y && cornerB.y < cornerA.y + sizeA.y;
 }
-
-};  // namespace
 
 /**
  **/
@@ -315,12 +296,7 @@ void World::stream(v3d::grid::TileCoord player) {
     }
 }
 
-namespace {
-
-/**
- * Log an exception a region's load threw, with the region's file.
- **/
-void logFailure(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& file, const std::exception_ptr& thrown) {
+void World::logFailure(const boost::shared_ptr<v3d::log::Logger>& logger, const std::string& file, const std::exception_ptr& thrown) {
     try {
         std::rethrow_exception(thrown);
     } catch (const std::exception& exception) {
@@ -329,8 +305,6 @@ void logFailure(const boost::shared_ptr<v3d::log::Logger>& logger, const std::st
         logger->get()->error("loading the region {} threw something that is not an exception", file);
     }
 }
-
-};  // namespace
 
 /**
  **/

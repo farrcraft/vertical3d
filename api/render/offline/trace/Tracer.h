@@ -164,6 +164,31 @@ class Tracer final {
 
  private:
     /**
+     * How far along the geometric normal a ray leaving a surface starts.
+     *
+     * **This is a trap.** A shadow ray that starts exactly on the surface hits the surface it
+     * left, and every lit pixel comes out black. The pattern looks like a fault in the normals
+     * rather than a numerical one. The offset is along the normal rather than along the ray,
+     * because an offset along a ray nearly parallel to the surface stays on the surface.
+     **/
+    static constexpr float EPSILON = 1.0e-4F;
+
+    /**
+     * Whether two primitives can be shaded by one run: the same surface shader in the same
+     * placement, the same object space and the same lights. Everything else a hit reads is a
+     * point of the batch.
+     **/
+    static bool shareable(const Primitive & one, const Primitive & other);
+
+    /**
+     * Put a surface behind what a ray has seen in front of it: C += (1 - A) Ci and
+     * A += (1 - A) Oi, with Ci already premultiplied.
+     *
+     * @return whether the ray is now opaque, so that nothing behind can show
+     **/
+    static bool composite(Tracer::Seen* seen, const glm::vec3 & colour, const glm::vec3 & opacity, float distance);
+
+    /**
      * Where the moving primitives are for each ray of a batch, at its time.
      *
      * @param placed where the poses computed for the batch are kept. It must outlive the

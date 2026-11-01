@@ -10,8 +10,10 @@
 #include <api/asset/kind/Json.h>
 #include <api/asset/media/Loaders.h>
 #include <api/event/Bindings.h>
+#include <api/event/Chord.h>
 #include <api/event/Router.h>
 #include <api/event/Event.h>
+#include <api/event/kind/DisplayScale.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
@@ -44,16 +46,7 @@
 
 namespace v3d::engine {
 
-namespace {
-
-/** The settings key the player's key bindings are kept under. **/
-const char* const BINDINGS = "bindings";
-
-/**
- * The player's key bindings as the settings keep them: a list of overrides, each the command,
- * the source it replaces, and the name it binds instead.
- **/
-boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overrides) {
+boost::json::array Engine::saveBindings(const std::vector<v3d::event::Bindings::Override>& overrides) {
     boost::json::array saved;
     for (const v3d::event::Bindings::Override& made : overrides) {
         saved.push_back(boost::json::object{ { "command", made.command }, { "source", made.source }, { "name", made.name } });
@@ -61,11 +54,7 @@ boost::json::array save(const std::vector<v3d::event::Bindings::Override>& overr
     return saved;
 }
 
-/**
- * The overrides a settings document holds. An entry of another shape, from a hand edit, is
- * left out.
- **/
-std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved) {
+std::vector<v3d::event::Bindings::Override> Engine::readBindings(const boost::json::value& saved) {
     std::vector<v3d::event::Bindings::Override> overrides;
     if (!saved.is_array()) {
         return overrides;
@@ -87,8 +76,6 @@ std::vector<v3d::event::Bindings::Override> read(const boost::json::value& saved
     }
     return overrides;
 }
-
-};  // namespace
 
 /**
  **/
@@ -164,12 +151,12 @@ void Engine::loadSettings() {
     }
     const boost::json::value* saved = settings_->value(BINDINGS);
     if (saved != nullptr) {
-        bindings_->restore(read(*saved));
+        bindings_->restore(readBindings(*saved));
     }
     // each change is saved as it is made. No exit path is certain to run, and a crash should
     // not lose a rebinding
     bindings_->changed([this]() {
-        settings_->set(BINDINGS, boost::json::value(save(bindings_->overrides())));
+        settings_->set(BINDINGS, boost::json::value(saveBindings(bindings_->overrides())));
         settings_->save();
     });
 }
@@ -454,6 +441,12 @@ void Engine::handleEvent(const SDL_Event& event) {
     case SDL_EVENT_WINDOW_FOCUS_LOST:
         dispatcher_->trigger(v3d::event::kind::WindowFocus(false));
         break;
+    // the monitor's scale changed, or the window moved to a monitor with another
+    case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+        if (window_) {
+            dispatcher_->trigger(v3d::event::kind::DisplayScale(window_->displayScale()));
+        }
+        break;
     case SDL_EVENT_WINDOW_MINIMIZED:
         minimized_ = true;
         break;
@@ -543,8 +536,16 @@ bool Engine::held(std::string_view command) const {
     if (!bindings_ || state == nullptr) {
         return false;
     }
-    return std::ranges::any_of(bindings_->sources(command),
-        [state](const v3d::event::Event& source) { return state->held(source.name()); });
+    // a chord is held while its key and every modifier it names are down, on either side
+    const auto down = [state](const v3d::event::Event& source) {
+        const v3d::event::Chord split = v3d::event::chord(source.name());
+        const v3d::event::Modifiers& needed = split.modifiers;
+        return state->held(split.key) &&
+            (!needed.ctrl || state->held("left_control") || state->held("right_control")) &&
+            (!needed.shift || state->held("left_shift") || state->held("right_shift")) &&
+            (!needed.alt || state->held("left_alt") || state->held("right_alt"));
+    };
+    return std::ranges::any_of(bindings_->sources(command), down);
 }
 
 /**

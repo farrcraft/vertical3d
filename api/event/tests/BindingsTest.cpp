@@ -21,7 +21,7 @@
 
 namespace {
 
-const char* DOCUMENT = R"({"mappings": [
+const char* const DOCUMENT = R"({"mappings": [
     {"source": {"name": "w", "context": "keyboard", "state": "pressed"},
      "destination": {"name": "up", "context": "game"}},
     {"source": {"name": "arrow_up", "context": "keyboard"},
@@ -82,6 +82,25 @@ BOOST_FIXTURE_TEST_CASE(bindings_known_test, Fixture) {
     BOOST_REQUIRE(bindings.load(boost::json::parse(DOCUMENT).as_object()));
     BOOST_TEST(asked.size() == 3U);
     BOOST_TEST(bindings.sources("ui::quit").size() == 1U);
+}
+
+/**
+ * A chord is put to the owner's check by its key, and keeps its whole name everywhere the
+ * bindings name a source: in what a command is bound to, and in what a name fires.
+ **/
+BOOST_FIXTURE_TEST_CASE(bindings_check_a_chord_by_its_key_test, Fixture) {
+    BOOST_REQUIRE(bindings.load(boost::json::parse(R"({"mappings": [
+        {"source": {"name": "ctrl+shift+z", "context": "keyboard"},
+         "destination": {"name": "redo", "context": "edit"}}
+    ]})").as_object()));
+    BOOST_REQUIRE_EQUAL(asked.size(), 1U);
+    BOOST_TEST(asked[0] == "z");
+
+    const std::vector<v3d::event::Event> redo = bindings.sources("edit::redo");
+    BOOST_REQUIRE_EQUAL(redo.size(), 1U);
+    BOOST_TEST(redo[0].name() == "ctrl+shift+z");
+    BOOST_CHECK(bindings.bound("ctrl+shift+z") == std::vector<std::string>{"edit::redo"});
+    BOOST_TEST(bindings.bound("z").empty());
 }
 
 /**

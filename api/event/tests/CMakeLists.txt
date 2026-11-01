@@ -1,6 +1,7 @@
 v3d_add_test(event
 	"TestMain.cpp"
 	"BindingsTest.cpp"
+	"ChordTest.cpp"
 	"CommandsTest.cpp"
 	"RouterTest.cpp"
 	"EventTest.cpp"

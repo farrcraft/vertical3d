@@ -43,6 +43,14 @@ class Emitter final {
     const std::string & error() const;
 
  private:
+    static runtime::Opcode binaryOpcode(const std::string & op);
+
+    /**
+     * The index of the ctransform that names both spaces, from and to, or -1 when the table has
+     * none.
+     **/
+    static int conversion();
+
     class Failure final {};
 
     /** A register for a value of that type and storage, with no name. **/

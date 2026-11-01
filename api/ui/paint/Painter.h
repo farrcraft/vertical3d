@@ -63,6 +63,29 @@ void plateBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& mi
     float radius, float width, const Plate& colours);
 
 /**
+ * How a shadow is drawn: the box's corner radius, how far past the box the fade reaches, and
+ * the colour at its darkest. A reach of zero draws the box alone.
+ **/
+struct Shadow {
+    float radius = 0.0F;
+    float reach = 0.0F;
+    glm::vec4 colour{0.0F};
+};
+
+/**
+ * A shadow: a rounded box filled with a colour, with an edge that fades out to nothing.
+ *
+ * The fade follows half a turn of a cosine, drawn as a few bands that each blend between two
+ * points on it, so it has no hard inner edge as a straight ramp would. Each corner turns about
+ * the same centre as the box's own, so the fade rounds even a square box's corners.
+ *
+ * Draw it before the box that casts it. Its inside is filled, so a box drawn over it with an
+ * alpha shows the shadow through.
+ **/
+void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
+    const Shadow& shadow);
+
+/**
  * @return whether a point is inside a box, its top and left edges included
  **/
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept;

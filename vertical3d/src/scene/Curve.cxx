@@ -15,7 +15,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -60,4 +60,4 @@ std::uint64_t Curve::revision() const noexcept {
     return Item::revision() + geometry_->changes();
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

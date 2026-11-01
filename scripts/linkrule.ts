@@ -18,7 +18,8 @@
  *                     through another header; the rule is that a target includes what it uses.
  *   visibility        an app library's header includes a v3dlib_* target that the app library
  *                     links PRIVATE, or the app library links one PUBLIC that none of its
- *                     headers includes.
+ *                     headers includes. A header under an internal/ directory is not counted,
+ *                     because only the library's own sources include it.
  *   package           an app or an app suite names a third-party package that is not the
  *                     exception. The exception is a package its own files include directly
  *                     that none of the v3dlib_* targets it links carries. A suite never names
@@ -513,7 +514,9 @@ function check(tree: Tree, t: Target, boost: string[], report: Report): void {
             if (!included.has(lib)) {
                 included.set(lib, [f, name]);
             }
-            if (own !== null && endsWithAny(f, HEADER_SUFFIXES) && !headerLibs.has(lib)) {
+            // a header under internal/ is included only by the library's own sources, so what it
+            // includes is linked PRIVATE
+            if (own !== null && endsWithAny(f, HEADER_SUFFIXES) && !rel(f).includes('/internal/') && !headerLibs.has(lib)) {
                 headerLibs.set(lib, [f, name]);
             }
         }

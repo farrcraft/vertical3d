@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/event/Chord.h>
+
 #include "Device.h"
 #include "KeyState.h"
 
@@ -29,6 +31,12 @@ std::string keyName(SDL_Keycode key);
  * against this, so a misspelt key is reported rather than bound to nothing.
  **/
 bool isKeyName(std::string_view name);
+
+/**
+ * Which of Ctrl, Shift and Alt SDL's modifier state holds, on either side of the keyboard. Both
+ * devices put it on the sources they send, so a key or a click can match a chord.
+ **/
+v3d::event::Modifiers modifiers(SDL_Keymod held) noexcept;
 
 /**
  **/

@@ -16,9 +16,9 @@
 #include "Bucket.h"
 #include "Primitive.h"
 
-namespace v3d::moya {
+namespace v3d::moya::state {
 class RenderContext;
-};  // namespace v3d::moya
+};  // namespace v3d::moya::state
 
 namespace v3d::moya::reyes {
 
@@ -59,7 +59,7 @@ class Buckets final {
      * a split piece may land in a bucket already rendered. Progress counts the buckets of one
      * pass. A stop leaves the buckets not yet rendered empty.
      **/
-    void render(Hider & hider, RenderContext & rc);
+    void render(Hider & hider, state::RenderContext & rc);
 
  private:
     std::vector<std::vector<Bucket>> buckets_;

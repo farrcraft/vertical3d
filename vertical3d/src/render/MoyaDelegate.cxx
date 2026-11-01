@@ -10,8 +10,8 @@
 #include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Profile.h>
-#include <moya/libmoya/Planes.h>
-#include <moya/libmoya/RIBHandler.h>
+#include <moya/libmoya/ri/RIBHandler.h>
+#include <moya/libmoya/state/Planes.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -27,7 +27,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  **/
@@ -66,7 +66,7 @@ boost::shared_ptr<v3d::image::Image> MoyaDelegate::picture() const {
 
 /**
  **/
-void MoyaDelegate::start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) {
+void MoyaDelegate::start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) {
     const boost::shared_ptr<v3d::render::offline::rib::Recorder> shot = boost::make_shared<v3d::render::offline::rib::Recorder>();
     shoot(shot.get(), scene, scene.evaluate(), from, RIBExportVisitor::Output{ .settings = settings });
     {
@@ -83,7 +83,7 @@ void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const st
     State finished = State::Failed;
     boost::shared_ptr<v3d::image::Image> image;
     try {
-        v3d::moya::RIBHandler handler;
+        v3d::moya::ri::RIBHandler handler;
         handler.context().progress([this, &stop](float done) {
             const std::scoped_lock lock(mutex_);
             status_.done = done;
@@ -95,7 +95,7 @@ void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const st
         } else if (!handler.context().picture()) {
             logger_->get()->error("the render made no picture of the scene");
         } else {
-            image = handler.context().picture()->image(v3d::moya::Planes::CHANNELS);
+            image = handler.context().picture()->image(v3d::moya::state::Planes::CHANNELS);
             finished = State::Finished;
         }
     } catch (const std::exception& error) {
@@ -112,4 +112,4 @@ void MoyaDelegate::run(const v3d::render::offline::rib::Recorder& shot, const st
     }
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

@@ -6,6 +6,7 @@
 #include "Component.h"
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Transition.h>
 #include <api/ui/component/Type.h>
 
 #include "Layout.h"
@@ -19,22 +20,13 @@
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * The next id to hand out. Atomic because a component may be built on any thread.
- **/
-std::atomic<unsigned int> nextID { 0 };
-
-};  // namespace
-
 // in declaration order, so that no member is initialised from one that is not yet set
 Component::Component(component::Type type) :
     parent_(nullptr),
     position_(0.0F, 0.0F),
     size_(0.0F, 0.0F),
     zIndex_(0),
-    id_(nextID++),
+    id_(nextId()),
     visible_(true),
     enabled_(true),
     pickable_(false),
@@ -223,6 +215,23 @@ std::vector<boost::shared_ptr<Component>> ordered(const std::vector<boost::share
             return first->depth() < second->depth();
         });
     return sorted;
+}
+
+Motion& Component::motion() noexcept {
+    return motion_;
+}
+
+std::string_view Component::tooltip() const noexcept {
+    return tooltip_;
+}
+
+void Component::tooltip(const std::string& text) {
+    tooltip_ = text;
+}
+
+unsigned int Component::nextId() noexcept {
+    static std::atomic<unsigned int> next{0};  // process-wide: a counter of ids unique across the run
+    return next++;
 }
 
 };  // end namespace v3d::ui

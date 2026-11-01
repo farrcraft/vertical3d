@@ -24,7 +24,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 /**
  * One motion event's worth of a manipulator's drag, about a pivot.
@@ -75,7 +75,7 @@ class Target final {
      * them, whose normals a move changes.
      **/
     struct Part {
-        boost::shared_ptr<Mesh> mesh;
+        boost::shared_ptr<scene::Mesh> mesh;
         std::vector<v3d::brep::Index> vertices;
         std::vector<v3d::brep::Index> faces;
         // where the mesh is in the world
@@ -87,7 +87,7 @@ class Target final {
      * by its part number.
      **/
     struct CurvePart {
-        boost::shared_ptr<Curve> curve;
+        boost::shared_ptr<scene::Curve> curve;
         std::vector<v3d::brep::Index> points;
         std::vector<v3d::brep::Index> handles;
         // where the curve is in the world
@@ -110,7 +110,7 @@ class Target final {
      *
      * @param evaluation where the objects and their parents are
      **/
-    static Target objects(const Items& items, const Evaluation& evaluation);
+    static Target objects(const scene::Items& items, const scene::Evaluation& evaluation);
 
     /**
      * The parts the selected components of one kind move, in every mesh and curve of the set.
@@ -122,8 +122,8 @@ class Target final {
      * @param components which parts of each item are selected
      * @param evaluation where the items are
      **/
-    static Target components(const Items& items, SelectMask kind, const Components& components,
-        const Evaluation& evaluation);
+    static Target components(const scene::Items& items, selection::SelectMask kind, const scene::Components& components,
+        const scene::Evaluation& evaluation);
 
     /**
      * The target the selection makes under a select mask: the selected items of the kinds the
@@ -131,7 +131,7 @@ class Target final {
      * meshes and curves otherwise. An item beneath another item the mask takes is left out,
      * because it moves with that item already.
      **/
-    static Target selected(const Scene& scene, SelectMask mask);
+    static Target selected(const scene::Scene& scene, selection::SelectMask mask);
 
     /**
      * @return whether there is nothing to move
@@ -147,7 +147,7 @@ class Target final {
      * @return the items the target moves, or the meshes and curves it moves parts of, the meshes
      *         first and each in scene order
      **/
-    const Items& items() const noexcept;
+    const scene::Items& items() const noexcept;
 
     /**
      * @return for a component target, each mesh's vertices and the faces around them
@@ -179,7 +179,32 @@ class Target final {
     void move(const Motion& motion, const glm::vec3& pivot, const glm::quat& frame);
 
  private:
-    Items items_;
+    /**
+     * The vertex a half edge starts at, which is the vertex the half edge before it in its
+     * loop ends at. A half edge names only its end, so this scans for the one whose next it is.
+     **/
+    static bool startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::brep::Index* vertex);
+    /**
+     * The vertices the selected components of one kind of a mesh item bring, each once, in index
+     * order. A part the geometry does not hold brings nothing.
+     **/
+    static std::vector<v3d::brep::Index> selectedVertices(const scene::Mesh& item, selection::SelectMask kind, const scene::Components& components);
+    /**
+     * The faces any of the vertices is a corner of, each once, in index order.
+     **/
+    static std::vector<v3d::brep::Index> facesAround(const v3d::brep::BRep& mesh, const std::vector<v3d::brep::Index>& vertices);
+    /**
+     * The selected control points of a curve item, by part number, rising. A part the geometry does
+     * not hold is left out.
+     **/
+    static std::vector<v3d::brep::Index> selectedPoints(const scene::Curve& item, const scene::Components& components);
+    /**
+     * The selected Bezier handles of a curve item, by part number, rising. A part that names no
+     * handle the geometry holds is left out.
+     **/
+    static std::vector<v3d::brep::Index> selectedHandles(const scene::Curve& item, const scene::Components& components);
+
+    scene::Items items_;
     // for an object target, the world matrix of each object's parent, in the order of items_
     std::vector<glm::mat4> parents_;
     // for an object target, each object's placement, as the evaluation found it and as each
@@ -190,4 +215,4 @@ class Target final {
     bool components_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

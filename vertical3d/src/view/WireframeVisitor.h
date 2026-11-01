@@ -14,12 +14,13 @@
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Light.h>
 #include <vertical3d/src/scene/Mesh.h>
-#include <vertical3d/src/scene/SceneVisitor.h>
+#include <vertical3d/src/scene/Visitor.h>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::view {
 
 /**
  * Draws a scene in lines, onto one line canvas: every mesh as a wireframe, every curve through
@@ -39,7 +40,7 @@ namespace v3d::editor {
  * These are lines, drawn over the shaded pass. A selected face is drawn as its boundary, and a
  * selected vertex as a small box.
  **/
-class WireframeVisitor final : public SceneVisitor {
+class WireframeVisitor final : public scene::Visitor {
  public:
     /**
      * Which kinds of item are drawn. A kind left out is skipped.
@@ -72,26 +73,59 @@ class WireframeVisitor final : public SceneVisitor {
      * @param components which parts of each mesh and curve to draw as selected, or null for none
      **/
     WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
-        const Components* components = nullptr);
+        const scene::Components* components = nullptr);
 
     /**
      * Append one mesh's wireframe.
      **/
-    void visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
 
     /**
      * Append one camera's, light's or group's glyph.
      **/
-    void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<Group>& group, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
 
     /**
      * Append one item's curves, through its world matrix.
      **/
-    void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
 
  private:
+    /**
+     * An unselected mesh.
+     **/
+    static constexpr glm::vec4 wire{ 0.78F, 0.80F, 0.84F, 1.0F };
+    /**
+     * An unselected camera or light, apart from the meshes around it.
+     **/
+    static constexpr glm::vec4 glyph{ 0.95F, 0.82F, 0.42F, 1.0F };
+    /**
+     * An item selected as a whole, which is object mode selection.
+     **/
+    static constexpr glm::vec4 object{ 0.35F, 0.72F, 1.0F, 1.0F };
+    /**
+     * A selected component: an edge, the boundary of a selected face, or the marker
+     * drawn at a selected vertex.
+     **/
+    static constexpr glm::vec4 component{ 1.0F, 0.62F, 0.19F, 1.0F };
+    /**
+     * How big a selected vertex's marker is, as a fraction of the mesh's largest
+     * dimension. A line canvas is world space, so the marker cannot be sized in pixels
+     * and is sized against the mesh instead.
+     **/
+    static constexpr float markerScale = 0.04F;
+    /**
+     * How big a curve's control point or handle marker is, against the curve's largest dimension.
+     * It is smaller than a vertex's, because a curve's points lie closer together than a mesh's.
+     **/
+    static constexpr float controlScale = 0.015F;
+    /**
+     * A marker's half size for geometry this large across, kept visible when the geometry is flat.
+     **/
+    static float markerSize(const glm::vec3& extent, float scale);
+
     /**
      * A box at each selected vertex, sized against the mesh.
      **/
@@ -100,15 +134,15 @@ class WireframeVisitor final : public SceneVisitor {
     /**
      * A selected curve's control points, its NURBS hulls and its Bezier handles, as shown.
      **/
-    void controls(const Curve& item);
+    void controls(const scene::Curve& item);
 
     v3d::render::realtime::canvas::Line* canvas_;
     Shown shown_;
-    const Components* components_;
+    const scene::Components* components_;
     glm::vec4 wire_;
     glm::vec4 glyph_;
     glm::vec4 object_;
     glm::vec4 component_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::view

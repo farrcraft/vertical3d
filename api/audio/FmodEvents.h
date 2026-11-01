@@ -85,6 +85,16 @@ class FmodEvents final : public Events {
 
  private:
     /**
+     * How many event instances FMOD may have playing at once, across every bank.
+     **/
+    static constexpr int maximumChannels = 512;
+
+    /**
+     * Whether a mixer path names a VCA rather than a bus.
+     **/
+    static bool isVca(std::string_view path) noexcept;
+
+    /**
      * Find an event and make an instance of it, logging an event no bank holds once.
      *
      * @param position where to place it before it starts, or nothing to leave it at the origin

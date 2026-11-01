@@ -30,25 +30,7 @@
 
 namespace odyssey::render {
 
-namespace {
-/**
- * The image file of the player's sprite, the only texture odyssey draws.
- **/
-const char* const spriteName = "sample.png";
-
-constexpr glm::vec4 clearColour(0.05F, 0.05F, 0.07F, 1.0F);
-constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
-
-constexpr glm::vec4 wallColour(0.35F, 0.35F, 0.40F, 1.0F);
-constexpr glm::vec4 crateColour(0.45F, 0.33F, 0.18F, 1.0F);
-constexpr glm::vec4 floorColour(0.14F, 0.15F, 0.18F, 1.0F);
-
-/**
- * A tile is drawn as its kind's colour. There is no tile artwork, so the kind is the only
- * thing that tells tiles apart. An unset texture handle draws against the renderer's white
- * texture, so the quad comes out as the colour alone.
- **/
-glm::vec4 tileColour(odyssey::tile::Kind kind) {
+glm::vec4 Renderer::tileColour(odyssey::tile::Kind kind) {
     switch (kind) {
     case odyssey::tile::Kind::Wall:
         return wallColour;
@@ -58,22 +40,6 @@ glm::vec4 tileColour(odyssey::tile::Kind kind) {
         return floorColour;
     }
 }
-
-/**
- * How much of a tile's colour is left when it is drawn from memory rather than from sight.
- *
- * Dimmed rather than recoloured, so a remembered wall still looks like a wall but is
- * visibly out of date.
- **/
-constexpr float rememberedLight = 0.4F;
-
-/**
- * A hairline of the clear colour around each tile, so a board of flat quads reads as a
- * grid rather than as one field of colour.
- **/
-constexpr float tileGap = 1.0F;
-
-};  // namespace
 
 /**
  **/
@@ -87,7 +53,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     engine_.clearColour(clearColour);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    shell_->present(&engine_, v3d::ui::shell::Screen::Options());
+    shell_->present(&engine_, v3d::shell::Shell::game());
     screen_ = shell_->screen();
 
     const boost::shared_ptr<v3d::asset::media::kind::Image> asset =

@@ -32,12 +32,16 @@ class Resolver;
 namespace component {
 class Box;
 class Button;
+class CheckBox;
+class Label;
+class SelectList;
 class TabBar;
 class Toolbar;
 };  // namespace component
 
 namespace component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace component::menu
 
@@ -168,13 +172,45 @@ class Arranger final {
     /**
      * Place a menu bar's open panel and its items, hanging from an origin and moved back into
      * the room where it would hang off an edge.
+     *
+     * @param shortcuts how wide the panel's widest shortcut is, which a column right of the
+     *        labels makes room for. Zero leaves no column
      **/
-    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const;
+    void panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room, float shortcuts = 0.0F) const;
 
     /**
-     * Place a game menu's level and its items, centred in the room.
+     * Place a game menu's level and its items, centred in the room's safe area. A level too
+     * large for the safe area keeps its top left corner inside it.
+     *
+     * The level's title goes above its items, and the level is as wide as the wider of its
+     * title and its widest row. A row is its label and a column for the values. A label is as
+     * wide as the wider of the body text and the chosen item's setting, so the level does not
+     * change width as the choice moves.
+     *
+     * @param values how wide the level's widest value is, which a column right of the labels
+     *        makes room for. Zero leaves no column
      **/
-    void centred(component::menu::Menu& level, const glm::vec2& room) const;
+    void centred(component::menu::Menu& level, const glm::vec2& room, float values = 0.0F) const;
+
+    /**
+     * Set a centred menu's title and its chosen item apart from the body text.
+     **/
+    void emphasis(const paint::Emphasis& sets);
+
+    /**
+     * @return how tall a centred menu's title is, with the gap under it, or zero for a level
+     *         with no title
+     **/
+    float heading(const component::menu::Menu& level) const;
+
+    /**
+     * The part of a window everything a game shows stays inside, clear of the edges a
+     * television can cut off. It is a share of the width in from each side, and a share of the
+     * height in from the top and the bottom.
+     **/
+    static v3d::type::geometry::Bound2D safe(const glm::vec2& room) noexcept;
+    static constexpr float safeSides = 0.05F;
+    static constexpr float safeEnds = 0.04F;
 
     /**
      * How wide a flyout panel's mark column is, as a fraction of a line - the room on each
@@ -182,7 +218,43 @@ class Arranger final {
      **/
     static constexpr float markColumn = 0.9F;
 
+    /**
+     * How tall a separator's row is, as a fraction of a line.
+     **/
+    static constexpr float separatorShare = 0.5F;
+
+    /**
+     * @return how tall an item's row is: a line, or a separator's share of one
+     **/
+    float row(const component::menu::Item* item) const;
+
  private:
+    /**
+     * A label's natural size: the width of its text, and a line, or the rows it wraps into
+     * when it is given a width.
+     **/
+    glm::vec2 labelSize(const component::Label& label, const v3d::type::geometry::Bound2D& room) const;
+
+    /**
+     * A check box's or a radio button's natural size: the mark, the gap after it and the
+     * label, on a row as tall as the taller of the mark and a line of text.
+     **/
+    glm::vec2 markSize(const component::CheckBox& box) const;
+
+    /**
+     * A select list's natural size. Its width is its widest row. Its height is the room it is
+     * offered, and that decides how many rows it shows.
+     *
+     * The list is not const because it caches the width of its widest row.
+     **/
+    glm::vec2 listSize(component::SelectList* list, const v3d::type::geometry::Bound2D& room) const;
+
+    /**
+     * @return the serial the next arranger takes. It starts at one because a list that has never
+     *      been measured holds zero
+     **/
+    static std::uint64_t nextSerial() noexcept;
+
     /**
      * The room a flow box offers each child: none along the line it lays out, the whole of
      * it across.
@@ -221,7 +293,14 @@ class Arranger final {
     float wrapped(const component::Box& box, const v3d::type::geometry::Bound2D& bounds,
         std::vector<v3d::type::geometry::Bound2D>* boxes) const;
 
+    /**
+     * @return how wide a centred menu's label is, in the wider of the body text and the chosen
+     *         item's setting
+     **/
+    float choice(const component::menu::Item* item) const;
+
     paint::Measure measure_;
+    paint::Emphasis emphasis_;
     const style::Resolver& styles_;
     /**
      * Which arranger this is, unique for the life of the program. A list caches its widest

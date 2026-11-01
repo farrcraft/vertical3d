@@ -44,21 +44,6 @@ const uint32_t fragmentShader[] =
 #include "shaders/world.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
-/**
- * The push constant block, laid out as world.vert and world.frag declare it. The tint is the
- * vertex stage's and the texture's slot the fragment stage's.
- **/
-struct Push final {
-    glm::vec4 tint;
-    uint32_t texture;
-};
-
-/**
- * What each buffer starts at, in bytes. They double from here when a canvas does not fit.
- **/
-const VkDeviceSize initialVertexBytes = 64ULL * 1024;
-const VkDeviceSize initialIndexBytes = 16ULL * 1024;
-
 };  // namespace
 
 /**

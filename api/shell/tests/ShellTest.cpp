@@ -10,9 +10,13 @@
 #include <api/event/Event.h>
 #include <api/event/State.h>
 #include <api/shell/Shell.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/GameMenu.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/ui/style/Resolver.h>
+#include <api/ui/style/Style.h>
+#include <api/ui/style/Theme.h>
 
 #include <algorithm>
 #include <string>
@@ -92,6 +96,52 @@ BOOST_AUTO_TEST_CASE(shell_puts_up_the_menu_the_ui_names) {
 }
 
 /**
+ * The game theme goes beneath the ui document's own theme, so a game's theme that names no
+ * style is drawn in the game theme's. An app can ask for nothing beneath its theme.
+ **/
+BOOST_AUTO_TEST_CASE(shell_puts_the_game_theme_beneath_the_uis) {
+    TestEngine engine(game);
+    v3d::shell::Shell shell(&engine, { .menu = true, .statistics = "" });
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_REQUIRE(shell.start());
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = shell.ui()->activeTheme();
+    BOOST_REQUIRE(theme);
+    BOOST_TEST(theme->name() == "default");
+    const boost::shared_ptr<v3d::ui::style::Style> base = v3d::ui::style::lookup(theme, "ui", "");
+    BOOST_REQUIRE(base);
+    BOOST_TEST(base->property("panel-opacity", "number"));
+
+    TestEngine bare(game);
+    v3d::shell::Shell plain(&bare, { .menu = true, .statistics = "", .theme = "" });
+    BOOST_REQUIRE(bare.initialize());
+    BOOST_REQUIRE(plain.start());
+    BOOST_TEST(!v3d::ui::style::lookup(plain.ui()->activeTheme(), "ui", ""));
+}
+
+/**
+ * A theme to put beneath that does not load fails start(), as a ui document that does not load
+ * does.
+ **/
+BOOST_AUTO_TEST_CASE(shell_refuses_a_theme_it_cannot_load) {
+    TestEngine engine(game);
+    v3d::shell::Shell shell(&engine, { .menu = true, .statistics = "", .theme = "ui/missing.json" });
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_TEST(!shell.start());
+}
+
+/**
+ * A game's screen sets its body text for a window 1080 high and follows the window's height.
+ **/
+BOOST_AUTO_TEST_CASE(shell_sizes_a_games_screen_by_the_windows_height) {
+    // the design's body text, at the reference height
+    constexpr float body = 26.0F;
+    const v3d::ui::shell::Screen::Options options = v3d::shell::Shell::game();
+    BOOST_TEST(options.size == body);
+    BOOST_TEST((options.scaling == v3d::ui::shell::Screen::Scaling::Height));
+    BOOST_TEST(options.reference == v3d::ui::shell::Screen::referenceHeight);
+}
+
+/**
  * The statistics command shows and hides the screen's overlay. Before present() there is no
  * screen, and the command does nothing.
  **/
@@ -114,6 +164,25 @@ BOOST_AUTO_TEST_CASE(shell_shows_the_statistics_on_its_command) {
     BOOST_TEST(!shell.screen());
     BOOST_TEST(!shell.ui());
     BOOST_TEST(engine.commands().invoke(press("game", "statistics")));
+}
+
+/**
+ * The screen the shell builds shows a command's keyboard binding as its shortcut, printed for a
+ * person, and nothing for a command bound only to the mouse.
+ **/
+BOOST_AUTO_TEST_CASE(shell_shows_a_commands_keyboard_shortcut) {
+    TestEngine engine(game);
+    v3d::shell::Shell shell(&engine, { .menu = false, .statistics = "" });
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_REQUIRE(shell.start());
+    shell.present(nullptr, v3d::ui::shell::Screen::Options());
+    BOOST_REQUIRE(shell.screen());
+
+    const v3d::ui::paint::ComponentRenderer& renderer = shell.screen()->components();
+    BOOST_TEST(renderer.shortcut(press("game", "save")) == "Ctrl+S");
+    BOOST_TEST(renderer.shortcut(press("game", "shoot")).empty());
+    BOOST_TEST(renderer.shortcut(press("game", "nothing")).empty());
+    shell.release();
 }
 
 /**

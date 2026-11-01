@@ -5,6 +5,11 @@
 
 #include "Operations.h"
 
+#include <api/brep/internal/Kept.h>
+#include <api/brep/internal/Merged.h>
+#include <api/brep/internal/Quad.h>
+#include <api/brep/internal/Rim.h>
+
 #include "BRep.h"
 #include "Face.h"
 #include "HalfEdge.h"
@@ -25,6 +30,9 @@
 namespace v3d::brep {
 
 namespace {
+
+/** The copy of each corner on a region's outline, by region and corner. **/
+using Copies = std::map<std::pair<std::size_t, Index>, Index>;
 
 /**
  * Cut one half edge in two at a vertex. The half edge then ends at the vertex, and a new half
@@ -93,21 +101,6 @@ std::map<Index, std::size_t> regions(const BRep& mesh, const std::vector<Index>&
 }
 
 /**
- * One half edge of a region's outline: a half edge of a face in the region whose other side is
- * not in the region.
- **/
-struct Rim {
-    Index edge = INVALID_ID;
-    Index from = INVALID_ID;
-    Index to = INVALID_ID;
-    // the half edge on the other side, or INVALID_ID on the mesh's boundary
-    Index outside = INVALID_ID;
-    // the half edge of the outline that leaves where this one ends
-    Index after = INVALID_ID;
-    std::size_t region = 0;
-};
-
-/**
  * The half edge of a region's outline that leaves the vertex an outline half edge ends at. It is
  * found by turning about the vertex through the region's faces until the next edge crosses out
  * of the region.
@@ -127,8 +120,8 @@ Index outlineAfter(const BRep& mesh, const std::map<Index, std::size_t>& region,
 /**
  * The outline of every region, in the order of the faces and then of their loops.
  **/
-std::vector<Rim> outline(const BRep& mesh, const std::map<Index, std::size_t>& region) {
-    std::vector<Rim> rims;
+std::vector<internal::Rim> outline(const BRep& mesh, const std::map<Index, std::size_t>& region) {
+    std::vector<internal::Rim> rims;
     for (const auto& [face, group] : region) {
         const std::vector<Index> loop = faceLoop(mesh, face);
         for (std::size_t entry = 0; entry < loop.size(); entry++) {
@@ -136,7 +129,7 @@ std::vector<Rim> outline(const BRep& mesh, const std::map<Index, std::size_t>& r
             if (outside != INVALID_ID && region.contains(mesh.edge(outside)->face())) {
                 continue;
             }
-            Rim rim;
+            internal::Rim rim;
             rim.edge = loop[entry];
             rim.from = mesh.edge(loop[(entry + loop.size() - 1) % loop.size()])->vertex();
             rim.to = mesh.edge(loop[entry])->vertex();
@@ -149,16 +142,13 @@ std::vector<Rim> outline(const BRep& mesh, const std::map<Index, std::size_t>& r
     return rims;
 }
 
-/** The copy of each corner on a region's outline, by region and corner. **/
-using Copies = std::map<std::pair<std::size_t, Index>, Index>;
-
 /**
  * Copy each corner on a region's outline once for that region, and move the region's faces onto
  * the copies.
  **/
-Copies copyCorners(BRep* mesh, const std::map<Index, std::size_t>& region, const std::vector<Rim>& rims) {
+Copies copyCorners(BRep* mesh, const std::map<Index, std::size_t>& region, const std::vector<internal::Rim>& rims) {
     Copies copies;
-    for (const Rim& rim : rims) {
+    for (const internal::Rim& rim : rims) {
         for (const Index corner : {rim.from, rim.to}) {
             if (!copies.contains({rim.region, corner})) {
                 copies[{rim.region, corner}] = mesh->addVertex(Vertex(mesh->vertex(corner)->point()));
@@ -176,20 +166,13 @@ Copies copyCorners(BRep* mesh, const std::map<Index, std::size_t>& region, const
     return copies;
 }
 
-/** One quad of a ring, and its two half edges that run between a corner and its copy. **/
-struct Quad {
-    Index face = INVALID_ID;
-    Index falling = INVALID_ID;
-    Index rising = INVALID_ID;
-};
-
 /**
  * The quad of a ring for one outline half edge, which runs from a to b. Its four sides are b' to
  * a' beside the region's half edge, a' down to a, a to b beside the half edge outside, and b up
  * to b'. It is paired with the two half edges it lies beside, and not yet with the quads beside
  * it.
  **/
-Quad ringQuad(BRep* mesh, const Rim& rim, const Copies& copies) {
+internal::Quad ringQuad(BRep* mesh, const internal::Rim& rim, const Copies& copies) {
     const Index along = mesh->addEdge(HalfEdge(copies.at({rim.region, rim.from})));
     const Index falling = mesh->addEdge(HalfEdge(rim.from));
     const Index below = mesh->addEdge(HalfEdge(rim.to));
@@ -206,34 +189,26 @@ Quad ringQuad(BRep* mesh, const Rim& rim, const Copies& copies) {
         mesh->edge(below)->pair(rim.outside);
         mesh->edge(rim.outside)->pair(below);
     }
-    return Quad{.face = face, .falling = falling, .rising = rising};
+    return internal::Quad{.face = face, .falling = falling, .rising = rising};
 }
-
-/** A half edge that keeps a length after a merge: where it now runs, and what follows it. **/
-struct Kept {
-    Index face = INVALID_ID;
-    Index from = INVALID_ID;
-    Index to = INVALID_ID;
-    Index next = INVALID_ID;
-};
 
 /**
  * The half edges that keep a length once the merged vertices are one, by index. Each is followed
  * by the next kept half edge of its face. A face left with fewer than three is dropped whole.
  **/
-std::map<Index, Kept> collapse(const BRep& mesh, const std::set<Index>& merged, Index keep) {
+std::map<Index, internal::Kept> collapse(const BRep& mesh, const std::set<Index>& merged, Index keep) {
     const auto into = [&merged, keep](Index vertex) { return merged.contains(vertex) ? keep : vertex; };
-    std::map<Index, Kept> kept;
+    std::map<Index, internal::Kept> kept;
     for (Index face = 0; face < mesh.faceCount(); face++) {
         const std::vector<Index> loop = faceLoop(mesh, face);
         std::vector<Index> left;
-        std::vector<Kept> parts;
+        std::vector<internal::Kept> parts;
         for (std::size_t entry = 0; entry < loop.size(); entry++) {
             const Index from = into(mesh.edge(loop[(entry + loop.size() - 1) % loop.size()])->vertex());
             const Index to = into(mesh.edge(loop[entry])->vertex());
             if (from != to) {
                 left.push_back(loop[entry]);
-                parts.push_back(Kept{.face = face, .from = from, .to = to});
+                parts.push_back(internal::Kept{.face = face, .from = from, .to = to});
             }
         }
         if (left.size() < 3) {
@@ -256,12 +231,6 @@ std::map<Index, Index> renumber(const std::set<Index>& used) {
     return renumbered;
 }
 
-/** A merge's result: the compacted arrays, and the merged vertex's index in them. **/
-struct Merged {
-    BRep::Snapshot arrays;
-    Index vertex = INVALID_ID;
-};
-
 /**
  * The arrays of a mesh with only the kept half edges, the faces they are in and the vertices
  * they end at, each renumbered in order. Each half edge pairs with the one that runs the other way
@@ -270,7 +239,7 @@ struct Merged {
  * @return nothing when two half edges run the same way between two vertices, which is an edge
  *         shared by more than two faces, or when no half edge ends at the merged vertex
  **/
-std::optional<Merged> compact(const BRep& mesh, const std::map<Index, Kept>& kept, Index keep, const glm::vec3& centre) {
+std::optional<internal::Merged> compact(const BRep& mesh, const std::map<Index, internal::Kept>& kept, Index keep, const glm::vec3& centre) {
     std::set<Index> vertices;
     std::set<Index> edges;
     std::set<Index> faces;
@@ -290,7 +259,7 @@ std::optional<Merged> compact(const BRep& mesh, const std::map<Index, Kept>& kep
     const std::map<Index, Index> edgeOf = renumber(edges);
     const std::map<Index, Index> faceOf = renumber(faces);
 
-    Merged merged;
+    internal::Merged merged;
     merged.vertex = vertexOf.at(keep);
     for (const Index old : vertices) {
         merged.arrays.vertices.emplace_back(old == keep ? centre : mesh.vertex(old)->point());
@@ -401,12 +370,12 @@ std::optional<std::vector<Index>> extrudeFaces(BRep & mesh, const std::vector<In
         }
     }
     const std::map<Index, std::size_t> region = regions(mesh, faces);
-    const std::vector<Rim> rims = outline(mesh, region);
+    const std::vector<internal::Rim> rims = outline(mesh, region);
     const Copies copies = copyCorners(&mesh, region, rims);
 
-    std::vector<Quad> quads;
+    std::vector<internal::Quad> quads;
     std::map<Index, std::size_t> quadOf;
-    for (const Rim& rim : rims) {
+    for (const internal::Rim& rim : rims) {
         quadOf[rim.edge] = quads.size();
         quads.push_back(ringQuad(&mesh, rim, copies));
     }
@@ -465,7 +434,7 @@ std::optional<Index> mergeVertices(BRep & mesh, const std::vector<Index> & verti
         sum += mesh.vertex(vertex)->point();
     }
     const Index keep = *chosen.begin();
-    const std::optional<Merged> merged = compact(mesh, collapse(mesh, chosen, keep), keep, sum / static_cast<float>(chosen.size()));
+    const std::optional<internal::Merged> merged = compact(mesh, collapse(mesh, chosen, keep), keep, sum / static_cast<float>(chosen.size()));
     if (!merged) {
         return std::nullopt;
     }

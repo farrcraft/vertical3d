@@ -12,6 +12,9 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Icon.h>
 #include <api/ui/component/Toolbar.h>
+#include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Image.h>
@@ -59,6 +62,67 @@ bool Interface::load(const boost::json::object& config) {
 
 /**
  **/
+bool Interface::add(const boost::json::object& document, std::string_view before) {
+    Loader loader(router_, dispatcher_, logger_);
+    if (!loader.loadContainers(document)) {
+        return false;
+    }
+    std::vector<boost::shared_ptr<Container>>& read = loader.containers();
+    for (const boost::shared_ptr<Container>& made : read) {
+        if (container(made->name())) {
+            logger_->get()->error("The ui already holds a container named [{}]", made->name());
+            return false;
+        }
+    }
+    const auto at = std::ranges::find_if(containers_,
+        [before](const boost::shared_ptr<Container>& held) { return !before.empty() && held && held->name() == before; });
+    containers_.insert(at, read.begin(), read.end());
+    return true;
+}
+
+/**
+ **/
+bool Interface::beneath(const boost::json::object& document) {
+    Loader loader(router_, dispatcher_, logger_);
+    if (!loader.loadThemes(document)) {
+        return false;
+    }
+    std::vector<boost::shared_ptr<style::Theme>>& read = loader.themes();
+    if (themes_.empty()) {
+        themes_ = std::move(read);
+        activeTheme_ = themes_.empty() ? nullptr : themes_.front();
+        return true;
+    }
+    for (const boost::shared_ptr<style::Theme>& theme : themes_) {
+        for (const boost::shared_ptr<style::Theme>& lower : read) {
+            theme->beneath(*lower);
+        }
+    }
+    return true;
+}
+
+/**
+ **/
+bool Interface::remove(std::string_view name) {
+    const auto found = std::ranges::find_if(containers_,
+        [name](const boost::shared_ptr<Container>& held) { return held && held->name() == name; });
+    if (found == containers_.end()) {
+        return false;
+    }
+    const boost::shared_ptr<Container> gone = std::move(*found);
+    containers_.erase(found);
+    // something else may still hold the component, so its weak handle would not expire
+    if (holds(*gone, focused())) {
+        focus(boost::shared_ptr<Component>());
+    }
+    if (holds(*gone, hovered())) {
+        hovered(boost::shared_ptr<Component>());
+    }
+    return true;
+}
+
+/**
+ **/
 std::size_t Interface::resolveThemeImages(const Resolve& resolve) {
     std::size_t resolved = 0;
     for (const boost::shared_ptr<style::Theme>& theme : themes_) {
@@ -94,6 +158,9 @@ std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boos
     // a toolbar's buttons are not its children, so the loop over children below does not
     // reach them
     const boost::shared_ptr<component::Toolbar> bar = boost::dynamic_pointer_cast<component::Toolbar>(component);
+    // nor are a menu bar's menus, or a menu's items
+    const boost::shared_ptr<component::menu::Bar> menus = boost::dynamic_pointer_cast<component::menu::Bar>(component);
+    const boost::shared_ptr<component::menu::Menu> menu = boost::dynamic_pointer_cast<component::menu::Menu>(component);
     if (icon) {
         if (resolveIcon(resolve, std::string(icon->source()), icon)) {
             resolved++;
@@ -109,12 +176,36 @@ std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boos
                 resolved++;
             }
         }
+    } else if (menus) {
+        for (std::size_t index = 0; index < menus->count(); index++) {
+            resolved += resolveMenuImages(resolve, menus->menu(index));
+        }
+    } else if (menu) {
+        resolved += resolveMenuImages(resolve, menu);
     }
 
     // Loader adds a nested component to its parent, not to the container, so an icon inside a
     // panel or a box is reached only through this loop
     for (const boost::shared_ptr<Component>& child : component->children()) {
         resolved += resolveComponentImages(resolve, child);
+    }
+    return resolved;
+}
+
+std::size_t Interface::resolveMenuImages(const Resolve& resolve, const boost::shared_ptr<component::menu::Menu>& menu) {
+    if (!menu) {
+        return 0;
+    }
+    std::size_t resolved = 0;
+    for (std::size_t index = 0; index < menu->count(); index++) {
+        const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
+        if (!item) {
+            continue;
+        }
+        if (resolveIcon(resolve, std::string(item->icon()), item)) {
+            resolved++;
+        }
+        resolved += resolveMenuImages(resolve, item->submenu());
     }
     return resolved;
 }
@@ -197,6 +288,14 @@ void Interface::onFocus(const Focused& moved) {
 
 /**
  **/
+void Interface::hovered(const boost::shared_ptr<Component>& component) {
+    hovered_ = component;
+}
+
+boost::shared_ptr<Component> Interface::hovered() const {
+    return hovered_.lock();
+}
+
 boost::shared_ptr<Component> Interface::focused() const {
     return focused_.lock();
 }
@@ -211,13 +310,19 @@ bool Interface::reachable(const boost::shared_ptr<Component>& component) const {
     return std::find(order.begin(), order.end(), component) != order.end();
 }
 
-namespace {
+bool Interface::within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component) {
+    return root == component || std::ranges::any_of(root->children(),
+        [&component](const boost::shared_ptr<Component>& child) { return child && within(child, component); });
+}
 
 /**
- * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
- * chosen, so a control on one is left out.
  **/
-void focusable(const boost::shared_ptr<Component>& component,
+bool Interface::holds(const Container& container, const boost::shared_ptr<Component>& component) {
+    return component && std::ranges::any_of(container.components(),
+        [&component](const boost::shared_ptr<Component>& root) { return root && within(root, component); });
+}
+
+void Interface::focusable(const boost::shared_ptr<Component>& component,
     std::vector<boost::shared_ptr<Component>>* found) {
     if (!component || !component->visible() || !component->enabled()) {
         return;  // a hidden or disabled subtree is skipped whole, not just its root
@@ -227,8 +332,6 @@ void focusable(const boost::shared_ptr<Component>& component,
     }
     forEachDrawn(*component, [found](const boost::shared_ptr<Component>& child) { focusable(child, found); });
 }
-
-};  // namespace
 
 /**
  **/

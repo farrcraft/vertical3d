@@ -13,9 +13,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
-namespace v3d::moya {
-
+namespace v3d::moya::state {
 class RenderContext;
+};  // namespace v3d::moya::state
+
+namespace v3d::moya {
 
 /**
  * One cubic Bezier segment of a curve, as the reyes hider draws it: a flat ribbon facing the
@@ -57,8 +59,8 @@ class Curve final : public reyes::Primitive {
     // reyes::Primitive
     /** The hull grown by half the widest width, which holds the ribbon. **/
     v3d::type::geometry::AABBox bound(void) const override;
-    void split(reyes::Hider & hider, RenderContext & rc) override;
-    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, RenderContext & rc) override;
+    void split(reyes::Hider & hider, state::RenderContext & rc) override;
+    bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, state::RenderContext & rc) override;
     /**
      * The same, into a grid of `across` micropolygons a side rather than the context's grid
      * size. The control points have to be in eye space already.
@@ -66,6 +68,26 @@ class Curve final : public reyes::Primitive {
     bool dice(boost::shared_ptr<reyes::MicroPolygonGrid> & grid, unsigned int across);
 
  private:
+    /**
+     * How many times a segment may be halved. A segment measured smaller each time reaches a grid's
+     * size long before this, so a segment still not diceable here is one that does not shrink.
+     **/
+    static constexpr unsigned int MOST_SPLITS = 16;
+
+    /**
+     * A cubic's degree, which its derivative is this many times the steps between its points.
+     **/
+    static constexpr float DEGREE = 3.0F;
+
+    static glm::vec3 pointOn(const Curve::Controls & controls, float v);
+
+    static glm::vec3 tangentOn(const Curve::Controls & controls, float v);
+
+    /**
+     * Any direction square to another, for a curve seen end on.
+     **/
+    static glm::vec3 square(const glm::vec3 & direction);
+
     Controls controls_;
     glm::vec2 widths_;
     unsigned int splits_ = 0;

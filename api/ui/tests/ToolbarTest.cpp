@@ -155,6 +155,32 @@ BOOST_AUTO_TEST_CASE(toolbar_column_layout) {
 }
 
 /**
+ * A column of icons is a column of squares: the strip is as wide as an icon plus the padding,
+ * and each button as tall as it is wide.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_column_of_icons_is_square) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::make_shared<v3d::ui::component::Toolbar>(fixture.dispatcher, v3d::ui::component::Toolbar::Edge::Left);
+    for (const char* name : { "move", "rotate" }) {
+        const boost::shared_ptr<v3d::ui::component::Button> button = fixture.button({.label = name, .name = name, .toggle = true});
+        button->icon(std::string("icon:") + name);
+        bar->add(button);
+    }
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 30.0F));
+
+    const float side = style.iconSize + style.padding;
+    BOOST_TEST(bar->size().x == side);
+    for (std::size_t index = 0; index < bar->count(); index++) {
+        const boost::shared_ptr<v3d::ui::component::Button> button = bar->button(index);
+        BOOST_TEST(button->size().x == side);
+        BOOST_TEST(button->size().y == side);
+        BOOST_TEST(button->position().y == 30.0F + (side * static_cast<float>(index)));
+    }
+}
+
+/**
  * A press on a button sends that button's command. One on the strip that misses every button
  * is still taken, so a click on the gap does not reach the scene under it, and one off the
  * strip is not taken at all.
@@ -212,6 +238,27 @@ BOOST_AUTO_TEST_CASE(toolbar_hover_follows_the_cursor) {
     // off the strip entirely, which leaves nothing hovered
     BOOST_TEST(!bar->motion(glm::vec2(10.0F, 400.0F)));
     BOOST_TEST((bar->button(1)->state() == v3d::ui::component::Button::STATE_NORMAL));
+}
+
+/**
+ * A pressed button is drawn pressed until the press comes up. It then shows its hover when the
+ * cursor is still on it, and goes back to normal when the cursor has left.
+ **/
+BOOST_AUTO_TEST_CASE(toolbar_press_holds_until_release) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        fixture.bar(v3d::ui::component::Toolbar::Edge::Top);
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 0.0F));
+
+    const glm::vec2 on = Fixture::centre(*bar->button(2));
+    BOOST_TEST(bar->press(on));
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_PRESS));
+    bar->release(on);
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_HOVER));
+
+    BOOST_TEST(bar->press(on));
+    bar->release(glm::vec2(10.0F, 400.0F));
+    BOOST_TEST((bar->button(2)->state() == v3d::ui::component::Button::STATE_NORMAL));
 }
 
 /**

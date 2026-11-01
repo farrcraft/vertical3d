@@ -26,56 +26,6 @@
 
 namespace v3d::ui::input {
 
-namespace {
-
-/**
- * Collect a container's menu bars and toolbars. The cursor offers a point to the menu bars
- * before the toolbars, the reverse of the draw order, because an open menu drops a panel
- * over a toolbar.
- *
- * A strip that is hidden, disabled or not pickable is left out, as Container::pick() leaves
- * out such a component.
- **/
-void strips(const boost::shared_ptr<Container>& container,
-    std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
-    std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
-    for (const boost::shared_ptr<Component>& component : container->components()) {
-        if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
-            continue;
-        }
-        if (!component::traits(component->type()).strip) {
-            continue;
-        }
-        if (component->type() == component::Type::MenuBar) {
-            bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
-        } else {
-            toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
-        }
-    }
-}
-
-/**
- * Set a component's hover state on or off.
- *
- * A button is the only component with a hover state. A Toolbar writes the same state onto
- * its buttons, so a button in the tree is highlighted the same way as one on a toolbar.
- *
- * A button that cannot be used is left alone in both directions, so a transient hover never
- * overwrites its disabled look.
- **/
-void lit(const boost::shared_ptr<Component>& component, bool on) {
-    if (!component || component->type() != component::Type::Button || !usable(*component)) {
-        return;
-    }
-    const boost::shared_ptr<component::Button> button =
-        boost::dynamic_pointer_cast<component::Button>(component);
-    if (button) {
-        button->state(on ? component::Button::STATE_HOVER : component::Button::STATE_NORMAL);
-    }
-}
-
-};  // namespace
-
 Cursor::Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
     const paint::Measure& measure) :
     ui_(ui),
@@ -92,6 +42,11 @@ boost::shared_ptr<Component> Cursor::hovered() const {
 }
 
 void Cursor::hover(const boost::shared_ptr<Component>& component) {
+    // written every time, so a component the cursor still rests on after a press is hovered
+    // again by the next motion
+    if (ui_) {
+        ui_->hovered(component);
+    }
     const boost::shared_ptr<Component> was = hovered_.lock();
     if (was == component) {
         return;
@@ -115,6 +70,8 @@ bool Cursor::motion(const glm::vec2& point) {
     }
     bool taken = false;
     boost::shared_ptr<Component> over;
+    // a toolbar's button is not in the tree, but it is what the cursor rests on for a tooltip
+    boost::shared_ptr<Component> button;
     for (const boost::shared_ptr<Container>& container : ui_->containers()) {
         if (!container || !container->visible()) {
             continue;
@@ -134,8 +91,9 @@ bool Cursor::motion(const glm::vec2& point) {
             // that an open panel now covers, stops drawing its hover
             if (taken) {
                 bar->leave();
-            } else {
-                taken = bar->motion(point) || taken;
+            } else if (bar->motion(point)) {
+                taken = true;
+                button = bar->buttonAt(point);
             }
         }
         if (!taken) {
@@ -146,6 +104,9 @@ bool Cursor::motion(const glm::vec2& point) {
     // a strip that took the point covers whatever is under it, so nothing in the tree is
     // hovered
     hover(over);
+    if (!over && button) {
+        ui_->hovered(button);
+    }
     return taken;
 }
 
@@ -156,6 +117,23 @@ bool Cursor::press(const glm::vec2& point) {
     // a press moves the focus wherever it lands: onto a focusable component, and otherwise
     // off whatever had it
     ui_->focus(boost::shared_ptr<Component>());
+    // a press puts away any tooltip, until the cursor moves again
+    ui_->hovered(boost::shared_ptr<Component>());
+    // an open menu bar takes every press, whichever container holds it, so a panel dropped over
+    // a container listed before its own still gets the press that lands on it
+    for (const boost::shared_ptr<Container>& container : ui_->containers()) {
+        if (!container || !container->visible()) {
+            continue;
+        }
+        std::vector<boost::shared_ptr<component::menu::Bar>> bars;
+        std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
+        strips(container, &bars, &toolbars);
+        for (const boost::shared_ptr<component::menu::Bar>& bar : bars) {
+            if (bar && bar->active()) {
+                return bar->press(point);
+            }
+        }
+    }
     // any_of stops at the first container that takes the press, so a press never reaches
     // more than one container
     return std::ranges::any_of(ui_->containers(),
@@ -186,17 +164,45 @@ bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec
     }
     held_ = picked;
     ui_->focus(picked);
+    if (picked->type() == component::Type::Button && usable(*picked)) {
+        boost::dynamic_pointer_cast<component::Button>(picked)->state(component::Button::STATE_PRESS);
+    }
     act(picked, point);
     return true;
 }
 
 bool Cursor::release(const glm::vec2& point) {
+    if (ui_) {
+        for (const boost::shared_ptr<Container>& container : ui_->containers()) {
+            if (!container) {
+                continue;
+            }
+            std::vector<boost::shared_ptr<component::menu::Bar>> bars;
+            std::vector<boost::shared_ptr<component::Toolbar>> toolbars;
+            strips(container, &bars, &toolbars);
+            for (const boost::shared_ptr<component::Toolbar>& bar : toolbars) {
+                if (bar) {
+                    bar->release(point);
+                }
+            }
+        }
+    }
+
     const boost::shared_ptr<Component> holding = held_.lock();
     held_.reset();
     if (!holding) {
         return false;
     }
     follow(holding, point);
+    if (holding->type() == component::Type::Button) {
+        const bool over = holding->bound().contains(point);
+        lit(holding, over);
+        // a press let go off its button leaves nothing hovered, so the next motion back onto
+        // the button lights it again
+        if (!over && hovered_.lock() == holding) {
+            hovered_.reset();
+        }
+    }
     return true;
 }
 
@@ -315,6 +321,35 @@ void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
     // nothing, and whatever handles the command sets checked(). input::command() decides
     // which components carry a command, for a key and a click alike
     send(dispatcher_.get(), command(component));
+}
+
+void Cursor::strips(const boost::shared_ptr<Container>& container,
+    std::vector<boost::shared_ptr<component::menu::Bar>>* bars,
+    std::vector<boost::shared_ptr<component::Toolbar>>* toolbars) {
+    for (const boost::shared_ptr<Component>& component : container->components()) {
+        if (!component || !component->visible() || !component->enabled() || !component->pickable()) {
+            continue;
+        }
+        if (!component::traits(component->type()).strip) {
+            continue;
+        }
+        if (component->type() == component::Type::MenuBar) {
+            bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
+        } else {
+            toolbars->push_back(boost::dynamic_pointer_cast<component::Toolbar>(component));
+        }
+    }
+}
+
+void Cursor::lit(const boost::shared_ptr<Component>& component, bool on) {
+    if (!component || component->type() != component::Type::Button || !usable(*component)) {
+        return;
+    }
+    const boost::shared_ptr<component::Button> button =
+        boost::dynamic_pointer_cast<component::Button>(component);
+    if (button) {
+        button->state(on ? component::Button::STATE_HOVER : component::Button::STATE_NORMAL);
+    }
 }
 
 };  // namespace v3d::ui::input

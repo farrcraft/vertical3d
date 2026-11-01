@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/style/Style.h>
 
 #include <array>
@@ -36,12 +37,20 @@ boost::shared_ptr<Style> lookup(const boost::shared_ptr<Theme>& theme,
 /**
  * Read a base style into a dressing: a theme's "ui" style for the retained components, or
  * its "tools" style for the immediate layer. Both are read by the same keys, each named for
- * one Dressing field. Only the properties the style names are overwritten, and the overlay
- * remembers what each replaced.
+ * one Dressing field, and the overlay remembers what each replaced.
+ *
+ * A style that names a "base" colour, an "accent" colour or a "contrast" has every colour role
+ * derived from them by a Palette. One it does not name takes the palette's built-in value. The
+ * roles the style names directly are read after, and override what was derived. A style that
+ * names none of the three overwrites only the properties it names.
  *
  * @param style the base style, or null to read nothing
+ * @param use which ui model the roles are derived for
+ * @param scale what the style's sizes are multiplied by. An outline's width is rounded as
+ *      Dressing::outline() rounds it
  **/
-void readBase(const boost::shared_ptr<Style>& style, Overlay<paint::Dressing>* overlay, paint::Dressing* dressing);
+void readBase(const boost::shared_ptr<Style>& style, paint::Palette::Use use, Overlay<paint::Dressing>* overlay,
+    paint::Dressing* dressing, float scale = 1.0F);
 
 /**
  * Turns a theme into the colours and metrics a component is drawn with, once per style
@@ -71,6 +80,7 @@ class Resolver final {
         List,
         Tabs,
         TextBox,
+        Hud,
         Button
     };
 
@@ -101,6 +111,14 @@ class Resolver final {
     void chrome();
 
     /**
+     * What a theme's sizes are multiplied by, which the screen's scale sets. A size the base
+     * already holds is not changed, so the caller scales the base itself. Takes effect at the
+     * next theme().
+     **/
+    void scale(float factor) noexcept;
+    float scale() const noexcept;
+
+    /**
      * The colours and metrics a component of this class, naming this style, is drawn with.
      *
      * @param name what the component's style() returns, which may be empty. A component
@@ -111,7 +129,7 @@ class Resolver final {
     /**
      * The active theme's style of a class, as style::lookup() finds it. Not cached.
      *
-     * A button's skin is chosen by state as well as by name, so ComponentRenderer searches
+     * A button's skin is chosen by state as well as by name, so the renderer's skin searches
      * the theme for it directly. Class::Button resolves only a button's focus ring. Like
      * every other class, it takes the first matching style of the class, because the ring
      * shows keyboard focus, not the button's state.
@@ -151,8 +169,27 @@ class Resolver final {
      **/
     paint::Dressing dress(Class className, const std::string_view& name) const;
 
+    /**
+     * Read the properties one class names from its style over a dressing. The focus ring,
+     * which every class reads, is left to dress().
+     **/
+    void readClass(Class className, const boost::shared_ptr<Style>& style, paint::Dressing* into) const;
+
+    /**
+     * Read a size from a style, when it names one, multiplied by scale(). A theme gives sizes
+     * in logical pixels.
+     **/
+    void metric(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const;
+
+    /**
+     * Read an outline's width from a style, when it names one, scaled the way
+     * Dressing::outline() scales one.
+     **/
+    void width(const boost::shared_ptr<Style>& from, const std::string& key, float* into) const;
+
     boost::shared_ptr<Theme> theme_;
     paint::Dressing base_;
+    float scale_;
     // what the current theme wrote over base_
     Overlay<paint::Dressing> overlay_;
 

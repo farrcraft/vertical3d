@@ -107,10 +107,10 @@ Rules:
 ### Game menus use commands, not focus
 
 A game's pause menu (`Menu` and `GameMenu`) does not use focus or `Keys`. It is driven by the
-`menuNext`, `menuPrevious`, `selectMenu` and `showGameMenu` commands that an app's bindings
-send. A game can therefore bind its menu to a gamepad or any keys, and rebind them from inside
-the menu. Menu items are not focusable. The two models meet only where a menu item captures a
-key, which the app routes through `GameMenu::capture()`.
+`menuNext`, `menuPrevious`, `selectMenu`, `menuLess`, `menuMore` and `showGameMenu` commands
+that an app's bindings send. A game can therefore bind its menu to a gamepad or any keys, and
+rebind them from inside the menu. Menu items are not focusable. The two models meet only where
+a menu item captures a key, which the app routes through `GameMenu::capture()`.
 
 ## Editing text
 

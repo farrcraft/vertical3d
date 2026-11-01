@@ -38,10 +38,13 @@ default-constructed `Input` is no cursor at all.
 | Call | Draws | Returns |
 |---|---|---|
 | `window(title, area, alpha)` / `endWindow()` | a window with a title bar | whether to draw its contents |
+| `region(name, area, alpha)` / `endRegion()` | a panel with no title bar at a fixed place | |
 | `text`, `textDisabled`, `textWrapped`, `bulletText` | a line of text | |
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
+| `treeRow(label, { .depth, .open, .selected })` | a full-width row of a tree, indented by its depth, with a fold mark when `open` is given | true when clicked anywhere but the mark |
 | `dragInt(label, &value, low, high)` | an integer scrubbed by dragging across it | true when the value changed |
+| `dragFloat(label, &value, speed)` | a number scrubbed by dragging across it, or typed into after a click | true when the value changed |
 | `sliderFloat(label, &value, low, high)` | a number set by pressing or dragging along a track | true when the value changed |
 | `checkbox(label, &value)` | a box ticked or not, with its label beside it | true on the frame it was clicked |
 | `combo(label, &selected, items)` | the chosen item, which a click opens as a list | true on the frame the choice changed |
@@ -63,6 +66,31 @@ Layout helpers:
 - A combo's list is drawn at `end()`, over everything, and is not clipped to its window. A
   click on an item takes effect on the next frame's `combo()` call. A press outside the list
   closes it, and so does a frame that does not draw the combo.
+
+A **region** is a window with no title bar, which neither moves nor folds. An app draws one as a
+panel that fills part of its own layout, such as an editor's area. Its name is its id and is
+not drawn. Its contents are clipped and scrolled as a window's are, and it takes the cursor from
+whatever was drawn before it. An `alpha` of 0 draws no background, for a region over something
+the app has already filled.
+
+A **tree row** is indented by one line for each level of `depth`. A row given `open` has
+something beneath it, and draws a mark in the first line of its indent, pointing right while
+folded and down while open. A click on the mark flips `*open` and is not a click on the row. The
+caller draws the rows beneath an open row and skips those beneath a folded one.
+
+A **number** from `dragFloat()` draws its label at the left in `secondary-text` and its value
+at the right, to three places.
+
+- A press that travels more than 3 pixels across it drags the value, by `speed` for each pixel
+  after those 3.
+- A press that does not travel types into it, with the whole value chosen, so typing replaces
+  it. The keys and the keyboard work as a text field's do.
+- What was typed is taken when the field gives up the keyboard, unless escape gave it up or the
+  text is not a finite number. Then the value stays as it was.
+
+`itemFinished()` is true on the frame an edit of the item just drawn ends: a number's drag is
+let go, or a number or a text field gives up the keyboard. A caller that applies each change as
+it comes, as a drag reports them, records the whole edit as one change on that frame.
 
 ### Ids, hover and capture
 
@@ -149,6 +177,13 @@ bool App::onEvent(const SDL_Event& event) {
 ```
 
 [Setup.md](Setup.md#the-keyboard-adapter) has the adapter's rules.
+
+### Titles and headers
+
+A window's title and a table's header are set in the dressing's `titleWeight`, semibold by
+default. They are drawn through the writer given to `titles(write)`, which a `Screen` fills in
+with its text renderer's semibold face. A layer given no such writer, or a `titleWeight` below
+500, draws them through the writer given to `text()`.
 
 ### Moving and folding a window
 

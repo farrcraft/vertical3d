@@ -52,13 +52,9 @@ static_assert(offsetof(MeshRegistry::SkinnedVertex, influence) == 32, "the influ
 static_assert(offsetof(model::Model::Influence, joints) == 0, "the joints are at location 3");
 static_assert(offsetof(model::Model::Influence, weights) == 8, "the weights are at location 4");
 
-namespace {
-
 /**
- * The mesh on the device: the model's vertices as they are, or interleaved with their
- * influences for a model with a skeleton.
  **/
-boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, const model::Model& model) {
+boost::shared_ptr<Mesh> MeshRegistry::device(const boost::shared_ptr<DeviceContext>& context, const model::Model& model) {
     if (model.skeleton().empty()) {
         return boost::make_shared<Mesh>(context->device(), context->uploader(),
             std::as_bytes(std::span(model.vertices())), static_cast<uint32_t>(model.vertices().size()),
@@ -74,10 +70,8 @@ boost::shared_ptr<Mesh> device(const boost::shared_ptr<DeviceContext>& context, 
 }
 
 /**
- * The bytes a decoded model puts on the device: its vertices, its indices, and each albedo it
- * carries pixels for that is not already uploaded, once.
  **/
-std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
+std::size_t MeshRegistry::bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
     std::size_t total = decoded.model->vertexBytes() + (decoded.model->indices().size() * sizeof(std::uint32_t));
     std::set<const image::Image*> counted;
     for (const DecodedModel::Albedo& albedo : decoded.albedos) {
@@ -89,10 +83,8 @@ std::size_t bytes(const DecodedModel& decoded, const AlbedoUploaded& uploaded) {
 }
 
 /**
- * A sphere around a model's vertices: the middle of the box that holds them, and the farthest
- * of them from it. A model with no vertices is a point at the origin.
  **/
-glm::vec4 bound(const model::Model& model) {
+glm::vec4 MeshRegistry::bound(const model::Model& model) {
     const std::vector<model::Model::Vertex>& vertices = model.vertices();
     if (vertices.empty()) {
         return glm::vec4(0.0F);
@@ -110,8 +102,6 @@ glm::vec4 bound(const model::Model& model) {
     }
     return glm::vec4(centre, radius);
 }
-
-};  // namespace
 
 /**
  **/

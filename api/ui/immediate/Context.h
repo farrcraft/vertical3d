@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/ui/Immediate.h>
+#include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -14,7 +15,9 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <glm/vec2.hpp>
@@ -56,6 +59,7 @@ struct Retained final {
     bool collapsed;    /**< whether a window is folded to its title bar **/
     bool dragging;     /**< whether the press on its bar has travelled far enough to move it **/
     int chosen;        /**< the item a combo's list was clicked on, taken next frame, or -1 **/
+    Transition face;   /**< the fill of its box, easing from one colour to the next **/
 };
 
 /**
@@ -160,6 +164,29 @@ struct Scrolled {
 };
 
 /**
+ * The body of a window or a region: the id that holds its scroll and content, the id its
+ * scrollbar is hit tested under, its box, and where the part below any title bar starts.
+ **/
+struct Body {
+    Id id = 0;
+    Id scroll = 0;
+    glm::vec2 min{0.0F};
+    glm::vec2 max{0.0F};
+    float top = 0.0F;
+};
+
+/**
+ * A number field being drawn: its id, its label, the value it shows, and its box.
+ **/
+struct Number {
+    Id id = 0;
+    std::string label;
+    float value = 0.0F;
+    glm::vec2 min{0.0F};
+    glm::vec2 max{0.0F};
+};
+
+/**
  * Everything an Immediate holds, and the steps its widgets share.
  *
  * Immediate's header carries only what an app calls. This is the rest: what the layer keeps
@@ -217,6 +244,12 @@ class Context final {
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
     /**
+     * Draw a title or a header as label() does, in the semibold face when the dressing's
+     * titleWeight asks for it and there is one.
+     **/
+    void title(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
+
+    /**
      * @return the colour to draw text in, given what the caller asked for and whether
      *      anything has disabled it
      **/
@@ -230,10 +263,53 @@ class Context final {
     glm::vec4 face(bool lit, bool under) const;
 
     /**
+     * Ease a widget's fill toward a colour over the dressing's hover duration, from wherever
+     * its last change had reached. Without a clock the colour is drawn at once.
+     *
+     * @return the colour to draw this frame
+     **/
+    glm::vec4 eased(Id id, const glm::vec4& colour);
+
+    /**
      * Give the keyboard to a text field, or take it from whichever has it, and tell whoever
      * listens to onTyping().
      **/
     void focus(Id field);
+
+    /**
+     * Start writing into the body of a window or a region: rows go inside it, clipped to it and
+     * scrolled, and the wheel over it scrolls it.
+     *
+     * @param shown false for a folded window, which takes the rows' margins and nothing else
+     **/
+    void openBody(const Body& body, bool shown);
+
+    /**
+     * Draw the line a field is editing between two corners, with the selection behind it and
+     * the caret, slid left as far as the caret needs. The caller clips to the corners.
+     **/
+    void drawEdit(const glm::vec2& low, const glm::vec2& high);
+
+    /**
+     * A number field that has the keyboard: when it lets go, take what was typed, unless escape
+     * let it go or the text is not a finite number.
+     *
+     * @return whether the value changed
+     **/
+    bool typeNumber(const Reaction& reaction, float* value);
+
+    /**
+     * A number field that does not have the keyboard: drag the value once a press has
+     * travelled, finish the drag on release, and type into the field after a click.
+     *
+     * @return whether the value changed
+     **/
+    bool dragNumber(Id id, const Reaction& reaction, float* value, float speed);
+
+    /**
+     * Draw a number field: its label and value, or the line being typed into it.
+     **/
+    void drawNumber(const Number& field, const Reaction& reaction);
 
     /**
      * Close a scrolled region, a window's body or a table: measure what was drawn into it,
@@ -277,6 +353,13 @@ class Context final {
 
     paint::Measure measure;
     paint::Write write;
+    // how semibold text is drawn, which may be empty
+    paint::Write strong;
+    // what a theme's sizes are multiplied by
+    float scale;
+    // the time transitions are measured on, and whether one has been given
+    Clock clock;
+    bool timed;
     paint::Dressing dressing;
     // what the current theme wrote over dressing
     style::Overlay<paint::Dressing> overlay;
@@ -305,6 +388,7 @@ class Context final {
 
     Id typing;            /**< the text field that holds the keyboard, or nothing **/
     bool letGo;           /**< a return, tab or escape asked the field to give it up **/
+    bool escaped;         /**< and it was escape, which a number field takes as no change **/
     bool typingDrawn;     /**< whether that field has been drawn this frame **/
     std::string written;  /**< what the field last wrote to the caller's string **/
     input::LineEdit edit;
@@ -314,8 +398,31 @@ class Context final {
     glm::vec2 itemMin;  /**< the box of the item placed last, which itemHovered() asks about **/
     glm::vec2 itemMax;
     Id itemOwner;       /**< what has to have held the cursor for that item to be hovered **/
+    bool itemFinished;  /**< whether an edit of that item ended this frame **/
 
     Popup popup;
+
+ private:
+    /**
+     * How far one notch of the wheel scrolls a window, as a multiple of a row. Three rows is
+     * what a desktop scrolls by, and reads as a deliberate move rather than a nudge.
+     **/
+    static constexpr float wheelRows = 3.0F;
+    /**
+     * How far a press on a number has to travel across it before it drags the value instead of
+     * typing into it, as a window's title bar decides between a move and a fold.
+     **/
+    static constexpr float dragThreshold = 3.0F;
+    /**
+     * @return a typed number, or nothing when the text is not a whole finite number
+     **/
+    static std::optional<float> number(std::string_view text);
+    /**
+     * The seed and the multiplier of FNV-1a, which hashes a label into an id.
+     * Any hash would do; this one is four lines and needs no table.
+     **/
+    static constexpr std::uint64_t hashSeed = 1469598103934665603ULL;
+    static constexpr std::uint64_t hashPrime = 1099511628211ULL;
 };
 
 };  // namespace v3d::ui::immediate

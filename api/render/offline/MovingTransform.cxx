@@ -17,50 +17,26 @@
 
 namespace v3d::render::offline {
 
-namespace {
-
-/** The least determinant, relative to the basis lengths, that counts as invertible. **/
-constexpr float SMALLEST_DETERMINANT = 1.0e-6F;
-
-/**
- * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
- * into the rotation's columns before they are normalised. Only an invertible matrix is taken
- * apart this way.
- **/
-class Parts {
- public:
-    explicit Parts(const glm::mat4x4 & matrix) {
-        translation = glm::vec3(matrix[3]);
-        glm::mat3 basis(matrix);
-        for (int axis = 0; axis < 3; axis++) {
-            scale[axis] = glm::length(basis[axis]);
-            basis[axis] /= scale[axis];
-        }
-        // a reflection is a negative scale, kept on x so the rest is a rotation
-        if (glm::determinant(basis) < 0.0F) {
-            scale.x = -scale.x;
-            basis[0] = -basis[0];
-        }
-        rotation = glm::quat_cast(basis);
+MovingTransform::Parts::Parts(const glm::mat4x4 & matrix) {
+    translation = glm::vec3(matrix[3]);
+    glm::mat3 basis(matrix);
+    for (int axis = 0; axis < 3; axis++) {
+        scale[axis] = glm::length(basis[axis]);
+        basis[axis] /= scale[axis];
     }
+    // a reflection is a negative scale, kept on x so the rest is a rotation
+    if (glm::determinant(basis) < 0.0F) {
+        scale.x = -scale.x;
+        basis[0] = -basis[0];
+    }
+    rotation = glm::quat_cast(basis);
+}
 
-    glm::vec3 translation;
-    glm::vec3 scale;
-    glm::quat rotation;
-};
-
-/**
- * Whether a transformation has an inverse. The determinant is measured against the lengths of
- * the basis columns, so a small uniform scale is invertible and only a flattened one is not.
- * Written so that a NaN has no inverse.
- **/
-bool invertible(const glm::mat4x4 & matrix) {
+bool MovingTransform::invertible(const glm::mat4x4 & matrix) {
     const glm::mat3 basis(matrix);
     const float lengths = glm::length(basis[0]) * glm::length(basis[1]) * glm::length(basis[2]);
     return lengths > 0.0F && std::fabs(glm::determinant(basis)) > SMALLEST_DETERMINANT * lengths;
 }
-
-};  // namespace
 
 MovingTransform::MovingTransform() : MovingTransform(glm::mat4x4(1.0F)) {
 }

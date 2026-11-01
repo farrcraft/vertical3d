@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <exception>
 #include <optional>
 #include <string>
@@ -52,37 +53,6 @@
 #include <entt/entt.hpp>
 
 namespace v3d::ui::loader {
-
-namespace {
-
-/**
- * Read one length: a number is pixels, and a string ending in % is a fraction of the parent.
- * @return the length, or nothing when the value is neither
- **/
-std::optional<Length> length(const boost::json::value& value) {
-    if (value.is_number()) {
-        return Length(static_cast<float>(value.to_number<double>()), Length::Unit::Pixels);
-    }
-    if (!value.is_string()) {
-        return std::nullopt;
-    }
-    const std::string text(value.as_string().c_str());
-    if (text.size() < 2 || text.back() != '%') {
-        return std::nullopt;
-    }
-    try {
-        std::size_t read = 0;
-        const float fraction = std::stof(text.substr(0, text.size() - 1), &read);
-        if (read != text.size() - 1) {
-            return std::nullopt;
-        }
-        return Length(fraction, Length::Unit::Percent);
-    } catch (const std::exception&) {
-        return std::nullopt;
-    }
-}
-
-};  // namespace
 
 ComponentReader::ComponentReader(const boost::shared_ptr<v3d::event::Router>& router,
     const boost::shared_ptr<entt::dispatcher>& dispatcher,
@@ -122,6 +92,7 @@ bool ComponentReader::readContainer(const boost::json::object& entry) {
         return false;
     }
     const boost::shared_ptr<Container> container = boost::make_shared<Container>(*named, *visible);
+    container->backdrop(optionalFlag(*logger_, entry, "backdrop", false));
     containers_.push_back(container);
 
     return std::ranges::all_of(*components, [this, &container](const boost::json::value& item) {
@@ -212,10 +183,12 @@ boost::shared_ptr<Component> ComponentReader::readComponent(const boost::json::o
     }
 
     component->name(*named);
-    // the renderer places a menu and a menu bar itself, so a layout read onto one would be
-    // ignored. Their other attributes are read as for any component
+    // the renderer places a menu and a docked menu bar itself, so a layout read onto one would
+    // be ignored. Their other attributes are read as for any component
     const component::Type type = component::parse(componentType);
-    if (type != component::Type::Menu && type != component::Type::MenuBar) {
+    const bool placed = type == component::Type::Menu ||
+        (type == component::Type::MenuBar && boost::static_pointer_cast<component::menu::Bar>(component)->docked());
+    if (!placed) {
         readLayout(entry, &component->layout());
     }
     readAttributes(entry, component);
@@ -257,6 +230,9 @@ void ComponentReader::readAttributes(const boost::json::object& entry, const boo
     component->pickable(optionalFlag(*logger_, entry, "pickable", component->pickable()));
     component->focusable(optionalFlag(*logger_, entry, "focusable", component->focusable()));
     component->clip(optionalFlag(*logger_, entry, "clip", component->clip()));
+    if (const std::optional<std::string> value = optionalString(*logger_, entry, "tooltip")) {
+        component->tooltip(*value);
+    }
     if (const std::optional<int> depth = optionalInt(*logger_, entry, "depth", 0)) {
         component->depth(static_cast<unsigned int>(*depth));
     }
@@ -460,6 +436,7 @@ boost::shared_ptr<component::Icon> ComponentReader::readIcon(const boost::json::
 
 boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
+    bar->docked(optionalFlag(*logger_, entry, "docked", true));
 
     const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
     if (menus == nullptr) {
@@ -499,14 +476,20 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
         if (itemEntry == nullptr) {
             return nullptr;
         }
-        const std::optional<std::string> label = requiredString(*logger_, *itemEntry, "label", "A menu item");
         const std::optional<std::string> typeName = requiredString(*logger_, *itemEntry, "type", "A menu item");
-        if (!label || !typeName) {
+        if (!typeName) {
             return nullptr;
         }
         const component::menu::ItemType itemType = component::menu::stringToType(*typeName);
         if (itemType == component::menu::ItemType::Unknown) {
             logger_->get()->error("A menu item has no type [{}]", *typeName);
+            return nullptr;
+        }
+        // a separator shows no text, so it is the one item that needs no label
+        const std::optional<std::string> label = itemType == component::menu::ItemType::Separator
+            ? std::optional<std::string>(optionalString(*logger_, *itemEntry, "label").value_or(std::string()))
+            : requiredString(*logger_, *itemEntry, "label", "A menu item");
+        if (!label) {
             return nullptr;
         }
 
@@ -518,6 +501,10 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
         if (command.context()) {
             menuItem->event(command);
         }
+        if (const std::optional<std::string> icon = optionalString(*logger_, *itemEntry, "icon")) {
+            menuItem->icon(*icon);
+        }
+        readSetting(*itemEntry, menuItem.get());
 
         menu->addItem(menuItem);
 
@@ -526,11 +513,43 @@ boost::shared_ptr<component::menu::Menu> ComponentReader::readMenu(const boost::
             if (!submenu) {  // a submenu that fails to read fails the whole menu
                 return nullptr;
             }
+            // a submenu is titled by the item that opens it, unless it names a title of its own
+            if (submenu->title().empty()) {
+                submenu->title(*label);
+            }
             menuItem->submenu(submenu);
         }
     }
+    if (const std::optional<std::string> title = optionalString(*logger_, entry, "title")) {
+        menu->title(*title);
+    }
     menu->active(0);
     return menu;
+}
+
+void ComponentReader::readSetting(const boost::json::object& entry, component::menu::Item* item) {
+    if (item->itemType() == component::menu::ItemType::Slider) {
+        constexpr int lowest = std::numeric_limits<int>::min();
+        component::menu::Item::Range span;
+        span.minimum = optionalInt(*logger_, entry, "minimum", lowest).value_or(span.minimum);
+        span.maximum = optionalInt(*logger_, entry, "maximum", lowest).value_or(span.maximum);
+        span.step = optionalInt(*logger_, entry, "step", 1).value_or(span.step);
+        item->range(span);
+        if (const std::optional<int> value = optionalInt(*logger_, entry, "value", lowest)) {
+            item->value(*value);
+            // clamped to the range it was given
+            item->range(span);
+        }
+    }
+    // the command is written whole, as a binding document writes it: its context, "::" and its name
+    if (const std::optional<std::string> binds = optionalString(*logger_, entry, "binds")) {
+        const std::size_t split = binds->find("::");
+        if (split == std::string::npos || split == 0 || split + 2 >= binds->size()) {
+            logger_->get()->warn("A menu item binds [{}], which is not a context and a command", *binds);
+        } else {
+            item->binds(v3d::event::Event(binds->substr(split + 2), router_->resolveContext(binds->substr(0, split))));
+        }
+    }
 }
 
 v3d::event::Event ComponentReader::readCommand(const boost::json::object& entry) {
@@ -539,7 +558,20 @@ v3d::event::Event ComponentReader::readCommand(const boost::json::object& entry)
     if (context.empty() || command.empty()) {
         return v3d::event::Event();
     }
-    return v3d::event::Event(command, router_->resolveContext(context));
+    v3d::event::Event event(command, router_->resolveContext(context));
+    // what the event carries for its handler, such as which of several alike components sent it
+    if (const boost::json::value* data = entry.if_contains("data")) {
+        if (data->is_int64()) {
+            event.data(static_cast<int>(data->as_int64()));
+        } else if (data->is_bool()) {
+            event.data(data->as_bool());
+        } else if (data->is_string()) {
+            event.data(std::string(data->as_string()));
+        } else {
+            logger_->get()->warn("A command's data is a whole number, a flag or a string, so it is ignored");
+        }
+    }
+    return event;
 }
 
 boost::shared_ptr<component::Toolbar> ComponentReader::readToolbar(const boost::json::object& entry) {
@@ -567,6 +599,29 @@ boost::shared_ptr<component::Toolbar> ComponentReader::readToolbar(const boost::
         bar->add(button);
     }
     return bar;
+}
+
+std::optional<Length> ComponentReader::length(const boost::json::value& value) {
+    if (value.is_number()) {
+        return Length(static_cast<float>(value.to_number<double>()), Length::Unit::Pixels);
+    }
+    if (!value.is_string()) {
+        return std::nullopt;
+    }
+    const std::string text(value.as_string().c_str());
+    if (text.size() < 2 || text.back() != '%') {
+        return std::nullopt;
+    }
+    try {
+        std::size_t read = 0;
+        const float fraction = std::stof(text.substr(0, text.size() - 1), &read);
+        if (read != text.size() - 1) {
+            return std::nullopt;
+        }
+        return Length(fraction, Length::Unit::Percent);
+    } catch (const std::exception&) {
+        return std::nullopt;
+    }
 }
 
 };  // namespace v3d::ui::loader

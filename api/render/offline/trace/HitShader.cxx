@@ -9,7 +9,6 @@
 #include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
-#include <api/render/offline/sl/runtime/Value.h>
 #include <api/type/geometry/Line.h>
 
 #include <algorithm>
@@ -25,12 +24,6 @@
 #include "Tracer.h"
 
 namespace v3d::render::offline::trace {
-
-namespace {
-
-typedef v3d::render::offline::sl::runtime::Value Value;
-
-};  // namespace
 
 HitShader::HitShader(Tracer* tracer, const std::vector<const Hit*> & hits, const std::vector<float> & times,
     const std::vector<const Scene::Poses*> & poses) :

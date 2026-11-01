@@ -5,11 +5,17 @@
 
 #pragma once
 
+#include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
+#include <api/ui/Transition.h>
 #include <api/ui/style/Resolver.h>
 
+#include <functional>
+#include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -53,12 +59,19 @@ class Toolbar;
 
 namespace component::menu {
 class Bar;
+class Item;
 class Menu;
 };  // namespace component::menu
 
 };  // namespace v3d::ui
 
 namespace v3d::ui::paint {
+
+namespace internal {
+class Easing;
+class MenuRenderer;
+class Skin;
+};  // namespace internal
 
 /**
  * Draws the ui onto a canvas of quads.
@@ -104,6 +117,12 @@ class ComponentRenderer {
     Dressing& dressing() noexcept;
 
     /**
+     * @return the colours and metrics the ui is drawn with, read without changing them, which
+     *      keeps what the resolver has worked out
+     **/
+    const Dressing& dressing() const noexcept;
+
+    /**
      * Draw with a theme: read its "ui" style into dressing(), and keep it for the images a
      * button is drawn from.
      *
@@ -118,6 +137,87 @@ class ComponentRenderer {
      * @return the theme being drawn with, which is null until one is given
      **/
     boost::shared_ptr<style::Theme> theme() const noexcept;
+
+    /**
+     * Multiply a theme's sizes, which are logical pixels. dressing() is not changed, so the
+     * caller sets it at the same scale. Takes effect at the next theme().
+     **/
+    void scale(float factor) noexcept;
+
+    /**
+     * The time the next draw is at. A change of a fill or a text colour eases over the
+     * dressing's hover duration, and a menu opens over its open duration, both measured on
+     * this clock. A renderer that is never given a clock draws every change at once.
+     **/
+    void clock(const Clock& now) noexcept;
+
+    /**
+     * How a command's shortcut is shown, such as "Ctrl+Z", or empty when nothing binds it.
+     **/
+    typedef std::function<std::string(const v3d::event::Event& command)> Shortcut;
+
+    /**
+     * Look up the shortcut a menu item shows beside its label, and a tooltip after its text.
+     * Without one, nothing shows a shortcut.
+     **/
+    void shortcuts(const Shortcut& lookup);
+
+    /**
+     * @return the shortcut of the command a component sends, or empty when it sends none or
+     *         nothing binds it
+     **/
+    std::string shortcut(const v3d::event::Event& command) const;
+
+    /**
+     * Set a centred menu's title and its chosen item apart from the body text. Without this,
+     * both are set as the body text is, and a title takes one line.
+     **/
+    void emphasis(const Emphasis& sets);
+
+    /**
+     * Draw a tooltip: a plate holding a line of text, and the shortcut after it in secondary
+     * text, with a shadow under it. It hangs just below a box, or beside it, as wide as it needs,
+     * and is moved back onto the canvas where it would leave it. Draw it last, over everything
+     * else.
+     *
+     * @param below the box it hangs by, which is the component it describes
+     * @param beside whether it hangs to the right of the box, centred on it, rather than under
+     *        it. A tooltip that would leave the canvas there goes to the left instead
+     **/
+    void tooltip(v3d::render::realtime::canvas::Canvas* canvas, const std::string& text, const std::string& keys,
+        const v3d::type::geometry::Bound2D& below, bool beside = false) const;
+
+    /**
+     * Where a block of text over the scene goes, and which of its points is put there.
+     **/
+    struct Place final {
+        /** where the anchor goes, in the canvas's pixels **/
+        glm::vec2 at{0.0F};
+        /**
+         * the point of the plate put at `at`, as a share of its size: 0, 0 is its top left
+         * and 0.5, 0 the middle of its top edge
+         **/
+        glm::vec2 anchor{0.0F};
+        /** the "hud" style it names, or empty for the theme's first **/
+        std::string_view style;
+    };
+
+    /**
+     * Draw lines of text over the scene, such as a score or a label, on one plate. The "hud"
+     * class dresses it: the text, the plate's colour and how opaque it is, the padding around
+     * the lines and the corners. The plate is as wide as the widest line and a line high for
+     * each.
+     *
+     * @return the plate's box, so that the next block can be placed against it
+     **/
+    v3d::type::geometry::Bound2D hud(v3d::render::realtime::canvas::Canvas* canvas, const std::vector<std::string>& lines,
+        const Place& place) const;
+
+    /**
+     * @return what text over the scene is dressed in, from the "hud" style of a name, or the
+     *         theme's first when the name is empty
+     **/
+    const Dressing& hud(std::string_view style) const;
 
     /**
      * Draw a label - one line of text at the position it holds.
@@ -243,13 +343,25 @@ class ComponentRenderer {
 
  private:
     /**
-     * Draw one dropped panel of a menu bar, leaving every item holding its own row.
-     *
-     * @param origin where the panel's top left corner would go, before it is moved to
-     *      keep it on the canvas
+     * The colour a component's own text is drawn in: the given colour, or the theme's disabled
+     * colour when the component, or anything holding it, cannot be used. An icon is tinted with
+     * the same colour, so disabling a box greys both a label and the picture beside it.
      **/
-    void panel(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::menu::Menu>& menu,
-        const glm::vec2& origin) const;
+    static glm::vec4 ink(const Component& component, const Dressing& dress, const glm::vec4& colour);
+    /**
+     * How many segments a radio button's disc is drawn with. Small enough to cost little at
+     * the size a mark is drawn, large enough that the rim does not read as a polygon.
+     **/
+    static constexpr unsigned int markSides = 16;
+    /**
+     * How much of the box, or of the disc, a mark fills. The rest is the gap that makes it
+     * read as a mark inside something rather than as a filled box.
+     **/
+    static constexpr float markFill = 0.5F;
+    /**
+     * How far a tooltip's text sits in from its edges, as a fraction of a line.
+     **/
+    static constexpr float tooltipInset = 0.4F;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is
@@ -266,19 +378,9 @@ class ComponentRenderer {
         const boost::shared_ptr<Component>& component) const;
 
     /**
-     * Draw the nine images a button style names over the button's box - the four corners
-     * at their own size, the four edges stretched along it, and the centre over the rest.
-     *
-     * @return false when the theme names no image for that button in that state, and a
-     *      flat button is drawn instead
-     **/
-    bool skin(v3d::render::realtime::canvas::Canvas* canvas, const component::Button& button,
-        const glm::vec2& min, const glm::vec2& max) const;
-
-    /**
      * The colours and metrics before any component's own style class is applied over
      * them. The parts of the ui with no style class of their own are drawn with these:
-     * a menu panel, a toolbar strip, a label.
+     * a toolbar strip, a label, a tooltip.
      **/
     const Dressing& base() const noexcept;
 
@@ -287,6 +389,9 @@ class ComponentRenderer {
     style::Resolver styles_;
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;
+    std::unique_ptr<internal::Easing> easing_;
+    std::unique_ptr<internal::Skin> skin_;
+    std::unique_ptr<internal::MenuRenderer> menus_;
 };
 
 };  // namespace v3d::ui::paint

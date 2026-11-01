@@ -5,7 +5,7 @@ imported, and how a scene is exported for the offline renderer.
 
 ## Projects
 
-A project is a directory, held by `v3d::editor::Project`:
+A project is a directory, held by `v3d::editor::store::Project`:
 
 ```
 <project>/
@@ -42,12 +42,12 @@ Background: [ADR-0100](../adr/0100-editor-a-project-is-a-directory-with-a-manife
 
 ## Scene documents
 
-A scene document is a SQLite database, read and written by `v3d::editor::SceneStore` through
+A scene document is a SQLite database, read and written by `v3d::editor::store::Scene` through
 `v3dlib_database`. The extension is `.v3d`.
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`SceneStore::SCHEMA_VERSION`, which is 3.
+`store::Scene::SCHEMA_VERSION`, which is 4.
 
 **The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
@@ -63,13 +63,14 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `sx`, `sy`, `sz` | The scale |
 | | `payload` | A JSON object of what the kind adds. The table checks that it is JSON |
 | | `parent` | The document id of the item's parent, or `NULL` for an item with none. It references `items(id)`, checked when the write commits |
+| | `name` | What the item is called, which may be empty |
 | `buffers` | `item` | The item the blob belongs to. Deleting the item deletes its blobs |
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
 | | `data` | The entries, as little-endian arrays |
 | `curves` | `owner` | The document id of the item the curve drives. It references `items(id)`, checked when the write commits |
 | | `property` | The path of the property it drives, such as `rotation.y` |
-| | `type_version` | The version of its keys, `SceneStore::CURVE_VERSION`, which is 1 |
+| | `type_version` | The version of its keys, `store::Scene::CURVE_VERSION`, which is 1 |
 | | `count` | How many keys it has |
 | | `keys` | 20 bytes a key: the frame, value, in slope and out slope as floats, then the interpolation (0 step, 1 linear, 2 Bezier) and whether it is automatic as a byte each, then two bytes of padding |
 
@@ -86,7 +87,7 @@ program wrote is refused. Its `user_version` is the version of the tables,
 **Each kind has a codec.** `Codec` in `src/store/Codec.h` writes and reads what a kind adds: its
 name, its version, its payload and its blobs. `MeshCodec`, `CameraCodec`, `LightCodec`,
 `GroupCodec` and `CurveCodec` are the five. `codecOf(kind)` finds one by kind, and
-`codecNamed(name)` by the name a row carries. `SceneStore` writes and reads what every item
+`codecNamed(name)` by the name a row carries. `store::Scene` writes and reads what every item
 shares, and hands the rest to the codec. A new kind of item is a new codec, returned from
 `codecOf()` and listed in `codecs()`. `codecOf()` switches on every kind, so a kind with no codec
 does not compile.
@@ -108,7 +109,7 @@ an open renumber nothing. `BRep::INVALID_ID` is stored as it is.
 - **Selection.** It describes what the user is doing, not what the document holds.
 - **A vertex's edge.** Nothing in the editor sets it.
 
-**Reading.** `SceneStore::read` replaces the whole scene, in the saved order, with the saved
+**Reading.** `store::Scene::read` replaces the whole scene, in the saved order, with the saved
 document ids and parents, and nothing comes back selected. It refuses the document, and leaves
 the scene untouched, if:
 
@@ -132,12 +133,12 @@ the scene untouched, if:
 - the timeline's rate is not a positive number, its range runs backwards, or its frame is
   outside the range
 
-**Writing.** `SceneStore::write` writes in one transaction. A write that fails at any point leaves
+**Writing.** `store::Scene::write` writes in one transaction. A write that fails at any point leaves
 the document as the last save left it, and a document the write was making is removed. A
 database that is not a scene document, or that this build could not read, is refused rather than
 overwritten.
 
-**A save writes only what changed.** A `SceneStore` remembers the document it last wrote or read,
+**A save writes only what changed.** A `store::Scene` remembers the document it last wrote or read,
 and for each item in it the item itself, its revision, its place in the order and its parent. A
 write to that document:
 
@@ -154,7 +155,7 @@ write to that document:
 A write to any other path, a document the store has neither written nor read, is written whole:
 everything it held is deleted and every item is written. The next write after a write that
 failed is written whole too, because the document may no longer hold what the store remembers.
-`SceneStore::written()` says what the last write did.
+`store::Scene::written()` says what the last write did.
 
 An item's revision is `Item::revision()`, which [Scene.md](Scene.md#the-scene) describes. A change
 that does not move it is not saved.
@@ -168,11 +169,12 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-Schema version 1 has no `parent` column, and versions 1 and 2 have no `curves` table. A read
-takes an older document as it is: every item of a version 1 document is at the top of the scene,
-and nothing in either is animated. The first write to it adds what it lacks and sets the version
-to 3, in the same transaction as the rest of the write. Every kind and the curves are at version
-1.
+Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, and versions 1
+to 3 have no `name` column. A read takes an older document as it is. Every item of a version 1
+document is at the top of the scene, and nothing in a version 1 or 2 document is animated.
+Every item of a version 1 to 3 document has an empty name. The first write to it adds what it
+lacks and sets the version to 4, in the same transaction as the rest of the write. Every kind
+and the curves are at version 1.
 
 **Reading sets the frame.** Once a document is read, its timeline's frame is the current one,
 and no edit is pending. A read changes no item's values, which
@@ -187,10 +189,10 @@ Background: [ADR-0101](../adr/0101-editor-a-scene-document-is-a-sqlite-database.
 ## Open, Save and Save As
 
 - The current project starts as the directory `project` beside the executable. A save makes it.
-- **Open** (O, or Project > Load) shows the file chooser in open mode, filtered to `.json`, to
+- **Open** (Ctrl+O, or File > Open) shows the file chooser in open mode, filtered to `.json`, to
   pick a project's manifest. A successful open makes that project current and clears the history.
-- **Save** (S, or Project > Save) writes to the current project without asking.
-- **Save As** (Project > Save As) shows the chooser in save mode. The name typed is a new project
+- **Save** (Ctrl+S, or File > Save) writes to the current project without asking.
+- **Save As** (File > Save As) shows the chooser in save mode. The name typed is a new project
   directory, which must not exist yet. A successful write makes it the current project.
 
 The chooser is `ui::shell::FileChooser`. It drives the `chooser` container laid out in
@@ -231,20 +233,19 @@ they do beside the file chooser.
 
 ## Importing
 
-Project > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file, and Project >
+File > Import > glTF (`project::import::gltf`) chooses a `.gltf` or `.glb` file, and File >
 Import > USD (`project::import::usd`) a `.usd`, `.usda`, `.usdc` or `.usdz` stage. Either puts
 the file's scene into the document as one change, which one undo takes out again. The items at
 the top of the import become the selection. `Document::importScene()` does the work, so anything
 that calls it gets the same import.
 
-The file is read by `interchange::readGltf()` or `interchange::readUsd()`, described in
+The file is read by `interchange::readGltf()` or `interchange::usd::read()`, described in
 [api/Interchange.md](../api/Interchange.md), and `editor::importScene()` in
 `src/scene/Import.h` makes the items from either:
 
 - **Kinds.** Each node becomes one item: a mesh, a camera, a light or a curve when it carries
   one, in that order, and a group when it carries none. A node that carries more than one
-  becomes the first, with the others as its children. Items have no names, so a node's name is
-  not kept.
+  becomes the first, with the others as its children. Each item takes its node's name.
 - **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
   that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
   give items that share one geometry. A mesh that cannot be built, such as one with three faces
@@ -270,7 +271,7 @@ Background: [ADR-0122](../adr/0122-editor-import-gltf-and-usd-as-scenes-of-items
 
 ## RIB export
 
-Project > Export > rib (`project::export::rib`) writes the scene as RenderMan RIB to
+File > Export > RIB (`project::export::rib`) writes the scene as RenderMan RIB to
 `export.rib` beside the executable, replacing any file already there. The export is one-way:
 nothing reads it back into the editor. The scene document stays the editor's own format, and
 the offline renderer reads RIB.

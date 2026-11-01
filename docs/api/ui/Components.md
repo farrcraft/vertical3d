@@ -25,8 +25,8 @@ reads besides the common ones:
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
-| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }` | yes / no |
-| `menu` | `menu::Menu` | a game menu, one level at a time, centred | `items` | no / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, `docked` (true) | yes / no |
+| `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
 Notes on individual components:
 
@@ -57,16 +57,83 @@ Notes on individual components:
   box that frame, so they are not picked or focused.
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
-  with an `icon` is sized to the icon; otherwise to its label. A toolbar button falls back to
-  its label when its icon is not resolved. A hidden button takes no room in its strip, is not
-  drawn and takes no press, and the buttons after it close up.
-- **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command` and
-  `context`. Item types are `action`, `submenu` (which holds its own `items`), `check`,
-  `radio`, `input`, `numeric_input` and `key_input`. A check and a radio item are marked by
-  the app, the same as a check box. Radio items are drawn with the same square mark as check
-  items.
+  with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an
+  icon is square, as tall as the strip is wide, and one without is a line tall. A toolbar
+  button falls back to its label when its icon is not resolved. A hidden button takes no room
+  in its strip, is not drawn and takes no press, and the buttons after it close up.
+- **A `menu::Menu` or `menu::Bar` item** has a `label`, a `type`, and optionally `command`,
+  `context` and `icon`. Item types are `action`, `submenu` (which holds its own `items`),
+  `check`, `radio`, `input`, `numeric_input`, `key_input`, `slider` and `separator`. A check and
+  a radio item are marked by the app, the same as a check box. Radio items are drawn with the
+  same square mark as check items.
+- **A centred menu** is drawn one level at a time in the middle of the canvas's safe area. The
+  safe area is 5% of the width in from each side and 4% of the height in from the top and the
+  bottom. A level too large for the safe area keeps its top left corner inside it.
+  - Its `title` is written above its items, semibold and 1.75 times the size of their text when
+    the menu is drawn on a `Screen`. A submenu is titled by the label of the item that opens it,
+    unless it names a `title` of its own.
+  - The chosen item shows three cues: the `highlight` behind it, its label in `active-text` and
+    semibold, and a ring in `focus` at `focus-width` around it. The menu is as wide as its widest
+    label set semibold, so it does not change width as the choice moves.
+  - The down and up arrows wrap from the last item to the first and back.
+  - Each row is a settings row: its label on the left and its value right-aligned, in
+    `secondary-text` unless the row is chosen. The menu makes room for the widest value any row
+    can show, the ellipsis of a capture and both ends of a slider's range among them, so it
+    keeps its width as a value changes. A row shows an ellipsis while a capture waits on it,
+    the key bound to the command it `binds`, a slider's value between the arrows that step it,
+    or the value it holds. A row with none shows its label alone.
+- **A slider item** holds a whole number between its `minimum` and `maximum`, which default to
+  0 and 10, and moves by its `step`, 1 by default. Its `value` starts it, clamped to the range,
+  and without one it starts at the minimum. `Menu::step()`, which `menuLess` and `menuMore` send,
+  moves it and sends its command carrying the new value. A step past an end sends nothing.
+- **An item's `binds`** names a command whole, as a binding document writes it, such as
+  `pong::leftPaddleUp`. The context is the part before the first `::`, so a command may hold
+  `::` itself. The row shows the key that command is bound to, through the screen's
+  shortcut lookup, so it stays true after a rebinding.
+- **A separator** is a rule between two groups of items, half a row tall. It needs no label and
+  sends nothing. The keys step over it and the cursor passes over it, so nothing chooses it.
+- **A menu item's icon** is drawn in the column a check mark takes, when the item is not
+  checked. It is resolved with the rest of the ui's images.
+- **A dropped panel shows each item's shortcut**, the key its command is bound to, right-aligned
+  in `secondary-text`, and in `active-text` on the chosen row, where secondary text would not
+  read against the highlight. The panel widens to fit the widest. Nothing writes the shortcut in the
+  document: the screen asks the bindings as the panel is drawn, so a rebinding shows at once.
+  A command is looked up by its name, so two items sending one command with different values
+  show the same shortcut. A centred game menu shows none.
+- **A submenu in a dropped panel opens after the cursor rests on its item** for the theme's
+  `submenu-delay`, and at once on a press. Moving onto an item with no submenu closes any
+  deeper panel at once. A menu bar drawn without a clock opens a submenu as soon as the cursor
+  reaches it.
 - **An open menu bar takes every press.** While a menu is open, a press anywhere on screen
   closes it and is consumed. A click meant for the scene under an open menu does nothing.
+- **An open menu bar takes the keys that walk it**, before anything that has the focus. The
+  down and up arrows choose the next and the previous item of the deepest panel, stepping over
+  separators and wrapping. The right arrow opens the chosen item's submenu at once, or the next
+  menu when it has none. The left arrow closes the deepest submenu, or opens the previous menu
+  from the first panel. A menu opened from the keys chooses its first item. Return and space act
+  on the chosen item as a press would, and escape closes the deepest submenu, or the bar.
+- **A closed menu bar takes a press only on a label.** A press on the rest of its band is not
+  taken, so a container listed after the bar's can put buttons beside the labels.
+
+## Tooltips
+
+Any component may carry a `tooltip`. Once the cursor has rested on it for the theme's
+`tooltip-delay`, the screen draws the text in a small plate just under the component. The
+shortcut of the command the component sends follows it, in `secondary-text`.
+
+- A tooltip shows after `tooltip-quick-delay` instead when another was showing a moment
+  before, so moving along a row of buttons shows each one's almost at once. A cursor that has
+  been off every tooltip for longer than `tooltip-delay` waits the full delay again.
+- A press puts the tooltip away until the cursor moves again.
+- A tooltip is drawn last, over every container and the statistics. Where it would leave the
+  canvas below its component, it is drawn above it.
+- A button on a toolbar down the left has its tooltip beside it, to its right and level with
+  it, where one underneath would cover the next button. Where it would leave the canvas on the
+  right, it is drawn to the left.
+- A toolbar's buttons and the components of the tree show tooltips. A menu item shows its
+  shortcut beside its label instead.
+- `shell::Screen` draws them, from what `input::Cursor` writes as `Interface::hovered()`. An app
+  that draws a `ComponentRenderer` itself calls `tooltip()` with the text to show.
 
 ## Enabled and disabled
 

@@ -7,7 +7,7 @@
 
 #include "Item.h"
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -20,4 +20,4 @@ Item::Kind Group::kind() const noexcept {
     return KIND;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

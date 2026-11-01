@@ -22,6 +22,10 @@ A ui document is JSON with three top-level keys:
   because the document would otherwise be half loaded.
 - `containers` (required) is an array. Each container has a `name`, a `visible` flag and a
   `components` array. A container is shown and hidden as a whole.
+- A container may set `backdrop` to true, as a pause menu or a prompt does. Everything drawn
+  before it is then dimmed: the theme's `backdrop` colour is laid over the whole canvas before
+  the container's components are drawn. It is false by default, and `Container::backdrop()`
+  sets it in code.
 
 **One rule decides what a bad member does, for themes and components alike.** Nothing throws
 out of the load.
@@ -35,7 +39,8 @@ out of the load.
 The required members are these, and every other member is optional:
 
 - a container's `name`, `visible` and `components`, and a component's `type` and `name`
-- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`
+- a menu bar's `menus`, a menu's `label` and `items`, and a menu item's `label` and `type`. A
+  separator needs no `label`
 - a toolbar's `buttons` and an icon's `source`
 - a theme's `name`, and a style's `class` and `name`
 - a style property's `name`, with a colour's or a number's `value` and an image's `source`
@@ -56,11 +61,12 @@ Every component entry has a `type` and a `name`. These keys apply to every compo
 | `focusable` | bool | per type | whether it can take the keyboard |
 | `clip` | bool | false | whether its children are cut off at its box |
 | `depth` | number | 0 | draw order among siblings; higher draws later |
+| `tooltip` | string | none | what the component says of itself when the cursor rests on it. See [Tooltips](Components.md#tooltips) |
 | `children` | array | none | component entries held inside this one |
 
 A length is a number of pixels (`120`), a percentage string (`"50%"`), or absent for `Auto`.
-A menu and a menu bar ignore `position`, `size` and `anchor`, because the renderer places
-them.
+A menu and a docked menu bar ignore `position`, `size` and `anchor`, because the renderer
+places them.
 
 ## The box model
 
@@ -141,7 +147,9 @@ a list that are scrolled out of view are not laid out on that frame.
 Menu bars and toolbars are called strips. They are placed at the edges of the canvas rather
 than by their layout, and they stack:
 
-- Every menu bar takes the top of the canvas.
+- Every docked menu bar takes the top of the canvas. A menu bar whose `docked` is false is laid
+  out by its `position`, `size` and `anchor` instead, as a header over part of the window. It
+  takes nothing from the edges, and drops its panels from its own bottom edge.
 - Each `top` toolbar takes a band under the menu bars and the top toolbars listed before it.
 - Each `left` toolbar runs down the side, below every menu bar and top toolbar, beside the
   left toolbars listed before it.

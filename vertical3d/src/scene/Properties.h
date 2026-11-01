@@ -18,7 +18,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * The numbers of an item that a curve can drive, each named by a path.
@@ -83,4 +83,4 @@ glm::quat fromEuler(const glm::vec3& degrees);
  **/
 glm::vec3 eulerNear(const glm::quat& rotation, const glm::vec3& near);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

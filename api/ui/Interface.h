@@ -26,6 +26,10 @@ namespace v3d::ui {
 class Component;
 class Container;
 
+namespace component::menu {
+class Menu;
+};  // namespace component::menu
+
 namespace style {
 class Theme;
 };  // namespace style
@@ -59,6 +63,40 @@ class Interface {
         const boost::shared_ptr<v3d::log::Logger>& logger);
 
     bool load(const boost::json::object& config);
+
+    /**
+     * Add the containers a document names, as an app does for a part of its ui it builds as it
+     * runs. The document is a ui config's "containers" with no themes, and the containers draw
+     * in the active theme.
+     *
+     * Containers draw in the order they are held, so what is added before a container draws
+     * under it. A document that does not read, or that names a container already held, adds
+     * nothing. Images are not resolved: resolveComponentImages() resolves what was added.
+     *
+     * @param before the container to put them before, or empty or a name not held to put them
+     *        after every container
+     * @return whether the containers were added
+     **/
+    bool add(const boost::json::object& document, std::string_view before = {});
+
+    /**
+     * Put the themes a document names beneath every loaded theme, as style::Theme::beneath()
+     * does, the first of them nearest. A ui with no theme loaded takes the document's themes as
+     * its own, and the first of them is active. The document's containers are not read.
+     *
+     * Called after load(), which replaces every theme.
+     *
+     * @return false when the document does not read, leaving the themes as they were
+     **/
+    bool beneath(const boost::json::object& document);
+
+    /**
+     * Take a container out. A component in it that held the focus or the cursor's rest stops
+     * holding it.
+     *
+     * @return whether a container of that name was held
+     **/
+    bool remove(std::string_view name);
 
     /**
      * The dispatcher this ui sends its commands through, for something in the shell that
@@ -102,6 +140,16 @@ class Interface {
      *      the focus off, and does not move it onto the panel
      **/
     void focus(const boost::shared_ptr<Component>& component);
+
+    /**
+     * What the cursor rests on, which a tooltip is shown for. input::Cursor writes it as the
+     * cursor moves, and clears it when a press lands, so a tooltip goes as soon as the
+     * component is used.
+     *
+     * @param component what is under the cursor, or null for nothing
+     **/
+    void hovered(const boost::shared_ptr<Component>& component);
+    boost::shared_ptr<Component> hovered() const;
 
     /**
      * @return the component the keyboard is on, or null
@@ -219,10 +267,32 @@ class Interface {
     bool resolveIcon(const Resolve& resolve, const std::string& source, const boost::shared_ptr<T>& target);
 
     /**
+     * Resolve the icons of a menu's items, and of every submenu under them.
+     *
+     * @return how many images were set
+     **/
+    std::size_t resolveMenuImages(const Resolve& resolve, const boost::shared_ptr<component::menu::Menu>& menu);
+
+    /**
      * What can be focused, in draw order. focusFirst() and focusNext() both move through
      * this order.
      **/
     std::vector<boost::shared_ptr<Component>> tabOrder() const;
+
+    /**
+     * @return whether a component is in a container's tree
+     **/
+    static bool holds(const Container& container, const boost::shared_ptr<Component>& component);
+    /**
+     * @return whether a component is one of a tree's, the root included
+     **/
+    static bool within(const boost::shared_ptr<Component>& root, const boost::shared_ptr<Component>& component);
+    /**
+     * Collect what can be focused, in draw order. forEachDrawn skips a tab page that is not
+     * chosen, so a control on one is left out.
+     **/
+    static void focusable(const boost::shared_ptr<Component>& component,
+        std::vector<boost::shared_ptr<Component>>* found);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     boost::shared_ptr<v3d::event::Router> router_;
@@ -233,6 +303,7 @@ class Interface {
     // weak, because the component belongs to its container. The focus must not keep alive a
     // component whose container was unloaded
     boost::weak_ptr<Component> focused_;
+    boost::weak_ptr<Component> hovered_;
     Focused moved_;
 };
 

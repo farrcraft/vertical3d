@@ -34,6 +34,14 @@ class Container {
      */
     void visible(bool vis);
 
+    /**
+     * Whether the container dims everything drawn before it, as a pause menu or a prompt that
+     * waits on an answer does. The dressing's backdrop is laid over the whole canvas before the
+     * container's components are drawn. Off unless set.
+     **/
+    bool backdrop() const noexcept;
+    void backdrop(bool dims) noexcept;
+
     void add(const boost::shared_ptr<Component>& component);
     /**
      * Find a component by name, anywhere in the container - the components it holds and
@@ -69,9 +77,20 @@ class Container {
     boost::shared_ptr<Component> pick(const glm::vec2& point) const;
 
  private:
+    /**
+     * Find a named component in a subtree, the component itself first and then what it holds.
+     **/
+    static boost::shared_ptr<Component> search(const boost::shared_ptr<Component>& component, const std::string& name);
+    /**
+     * Offer a point to a subtree, deepest and last drawn first, which is the reverse of the
+     * order it was drawn in.
+     **/
+    static boost::shared_ptr<Component> probe(const boost::shared_ptr<Component>& component, const glm::vec2& point);
+
     std::string name_;
     std::vector<boost::shared_ptr<Component>> components_;
     bool visible_;
+    bool backdrop_;
 };
 
 };  // namespace v3d::ui

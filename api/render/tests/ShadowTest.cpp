@@ -37,6 +37,29 @@ namespace lighting = v3d::render::realtime::lighting;
 
 namespace {
 
+/** Where a camera is, the point it looks at, and how far it sees. **/
+struct Looking {
+    glm::vec3 eye{0.0F};
+    glm::vec3 at{0.0F};
+    float farPlane = 100.0F;
+};
+
+/** A camera to fit cascades to, described for a check that does not use the fit. **/
+struct Viewed final {
+    glm::mat4 viewProjection;
+    glm::vec3 eye;
+    glm::vec3 forward;
+    float near = 0.5F;
+    /** whether every ray runs along forward, rather than out from the eye **/
+    bool orthographic = false;
+};
+
+/** A point of a view, and its distance from the near plane. **/
+struct Sampled final {
+    glm::vec3 point;
+    float distance = 0.0F;
+};
+
 /**
  * Where a world point lands in clip space, after the perspective divide. An orthographic matrix
  * leaves w at one, so the divide changes nothing for it.
@@ -94,13 +117,6 @@ glm::vec3 towards() {
     return glm::normalize(glm::vec3(-0.45F, 0.62F, 0.64F));
 }
 
-/** Where a camera is, the point it looks at, and how far it sees. **/
-struct Looking {
-    glm::vec3 eye{0.0F};
-    glm::vec3 at{0.0F};
-    float farPlane = 100.0F;
-};
-
 /**
  * A perspective camera's view projection, looking from an eye at a point.
  **/
@@ -140,6 +156,65 @@ std::vector<glm::vec3> viewCorners(const glm::mat4& viewProjection, float distan
         }
     }
     return corners;
+}
+
+/**
+ * Whether a cascade reaches a point's distance, and check that the point lies in the sphere of
+ * every cascade that does. Cascade i reaches from split i - 1, less the blend, to split i.
+ **/
+bool covers(const lighting::Cascades& fitted, const std::vector<float>& splits, const Sampled& sampled) {
+    bool covered = false;
+    for (std::size_t i = 0; i < fitted.count; i++) {
+        const float from = i == 0 ? 0.0F : splits[i - 1] * (1.0F - fitted.blend);
+        if (sampled.distance < from - 1e-3F || sampled.distance > splits[i] + 1e-3F) {
+            continue;
+        }
+        covered = true;
+        BOOST_CHECK_LE(glm::length(sampled.point - fitted.bounds[i].centre), fitted.bounds[i].radius * 1.0001F);
+    }
+    return covered;
+}
+
+/**
+ * Check that every point of a view out to the last split lies in a cascade that reaches it, and
+ * so in that cascade's sphere. A cascade reaches from the end of the one before it, less the
+ * blend, to its own split, so the two share a band. The points lie along rays through the edges
+ * and the inside of the picture, stepped evenly by distance, so each shared band is sampled
+ * finely. The distance is measured from the camera, not from what the fit returns, and the
+ * fit's plane gives the same distance.
+ **/
+void checkCovered(const Viewed& viewed, const std::vector<float>& splits) {
+    const float blend = 0.1F;
+    const std::optional<lighting::Cascades> fitted = lighting::fitCascades(viewed.viewProjection, splits, towards(),
+        {.texels = 1024, .blend = blend});
+    if (!fitted) {
+        BOOST_ERROR("a view gave no cascades");
+        return;
+    }
+    BOOST_REQUIRE_EQUAL(fitted->count, splits.size());
+    for (std::size_t i = 0; i < splits.size(); i++) {
+        BOOST_CHECK_EQUAL(fitted->far[i], splits[i]);
+    }
+
+    const glm::mat4 inverse = glm::inverse(viewed.viewProjection);
+    const int steps = 400;
+    for (int x = -4; x <= 4; x++) {
+        for (int y = -4; y <= 4; y++) {
+            const glm::vec4 clip = inverse * glm::vec4(static_cast<float>(x) / 4.0F, static_cast<float>(y) / 4.0F, 0.0F, 1.0F);
+            const glm::vec3 onNear = glm::vec3(clip) / clip.w;
+            const glm::vec3 ray = viewed.orthographic ? viewed.forward : glm::normalize(onNear - viewed.eye);
+            for (int step = 0; step <= steps; step++) {
+                const float distance = splits.back() * static_cast<float>(step) / static_cast<float>(steps);
+                const glm::vec3 point = onNear + ray * (distance / glm::dot(ray, viewed.forward));
+                BOOST_CHECK_SMALL(glm::dot(glm::vec3(fitted->plane), point) + fitted->plane.w - distance, 1e-2F);
+                BOOST_CHECK(covers(*fitted, splits, {.point = point, .distance = distance}));
+            }
+        }
+    }
+    // a nearer cascade covers less, so its texels are smaller
+    for (std::size_t i = 1; i < fitted->count; i++) {
+        BOOST_CHECK_LT(fitted->bounds[i - 1].radius, fitted->bounds[i].radius);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE(shadow_test)
@@ -438,81 +513,6 @@ BOOST_AUTO_TEST_CASE(the_view_split_refuses_what_it_cannot_split) {
     BOOST_CHECK(lighting::splitView(0.5F, 90.0F, 0, 0.5F).empty());
     BOOST_CHECK(lighting::splitView(0.5F, 90.0F, lighting::maximumCascades + 1, 0.5F).empty());
     BOOST_CHECK(lighting::splitView(0.5F, 90.0F, 3, nan).empty());
-}
-
-/** A camera to fit cascades to, described for a check that does not use the fit. **/
-struct Viewed final {
-    glm::mat4 viewProjection;
-    glm::vec3 eye;
-    glm::vec3 forward;
-    float near = 0.5F;
-    /** whether every ray runs along forward, rather than out from the eye **/
-    bool orthographic = false;
-};
-
-/** A point of a view, and its distance from the near plane. **/
-struct Sampled final {
-    glm::vec3 point;
-    float distance = 0.0F;
-};
-
-/**
- * Whether a cascade reaches a point's distance, and check that the point lies in the sphere of
- * every cascade that does. Cascade i reaches from split i - 1, less the blend, to split i.
- **/
-bool covers(const lighting::Cascades& fitted, const std::vector<float>& splits, const Sampled& sampled) {
-    bool covered = false;
-    for (std::size_t i = 0; i < fitted.count; i++) {
-        const float from = i == 0 ? 0.0F : splits[i - 1] * (1.0F - fitted.blend);
-        if (sampled.distance < from - 1e-3F || sampled.distance > splits[i] + 1e-3F) {
-            continue;
-        }
-        covered = true;
-        BOOST_CHECK_LE(glm::length(sampled.point - fitted.bounds[i].centre), fitted.bounds[i].radius * 1.0001F);
-    }
-    return covered;
-}
-
-/**
- * Check that every point of a view out to the last split lies in a cascade that reaches it, and
- * so in that cascade's sphere. A cascade reaches from the end of the one before it, less the
- * blend, to its own split, so the two share a band. The points lie along rays through the edges
- * and the inside of the picture, stepped evenly by distance, so each shared band is sampled
- * finely. The distance is measured from the camera, not from what the fit returns, and the
- * fit's plane gives the same distance.
- **/
-void checkCovered(const Viewed& viewed, const std::vector<float>& splits) {
-    const float blend = 0.1F;
-    const std::optional<lighting::Cascades> fitted = lighting::fitCascades(viewed.viewProjection, splits, towards(),
-        {.texels = 1024, .blend = blend});
-    if (!fitted) {
-        BOOST_ERROR("a view gave no cascades");
-        return;
-    }
-    BOOST_REQUIRE_EQUAL(fitted->count, splits.size());
-    for (std::size_t i = 0; i < splits.size(); i++) {
-        BOOST_CHECK_EQUAL(fitted->far[i], splits[i]);
-    }
-
-    const glm::mat4 inverse = glm::inverse(viewed.viewProjection);
-    const int steps = 400;
-    for (int x = -4; x <= 4; x++) {
-        for (int y = -4; y <= 4; y++) {
-            const glm::vec4 clip = inverse * glm::vec4(static_cast<float>(x) / 4.0F, static_cast<float>(y) / 4.0F, 0.0F, 1.0F);
-            const glm::vec3 onNear = glm::vec3(clip) / clip.w;
-            const glm::vec3 ray = viewed.orthographic ? viewed.forward : glm::normalize(onNear - viewed.eye);
-            for (int step = 0; step <= steps; step++) {
-                const float distance = splits.back() * static_cast<float>(step) / static_cast<float>(steps);
-                const glm::vec3 point = onNear + ray * (distance / glm::dot(ray, viewed.forward));
-                BOOST_CHECK_SMALL(glm::dot(glm::vec3(fitted->plane), point) + fitted->plane.w - distance, 1e-2F);
-                BOOST_CHECK(covers(*fitted, splits, {.point = point, .distance = distance}));
-            }
-        }
-    }
-    // a nearer cascade covers less, so its texels are smaller
-    for (std::size_t i = 1; i < fitted->count; i++) {
-        BOOST_CHECK_LT(fitted->bounds[i - 1].radius, fitted->bounds[i].radius);
-    }
 }
 
 /**

@@ -5,6 +5,8 @@
 
 #include "Clip.h"
 
+#include <api/animation/internal/Segment.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -32,18 +34,11 @@ glm::quat asQuat(const glm::vec4& value) {
     return glm::quat(value.w, value.x, value.y, value.z);
 }
 
-/** The key a segment starts at, how far through it to sample, and how long it lasts. **/
-struct Segment {
-    std::size_t key = 0;
-    float u = 0.0F;
-    float span = 0.0F;
-};
-
 /**
  * Hermite between two keys, as glTF's cubic spline defines it: each key's value and its out or
  * in tangent, the tangents scaled by the time between the keys.
  **/
-glm::vec4 hermite(const Channel& channel, const Segment& segment) {
+glm::vec4 hermite(const Channel& channel, const internal::Segment& segment) {
     const std::size_t key = segment.key;
     const float u = segment.u;
     const float span = segment.span;

@@ -70,6 +70,16 @@ class Frustum final {
     const std::array<Plane, PLANE_COUNT>& planes() const noexcept;
 
  private:
+    /**
+     * A frustum plane is a combination of the matrix's rows: its w row times one weight plus
+     * one of its x, y or z rows times another.
+     *
+     * glm is column major, so row i component k is matrix[k][i]. Reading matrix[i][k] would
+     * extract the planes of the transposed matrix. Unless the matrix is symmetric, that is a
+     * different frustum.
+     **/
+    static Plane rowPlane(const glm::mat4& matrix, unsigned int row, float wWeight, float rowWeight);
+
     std::array<Plane, PLANE_COUNT> planes_;
 };
 

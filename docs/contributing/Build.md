@@ -122,10 +122,10 @@ has been added. Two checks run after every library is added, and either one stop
 - **`v3d_api_verify_manifest`** compares the manifest with the link lines. It fails on a
   difference in either direction and prints the line that is wrong. When you add a package or an
   api library to a library's `CMakeLists.txt`, add it to the manifest too.
-- **`v3d_api_verify_visibility`** reads every header of every api library. It fails when a header
-  includes another api library that its own library links PRIVATE or not at all. It also fails
-  when a PUBLIC link to another api library is not needed by any header. See
-  [Linking rules](#linking-rules).
+- **`v3d_api_verify_visibility`** reads every header of every api library but those under an
+  `internal/` directory. It fails when a header includes another api library that its own
+  library links PRIVATE or not at all. It also fails when a PUBLIC link to another api library is
+  not needed by any header. See [Linking rules](#linking-rules).
 
 The checks run at configure time, so a header edited afterwards is checked at the next configure.
 CI configures on every run.
@@ -245,7 +245,9 @@ component rather than the variable.
 one. It does not check the api libraries, which the configure checks.
 
 **PUBLIC or PRIVATE:** link a package or another api library PUBLIC when one of the library's
-headers includes it, and PRIVATE when only its sources do. The configure enforces this for api
+headers includes it, and PRIVATE when only its sources do. A header under the library's
+`internal/` directory counts as a source here, because only the library's own sources and tests
+include it. The configure enforces this for api
 libraries (see [the manifest checks](#the-manifest-is-checked-on-every-configure)). A wrong
 visibility can otherwise compile for as long as some other library happens to export the same
 dependency.

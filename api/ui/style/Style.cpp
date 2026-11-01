@@ -62,6 +62,12 @@ std::vector< boost::shared_ptr<Property>  > Style::getPropertySet(const std::str
     return props;
 }
 
+void Style::under(const Style& lower) {
+    for (const auto& [key, property] : lower.properties_) {
+        properties_.try_emplace(key, property);
+    }
+}
+
 void readColour(const boost::shared_ptr<Style>& target, const std::string& name, glm::vec4* into) {
     if (!target) {
         return;

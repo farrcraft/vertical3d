@@ -89,7 +89,7 @@ needs.
 - **Keep `sdl3`'s `vulkan` feature.** Without it, `SDL_Vulkan_LoadLibrary` fails at startup with
   "No dynamic Vulkan support in current SDL video driver (windows)". The app fails with an
   unhandled exception, not a build error.
-- **Copy the `baseline` commit in `vcpkg-configuration.json` exactly.** The baseline fixes every
+- **Copy the `builtin-baseline` commit in `vcpkg.json` exactly.** The baseline fixes every
   package's version. A boost library's file name includes its version, so a different baseline
   gives a different boost, and the result is a link error far from its cause. Nothing checks that
   your baseline matches vertical3d's.
@@ -337,9 +337,9 @@ git -C vendor/vertical3d pull
 Then rebuild. A breaking change appears as a compile error in your build. After updating, check
 two files:
 
-- **`vcpkg-configuration.json`.** If vertical3d's baseline changed, copy it again.
-- **`vcpkg.json`.** If vertical3d's package list changed, update yours. Yours is the one that is
-  installed.
+- **`vcpkg.json`.** If vertical3d's baseline or package list changed, update yours. Yours is
+  the one that is installed.
+- **`vcpkg-configuration.json`.** If vertical3d's registries changed, copy it again.
 
 The api is still changing, so expect to update a call site now and then.
 

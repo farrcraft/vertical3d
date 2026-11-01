@@ -15,7 +15,7 @@
 #include "Item.h"
 #include "Scene.h"
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * The items a file's scene becomes, with their hierarchy and their curves, ready to be put into
@@ -56,4 +56,4 @@ struct Import final {
  **/
 Import importScene(const v3d::interchange::Scene& scene, float rate);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

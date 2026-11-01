@@ -7,7 +7,7 @@
 
 #include <api/type/Transform.h>
 
-namespace v3d::editor {
+namespace v3d::editor::command {
 
 /**
  * Whether two placements are the same to within a tolerance.
@@ -19,4 +19,4 @@ namespace v3d::editor {
  **/
 bool same(const v3d::type::Transform& first, const v3d::type::Transform& second);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::command

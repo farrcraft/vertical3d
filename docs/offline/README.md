@@ -21,7 +21,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 ### Glossary
 
 - **RI** (RenderMan Interface): the C API a RenderMan renderer exposes, such as `RiPolygon`
-  and `RiSurface`. moya declares all of it in `moya/libmoya/RenderMan.h`.
+  and `RiSurface`. moya declares all of it in `moya/libmoya/ri/RenderMan.h`.
 - **RIB** (RenderMan Interface Bytestream): a text file of RI calls, one **request** per call,
   such as `Polygon "P" [...]`. It is the scene format moya reads.
 - **Parameter list**: the name and value pairs that end a request, such as `"Cs" [1 0 0]`. Each
@@ -29,9 +29,9 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 - **RIB reader**: `offline::rib::Reader`. It tokenises a RIB file and calls one handler method
   per request.
 - **Handler**: `offline::rib::Handler`, a C++ interface with one virtual method per request.
-  moya implements it as `moya::RIBHandler`.
+  moya implements it as `moya::ri::RIBHandler`.
 - **Graphics state**: the current transformation, colour, opacity, surface shader and lights,
-  plus the frame's options. `moya::RenderContext` holds it, as the classes below.
+  plus the frame's options. `moya::state::RenderContext` holds it, as the classes below.
 - **Primitive**: one piece of geometry: a polygon, a sphere, or one segment of a curve.
 - **Hider**: the stage that decides what is visible at each sample. moya has two, selected by
   the `Hider` request: `"hidden"` (the reyes hider, and RI's default) and `"raytrace"`.
@@ -59,9 +59,9 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 ### The pipeline
 
 ```
-scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics state)
+scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics state)
                                                       |  WorldEnd
-                                     reyes::Hider ("hidden") or RayHider ("raytrace")
+                               reyes::Hider ("hidden") or raytrace::Hider ("raytrace")
                                                       |  samples
                                    offline::Film -> planes -> imager -> image file
 ```
@@ -79,14 +79,15 @@ scene.rib -> rib::Reader -> moya::RIBHandler -> moya::RenderContext (graphics st
 5. The imager shader, if the scene names one, runs over the planes.
 6. The colour planes are written to the output file.
 
-**The RI C entry points in `RenderMan.cxx` are an adapter over `RIBHandler`.** Each converts
+**The RI C entry points in `ri/RenderMan.cxx` are an adapter over `RIBHandler`.** Each converts
 its arguments into the request the handler takes and passes it on, so a C call and a file's
-request follow the same rules. The conversion is all an entry point does: RI_NULL becomes the
-empty name, a filter function becomes a `Filter`, and the untyped parameter arrays become a list
-typed by the handler's declarations. The reader cannot call the C entry points instead, because
-most take varargs and a `va_list` cannot be built at run time.
+request follow the same rules. The conversion is all an entry point does. `ri::internal::Converter`
+holds each conversion: RI_NULL becomes the empty name, a filter function becomes a `Filter`, and
+the untyped parameter arrays become a list typed by the handler's declarations. Arguments the RIB
+reader would refuse in a file skip the request. The reader cannot call the C entry points instead,
+because most take varargs and a `va_list` cannot be built at run time.
 
-- `moya::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
+- `moya::ri::Renderer` is the C interface's stack of handlers. `RiBegin` pushes one and `RiEnd`
   pops it. The active handler receives every call, and `RiGetContext`'s handle is the handler.
 - `RIBHandler` ignores a request whose shader, light or space name is empty.
 - Every C entry point has a definition, but many are empty: every quadric but the sphere, and
@@ -103,7 +104,8 @@ most take varargs and a `va_list` cannot be built at run time.
 ### The render context
 
 **`RenderContext` has one method per RI request**, and holds the world from `WorldBegin` to
-`WorldEnd`. Each part of the graphics state is a class of its own in `moya/libmoya/`:
+`WorldEnd`. Each part of the graphics state is a class of its own in `moya::state`, in
+`moya/libmoya/state/`:
 
 | Class | Holds |
 |---|---|
@@ -112,18 +114,18 @@ most take varargs and a `va_list` cannot be built at run time.
 | `Attributes` | Everything `AttributeBegin` saves but the transformation. A block saves and restores the whole value |
 | `Lights` | The lights a scene created, which last for the frame. Which are on is an attribute |
 | `Shaders` | The shader library, the textures, the imager, and whether any bound shader traces |
-| `TracedScene` | The scene a ray meets, which every primitive is added to |
+| `raytrace::Scene` | The scene a ray meets, which every primitive is added to. It is in `moya/libmoya/raytrace/`, beside the ray hider |
 | `Display` | `Display` and `CropWindow`, and the finishing of a frame |
 | `Progress` | The callback a render reports to, and whether it was asked to stop |
 
-The planes a frame is drawn into are `context().picture()`, indexed by `moya::Planes`.
+The planes a frame is drawn into are `context().picture()`, indexed by `moya::state::Planes`.
 
 ### The two hiders
 
 **A hider is a `moya::Hider`.** It reports whether it sees only the traced scene
 (`traces()`), and it renders what the context gathered (`render()`). `RenderContext` holds one.
-`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::RayHider`. A hider name moya does
-not recognise is logged, and the current hider stays.
+`"hidden"` is `moya::reyes::Hider` and `"raytrace"` is `moya::raytrace::Hider`. A hider name
+moya does not recognise is logged, and the current hider stays.
 
 Both hiders read one graphics state and one camera, write one framebuffer, and share the film,
 the shading language and the ray tracer. They differ in these ways:

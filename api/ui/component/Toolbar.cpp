@@ -117,9 +117,21 @@ bool Toolbar::press(const glm::vec2& cursor) {
     // the gap between the buttons and the edges of the strip takes the press and does
     // nothing with it, so a click that misses a button does not reach the scene under it
     if (over) {
+        over->state(Button::STATE_PRESS);
         v3d::ui::input::send(dispatcher_.get(), over->event());
     }
     return true;
+}
+
+/**
+ **/
+void Toolbar::release(const glm::vec2& cursor) {
+    const boost::shared_ptr<Button> over = buttonAt(cursor);
+    for (const boost::shared_ptr<Button>& button : buttons_) {
+        if (button && button->state() == Button::STATE_PRESS) {
+            button->state(button == over ? Button::STATE_HOVER : Button::STATE_NORMAL);
+        }
+    }
 }
 
 /**

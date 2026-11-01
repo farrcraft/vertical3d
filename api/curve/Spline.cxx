@@ -15,14 +15,7 @@
 
 namespace v3d::curve {
 
-namespace {
-
-/**
- * de Boor's algorithm over the degree + 1 points that shape one span.
- *
- * local holds the points span - degree to span, and knots is indexed as the points are.
- **/
-glm::vec4 deBoor(std::vector<glm::vec4> local, const float* knots, std::size_t span, unsigned int degree, float u) {
+glm::vec4 Spline::deBoor(std::vector<glm::vec4> local, const float* knots, std::size_t span, unsigned int degree, float u) {
     for (unsigned int level = 1; level <= degree; level++) {
         for (unsigned int j = degree; j >= level; j--) {
             const std::size_t index = span - degree + j;
@@ -32,8 +25,6 @@ glm::vec4 deBoor(std::vector<glm::vec4> local, const float* knots, std::size_t s
     }
     return local[degree];
 }
-
-};  // namespace
 
 Spline::Spline(const Nurbs& nurbs, bool closed) : degree_(nurbs.order - 1), polynomial_(true) {
     const std::size_t count = nurbs.points.size();

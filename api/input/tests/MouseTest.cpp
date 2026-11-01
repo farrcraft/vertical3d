@@ -48,12 +48,28 @@ struct Recorder {
     std::vector<v3d::event::Event> source_;
 };
 
-/** An event type, the button, and where the cursor was. **/
+/** An event type, the button, where the cursor was, and how many clicks in succession. **/
 struct Click {
     uint32_t type = SDL_EVENT_MOUSE_BUTTON_DOWN;
     uint8_t button = SDL_BUTTON_LEFT;
     float x = 0.0F;
     float y = 0.0F;
+    uint8_t clicks = 1;
+};
+
+/** How far the wheel turned, and where the cursor was. **/
+struct Wheel {
+    float notches = 0.0F;
+    float x = 0.0F;
+    float y = 0.0F;
+};
+
+/** Where the cursor is, and how far it moved. **/
+struct Motion {
+    float x = 0.0F;
+    float y = 0.0F;
+    float dx = 0.0F;
+    float dy = 0.0F;
 };
 
 SDL_Event buttonEvent(const Click& spec) {
@@ -62,15 +78,9 @@ SDL_Event buttonEvent(const Click& spec) {
     event.button.button = spec.button;
     event.button.x = spec.x;
     event.button.y = spec.y;
+    event.button.clicks = spec.clicks;
     return event;
 }
-
-/** How far the wheel turned, and where the cursor was. **/
-struct Wheel {
-    float notches = 0.0F;
-    float x = 0.0F;
-    float y = 0.0F;
-};
 
 SDL_Event wheelEvent(const Wheel& spec) {
     SDL_Event event{};
@@ -81,14 +91,6 @@ SDL_Event wheelEvent(const Wheel& spec) {
     event.wheel.mouse_y = spec.y;
     return event;
 }
-
-/** Where the cursor is, and how far it moved. **/
-struct Motion {
-    float x = 0.0F;
-    float y = 0.0F;
-    float dx = 0.0F;
-    float dy = 0.0F;
-};
 
 SDL_Event motionEvent(const Motion& spec) {
     SDL_Event event{};
@@ -175,6 +177,42 @@ BOOST_AUTO_TEST_CASE(mouse_motion_test) {
     SDL_Event key{};
     key.type = SDL_EVENT_KEY_DOWN;
     BOOST_CHECK_EQUAL(mouse.handleEvent(key), false);
+}
+
+/**
+ * A button's edge carries how many clicks in succession the platform counted, so a double
+ * click can be told from two single ones.
+ **/
+BOOST_AUTO_TEST_CASE(a_button_carries_its_clicks) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::input::Mouse mouse(boost::make_shared<v3d::event::Context>("mouse"), dispatcher);
+    Recorder recorder;
+    dispatcher->sink<v3d::event::kind::MouseButton>().connect<&Recorder::button>(recorder);
+
+    mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_LEFT}));
+    mouse.handleEvent(buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_LEFT, .clicks = 2}));
+    BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 2U);
+    BOOST_CHECK_EQUAL(recorder.buttons_[0].clicks(), 1U);
+    BOOST_CHECK_EQUAL(recorder.buttons_[1].clicks(), 2U);
+}
+
+/**
+ * A motion carries the modifier keys held as it happened, so a drag can change with Ctrl.
+ **/
+BOOST_AUTO_TEST_CASE(a_motion_carries_the_modifiers_held) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::input::Mouse mouse(boost::make_shared<v3d::event::Context>("mouse"), dispatcher);
+    Recorder recorder;
+    dispatcher->sink<v3d::event::kind::MouseMotion>().connect<&Recorder::motion>(recorder);
+
+    SDL_SetModState(SDL_KMOD_RCTRL);
+    mouse.handleEvent(motionEvent({.x = 3.0F}));
+    SDL_SetModState(SDL_KMOD_NONE);
+    mouse.handleEvent(motionEvent({.x = 4.0F}));
+    BOOST_REQUIRE_EQUAL(recorder.motion_.size(), 2U);
+    BOOST_CHECK(recorder.motion_[0].modifiers().ctrl);
+    BOOST_CHECK(!recorder.motion_[0].modifiers().shift);
+    BOOST_CHECK(!recorder.motion_[1].modifiers().ctrl);
 }
 
 /**

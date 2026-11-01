@@ -18,13 +18,11 @@ using v3d::render::realtime::vulkan::pipeline::Pipeline;
 namespace {
 
 /**
- * A stand-in for a descriptor set. check() tests only whether a pass names one, so nothing
- * ever binds it.
+ * A stand-in for a descriptor set, at the address of the caller's placeholder. check() tests
+ * only whether a pass names one, so nothing ever binds it.
  **/
-int placeholder = 0;
-
-VkDescriptorSet someSet() {
-    return reinterpret_cast<VkDescriptorSet>(&placeholder);
+VkDescriptorSet someSet(int* placeholder) {
+    return reinterpret_cast<VkDescriptorSet>(placeholder);
 }
 
 BOOST_AUTO_TEST_SUITE(recorder_check_test)
@@ -74,7 +72,8 @@ BOOST_AUTO_TEST_CASE(a_scene_pipeline_needs_a_scene_set) {
     BOOST_CHECK_THROW(Recorder::check(bare, lit), std::runtime_error);
 
     Pass scene("scene");
-    scene.scene(someSet());
+    int placeholder = 0;
+    scene.scene(someSet(&placeholder));
     BOOST_CHECK_NO_THROW(Recorder::check(scene, lit));
 }
 

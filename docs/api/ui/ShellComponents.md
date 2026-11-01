@@ -26,17 +26,22 @@ menu_ = boost::make_shared<v3d::ui::shell::GameMenu>(ui, [this](bool suspended) 
 
 - It shows and hides a container, `game-menu` by default, and drives the `Menu` inside it,
   `main-menu` by default. Both names can be passed to the constructor.
+- The container dims the game behind it with the theme's `backdrop`, whatever its document
+  says. The menu is drawn as a centred menu, in the safe area under its title, with the chosen
+  item's three cues ([Components.md](Components.md#notes-on-individual-components)).
 - `GameMenu::declare(commands, menu)` registers its commands in the `ui` context:
-  `showGameMenu` toggles it, and `menuPrevious`, `menuNext` and `selectMenu` navigate it
-  while it is up. An app calls it from its constructor, before the menu exists, and passes the
-  member it will hold the menu in. Each command does nothing while that member is empty. An app
-  binds these in its mappings, for example `escape` to `showGameMenu`. These command names
-  cannot be changed.
+  `showGameMenu` toggles it, `menuPrevious`, `menuNext` and `selectMenu` navigate it
+  while it is up, and `menuLess` and `menuMore` step the chosen slider. An app calls it from
+  its constructor, before the menu exists, and passes the member it will hold the menu in.
+  Each command does nothing while that member is empty. An app binds these in its mappings,
+  for example `escape` to `showGameMenu`. These command names cannot be changed.
 - `toggle()` opens the menu, or steps back out of a submenu. Closing the top level resumes
   the game.
 - The `Suspend` callback runs with `true` as the menu opens and `false` as it closes. Do
   only small things in it, such as setting a flag. Tearing something down inside it can
   break the toggle that called it.
+- `item(command)` finds the item that sends a command, in any submenu. An app gives a
+  setting's item the value the game holds, so the row shows it before the player changes it.
 - `capturing()` is true while an input item is waiting for a value. The app sends the next
   key to `capture(value)` instead of acting on it. This is how a rebinding screen works.
 - If the document names no such container, every call does nothing and the game runs without
@@ -52,6 +57,9 @@ builds one unless told not to.
   nanoseconds, the simulation steps the last frame ran, and a list of named timing spans.
   The app copies these out of `engine::Statistics`.
 - `size` defaults to 16 pixels, smaller than the ui's own text.
+- It is drawn in the theme's `hud` style named `statistics`, or its first `hud` style: a plate
+  of the panel's colour as opaque as `plate-opacity`, with the text over it
+  ([Themes.md](Themes.md#text-over-the-scene)). `Screen` hands it the style each frame.
 - `device(name)` sets a top line naming the GPU. `Screen` sets it from
   `Device::description()` when it builds the overlay.
 - `lines(sample)` returns the frame's lines without drawing them, and `content(sample)` returns

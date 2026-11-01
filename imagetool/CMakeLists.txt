@@ -1,4 +1,4 @@
-add_executable(imagetool "imagetool.cxx")
+add_executable(imagetool "SheetRequest.h" "imagetool.cxx")
 
 # Boost::program_options is named here rather than reached through a library: imagetool
 # parses its own command line.

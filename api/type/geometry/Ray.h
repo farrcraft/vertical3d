@@ -110,6 +110,20 @@ class Ray final {
     bool intersects(const Plane& plane, float* distance) const;
 
  private:
+    /**
+     * A direction shorter than this is degenerate. A triangle determinant smaller than this
+     * means the ray runs in the plane of the triangle, where the barycentric solution is
+     * meaningless.
+     **/
+    static constexpr float epsilon = 1e-7F;
+
+    /**
+     * Whether every component of a ray's origin and direction is finite. Each intersection test
+     * rejects a ray that is not. A comparison with NaN is false, so a NaN ray would otherwise
+     * pass every rejection test.
+     **/
+    static bool finite(const glm::vec3& origin, const glm::vec3& direction);
+
     glm::vec3 origin_;
     glm::vec3 direction_;
 };

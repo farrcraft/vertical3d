@@ -4,8 +4,8 @@ This page is for someone writing an app against the api, or changing how text is
 covers `api/font`. Terms are defined in the [glossary](README.md#glossary).
 
 `api/font` (`v3d::font`) rasterizes typefaces with FreeType into a texture atlas and lays out
-text as quads. Most apps do not use it directly: `ui::paint::TextRenderer` owns a font, its atlas
-and the drawing of text. See [ui/](ui/README.md).
+text as quads. Most apps do not use it directly: `ui::paint::TextRenderer` owns the faces, their
+atlas and the drawing of text. See [ui/](ui/README.md).
 
 - **`TextureFont(filename, size, logger, spread)`** loads one face at one size.
   - With `spread` 0 the glyphs are plain coverage.
@@ -22,6 +22,12 @@ and the drawing of text. See [ui/](ui/README.md).
   `glyph(TextureFont::SOLID)` is an opaque white square, used to draw lines and backgrounds.
 - `packed(charcode)` returns a glyph only if it is already packed, and never adds one. Use it
   once the atlas has been uploaded, since a glyph packed afterwards is not on the device.
+- **`fallback(font)`** gives a face another face for the code points it lacks. `loadGlyphs()`
+  packs each code point the face has no glyph for into the fallback, and `packed()` looks there
+  for it, so the text buffer lays out a string that mixes the two as one font. The fallback has
+  to pack into the same atlas at the same size. Several faces may share one fallback, and a code
+  point is packed into it once. A face with no fallback packs its own missing glyph for a code
+  point it lacks.
 - `ascender()`, `descender()`, `height()`, `linegap()`, `underlinePosition()` and
   `underlineThickness()` are the face's metrics.
 - **`width(utf8, size)`** measures a UTF-8 string at a size from the packed glyphs alone. A

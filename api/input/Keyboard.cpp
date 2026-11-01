@@ -5,11 +5,13 @@
 
 #include "Keyboard.h"
 
+#include <api/event/Chord.h>
 #include <api/event/Source.h>
 #include <api/event/State.h>
 #include <api/event/kind/KeyDown.h>
 #include <api/event/kind/KeyUp.h>
 #include <api/event/kind/TextInput.h>
+#include <api/input/internal/Named.h>
 
 #include <algorithm>
 #include <string>
@@ -19,16 +21,7 @@ namespace v3d::input {
 
 namespace {
 
-/**
- * Every key this library has a name for, and the name. Read in both directions: an SDL key
- * to the name a binding and a text box use, and a name back to whether it is one.
- **/
-struct Named {
-    SDL_Keycode key;
-    std::string_view name;
-};
-
-constexpr Named KEYS[] = {
+constexpr internal::Named KEYS[] = {
     {SDLK_ESCAPE, "escape"},
     {SDLK_RETURN, "return"},
     {SDLK_A, "a"},
@@ -120,7 +113,7 @@ constexpr Named KEYS[] = {
 /**
  **/
 std::string keyName(SDL_Keycode key) {
-    for (const Named& named : KEYS) {
+    for (const internal::Named& named : KEYS) {
         if (named.key == key) {
             return std::string(named.name);
         }
@@ -131,7 +124,7 @@ std::string keyName(SDL_Keycode key) {
 /**
  **/
 bool isKeyName(std::string_view name) {
-    return std::ranges::any_of(KEYS, [name](const Named& named) { return named.name == name; });
+    return std::ranges::any_of(KEYS, [name](const internal::Named& named) { return named.name == name; });
 }
 
 /**
@@ -144,6 +137,13 @@ void Keyboard::flush() {
  **/
 const KeyState& Keyboard::state() const {
     return state_;
+}
+
+v3d::event::Modifiers modifiers(SDL_Keymod held) noexcept {
+    return v3d::event::Modifiers{
+        .ctrl = (held & SDL_KMOD_CTRL) != 0,
+        .shift = (held & SDL_KMOD_SHIFT) != 0,
+        .alt = (held & SDL_KMOD_ALT) != 0};
 }
 
 /**
@@ -186,6 +186,7 @@ bool Keyboard::handleEvent(const SDL_Event& event) {
     v3d::event::Source source(name, context(), pressed ? v3d::event::State::Pressed : v3d::event::State::Released);
     // only a press can repeat, so a release is never marked as one
     source.repeat(pressed && event.key.repeat);
+    source.modifiers(modifiers(event.key.mod));
     v3d::event::publish(*dispatcher(), source);
 
     return true;

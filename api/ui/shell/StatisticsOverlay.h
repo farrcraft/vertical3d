@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/TextRenderer.h>
 
 #include <array>
@@ -14,6 +15,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui::shell {
 
@@ -89,8 +91,12 @@ class StatisticsOverlay final {
 
     /**
      * Append the overlay to a canvas, or nothing at all while it is hidden.
+     *
+     * @param dress what the readout is dressed in, as text over the scene is: its text, and a
+     *        plate of the panel's colour as opaque as the plate opacity and with its corners
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const Sample& sample,
+        const paint::Dressing& dress = paint::Dressing());
 
     /**
      * The frame's lines, top to bottom.
@@ -122,6 +128,22 @@ class StatisticsOverlay final {
     std::vector<std::string> content(const Sample& sample) const;
 
  private:
+    /**
+     * The gap from the corner of the canvas to the box, and from the box to the text inside it.
+     **/
+    static constexpr float margin = 8.0F;
+    static constexpr float padding = 6.0F;
+    /**
+     * A line's height as a multiple of the size the readout is drawn at.
+     **/
+    static constexpr float lineSpacing = 1.3F;
+    static constexpr double nanosecondsPerMillisecond = 1000000.0;
+    static constexpr double nanosecondsPerSecond = 1000000000.0;
+    /**
+     * A duration in nanoseconds, as milliseconds to one decimal place.
+     **/
+    static std::string milliseconds(std::uint64_t nanoseconds);
+
     boost::shared_ptr<paint::TextRenderer> text_;
     float size_;
     bool visible_;

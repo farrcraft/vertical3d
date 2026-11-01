@@ -85,6 +85,24 @@ class TextureArray final {
     uint32_t taken() const noexcept;
 
  private:
+    /**
+     * The most slots an array has. Each slot costs a descriptor in the one set, written once, so
+     * the size bounds how many textures a context holds at once rather than any per-frame cost.
+     **/
+    static constexpr uint32_t mostSlots = 4096;
+
+    /**
+     * Descriptors left over for the other sets a pipeline declares beside the array, such as the
+     * lit scene's shadow map, under the device's per-stage limit.
+     **/
+    static constexpr uint32_t otherSamplers = 16;
+
+    /**
+     * How many slots the device allows: the fewest of its per-stage and per-set limits on samplers
+     * and sampled images, less what other sets may take, and no more than mostSlots.
+     **/
+    static uint32_t slots(VkPhysicalDevice physical);
+
     boost::shared_ptr<device::Device> device_;
     boost::shared_ptr<frame::Ring> ring_;
     VkDescriptorSetLayout layout_;

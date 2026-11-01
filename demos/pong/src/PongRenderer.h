@@ -48,6 +48,21 @@ class PongRenderer final {
     void shutdown();
 
  private:
+    // the court is drawn over black, so a window of another shape shows where it ends
+    static constexpr glm::vec4 barColour{0.0F, 0.0F, 0.0F, 1.0F};
+    static constexpr glm::vec4 courtColour{0.06F, 0.07F, 0.10F, 1.0F};
+    static constexpr glm::vec4 boardColour{0.35F, 0.35F, 0.35F, 1.0F};
+    static constexpr glm::vec4 ballColour{1.0F, 1.0F, 1.0F, 1.0F};
+
+    static constexpr unsigned int ballSides = 32;
+    static constexpr unsigned int centreLineWidth = 14;
+
+    // where the scores sit, as fractions of the court: a quarter of the way down, centred over
+    // each half
+    static constexpr float scoreRow = 0.25F;
+    static constexpr float leftScoreColumn = 0.25F;
+    static constexpr float rightScoreColumn = 0.75F;
+
     void drawBoard();
     void drawScores();
     void drawBall(float alpha);

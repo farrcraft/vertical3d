@@ -111,6 +111,148 @@ struct Recorder {
     std::vector<v3d::event::Event> events_;
 };
 
+const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
+const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
+
+/**
+ * A position on a plane, which the engine can draw between two steps.
+ **/
+struct Position2D final {
+    glm::vec2 value{0.0F};
+};
+
+/**
+ * An engine whose simulation moves every Position2D one unit along x, so a case can tell what
+ * a step saw before it moved anything.
+ **/
+class SteppingEngine final : public v3d::engine::Engine {
+ public:
+    explicit SteppingEngine(const std::string& path) : Engine(path) {
+    }
+
+    using Engine::interpolate;
+    using Engine::registry;
+    using Engine::step;
+
+    bool simulate(float /* step */) override {
+        for (auto [entity, position] : registry().view<Position2D>().each()) {
+            position.value.x += 1.0F;
+        }
+        return true;
+    }
+};
+
+template <typename T>
+concept ShutsDown = requires(T& engine) { engine.shutdown(); };
+template <typename T>
+concept Quits = requires(T& engine) { engine.quit(); };
+static_assert(!ShutsDown<TestEngine>);
+static_assert(Quits<TestEngine>);
+
+/**
+ * How often an engine's hooks ran, kept outside the engine so a test can read them after
+ * run() has destroyed it.
+ **/
+struct Lifecycle final {
+    int started = 0;
+    int released = 0;
+    bool starts = true;
+    bool throws = false;
+};
+
+/**
+ * An engine with no features that counts its hooks. One that starts asks to quit at once, so
+ * run() returns without a window or a frame.
+ **/
+class LifecycleEngine final : public v3d::engine::Engine {
+ public:
+    LifecycleEngine(const std::string& path, Lifecycle* counts) :
+        Engine(path),
+        counts_(counts) {
+    }
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+    bool start() override {
+        counts_->started++;
+        quit();
+        return counts_->starts;
+    }
+
+    bool release() override {
+        counts_->released++;
+        if (counts_->throws) {
+            throw std::runtime_error("the device was lost");
+        }
+        return true;
+    }
+
+ private:
+    Lifecycle* counts_;
+};
+
+/**
+ * An engine with no features whose first tick pushes a window-minimized event. A timer on
+ * SDL's timer thread pushes a restore later, and the first tick after the restore quits. Every
+ * tick is counted, and so is each one that ran while minimized.
+ **/
+class MinimizedEngine final : public v3d::engine::Engine {
+ public:
+    explicit MinimizedEngine(const std::string& path) :
+        Engine(path) {
+    }
+
+    bool tick(unsigned int /* delta */) override {
+        ticks_++;
+        if (minimized_ && !restored_) {
+            ticksWhileMinimized_++;
+        }
+        if (ticks_ == 1) {
+            push(SDL_EVENT_WINDOW_MINIMIZED);
+        }
+        // a loop that never waits would spin until the restore, so it is stopped here
+        if (restored_ || ticksWhileMinimized_ > 1000) {
+            quit();
+        }
+        return true;
+    }
+
+    bool onEvent(const SDL_Event& event) override {
+        if (event.type == SDL_EVENT_WINDOW_MINIMIZED) {
+            minimized_ = true;
+            SDL_AddTimer(50, restore, nullptr);
+        } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
+            restored_ = true;
+        }
+        return false;
+    }
+
+    int ticks_ = 0;
+    int ticksWhileMinimized_ = 0;
+    bool minimized_ = false;
+    bool restored_ = false;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
+    }
+
+ private:
+    static void push(Uint32 type) {
+        SDL_Event event{};
+        event.type = type;
+        SDL_PushEvent(&event);
+    }
+
+    static Uint32 restore(void* /* user */, SDL_TimerID /* timer */, Uint32 /* interval */) {
+        push(SDL_EVENT_WINDOW_RESTORED);
+        return 0;
+    }
+};
+
 v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
     const std::string& name, v3d::event::State state) {
     return v3d::event::Source(name, context, state);
@@ -123,9 +265,6 @@ v3d::event::Source source(const boost::shared_ptr<v3d::event::Context>& context,
 std::string appPath(const std::string& fixture) {
     return "fixtures/" + fixture + "/";
 }
-
-const v3d::engine::Features configFeature = v3d::engine::Feature::Config;
-const v3d::engine::Features boundFeature = v3d::engine::Feature::Config | v3d::engine::Feature::KeyboardInput;
 
 /**
  * The identity the lifecycle cases run under. It has no organization, so the engine keeps no
@@ -440,6 +579,27 @@ BOOST_AUTO_TEST_CASE(engine_base_tick_and_render_test) {
 }
 
 /**
+ * A command bound to a chord is held while its key and its modifier are both down, the
+ * modifier on either side of the keyboard.
+ **/
+BOOST_AUTO_TEST_CASE(engine_held_follows_a_chord_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+
+    engine.offer(keyDown(SDLK_S));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyDown(SDLK_RCTRL));
+    BOOST_CHECK(engine.held("project::save"));
+    engine.offer(keyUp(SDLK_RCTRL));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyDown(SDLK_LCTRL));
+    BOOST_CHECK(engine.held("project::save"));
+    engine.offer(keyUp(SDLK_S));
+    BOOST_CHECK(!engine.held("project::save"));
+    engine.offer(keyUp(SDLK_LCTRL));
+}
+
+/**
  * A command is held while the key bound to it is, whether the binding fires on both edges or
  * on the press alone.
  **/
@@ -503,37 +663,9 @@ BOOST_AUTO_TEST_CASE(engine_saves_and_restores_a_rebinding_test) {
     BOOST_CHECK(later.held("pong::leftPaddleUp"));
 }
 
-/**
- * A position on a plane, which the engine can draw between two steps.
- **/
-struct Position2D final {
-    glm::vec2 value{0.0F};
-};
-
 Position2D interpolate(const Position2D& from, const Position2D& to, float alpha) {
     return Position2D{glm::mix(from.value, to.value, alpha)};
 }
-
-/**
- * An engine whose simulation moves every Position2D one unit along x, so a case can tell what
- * a step saw before it moved anything.
- **/
-class SteppingEngine final : public v3d::engine::Engine {
- public:
-    explicit SteppingEngine(const std::string& path) : Engine(path) {
-    }
-
-    using Engine::interpolate;
-    using Engine::registry;
-    using Engine::step;
-
-    bool simulate(float /* step */) override {
-        for (auto [entity, position] : registry().view<Position2D>().each()) {
-            position.value.x += 1.0F;
-        }
-        return true;
-    }
-};
 
 /**
  * A step snapshots each registered type before it simulates, so an entity's Previous holds
@@ -702,62 +834,6 @@ BOOST_AUTO_TEST_CASE(engine_answers_ui_fullscreen_test) {
     BOOST_TEST(!engine.quitting());
 }
 
-template <typename T>
-concept ShutsDown = requires(T& engine) { engine.shutdown(); };
-template <typename T>
-concept Quits = requires(T& engine) { engine.quit(); };
-static_assert(!ShutsDown<TestEngine>);
-static_assert(Quits<TestEngine>);
-
-namespace {
-
-/**
- * How often an engine's hooks ran, kept outside the engine so a test can read them after
- * run() has destroyed it.
- **/
-struct Lifecycle final {
-    int started = 0;
-    int released = 0;
-    bool starts = true;
-    bool throws = false;
-};
-
-/**
- * An engine with no features that counts its hooks. One that starts asks to quit at once, so
- * run() returns without a window or a frame.
- **/
-class LifecycleEngine final : public v3d::engine::Engine {
- public:
-    LifecycleEngine(const std::string& path, Lifecycle* counts) :
-        Engine(path),
-        counts_(counts) {
-    }
-
- protected:
-    v3d::engine::Features features() const override {
-        return v3d::engine::Features();
-    }
-
-    bool start() override {
-        counts_->started++;
-        quit();
-        return counts_->starts;
-    }
-
-    bool release() override {
-        counts_->released++;
-        if (counts_->throws) {
-            throw std::runtime_error("the device was lost");
-        }
-        return true;
-    }
-
- private:
-    Lifecycle* counts_;
-};
-
-};  // namespace
-
 /**
  * run() starts an app once and releases it once, and the release happens whether start()
  * succeeded or not, since start() may have built something before it failed.
@@ -785,69 +861,6 @@ BOOST_AUTO_TEST_CASE(engine_a_release_that_throws_is_a_failure_test) {
     BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>("engine_test.exe", lifecycle(), &throwing), EXIT_FAILURE);
     BOOST_CHECK_EQUAL(throwing.released, 1);
 }
-
-namespace {
-
-/**
- * An engine with no features whose first tick pushes a window-minimized event. A timer on
- * SDL's timer thread pushes a restore later, and the first tick after the restore quits. Every
- * tick is counted, and so is each one that ran while minimized.
- **/
-class MinimizedEngine final : public v3d::engine::Engine {
- public:
-    explicit MinimizedEngine(const std::string& path) :
-        Engine(path) {
-    }
-
-    bool tick(unsigned int /* delta */) override {
-        ticks_++;
-        if (minimized_ && !restored_) {
-            ticksWhileMinimized_++;
-        }
-        if (ticks_ == 1) {
-            push(SDL_EVENT_WINDOW_MINIMIZED);
-        }
-        // a loop that never waits would spin until the restore, so it is stopped here
-        if (restored_ || ticksWhileMinimized_ > 1000) {
-            quit();
-        }
-        return true;
-    }
-
-    bool onEvent(const SDL_Event& event) override {
-        if (event.type == SDL_EVENT_WINDOW_MINIMIZED) {
-            minimized_ = true;
-            SDL_AddTimer(50, restore, nullptr);
-        } else if (event.type == SDL_EVENT_WINDOW_RESTORED) {
-            restored_ = true;
-        }
-        return false;
-    }
-
-    int ticks_ = 0;
-    int ticksWhileMinimized_ = 0;
-    bool minimized_ = false;
-    bool restored_ = false;
-
- protected:
-    v3d::engine::Features features() const override {
-        return v3d::engine::Features();
-    }
-
- private:
-    static void push(Uint32 type) {
-        SDL_Event event{};
-        event.type = type;
-        SDL_PushEvent(&event);
-    }
-
-    static Uint32 restore(void* /* user */, SDL_TimerID /* timer */, Uint32 /* interval */) {
-        push(SDL_EVENT_WINDOW_RESTORED);
-        return 0;
-    }
-};
-
-};  // namespace
 
 /**
  * A minimized window shows nothing, so the loop sleeps until an event arrives rather than

@@ -63,6 +63,88 @@ class Compiler final {
         int symbol = 0;
     };
 
+    static constexpr unsigned int SURFACE = 1U << 0;
+    static constexpr unsigned int LIGHT = 1U << 1;
+    static constexpr unsigned int IMAGER = 1U << 2;
+    static constexpr unsigned int DISPLACEMENT = 1U << 3;
+
+    /**
+     * A shader global: which shader types have it, and which of them may write it.
+     *
+     * The table follows the standard. A name in the table is reported as belonging to the
+     * shader types that have it. A light shader that mentions `Ci` is told that `Ci` belongs to
+     * a surface and an imager shader, not that it is undeclared.
+     **/
+    class Global final {
+     public:
+        const char* name;
+        Type type;
+        Storage storage;
+        unsigned int shaders;
+        unsigned int writable;
+        /**
+         * Readable only inside a lighting construct, in a shader that cannot write it. In a
+         * surface shader, L and Cl are set by the light the illuminance body is running for.
+         **/
+        bool lighting;
+    };
+
+    static constexpr Global GLOBALS[] = {
+        // a displacement shader moves the surface, so it writes P and N, and reads where it is
+        { "P", Type::POINT, Storage::VARYING, SURFACE | LIGHT | IMAGER | DISPLACEMENT, DISPLACEMENT, false },
+        { "N", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, DISPLACEMENT, false },
+        { "Ng", Type::NORMAL, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "I", Type::VECTOR, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "E", Type::POINT, Storage::UNIFORM, SURFACE | DISPLACEMENT, 0, false },
+        { "Cs", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
+        { "Os", Type::COLOR, Storage::VARYING, SURFACE, 0, false },
+        { "s", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "t", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "u", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "v", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "du", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "dv", Type::FLOAT, Storage::VARYING, SURFACE | DISPLACEMENT, 0, false },
+        { "Ci", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
+        { "Oi", Type::COLOR, Storage::VARYING, SURFACE | IMAGER, SURFACE | IMAGER, false },
+        { "Ps", Type::POINT, Storage::VARYING, LIGHT, 0, false },
+        // an imager reads and writes alpha. A pixel it paints counts as covered, and the
+        // "background" imager writes alpha to record that
+        { "alpha", Type::FLOAT, Storage::VARYING, IMAGER, IMAGER, false },
+        // a light writes these. A surface reads them, and only inside an illuminance body
+        { "L", Type::VECTOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true },
+        { "Cl", Type::COLOR, Storage::VARYING, SURFACE | LIGHT, LIGHT, true }
+    };
+
+    static unsigned int bit(ShaderType type);
+
+    /**
+     * Which shader types a global belongs to, as prose for a diagnostic.
+     **/
+    static std::string owners(unsigned int shaders);
+
+    static std::string article(ShaderType type);
+
+    /**
+     * The type a call's arguments promote to, as an arithmetic operator promotes its operands.
+     * Void when two of them have no arithmetic between them, such as a colour and a point.
+     **/
+    static Type promoted(const std::vector<Type> & given);
+
+    /**
+     * Whether one way of calling a standard library function takes these argument types.
+     **/
+    static bool suits(const Signature & signature, const std::vector<Type> & given);
+
+    static bool defines(const std::vector<syntax::Function> & functions, const std::string & name);
+
+    /**
+     * Every name an expression calls, added once. adopt() collects these from the tree before
+     * any name has been resolved.
+     **/
+    static void gather(const syntax::ExpressionPtr & expression, std::vector<std::string>* called);
+
+    static void gather(const syntax::StatementPtr & statement, std::vector<std::string>* called);
+
     void declareGlobals();
     void declareParameters();
     int declare(const std::string & name, Type type, Storage storage, Symbol::Role role,

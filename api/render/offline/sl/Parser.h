@@ -53,6 +53,24 @@ class Parser final {
     const std::string & error() const;
 
  private:
+    static std::string position(const Token & token);
+
+    /**
+     * What a token is, for a diagnostic. An END has no text to quote, so the diagnostic says
+     * "end of source" rather than showing an empty pair of quotes.
+     **/
+    static std::string describe(const Token & token);
+
+    /**
+     * Whether a keyword names a message passing call. "surface" and "displacement" are shader types
+     * at the top of a file, and inside a shader's body they can only be calls.
+     **/
+    static bool messageCall(const Token & token);
+
+    static bool shaderType(const Token & token, ShaderType* type);
+
+    static bool assignment(const Token & token);
+
     /**
      * Thrown by the productions and caught by parse(), so that a production reads like its
      * grammar rule and not like a chain of null checks.

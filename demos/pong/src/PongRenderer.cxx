@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
 #include <api/shell/Shell.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 
@@ -17,32 +18,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-
-namespace {
-
-/**
- * The size the ui and the scores are drawn at. Glyphs are distance fields, so the atlas
- * is scaled to this size rather than rasterized at it.
- **/
-const float fontSize = 28.0F;
-
-// the court is drawn over black, so a window of another shape shows where it ends
-constexpr glm::vec4 barColour(0.0F, 0.0F, 0.0F, 1.0F);
-constexpr glm::vec4 courtColour(0.06F, 0.07F, 0.10F, 1.0F);
-constexpr glm::vec4 boardColour(0.35F, 0.35F, 0.35F, 1.0F);
-constexpr glm::vec4 ballColour(1.0F, 1.0F, 1.0F, 1.0F);
-constexpr glm::vec4 scoreColour(0.85F, 0.85F, 0.85F, 1.0F);
-
-const unsigned int ballSides = 32;
-const unsigned int centreLineWidth = 14;
-
-// where the scores sit, as fractions of the court: a quarter of the way down, centred over
-// each half
-constexpr float scoreRow = 0.25F;
-constexpr float leftScoreColumn = 0.25F;
-constexpr float rightScoreColumn = 0.75F;
-
-};  // namespace
 
 /**
  **/
@@ -57,9 +32,7 @@ PongRenderer::PongRenderer(const boost::shared_ptr<v3d::window::Window>& window,
     court_.space(glm::vec2(PongScene::width, PongScene::height), v3d::render::realtime::canvas::Canvas::Fit::Contain);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
-    shell_->present(&engine_, options);
+    shell_->present(&engine_, v3d::shell::Shell::game());
 }
 
 /**
@@ -132,8 +105,14 @@ void PongRenderer::drawScores() {
     const std::string left = boost::lexical_cast<std::string>(scene_->left().score());
     const std::string right = boost::lexical_cast<std::string>(scene_->right().score());
 
-    shell_->screen()->text()->draw(&court_, left, glm::vec2(width * leftScoreColumn, height * scoreRow), scoreColour, fontSize);
-    shell_->screen()->text()->draw(&court_, right, glm::vec2(width * rightScoreColumn, height * scoreRow), scoreColour, fontSize);
+    // drawn over the court in the theme's text, centred on a point of the court, so each score
+    // stays over its half whatever the window's shape
+    v3d::ui::shell::Screen* screen = shell_->screen();
+    const glm::vec2 centre(0.5F, 0.5F);
+    screen->components().hud(&screen->canvas(), { left },
+        { .at = court_.toPixels(glm::vec2(width * leftScoreColumn, height * scoreRow)), .anchor = centre });
+    screen->components().hud(&screen->canvas(), { right },
+        { .at = court_.toPixels(glm::vec2(width * rightScoreColumn, height * scoreRow)), .anchor = centre });
 }
 
 /**

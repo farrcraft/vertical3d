@@ -156,6 +156,21 @@ class LitScene final {
     Grade& grade() noexcept;
 
  private:
+    /**
+     * The scene target, after the checks every other member is built on.
+     **/
+    static boost::shared_ptr<RenderTarget> sceneTarget(const DeviceContext& context, const LitScene::Spec& spec);
+
+    /**
+     * The shadow map: a sampled depth layer per cascade, or nothing for a scene with no shadow.
+     **/
+    static boost::shared_ptr<RenderTarget> shadowMap(const DeviceContext& context, const LitScene::Spec& spec);
+
+    /**
+     * The lit pipelines, built against the scene target and the shadow map, if there is one.
+     **/
+    static renderer::Lit::Spec litSpec(const LitScene::Spec& spec, const RenderTarget& scene, const boost::shared_ptr<RenderTarget>& map);
+
     std::string name_;
     glm::vec4 clearColour_;
     boost::shared_ptr<log::Logger> logger_;

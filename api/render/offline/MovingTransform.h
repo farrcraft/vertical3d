@@ -81,6 +81,30 @@ class MovingTransform final {
 
  private:
     /**
+     * A matrix as a translation, a rotation and a scale along each axis, with any shear folded
+     * into the rotation's columns before they are normalised. Only an invertible matrix is taken
+     * apart this way.
+     **/
+    class Parts {
+     public:
+        explicit Parts(const glm::mat4x4 & matrix);
+
+        glm::vec3 translation;
+        glm::vec3 scale;
+        glm::quat rotation;
+    };
+
+    /** The least determinant, relative to the basis lengths, that counts as invertible. **/
+    static constexpr float SMALLEST_DETERMINANT = 1.0e-6F;
+
+    /**
+     * Whether a transformation has an inverse. The determinant is measured against the lengths of
+     * the basis columns, so a small uniform scale is invertible and only a flattened one is not.
+     * Written so that a NaN has no inverse.
+     **/
+    static bool invertible(const glm::mat4x4 & matrix);
+
+    /**
      * Decomposes both ends, which at() then only blends. Called whenever the ends change
      * while the transformation moves.
      **/

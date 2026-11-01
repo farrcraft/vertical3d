@@ -12,6 +12,7 @@
 #include "Menu.h"
 #include "Type.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -56,10 +57,16 @@ std::string_view Item::label() const {
 /**
  **/
 std::string Item::text() const {
+    return label_ + shown();
+}
+
+/**
+ **/
+std::string Item::shown() const {
     if (!hasValue_) {
-        return label_;
+        return std::string();
     }
-    const std::string value = std::visit([](auto&& held) -> std::string {
+    return std::visit([](auto&& held) -> std::string {
         using T = std::decay_t<decltype(held)>;
         if constexpr (std::is_same_v<T, std::string>) {
             return held;
@@ -69,7 +76,47 @@ std::string Item::text() const {
             return std::to_string(held);
         }
     }, value_);
-    return label_ + value;
+}
+
+/**
+ **/
+void Item::range(const Range& span) {
+    range_ = span;
+    if (hasValue_ && std::holds_alternative<int>(value_)) {
+        value_ = std::clamp(std::get<int>(value_), range_.minimum, std::max(range_.minimum, range_.maximum));
+    }
+}
+
+/**
+ **/
+const Item::Range& Item::range() const noexcept {
+    return range_;
+}
+
+/**
+ **/
+bool Item::step(int direction) {
+    if (type_ != menu::ItemType::Slider || direction == 0) {
+        return false;
+    }
+    const int was = hasValue_ && std::holds_alternative<int>(value_) ? std::get<int>(value_) : range_.minimum;
+    const int stride = direction > 0 ? range_.step : -range_.step;
+    const int moved = std::clamp(was + stride, range_.minimum, std::max(range_.minimum, range_.maximum));
+    const bool changed = !hasValue_ || moved != was;
+    value(moved);
+    return changed;
+}
+
+/**
+ **/
+void Item::binds(const v3d::event::Event& command) {
+    binds_ = command;
+}
+
+/**
+ **/
+const v3d::event::Event& Item::binds() const noexcept {
+    return binds_;
 }
 
 /**
@@ -123,6 +170,30 @@ void Item::checked(bool on) {
  **/
 bool Item::checked() const {
     return (type_ == menu::ItemType::Check || type_ == menu::ItemType::Radio) && checked_;
+}
+
+void Item::icon(const std::string& source) {
+    if (source == icon_) {
+        return;
+    }
+    icon_ = source;
+    image_ = v3d::ui::Image();
+}
+
+std::string_view Item::icon() const {
+    return icon_;
+}
+
+const v3d::ui::Image& Item::image() const noexcept {
+    return image_;
+}
+
+void Item::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
+}
+
+bool Item::separator() const noexcept {
+    return type_ == menu::ItemType::Separator;
 }
 
 };  // namespace v3d::ui::component::menu

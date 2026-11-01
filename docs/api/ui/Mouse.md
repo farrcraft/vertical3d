@@ -35,7 +35,9 @@ any press the ui did not take.
 
 How a point is routed:
 
-- Each visible container is offered the point, in the order the document lists them. The
+- A press goes first to an open menu bar, in whichever container holds it. An open menu takes
+  every press, including one that lands on a container listed before its own.
+- Otherwise each visible container is offered the point, in the order the ui holds them. The
   first container that takes it ends the search.
 - Within a container, the menu bars are offered the point first, then the toolbars, then the
   component tree. This is the reverse of the draw order.
@@ -56,6 +58,11 @@ Hover:
 - A button lights up under the cursor, on a strip or in the tree. Only the component a press
   would land on is lit, so unpickable labels never flicker as the cursor crosses them.
 - Hover is a button state only. No other component has a hover look.
+- A press on a button, on a strip or in the tree, draws it in the `pressed` colour until the
+  press comes up. It is then hovered if the cursor is still on it, and normal if not.
+- `motion()` writes what the cursor rests on as `Interface::hovered()`: the component in the
+  tree, or the toolbar button. A press clears it. The screen shows that component's
+  [tooltip](Components.md#tooltips).
 
 Everything is tested against the boxes left by the last draw. **Draw before routing input,**
 or an app sees a dead ui for one frame. Nothing can be picked before the first frame is

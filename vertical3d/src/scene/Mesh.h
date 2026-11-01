@@ -13,7 +13,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * A mesh placed in the scene.
@@ -45,4 +45,4 @@ class Mesh final : public Item {
     boost::shared_ptr<v3d::brep::BRep> geometry_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

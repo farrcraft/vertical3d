@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
@@ -102,6 +103,27 @@ class Immediate {
     void text(const paint::Measure& measure, const paint::Write& write);
 
     /**
+     * How the app draws text in the semibold face. A window's title and a table's header are
+     * drawn through it when the dressing's titleWeight is semibold. Without one, they are drawn
+     * through the write given to text().
+     **/
+    void titles(const paint::Write& write);
+
+    /**
+     * Draw larger or smaller. Every size of the dressing goes back to the built-in one at this
+     * scale, and a theme's sizes are multiplied by it, from the next theme(). The colours are
+     * kept.
+     **/
+    void scale(float factor);
+
+    /**
+     * The time the next frame is drawn at. A change of a widget's fill eases over the
+     * dressing's hover duration on this clock. A layer that is never given a clock draws every
+     * change at once.
+     **/
+    void clock(const Clock& now) noexcept;
+
+    /**
      * @return the colours and metrics, to be changed in place. They start from
      *      paint::Dressing::tools()
      **/
@@ -171,6 +193,19 @@ class Immediate {
     void endWindow();
 
     /**
+     * Open a region at a place the caller decides: a window with no title bar, which does not
+     * move or fold. An app draws one as a panel that fills part of its own layout.
+     *
+     * What goes in it is clipped to its edges and scrolls as a window's does, and it takes the
+     * cursor from what was drawn before it. Pair every call with endRegion().
+     *
+     * @param name the region's id, which is not drawn
+     * @param alpha what its background is drawn at, 0 to draw none
+     **/
+    void region(const std::string& name, const v3d::type::geometry::Bound2D::Area& area, float alpha);
+    void endRegion();
+
+    /**
      * One line of text at the pen.
      **/
     void text(const std::string& line);
@@ -209,12 +244,44 @@ class Immediate {
     bool selectable(const std::string& label, bool selected);
 
     /**
+     * How a row of a tree sits: how deep it is, whether it folds, and whether it is chosen.
+     **/
+    struct TreeRow final {
+        unsigned int depth = 0;  /**< how many levels down, each indenting the row by a line **/
+        bool* open = nullptr;    /**< read and written - whether what is beneath it shows, or null for a row with nothing beneath it **/
+        bool selected = false;   /**< drawn highlighted **/
+    };
+
+    /**
+     * A row of a tree that spans the width, indented by its depth. A row with something
+     * beneath it has a mark before its label, pointing right while folded and down while open,
+     * and a click on the mark folds or opens it.
+     *
+     * @return whether the row was clicked anywhere but its mark
+     **/
+    bool treeRow(const std::string& label, const TreeRow& row);
+
+    /**
      * An integer scrubbed by dragging across it.
      *
      * @param value read and written; left alone when nothing dragged
      * @return whether the value changed this frame
      **/
     bool dragInt(const std::string& label, int* value, int low, int high);
+
+    /**
+     * A number scrubbed by dragging across it, or typed into after a click that does not drag.
+     * The label is drawn at the left in secondary text and the value at the right.
+     *
+     * A drag starts once the press has travelled a few pixels, and moves the value by speed
+     * for each pixel. A typed value is taken when the field gives up the keyboard, as a text
+     * field does, unless escape gave it up or what was typed is not a finite number.
+     *
+     * @param value read and written; left alone when nothing changed it
+     * @param speed how far the value moves for each pixel the cursor travels
+     * @return whether the value changed this frame
+     **/
+    bool dragFloat(const std::string& label, float* value, float speed);
 
     /**
      * A filled track spanning the width, with a line of text over it.
@@ -320,6 +387,13 @@ class Immediate {
      * answers as text does, so a tooltip can say why it is disabled.
      **/
     bool itemHovered() const noexcept;
+
+    /**
+     * Whether an edit of the item just drawn ended this frame: a drag of a number was let go,
+     * or a field gave up the keyboard. A caller that applies each change as it comes records
+     * the whole edit as one change here.
+     **/
+    bool itemFinished() const noexcept;
 
     /**
      * A key went down. A text field that holds the keyboard edits its line with it.
@@ -452,6 +526,46 @@ class Immediate {
     void endTable();
 
  private:
+    /**
+     * How far a scrub moves the value for each pixel the cursor travels. One unit per pixel is
+     * too fast to land on a number by hand and too slow to cross a wide range; a quarter is a
+     * compromise between the two.
+     **/
+    static constexpr float scrubRate = 0.25F;
+    /**
+     * The most units one frame's drag may move a value. A larger step is not a hand on a mouse, and
+     * is ignored.
+     **/
+    static constexpr int32_t scrubLimit = 1000000;
+    /**
+     * The side of the square a bullet is drawn in, as a fraction of a row.
+     **/
+    static constexpr float bulletScale = 0.28F;
+    /**
+     * How many segments a bullet is drawn with.
+     **/
+    static constexpr unsigned int bulletSides = 8;
+    /**
+     * How far a tree row's fold mark reaches from its middle, and how thick its strokes are, as
+     * fractions of a line.
+     **/
+    static constexpr float foldScale = 0.18F;
+    static constexpr float foldWidth = 0.08F;
+    /**
+     * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
+     **/
+    static constexpr float tickInset = 0.25F;
+    /**
+     * How wide the mark at the right end of a combo is, as a fraction of a row.
+     **/
+    static constexpr float comboMark = 0.4F;
+    /**
+     * How far a press on a title bar has to travel before it moves the window instead of
+     * folding it. Wide enough that a hand resting on the button does not drag,
+     * and narrow enough that a move that was meant is never read as a fold.
+     **/
+    static constexpr float dragThreshold = 3.0F;
+
     std::unique_ptr<immediate::Context> context_;
 };
 

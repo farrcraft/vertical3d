@@ -11,7 +11,10 @@
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Pass.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/shell/Shell.h>
+#include <api/type/geometry/Bound2D.h>
+#include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 
@@ -22,50 +25,10 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <string_view>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-
-namespace {
-
-/**
- * The size the ui and the side panel are drawn at. Glyphs are distance fields, so the atlas
- * is scaled to this size rather than rasterized at it.
- **/
-const float fontSize = 22.0F;
-
-/**
- * The piece colours, which are also the texture file names and the names a shape in
- * pieces/shapes.txt gives itself.
- **/
-const char* const colours[] = { "red", "cyan", "blue", "green", "orange", "purple", "yellow" };
-
-/**
- * The size of the atlas the seven 64x64 block textures are packed into. Three fit across a
- * row, so seven need three rows. The atlas keeps a one texel gutter around each texture.
- **/
-const unsigned int atlasSize = 256;
-
-/**
- * How many cells of well width the panel beside it is given, for the preview and the
- * score. The two together decide how big a cell can be.
- **/
-const float panelCells = 6.0F;
-
-const float margin = 16.0F;
-
-/**
- * The height of a line of text, as a multiple of the text's size.
- **/
-constexpr float lineSpacing = 1.4F;
-
-constexpr glm::vec4 backgroundColour(0.09F, 0.09F, 0.11F, 1.0F);
-constexpr glm::vec4 wellColour(0.04F, 0.04F, 0.05F, 1.0F);
-constexpr glm::vec4 borderColour(0.30F, 0.30F, 0.34F, 1.0F);
-constexpr glm::vec4 textColour(0.85F, 0.85F, 0.85F, 1.0F);
-constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
-
-};  // namespace
 
 /**
  **/
@@ -78,9 +41,7 @@ TetrisRenderer::TetrisRenderer(const boost::shared_ptr<v3d::window::Window>& win
     loadPieces(assetManager, logger);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
-    shell_->present(&engine_, options);
+    shell_->present(&engine_, v3d::shell::Shell::game());
     screen_ = shell_->screen();
 }
 
@@ -198,7 +159,8 @@ void TetrisRenderer::drawWell(const Layout& metrics) {
     const glm::vec2 max = min + glm::vec2(metrics.cell * static_cast<float>(board->columns()), metrics.cell * static_cast<float>(board->rows()));
     const float border = 2.0F;
 
-    screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), borderColour);
+    // the well's edge is the theme's, so it takes the game's colours with the panel beside it
+    screen_->canvas().rect(min - glm::vec2(border, border), max + glm::vec2(border, border), screen_->components().dressing().border);
     screen_->canvas().rect(min, max, wellColour);
 }
 
@@ -262,25 +224,25 @@ void TetrisRenderer::drawBlock(const std::string& colour, const glm::vec2& min, 
  **/
 void TetrisRenderer::drawPanel(const Layout& metrics) {
     const GameBoard* board = scene_->board();
-    const float line = fontSize * lineSpacing;
-    // the panel's rows, counted in lines from its top
+    const v3d::ui::paint::ComponentRenderer& hud = screen_->components();
+    const float line = hud.hud(std::string_view()).lineHeight;
+    // the panel's blocks, counted in lines from its top
     constexpr float nextLabelRow = 3.0F;
-    constexpr float previewRow = 3.5F;
-    constexpr float gameOverRow = 7.0F;
-    constexpr float debugRow = 9.0F;
+    constexpr float gameOverRow = 8.0F;
+    constexpr float debugRow = 10.0F;
     // the preview is drawn a little smaller than the well, so a four wide tetrad fits the
     // panel it was given
     constexpr float previewScale = 0.75F;
-    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0F), line);
+    const glm::vec2 panel = metrics.origin + glm::vec2(metrics.cell * (static_cast<float>(board->columns()) + 1.0F), 0.0F);
+    v3d::render::realtime::canvas::Canvas* canvas = &screen_->canvas();
 
-    screen_->text()->draw(&screen_->canvas(), "SCORE", panel, textColour, fontSize);
-    screen_->text()->draw(&screen_->canvas(), boost::lexical_cast<std::string>(scene_->score()), panel + glm::vec2(0.0F, line), textColour, fontSize);
+    hud.hud(canvas, { "SCORE", boost::lexical_cast<std::string>(scene_->score()) }, { .at = panel });
 
-    screen_->text()->draw(&screen_->canvas(), "NEXT", panel + glm::vec2(0.0F, line * nextLabelRow), textColour, fontSize);
-    drawTetrad(board->nextTetrad(), panel + glm::vec2(0.0F, line * previewRow), metrics.cell * previewScale);
+    const v3d::type::geometry::Bound2D next = hud.hud(canvas, { "NEXT" }, { .at = panel + glm::vec2(0.0F, line * nextLabelRow) });
+    drawTetrad(board->nextTetrad(), next.position() + glm::vec2(0.0F, next.size().y + (line * 0.5F)), metrics.cell * previewScale);
 
     if (board->over()) {
-        screen_->text()->draw(&screen_->canvas(), "GAME OVER", panel + glm::vec2(0.0F, line * gameOverRow), textColour, fontSize);
+        hud.hud(canvas, { "GAME OVER" }, { .at = panel + glm::vec2(0.0F, line * gameOverRow) });
     }
 
     if (scene_->debug()) {
@@ -289,6 +251,6 @@ void TetrisRenderer::drawPanel(const Layout& metrics) {
         const std::string state =
             boost::lexical_cast<std::string>(position.first) + "," + boost::lexical_cast<std::string>(position.second) +
             " " + boost::lexical_cast<std::string>(current.width()) + "x" + boost::lexical_cast<std::string>(current.height());
-        screen_->text()->draw(&screen_->canvas(), state, panel + glm::vec2(0.0F, line * debugRow), textColour, fontSize);
+        hud.hud(canvas, { state }, { .at = panel + glm::vec2(0.0F, line * debugRow) });
     }
 }

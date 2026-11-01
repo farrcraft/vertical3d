@@ -9,6 +9,7 @@
 #include <api/event/Event.h>
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
+#include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 
 #include <functional>
@@ -23,7 +24,8 @@ namespace v3d::ui::shell {
  * The menu a game puts up over itself, and the commands that drive it.
  *
  * The container is shown and hidden, not the menu. A component is visible from the moment
- * it is built, so the menu's own visible() does not say whether the menu is up.
+ * it is built, so the menu's own visible() does not say whether the menu is up. The container
+ * dims the game behind it with the theme's backdrop, whatever its document says.
  *
  * Both names come from the app's ui config. When the container is not found, every call
  * here does nothing, so a game whose config names no menu still runs, without one.
@@ -68,8 +70,9 @@ class GameMenu {
     GameMenu(const boost::shared_ptr<Interface>& engine, const Suspend& suspend);
 
     /**
-     * Register the menu's commands: "ui::showGameMenu" toggles it, and "ui::menuPrevious",
-     * "ui::menuNext" and "ui::selectMenu" navigate it. A held key's repeats toggle nothing.
+     * Register the menu's commands: "ui::showGameMenu" toggles it, "ui::menuPrevious",
+     * "ui::menuNext" and "ui::selectMenu" navigate it, and "ui::menuLess" and "ui::menuMore"
+     * step the chosen slider. A held key's repeats toggle nothing.
      *
      * An app calls this from its constructor, before the menu exists, and passes the member it
      * will hold the menu in. Each command does nothing while that member is empty.
@@ -99,13 +102,20 @@ class GameMenu {
 
     /**
      * Act on one of the navigation commands an app's bindings send while the menu is up:
-     * "menuPrevious", "menuNext" and "selectMenu", which the mappings in an app's data
-     * directory name.
+     * "menuPrevious", "menuNext", "selectMenu", "menuLess" and "menuMore", which the mappings
+     * in an app's data directory name.
      *
      * @return whether the command was one of them and was acted on. A command that arrives
      *         while the menu is down returns false
      **/
     bool navigate(const std::string_view& command);
+
+    /**
+     * @return the menu's item that sends the named command, in any submenu, or null when there
+     *         is none. An app gives a setting's item the value the game holds, as the menu opens
+     *         or as the game starts
+     **/
+    boost::shared_ptr<component::menu::Item> item(std::string_view command) const;
 
     /**
      * Whether an input item is capturing. While it is, the app passes its keys to capture()

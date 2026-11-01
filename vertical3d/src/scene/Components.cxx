@@ -14,7 +14,7 @@
 #include <set>
 #include <vector>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  **/
@@ -83,4 +83,4 @@ void Components::clear() noexcept {
     parts_.clear();
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

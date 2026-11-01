@@ -13,9 +13,7 @@
 
 namespace v3d::render::offline::rib {
 
-namespace {
-
-bool storageWord(const std::string & word, Declaration::Storage * storage) {
+bool Declaration::storageWord(const std::string & word, Declaration::Storage * storage) {
     if (word == "constant") {
         *storage = Declaration::Storage::CONSTANT;
     } else if (word == "uniform") {
@@ -30,7 +28,7 @@ bool storageWord(const std::string & word, Declaration::Storage * storage) {
     return true;
 }
 
-bool typeWord(const std::string & word, Declaration::Type * type) {
+bool Declaration::typeWord(const std::string & word, Declaration::Type * type) {
     if (word == "float") {
         *type = Declaration::Type::FLOAT;
     } else if (word == "integer" || word == "int") {
@@ -55,10 +53,7 @@ bool typeWord(const std::string & word, Declaration::Type * type) {
     return true;
 }
 
-/**
- * Split a trailing "[n]" off a type word.
- **/
-unsigned int arrayCount(std::string * word) {
+unsigned int Declaration::arrayCount(std::string * word) {
     const std::string::size_type open = word->find('[');
     if (open == std::string::npos || word->back() != ']') {
         return 1;
@@ -68,8 +63,6 @@ unsigned int arrayCount(std::string * word) {
     const long count = std::strtol(digits.c_str(), nullptr, 10);  // NOLINT(runtime/int)
     return count > 0 ? static_cast<unsigned int>(count) : 1;
 }
-
-};  // namespace
 
 Declaration::Declaration() noexcept {
 }

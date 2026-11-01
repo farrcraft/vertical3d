@@ -17,3 +17,11 @@ add_custom_command(TARGET v3dtest_shell POST_BUILD
 		"$<TARGET_FILE_DIR:v3dtest_shell>/fixtures"
 	COMMENT "Copying shell test fixtures"
 	VERBATIM)
+
+# The game theme the shell puts beneath a game's own, from the shared data every game copies.
+add_custom_command(TARGET v3dtest_shell POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${V3D_ROOT}/data/ui"
+		"$<TARGET_FILE_DIR:v3dtest_shell>/fixtures/game/data/ui"
+	COMMENT "Copying the game theme into the shell test fixture"
+	VERBATIM)

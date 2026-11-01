@@ -147,6 +147,23 @@ class Settings final {
 
  private:
     /**
+     * The document within userPath(). One name for every app, because the directory is already
+     * this app's.
+     **/
+    static constexpr const char* DOCUMENT = "settings.json";
+
+    /**
+     * The top level key the settings sit under. They are kept off the root so that the format's
+     * "version" key cannot collide with an app setting called version.
+     **/
+    static constexpr const char* ENTRIES = "settings";
+
+    /**
+     * The key the format's version sits under, which asset::readForward() reads.
+     **/
+    static constexpr const char* FORMAT = "version";
+
+    /**
      * @return the stored value for a key, or null when there is none
      **/
     const boost::json::value* find(const std::string& key) const;

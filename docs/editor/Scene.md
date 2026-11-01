@@ -119,7 +119,7 @@ where it lives.
 
 ## Modelling operations
 
-The Transform menu's Poly items act on the selection. Each records one `TopologyCommand`, and
+The Transform menu's Poly items act on the selection. Each records one `command::Topology`, and
 does nothing, with a log line, on a selection it cannot use.
 
 - **Split Edge** (`transform::poly::split_edge`) works under the edge mask. It splits every
@@ -146,11 +146,11 @@ can be tested without it.
 
 ## The scene
 
-`v3d::editor::Scene` is the document being edited. It belongs to the editor, not to the api.
+`v3d::editor::scene::Scene` is the document being edited. It belongs to the editor, not to the api.
 It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
 order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
-**Items.** A scene item is a `v3d::editor::Item`. It has an id unique within one run of the
+**Items.** A scene item is a `v3d::editor::scene::Item`. It has an id unique within one run of the
 editor, a placement that is a `type::Transform`, and the object selection flag. There are five
 kinds:
 
@@ -172,18 +172,24 @@ kinds:
     saved that refers to an item names it by its document id.
 
   An item cannot be copied, because a copy would share both ids.
+- **Name.** `Item::name()` is what the item is called. Any text is a name, an empty one
+  included, and two items may share one, since nothing refers to an item by its name. A new
+  item is named for its kind, with each word begun in capitals, such as `Cube`, `Point Light`
+  or `Group`. An imported item takes its node's name. The document saves the name, so a rename
+  moves the revision. Background:
+  [ADR-0135](../adr/0135-editor-item-names-are-labels-that-need-not-be-unique.md)
 - **Placement.** `placement()` is a translation, a rotation and a scale, measured in the space of
   the item's parent. A command undoes a gesture by setting all three at once. `matrix()` composes
   them as translation × rotation × scale, which is the item's local matrix. Where the item is in
   the world comes from the scene's evaluation. `translation(v)` sets the position, and
   `translate(v)` adds an offset to it. A camera and a light ignore their scale.
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
-  its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is the item's
-  own count of changes, which every placement setter and every setter of what its kind holds adds
-  one to, and for a mesh `BRep::changes()` or for a curve `Curves::changes()` as well. A setter
-  that writes what is already there counts too. Each count only goes up, so the sum moves exactly
-  when one of them does. A change of selection does not move it. A save writes an item again only
-  when its revision has moved.
+  its name, its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is
+  the item's own count of changes, which the name's setter, every placement setter and every
+  setter of what its kind holds adds one to. A mesh adds `BRep::changes()` to it, and a curve
+  `Curves::changes()`. A setter that writes what is already there counts too. Each count only
+  goes up, so the sum moves exactly when one of them does. A change of selection does not move
+  it. A save writes an item again only when its revision has moved.
 - **Kinds.** `Item::kind()` names an item's class, and `as<T>(item)` casts to that class, or
   gives an empty pointer for any other kind. `Scene::mesh(id)` is the typed lookup for a mesh,
   and `Scene::item(id)` finds any kind.
@@ -192,7 +198,7 @@ kinds:
   `selected<Mesh>()` gives the `Meshes` an operation on components works through. Component
   selection lives inside those meshes and may span several of them. A modelling operation runs
   once on a `BRep` that two selected items share.
-- **Visitors.** Code that reads the whole scene implements `SceneVisitor` and is passed to
+- **Visitors.** Code that reads the whole scene implements `scene::Visitor` and is passed to
   `Scene::accept()`, which calls the `visit` for each item's kind with where one evaluation of
   the scene puts it. Every `visit` is pure, so a new kind does not compile until each visitor
   handles it. The walk is depth first: an item, then everything beneath it, then `leave()` for
@@ -204,12 +210,12 @@ kinds:
   camera profiles read from `data/cameras.json`, and the layout names one profile per view. A
   camera item is part of the document.
 - **Making a camera or a light.** The Create menu's Camera and Light items make one at the
-  active view's eye, facing the way the view looks, through a `CreateCommand`, so the new item
+  active view's eye, facing the way the view looks, through a `command::Create`, so the new item
   is the selection and one undo removes it. `create_camera()` and `create_light()` in
   `src/scene/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
   when the view's would not be valid. A light takes RI's default emission for its type.
 - **Making a curve.** The Create menu's Curve items make one curve of a type, poly, Bezier,
-  Catmull-Rom or NURBS, at the origin through a `CreateCommand`, as a primitive is made.
+  Catmull-Rom or NURBS, at the origin through a `command::Create`, as a primitive is made.
   `create_curve()` in `src/scene/CreateItem.h` makes an S on the ground through four points from
   -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
   clamped knots.
@@ -250,7 +256,7 @@ share one `BRep`.
 - **Removing.** `Scene::remove` takes the item and everything beneath it, at every depth. The
   links among them go too, so adding the items back does not restore the hierarchy.
 - **Grouping.** Create > Group (`create::group`) gathers the uppermost of the selection beneath
-  a new group, through a `GroupCommand`, and the group becomes the selection. The group goes at
+  a new group, through a `command::Group`, and the group becomes the selection. The group goes at
   the mean of the items' origins, with no rotation or scale. When the items all have the same
   parent the group goes beneath it, and has no parent otherwise. Each item's placement changes so
   that it stays where it was in the world. That is exact for an item that keeps its parent's
@@ -268,25 +274,209 @@ item that holds it places it. The cylinder and the cone are open: they have no c
 A viewport is a camera, a rectangle of the window, and a set of display flags. It owns no
 device state.
 
-**Layout.** `data/layout.json` is a tree of vertical and horizontal splits. Each leaf names a
-camera profile. `ViewLayout` turns the tree into one region per leaf, and names each view
-after its profile. A profile shown twice names its second view "Perspective 2" and so on, so
-every view has a pass of its own. A name, camera or split
-that is not a string makes `load()` return false, and so does a split with no children. The
-default layout is Front, Top, Left and Perspective. The menu bar and the toolbars take strips
-along two edges of the window, and the views divide the rest.
+**Areas.** The window is divided into areas, and each area holds one or more editors and shows
+one of them. A viewport is one kind of editor. `AreaLayout` holds the division as a tree of
+vertical and horizontal splits whose leaves are areas. A layout reads like this:
 
-**Shares.** A split divides its area between its children by their shares. A node's `share` is
-a number above zero, a weight against the other children of its split, and a node with none
-has a share of one. A split whose children name no share divides evenly, as the default layout
-does. A share that is not a number above zero makes `load()` return false.
+```json
+{
+  "name": "Modelling",
+  "root": {
+    "split": "horizontal",
+    "children": [
+      { "editors": [{ "kind": "viewport", "camera": "Front" }], "share": 2 },
+      { "editors": [{ "kind": "viewport", "camera": "Top" }, { "kind": "viewport", "camera": "Left" }], "chosen": 1 }
+    ]
+  }
+}
+```
 
-**Dragging a divider.** A press within `ViewLayout::dividerReach` (3 pixels) of the line
-between two views takes hold of it before any tool sees the press, and the drag moves it. The
-two views beside it trade weight, so every other view stays as it was. Each keeps at least
-`ViewLayout::minimumShare` (5%) of its split. Where two dividers meet, the outer split's is
-taken. The shares last as long as the editor runs, and are not written back to
-`data/layout.json`.
+- A node is a split, with `split` and `children`, or an area, with `editors`. A split is
+  `vertical`, which stacks its children, unless it says `horizontal`, which puts them side by
+  side.
+- An area lists at least one editor. Each editor is an object that names its `kind`, and the
+  whole object is the editor's state. A viewport's state names the camera profile it starts
+  from. `chosen` is the index of the editor the area shows, and is 0 when it is missing.
+- `load()` refuses a layout without a root, a split with no children, and a node that is
+  neither. It refuses an area with no editors, an editor with no kind, and a chosen editor the
+  area does not hold. It refuses any of these of the wrong type. A refused layout leaves the one
+  held as it was.
+- `save()` writes the same form, with every share and every chosen editor.
+
+The menu bar and the tool shelf take strips along the top and the left of the window, the
+status bar one along the foot, and the areas divide the rest.
+
+**Viewports for editors.** `AreaViews` gives each viewport editor a `ViewPort`, made from the
+profile its state names, and drops the viewport when its editor goes. A viewport outlasts a
+change of tab, so it keeps its camera and display while its area shows another editor. Each
+viewport's pass is named for its profile and its editor's id, so two views of one profile draw
+apart. The views drawn are the viewports their areas show. A viewport that names no profile the
+editor holds stops the editor at startup.
+
+**Shares and gaps.** A split divides its room between its children by their shares. A node's
+`share` is a number above zero, a weight against the other children of its split, and a node with
+none has a share of one. A share that is not a number above zero is refused. Areas are 3 pixels
+apart, and the same gap runs around the edge of the region they divide. Each extent is rounded
+down to a whole pixel, and the last child of a split takes what that left, so the areas and gaps
+cover the region exactly. Every size in this section is at a ui scale of 1, and is multiplied by
+the ui's scale. The gap is rounded to a whole pixel and is never less than one.
+
+**The frame.** The renderer draws a frame around the areas, over the views and under the ui:
+
+- the gaps, in the theme's `gap`
+- each area's corners, rounded by 4 pixels by covering what lies outside the rounding in `gap`
+- a line just inside each area's edge, in `hairline`, or in the accent, the theme's `focus`, for
+  the active area
+- the lit divider, filled with the accent
+
+The active area is the one the cursor was last in, between drags. The lit divider is the one
+held, or else the one a press would take, unless the ui has the cursor or a tool is dragging.
+Over a lit divider the pointer is a resize cursor, for rows or for columns.
+
+**Dividers.** The gap between two children of a split is a divider. A press within 4 pixels of a
+gap takes hold of its divider before any tool sees the press, and the drag moves it. Where two
+dividers meet, the outer split's is taken.
+
+- The two children beside the divider trade weight, so every other child stays as it was.
+- Neither is made smaller than its least size: 68 pixels for an area, and for a split, room for
+  what it holds. A split that runs the same way as the divider needs the sum of its children and
+  their gaps, and one that runs across needs its largest child.
+- Holding Ctrl snaps the divider to the nearest tenth of its split.
+- Escape or a right click puts the divider back where it was taken.
+- The second press of a double click on a divider gives the two children beside it the same
+  room.
+
+The shares are saved with the rest of the layout, as [Workspaces](#workspaces) describes.
+
+**Changing the layout.** Every area and every editor has an id that lasts while the layout does.
+
+- **Split** divides an area in two. The new half is on the edge asked for and shows a copy of
+  the editor shown. A split in a direction its parent already runs joins the parent, so the tree
+  gains no level. An area with less than two least sizes and a gap is not split.
+- **Join** gives an area's room to the area beside it in the same split, and closes its editors.
+- **Swap** exchanges what two areas hold, and each area keeps its place.
+- **Maximise** gives one area the whole region, and maximising it again gives every area its
+  place back. Behind it the others have no room, and no divider can be taken.
+- **Tabs.** An editor added to an area is shown. An area's only editor cannot be closed, and
+  closing the editor shown shows the one before it. An editor moved to another area is shown
+  there. One dropped on an area's edge makes a new area on that edge. An area that an editor
+  leaves empty gives its room to the area beside it.
+
+A split, a join, a move that empties an area and a drop renumber the areas, let go of a held
+divider and give a maximised area's room back. A split left with one child becomes that child,
+and a split inside one that runs the same way gives its children to that one.
+
+**Headers and tabs.** `AreaChrome` gives each area a ui container, `area-` and the area's id,
+built as the editor runs and put before the editor's own container so its menus drop over them.
+
+- **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
+  It is a menu bar that is not docked. Its first menu is named for the kind of editor shown,
+  such as Viewport. It holds Editor, which offers each kind of editor and marks the one shown.
+  Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom or Below,
+  and then New Tab, Close Tab and Maximise. A maximise button sits at the header's right end.
+- **A viewport's header** has three more menus, drawn over the scene:
+  - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
+    Back, Left, Right, Top, Bottom and Perspective, and Orthographic.
+  - one named for how the view shades the scene: Points or Wireframe when the front of each
+    triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
+    and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,
+    with None, Front, Back and Both.
+  - one named for the select mask, such as Object, holding the nine masks. The mask is the
+    editor's, not the view's, so every header names the same one.
+
+  Each item marks what its own view holds, whichever view is active. These are the View menu's
+  `view::camera::`, `view::shade::`, `view::rendermode::` and `view::cull::` commands and the
+  Select menu's `select::mask::` commands, which `AreaChrome::marks()` reads for both.
+- **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
+  across its top. The editor draws under the strip and the header sits at the top of the
+  editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
+  chosen one is checked.
+- The containers are built again when the areas, the kind of editor each shows, their editors,
+  or what a view's menus are named for change. Otherwise they are moved each frame to where
+  the areas are. A container whose area has no room is hidden.
+
+The area menu's commands are in the `area` context, a viewport's camera and shading menus' in
+the `view` context, and its mask menu's in the `select` context. A header's command carries its
+area's id as its data, and the same command sent by a key or the View menu acts on the active
+area.
+
+| Command | Effect |
+|---|---|
+| `area::split::left`, `right`, `top`, `bottom` | Splits the area, putting the new half on that edge |
+| `area::join::left`, `right`, `top`, `bottom` | Joins the area with its neighbour on that edge, which goes |
+| `area::swap::left`, `right`, `top`, `bottom` | Swaps what the area holds with its neighbour on that edge |
+| `area::editor::viewport`, `outliner`, `properties` | Puts an editor of that kind in place of the one shown, in its place among the tabs. A viewport shows Perspective |
+| `area::tab::new` | Adds a viewport of the camera the area shows, or of Perspective |
+| `area::tab::close` | Closes the editor shown, unless it is the only one |
+| `area::tab::choose` | Shows the editor whose id the tab carries |
+| `area::maximise` (Ctrl+Space) | Maximises the area, or gives every area its place back |
+
+An area's neighbour on an edge is the area across the gap from the middle of that edge. A join
+needs the two to be children of the same split.
+
+**Dragging a tab.** A press on a tab that moves more than 6 pixels is a drag of that tab, and is
+not a click on it. While it is dragged, the frame covers where it would land in the accent at a
+quarter of its opacity.
+
+- Let go within a quarter of an area's size from its nearest edge, the tab makes a new area on
+  that edge, covering half of the area it landed on.
+- Let go anywhere else in another area, the tab joins that area's tabs and is shown there.
+- Let go in the middle of its own area, or on its own area's edge when it is that area's only
+  editor, it stays where it was.
+
+An area that a tab leaves with no editor gives its room to its neighbour.
+
+### Workspaces
+
+A workspace is a named layout. `Workspaces` holds them, and the project's arrangement of each.
+
+**Where they come from.** `data/layout.json` holds the workspaces a new user starts with, as an
+array of named layouts under `workspaces`. Modelling is Front, Top, Left and Perspective, with
+an outliner over a properties editor down the right. Perspective is one view. A layout with no
+name, one that cannot be read, or a second of one name is left out, and the editor stops at
+startup when none is left.
+
+**What the user's settings hold.** The engine's settings document, under the app's identity,
+holds three keys:
+
+| Key | Holds |
+|---|---|
+| `workspaces` | the user's own set, once they keep or import a workspace. It replaces the shipped set from then on |
+| `projects` | each project's record, keyed by the absolute path of its directory: the `workspace` it was last shown in, and under `layouts` its arrangement in each workspace it was shown in |
+| `workspace` | the workspace last shown |
+
+A project's arrangement is kept in the user's settings rather than in the project, so arranging
+areas never marks a project unsaved, and the project's files hold only content.
+
+**When they are read and written.**
+
+- At startup, the record of each project whose directory no longer exists is dropped. The
+  editor then shows the current project's last workspace, or else the workspace last shown, or
+  else the first.
+- Showing a workspace shows the project's own arrangement of it, or the workspace as it is kept
+  when the project has none.
+- The current project's arrangement is recorded and the settings saved when the editor closes,
+  before another project is opened, and around each change of workspace. A project opened or
+  saved under a new name shows its own last workspace, or keeps the arrangement it has.
+
+**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace. A tab shows its
+workspace (`workspace::show`, carrying the workspace's name) and is checked while it is shown.
+After the tabs come the project's name, with ` *` after it while it has unsaved changes, and a
+Search button at the right end that opens the command search. They are a container listed after
+the editor's own, over the menu bar's band, which takes a press only on a label.
+
+**Commands**, in the Window menu:
+
+| Command | Effect |
+|---|---|
+| `workspace::show` | Show the workspace whose name it carries, as a top bar tab does |
+| `workspace::next`, `previous` (Ctrl+Page Down, Ctrl+Page Up) | Show the workspace after or before the one shown, wrapping at either end |
+| `workspace::save` | Keep the arrangement shown as the workspace's definition |
+| `workspace::reset` | Put the workspace back as the editor ships it, when it ships one of that name, and show it so |
+| `workspace::export` | Write the workspace shown, as arranged, to a file in the form `data/layout.json` takes |
+| `workspace::import` | Keep each workspace a file holds, replacing any of the same name, and show the first |
+
+Background: [ADR-0134](../adr/0134-editor-workspaces-and-layouts-live-in-user-settings.md)
 
 **Drawing.** Each frame, the renderer fills two line canvases for every view:
 
@@ -302,7 +492,7 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 |---|---|---|---|
 | Scene pass, named after the view, which no other view shares. It draws the meshes' shaded surfaces first and the scene canvas over them | The view's region | Tested | Its own region, colour and depth |
 | Handle pass | The view's region | Not tested | Nothing; it draws over the scene pass |
-| `ui` | The whole window | Not tested | Nothing; it also draws the rubber band |
+| `ui` | The whole window | Not tested | Nothing; it also draws each view's overlays, the frame, a notice, the status bar and the rubber band |
 
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
@@ -338,19 +528,115 @@ change while a drag is under way, so a drag that crosses a border keeps its came
 select and transform tools all work in the active view. The cursor over the menu bar or a
 toolbar does not change it, so a menu item acts on the view the cursor was last over.
 
-**Cameras.** The View menu's Camera items show a fixed view in the active view: Front, Back,
-Left, Right, Top, Bottom and Perspective, each a profile in `data/cameras.json`. The view keeps
-its region and its camera object, so the camera tools keep driving it. The menu marks the item
-for the profile the active view shows. A view laid out from a profile the menu does not offer
-marks none. `Controller::fixedViews()` lists each command and its profile.
+**Cameras.** The View menu's Camera items, and a viewport header's camera menu, show a fixed
+view: Front, Back, Left, Right, Top, Bottom and Perspective, each a profile in
+`data/cameras.json`. The View menu acts on the active view and a header on its own. The view
+keeps its region and its camera object, so the camera tools keep driving it. Its editor's state
+names the new camera, so its tab and a saved layout show it. A menu marks the item for the
+profile its view shows. A view laid out from a profile no fixed view is marks none.
+`AreaChrome::fixedViews()` lists each command and its profile.
 
-**Orthographic** (`view::camera::orthographic`, the P key) switches the active view's camera
-between an orthographic and a perspective projection, and leaves the camera where it is. The
-menu item is checked while the camera is orthographic.
+**Orthographic** (`view::camera::orthographic`, the P key) switches a view's camera between an
+orthographic and a perspective projection, and leaves the camera where it is. The menu item is
+checked while the camera is orthographic.
+
+**Overlays.** Each view draws two things over itself, in window pixels, in the ui pass:
+
+- **An axis marker**, 36 pixels in from its lower left corner. It is a 20 pixel line along each
+  world axis as the view's camera sees it, in the axis's colour, with the axis's letter beyond
+  its end. An axis seen end on, whose line is shorter than a quarter of its length, has no letter.
+- **A navigation gizmo**, in a perspective view only, 8 pixels in from the upper right corner and
+  below the header. A ball 9 pixels in radius sits 30 pixels from its centre at each end of each
+  axis. At a positive end it is filled, with the axis's letter and a line back to the centre. At a
+  negative end it is a ring. A faint disc lies behind it while the cursor is over it, and a ring
+  around the ball under the cursor.
+
+The axes are drawn as an orthographic camera would show them, so perspective does not bend
+them. X is `#d9595f`, Y `#72b052` and Z `#5590e8`. The sizes are multiplied by the ui's scale.
+
+A press on a gizmo's ball is taken before the dividers and the tools. It turns the camera to look
+down that axis from its end, at the point the camera looked at. That point is where its line of
+sight passes nearest the origin, or a unit in front of the eye when that is behind it. The eye
+keeps its distance. Looking down y has z for up, as Top and Bottom do, and any other axis y. Where
+two balls overlap, the one nearer the viewer is taken. `src/view/ViewOverlay.h` holds the geometry
+and the drawing.
+
+**The status bar** runs along the foot of the window, as tall as a menu bar, from the right of
+the toolbar down the left. The areas are laid out above it. It is drawn in the theme's `bar`,
+with a `hairline` along its top. `StatusBar` in `src/control/` says what it shows:
+
+- On the left, what each mouse button does in the active view. The left button names the
+  camera move held or latched, such as Truck or Orbit. Without one it says Select, or Add or
+  remove while Shift is held, and adds what the transform mode's handles do, as in "Select, or
+  drag a handle to rotate". The middle button says Orbit in a perspective view, and is left out
+  of an orthographic one, where it does nothing.
+- On the right, what is selected, the frame and the frame rate. Under a mask that selects whole
+  items the count is of items. Under a part mask it is of the parts of every item, and an edge
+  counts once whichever of its halves are selected. Nothing selected says so. The frame rate is
+  from the engine's mean frame time.
+
+**Notices.** What an operation says, done or refused, shows as a notice at the foot of the active
+area, 16 pixels above its edge and centred. The message starts with a capital, on a plate in the
+theme's `panel` and `border`, with a menu's shadow. Undo and redo say the name of what they undid
+or redid. A notice shows for 2.5 seconds on the ui's clock, from the first frame it is drawn, and
+fades in and out over 0.15 seconds of that. A new notice replaces the one showing. `Notices` in
+`src/control/` times it.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with
 a neighbour.
+
+## Panels
+
+An area can show an editor other than a viewport. Such an editor is a panel, drawn with the
+immediate layer from the scene every frame, under the area's header, so what it shows is never
+stale. The header, the tabs and a panel's menus are retained, as every area's are.
+[api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes the layer, and
+`Controller::drawPanels()` draws each panel.
+
+- A panel fills its area in the theme's `panel`, and the frame's corners and lines are drawn
+  over it.
+- A press in an area that shows a panel reaches no tool. The panels have the cursor while it is
+  in such an area, unless the ui, a divider or a tool has it. They keep it while a press that
+  landed on one is held.
+- A panel's text fields take the keyboard as the ui's do, so typing into one fires no binding.
+
+Background: [ADR-0136](../adr/0136-editor-panels-are-drawn-in-immediate-mode.md)
+
+**The outliner** (`outliner`) lists the scene's items as the tree their parents make. `Outliner`
+in `src/control/` draws it.
+
+- A row shows its item's name, or its kind when it has none, indented a line for each level.
+  Siblings come in the scene's order.
+- A row with children has a mark before its label. A click on the mark folds the row, hiding
+  everything beneath it, or opens it.
+- The field at the top filters the rows. A row is kept when its label holds every word typed,
+  in any case, and each kept row's ancestors are kept with it so it shows where it sits. A
+  filtered tree folds nothing.
+- A click on a row selects its item and nothing else. While Shift is held, as for the select
+  tool, a click selects an item that is not selected, deselects one that is, and leaves the
+  rest. The selected items' rows are highlighted.
+- Each outliner keeps its own filter and folds while the editor runs. Neither is saved.
+
+**The properties editor** (`properties`) shows the selected item's name, placement and settings,
+and edits them. `PropertiesEditor` in `src/control/` draws it.
+
+- It shows one item, when exactly one is selected. Otherwise it says how many are.
+- At the top are the item's kind and a field for its name.
+- Below them is each number a curve can drive, under a heading: Translation, Rotation and Scale
+  for every kind, Lens for a camera and Emission for a light. Each is shown as the current
+  frame shows it, so a keyed number follows playback. A rotation is shown as Euler angles in
+  degrees, kept closest to the angles last shown.
+- A camera adds its projection, a light its type, and a curve item whether a render draws it
+  and its width.
+- A number is dragged or typed into, as
+  [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes. A drag moves a distance a
+  hundredth of a unit a pixel, and an angle half a degree.
+- An edit is written into the item as it happens, so the views follow a drag. When it ends, or
+  its item stops being the one shown, it is one change in the history, which
+  [CommandsAndUndo.md](CommandsAndUndo.md#undo) describes. An edit to a keyed number is pending
+  until the frame is set, as a manipulator's is.
+- A value that would make a lens, an emission or a curve item's style invalid is not written.
 
 ## Shaded views
 

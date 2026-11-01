@@ -116,6 +116,30 @@ class BRep {
         Index findPair(Index edge, Index prevEdge);
 
  private:
+        /**
+         * Whether a reference is to something there are this many of, or is the sentinel where one
+         * may be absent.
+         **/
+        static bool refers(Index reference, std::size_t count, bool optional);
+
+        /**
+         * Report a problem, for a check that has found one.
+         * @return false, so a check can return what this returns
+         **/
+        static bool fail(std::string * problem, const std::string & what);
+
+        /**
+         * Whether every half edge that has a pair is that pair's pair, and not its own.
+         **/
+        static bool pairsMutual(const BRep & mesh, std::string * problem);
+
+        /**
+         * Whether a face's next chain closes, every half edge on it names the face, and no two of
+         * them run between the same two vertices. The mesh has passed validate(), so every index it
+         * holds is in range or INVALID_ID.
+         **/
+        static bool loopSound(const BRep & mesh, Index face, std::string * problem);
+
         std::vector<Vertex> vertices_;
         std::vector<Face> faces_;
         std::vector<HalfEdge> edges_;

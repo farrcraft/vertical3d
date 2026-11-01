@@ -20,20 +20,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
-
-namespace {
-
-/**
- * The three axis colours, and the colour a handle takes while it is the active one.
- **/
-constexpr glm::vec4 xColour(0.90F, 0.28F, 0.32F, 1.0F);
-constexpr glm::vec4 yColour(0.42F, 0.82F, 0.35F, 1.0F);
-constexpr glm::vec4 zColour(0.32F, 0.55F, 0.95F, 1.0F);
-constexpr glm::vec4 centreColour(0.80F, 0.82F, 0.86F, 1.0F);
-constexpr glm::vec4 activeColour(1.0F, 0.86F, 0.25F, 1.0F);
-
-};  // namespace
+namespace v3d::editor::manipulator {
 
 const float Manipulator::handlePixels = 90.0F;
 const float Manipulator::tolerance = 6.0F;
@@ -367,4 +354,4 @@ bool Manipulator::grab(const Target& target, const Screen& screen,
     return found;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

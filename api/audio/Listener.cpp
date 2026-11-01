@@ -15,15 +15,15 @@ namespace v3d::audio {
 
 namespace {
 
-bool finite(const glm::vec3& v) noexcept {
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
-
 /**
  * The shortest vector taken as a direction, relative to the length it was made from. Shorter
  * than this, normalising it gives noise.
  **/
 const float minimumLength = 1.0e-6F;
+
+bool finite(const glm::vec3& v) noexcept {
+    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
+}
 
 };  // namespace
 

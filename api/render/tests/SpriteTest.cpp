@@ -34,6 +34,15 @@ constexpr glm::vec3 right(1.0F, 0.0F, 0.0F);
 constexpr glm::vec3 up(0.0F, 1.0F, 0.0F);
 constexpr glm::vec3 away(0.0F, 0.0F, 1.0F);
 
+/** Where a billboard stands, its size, and the directions its width and height run in. **/
+struct Upright {
+    glm::vec3 feet{0.0F};
+    float width = 1.0F;
+    float height = 1.0F;
+    glm::vec3 across{1.0F, 0.0F, 0.0F};
+    glm::vec3 rise{0.0F, 1.0F, 0.0F};
+};
+
 bool same(const glm::vec3& first, const glm::vec3& second) {
     return glm::all(glm::epsilonEqual(first, second, 0.0001F));
 }
@@ -60,15 +69,6 @@ void draw(const entt::registry& registry, float alpha, const glm::vec3& across,
     v3d::render::realtime::entity::sprites(registry, alpha, {.right = across, .up = rise, .depthAxis = depthAxis}, &order);
     order.into(canvas);
 }
-
-/** Where a billboard stands, its size, and the directions its width and height run in. **/
-struct Upright {
-    glm::vec3 feet{0.0F};
-    float width = 1.0F;
-    float height = 1.0F;
-    glm::vec3 across{1.0F, 0.0F, 0.0F};
-    glm::vec3 rise{0.0F, 1.0F, 0.0F};
-};
 
 /**
  * The corners of a billboard built by hand, to compare with what sprites() emits: half the

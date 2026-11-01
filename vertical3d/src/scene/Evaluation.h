@@ -13,7 +13,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/mat4x4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * Where one item is, as an evaluation of its scene found it.
@@ -78,4 +78,4 @@ glm::quat orientation(const glm::mat4& matrix);
  **/
 glm::mat4 withoutScale(const glm::mat4& matrix);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

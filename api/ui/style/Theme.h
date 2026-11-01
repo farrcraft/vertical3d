@@ -41,6 +41,19 @@ class Theme {
         */
     std::vector< boost::shared_ptr<Style> > getStyleSet(const std::string & name, const std::string & class_name) const;
 
+    /**
+     * Put another theme beneath this one. A style of this theme fills in what it does not name
+     * from the other's style of the same class and name, and of the same state for a button.
+     * The other's styles with no such match are added after this theme's own, so a component
+     * that names no style is still dressed by this theme's first style of its class.
+     *
+     * Each style added is a copy of the other's, of the same kind and holding the same
+     * properties, so filling in this theme's copy later leaves the other theme's style alone.
+     *
+     * @param lower the theme beneath this one
+     **/
+    void beneath(const Theme& lower);
+
  private:
     std::string name_;
     std::vector< boost::shared_ptr<Style> > styles_;

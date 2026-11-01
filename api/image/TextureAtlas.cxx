@@ -20,17 +20,6 @@
 
 #include "Image.h"
 
-namespace {
-
-/**
- * Texels held empty around every region, so that a sampler reading a region's edge texel
- * cannot reach into whatever was packed beside it. One texel is enough for bilinear
- * filtering. A mipmapped atlas would need a gutter that grows with the mip chain.
- **/
-constexpr unsigned int gutter = 1;
-
-};  // namespace
-
 namespace v3d::image {
 TextureAtlas::TextureAtlas(unsigned int width, unsigned int height, unsigned int depth, const boost::shared_ptr<v3d::log::Logger>& logger) :
     width_(width),
@@ -170,7 +159,7 @@ void TextureAtlas::merge() {
     }
 }
 
-void TextureAtlas::region(const glm::ivec4& area, unsigned char* data, unsigned int stride) {
+void TextureAtlas::region(const glm::ivec4& area, const unsigned char* data, unsigned int stride) {
     const unsigned int x = static_cast<unsigned int>(area.x);
     const unsigned int y = static_cast<unsigned int>(area.y);
     const unsigned int width = static_cast<unsigned int>(area.z);

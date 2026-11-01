@@ -5,6 +5,7 @@
 
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
@@ -23,6 +24,9 @@ namespace {
 
 using v3d::ui::style::Resolver;
 
+constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
+
 boost::shared_ptr<v3d::ui::style::Style> style(const std::string& name, const std::string& className) {
     return boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{.name = name, .className = className});
 }
@@ -35,9 +39,6 @@ void colour(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::s
 void metric(const boost::shared_ptr<v3d::ui::style::Style>& target, const std::string& name, float value) {
     target->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
 }
-
-constexpr glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
-constexpr glm::vec4 green(0.0F, 1.0F, 0.0F, 1.0F);
 
 BOOST_AUTO_TEST_SUITE(resolver_test)
 
@@ -162,6 +163,28 @@ BOOST_AUTO_TEST_CASE(the_ui_style_is_read_into_the_base) {
     const v3d::ui::paint::Dressing& dressing = resolver.resolve(Resolver::Class::Bar, std::string_view());
     BOOST_CHECK(dressing.border == green);
     BOOST_CHECK_CLOSE(dressing.borderWidth, 3.0F, 0.001F);
+}
+
+/**
+ * A theme's durations are read in seconds and are not multiplied by the scale, which is for
+ * sizes. The distance a menu slides is a size, and is.
+ **/
+BOOST_AUTO_TEST_CASE(durations_are_read_and_not_scaled) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme =
+        boost::make_shared<v3d::ui::style::Theme>("dark");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", "ui");
+    metric(chrome, "hover-duration", 0.25F);
+    metric(chrome, "open-duration", 0.5F);
+    metric(chrome, "open-distance", 6.0F);
+    theme->addStyle(chrome);
+
+    Resolver resolver;
+    resolver.scale(2.0F);
+    resolver.theme(theme);
+
+    BOOST_CHECK_CLOSE(resolver.base().hoverDuration, 0.25F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().openDuration, 0.5F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().openDistance, 12.0F, 0.001F);
 }
 
 /**
@@ -461,6 +484,141 @@ BOOST_AUTO_TEST_CASE(the_immediate_layer_resets_what_the_new_theme_does_not_name
     ui.theme(first);
     ui.theme(boost::shared_ptr<v3d::ui::style::Theme>());
     BOOST_CHECK(ui.dressing().text == text);
+}
+
+/**
+ * A "ui" style that names an accent has every colour role derived from it. The base it does not
+ * name is the built-in one, so the panel keeps its colour.
+ **/
+BOOST_AUTO_TEST_CASE(an_accent_derives_every_colour_role) {
+    const glm::vec4 teal(0.10F, 0.70F, 0.60F, 1.0F);
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("teal");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    colour(chrome, "accent", teal);
+    theme->addStyle(chrome);
+
+    Resolver resolver;
+    const v3d::ui::paint::Dressing before = resolver.base();
+    resolver.theme(theme);
+
+    const v3d::ui::paint::Palette palette(v3d::ui::paint::Palette::base, teal, 1.0F);
+    BOOST_CHECK(resolver.base().mark == palette.accented()[8]);
+    BOOST_CHECK(resolver.base().focus == palette.accented()[8]);
+    BOOST_CHECK(resolver.base().highlight != before.highlight);
+    BOOST_CHECK(resolver.base().panel == before.panel);
+}
+
+/**
+ * A role the style names directly wins over the one derived from its accent, and the others
+ * stay derived.
+ **/
+BOOST_AUTO_TEST_CASE(a_named_role_overrides_the_derived_one) {
+    const glm::vec4 teal(0.10F, 0.70F, 0.60F, 1.0F);
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("teal");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    colour(chrome, "accent", teal);
+    colour(chrome, "highlight", red);
+    theme->addStyle(chrome);
+
+    Resolver resolver;
+    resolver.theme(theme);
+    BOOST_CHECK(resolver.base().highlight == red);
+    BOOST_CHECK(resolver.base().mark == v3d::ui::paint::Palette(v3d::ui::paint::Palette::base, teal, 1.0F).accented()[8]);
+}
+
+/**
+ * A theme that derived its colours gives every one of them back when the next theme names
+ * nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_derived_theme_is_undone_by_the_next) {
+    const boost::shared_ptr<v3d::ui::style::Theme> derived = boost::make_shared<v3d::ui::style::Theme>("derived");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    colour(chrome, "base", glm::vec4(0.95F, 0.95F, 0.96F, 1.0F));
+    metric(chrome, "contrast", 1.2F);
+    derived->addStyle(chrome);
+    const boost::shared_ptr<v3d::ui::style::Theme> empty = boost::make_shared<v3d::ui::style::Theme>("empty");
+
+    Resolver resolver;
+    const v3d::ui::paint::Dressing before = resolver.base();
+    resolver.theme(derived);
+    BOOST_CHECK(resolver.base().panel != before.panel);
+    BOOST_CHECK(resolver.base().text != before.text);
+
+    resolver.theme(empty);
+    BOOST_CHECK(resolver.base().panel == before.panel);
+    BOOST_CHECK(resolver.base().text == before.text);
+    BOOST_CHECK(resolver.base().gap == before.gap);
+}
+
+/**
+ * A "tools" style derives the immediate layer's roles, whose tracks sit at its widgets' level.
+ **/
+BOOST_AUTO_TEST_CASE(a_tools_style_derives_the_immediate_roles) {
+    const boost::shared_ptr<v3d::ui::style::Style> tools = style("default", Resolver::tools);
+    colour(tools, "accent", green);
+
+    v3d::ui::style::Overlay<v3d::ui::paint::Dressing> overlay;
+    v3d::ui::paint::Dressing dressing = v3d::ui::paint::Dressing::tools();
+    v3d::ui::style::readBase(tools, v3d::ui::paint::Palette::Use::Tools, &overlay, &dressing);
+    BOOST_CHECK(dressing.track == dressing.widget);
+    BOOST_CHECK(dressing.mark == v3d::ui::paint::Palette(v3d::ui::paint::Palette::base, green, 1.0F).accented()[8]);
+
+    overlay.restore(&dressing);
+    BOOST_CHECK(dressing.mark == v3d::ui::paint::Dressing::tools().mark);
+}
+
+/**
+ * A theme's sizes are logical pixels, which the resolver's scale multiplies, in the base style
+ * and in a class's own. A size equal to the one already there is multiplied all the same, and an
+ * outline is rounded as Dressing::outline() rounds it.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_size_is_multiplied_by_the_scale) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("sized");
+    const boost::shared_ptr<v3d::ui::style::Style> chrome = style("default", Resolver::chromeClass);
+    metric(chrome, "padding", 8.0F);
+    metric(chrome, "line-height", 32.0F);
+    metric(chrome, "border-width", 1.0F);
+    theme->addStyle(chrome);
+    const boost::shared_ptr<v3d::ui::style::Style> plate = style("default", "panel");
+    metric(plate, "radius", 4.0F);
+    theme->addStyle(plate);
+
+    Resolver resolver;
+    resolver.scale(1.5F);
+    resolver.base().lineHeight = 32.0F;
+    resolver.theme(theme);
+    BOOST_CHECK_CLOSE(resolver.base().padding, 12.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().lineHeight, 48.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.base().borderWidth, 1.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.resolve(Resolver::Class::Panel, std::string_view()).radius, 6.0F, 0.001F);
+}
+
+/**
+ * A "hud" style dresses text over the scene: its plate's colour and opacity, its text and its
+ * padding. A hud style naming no opacity takes the base's, which a "ui" style sets.
+ **/
+BOOST_AUTO_TEST_CASE(a_hud_style_dresses_its_plate_and_text) {
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = boost::make_shared<v3d::ui::style::Theme>("game");
+    const boost::shared_ptr<v3d::ui::style::Style> base = style("default", "ui");
+    metric(base, "plate-opacity", 0.4F);
+    theme->addStyle(base);
+    const boost::shared_ptr<v3d::ui::style::Style> score = style("score", "hud");
+    colour(score, "background", red);
+    colour(score, "text", green);
+    metric(score, "plate-opacity", 0.8F);
+    metric(score, "padding", 5.0F);
+    theme->addStyle(score);
+    const boost::shared_ptr<v3d::ui::style::Style> label = style("label", "hud");
+    theme->addStyle(label);
+
+    Resolver resolver;
+    resolver.theme(theme);
+    const v3d::ui::paint::Dressing& scored = resolver.resolve(Resolver::Class::Hud, "score");
+    BOOST_CHECK(scored.panel == red);
+    BOOST_CHECK(scored.text == green);
+    BOOST_CHECK_CLOSE(scored.plateOpacity, 0.8F, 0.001F);
+    BOOST_CHECK_CLOSE(scored.padding, 5.0F, 0.001F);
+    BOOST_CHECK_CLOSE(resolver.resolve(Resolver::Class::Hud, "label").plateOpacity, 0.4F, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

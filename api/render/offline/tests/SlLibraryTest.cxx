@@ -32,6 +32,7 @@
 namespace {
 
 typedef v3d::render::offline::sl::runtime::Machine Machine;
+
 typedef v3d::render::offline::sl::runtime::Program Program;
 
 /**
@@ -78,11 +79,118 @@ class Shaded final {
     Machine machine_;
 };
 
+v3d::render::offline::Texture quartered();
+
+/**
+ * A renderer holding one texture, under the name "quarters".
+ **/
+class Textured final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
+        return false;
+    }
+
+    const v3d::render::offline::Texture* texture(const std::string & name) override {
+        return name == "quarters" ? &texture_ : nullptr;
+    }
+
+ private:
+    v3d::render::offline::Texture texture_ = quartered();
+};
+
+/**
+ * A renderer that defines three spaces, so that the transforming built-ins have something to
+ * transform through. Each matrix maps current space into the named one.
+ *
+ * "world" both scales one axis and translates, so the three transforms give different
+ * results. Under a rotation or a uniform scale a normal and a vector transform the same way;
+ * under a non-uniform scale they do not.
+ *
+ * "shader" is a shader the scene placed two units up y. Its origin is (0, 2, 0) in current
+ * space, so the matrix from current space into it moves a point two units down.
+ **/
+class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name == "world") {
+            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(2.0F, 3.0F, 4.0F)) *
+                glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 2.0F));
+            return true;
+        }
+        if (name == "shader") {
+            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
+            return true;
+        }
+        if (name == "NDC") {
+            *matrix = glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 0.1F));
+            return true;
+        }
+        return false;
+    }
+};
+
+/**
+ * A renderer whose "raster" and "NDC" are one projection that swaps z and w. A point (x, y, z)
+ * goes to (x, y, 1, z), and is (x / z, y / z, 1 / z) after the divide. The swap is its own
+ * inverse, so a cast from raster space is the same swap, divided again.
+ **/
+class Projecting final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & name, glm::mat4x4* matrix) override {
+        if (name != "raster" && name != "NDC") {
+            return false;
+        }
+        glm::mat4x4 projection(1.0F);
+        projection[2][2] = 0.0F;
+        projection[3][3] = 0.0F;
+        projection[2][3] = 1.0F;
+        projection[3][2] = 1.0F;
+        *matrix = projection;
+        return true;
+    }
+};
+
+/**
+ * A renderer whose lights pass a "tag" of 0.5 as a float, and nothing else.
+ **/
+class Messaging final : public v3d::render::offline::sl::runtime::Renderer {
+ public:
+    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
+        return false;
+    }
+
+    bool message(const std::string & shader, const std::string & name,
+        v3d::render::offline::sl::runtime::Value* value) override {
+        if (shader != "lightsource" || name != "tag" || value->type() != v3d::render::offline::sl::Type::FLOAT) {
+            return false;
+        }
+        for (unsigned int point = 0; point < value->width(); point++) {
+            value->number(point, 0.5F);
+        }
+        return true;
+    }
+};
+
 /**
  * The float a one line expression evaluates to. Most of the library is tested through this.
  **/
 float answer(const std::string & expression) {
     return Shaded("float answer = " + expression + ";").number("answer");
+}
+
+/**
+ * Two by two texels: red and green across the top, blue and white across the bottom.
+ **/
+v3d::render::offline::Texture quartered() {
+    v3d::image::Image image(glm::uvec2(2, 2), 24);
+    const unsigned char texels[12] = {
+        255, 0, 0,   0, 255, 0,
+        0, 0, 255,   255, 255, 255
+    };
+    for (unsigned int i = 0; i < 12; i++) {
+        image[i] = texels[i];
+    }
+    return v3d::render::offline::Texture(image);
 }
 
 /**
@@ -359,42 +467,6 @@ BOOST_AUTO_TEST_CASE(sllibrary_stubs_report_once_test) {
     BOOST_CHECK(reports[1].starts_with("line 3, column 11: "));
 }
 
-namespace {
-
-/**
- * Two by two texels: red and green across the top, blue and white across the bottom.
- **/
-v3d::render::offline::Texture quartered() {
-    v3d::image::Image image(glm::uvec2(2, 2), 24);
-    const unsigned char texels[12] = {
-        255, 0, 0,   0, 255, 0,
-        0, 0, 255,   255, 255, 255
-    };
-    for (unsigned int i = 0; i < 12; i++) {
-        image[i] = texels[i];
-    }
-    return v3d::render::offline::Texture(image);
-}
-
-/**
- * A renderer holding one texture, under the name "quarters".
- **/
-class Textured final : public v3d::render::offline::sl::runtime::Renderer {
- public:
-    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
-        return false;
-    }
-
-    const v3d::render::offline::Texture* texture(const std::string & name) override {
-        return name == "quarters" ? &texture_ : nullptr;
-    }
-
- private:
-    v3d::render::offline::Texture texture_ = quartered();
-};
-
-};  // namespace
-
 /**
  * texture() reads the renderer's image at the s and t it is given, or at the shader's own
  * when it is given none, and a cast to float takes the first channel.
@@ -471,41 +543,6 @@ BOOST_AUTO_TEST_CASE(sllibrary_string_comparison_test) {
     BOOST_CHECK_EQUAL(shaded.number("empty"), 0.0F);
     BOOST_CHECK_EQUAL(shaded.number("same"), 1.0F);
 }
-
-namespace {
-
-/**
- * A renderer that defines three spaces, so that the transforming built-ins have something to
- * transform through. Each matrix maps current space into the named one.
- *
- * "world" both scales one axis and translates, so the three transforms give different
- * results. Under a rotation or a uniform scale a normal and a vector transform the same way;
- * under a non-uniform scale they do not.
- *
- * "shader" is a shader the scene placed two units up y. Its origin is (0, 2, 0) in current
- * space, so the matrix from current space into it moves a point two units down.
- **/
-class Spaces final : public v3d::render::offline::sl::runtime::Renderer {
- public:
-    bool space(const std::string & name, glm::mat4x4* matrix) override {
-        if (name == "world") {
-            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(2.0F, 3.0F, 4.0F)) *
-                glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 2.0F));
-            return true;
-        }
-        if (name == "shader") {
-            *matrix = glm::translate(glm::mat4x4(1.0F), glm::vec3(0.0F, -2.0F, 0.0F));
-            return true;
-        }
-        if (name == "NDC") {
-            *matrix = glm::scale(glm::mat4x4(1.0F), glm::vec3(1.0F, 1.0F, 0.1F));
-            return true;
-        }
-        return false;
-    }
-};
-
-};  // namespace
 
 /**
  * The three transforms against one matrix that scales an axis and translates. A point
@@ -605,31 +642,6 @@ BOOST_AUTO_TEST_CASE(sllibrary_cast_maps_the_named_space_into_current_test) {
     BOOST_CHECK_CLOSE(shaded.triple("placed").z, 1.0F, 0.01F);
     BOOST_CHECK(shaded.machine().reports().empty());
 }
-
-namespace {
-
-/**
- * A renderer whose "raster" and "NDC" are one projection that swaps z and w. A point (x, y, z)
- * goes to (x, y, 1, z), and is (x / z, y / z, 1 / z) after the divide. The swap is its own
- * inverse, so a cast from raster space is the same swap, divided again.
- **/
-class Projecting final : public v3d::render::offline::sl::runtime::Renderer {
- public:
-    bool space(const std::string & name, glm::mat4x4* matrix) override {
-        if (name != "raster" && name != "NDC") {
-            return false;
-        }
-        glm::mat4x4 projection(1.0F);
-        projection[2][2] = 0.0F;
-        projection[3][3] = 0.0F;
-        projection[2][3] = 1.0F;
-        projection[3][2] = 1.0F;
-        *matrix = projection;
-        return true;
-    }
-};
-
-};  // namespace
 
 /**
  * A point into or out of a projected space is divided by w, through ptransform, depth() and a
@@ -787,31 +799,6 @@ BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     BOOST_CHECK(declared == written);
     BOOST_CHECK(stubs == std::set<std::string>({ "shadow" }));
 }
-
-namespace {
-
-/**
- * A renderer whose lights pass a "tag" of 0.5 as a float, and nothing else.
- **/
-class Messaging final : public v3d::render::offline::sl::runtime::Renderer {
- public:
-    bool space(const std::string & /* name */, glm::mat4x4* /* matrix */) override {
-        return false;
-    }
-
-    bool message(const std::string & shader, const std::string & name,
-        v3d::render::offline::sl::runtime::Value* value) override {
-        if (shader != "lightsource" || name != "tag" || value->type() != v3d::render::offline::sl::Type::FLOAT) {
-            return false;
-        }
-        for (unsigned int point = 0; point < value->width(); point++) {
-            value->number(point, 0.5F);
-        }
-        return true;
-    }
-};
-
-};  // namespace
 
 /**
  * A message call returns 1 and writes the variable when the renderer passes the value, and

@@ -14,7 +14,7 @@
 #include <boost/make_shared.hpp>
 
 namespace {
-const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
+const char* const kTypeface = "data/fonts/NotoSans-Regular.ttf";
 
 const char* const kPrintable =
 " !\"#$%&'()*+,-./0123456789:;<=>?"

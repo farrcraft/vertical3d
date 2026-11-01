@@ -20,13 +20,6 @@
 
 namespace v3d::render::offline {
 
-namespace {
-
-/** A pixel whose total filter weight is smaller than this has no value. **/
-constexpr double NEGLIGIBLE_WEIGHT = 1.0e-12;
-
-};  // namespace
-
 Film::Film(unsigned int width, unsigned int height, const Sampling & sampling) :
     width_(width), height_(height), filter_(sampling.filter), filterWidth_(sampling.width),
     pixels_(static_cast<std::size_t>(width) * height) {

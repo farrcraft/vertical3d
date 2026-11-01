@@ -16,7 +16,7 @@
 
 namespace {
 
-const char* kTypeface = "data/fonts/NotoSans-Regular.ttf";
+const char* const kTypeface = "data/fonts/NotoSans-Regular.ttf";
 
 const float kBase = 48.0F;
 const unsigned int kSpread = 8;

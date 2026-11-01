@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/MeshRegistry.h>
 #include <api/render/realtime/component/Mesh.h>
+#include <api/render/realtime/entity/internal/Track.h>
 #include <api/animation/Clip.h>
 #include <api/animation/Clock.h>
 #include <api/animation/Pose.h>
@@ -24,19 +25,11 @@ namespace v3d::render::realtime::entity {
 
 namespace {
 
-/** A clip, how far into it the playback is, how long it lasts, and whether it loops. **/
-struct Track {
-    uint32_t clip = 0;
-    float time = 0.0F;
-    float duration = 0.0F;
-    bool loops = false;
-};
-
 /**
  * One of a skin's clips sampled over its rest pose, or the rest pose when the clip is none or
  * not one the skin has.
  **/
-animation::Pose sampled(const MeshRegistry::Skin& skin, const Track& track) {
+animation::Pose sampled(const MeshRegistry::Skin& skin, const internal::Track& track) {
     const uint32_t clip = track.clip;
     const float time = track.time;
     const float duration = track.duration;

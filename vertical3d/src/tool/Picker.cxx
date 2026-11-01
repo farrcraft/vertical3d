@@ -39,15 +39,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
-
-namespace {
+namespace v3d::editor::tool {
 
 /**
- * Where along a segment the closest point to a target is, as a fraction of it,
- * clamped to the segment's ends. A degenerate segment returns zero, its start.
  **/
-float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
+float Picker::closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& target) {
     const glm::vec2 along = to - from;
     const float length = glm::dot(along, along);
     if (length <= 0.0F) {
@@ -63,14 +59,12 @@ float closest(const glm::vec2& from, const glm::vec2& to, const glm::vec2& targe
     return u;
 }
 
-};  // namespace
-
 /**
  **/
 Picker::Hit::Hit() :
 valid(false),
 item(0),
-kind(SelectMask::Object),
+kind(selection::SelectMask::Object),
 component(0) {
 }
 
@@ -78,7 +72,7 @@ component(0) {
  **/
 Picker::Picker(float tolerance) :
     tolerance_(tolerance),
-    mask_(SelectMask::Object),
+    mask_(selection::SelectMask::Object),
     camera_(nullptr),
     cursor_(0.0F, 0.0F),
     model_(1.0F),
@@ -95,7 +89,7 @@ Picker::Picker(float tolerance) :
 
 /**
  **/
-Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::vec2& cursor, SelectMask mask) {
+Picker::Hit Picker::pick(const scene::Scene& scene, const view::ViewPort& view, const glm::vec2& cursor, selection::SelectMask mask) {
     hit_ = Hit();
     hit_.kind = mask;
     cursor_ = cursor;
@@ -115,8 +109,8 @@ Picker::Hit Picker::pick(const Scene& scene, const ViewPort& view, const glm::ve
 
 /**
  **/
-std::vector<Picker::Hit> Picker::inside(const Scene& scene, const ViewPort& view, const glm::vec2& corner,
-    const glm::vec2& opposite, SelectMask mask) {
+std::vector<Picker::Hit> Picker::inside(const scene::Scene& scene, const view::ViewPort& view, const glm::vec2& corner,
+    const glm::vec2& opposite, selection::SelectMask mask) {
     inside_.clear();
     min_ = glm::min(corner, opposite);
     max_ = glm::max(corner, opposite);
@@ -135,7 +129,7 @@ std::vector<Picker::Hit> Picker::inside(const Scene& scene, const ViewPort& view
 
 /**
  **/
-bool Picker::begin(const ViewPort& view, SelectMask mask) {
+bool Picker::begin(const view::ViewPort& view, selection::SelectMask mask) {
     mask_ = mask;
     camera_ = nullptr;
 
@@ -160,12 +154,12 @@ bool Picker::begin(const ViewPort& view, SelectMask mask) {
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
+void Picker::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) {
     if (!item || camera_ == nullptr) {
         return;
     }
 
-    if (selectsItems(mask_) ? !takes(mask_, Item::Kind::Mesh) : (!item->selected() || mask_ == SelectMask::Handle)) {
+    if (selectsItems(mask_) ? !takes(mask_, scene::Item::Kind::Mesh) : (!item->selected() || mask_ == selection::SelectMask::Handle)) {
         // an object has to be selected before any of its components may be, so a component
         // click stays inside the mesh the user is working on. A mesh has no handles
         return;
@@ -181,85 +175,85 @@ void Picker::visit(const boost::shared_ptr<Mesh>& item, const Placed& placed) {
     }
 
     switch (mask_) {
-    case SelectMask::Vertex:
+    case selection::SelectMask::Vertex:
         vertices(mesh);
         break;
-    case SelectMask::Edge:
+    case selection::SelectMask::Edge:
         edges(mesh);
         break;
-    case SelectMask::Object:
-    case SelectMask::Mesh:
-    case SelectMask::Light:
-    case SelectMask::Camera:
-    case SelectMask::Curve:
-    case SelectMask::Face:
+    case selection::SelectMask::Object:
+    case selection::SelectMask::Mesh:
+    case selection::SelectMask::Light:
+    case selection::SelectMask::Camera:
+    case selection::SelectMask::Curve:
+    case selection::SelectMask::Face:
         surface(mesh);
         break;
-    case SelectMask::Handle:
+    case selection::SelectMask::Handle:
         break;
     }
 }
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) {
-    if (!camera || camera_ == nullptr || !takes(mask_, Item::Kind::Camera)) {
+void Picker::visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) {
+    if (!camera || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Camera)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawCamera(lens, glm::vec4(1.0F), &drawn);
-    lines(*camera, glyphPlacement(placed.world), drawn);
+    view::drawCamera(lens, glm::vec4(1.0F), &drawn);
+    lines(*camera, view::glyphPlacement(placed.world), drawn);
 }
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) {
-    if (!light || camera_ == nullptr || !takes(mask_, Item::Kind::Light)) {
+void Picker::visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) {
+    if (!light || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Light)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawLight(emission, glm::vec4(1.0F), &drawn);
-    lines(*light, glyphPlacement(placed.world), drawn);
+    view::drawLight(emission, glm::vec4(1.0F), &drawn);
+    lines(*light, view::glyphPlacement(placed.world), drawn);
 }
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Group>& group, const Placed& placed) {
-    if (!group || camera_ == nullptr || !takes(mask_, Item::Kind::Group)) {
+void Picker::visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) {
+    if (!group || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Group)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawGroup(glm::vec4(1.0F), &drawn);
-    lines(*group, glyphPlacement(placed.world), drawn);
+    view::drawGroup(glm::vec4(1.0F), &drawn);
+    lines(*group, view::glyphPlacement(placed.world), drawn);
 }
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) {
+void Picker::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) {
     if (!curve || camera_ == nullptr) {
         return;
     }
-    if (mask_ == SelectMask::Vertex || mask_ == SelectMask::Handle) {
+    if (mask_ == selection::SelectMask::Vertex || mask_ == selection::SelectMask::Handle) {
         // as with a mesh, the curve has to be selected before any of its parts may be
         if (curve->selected()) {
             model_ = placed.world;
             current_ = curve->id();
             const v3d::curve::Curves& geometry = *curve->geometry();
-            points(mask_ == SelectMask::Vertex ? controlPoints(geometry) : handlePoints(geometry));
+            points(mask_ == selection::SelectMask::Vertex ? scene::controlPoints(geometry) : scene::handlePoints(geometry));
         }
         return;
     }
-    if (!takes(mask_, Item::Kind::Curve)) {
+    if (!takes(mask_, scene::Item::Kind::Curve)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
-    drawCurves(*curve->geometry(), glm::vec4(1.0F), &drawn);
+    view::drawCurves(*curve->geometry(), glm::vec4(1.0F), &drawn);
     lines(*curve, placed.world, drawn);
 }
 
 /**
  **/
-void Picker::lines(const Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn) {
+void Picker::lines(const scene::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn) {
     model_ = model;
     current_ = item.id();
     const std::vector<v3d::render::realtime::canvas::Line::Vertex>& points = drawn.vertices();
@@ -415,21 +409,21 @@ void Picker::edges(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
  **/
 void Picker::enclosed(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     switch (mask_) {
-    case SelectMask::Object:
-    case SelectMask::Mesh:
-    case SelectMask::Light:
-    case SelectMask::Camera:
-    case SelectMask::Curve:
+    case selection::SelectMask::Object:
+    case selection::SelectMask::Mesh:
+    case selection::SelectMask::Light:
+    case selection::SelectMask::Camera:
+    case selection::SelectMask::Curve:
         enclosedObject(mesh);
         break;
-    case SelectMask::Vertex:
+    case selection::SelectMask::Vertex:
         enclosedVertices(mesh);
         break;
-    case SelectMask::Edge:
-    case SelectMask::Face:
+    case selection::SelectMask::Edge:
+    case selection::SelectMask::Face:
         enclosedLoops(mesh);
         break;
-    case SelectMask::Handle:
+    case selection::SelectMask::Handle:
         break;
     }
 }
@@ -467,7 +461,7 @@ void Picker::enclosedVertices(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
     Hit hit;
     hit.valid = true;
     hit.item = current_;
-    hit.kind = SelectMask::Vertex;
+    hit.kind = selection::SelectMask::Vertex;
     const std::size_t count = mesh->vertexCount();
     for (v3d::brep::Index index = 0; index < count; index++) {
         const v3d::brep::Vertex* vertex = mesh->vertex(index);
@@ -495,12 +489,12 @@ void Picker::enclosedLoops(const boost::shared_ptr<v3d::brep::BRep>& mesh) {
             whole = whole && held;
             // a half edge and its pair are one edge, so only the half that draws it is
             // offered, as a click offers it
-            if (mask_ == SelectMask::Edge && held && v3d::brep::ownsEdge(*mesh, loop[index])) {
+            if (mask_ == selection::SelectMask::Edge && held && v3d::brep::ownsEdge(*mesh, loop[index])) {
                 hit.component = loop[index];
                 inside_.push_back(hit);
             }
         }
-        if (mask_ == SelectMask::Face && whole) {
+        if (mask_ == selection::SelectMask::Face && whole) {
             hit.component = face;
             inside_.push_back(hit);
         }
@@ -551,4 +545,4 @@ void Picker::offer(const Candidate& candidate) {
     hit_.component = candidate.component;
 }
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::tool

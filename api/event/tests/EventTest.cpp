@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(mouse_event_position_test) {
     const v3d::event::kind::MouseButton release("left", glm::vec2(4.0F, 9.0F), mouse, false);
     BOOST_CHECK(release.state() == v3d::event::State::Released);
 
-    const v3d::event::kind::MouseMotion moved({.position = glm::vec2(4.0F, 9.0F), .motion = glm::vec2(1.0F, -1.0F)}, mouse);
+    const v3d::event::kind::MouseMotion moved({.position = glm::vec2(4.0F, 9.0F), .motion = glm::vec2(1.0F, -1.0F), .modifiers = {}}, mouse);
     BOOST_CHECK_EQUAL(moved.position()[0], press.position()[0]);
     BOOST_CHECK_EQUAL(moved.motion()[1], -1.0F);
 }

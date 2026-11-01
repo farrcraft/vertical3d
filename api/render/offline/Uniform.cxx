@@ -4,6 +4,7 @@
  **/
 
 #include "Uniform.h"
+#include "Units.h"
 
 #include <algorithm>
 #include <cmath>
@@ -11,15 +12,9 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace v3d::render::offline::uniform {
+namespace v3d::render::offline {
 
-namespace {
-
-constexpr float PI = 3.14159265358979F;
-
-};  // namespace
-
-glm::vec2 disc(const glm::vec2 & square) {
+glm::vec2 uniformDisc(const glm::vec2 & square) {
     // the square's diagonals cut the disc into four quarters, and this is half the angle of one
     constexpr float halfQuarter = PI / 4.0F;
     const glm::vec2 centred = square * 2.0F - glm::vec2(1.0F);
@@ -38,7 +33,7 @@ glm::vec2 disc(const glm::vec2 & square) {
     return glm::vec2(radius * std::cos(angle), radius * std::sin(angle));
 }
 
-glm::vec3 triangle(const glm::vec3 & first, const glm::vec3 & second, const glm::vec3 & third, const glm::vec2 & square) {
+glm::vec3 uniformTriangle(const glm::vec3 & first, const glm::vec3 & second, const glm::vec3 & third, const glm::vec2 & square) {
     // the square root spreads the first number over the triangle's height evenly by area
     const float root = std::sqrt(square.x);
     const float towardSecond = root * (1.0F - square.y);
@@ -46,7 +41,7 @@ glm::vec3 triangle(const glm::vec3 & first, const glm::vec3 & second, const glm:
     return (first * (1.0F - root)) + (second * towardSecond) + (third * towardThird);
 }
 
-glm::vec3 sphere(const glm::vec2 & square) {
+glm::vec3 uniformSphere(const glm::vec2 & square) {
     // a height spread evenly over [-1, 1] spreads points evenly over the sphere, by
     // Archimedes' hat-box theorem
     const float z = 1.0F - (2.0F * square.x);
@@ -55,4 +50,4 @@ glm::vec3 sphere(const glm::vec2 & square) {
     return glm::vec3(ring * std::cos(angle), ring * std::sin(angle), z);
 }
 
-};  // namespace v3d::render::offline::uniform
+};  // namespace v3d::render::offline

@@ -19,10 +19,6 @@
 
 namespace {
 
-boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data") {
-    return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
-}
-
 /**
  * A loader of text that records the name it was asked for and returns nothing, so a case can
  * see which of two loaders of one kind a load reached.
@@ -38,6 +34,10 @@ class Probe final : public v3d::asset::Loader {
     }
     std::string asked_;
 };
+
+boost::shared_ptr<v3d::asset::Manager> manager(const std::string& path = "data") {
+    return boost::make_shared<v3d::asset::Manager>(path, boost::make_shared<v3d::log::Logger>());
+}
 
 /**
  * A manager starts with the document loaders and nothing else. api/asset/media and api/audio

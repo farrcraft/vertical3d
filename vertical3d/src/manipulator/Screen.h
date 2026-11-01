@@ -10,7 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::manipulator {
 
 /**
  * What a manipulator is seen through: a camera, and the rectangle of the window it draws into.
@@ -23,4 +23,4 @@ struct Screen {
     glm::vec4 region{ 0.0F };
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::manipulator

@@ -31,28 +31,21 @@
 #include <utility>
 #include <vector>
 
+#include <glm/common.hpp>
+#include <glm/vec2.hpp>
+
 #include "Component.h"
 #include "Container.h"
 #include "Length.h"
 
 namespace v3d::ui {
 
-namespace {
-
-/**
- * The serial the next arranger takes. It starts at one because a list that has never been
- * measured holds zero.
- **/
-std::atomic<std::uint64_t> nextSerial(1);
-
-};  // namespace
-
 const float Arranger::ruleWidth = 1.0F;
 
 Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
     measure_(measure),
     styles_(styles),
-    serial_(nextSerial++) {
+    serial_(nextSerial()) {
 }
 
 /**
@@ -114,19 +107,7 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
     switch (component.type()) {
         case component::Type::Label: {
             const auto* label = dynamic_cast<const component::Label*>(&component);
-            if (label == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            const float line = measure_(label->text());
-            // a label given a width wraps to it. Its natural height is then the height of the
-            // rows it wraps into, which an Auto height resolves to
-            if (component.layout().width.unit() == Length::Unit::Auto) {
-                return glm::vec2(line, styles_.base().lineHeight);
-            }
-            const float width = component.layout().width.resolve({.extent = room.size().x, .own = line});
-            const std::size_t rows = paint::wrap(label->text(), width, measure_).size();
-            return glm::vec2(line,
-                styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
+            return label == nullptr ? glm::vec2(0.0F, 0.0F) : labelSize(*label, room);
         }
         case component::Type::Icon:
             // an icon given no size is a square the height of a strip
@@ -138,43 +119,12 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
         }
         case component::Type::CheckBox:
         case component::Type::RadioButton: {
-            // the mark, the gap after it and the label, on a row as tall as the taller of
-            // the mark and a line of text
             const auto* box = dynamic_cast<const component::CheckBox*>(&component);
-            if (box == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            // measured with its own style class, because the mark is drawn at the size that
-            // class sets, which can differ from the base
-            const paint::Dressing& dress = styles_.resolve(
-                component.type() == component::Type::RadioButton
-                    ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
-                component.style());
-            const float text = box->label().empty() ? 0.0F
-                : (dress.padding * 0.5F) + measure_(box->label());
-            return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
+            return box == nullptr ? glm::vec2(0.0F, 0.0F) : markSize(*box);
         }
         case component::Type::SelectList: {
-            // a list's natural width is its widest row. Its height is the room it is offered,
-            // and that decides how many rows it shows
             auto* list = dynamic_cast<component::SelectList*>(&component);
-            if (list == nullptr) {
-                return glm::vec2(0.0F, 0.0F);
-            }
-            // this measures every row, and the result changes only when the rows or the
-            // measure do. The list caches it against this arranger's serial, because an
-            // arranger holds one measure, and drops it when it is given new rows
-            float widest = list->widest(serial_);
-            if (widest < 0.0F) {
-                widest = 0.0F;
-                for (const std::string& item : list->items()) {
-                    widest = std::max(widest, measure_(item));
-                }
-                list->widest({.width = widest, .measure = serial_});
-            }
-            return glm::vec2(
-                widest + styles_.resolve(style::Resolver::Class::List, component.style()).padding,
-                room.size().y);
+            return list == nullptr ? glm::vec2(0.0F, 0.0F) : listSize(list, room);
         }
         case component::Type::TextBox: {
             // a text box is as wide as the room it is in and as tall as one line. Its text
@@ -215,6 +165,54 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
     // every enumerator is handled above and the switch carries no default, so C4062 names
     // this function when a component type is added
     return room.size();
+}
+
+/**
+ **/
+glm::vec2 Arranger::labelSize(const component::Label& label, const v3d::type::geometry::Bound2D& room) const {
+    const float line = measure_(label.text());
+    // a label given a width wraps to it. Its natural height is then the height of the
+    // rows it wraps into, which an Auto height resolves to
+    if (label.layout().width.unit() == Length::Unit::Auto) {
+        return glm::vec2(line, styles_.base().lineHeight);
+    }
+    const float width = label.layout().width.resolve({.extent = room.size().x, .own = line});
+    const std::size_t rows = paint::wrap(label.text(), width, measure_).size();
+    return glm::vec2(line,
+        styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
+}
+
+/**
+ **/
+glm::vec2 Arranger::markSize(const component::CheckBox& box) const {
+    // measured with its own style class, because the mark is drawn at the size that
+    // class sets, which can differ from the base
+    const paint::Dressing& dress = styles_.resolve(
+        box.type() == component::Type::RadioButton
+            ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
+        box.style());
+    const float text = box.label().empty() ? 0.0F
+        : (dress.padding * 0.5F) + measure_(box.label());
+    return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
+}
+
+/**
+ **/
+glm::vec2 Arranger::listSize(component::SelectList* list, const v3d::type::geometry::Bound2D& room) const {
+    // this measures every row, and the result changes only when the rows or the
+    // measure do. The list caches it against this arranger's serial, because an
+    // arranger holds one measure, and drops it when it is given new rows
+    float widest = list->widest(serial_);
+    if (widest < 0.0F) {
+        widest = 0.0F;
+        for (const std::string& item : list->items()) {
+            widest = std::max(widest, measure_(item));
+        }
+        list->widest({.width = widest, .measure = serial_});
+    }
+    return glm::vec2(
+        widest + styles_.resolve(style::Resolver::Class::List, list->style()).padding,
+        room.size().y);
 }
 
 /**
@@ -327,8 +325,8 @@ glm::vec2 Arranger::stack(const Container& container,
     std::vector<boost::shared_ptr<component::menu::Bar>>* bars) const {
     const float row = styles_.base().barHeight + ruleWidth;
     std::vector<boost::shared_ptr<component::Toolbar>> shown;
-    // a menu bar is drawn at the top of the canvas, so every menu bar comes first. The top
-    // strips go under them in the order they are listed. The left strips start below all of
+    // a docked menu bar is drawn at the top of the canvas, so every docked bar comes first. The
+    // top strips go under them in the order they are listed. The left strips start below all of
     // those, whatever order they are listed in
     float menus = 0.0F;
     float tops = 0.0F;
@@ -337,10 +335,14 @@ glm::vec2 Arranger::stack(const Container& container,
             continue;
         }
         if (component->type() == component::Type::MenuBar) {
+            const boost::shared_ptr<component::menu::Bar> menuBar = boost::dynamic_pointer_cast<component::menu::Bar>(component);
             if (bars != nullptr) {
-                bars->push_back(boost::dynamic_pointer_cast<component::menu::Bar>(component));
+                bars->push_back(menuBar);
             }
-            menus += row;
+            // a bar laid out by its Layout sits over the window rather than taking a strip
+            if (menuBar->docked()) {
+                menus += row;
+            }
             continue;
         }
         const boost::shared_ptr<component::Toolbar> bar =
@@ -444,11 +446,12 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
             continue;
         }
         // the strip decides how big a button in it is. A row's is as wide as its label and a
-        // column's is as wide as the strip. The button is then drawn at that size, the same
-        // way a button anywhere else is
+        // column's is as wide as the strip, and as tall when it shows an icon, so a shelf of
+        // icons is a column of squares. The button is then drawn at that size, the same way a
+        // button anywhere else is
         const glm::vec2 box = row
             ? glm::vec2(extent(*button) + styles_.base().padding, size.y)
-            : glm::vec2(size.x, styles_.base().lineHeight);
+            : glm::vec2(size.x, button->icon().empty() ? styles_.base().lineHeight : size.x);
         place(*button, {.position = pen, .size = box});
         pen += row ? glm::vec2(box.x, 0.0F) : glm::vec2(0.0F, box.y);
     }
@@ -456,23 +459,31 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
 
 /**
  **/
-void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room) const {
+float Arranger::row(const component::menu::Item* item) const {
+    const float line = styles_.base().lineHeight;
+    return item != nullptr && item->separator() ? line * separatorShare : line;
+}
+
+void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const glm::vec2& room, float shortcuts) const {
     const std::size_t count = menu.count();
     if (count == 0) {
         return;
     }
     float widest = 0.0F;
+    float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
         widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        rows += row(item.get());
     }
     const paint::Dressing& base = styles_.base();
     // a column either side of the labels: the mark on the left and the submenu arrow on the
     // right. Both are there whether or not this menu uses them, so that every label in one
-    // panel starts at the same place
+    // panel starts at the same place. Shortcuts take a column of their own, a padding clear
+    // of the labels
     const float column = base.lineHeight * markColumn;
-    const glm::vec2 size(widest + (column * 2.0F) + (base.padding * 0.5F),
-        (base.lineHeight * static_cast<float>(count)) + (base.panelPadding * 2.0F));
+    const float keys = shortcuts > 0.0F ? shortcuts + base.padding : 0.0F;
+    const glm::vec2 size(widest + keys + (column * 2.0F) + (base.padding * 0.5F), rows + (base.panelPadding * 2.0F));
 
     // a panel that would hang off an edge is moved back onto the canvas rather than clipped,
     // so the flyouts of a bar's last menu stay inside the window
@@ -480,39 +491,89 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     corner = glm::vec2(std::max(corner.x, 0.0F), std::max(corner.y, 0.0F));
     place(menu, {.position = corner, .size = size});
 
+    float top = corner.y + base.panelPadding;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
+        const float height = row(item.get());
         if (item) {
-            const float top = corner.y + base.panelPadding + (base.lineHeight * static_cast<float>(index));
-            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, height)});
         }
+        top += height;
     }
 }
 
 /**
  **/
-void Arranger::centred(component::menu::Menu& level, const glm::vec2& room) const {
+void Arranger::emphasis(const paint::Emphasis& sets) {
+    emphasis_ = sets;
+}
+
+/**
+ **/
+v3d::type::geometry::Bound2D Arranger::safe(const glm::vec2& room) noexcept {
+    const glm::vec2 inset(room.x * safeSides, room.y * safeEnds);
+    return v3d::type::geometry::Bound2D({.position = inset, .size = room - (inset * 2.0F)});
+}
+
+/**
+ **/
+float Arranger::heading(const component::menu::Menu& level) const {
+    if (level.title().empty()) {
+        return 0.0F;
+    }
+    const paint::Dressing& base = styles_.base();
+    const float scale = emphasis_.title.measure ? emphasis_.title.scale : 1.0F;
+    return (base.lineHeight * scale) + (base.padding * 0.5F);
+}
+
+/**
+ **/
+float Arranger::choice(const component::menu::Item* item) const {
+    if (item == nullptr) {
+        return 0.0F;
+    }
+    const std::string_view text = item->label();
+    const float body = measure_(text);
+    return emphasis_.chosen.measure ? std::max(body, emphasis_.chosen.measure(text)) : body;
+}
+
+/**
+ **/
+void Arranger::centred(component::menu::Menu& level, const glm::vec2& room, float values) const {
     const std::size_t count = level.count();
     if (count == 0) {
         return;
     }
     float widest = 0.0F;
+    float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
-        widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        widest = std::max(widest, choice(item.get()));
+        rows += row(item.get());
     }
     const paint::Dressing& base = styles_.base();
-    const glm::vec2 size(widest + (base.padding * 2.0F),
-        (base.lineHeight * static_cast<float>(count)) + (base.padding * 2.0F));
-    const glm::vec2 corner((room - size) * 0.5F);
+    // a value sits two paddings clear of the longest label, so a row reads as two columns
+    if (values > 0.0F) {
+        widest += (base.padding * 2.0F) + values;
+    }
+    if (!level.title().empty()) {
+        const paint::Measure& titled = emphasis_.title.measure ? emphasis_.title.measure : measure_;
+        widest = std::max(widest, titled(level.title()));
+    }
+    const float band = heading(level);
+    const glm::vec2 size(widest + (base.padding * 2.0F), band + rows + (base.padding * 2.0F));
+    const v3d::type::geometry::Bound2D area = safe(room);
+    const glm::vec2 corner = glm::max(area.position() + ((area.size() - size) * 0.5F), area.position());
     place(level, {.position = corner, .size = size});
 
+    float top = corner.y + base.padding + band;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = level[index];
+        const float height = row(item.get());
         if (item) {
-            const float top = corner.y + base.padding + (base.lineHeight * static_cast<float>(index));
-            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, base.lineHeight)});
+            place(*item, {.position = glm::vec2(corner.x, top), .size = glm::vec2(size.x, height)});
         }
+        top += height;
     }
 }
 
@@ -533,6 +594,11 @@ glm::vec2 Arranger::childSize(Component& child, const v3d::type::geometry::Bound
     const glm::vec2 own = natural(child, room);
     const Layout& layout = child.layout();
     return glm::vec2(layout.width.resolve({.extent = extent.x, .own = own.x}), layout.height.resolve({.extent = extent.y, .own = own.y}));
+}
+
+std::uint64_t Arranger::nextSerial() noexcept {
+    static std::atomic<std::uint64_t> next{1};  // process-wide: a counter of serials unique across the run
+    return next++;
 }
 
 };  // namespace v3d::ui

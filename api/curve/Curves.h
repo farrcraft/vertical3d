@@ -82,6 +82,11 @@ class Curves final {
     std::uint64_t changes(void) const noexcept;
 
  private:
+    /**
+     * Check a curve, and settle a Bezier curve's handles, before it is stored.
+     **/
+    static std::string prepare(Curve* curve);
+
     std::vector<Curve> curves_;
     mutable std::vector<std::vector<glm::vec3>> evaluated_;
     unsigned int resolution_ = DEFAULT_RESOLUTION;

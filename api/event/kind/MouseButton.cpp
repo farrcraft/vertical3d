@@ -16,10 +16,11 @@ namespace v3d::event::kind {
 /**
  **/
 MouseButton::MouseButton(const std::string& button, const glm::vec2& position,
-    const boost::shared_ptr<Context>& context, bool pressed) :
+    const boost::shared_ptr<Context>& context, bool pressed, unsigned int clicks) :
     Event(button, context),
     position_(position),
-    pressed_(pressed) {
+    pressed_(pressed),
+    clicks_(clicks) {
     // the edge belongs in the event's state; data is reserved for a parameter
     state(pressed ? State::Pressed : State::Released);
 }
@@ -40,6 +41,12 @@ glm::vec2 MouseButton::position() const noexcept {
 **/
 bool MouseButton::pressed() const noexcept {
     return pressed_;
+}
+
+/**
+ **/
+unsigned int MouseButton::clicks() const noexcept {
+    return clicks_;
 }
 
 };  // namespace v3d::event::kind

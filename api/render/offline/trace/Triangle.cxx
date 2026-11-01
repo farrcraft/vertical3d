@@ -19,22 +19,11 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-/** The least length of a triangle's edge cross product that gives it a plane. **/
-constexpr float SMALLEST_TRIANGLE_AREA = 1.0e-8F;
-
-/**
- * The plane of a triangle, wound the way its corners are. A triangle with no area names no
- * plane and returns zero rather than normalising a zero vector.
- **/
-glm::vec3 plane(const glm::vec3 & cornerA, const glm::vec3 & cornerB, const glm::vec3 & cornerC) {
+glm::vec3 Triangle::plane(const glm::vec3 & cornerA, const glm::vec3 & cornerB, const glm::vec3 & cornerC) {
     const glm::vec3 across = glm::cross(cornerB - cornerA, cornerC - cornerA);
     const float area = glm::length(across);
     return area > SMALLEST_TRIANGLE_AREA ? across / area : glm::vec3(0.0F);
 }
-
-};  // namespace
 
 Triangle::Triangle(const Corners & corners, const glm::vec3 & colour) :
     Primitive(colour), a_(corners[0]), b_(corners[1]), c_(corners[2]), geometric_(plane(a_, b_, c_)) {

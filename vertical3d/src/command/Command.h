@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace v3d::editor {
+namespace v3d::editor::command {
 
 /**
  * One undoable unit of editing.
@@ -28,7 +28,7 @@ class Command {
     /**
      * Make the change again. A command whose change is not already made calls this to make
      * it the first time, so that the first do and a redo run the same code. A
-     * TransformCommand is the exception: its drag moved the mesh before it was made.
+     * Transform is the exception: its drag moved the mesh before it was made.
      **/
     virtual void redo() = 0;
 
@@ -38,4 +38,4 @@ class Command {
     virtual std::string name() const = 0;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::command

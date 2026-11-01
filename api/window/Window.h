@@ -9,6 +9,9 @@
 
 #include <SDL3/SDL.h>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -19,7 +22,7 @@
 namespace v3d::window {
 /**
  * An OS window, and the platform calls that act on it: its size, caption, focus, full screen,
- * text input and the mouse.
+ * text input, the mouse and the pointer's shape.
  *
  * The window is made for presenting with Vulkan, which SDL loads when the window is created. It
  * holds no Vulkan object: a renderer makes the surface it presents to from sdl(), and has to be
@@ -27,6 +30,15 @@ namespace v3d::window {
  **/
 class Window final {
  public:
+    /**
+     * The shapes the pointer takes over the window.
+     **/
+    enum class Pointer : std::uint8_t {
+        Arrow,     /**< the platform's ordinary pointer **/
+        Columns,   /**< resizing from side to side, as over a divider between columns **/
+        Rows       /**< resizing up and down, as over a divider between rows **/
+    };
+
     /**
      * @param logger
      **/
@@ -99,6 +111,14 @@ class Window final {
     bool focused() const;
 
     /**
+     * How much larger than its pixel size a ui is drawn on the monitor the window is on, to look
+     * the size it was designed at: 1 at 100%, 1.5 at 150%.
+     *
+     * @return the scale, and 1 while there is no window or the scale cannot be read
+     **/
+    float displayScale() const;
+
+    /**
      * Fill the display the window is on, or go back to a window.
      *
      * The display keeps its own mode, so the change is a resize as far as the swapchain is
@@ -163,7 +183,30 @@ class Window final {
      **/
     void warpCursor(int x, int y);
 
+    /**
+     * Show the pointer in a shape, which lasts until another is asked for. A shape the platform
+     * cannot make leaves the pointer as it was.
+     **/
+    void pointer(Pointer shape);
+
+    /**
+     * @return the shape last asked for
+     **/
+    Pointer pointer() const noexcept;
+
  private:
+    // the size a window reports before it is created
+    static constexpr int DEFAULT_WIDTH = 300;
+    static constexpr int DEFAULT_HEIGHT = 200;
+
+    /**
+     * @return the platform's cursor for a shape
+     **/
+    static SDL_SystemCursor systemCursor(Window::Pointer shape) noexcept;
+
+    // one per shape, made the first time the shape is asked for and freed with the window
+    std::array<SDL_Cursor*, 3> pointers_{};
+    Pointer shape_ = Pointer::Arrow;
     SDL_Window* window_;
     std::string caption_;
     int width_;

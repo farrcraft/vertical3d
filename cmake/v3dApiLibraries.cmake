@@ -113,8 +113,8 @@ set(V3D_API_render_offline_PACKAGES glm)
 # What every app builds around its own code: the ui, the screen, the menu and the statistics
 # overlay. It joins engine and ui, which do not depend on each other.
 set(V3D_API_shell_PATH "shell")
-set(V3D_API_shell_REQUIRES engine ui asset)
-set(V3D_API_shell_PACKAGES)
+set(V3D_API_shell_REQUIRES engine event ui asset window)
+set(V3D_API_shell_PACKAGES EnTT)
 
 set(V3D_API_type_PATH "type")
 set(V3D_API_type_REQUIRES)
@@ -316,8 +316,9 @@ function(v3d_api_verify_visibility root)
 		set(included)
 		foreach(header IN LISTS headers)
 			# a test's headers are not the library's, and nor are those of a library nested in
-			# this one's directory
-			if(header MATCHES "/tests/")
+			# this one's directory. A header under internal/ is included only by the library's
+			# own sources, so what it includes is linked PRIVATE.
+			if(header MATCHES "/tests/" OR header MATCHES "/internal/")
 				continue()
 			endif()
 			v3d_api_owner("${header}" owner)

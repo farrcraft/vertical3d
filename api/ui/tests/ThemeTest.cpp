@@ -20,7 +20,9 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/json/parse.hpp>
 #include <boost/make_shared.hpp>
+#include <glm/vec4.hpp>
 
 #include "Documents.h"
 
@@ -201,6 +203,138 @@ BOOST_AUTO_TEST_CASE(a_colour_that_is_not_four_numbers_is_refused) {
             BOOST_CHECK(!loaded);
         }
     }
+}
+
+/**
+ * A theme put beneath keeps every value the theme over it names and fills in the rest, for a
+ * style of the same class and name, and of the same state for a button. A style with no match
+ * is added after the theme's own, so the theme's own first style of a class still dresses a
+ * component that names none.
+ **/
+BOOST_AUTO_TEST_CASE(a_theme_beneath_fills_in_what_the_one_over_it_does_not_name) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "game", "styles": [
+            { "class": "ui", "name": "default", "colors": [ { "name": "accent", "value": [1, 0, 0, 1] } ] },
+            { "class": "button", "name": "go", "state": "hover", "numbers": [ { "name": "corner", "value": 3 } ] }
+        ] } ],
+        "containers": [] })", &loaded);
+    BOOST_REQUIRE(loaded);
+    BOOST_REQUIRE(ui->beneath(boost::json::parse(R"({
+        "themes": [ { "name": "shell", "styles": [
+            { "class": "panel", "name": "plate", "numbers": [ { "name": "radius", "value": 2 } ] },
+            { "class": "ui", "name": "default",
+              "colors": [ { "name": "accent", "value": [0, 0, 1, 1] } ],
+              "numbers": [ { "name": "radius", "value": 8 } ] },
+            { "class": "button", "name": "go", "state": "normal", "numbers": [ { "name": "corner", "value": 5 } ] }
+        ] } ] })").as_object()));
+
+    const boost::shared_ptr<v3d::ui::style::Theme> theme = ui->activeTheme();
+    BOOST_REQUIRE(theme);
+    BOOST_TEST(theme->name() == "game");
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> chrome = theme->getStyleSet("", "ui");
+    BOOST_REQUIRE_EQUAL(chrome.size(), 1U);
+    glm::vec4 accent(0.0F);
+    v3d::ui::style::readColour(chrome.front(), "accent", &accent);
+    BOOST_CHECK_CLOSE(accent.r, 1.0F, 0.001F);
+    float radius = 0.0F;
+    v3d::ui::style::readMetric(chrome.front(), "radius", &radius);
+    BOOST_CHECK_CLOSE(radius, 8.0F, 0.001F);
+
+    BOOST_CHECK_EQUAL(theme->getStyleSet("", "panel").size(), 1U);
+    // the hover skin and the normal one are two styles, not one filled in from the other
+    const std::vector<boost::shared_ptr<v3d::ui::style::Style>> buttons = theme->getStyleSet("go", "button");
+    BOOST_REQUIRE_EQUAL(buttons.size(), 2U);
+    float corner = 0.0F;
+    v3d::ui::style::readMetric(buttons.front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 3.0F, 0.001F);
+}
+
+/**
+ * Each theme a style is put beneath takes its own copy of the style, of the same kind. Filling
+ * in one theme's copy later leaves the other themes and the theme beneath as they were.
+ **/
+BOOST_AUTO_TEST_CASE(a_style_put_beneath_two_themes_is_not_shared_between_them) {
+    const auto plate = [](const std::string& name, float value) {
+        const boost::shared_ptr<v3d::ui::style::Style> style =
+            boost::make_shared<v3d::ui::style::Style>(v3d::ui::style::Selector{ .name = "plate", .className = "panel" });
+        style->addProperty(boost::make_shared<v3d::ui::style::property::Number>(name, value), "number");
+        return style;
+    };
+    v3d::ui::style::Theme lower("lower");
+    lower.addStyle(plate("radius", 2.0F));
+    lower.addStyle(boost::make_shared<v3d::ui::style::Button>("go", v3d::ui::style::Button::State::Hover));
+    v3d::ui::style::Theme one("one");
+    v3d::ui::style::Theme two("two");
+    one.beneath(lower);
+    two.beneath(lower);
+
+    v3d::ui::style::Theme further("further");
+    further.addStyle(plate("corner", 4.0F));
+    one.beneath(further);
+
+    float corner = 0.0F;
+    v3d::ui::style::readMetric(one.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 4.0F, 0.001F);
+    corner = 0.0F;
+    v3d::ui::style::readMetric(two.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 0.0F, 0.001F);
+    v3d::ui::style::readMetric(lower.getStyleSet("plate", "panel").front(), "corner", &corner);
+    BOOST_CHECK_CLOSE(corner, 0.0F, 0.001F);
+    float radius = 0.0F;
+    v3d::ui::style::readMetric(two.getStyleSet("plate", "panel").front(), "radius", &radius);
+    BOOST_CHECK_CLOSE(radius, 2.0F, 0.001F);
+
+    const boost::shared_ptr<v3d::ui::style::Button> button =
+        boost::dynamic_pointer_cast<v3d::ui::style::Button>(two.getStyleSet("go", "button").front());
+    BOOST_REQUIRE(button);
+    BOOST_CHECK(button->state() == v3d::ui::style::Button::State::Hover);
+}
+
+/**
+ * A ui with no theme of its own takes the themes put beneath it, and the first is active. A
+ * document that does not read puts nothing beneath.
+ **/
+BOOST_AUTO_TEST_CASE(a_ui_with_no_theme_takes_the_one_put_beneath) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({ "themes": [], "containers": [] })", &loaded);
+    BOOST_REQUIRE(loaded);
+    BOOST_TEST(!ui->activeTheme());
+    BOOST_TEST(!ui->beneath(boost::json::parse(R"({ "containers": [] })").as_object()));
+    BOOST_TEST(!ui->activeTheme());
+
+    BOOST_REQUIRE(ui->beneath(boost::json::parse(R"({ "themes": [ { "name": "shell" } ] })").as_object()));
+    BOOST_REQUIRE(ui->activeTheme());
+    BOOST_TEST(ui->activeTheme()->name() == "shell");
+}
+
+/**
+ * A panel's opacity multiplies the panel's alpha, whether the panel was named or derived from
+ * an accent, and switching away puts the opaque panel back.
+ **/
+BOOST_AUTO_TEST_CASE(a_panels_opacity_applies_over_its_colour) {
+    v3d::ui::paint::ComponentRenderer drawn = renderer();
+    const float opaque = drawn.dressing().panel.a;
+
+    const boost::shared_ptr<v3d::ui::style::Theme> named = boost::make_shared<v3d::ui::style::Theme>("named");
+    const boost::shared_ptr<v3d::ui::style::Style> plain = boost::make_shared<v3d::ui::style::Style>(
+        v3d::ui::style::Selector{.name = "default", .className = "ui"});
+    plain->addProperty(boost::make_shared<v3d::ui::style::property::Number>("panel-opacity", 0.9F), "number");
+    named->addStyle(plain);
+    drawn.theme(named);
+    BOOST_CHECK_CLOSE(drawn.dressing().panel.a, opaque * 0.9F, 0.001F);
+
+    const boost::shared_ptr<v3d::ui::style::Theme> derived = boost::make_shared<v3d::ui::style::Theme>("derived");
+    const boost::shared_ptr<v3d::ui::style::Style> accented = boost::make_shared<v3d::ui::style::Style>(
+        v3d::ui::style::Selector{.name = "default", .className = "ui"});
+    accented->addProperty(boost::make_shared<v3d::ui::style::property::Number>("panel-opacity", 0.5F), "number");
+    accented->addProperty(boost::make_shared<v3d::ui::style::property::Color>("accent", glm::vec4(1.0F, 0.5F, 0.0F, 1.0F)), "color");
+    derived->addStyle(accented);
+    drawn.theme(derived);
+    BOOST_CHECK_CLOSE(drawn.dressing().panel.a, 0.5F, 0.001F);
+
+    drawn.theme(boost::shared_ptr<v3d::ui::style::Theme>());
+    BOOST_CHECK_CLOSE(drawn.dressing().panel.a, opaque, 0.001F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

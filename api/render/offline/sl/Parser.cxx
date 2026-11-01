@@ -42,17 +42,11 @@
 
 namespace v3d::render::offline::sl {
 
-namespace {
-
-std::string position(const Token & token) {
+std::string Parser::position(const Token & token) {
     return " at line " + std::to_string(token.line()) + ", column " + std::to_string(token.column());
 }
 
-/**
- * What a token is, for a diagnostic. An END has no text to quote, so the diagnostic says
- * "end of source" rather than showing an empty pair of quotes.
- **/
-std::string describe(const Token & token) {
+std::string Parser::describe(const Token & token) {
     switch (token.kind()) {
         case Token::Kind::END:
             return "end of source";
@@ -69,15 +63,11 @@ std::string describe(const Token & token) {
     return "'" + token.text() + "'";
 }
 
-/**
- * Whether a keyword names a message passing call. "surface" and "displacement" are shader types
- * at the top of a file, and inside a shader's body they can only be calls.
- **/
-bool messageCall(const Token & token) {
+bool Parser::messageCall(const Token & token) {
     return token.kind() == Token::Kind::KEYWORD && (token.text() == "surface" || token.text() == "displacement");
 }
 
-bool shaderType(const Token & token, ShaderType* type) {
+bool Parser::shaderType(const Token & token, ShaderType* type) {
     if (token.kind() != Token::Kind::KEYWORD) {
         return false;
     }
@@ -97,15 +87,13 @@ bool shaderType(const Token & token, ShaderType* type) {
     return true;
 }
 
-bool assignment(const Token & token) {
+bool Parser::assignment(const Token & token) {
     if (token.kind() != Token::Kind::OPERATOR) {
         return false;
     }
     const std::string & text = token.text();
     return text == "=" || text == "+=" || text == "-=" || text == "*=" || text == "/=";
 }
-
-};  // namespace
 
 Parser::Parser(std::istream & stream) : lexer_(stream) {
 }

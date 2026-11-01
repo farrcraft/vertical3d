@@ -73,6 +73,13 @@ class Image {
         unsigned char operator[] (unsigned int index) const;
 
  private:
+    /**
+     * @return the format of that many bits per pixel, or RGB for a depth no format describes.
+     *         RGB is then a defined value but not necessarily a correct one, so a writer checks
+     *         the format it receives rather than assuming one
+     **/
+    static Image::Format formatOf(uint8_t bpp);
+
         unsigned char * data_;  // Data (Up To 32 Bits)
         uint8_t bpp_;  // Color Depth In Bits Per Pixel
         uint32_t width_;

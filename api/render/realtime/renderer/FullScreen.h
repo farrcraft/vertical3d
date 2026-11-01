@@ -105,6 +105,12 @@ class FullScreen final {
     PipelineHandle pipeline() const noexcept;
 
  private:
+    /**
+     * How many sources each descriptor pool holds before DescriptorPool adds another. A source is
+     * made when a target is created or resized, so a few cover most programs.
+     **/
+    static constexpr uint32_t setsPerPool = 8;
+
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<Resources> resources_;
     boost::shared_ptr<vulkan::pipeline::DescriptorPool> sources_;

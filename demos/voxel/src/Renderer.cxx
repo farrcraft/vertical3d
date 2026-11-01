@@ -72,58 +72,6 @@ const uint32_t fragmentShader[] =
 const char* const terrainPass = v3d::render::realtime::WindowRenderer::colourPass;
 
 /**
- * The pass the overlay and the ui draw into, over whatever the terrain left.
- **/
-const char* const overlayPass = "overlay";
-
-/**
- * What the debug readout's window is titled, which is also its id in the immediate layer.
- **/
-const char* const debugTitle = "Debug";
-
-/**
- * The size the ui and the debug overlay are drawn at. Glyphs are distance fields, so the
- * atlas is scaled to this size rather than rasterized at it.
- **/
-const float fontSize = 18.0F;
-
-constexpr glm::vec4 sky(0.4F, 0.6F, 0.9F, 1.0F);
-constexpr glm::vec4 textColour(0.95F, 0.95F, 0.95F, 1.0F);
-constexpr glm::vec4 white(1.0F, 1.0F, 1.0F, 1.0F);
-
-/**
- * How many chunks are remeshed in one tick. Each mesh waits for its staging copy, so meshing
- * the whole world in one frame would stall that frame visibly.
- **/
-const size_t chunkUpdatesPerTick = 16;
-
-/**
- * The sun, in world space and well above a 256 block wide world.
- **/
-constexpr glm::vec4 sunPosition(128.0F, 200.0F, 128.0F, 1.0F);
-constexpr glm::vec4 ambientLight(0.4F, 0.4F, 0.4F, 1.0F);
-
-/**
- * The specular colour every block shares, with its shininess in the fourth component.
- **/
-constexpr glm::vec4 blockSpecular(0.8F, 0.8F, 0.8F, 100.0F);
-
-/**
- * The farthest distance, in blocks, that a draw's depth key can hold.
- **/
-constexpr float maxDepthKey = static_cast<float>(std::numeric_limits<uint16_t>::max());
-
-/**
- * Where the debug readout sits and how big it is, in pixels, and the alpha its background is
- * drawn at. Its height is debugHeight plus one debugLineHeight for each timed span.
- **/
-constexpr glm::vec2 debugPosition(20.0F, 20.0F);
-constexpr float debugWidth = 260.0F;
-constexpr float debugHeight = 154.0F;
-constexpr float debugLineHeight = 26.0F;
-constexpr float debugAlpha = 0.85F;
-
-/**
  * The block palette, indexed by Voxel::BlockType less one. Air is never meshed, so the
  * table starts at dirt.
  **/
@@ -176,8 +124,7 @@ Renderer::Renderer(const boost::shared_ptr<Scene> & scene, const boost::shared_p
     builder_ = boost::make_shared<MeshBuilder>(scene_->chunks(),
         ChunkMeshBuilder(context_->device(), context_->uploader()));
 
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
+    v3d::ui::shell::Screen::Options options = v3d::shell::Shell::game();
     // the frame time is in the debug readout, so there is no overlay to draw it
     options.statistics = false;
     // the debug readout is an immediate mode panel: it is written as calls every frame

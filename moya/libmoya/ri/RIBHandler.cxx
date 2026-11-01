@@ -1,0 +1,392 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "RIBHandler.h"
+
+#include <api/render/offline/Sampling.h>
+#include <api/render/offline/rib/Declarations.h>
+#include <api/render/offline/rib/Requests.h>
+#include <api/type/Checked.h>
+#include <moya/libmoya/Polygon.h>
+#include <moya/libmoya/state/RenderContext.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <boost/make_shared.hpp>
+
+namespace v3d::moya::ri {
+
+std::optional<uint32_t> RIBHandler::count(float value) {
+    return v3d::type::toCount(value, {.minimum = 1, .maximum = RIBHandler::largestLimit});
+}
+
+int RIBHandler::side(unsigned int value) {
+    return static_cast<int>(std::min(value, v3d::render::offline::largestResolution + 1));
+}
+
+void RIBHandler::notice() {
+    static const bool printed = [] {
+        std::cout << "The RenderMan (R) Interface Procedures and Protocol are:" << "\n" <<
+                     "Copyright 1988, 1989, Pixar" << "\n" <<
+                     "All Rights Reserved" << "\n";
+        return true;
+    }();
+    (void)printed;
+}
+
+RIBHandler::RIBHandler(const std::string & name) : context_(name) {
+    notice();
+}
+
+state::RenderContext & RIBHandler::context() {
+    return context_;
+}
+
+const v3d::render::offline::rib::Declarations & RIBHandler::declarations() const {
+    return declarations_;
+}
+
+void RIBHandler::declare(const v3d::render::offline::rib::Declare & request) {
+    // a declaration that names no type declares nothing. The reader has already reported it
+    // for a file, and RiDeclare has nothing to report it to
+    (void)declarations_.declare(request);
+}
+
+void RIBHandler::option(const std::string & name, const ParameterList & parameters) {
+    if (name == "searchpath") {
+        // RI writes it as Option "searchpath" "shader" ["./shaders:&"]. The renderer looks
+        // up shaders and textures only, so every other path is ignored
+        if (parameters.has("shader")) {
+            context().searchpath(parameters.string("shader"));
+        }
+        if (parameters.has("texture")) {
+            context().textures().searchpath(parameters.string("texture"));
+        }
+        return;
+    }
+    if (name == "trace" && parameters.has("maxdepth")) {
+        const float depth = parameters.number("maxdepth", 0.0F);
+        const bool usable = std::isfinite(depth) && depth >= 0.0F;
+        if (!usable) {
+            context().logger()->get()->warn("a trace depth of {} is not a depth, and is not used", depth);
+            return;
+        }
+        if (depth > DEEPEST_TRACE) {
+            context().logger()->get()->warn("a trace depth of {} is deeper than {}, and {} is used", depth, DEEPEST_TRACE, DEEPEST_TRACE);
+        }
+        context().traced().traceDepth(static_cast<unsigned int>(std::min(depth, DEEPEST_TRACE)));
+        return;
+    }
+    if (name != "limits") {
+        return;
+    }
+    const std::vector<float> & bucket = parameters.floats("bucketsize");
+    if (bucket.size() >= 2) {
+        const std::optional<uint32_t> across = count(bucket[0]);
+        const std::optional<uint32_t> down = count(bucket[1]);
+        if (across && down) {
+            context().bucketSize(*across, *down);
+        } else {
+            context().logger()->get()->warn("a bucket size of {} by {} is not a size, and is not used", bucket[0], bucket[1]);
+        }
+    }
+    if (parameters.has("gridsize")) {
+        const float grid = parameters.number("gridsize", 256.0F);
+        const std::optional<uint32_t> size = count(grid);
+        if (size) {
+            context().gridSize(*size);
+        } else {
+            context().logger()->get()->warn("a grid size of {} is not a size, and is not used", grid);
+        }
+    }
+}
+
+void RIBHandler::hider(const std::string & name, const ParameterList & parameters) {
+    (void)parameters;
+    context().hider(name);
+}
+
+void RIBHandler::surface(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    context().surface(name, parameters);
+}
+
+void RIBHandler::lightSource(const v3d::render::offline::rib::LightSource & request, const ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
+    context().lightSource(request, parameters);
+}
+
+void RIBHandler::displacement(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    context().displacement(name, parameters);
+}
+
+void RIBHandler::attribute(const std::string & name, const ParameterList & parameters) {
+    context().attribute(name, parameters);
+}
+
+void RIBHandler::areaLightSource(const v3d::render::offline::rib::LightSource & request,
+    const ParameterList & parameters) {
+    if (request.shader.empty()) {
+        return;
+    }
+    context().areaLightSource(request, parameters);
+}
+
+void RIBHandler::illuminate(const std::string & handle, bool on) {
+    if (handle.empty()) {
+        return;
+    }
+    context().illuminate(handle, on);
+}
+
+void RIBHandler::imager(const std::string & name, const ParameterList & parameters) {
+    if (name.empty()) {
+        return;
+    }
+    context().imager(name, parameters);
+}
+
+void RIBHandler::format(const v3d::render::offline::rib::Format & request) {
+    unsigned int width = request.width;
+    unsigned int height = request.height;
+    if (width_ > 0 && height_ > 0) {
+        width = width_;
+        height = height_;
+    }
+    context().imageResolution(glm::ivec2(side(width), side(height)), request.pixelAspect);
+}
+
+void RIBHandler::frameAspectRatio(float aspect) {
+    context().frameAspectRatio(aspect);
+}
+
+void RIBHandler::screenWindow(const v3d::render::offline::rib::ScreenWindow & request) {
+    context().screenWindow(request);
+}
+
+void RIBHandler::cropWindow(const v3d::render::offline::rib::CropWindow & request) {
+    context().cropWindow(request);
+}
+
+void RIBHandler::projection(const std::string & name, const ParameterList & parameters) {
+    context().projection(name, parameters.number("fov", state::RenderContext::defaultFov));
+}
+
+void RIBHandler::clipping(const v3d::render::offline::rib::Clipping & request) {
+    context().clipping(request);
+}
+
+void RIBHandler::depthOfField(const v3d::render::offline::rib::DepthOfField & request) {
+    context().sampling().fstop = request.fstop;
+    context().sampling().focalLength = request.focalLength;
+    context().sampling().focalDistance = request.focalDistance;
+}
+
+void RIBHandler::shutter(const v3d::render::offline::rib::Shutter & request) {
+    context().sampling().shutter = glm::vec2(request.open, request.close);
+}
+
+void RIBHandler::pixelSamples(const glm::uvec2 & samples) {
+    context().sampling().samples = samples;
+}
+
+void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
+    context().sampling().filter = filter;
+    context().sampling().width = glm::vec2(xwidth, ywidth);
+}
+
+void RIBHandler::pixelVariance(float variation) {
+    context().sampling().variance = variation;
+}
+
+void RIBHandler::output(const std::string & name) {
+    output_ = name;
+    context().display({.name = name, .type = "file", .mode = "rgb"});
+}
+
+bool RIBHandler::resolution(int width, int height) {
+    // the context reads a side of zero or less as its default, so such a side is refused here
+    if (width < 1 || height < 1 || !context().imageResolution(glm::ivec2(width, height), 1.0F)) {
+        return false;
+    }
+    width_ = static_cast<unsigned int>(width);
+    height_ = static_cast<unsigned int>(height);
+    return true;
+}
+
+void RIBHandler::display(const v3d::render::offline::rib::Display & request, const ParameterList & parameters) {
+    if (!output_.empty()) {
+        context().display({.name = output_, .type = "file", .mode = request.mode}, parameters);
+        return;
+    }
+    context().display(request, parameters);
+}
+
+void RIBHandler::worldBegin() {
+    context().prepareWorld();
+}
+
+void RIBHandler::worldEnd() {
+    context().render();
+}
+
+void RIBHandler::attributeBegin() {
+    context().attributeBegin();
+}
+
+void RIBHandler::attributeEnd() {
+    context().attributeEnd();
+}
+
+void RIBHandler::transformBegin() {
+    context().pushTransform();
+}
+
+void RIBHandler::transformEnd() {
+    context().popTransform();
+}
+
+void RIBHandler::identity() {
+    context().setIdentityTransform();
+}
+
+void RIBHandler::transform(const glm::mat4x4 & matrix) {
+    context().setTransform(matrix);
+}
+
+void RIBHandler::concatTransform(const glm::mat4x4 & matrix) {
+    context().concatTransform(matrix);
+}
+
+void RIBHandler::translate(float dx, float dy, float dz) {
+    context().translate(dx, dy, dz);
+}
+
+void RIBHandler::rotate(float angle, const glm::vec3 & axis) {
+    context().rotate(angle, axis);
+}
+
+void RIBHandler::scale(float sx, float sy, float sz) {
+    context().scale(sx, sy, sz);
+}
+
+void RIBHandler::coordinateSystem(const std::string & space) {
+    if (space.empty()) {
+        return;
+    }
+    context().saveCoordinateSystem(space);
+}
+
+void RIBHandler::coordSysTransform(const std::string & space) {
+    if (space.empty()) {
+        return;
+    }
+    context().setCoordinateSystem(space);
+}
+
+void RIBHandler::motionBegin(const std::vector<float> & times) {
+    motion_ = true;
+    primitives_ = 0;
+    context().motionBegin(times);
+}
+
+void RIBHandler::motionEnd() {
+    motion_ = false;
+    context().motionEnd();
+}
+
+bool RIBHandler::deforms() {
+    if (!motion_ || primitives_++ == 0) {
+        return false;
+    }
+    if (!deformed_) {
+        deformed_ = true;
+        context().logger()->get()->warn("a primitive inside a motion block deforms, which is not supported; "
+            "it is drawn at the block's first time");
+    }
+    return true;
+}
+
+void RIBHandler::color(const glm::vec3 & value) {
+    context().color(value);
+}
+
+void RIBHandler::opacity(const glm::vec3 & value) {
+    context().opacity(value);
+}
+
+void RIBHandler::shadingRate(float size) {
+    context().shadingRate(size);
+}
+
+void RIBHandler::basis(const v3d::render::offline::rib::Basis & request) {
+    context().basis(request);
+}
+
+void RIBHandler::curves(const v3d::render::offline::rib::Curves & request, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
+    context().addCurves(request, parameters);
+}
+
+void RIBHandler::polygon(unsigned int vertices, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
+    const boost::shared_ptr<Polygon> polygon = Polygon::from(parameters, vertices);
+    if (polygon) {
+        context().addPolygon(polygon);
+    }
+}
+
+void RIBHandler::sphere(const v3d::render::offline::rib::Sphere & request, const ParameterList & parameters) {
+    (void)parameters;
+    if (deforms()) {
+        return;
+    }
+    if (!context().addSphere(request) && !spheres_) {
+        spheres_ = true;
+        context().logger()->get()->warn("the reyes hider does not dice spheres, so this scene renders without them");
+    }
+}
+
+void RIBHandler::pointsPolygons(const v3d::render::offline::rib::PointsPolygons & request, const ParameterList & parameters) {
+    if (deforms()) {
+        return;
+    }
+    const std::vector<unsigned int> & indices = request.indices;
+    const std::vector<glm::vec3> points = parameters.points("P");
+    const std::vector<glm::vec3> colors = parameters.points("Cs");
+    const std::vector<glm::vec3> normals = parameters.points("N");
+    const std::vector<float> & st = parameters.floats("st");
+    std::size_t offset = 0;
+    for (const unsigned int count : request.counts) {
+        if (offset + count > indices.size()) {
+            return;
+        }
+        if (count >= 3) {
+            const std::vector<unsigned int> face(indices.begin() + static_cast<std::ptrdiff_t>(offset), indices.begin() + static_cast<std::ptrdiff_t>(offset + count));
+            context().addPolygon(Polygon::build(points, colors, normals, st, face));
+        }
+        offset += count;
+    }
+}
+
+};  // namespace v3d::moya::ri

@@ -30,6 +30,12 @@ namespace {
  **/
 const float characterWidth = 10.0F;
 
+/** A label's name, and the text it shows. **/
+struct Labelled {
+    std::string name;
+    std::string text;
+};
+
 /**
  * A renderer that measures a string at ten pixels a character and writes nothing, which is
  * enough to lay a tree out without a font, an atlas or a device.
@@ -45,12 +51,6 @@ boost::shared_ptr<v3d::ui::component::Panel> panel(const std::string& name) {
     component->name(name);
     return component;
 }
-
-/** A label's name, and the text it shows. **/
-struct Labelled {
-    std::string name;
-    std::string text;
-};
 
 boost::shared_ptr<v3d::ui::component::Label> label(const Labelled& spec) {
     boost::shared_ptr<v3d::ui::component::Label> component = boost::make_shared<v3d::ui::component::Label>();

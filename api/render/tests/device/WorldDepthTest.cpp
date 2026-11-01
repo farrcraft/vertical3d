@@ -41,6 +41,9 @@ const VkFormat colourFormat = VK_FORMAT_R8G8B8A8_UNORM;
 const uint32_t width = 64;
 const uint32_t height = 32;
 
+constexpr glm::vec4 NEAR_COLOUR(1.0F, 0.0F, 0.0F, 1.0F);
+constexpr glm::vec4 FAR_COLOUR(0.0F, 0.0F, 1.0F, 1.0F);
+
 /**
  * A projection that measures the world in pixels of the target: x right over [0, width), y
  * down over [0, height), and z into the screen over [0, 1], as Vulkan clip space requires.
@@ -69,9 +72,6 @@ canvas::World::Corners rect(float minX, float minY, float maxX, float maxY, floa
         glm::vec3(minX, maxY, depth)
     };
 }
-
-constexpr glm::vec4 NEAR_COLOUR(1.0F, 0.0F, 0.0F, 1.0F);
-constexpr glm::vec4 FAR_COLOUR(0.0F, 0.0F, 1.0F, 1.0F);
 
 /**
  * The two overlapping quads, submitted in the order given.

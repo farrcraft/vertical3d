@@ -26,22 +26,6 @@
 
 namespace diorama {
 
-namespace {
-
-/** The clip the well plays, as sounds.json files it. **/
-const char* const WELL_CLIP = "well";
-
-/** Where the voice sits above the well's base: at the water. **/
-constexpr glm::vec3 WATER(0.0F, 0.6F, 0.0F);
-
-/** How long the well's voice takes to fade up, in milliseconds. **/
-constexpr int FADE_IN = 1000;
-
-/** The orthographic half height the camera starts at, which shows the whole village. **/
-constexpr float START_ZOOM = 8.0F;
-
-};  // namespace
-
 /**
  **/
 Diorama::Diorama(const std::string& appPath) :

@@ -4,7 +4,10 @@ v3d_add_test(vertical3d
 	"TestMain.cxx"
 	"BindingsTest.cxx"
 
-	"view/ViewLayoutTest.cxx"
+	"view/AreaLayoutTest.cxx"
+	"view/AreaViewsTest.cxx"
+	"view/AreaFrameTest.cxx"
+	"view/ViewOverlayTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
 
@@ -21,28 +24,37 @@ v3d_add_test(vertical3d
 	"render/RIBExportVisitorTest.cxx"
 	"store/ProjectTest.cxx"
 	"store/CodecTest.cxx"
-	"store/SceneStoreTest.cxx"
+	"store/SceneTest.cxx"
 	"command/ModellingTest.cxx"
 
 	"document/DocumentTest.cxx"
 
 	"control/PlaybackTest.cxx"
 	"control/PointerTest.cxx"
+	"control/AreaChromeTest.cxx"
+	"control/CommandSearchTest.cxx"
+	"control/IconSheetTest.cxx"
+	"control/NoticesTest.cxx"
+	"control/OutlinerTest.cxx"
+	"control/PropertiesEditorTest.cxx"
+	"control/StatusBarTest.cxx"
+	"control/TopBarTest.cxx"
+	"control/WorkspacesTest.cxx"
 
-	"command/CommandStackTest.cxx"
-	"command/GroupCommandTest.cxx"
-	"command/KeyCommandTest.cxx"
-	"command/SettingsCommandTest.cxx"
+	"command/StackTest.cxx"
+	"command/GroupTest.cxx"
+	"command/KeyTest.cxx"
+	"command/SettingsTest.cxx"
 
 	"render/DelegateTest.cxx"
 	"render/BatchTest.cxx"
-	"render/RenderPanelsTest.cxx"
+	"render/PanelsTest.cxx"
 
-	"tool/CameraControlToolTest.cxx"
+	"tool/CameraControlTest.cxx"
 	"tool/PickerTest.cxx"
-	"tool/SelectToolTest.cxx"
-	"tool/ToolRouterTest.cxx"
-	"tool/TransformToolTest.cxx"
+	"tool/SelectTest.cxx"
+	"tool/RouterTest.cxx"
+	"tool/TransformTest.cxx"
 
 	"manipulator/ManipulatorTest.cxx"
 	"manipulator/TargetTest.cxx")
@@ -50,7 +62,6 @@ v3d_add_test(vertical3d
 target_link_libraries(v3dtest_vertical3d PRIVATE
 	v3dlib_editor
 	v3dlib_animation
-	v3dlib_asset
 	v3dlib_brep
 	v3dlib_curve
 	v3dlib_database

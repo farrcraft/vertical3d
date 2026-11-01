@@ -75,6 +75,8 @@ v3d_add_api_library(render_offline
 	"sl/Emitter.h" "sl/Emitter.cxx"
 	"sl/runtime/Machine.h" "sl/runtime/Machine.cxx"
 	"sl/runtime/Library.cxx"
+	"sl/runtime/internal/Range.h"
+	"sl/runtime/internal/Site.h"
 	"sl/Instance.h" "sl/Instance.cxx"
 	"sl/Placed.h" "sl/Placed.cxx"
 	"sl/Globals.h" "sl/Globals.cxx"

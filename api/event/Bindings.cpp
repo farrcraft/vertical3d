@@ -8,6 +8,7 @@
 #include <api/asset/Json.h>
 #include <api/log/Logger.h>
 
+#include "Chord.h"
 #include "Router.h"
 #include "Event.h"
 #include "State.h"
@@ -171,7 +172,7 @@ bool Bindings::build() {
         const std::string command = destination.str();
         declared.emplace_back(command, std::string(source.name()));
         source = rebound(source, command);
-        if (known_ && !known_(source)) {
+        if (known_ && !known_(Event(chord(source.name()).key, source.context()))) {
             logger_->get()->warn("{} is bound to {}, which no device sends, so it never fires", command, source.str());
         }
         install(&installed, source, destination);

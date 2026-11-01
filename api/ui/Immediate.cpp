@@ -7,9 +7,11 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/Checked.h>
+#include <api/ui/Transition.h>
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
+#include <api/ui/paint/Palette.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Theme.h>
@@ -28,38 +30,6 @@
 #include <glm/vec2.hpp>
 
 namespace v3d::ui {
-
-namespace {
-
-/**
- * How far a scrub moves the value for each pixel the cursor travels. One unit per pixel is
- * too fast to land on a number by hand and too slow to cross a wide range; a quarter is a
- * compromise between the two.
- **/
-const float scrubRate = 0.25F;
-
-/**
- * The most units one frame's drag may move a value. A larger step is not a hand on a mouse, and
- * is ignored.
- **/
-const int32_t scrubLimit = 1000000;
-
-/**
- * The side of the square a bullet is drawn in, as a fraction of a row.
- **/
-const float bulletScale = 0.28F;
-
-/**
- * How many segments a bullet is drawn with.
- **/
-const unsigned int bulletSides = 8;
-
-/**
- * How far into its box a checkbox's tick is inset, as a fraction of the box's side.
- **/
-const float tickInset = 0.25F;
-
-};  // namespace
 
 Immediate::Input::Input() noexcept :
 cursor(0.0F, 0.0F),
@@ -83,6 +53,22 @@ void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
     context_->write = write;
 }
 
+void Immediate::titles(const paint::Write& write) {
+    context_->strong = write;
+}
+
+void Immediate::clock(const Clock& now) noexcept {
+    context_->clock = now;
+    context_->timed = true;
+}
+
+void Immediate::scale(float factor) {
+    // the theme's sizes were read at the last scale, so they are put back before the new one
+    context_->overlay.restore(&context_->dressing);
+    context_->scale = factor;
+    context_->dressing.resize(paint::Dressing::tools().scaled(factor));
+}
+
 paint::Dressing& Immediate::dressing() noexcept {
     return context_->dressing;
 }
@@ -91,7 +77,8 @@ void Immediate::theme(const boost::shared_ptr<style::Theme>& theme) {
     // the new theme starts from what was there before any theme, so where it is silent the
     // last theme's value does not linger
     context_->overlay.restore(&context_->dressing);
-    style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), &context_->overlay, &context_->dressing);
+    style::readBase(style::lookup(theme, style::Resolver::tools, std::string_view()), paint::Palette::Use::Tools,
+        &context_->overlay, &context_->dressing, context_->scale);
 }
 
 void Immediate::begin(v3d::render::realtime::canvas::Canvas* canvas, const Input& input) {
@@ -228,7 +215,7 @@ bool Immediate::button(const std::string& label) {
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, min + size);
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size,
         context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
     return reaction.clicked;
@@ -243,7 +230,7 @@ bool Immediate::smallButton(const std::string& label) {
     const Id id = context_->identify(label);
     const immediate::Reaction reaction = context_->interact(id, min, min + size);
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     context_->label(label, min + glm::vec2(context_->dressing.padding * 0.5F, 0.0F), size,
         context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
     return reaction.clicked;
@@ -265,6 +252,48 @@ bool Immediate::selectable(const std::string& label, bool selected) {
     }
     context_->label(label, min + glm::vec2(context_->dressing.padding * 0.5F, 0.0F), size,
         context_->ink(selected ? context_->dressing.activeText : context_->dressing.text));
+    return reaction.clicked;
+}
+
+bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
+    if (context_->canvas == nullptr) {
+        return false;
+    }
+    const float line = context_->dressing.lineHeight;
+    const glm::vec2 size(context_->itemWidth(), line);
+    const glm::vec2 min = context_->place(size);
+    const glm::vec2 max = min + size;
+    const Id id = context_->identify(label);
+    const immediate::Reaction reaction = context_->interact(id, min, max);
+
+    // the mark is offered after the row, so the cursor on it is the mark's and not the row's
+    const glm::vec2 markMin(min.x + (line * static_cast<float>(row.depth)), min.y);
+    const glm::vec2 markMax = markMin + glm::vec2(line, line);
+    immediate::Reaction fold;
+    if (row.open != nullptr) {
+        fold = context_->interact(context_->identify(label + " fold"), markMin, markMax);
+        if (fold.clicked) {
+            *row.open = !*row.open;
+        }
+    }
+
+    if (row.selected) {
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.highlight);
+    } else if (reaction.hovered || fold.hovered) {
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
+    }
+    const glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
+    if (row.open != nullptr) {
+        const glm::vec2 centre = (markMin + markMax) * 0.5F;
+        const float reach = line * foldScale;
+        const float width = std::max(line * foldWidth, 1.0F);
+        const glm::vec2 tip = *row.open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
+        const glm::vec2 side = *row.open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
+        const glm::vec2 back = *row.open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
+        context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
+        context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
+    }
+    context_->label(label, glm::vec2(markMax.x, min.y), glm::vec2(max.x - markMax.x, line), ink);
     return reaction.clicked;
 }
 
@@ -291,7 +320,7 @@ bool Immediate::dragInt(const std::string& label, int* value, int low, int high)
         }
     }
 
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     std::string shown(label);
     shown.append("  ").append(std::to_string(*value));
     context_->label(shown, min + glm::vec2(context_->dressing.padding, 0.0F), size, context_->ink(context_->dressing.text));
@@ -311,7 +340,7 @@ bool Immediate::checkbox(const std::string& label, bool* value) {
         *value = !*value;
     }
 
-    paint::fillBox(context_->canvas, min, min + glm::vec2(side, side), context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + glm::vec2(side, side), context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     if (*value) {
         const glm::vec2 inset(side * tickInset, side * tickInset);
         paint::fillBox(context_->canvas, min + inset, min + glm::vec2(side, side) - inset, 0.0F, context_->ink(context_->dressing.mark));
@@ -342,7 +371,7 @@ bool Immediate::sliderFloat(const std::string& label, float* value, float low, f
 
     const float span = high - low;
     const float part = span == 0.0F ? 0.0F : std::clamp((*value - low) / span, 0.0F, 1.0F);
-    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->face(reaction.held, reaction.hovered));
+    paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     if (part > 0.0F) {
         paint::fillBox(context_->canvas, min, glm::vec2(min.x + (size.x * part), min.y + size.y), context_->dressing.radius, context_->ink(context_->dressing.fill));
     }
@@ -352,6 +381,10 @@ bool Immediate::sliderFloat(const std::string& label, float* value, float low, f
 
 bool Immediate::itemHovered() const noexcept {
     return paint::inside(context_->itemMin, context_->itemMax, context_->input.cursor) && context_->hovered == context_->itemOwner;
+}
+
+bool Immediate::itemFinished() const noexcept {
+    return context_->itemFinished;
 }
 
 void Immediate::progressBar(float fraction, const std::string& overlay) {

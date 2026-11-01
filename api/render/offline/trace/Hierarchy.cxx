@@ -19,22 +19,7 @@
 
 namespace v3d::render::offline::trace {
 
-namespace {
-
-/** How many bins the centres along the split axis are sorted into. **/
-constexpr std::size_t BINS = 16;
-
-/** A node of this many items or fewer is a leaf. **/
-constexpr std::uint32_t SMALLEST_SPLIT = 2;
-
-/** A node of this many items or fewer is a leaf when splitting it would cost more. **/
-constexpr std::uint32_t LARGEST_LEAF = 8;
-
-/** How much a box grows, as a fraction of the largest coordinate it holds. **/
-constexpr float GROWTH = 1.0e-5F;
-
-/** Which bin a centre falls in along an axis of the centres' range. **/
-std::size_t bin(float centre, float low, float scale) {
+std::size_t Hierarchy::bin(float centre, float low, float scale) {
     const float at = (centre - low) * scale;
     // clamped while still a float. An extent near zero makes the scale infinite, and an
     // infinite or NaN float converted to an integer is undefined
@@ -46,8 +31,6 @@ std::size_t bin(float centre, float low, float scale) {
     }
     return static_cast<std::size_t>(at);
 }
-
-};  // namespace
 
 void Hierarchy::Box::extend(const glm::vec3 & point) {
     min = glm::min(min, point);

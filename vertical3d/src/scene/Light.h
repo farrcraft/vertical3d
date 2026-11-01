@@ -11,7 +11,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * A light placed in the scene: a point, distant or spot light, as RI's standard
@@ -66,4 +66,4 @@ class Light final : public Item {
     Emission emission_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene

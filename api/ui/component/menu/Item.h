@@ -7,6 +7,7 @@
 
 #include <api/event/Event.h>
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 
 #include <string>
 
@@ -31,6 +32,10 @@ class Menu;
  * - numeric_input - an input item meant for a number. The library handles it as it handles
  *   input, and does not check the value
  * - key_input - an input type that uses a key name as the value
+ * - separator - a rule between two groups of items. It has no label and sends nothing, and
+ *   neither the keys nor the cursor can choose it
+ * - slider - a whole number in a range. The left and right keys step it, and each step sends
+ *   the item's event carrying the new value
  *
  * A check or radio item does not own the state it shows. Activating one dispatches its
  * event like an action item and marks nothing. Whatever handles the command sets
@@ -126,6 +131,67 @@ class Item : public Component {
       */
     bool checked() const;
 
+    /**
+     * Name the image drawn beside the label, in the column a check mark takes when the item
+     * has none. Naming a different image drops what the old name resolved to.
+     *
+     * @param source the name of the image, for whatever resolves sources to images
+     **/
+    void icon(const std::string& source);
+    std::string_view icon() const;
+
+    /**
+     * @return what icon() resolved to, unset until something has resolved it
+     **/
+    const v3d::ui::Image& image() const noexcept;
+    void image(const v3d::ui::Image& resolved) noexcept;
+
+    /**
+     * @return whether the item is a separator, which nothing can choose
+     **/
+    bool separator() const noexcept;
+
+    /**
+     * The maximum a slider runs to when its document names none.
+     **/
+    static constexpr int defaultMaximum = 10;
+
+    /**
+     * The whole numbers a slider runs between, and how far one step moves it.
+     **/
+    struct Range {
+        int minimum = 0;
+        int maximum = defaultMaximum;
+        int step = 1;
+    };
+
+    /**
+     * Set the range a slider runs between. A value it holds is clamped to the new range.
+     **/
+    void range(const Range& span);
+    const Range& range() const noexcept;
+
+    /**
+     * Move a slider's value by its step, toward the maximum for a direction above zero and
+     * toward the minimum below it, stopping at either end. A slider holding no value starts
+     * from its minimum. Any other type of item does not move.
+     *
+     * @return whether the value changed
+     **/
+    bool step(int direction);
+
+    /**
+     * Name the command a key input rebinds. A menu shows the key bound to that command as
+     * the item's value, so the row stays true after a rebinding.
+     **/
+    void binds(const v3d::event::Event& command);
+    const v3d::event::Event& binds() const noexcept;
+
+    /**
+     * @return the item's value as text, or empty when it has none
+     **/
+    std::string shown() const;
+
  private:
     std::string label_;
     boost::shared_ptr<Menu> submenu_;
@@ -135,6 +201,10 @@ class Item : public Component {
     bool checked_;
     bool hasValue_;
     v3d::event::EventData value_;
+    std::string icon_;
+    v3d::ui::Image image_;
+    Range range_;
+    v3d::event::Event binds_;
 };
 
 };  // namespace v3d::ui::component::menu

@@ -27,7 +27,7 @@
 #  - readability-make-member-function-const reports Menu::next and Menu::previous, which move
 #    the active item of the level they lock out of a weak_ptr. Nothing in *this* changes, so
 #    the check is right about the physics and wrong about the meaning.
-#  - readability-non-const-parameter reports the RI entry points in moya's RenderMan.cxx.
+#  - readability-non-const-parameter reports the RI entry points in moya's ri/RenderMan.cxx.
 #    RtToken is char*, and the signature is the standard's rather than this tree's to choose.
 #  - readability-container-contains cannot be satisfied for the two command line tools.
 #    boost::program_options::variables_map inherits contains() from std::map, but the built
@@ -73,6 +73,9 @@ CheckOptions:
   # author wrote: a straight run of assertions with no branch in it reaches 37. Nothing in this
   # tree's own macros branches, so counting them buys nothing anywhere else either.
   readability-function-cognitive-complexity.IgnoreMacros: 'true'
+  # A function longer than 100 lines does several steps, and each step deserves a name. The
+  # check sets no limit on lines unless it is given one.
+  readability-function-size.LineThreshold: '100'
   # The check already ignores std::bad_alloc, since running out of memory is not a defect in the
   # function that allocates. MSVC's debug library throws std::bad_array_new_length, a kind of
   # bad_alloc, from the size check of every allocation, including the proxy that moving a string

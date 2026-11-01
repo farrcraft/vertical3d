@@ -20,7 +20,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::render {
 
 /**
  * Renders with moya, linked into the editor, on a thread of its own.
@@ -50,7 +50,7 @@ class MoyaDelegate final : public Delegate {
     boost::shared_ptr<v3d::image::Image> picture() const override;
 
  protected:
-    void start(const Scene& scene, const v3d::type::camera::Profile& from, const RenderSettings& settings) override;
+    void start(const scene::Scene& scene, const v3d::type::camera::Profile& from, const scene::RenderSettings& settings) override;
 
  private:
     /**
@@ -66,4 +66,4 @@ class MoyaDelegate final : public Delegate {
     std::jthread worker_;
 };
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::render

@@ -17,7 +17,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace v3d::editor {
+namespace v3d::editor::scene {
 
 /**
  * One control point among the curves of an item: which curve, and which of its points.
@@ -112,4 +112,4 @@ std::vector<std::pair<v3d::brep::Index, glm::vec3>> controlPoints(const v3d::cur
  **/
 std::vector<std::pair<v3d::brep::Index, glm::vec3>> handlePoints(const v3d::curve::Curves& curves);
 
-};  // namespace v3d::editor
+};  // namespace v3d::editor::scene
