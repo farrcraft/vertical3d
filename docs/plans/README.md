@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-There is no open plan.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [EditorFinish](EditorFinish.md) | Editor, UI | The editor's views, headers, outliner, properties, status bar and notices as designed; a timeline, graph editor, console, render view and render settings as area editors; and the Animation, Shading and Rendering workspaces |
 
 ## Completed plans
 
