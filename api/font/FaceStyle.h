@@ -19,6 +19,8 @@ struct FaceStyle final {
 
     unsigned int weight = REGULAR;
     bool italic = false;
+
+    bool operator==(const FaceStyle& other) const = default;
 };
 
 };  // namespace v3d::font

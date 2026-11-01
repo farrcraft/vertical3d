@@ -8,7 +8,10 @@
 #include <api/font/internal/FaceHandle.h>
 #include <api/font/internal/LibraryHandle.h>
 #include <api/log/Logger.h>
+#include <hb-ot.h>
+#include <hb.h>
 
+#include "FaceMetrics.h"
 #include "FaceStyle.h"
 #include "Library.h"
 
@@ -16,6 +19,7 @@
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
 
+#include <memory>
 #include <string>
 
 #include <boost/make_shared.hpp>
@@ -84,6 +88,27 @@ unsigned int Face::glyphIndex(char32_t charcode) const {
 
 bool Face::has(char32_t charcode) const {
     return glyphIndex(charcode) != 0;
+}
+
+FaceMetrics Face::metrics(float size) const {
+    const std::unique_ptr<hb_font_t, decltype(&hb_font_destroy)> font(hb_font_create(handle_->shaping), &hb_font_destroy);
+    // measured in design units and scaled here, so a small size loses no precision to rounding
+    const auto units = static_cast<int>(hb_face_get_upem(handle_->shaping));
+    hb_font_set_scale(font.get(), units, units);
+    const float scale = units > 0 ? size / static_cast<float>(units) : 0.0F;
+    const auto measure = [&font, scale](hb_ot_metrics_tag_t tag) {
+        hb_position_t position = 0;
+        hb_ot_metrics_get_position_with_fallback(font.get(), tag, &position);
+        return static_cast<float>(position) * scale;
+    };
+    // OpenType's y grows upwards, so a descender and an underline offset are negative there
+    return FaceMetrics{ .ascender = measure(HB_OT_METRICS_TAG_HORIZONTAL_ASCENDER),
+        .descender = -measure(HB_OT_METRICS_TAG_HORIZONTAL_DESCENDER),
+        .lineGap = measure(HB_OT_METRICS_TAG_HORIZONTAL_LINE_GAP),
+        .underlinePosition = -measure(HB_OT_METRICS_TAG_UNDERLINE_OFFSET),
+        .underlineThickness = measure(HB_OT_METRICS_TAG_UNDERLINE_SIZE),
+        .strikeoutPosition = measure(HB_OT_METRICS_TAG_STRIKEOUT_OFFSET),
+        .strikeoutThickness = measure(HB_OT_METRICS_TAG_STRIKEOUT_SIZE) };
 }
 
 const boost::shared_ptr<Library>& Face::library() const noexcept {

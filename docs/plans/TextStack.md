@@ -90,7 +90,7 @@ Text passes through five layers. Each takes what the one above it gives.
 
 **A text object** is what the ui and the games hold. It is shaped and laid out once, and kept
 while its string, style and width stay the same. It answers its size, the caret position of a
-string index, the index under a point, and the rectangles of a selection. It draws itself.
+string index, the index under a point, and the rectangles of a selection. A renderer draws it.
 
 **Two ways to draw a glyph:**
 
@@ -111,7 +111,7 @@ features, the variable font axes, the decorations, and the effects.
 | Text: the glyph atlas. Open: pages that grow and drop unused glyphs, or one fixed atlas cleared when it fills. | 8 |
 | Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
 | Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
-| Text: the text object the ui and the games hold, and how it is cached. Open. | 6 |
+| Text: the text object the ui and the games hold, and how it is cached. Decided by ADR-0143: a paragraph with style ranges over a shared shaping cache. | 6 |
 | Text: how coverage is blended. Open: as it lands in a display space target, with a contrast curve, or in linear space with stem darkening. | 12 |
 | Text: which colour glyph formats are read. Open: COLR v0 and v1, CBDT, sbix and SVG. | 14 |
 
@@ -225,18 +225,33 @@ libunibreak, Raqm and ICU4X.
 
 ### Step 6 — The text object and layout
 
-**Open.** Decide the text object and its cache.
+**Closed.** ADR-0143 decided it, after weighing an immutable layout, a paragraph with no
+shared cache, a cache with no object, and one style for each text.
 
-- A text object is shaped and laid out from a string, a style and a width, and kept while
-  those stay the same.
-- Lines break at step 4's opportunities. A word longer than the width breaks at a cluster. A
-  line is aligned left, right, centre or to the paragraph's direction, and may end in an
-  ellipsis.
-- Line height and the baseline come from the face's metrics and the style.
-- It answers its size, the caret position of an index, the index under a point, and the
-  rectangles of a selection, each by cluster.
-- The layout suite covers wrapping, alignment, the ellipsis, the caret through kerned and
-  reordered text, and a hit test on each half of a glyph.
+- `font::Paragraph` holds a text with `TextStyle`s over its ranges and a `ParagraphStyle`. It
+  keeps its shaping, so a new width, alignment or line limit only lays it out again, and a new
+  colour or decoration does neither.
+- `font::ShapingCache` shapes texts for every paragraph and keeps the 256 used most recently.
+  It finds them by string, direction and the ranges as they shape, so immediate mode's text
+  built again each frame is found.
+- The shaper shapes one range of a string with the levels of the whole, and the rest as context.
+- Lines break at step 4's opportunities, and a word wider than the width breaks at a cluster.
+  Space at a line's end hangs. A line is aligned to its start, its end, the left, the right or
+  the centre. A line limit cuts the last line shown and ends it in an ellipsis.
+- `Face::metrics()` reads the ascender, descender, line gap, underline and strikethrough
+  through HarfBuzz, honouring a font's choice of typographic metrics. A line is as tall as its
+  tallest faces, times the line spacing.
+- A paragraph answers its size, its lines and runs in drawing order, a caret for an index and
+  an affinity, the hit under a point, and the rectangles of a selection, each by cluster. A
+  ligature is shared between its clusters evenly.
+- The font suite frees ICU's caches once its cases have run, so the debug runtime reports no
+  leaks.
+- The paragraph suite covers wrapping at words and at clusters, each alignment, and the
+  ellipsis. It covers the caret through kerned and reordered text, a hit on each half of a glyph,
+  and a selection and a caret across a wrap. It also covers empty lines, and shaping kept across
+  a new width, a new colour and a second paragraph. It covers styles split and joined, and space
+  hanging left in text read right to left. It covers a line limit with no ellipsis, a limit that
+  hides only an empty line, a new direction shaping again, and the cache letting old text go.
 
 ### Step 7 — Partial texture updates
 

@@ -20,6 +20,10 @@ atlas and the drawing of text. See [ui/](ui/README.md).
   - `glyphIndex(charcode)` is the index of a code point's glyph. Index 0 is the face's missing
     glyph, and `has(charcode)` is whether the index is not 0. A glyph is named by its face and
     its index, a `FaceGlyph`.
+  - `metrics(size)` gives the face's `FaceMetrics` at a size in pixels, unhinted: its
+    ascender, descender and line gap, and the position and thickness of an underline and a
+    strikethrough, each as a distance from the baseline. A face whose OS/2 table asks for its
+    typographic metrics is measured by them, and any other by its hhea table.
 - **`FaceStyle`** is the weight and style a face is chosen by: `{ .weight = 600, .italic =
   false }`. The weight defaults to 400 and italic to false.
 - **`Family(name)`** holds the faces of one typeface. `add(face)` leaves out a null face.
@@ -44,6 +48,10 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   UTF-8 string at a `FaceStyle` and a size in pixels, and returns its runs in the string's
   order. An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain
   with no faces gives no runs.
+- **`shape(utf8, from, to, bidi, style, size, features)`** shapes only the bytes from one
+  offset to another, with a `Bidi` resolved over the whole string. The rest of the string is
+  the context, so the characters either side shape the range's edges as they would inside one
+  run. A paragraph shapes each of its style ranges this way.
 - **Runs.** A character stays in the run before it when that run's face has it, or is the face
   the chain finds for it. Otherwise it starts a run in the face the chain finds. A run also ends
   where the script changes. A character with no script of its own, such as a space, a digit or
@@ -122,6 +130,95 @@ is made.
   gives the paragraph's start edge.
 
 Background: [ADR-0142](../adr/0142-text-bidi-and-segmentation-with-icu.md)
+
+## Paragraphs
+
+A `Paragraph` is the text object the ui and the games hold: a text with styles over its
+ranges, divided into lines at a width, and placed. It answers its size, its lines, where a caret
+goes and what a point is over. It needs no GPU; a renderer draws it by walking its lines.
+
+**Styles.**
+
+- **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
+  `size` in pixels, the OpenType `features`, the `colour`, and whether it has an `underline` or a
+  `strikethrough`. The first four decide the glyphs; `shapesLike()` compares those alone. The
+  colour and the decorations only decide how the glyphs are drawn.
+- **`ParagraphStyle`** names the `direction` each paragraph is read in, the `alignment`, and
+  the `width` lines wrap at. At a width of 0 or less they never wrap. It also names
+  `maxLines`, 0 for no limit, and whether a cut line ends in an `ellipsis`. Its
+  `lineSpacing` is a line's height as a multiple of its faces' natural height.
+- **`Alignment`** is `Start` or `End`, which follow the paragraph's direction, or `Left`,
+  `Right` or `Center`.
+
+**Making and changing one.**
+
+- **`Paragraph(cache, text, style, paragraphStyle)`** holds a text in one style.
+- **`setStyle(start, end, style)`** styles the bytes from one offset to another, clamped to the
+  text. `styles()` gives the `StyledRange`s, which cover the text in order, with adjacent ranges
+  in one style joined. `styleAt(offset)` gives the style of the character there.
+- **`setText(text)`** replaces the text, which takes the style of the first range.
+- **`setWidth(width)`** and **`setParagraphStyle(style)`** change how it is laid out.
+
+**What a change costs.** A paragraph is shaped once and laid out once, when first asked.
+
+| Change | Shapes again | Lays out again |
+|---|---|---|
+| The width, the alignment, the line limit, the ellipsis or the line spacing | No | Yes |
+| A style whose colour or decorations alone differ | No | No |
+| A style that shapes differently, the text, or the direction | Through the cache | Yes |
+
+**The shaping cache.** Every paragraph of an app shares one `ShapingCache`, made with the
+locale whose rules divide words and lines. It keeps the `ShapedText` of the texts most recently
+used: the string, its levels, its shaped runs, its clusters and its line breaks. A text is found
+by its string, its direction and its ranges as they shape, with adjacent ranges that shape alike
+taken as one. Text built again each frame, as immediate mode builds it, is found rather than
+shaped. Past its capacity, 256 texts unless another is given, the text used longest ago is let
+go. A paragraph keeps its own text whether or not the cache does. `shaped()` counts the texts
+shaped rather than found. The cache and its paragraphs are used from one thread.
+
+**Lines.**
+
+- A line breaks after the last opportunity that fits, as `Segmenter` finds them. A line
+  separator always ends one. A word wider than the width breaks between its grapheme clusters,
+  with at least one cluster on each line.
+- Space at a line's end hangs past its edge: it is not counted in the line's `width`, and it is
+  not aligned. In a paragraph read right to left it hangs past the left edge. A no-break space,
+  a figure space and a narrow no-break space hold words together, and do not hang.
+- With `maxLines` above 0, the lines past it are dropped. The empty line after a closing line
+  separator hides no text, so dropping it alone cuts nothing. Otherwise the last line shown is
+  cut at a cluster so that it and an ellipsis, U+2026 in the style of the text before it, fit the
+  width. The ellipsis is a run with `ellipsis` set, at the paragraph's end edge.
+- Empty text is one empty line, and text ending in a line separator has an empty line after it.
+  An empty line is as tall as its style's first face.
+- A **`Line`** holds the byte range `start` to `end`, which includes the space and the line
+  separator ending it. It holds its `top`, `height` and `baseline`, downwards from the
+  paragraph's top, and the `x` and `width` of its text without the space at its end. A line is as
+  tall as the ascender, descender and line gap of the tallest faces on it, times the line
+  spacing, with the baseline centred in any extra height.
+- A line's **`LineRun`s** are in the order they are drawn, left to right. Each holds its `face`,
+  `size`, direction, byte range, `x` from the paragraph's left, `advance`, and `glyphs`. A glyph
+  is drawn at its run's `x` plus the advances before it, plus its own offset. A run's colour and
+  decorations are those of the style at its glyphs' clusters, as `styleAt()` gives it.
+- Text is not shaped again where a line breaks it, so a ligature or a joining form across the
+  break keeps its shape.
+
+**Carets, hits and selections.** Every index is a byte offset, and a caret stops only at a
+grapheme cluster's edge; `clusters()` gives those offsets. A glyph that came from several
+clusters, such as a ligature, is shared between them evenly.
+
+- **`caret(index, affinity)`** gives the `Caret`'s `x`, and the `top` and `height` of its line.
+  Upstream it is the end edge of the cluster before the index, and downstream the start edge of
+  the cluster after it, which differ where runs of two directions meet. At a wrap, upstream is
+  the end of the line above and downstream the start of the line below. An index past a cut line
+  is drawn at the end of the last line shown.
+- **`hitTest(point)`** gives the `Hit` nearest a point: an index and its affinity. It takes the
+  line the point is over, or the nearest line. Over a cluster's left half it is that cluster's
+  left edge, and over its right half its right edge. Left or right of the line it is the line's
+  edge on that side.
+- **`selection(start, end)`** gives the `SelectionRect`s covering the clusters from one index to
+  another: one for each stretch of a line they cover side by side, top to bottom.
+
+Background: [ADR-0143](../adr/0143-text-styled-paragraphs-over-a-shared-shaping-cache.md)
 
 ## Texture fonts
 

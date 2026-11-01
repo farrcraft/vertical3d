@@ -9,6 +9,8 @@
 
 #include <string>
 
+#include "FaceMetrics.h"
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::font::internal {
@@ -53,6 +55,12 @@ class Face final {
      * @return whether the face has a glyph for a code point
      **/
     bool has(char32_t charcode) const;
+
+    /**
+     * @return the face's vertical measures at a size in pixels. A face whose OS/2 table asks for
+     *         its typographic metrics is measured by them, and any other by its hhea table
+     **/
+    FaceMetrics metrics(float size) const;
 
     /**
      * @return the library the face was opened through

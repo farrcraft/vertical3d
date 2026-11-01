@@ -54,6 +54,18 @@ class Shaper final {
     std::vector<ShapedRun> shape(std::string_view utf8, const FaceStyle& style, float size,
         const std::vector<Feature>& features = {}, BaseDirection base = BaseDirection::Auto) const;
 
+    /**
+     * Shape the bytes from one offset to another of a UTF-8 string, with the levels of the whole
+     * string. The rest of the string is the context, so the characters either side of the range
+     * shape its edges as they would inside one run.
+     *
+     * @param bidi resolved over the whole string
+     * @return the range's runs, or none for an empty range, a range out of the string, a size
+     *         that is not from 0 to LARGEST, or a chain with no faces
+     **/
+    std::vector<ShapedRun> shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
+        const std::vector<Feature>& features = {}) const;
+
  private:
     boost::shared_ptr<FallbackChain> chain_;
 };

@@ -104,18 +104,26 @@ Shaper::Shaper(const boost::shared_ptr<FallbackChain>& chain) :
 
 std::vector<ShapedRun> Shaper::shape(std::string_view utf8, const FaceStyle& style, float size, const std::vector<Feature>& features,
     BaseDirection base) const {
+    if (utf8.size() > static_cast<std::size_t>(INT_MAX)) {
+        return {};
+    }
+    return shape(utf8, 0, utf8.size(), Bidi(utf8, base), style, size, features);
+}
+
+std::vector<ShapedRun> Shaper::shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
+    const std::vector<Feature>& features) const {
     std::vector<ShapedRun> runs;
-    if (!chain_ || utf8.empty() || utf8.size() > static_cast<std::size_t>(INT_MAX) || !std::isfinite(size) || size <= 0.0F || size > LARGEST) {
+    if (!chain_ || from >= to || to > utf8.size() || utf8.size() > static_cast<std::size_t>(INT_MAX) || !std::isfinite(size) || size <= 0.0F ||
+        size > LARGEST) {
         return runs;
     }
 
     // split into runs of one face, one script and one embedding level. A run whose characters so
     // far have no script takes the first script that follows
-    const Bidi bidi(utf8, base);
     std::vector<hb_script_t> scripts;
     hb_unicode_funcs_t* unicode = hb_unicode_funcs_get_default();
-    std::size_t index = 0;
-    while (index < utf8.size()) {
+    std::size_t index = from;
+    while (index < to) {
         const std::size_t start = index;
         const char32_t charcode = next(utf8, &index);
         const hb_script_t script = hb_unicode_script(unicode, charcode);

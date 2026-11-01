@@ -20,6 +20,8 @@ namespace v3d::font {
 struct Feature final {
     std::string tag;
     std::uint32_t value = 1;
+
+    bool operator==(const Feature& other) const = default;
 };
 
 };  // namespace v3d::font
