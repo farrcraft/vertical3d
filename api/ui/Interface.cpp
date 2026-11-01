@@ -178,7 +178,11 @@ std::size_t Interface::resolveComponentImages(const Resolve& resolve, const boos
         }
     } else if (menus) {
         for (std::size_t index = 0; index < menus->count(); index++) {
-            resolved += resolveMenuImages(resolve, menus->menu(index));
+            const boost::shared_ptr<component::menu::Menu> titled = menus->menu(index);
+            if (titled && resolveIcon(resolve, std::string(titled->icon()), titled)) {
+                resolved++;
+            }
+            resolved += resolveMenuImages(resolve, titled);
         }
     } else if (menu) {
         resolved += resolveMenuImages(resolve, menu);

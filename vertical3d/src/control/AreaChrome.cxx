@@ -96,7 +96,7 @@ boost::json::object AreaChrome::maskMenu(selection::SelectMask mask, std::size_t
         items.emplace_back(boost::json::object{ { "label", capital(name) }, { "type", "radio" }, { "context", "select" },
             { "command", "mask::" + name }, { "data", static_cast<std::int64_t>(area) } });
     }
-    return boost::json::object{ { "label", capital(selectMaskName(mask)) }, { "items", std::move(items) } };
+    return boost::json::object{ { "label", capital(selectMaskName(mask)) }, { "drop", true }, { "items", std::move(items) } };
 }
 
 /**
@@ -119,9 +119,22 @@ boost::json::array AreaChrome::viewMenus(const view::ViewPort& view, std::size_t
         choices("Cull", "cull::", CULLS, area),
     };
     return boost::json::array{
-        boost::json::object{ { "label", view.camera()->profile().name() }, { "items", std::move(cameras) } },
-        boost::json::object{ { "label", AreaChrome::shading(view.display()) }, { "items", std::move(shading) } },
+        boost::json::object{ { "label", view.camera()->profile().name() }, { "drop", true }, { "items", std::move(cameras) } },
+        boost::json::object{ { "label", AreaChrome::shading(view.display()) }, { "drop", true }, { "items", std::move(shading) } },
     };
+}
+
+/**
+ **/
+boost::json::object AreaChrome::overlaysMenu(std::size_t area) {
+    boost::json::array items = {
+        mark("Grid", "check", "show::grid", area),
+        mark("Meshes", "check", "show::mesh", area),
+        mark("Cameras", "check", "show::camera", area),
+        mark("Lights", "check", "show::light", area),
+        mark("Handles", "check", "show::handle", area),
+    };
+    return boost::json::object{ { "label", "Overlays" }, { "icon", "icon:overlays" }, { "drop", true }, { "items", std::move(items) } };
 }
 
 /**
@@ -302,15 +315,18 @@ boost::json::object AreaChrome::document(const view::AreaViews& views, selection
             boost::json::object{ { "type", "separator" } },
             item("Maximise", "maximise", id),
         };
-        boost::json::array menus = { boost::json::object{ { "label", capital(area.editor().kind) }, { "items", std::move(items) } } };
+        boost::json::array menus = { boost::json::object{ { "label", capital(area.editor().kind) },
+            { "icon", "icon:editor-" + area.editor().kind }, { "drop", true }, { "items", std::move(items) } } };
         if (const boost::shared_ptr<view::ViewPort> view = views.of(index)) {
             for (boost::json::value& menu : viewMenus(*view, id)) {
                 menus.emplace_back(std::move(menu));
             }
             menus.emplace_back(maskMenu(mask, id));
+            menus.emplace_back(overlaysMenu(id));
         }
         boost::json::array components = {
-            boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false }, { "menus", std::move(menus) } },
+            boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false }, { "opacity", HEADER_OPACITY },
+                { "menus", std::move(menus) } },
             boost::json::object{ { "type", "button" }, { "name", "maximise" }, { "icon", "icon:maximise" },
                 { "tooltip", "Maximise" }, { "context", CONTEXT }, { "command", "maximise" }, { "data", static_cast<std::int64_t>(id) } },
         };
@@ -330,7 +346,7 @@ boost::json::object AreaChrome::document(const view::AreaViews& views, selection
 
 /**
  **/
-void AreaChrome::sync(const view::AreaViews& views, selection::SelectMask mask, float height) {
+void AreaChrome::sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active) {
     const view::AreaLayout& layout = *views.layout();
     const std::string now = signature(views, mask);
     if (now != signature_) {
@@ -351,13 +367,13 @@ void AreaChrome::sync(const view::AreaViews& views, selection::SelectMask mask, 
         }
     }
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
-        place(layout.areas()[index], views.of(index).get(), mask, height);
+        place(layout.areas()[index], views.of(index).get(), mask, height, index == active);
     }
 }
 
 /**
  **/
-void AreaChrome::place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height) const {
+void AreaChrome::place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height, bool active) const {
     const boost::shared_ptr<v3d::ui::Container> container = ui_->container(name(area.id));
     if (!container) {
         return;
@@ -377,6 +393,10 @@ void AreaChrome::place(const view::AreaLayout::Area& area, const view::ViewPort*
         if (bar && view != nullptr) {
             check(bar.get(), marks(*view));
             check(bar.get(), marks(mask));
+            // the camera's menu follows the editor's, and names the active view
+            if (bar->count() > 1 && bar->menu(1)) {
+                bar->menu(1)->emphasis(active);
+            }
         }
     }
     if (const boost::shared_ptr<v3d::ui::Component> maximise = container->get("maximise")) {

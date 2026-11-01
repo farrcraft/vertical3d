@@ -306,6 +306,39 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f5",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::viewport"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f7",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::properties"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f9",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::outliner"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+pagedown",
         "state": "pressed"
       },

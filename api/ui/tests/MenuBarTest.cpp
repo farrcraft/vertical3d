@@ -5,10 +5,12 @@
 
 #include <api/event/Context.h>
 #include <api/event/Event.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
 #include <api/ui/Component.h>
+#include <api/ui/Image.h>
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 #include <api/ui/component/menu/Menu.h>
@@ -16,6 +18,8 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/Text.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -165,6 +169,79 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
     BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
     // the strip and the rule under it, and no panel
     BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), 2 * 4);
+}
+
+/**
+ * A bar's strip is drawn at its opacity, which is held between none and whole.
+ **/
+BOOST_AUTO_TEST_CASE(a_bar_strip_is_drawn_at_its_opacity) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->opacity(0.8F);
+    fixture.draw();
+    BOOST_CHECK_CLOSE(fixture.canvas.vertices()[0].colour.a, fixture.renderer.dressing().panel.a * 0.8F, 0.001F);
+
+    fixture.bar->opacity(2.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->opacity(), 1.0F);
+    fixture.bar->opacity(-1.0F);
+    BOOST_CHECK_EQUAL(fixture.bar->opacity(), 0.0F);
+}
+
+/**
+ * A title with a drop mark is wider by the mark and the gap before it, and draws the mark as
+ * two strokes after its label.
+ **/
+BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    const std::size_t drawn = fixture.canvas.vertices().size();
+
+    fixture.bar->menu(0)->drop(true);
+    fixture.draw();
+    BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
+    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), drawn + std::size_t{8});
+}
+
+/**
+ * A title with a resolved icon draws the icon in place of its label, tinted the label's colour,
+ * and is as wide as the icon and the padding.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.renderer.dressing().iconSize = 16.0F;
+    fixture.bar->menu(0)->icon("icon:viewport");
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::TextureHandle(3)));
+    fixture.draw();
+
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.written[0].text, "View");
+    const v3d::ui::paint::Dressing& dressing = fixture.renderer.dressing();
+    BOOST_CHECK_CLOSE(fixture.bar->bound(0).size().x, std::min(dressing.iconSize, dressing.barHeight) + dressing.padding, 0.001F);
+    BOOST_CHECK(std::ranges::any_of(fixture.canvas.batches(), [](const auto& batch) { return batch.texture.id() == 3U; }));
+}
+
+/**
+ * A title set apart is written by the chosen item's writer, on a pill of the widget colour.
+ **/
+BOOST_AUTO_TEST_CASE(a_title_set_apart_is_semibold_on_a_pill) {
+    Fixture fixture;
+    build(&fixture);
+    std::vector<std::string> emphasised;
+    v3d::ui::paint::Emphasis sets;
+    sets.chosen.write = [&emphasised](std::string_view text, const glm::vec2&, const glm::vec4&) { emphasised.emplace_back(text); };
+    fixture.renderer.emphasis(sets);
+    fixture.bar->menu(1)->emphasis(true);
+    fixture.draw();
+
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 1U);
+    BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
+    BOOST_REQUIRE_EQUAL(emphasised.size(), 1U);
+    BOOST_CHECK_EQUAL(emphasised[0], "View");
+    const glm::vec4 widget = fixture.renderer.dressing().widget;
+    BOOST_CHECK(std::ranges::any_of(fixture.canvas.vertices(), [&widget](const auto& vertex) { return vertex.colour == widget; }));
 }
 
 /**

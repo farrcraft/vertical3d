@@ -14,6 +14,7 @@
 #include "Menu.h"
 #include "Type.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -342,6 +343,18 @@ void Bar::docked(bool along) noexcept {
  **/
 bool Bar::docked() const noexcept {
     return docked_;
+}
+
+/**
+ **/
+void Bar::opacity(float drawn) noexcept {
+    opacity_ = std::clamp(drawn, 0.0F, 1.0F);
+}
+
+/**
+ **/
+float Bar::opacity() const noexcept {
+    return opacity_;
 }
 
 /**

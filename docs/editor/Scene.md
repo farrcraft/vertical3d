@@ -370,23 +370,30 @@ and a split inside one that runs the same way gives its children to that one.
 built as the editor runs and put before the editor's own container so its menus drop over them.
 
 - **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
-  It is a menu bar that is not docked. Its first menu is named for the kind of editor shown,
-  such as Viewport. It holds Editor, which offers each kind of editor and marks the one shown.
-  Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom or Below,
-  and then New Tab, Close Tab and Maximise. A maximise button sits at the header's right end.
-- **A viewport's header** has three more menus, drawn over the scene:
+  It is a menu bar that is not docked, drawn at 80% over what is beneath it, and every menu on
+  it has a drop mark. Its first menu is named for the kind of editor shown, such as Viewport,
+  and shows that kind's icon. It holds Editor, which offers each kind of editor and marks the
+  one shown. Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom
+  or Below, and then New Tab, Close Tab and Maximise. A maximise button sits at the header's
+  right end. Shift+F5, Shift+F7 and Shift+F9 show a viewport, the properties editor and the
+  outliner in the area under the cursor.
+- **A viewport's header** has four more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
-    Back, Left, Right, Top, Bottom and Perspective, and Orthographic.
+    Back, Left, Right, Top, Bottom and Perspective, and Orthographic. While the area is active,
+    its name is set semibold on a pill.
   - one named for how the view shades the scene: Points or Wireframe when the front of each
     triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
     and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,
     with None, Front, Back and Both.
   - one named for the select mask, such as Object, holding the nine masks. The mask is the
     editor's, not the view's, so every header names the same one.
+  - Overlays, shown as its icon, which toggles the grid, the meshes, the cameras, the lights and
+    the handles the view draws.
 
   Each item marks what its own view holds, whichever view is active. These are the View menu's
-  `view::camera::`, `view::shade::`, `view::rendermode::` and `view::cull::` commands and the
-  Select menu's `select::mask::` commands, which `AreaChrome::marks()` reads for both.
+  `view::camera::`, `view::shade::`, `view::rendermode::`, `view::cull::` and `view::show::`
+  commands and the Select menu's `select::mask::` commands, which `AreaChrome::marks()` reads
+  for both.
 - **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
   across its top. The editor draws under the strip and the header sits at the top of the
   editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the

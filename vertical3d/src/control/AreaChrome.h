@@ -65,6 +65,11 @@ class AreaChrome final {
     static constexpr std::string_view VIEW_CONTEXT = "view";
 
     /**
+     * How much of a header's strip is drawn over the view beneath it.
+     **/
+    static constexpr double HEADER_OPACITY = 0.8;
+
+    /**
      * A command that shows a fixed view, and the camera profile that view is.
      **/
     struct FixedView final {
@@ -94,12 +99,14 @@ class AreaChrome final {
     /**
      * Build the containers again if the areas, their editors or the names of their menus
      * changed, and put each where its area is. Mark what each viewport holds and the select
-     * mask on its header's menus. An area with no room hides its container.
+     * mask on its header's menus, and set the active viewport's camera name apart. An area with
+     * no room hides its container.
      *
      * @param mask the select mask in force
      * @param height how tall a header and a tab are
+     * @param active the index of the active area
      **/
-    void sync(const view::AreaViews& views, selection::SelectMask mask, float height);
+    void sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active);
 
     /**
      * @return the id of the editor whose tab is at a point, or nothing when no tab is there
@@ -235,6 +242,12 @@ class AreaChrome final {
     static boost::json::object maskMenu(selection::SelectMask mask, std::size_t area);
 
     /**
+     * @return a viewport's Overlays menu, shown as its icon, which toggles what the view draws
+     *         over the scene
+     **/
+    static boost::json::object overlaysMenu(std::size_t area);
+
+    /**
      * @return a viewport's camera menu and its shading menu, named for what the view shows
      **/
     static boost::json::array viewMenus(const view::ViewPort& view, std::size_t area);
@@ -262,12 +275,12 @@ class AreaChrome final {
     static std::string signature(const view::AreaViews& views, selection::SelectMask mask);
 
     /**
-     * Put one area's header, button and tabs where the area is, and mark what its view holds
-     * and the mask.
+     * Put one area's header, button and tabs where the area is, mark what its view holds and
+     * the mask, and set its camera name apart while it is active.
      *
      * @param view the view the area shows, or null when it shows another kind of editor
      **/
-    void place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height) const;
+    void place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height, bool active) const;
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;

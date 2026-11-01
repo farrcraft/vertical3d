@@ -434,6 +434,7 @@ boost::shared_ptr<component::Icon> ComponentReader::readIcon(const boost::json::
 boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost::json::object& entry) {
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
     bar->docked(optionalFlag(*logger_, entry, "docked", true));
+    bar->opacity(optionalNumber(*logger_, entry, "opacity").value_or(1.0F));
 
     const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
     if (menus == nullptr) {
@@ -456,6 +457,11 @@ boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost
         // a bar's menus are dropped rather than navigated, so none of them is a level and none
         // starts with an item active
         menu->active(-1);
+        if (const std::optional<std::string> icon = optionalString(*logger_, *menuEntry, "icon")) {
+            menu->icon(*icon);
+        }
+        menu->drop(optionalFlag(*logger_, *menuEntry, "drop", false));
+        menu->emphasis(optionalFlag(*logger_, *menuEntry, "emphasis", false));
         bar->add(*label, menu);
     }
     return bar;

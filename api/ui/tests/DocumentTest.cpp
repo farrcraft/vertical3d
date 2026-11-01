@@ -108,6 +108,36 @@ BOOST_AUTO_TEST_CASE(tooltips_separators_and_item_icons_load) {
 }
 
 /**
+ * A menu bar reads its opacity, and each of its menus an icon, a drop mark and whether its title
+ * is set apart. A menu that names none of them has none.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_bar_reads_its_opacity_and_its_titles) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "menubar", "name": "header", "docked": false, "opacity": 0.8, "menus": [
+                { "label": "Viewport", "icon": "icon:editor-viewport", "drop": true, "items": [] },
+                { "label": "Front", "emphasis": true, "items": [] },
+                { "label": "Flat", "items": [] }
+            ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(ui->container("hud")->get("header"));
+    BOOST_REQUIRE(bar);
+    BOOST_CHECK_CLOSE(bar->opacity(), 0.8F, 0.001F);
+    BOOST_REQUIRE_EQUAL(bar->count(), 3U);
+    BOOST_CHECK_EQUAL(bar->menu(0)->icon(), "icon:editor-viewport");
+    BOOST_CHECK(bar->menu(0)->drop());
+    BOOST_CHECK(!bar->menu(0)->emphasis());
+    BOOST_CHECK(bar->menu(1)->emphasis());
+    BOOST_CHECK(bar->menu(2)->icon().empty());
+    BOOST_CHECK(!bar->menu(2)->drop());
+}
+
+/**
  * A container dims what is behind it only when its document asks it to.
  **/
 BOOST_AUTO_TEST_CASE(a_container_may_ask_for_a_backdrop) {

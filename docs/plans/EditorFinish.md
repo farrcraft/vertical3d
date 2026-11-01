@@ -182,16 +182,23 @@ ADR.
 
 ### Step 3 — A viewport's header
 
-**Open.** Needs step 4.
+**Closed.**
 
-- `api/ui`: a menu bar's label may carry a drop mark, and a menu bar may be drawn at an opacity
-  over what is beneath it.
-- The header is drawn at 80% of the area header colour, over the view.
-- The editor's kind is an icon button with a drop mark. The view's name is semibold, on a pill
-  while the view is active.
-- An Overlays menu holds the grid, mesh and handle toggles, each marked when on.
-- Each kind of editor has a shortcut that shows it in the area under the cursor, listed in the
-  editor-type menu.
+- `api/ui`: a menu bar has an `opacity` that its strip is drawn at, and each of its menus may
+  show an `icon` in place of its label, a `drop` mark after it, and `emphasis`, which sets the
+  title in the chosen item's weight on a pill of the widget colour. A title's icon and mark take
+  the label's colour.
+- A header is drawn at 80% over the view. Its editor menu shows the kind's icon, every menu has
+  a drop mark, and the active view's camera name is set apart. `AreaChrome::sync()` takes the
+  active area, so the emphasis moves without a rebuild.
+- An Overlays menu, shown as its icon, toggles the grid, the meshes, the cameras, the lights and
+  the handles, each marked while on.
+- Shift+F5, Shift+F7 and Shift+F9 show a viewport, the properties editor and the outliner in the
+  area under the cursor. The header's Editor menu shows each beside its kind, as every menu
+  shows the first key bound to an item's command.
+- The menu bar and document suites cover the opacity, the icon, the drop mark and the
+  emphasis. The chrome suite covers the header's dressing, the Overlays menu's marks and the
+  emphasis following the active area. The editor was photographed with the headers dressed.
 
 ### Step 4 — Images in the immediate layer and the icon sheet
 

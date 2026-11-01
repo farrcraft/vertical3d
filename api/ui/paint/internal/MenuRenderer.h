@@ -159,6 +159,48 @@ class MenuRenderer final {
      * What a row shows while a capture waits on its key.
      **/
     static constexpr std::string_view CAPTURE = "...";
+    /**
+     * How wide a menu bar title's drop mark is, as a fraction of a line, and the gap before it,
+     * as a fraction of the padding.
+     **/
+    static constexpr float dropScale = 0.3F;
+    static constexpr float dropGapScale = 0.25F;
+    /**
+     * How thick a drop mark's strokes are, as a fraction of its width.
+     **/
+    static constexpr float dropStroke = 0.2F;
+
+    /**
+     * How much room a menu bar title takes: its icon or its label, its drop mark, and the gap
+     * before the mark, with the padding about them.
+     **/
+    struct Title final {
+        float content = 0.0F;  /**< the icon's side, or the label's width **/
+        float mark = 0.0F;     /**< the drop mark's width, or none **/
+        float extent = 0.0F;   /**< the whole title, padding and all **/
+    };
+
+    /**
+     * @return the room a menu bar title takes on a bar the height given. An icon is as large as
+     *         the dressing's icon size or the bar, whichever is smaller. A label set apart is
+     *         measured in the weight it is written in
+     **/
+    Title titled(const component::menu::Menu& menu, const std::string& label, float height) const;
+
+    /**
+     * Draw one menu's title on a bar, from a corner, and tell the bar where it lies: any pill
+     * that sets it apart, its highlight while open or under the cursor, its icon or label, and
+     * its drop mark.
+     *
+     * @return how wide the title is, or nothing for a menu the bar does not hold
+     **/
+    float title(v3d::render::realtime::canvas::Canvas* canvas, component::menu::Bar& bar, std::size_t index, const glm::vec2& at,
+        float height) const;
+
+    /**
+     * Draw a drop mark: a chevron pointing down, centred on a point, the width given.
+     **/
+    static void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);
 
     /**
      * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark

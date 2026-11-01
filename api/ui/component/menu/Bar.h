@@ -139,6 +139,13 @@ class Bar : public Component {
     bool docked() const noexcept;
 
     /**
+     * How much of the bar's strip is drawn over what is beneath it, from 0 to 1. Its titles are
+     * drawn whole. A value outside the range is clamped to it.
+     **/
+    void opacity(float drawn) noexcept;
+    float opacity() const noexcept;
+
+    /**
      * Open the submenu the cursor has rested on for the delay. Called once a frame with the
      * ui's time. The first call after the cursor reaches an item starts its wait.
      **/
@@ -247,6 +254,7 @@ class Bar : public Component {
     int open_;   // the open menu, or -1
     float delay_;
     bool docked_ = true;
+    float opacity_ = 1.0F;
     std::optional<Pending> pending_;
 };
 

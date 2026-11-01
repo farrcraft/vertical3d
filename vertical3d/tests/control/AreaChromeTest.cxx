@@ -79,7 +79,7 @@ struct Chrome {
      **/
     void sync() {
         BOOST_REQUIRE(views->sync());
-        chrome.sync(*views, mask, 28.0F);
+        chrome.sync(*views, mask, 28.0F, active);
     }
 
     /**
@@ -110,6 +110,7 @@ struct Chrome {
     boost::shared_ptr<AreaViews> views;
     AreaChrome chrome;
     v3d::editor::selection::SelectMask mask = v3d::editor::selection::SelectMask::Object;
+    std::size_t active = 0;
     v3d::render::realtime::canvas::Canvas canvas;
     v3d::ui::paint::ComponentRenderer renderer;
 };
@@ -251,7 +252,7 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_its_camera_and_shading, Chrome)
     views->of(1)->display().shading = v3d::editor::view::Shading::Smooth;
     sync();
     const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
-    BOOST_REQUIRE_EQUAL(bar->count(), 4U);
+    BOOST_REQUIRE_EQUAL(bar->count(), 5U);
     BOOST_CHECK_EQUAL(bar->label(1), "Top");
     BOOST_CHECK_EQUAL(bar->label(2), "Smooth");
 
@@ -295,6 +296,37 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_the_mask, Chrome) {
     BOOST_CHECK_EQUAL(header(0)->label(3), "Face");
     BOOST_CHECK(header(0)->find("select::mask::face")->checked());
     BOOST_CHECK(!header(0)->find("select::mask::object")->checked());
+}
+
+/**
+ * A viewport's header is drawn partly through over the view. Its editor menu shows the kind's
+ * icon, every menu has a drop mark, and it ends with an Overlays menu that marks what the view
+ * draws. The active view's camera menu is set apart, and moves with the active area.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_viewports_header_is_dressed_as_menus, Chrome) {
+    views->of(1)->show(ViewPort::SHOW_GRID, false);
+    sync();
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
+    BOOST_CHECK_CLOSE(bar->opacity(), static_cast<float>(AreaChrome::HEADER_OPACITY), 0.001F);
+    BOOST_CHECK_EQUAL(bar->menu(0)->icon(), "icon:editor-viewport");
+    for (std::size_t index = 0; index < bar->count(); index++) {
+        BOOST_CHECK_MESSAGE(bar->menu(index)->drop(), bar->label(index));
+    }
+    BOOST_CHECK_EQUAL(bar->label(4), "Overlays");
+    BOOST_CHECK_EQUAL(bar->menu(4)->icon(), "icon:overlays");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> grid = bar->find("view::show::grid");
+    BOOST_REQUIRE(grid);
+    BOOST_CHECK(number(grid->event()) == static_cast<int>(layout.areas()[1].id));
+    BOOST_CHECK(!grid->checked());
+    BOOST_CHECK(bar->find("view::show::mesh")->checked());
+
+    BOOST_CHECK(header(0)->menu(1)->emphasis());
+    BOOST_CHECK(!bar->menu(1)->emphasis());
+    active = 1;
+    sync();
+    BOOST_CHECK(!header(0)->menu(1)->emphasis());
+    BOOST_CHECK(bar->menu(1)->emphasis());
+    BOOST_CHECK(!bar->menu(0)->emphasis());
 }
 
 /**

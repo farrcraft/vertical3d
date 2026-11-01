@@ -178,6 +178,42 @@ const std::string& Menu::title() const noexcept {
     return title_;
 }
 
+void Menu::icon(const std::string& source) {
+    if (source == icon_) {
+        return;
+    }
+    icon_ = source;
+    image_ = v3d::ui::Image();
+}
+
+std::string_view Menu::icon() const {
+    return icon_;
+}
+
+const v3d::ui::Image& Menu::image() const noexcept {
+    return image_;
+}
+
+void Menu::image(const v3d::ui::Image& resolved) noexcept {
+    image_ = resolved;
+}
+
+void Menu::drop(bool shown) noexcept {
+    drop_ = shown;
+}
+
+bool Menu::drop() const noexcept {
+    return drop_;
+}
+
+void Menu::emphasis(bool set) noexcept {
+    emphasis_ = set;
+}
+
+bool Menu::emphasis() const noexcept {
+    return emphasis_;
+}
+
 size_t Menu::count() const {
     return items_.size();
 }

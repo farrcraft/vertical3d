@@ -225,32 +225,15 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
     const float height = box.size().y;
     Arranger::place(*bar, {.position = corner, .size = box.size()});
 
-    canvas->rect(corner, corner + glm::vec2(width, height), base().panel);
+    // the strip may be drawn partly through, over a view beneath it, and its titles whole
+    canvas->rect(corner, corner + glm::vec2(width, height), glm::vec4(glm::vec3(base().panel), base().panel.a * bar->opacity()));
     // a rule along the bottom edge, so the strip reads as something over the scene rather
     // than as part of it
     canvas->rect(corner + glm::vec2(0.0F, height), corner + glm::vec2(width, height + Arranger::ruleWidth), base().border);
 
     float pen = corner.x + (base().padding * 0.5F);
     for (std::size_t index = 0; index < bar->count(); index++) {
-        const boost::shared_ptr<component::menu::Menu> menu = bar->menu(index);
-        if (!menu) {
-            continue;
-        }
-        const std::string& label = bar->label(index);
-        const float extent = measure_(label) + base().padding;
-
-        // on the bar rather than on the menu, whose own bounds are the panel it drops
-        bar->place(index, glm::vec2(pen, corner.y), glm::vec2(extent, height));
-
-        const bool lit = bar->open() == static_cast<int>(index) || bar->hover() == static_cast<int>(index);
-        Motion& motion = menu->motion();
-        const glm::vec4 face = lit ? easing_.toward(&motion.face, base().highlight) : easing_.away(&motion.face);
-        if (face.a > 0.0F) {
-            canvas->rect(glm::vec2(pen, corner.y), glm::vec2(pen + extent, corner.y + height), face);
-        }
-        write_(label, glm::vec2(pen + (base().padding * 0.5F), corner.y + (height * WIDGET_BASELINE)),
-            easing_.toward(&motion.ink, lit ? base().activeText : base().text));
-        pen += extent;
+        pen += title(canvas, *bar, index, glm::vec2(pen, corner.y), height);
     }
 
     // outermost first, so that a flyout is drawn over the panel it came out of
@@ -323,6 +306,76 @@ void MenuRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const bo
         entry(canvas, item, menu->bound(), active && item == active, keys[index]);
     }
     end(canvas);
+}
+
+/**
+ **/
+MenuRenderer::Title MenuRenderer::titled(const component::menu::Menu& menu, const std::string& label, float height) const {
+    Title title;
+    if (menu.image().valid()) {
+        title.content = std::min(base().iconSize, height);
+    } else {
+        const Measure& measured = menu.emphasis() && emphasis_.chosen.measure ? emphasis_.chosen.measure : measure_;
+        title.content = measured(label);
+    }
+    title.extent = title.content + base().padding;
+    if (menu.drop()) {
+        title.mark = base().lineHeight * dropScale;
+        title.extent += title.mark + (base().padding * dropGapScale);
+    }
+    return title;
+}
+
+/**
+ **/
+float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, component::menu::Bar& bar, std::size_t index, const glm::vec2& at,
+    float height) const {
+    const boost::shared_ptr<component::menu::Menu> menu = bar.menu(index);
+    if (!menu) {
+        return 0.0F;
+    }
+    const std::string& label = bar.label(index);
+    const Title room = titled(*menu, label, height);
+    const glm::vec2 far(at.x + room.extent, at.y + height);
+
+    // on the bar rather than on the menu, whose own bounds are the panel it drops
+    bar.place(index, at, glm::vec2(room.extent, height));
+
+    const bool lit = bar.open() == static_cast<int>(index) || bar.hover() == static_cast<int>(index);
+    Motion& motion = menu->motion();
+    if (menu->emphasis()) {
+        const float inset = std::max(0.0F, (height - base().lineHeight) * 0.5F);
+        fillBox(canvas, glm::vec2(at.x, at.y + inset), glm::vec2(far.x, far.y - inset), base().radius, base().widget);
+    }
+    const glm::vec4 face = lit ? easing_.toward(&motion.face, base().highlight) : easing_.away(&motion.face);
+    if (face.a > 0.0F) {
+        canvas->rect(at, far, face);
+    }
+    const glm::vec4 ink = easing_.toward(&motion.ink, lit ? base().activeText : base().text);
+    const float left = at.x + (base().padding * 0.5F);
+    const v3d::ui::Image& picture = menu->image();
+    if (picture.valid()) {
+        const glm::vec2 corner(left, at.y + ((height - room.content) * 0.5F));
+        canvas->rect(corner, corner + glm::vec2(room.content, room.content), picture.uv0, picture.uv1, ink, picture.texture);
+    } else {
+        const Write& inked = menu->emphasis() && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
+        inked(label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
+    }
+    if (menu->drop()) {
+        const float middle = left + room.content + (base().padding * dropGapScale) + (room.mark * 0.5F);
+        dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, ink);
+    }
+    return room.extent;
+}
+
+/**
+ **/
+void MenuRenderer::dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour) {
+    const float half = width * 0.5F;
+    const float stroke = std::max(width * dropStroke, 1.0F);
+    const glm::vec2 tip(centre.x, centre.y + (half * 0.5F));
+    canvas->segment({.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .to = tip, .width = stroke}, colour);
+    canvas->segment({.from = tip, .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke}, colour);
 }
 
 /**
