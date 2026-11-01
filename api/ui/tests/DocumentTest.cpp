@@ -349,9 +349,7 @@ BOOST_AUTO_TEST_CASE(a_required_member_of_the_wrong_type_is_refused) {
         R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
             { "type": "menubar", "name": "m" } ] } ] })",
         R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
-            { "type": "list", "name": "l", "items": [ "one", 2 ] } ] } ] })",
-        R"({ "themes": [], "containers": [ { "name": "c", "visible": true, "components": [
-            { "type": "icon", "name": "i", "source": 5 } ] } ] })"
+            { "type": "list", "name": "l", "items": [ "one", 2 ] } ] } ] })"
     };
     for (const char* const document : documents) {
         BOOST_TEST_CONTEXT(document) {

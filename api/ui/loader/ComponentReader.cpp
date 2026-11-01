@@ -427,11 +427,8 @@ boost::shared_ptr<component::Label> ComponentReader::readLabel(const boost::json
 }
 
 boost::shared_ptr<component::Icon> ComponentReader::readIcon(const boost::json::object& entry) {
-    const std::optional<std::string> source = requiredString(*logger_, entry, "source", "An icon");
-    if (!source) {
-        return nullptr;
-    }
-    return boost::make_shared<component::Icon>(*source);
+    // an icon with no source shows nothing until the app gives it an image
+    return boost::make_shared<component::Icon>(optionalString(*logger_, entry, "source").value_or(std::string()));
 }
 
 boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost::json::object& entry) {

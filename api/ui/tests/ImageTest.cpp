@@ -138,6 +138,34 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
 }
 
 /**
+ * An icon may name no source, for a picture the app gives it as it runs. It loads with no image,
+ * and resolving asks for nothing on its behalf.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_with_no_source_waits_for_an_image) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "hud", "visible": true, "components": [
+            { "type": "icon", "name": "picture" }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+
+    std::size_t asked = 0;
+    const std::size_t resolved = ui->resolveImages([&asked](const std::string&) {
+        asked++;
+        return v3d::render::realtime::TextureHandle(4);
+    });
+
+    BOOST_CHECK_EQUAL(resolved, 0U);
+    BOOST_CHECK_EQUAL(asked, 0U);
+    const boost::shared_ptr<v3d::ui::component::Icon> icon =
+        boost::dynamic_pointer_cast<v3d::ui::component::Icon>(ui->container("hud")->get("picture"));
+    BOOST_REQUIRE(icon);
+    BOOST_CHECK(!icon->image().valid());
+}
+
+/**
  * A skinned button is nine quads against the images its style names, and it is drawn instead
  * of the flat highlight rather than under it. Only the two the style names are drawn.
  **/

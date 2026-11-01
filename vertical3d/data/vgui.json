@@ -368,7 +368,7 @@
               "spacing": 8,
               "children": [
                 { "type": "label", "name": "renderStatus", "label": "" },
-                { "type": "icon", "name": "renderPicture", "source": "render-picture", "size": [496, 372] },
+                { "type": "icon", "name": "renderPicture", "size": [496, 372] },
                 {
                   "type": "hbox",
                   "name": "renderButtons",

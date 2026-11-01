@@ -12,7 +12,7 @@ reads besides the common ones:
 |---|---|---|---|---|
 | `panel` | `Panel` | a filled box with a border, optionally rounded | none | no / no |
 | `label` | `Label` | its text, wrapped to the width it was given, or one line when the width is `Auto` | `label` | no / no |
-| `icon` | `Icon` | an image at the component's size | `source` (required) | no / no |
+| `icon` | `Icon` | an image at the component's size, or nothing until it has one | `source`; with none, the app gives it an image with `Icon::image()` | no / no |
 | `bar` | `Bar` | a track and the filled fraction of it | `fraction` (0 to 1), `direction` (`vertical`, else horizontal) | no / no |
 | `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `command`, `context` | yes / yes |
 | `checkbox` | `CheckBox` | a square mark and a label beside it | `label`, `checked`, `command`, `context` | yes / yes |
