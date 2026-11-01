@@ -263,7 +263,7 @@ class Immediate {
     struct TreeRow final {
         unsigned int depth = 0;  /**< how many levels down, each indenting the row by a line **/
         bool* open = nullptr;    /**< read and written - whether what is beneath it shows, or null for a row with nothing beneath it **/
-        bool selected = false;   /**< drawn highlighted **/
+        bool selected = false;   /**< drawn on the selected tint **/
         Image icon;              /**< drawn before the label, or nothing when it is not valid **/
         glm::vec4 iconTint{1.0F};  /**< what the icon is tinted **/
     };

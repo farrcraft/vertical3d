@@ -627,8 +627,11 @@ Background: [ADR-0136](../adr/0136-editor-panels-are-drawn-in-immediate-mode.md)
 **The outliner** (`outliner`) lists the scene's items as the tree their parents make. `Outliner`
 in `src/control/` draws it.
 
-- A row shows its item's name, or its kind when it has none, indented a line for each level.
-  Siblings come in the scene's order.
+- Every item sits under a Scene row at the root. Its mark folds every item, and a click on it
+  selects nothing.
+- A row shows an icon for its item's kind, tinted the kind's colour, then the item's name, or
+  its kind when it has none, indented a line for each level. A camera is grey, a light yellow, a
+  mesh orange, a curve green and a group a darker grey. Siblings come in the scene's order.
 - A row with children has a mark before its label. A click on the mark folds the row, hiding
   everything beneath it, or opens it.
 - The field at the top filters the rows. A row is kept when its label holds every word typed,
@@ -636,7 +639,7 @@ in `src/control/` draws it.
   filtered tree folds nothing.
 - A click on a row selects its item and nothing else. While Shift is held, as for the select
   tool, a click selects an item that is not selected, deselects one that is, and leaves the
-  rest. The selected items' rows are highlighted.
+  rest. The selected items' rows are drawn on the theme's `selected` tint.
 - Each outliner keeps its own filter and folds while the editor runs. Neither is saved.
 
 **The properties editor** (`properties`) shows the selected item's name, placement and settings,

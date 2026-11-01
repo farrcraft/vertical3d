@@ -300,7 +300,7 @@ bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
     }
 
     if (row.selected) {
-        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.highlight);
+        paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.selected);
     } else if (reaction.hovered || fold.hovered) {
         paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
     }

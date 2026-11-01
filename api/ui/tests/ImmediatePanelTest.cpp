@@ -152,7 +152,8 @@ BOOST_AUTO_TEST_CASE(a_tree_rows_mark_folds_it) {
 }
 
 /**
- * A chosen row writes its label in the active text colour.
+ * A chosen row is drawn on the selected tint, not the solid highlight, and writes its label in
+ * the active text colour.
  **/
 BOOST_AUTO_TEST_CASE(a_chosen_tree_row_is_highlighted) {
     std::vector<Written> written;
@@ -168,6 +169,10 @@ BOOST_AUTO_TEST_CASE(a_chosen_tree_row_is_highlighted) {
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
     BOOST_CHECK(written[0].colour == ui.dressing().activeText);
     BOOST_CHECK(written[1].colour == ui.dressing().text);
+    const glm::vec4 tint = ui.dressing().selected;
+    const glm::vec4 solid = ui.dressing().highlight;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; }));
+    BOOST_CHECK(std::ranges::none_of(canvas.vertices(), [&solid](const auto& vertex) { return vertex.colour == solid; }));
 }
 
 /**

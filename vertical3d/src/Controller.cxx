@@ -217,6 +217,7 @@ void Controller::buildRenderer() {
         logger()->get()->error("The editor has no icon sheet it can read, so its toolbar shows labels");
     }
     renderer_->icons(icons);
+    outliner_.icons([this](const std::string& source) { return renderer_->image(source); });
     renderer_->views(context_.views);
     renderer_->scene(context_.document->scene());
     renderer_->transformTool(context_.transformTool);

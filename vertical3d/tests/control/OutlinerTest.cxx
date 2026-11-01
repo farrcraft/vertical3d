@@ -4,7 +4,9 @@
  **/
 
 #include <api/brep/Primitives.h>
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/scene/Group.h>
@@ -13,12 +15,14 @@
 #include <vertical3d/src/scene/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include <boost/make_shared.hpp>
@@ -222,6 +226,60 @@ BOOST_FIXTURE_TEST_CASE(a_click_on_the_mark_folds_a_row, Drawn) {
     BOOST_CHECK(!at("Hand"));
     BOOST_CHECK(at("Arm"));
     BOOST_CHECK(!arm->selected());
+}
+
+/**
+ * Every item sits under a Scene row. Its mark folds them all, and a click on it selects nothing.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_scene_row_holds_every_item, Drawn) {
+    lamp->selected(true);
+    frame({});
+    const std::optional<glm::vec2> onScene = at("Scene");
+    const std::optional<glm::vec2> onRig = at("Rig");
+    BOOST_REQUIRE(onScene.has_value());
+    BOOST_REQUIRE(onRig.has_value());
+    const glm::vec2 sceneRow = onScene.value_or(glm::vec2(0.0F));
+    const glm::vec2 rigRow = onRig.value_or(glm::vec2(0.0F));
+    BOOST_CHECK_LT(sceneRow.y, rigRow.y);
+    BOOST_CHECK_LT(sceneRow.x, rigRow.x);
+
+    click(sceneRow);
+    BOOST_CHECK(lamp->selected());
+    const std::optional<glm::vec2> onMark = at("Scene", -6.0F);
+    BOOST_REQUIRE(onMark.has_value());
+    click(onMark.value_or(glm::vec2(0.0F)));
+    frame({});
+    BOOST_CHECK(at("Scene"));
+    BOOST_CHECK(!at("Rig"));
+    BOOST_CHECK(!at("Lamp"));
+}
+
+/**
+ * Each kind of item has its own icon and colour, and with icons to draw, each row draws its
+ * kind's icon in its kind's colour.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
+    std::set<std::string> icons;
+    std::set<std::tuple<float, float, float>> colours;
+    for (const v3d::editor::scene::Item::Kind kind : { v3d::editor::scene::Item::Kind::Mesh, v3d::editor::scene::Item::Kind::Camera,
+             v3d::editor::scene::Item::Kind::Light, v3d::editor::scene::Item::Kind::Group, v3d::editor::scene::Item::Kind::Curve }) {
+        const Outliner::Mark marked = Outliner::mark(kind);
+        icons.insert(marked.icon);
+        colours.insert({ marked.colour.r, marked.colour.g, marked.colour.b });
+    }
+    BOOST_CHECK_EQUAL(icons.size(), 5U);
+    BOOST_CHECK_EQUAL(colours.size(), 5U);
+
+    std::vector<std::string> asked;
+    outliner.icons([&asked](const std::string& source) {
+        asked.push_back(source);
+        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9));
+    });
+    frame({});
+    BOOST_CHECK(std::ranges::find(asked, "icon:item-scene") != asked.end());
+    BOOST_CHECK(std::ranges::find(asked, Outliner::mark(v3d::editor::scene::Item::Kind::Mesh).icon) != asked.end());
+    const glm::vec4 mesh = Outliner::mark(v3d::editor::scene::Item::Kind::Mesh).colour;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&mesh](const auto& vertex) { return vertex.colour == mesh; }));
 }
 
 /**

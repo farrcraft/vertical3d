@@ -224,11 +224,17 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 5 — The outliner
 
-**Open.** Needs step 4.
+**Closed.**
 
-- A Scene row at the root holds every item, folded open.
-- Each row leads with its kind's icon in its kind's colour.
-- The chosen row is the accent at 24%.
+- A Scene row at the root holds every item, open until it is folded. A click on it selects
+  nothing.
+- Each row leads with its kind's icon in its kind's colour. `Outliner::mark()` names both, and
+  the outliner is given the renderer's image lookup to resolve them.
+- `api/ui`: a chosen tree row is drawn on the theme's `selected` role, the accent at 24%, instead
+  of the solid highlight.
+- The outliner suite covers the Scene row's fold and its click, and each kind's icon and
+  colour. The ui suite covers the chosen row's tint. The editor was photographed with a cube
+  selected.
 
 ### Step 6 — The properties editor
 

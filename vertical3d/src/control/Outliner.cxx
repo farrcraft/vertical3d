@@ -5,6 +5,7 @@
 
 #include "Outliner.h"
 
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/Item.h>
@@ -27,6 +28,42 @@ namespace v3d::editor::control {
  **/
 std::string Outliner::label(const scene::Item& item) {
     return item.name().empty() ? kind(item.kind()) : item.name();
+}
+
+/**
+ **/
+Outliner::Mark Outliner::mark(scene::Item::Kind kind) {
+    switch (kind) {
+        case scene::Item::Kind::Mesh:
+            return { .icon = "icon:item-mesh", .colour = MESH };
+        case scene::Item::Kind::Camera:
+            return { .icon = "icon:item-camera", .colour = CAMERA };
+        case scene::Item::Kind::Light:
+            return { .icon = "icon:item-light", .colour = LIGHT };
+        case scene::Item::Kind::Group:
+            return { .icon = "icon:item-group", .colour = GROUP };
+        case scene::Item::Kind::Curve:
+            return { .icon = "icon:item-curve", .colour = CURVE };
+    }
+    return {};
+}
+
+/**
+ **/
+Outliner::Mark Outliner::sceneMark() {
+    return { .icon = "icon:item-scene", .colour = GROUP };
+}
+
+/**
+ **/
+void Outliner::icons(const Icons& resolve) {
+    icons_ = resolve;
+}
+
+/**
+ **/
+v3d::ui::Image Outliner::image(const Mark& mark) const {
+    return icons_ ? icons_(mark.icon) : v3d::ui::Image();
 }
 
 /**
@@ -69,11 +106,18 @@ void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t edi
     ui->pushId(id);
     ui->textField("Filter", &state.filter);
     ui->separator();
-    for (const Row& row : rows(*scene, state.filter, state.folded)) {
+    // the Scene row folds every item and selects nothing
+    bool sceneOpen = !state.sceneFolded;
+    const Mark scened = sceneMark();
+    ui->treeRow("Scene", { .depth = 0, .open = &sceneOpen, .selected = false, .icon = image(scened), .iconTint = scened.colour });
+    state.sceneFolded = !sceneOpen;
+    const std::vector<Row> shown = sceneOpen ? rows(*scene, state.filter, state.folded) : std::vector<Row>();
+    for (const Row& row : shown) {
         ui->pushId(static_cast<int>(row.item->documentId()));
         bool open = row.open;
-        const bool clicked = ui->treeRow(label(*row.item),
-            { .depth = row.depth, .open = row.parent ? &open : nullptr, .selected = row.item->selected() });
+        const Mark marked = mark(row.item->kind());
+        const bool clicked = ui->treeRow(label(*row.item), { .depth = row.depth + 1, .open = row.parent ? &open : nullptr,
+            .selected = row.item->selected(), .icon = image(marked), .iconTint = marked.colour });
         if (open != row.open) {
             if (open) {
                 state.folded.erase(row.item->documentId());

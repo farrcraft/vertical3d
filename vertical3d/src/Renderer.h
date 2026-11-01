@@ -125,6 +125,13 @@ class Renderer final {
     void icons(const control::IconSheet& sheet);
 
     /**
+     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
+     *         Any other source is the whole of the image it names, or nothing when the image
+     *         cannot be loaded
+     **/
+    v3d::ui::Image image(const std::string& source);
+
+    /**
      * The ui drawn over every view, or null to draw none.
      **/
     void ui(const boost::shared_ptr<v3d::ui::Interface>& ui);
@@ -279,13 +286,6 @@ class Renderer final {
     static constexpr float paddingScale = 1.0F;
     static constexpr float barHeightScale = 28.0F / 12.0F;
     static constexpr float panelPaddingScale = 1.0F / 3.0F;
-
-    /**
-     * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.
-     *         Any other source is the whole of the image it names, or nothing when the image
-     *         cannot be loaded
-     **/
-    v3d::ui::Image image(const std::string& source);
 
     /**
      * Draw the icon sheet at the ui's icon size in device pixels, when it was last drawn at

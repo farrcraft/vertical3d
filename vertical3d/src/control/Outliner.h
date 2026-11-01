@@ -5,12 +5,14 @@
 
 #pragma once
 
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -26,7 +28,9 @@ namespace v3d::editor::control {
  * The outliner: an editor that lists the scene's items as the tree their parents make, under a
  * filter, and selects the item a row is clicked on.
  *
- * A row shows an item's name, or its kind when it has none. Siblings come in the scene's order.
+ * Every item sits under a Scene row at the root, which folds them all and selects nothing. A row
+ * shows an icon for its item's kind, tinted the kind's colour, and the item's name, or its kind
+ * when it has none. Siblings come in the scene's order.
  * An item with children can be folded, which hides everything beneath it. The filter keeps the
  * items whose shown name holds every word of it, ignoring case, along with their ancestors so
  * that each is shown where it sits, and opens every row it keeps. Each outliner keeps its own
@@ -63,6 +67,35 @@ class Outliner final {
     static std::string kind(scene::Item::Kind kind);
 
     /**
+     * What a row shows before its label: an icon's source, and the colour it is tinted.
+     **/
+    struct Mark final {
+        std::string icon;
+        glm::vec4 colour{ 1.0F };
+    };
+
+    /**
+     * @return the mark of a kind of item: a camera in grey, a light in yellow, a mesh in orange,
+     *         a curve in green and a group in a darker grey
+     **/
+    static Mark mark(scene::Item::Kind kind);
+
+    /**
+     * @return the mark of the Scene row
+     **/
+    static Mark sceneMark();
+
+    /**
+     * What gives the image an icon's source resolves to.
+     **/
+    using Icons = std::function<v3d::ui::Image(const std::string& source)>;
+
+    /**
+     * Resolve the rows' icons through this. With none, rows show no icon.
+     **/
+    void icons(const Icons& resolve);
+
+    /**
      * The rows of a scene, in the order they are shown.
      *
      * @param filter the words a shown item's label holds, or empty for every item
@@ -91,7 +124,22 @@ class Outliner final {
     struct State final {
         std::string filter;
         std::set<std::int64_t> folded;
+        bool sceneFolded = false;
     };
+
+    /**
+     * The colours each kind's icon is tinted.
+     **/
+    static constexpr glm::vec4 MESH{ 0.894F, 0.565F, 0.290F, 1.0F };
+    static constexpr glm::vec4 CAMERA{ 0.788F, 0.800F, 0.824F, 1.0F };
+    static constexpr glm::vec4 LIGHT{ 0.878F, 0.761F, 0.290F, 1.0F };
+    static constexpr glm::vec4 CURVE{ 0.447F, 0.690F, 0.322F, 1.0F };
+    static constexpr glm::vec4 GROUP{ 0.608F, 0.631F, 0.667F, 1.0F };
+
+    /**
+     * @return the image a mark's icon resolves to, or an unset one with no way to resolve it
+     **/
+    v3d::ui::Image image(const Mark& mark) const;
 
     /**
      * What a walk of the tree is asked for: the filter's words, and the items folded.
@@ -109,6 +157,7 @@ class Outliner final {
     static bool gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into);
 
     std::map<std::size_t, State> states_;
+    Icons icons_;
 };
 
 };  // namespace v3d::editor::control
