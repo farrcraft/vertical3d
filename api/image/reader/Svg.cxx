@@ -66,7 +66,12 @@ boost::shared_ptr<Image> Svg::read(const unsigned char* encoded, std::size_t siz
         logger()->get()->error("The SVG document could not be read, or gives itself no size");
         return nullptr;
     }
-    const glm::uvec2 own(static_cast<unsigned int>(std::ceil(document->width)), static_cast<unsigned int>(std::ceil(document->height)));
+    if (!(document->width <= LARGEST_SIDE) || !(document->height <= LARGEST_SIDE)) {
+        logger()->get()->error("The SVG document gives itself a side longer than {} pixels", LARGEST_SIDE);
+        return nullptr;
+    }
+    const glm::uvec2 own(static_cast<unsigned int>(std::ceil(document->width)),  // checked: in (0, LARGEST_SIDE]
+        static_cast<unsigned int>(std::ceil(document->height)));  // checked: in (0, LARGEST_SIDE]
     return read(encoded, size, own);
 }
 

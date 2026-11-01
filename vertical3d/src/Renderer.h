@@ -258,6 +258,12 @@ class Renderer final {
     static constexpr float GRID_AXIS = 0.75F;
 
     /**
+     * The largest side of an icon's cell, in pixels. A theme's icon size outside 1 to this draws
+     * no new sheet.
+     **/
+    static constexpr float LARGEST_ICON = 256.0F;
+
+    /**
      * The status bar's text against the ui's, 11 pixels beside 12, and its mouse icons against
      * its text.
      **/

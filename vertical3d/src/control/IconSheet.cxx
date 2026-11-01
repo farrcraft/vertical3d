@@ -73,7 +73,7 @@ const std::vector<std::string>& IconSheet::names() const noexcept {
 /**
  **/
 std::size_t IconSheet::columns() const noexcept {
-    return static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<double>(names_.size()))));
+    return static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<double>(names_.size()))));  // checked: the root of a count is finite and no larger
 }
 
 /**

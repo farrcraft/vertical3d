@@ -83,6 +83,16 @@ BOOST_AUTO_TEST_CASE(what_cannot_be_drawn_gives_nothing) {
     BOOST_CHECK(!read(halfRed, glm::uvec2(0, 8)));
 }
 
+/**
+ * A document read at its own size is refused when it gives a side too long to draw, or one that
+ * is not finite.
+ **/
+BOOST_AUTO_TEST_CASE(a_document_too_large_gives_nothing) {
+    BOOST_CHECK(!read(R"(<svg xmlns="http://www.w3.org/2000/svg" width="20000" height="2"></svg>)"));
+    BOOST_CHECK(!read(R"(<svg xmlns="http://www.w3.org/2000/svg" width="2" height="1e40"></svg>)"));
+    BOOST_CHECK(read(R"(<svg xmlns="http://www.w3.org/2000/svg" width="16384" height="1"></svg>)"));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

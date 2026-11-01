@@ -4,8 +4,8 @@ This page is for someone writing an app against the api. It covers `api/image`: 
 type, reading, writing and comparing images, the texture atlas, and packing a sprite sheet.
 Terms are defined in the [glossary](README.md#glossary).
 
-`api/image` (`v3d::image`) reads, writes and compares images. It depends on libpng and libjpeg
-and on no device.
+`api/image` (`v3d::image`) reads, writes and compares images. It depends on libpng, libjpeg and
+NanoSVG, and on no device.
 
 ## Image
 
@@ -61,6 +61,23 @@ if (bytes) {
 
 **Every writer can write greyscale**: png as a grey image, tga as type 3, jpeg as
 `JCS_GRAYSCALE`, and bmp as 8-bit indices into a 256-entry grey ramp.
+
+### Drawing SVG
+
+`image::reader::Svg` ([api/image/reader/Svg.h](../../api/image/reader/Svg.h)) draws an SVG
+document into an RGBA image. The factory does not hold it, because a document is drawn at a size
+rather than decoded.
+
+- `read(data, size)` draws the document at the size it gives itself. Lengths are pixels at 96 to
+  the inch.
+- `read(data, size, into)` draws it scaled to fit inside `into`, keeping its proportions, and
+  centred.
+- Every pixel nothing is drawn on is transparent.
+- Only the subset NanoSVG draws is drawn: shapes, paths, fills, strokes and gradients, but no
+  text, filters or embedded images.
+- Each read returns null when the text is not SVG, the document gives itself no size, or the size
+  asked for is empty. A read at the document's own size also returns null when a side is longer
+  than `Svg::LARGEST_SIDE`, 16384 pixels, or is not finite.
 
 ## Other functions
 

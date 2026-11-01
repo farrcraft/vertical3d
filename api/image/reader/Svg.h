@@ -21,6 +21,11 @@ namespace v3d::image::reader {
  **/
 class Svg : public v3d::image::Reader {
  public:
+    /**
+     * The longest side a document read at its own size may give itself, in pixels.
+     **/
+    static constexpr float LARGEST_SIDE = 16384.0F;
+
     explicit Svg(const boost::shared_ptr<v3d::log::Logger> & logger);
     ~Svg() = default;
 
@@ -28,8 +33,8 @@ class Svg : public v3d::image::Reader {
     using v3d::image::Reader::read;
 
     /**
-     * @return the document drawn at the size it gives itself, or null when it cannot be read or
-     *         gives itself no size
+     * @return the document drawn at the size it gives itself, or null when it cannot be read,
+     *         gives itself no size, or gives a side longer than LARGEST_SIDE
      **/
     boost::shared_ptr<Image> read(const unsigned char* encoded, std::size_t size) override;
 

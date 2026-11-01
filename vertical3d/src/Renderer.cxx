@@ -203,7 +203,11 @@ v3d::ui::Image Renderer::image(const std::string& source) {
  **/
 void Renderer::drawIcons() {
     const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
-    const auto side = static_cast<unsigned int>(std::ceil(dress.iconSize));
+    // a theme's size is read from a file, so it may be no size an icon can be drawn at
+    if (!(dress.iconSize >= 1.0F) || !(dress.iconSize <= LARGEST_ICON)) {
+        return;
+    }
+    const auto side = static_cast<unsigned int>(std::ceil(dress.iconSize));  // checked: in [1, LARGEST_ICON]
     if (side == iconSide_ || icons_.names().empty()) {
         return;
     }
