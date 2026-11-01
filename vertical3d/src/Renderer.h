@@ -261,21 +261,23 @@ class Renderer final {
     /**
      * The size the ui text is drawn at, and what the bar and its rows are sized from.
      **/
-    static constexpr float fontSize = 15.0F * uiScale;
+    static constexpr float fontSize = 12.0F * uiScale;
 
     /**
-     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 15 pixel
+     * How large a toolbar's icon is, as a multiple of the text size: 18 pixels beside 12 pixel
      * text.
      **/
-    static constexpr float iconScale = 1.2F;
+    static constexpr float iconScale = 1.5F;
 
     /**
-     * The ui's spacing, each a multiple of the text size.
+     * The ui's spacing, each a multiple of the text size. At 12 pixel text a row is 24 pixels,
+     * a header or bar 28, the gap around text 12, and the gap above and below a dropped panel's
+     * items 4. An icon button is as wide as its icon and the gap, 30 pixels.
      **/
-    static constexpr float lineHeightScale = 1.5F;
-    static constexpr float paddingScale = 1.4F;
-    static constexpr float barHeightScale = 1.8F;
-    static constexpr float panelPaddingScale = 0.3F;
+    static constexpr float lineHeightScale = 2.0F;
+    static constexpr float paddingScale = 1.0F;
+    static constexpr float barHeightScale = 28.0F / 12.0F;
+    static constexpr float panelPaddingScale = 1.0F / 3.0F;
 
     /**
      * @return what a ui image source resolves to. An icon's name is a cell of the icon sheet.

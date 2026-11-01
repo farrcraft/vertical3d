@@ -133,7 +133,7 @@ view beside the properties. Rendering puts the render view beside the render set
 
 | Decision | Step |
 |---|---|
-| Editor: the ui's text size. Open: 12 pixels as designed, or 15 as built. | 1 |
+| Editor: the ui's text size. Decided in ADR-0138: 12 pixels, with the scale preference for larger. | 1 |
 | Editor: the scene's unit of length. Open: no unit, metres, or a unit each project chooses. | 6 |
 | Editor: what the console runs. Open: the editor's commands by name, or a scripting language. | 13 |
 | Editor: where a render is shown. Open: an editor in an area, a floating window, or both. | 14 |
@@ -155,8 +155,14 @@ ADR.
 
 ### Step 1 — The ui's text size
 
-**Open.** Decide between 12 pixels and 15, then set the editor's text, rows, headers, bars and
-icons from the result. The design's row heights, 22 to 26 pixels, follow from the size chosen.
+**Closed.** ADR-0138 decided it, after weighing 15 pixels and 13.
+
+- The editor's text is 12 pixels. Rows are 24 pixels, headers and bars 28, the gap around text
+  12, and a dropped panel's padding 4. Icons are 18 pixels on 30 pixel buttons.
+- The glyphs were magnified in a screenshot and read sharply at 12 pixels, so the margin 13
+  pixels would have given was not needed.
+- The design's 11 pixel secondary text needs a size of its own, which the status bar in step 7
+  is the first to use.
 
 ### Step 2 — Views drawn from the theme
 

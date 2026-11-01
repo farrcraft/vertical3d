@@ -172,6 +172,7 @@ content went. Numbers are never reused.
 | [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
 | [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
 | [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
+| [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
 
 ## Build, testing and code
 
