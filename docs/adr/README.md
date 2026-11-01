@@ -173,6 +173,7 @@ content went. Numbers are never reused.
 | [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
 | [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
 | [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
+| [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
 
 ## Build, testing and code
 

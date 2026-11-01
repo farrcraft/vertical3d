@@ -5,6 +5,7 @@
 
 #include "Renderer.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Manager.h>
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
@@ -180,16 +181,41 @@ void Renderer::resolve(const boost::shared_ptr<v3d::ui::Component>& component) {
  **/
 void Renderer::icons(const control::IconSheet& sheet) {
     icons_ = sheet;
+    iconSide_ = 0;
+    drawIcons();
 }
 
 /**
  **/
 v3d::ui::Image Renderer::image(const std::string& source) {
     if (const std::optional<v3d::ui::Image::Corners> corners = icons_.corners(source)) {
-        const v3d::render::realtime::TextureHandle sheet = texture(icons_.image());
-        return sheet.valid() ? v3d::ui::Image(sheet, *corners) : v3d::ui::Image();
+        return iconTexture_.valid() ? v3d::ui::Image(iconTexture_, *corners) : v3d::ui::Image();
     }
     return texture(source);
+}
+
+/**
+ **/
+void Renderer::drawIcons() {
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    const auto side = static_cast<unsigned int>(std::ceil(dress.iconSize));
+    if (side == iconSide_ || icons_.names().empty()) {
+        return;
+    }
+    iconSide_ = side;
+    const boost::shared_ptr<v3d::image::Image> sheet = icons_.draw(side,
+        [this](const std::string& path) { return v3d::asset::readFile(assetManager_->path(path)); }, logger_);
+    // the old texture is reclaimed once the frame in flight has finished with it
+    if (iconTexture_.valid()) {
+        engine_.textures()->release(iconTexture_);
+        iconTexture_ = v3d::render::realtime::TextureHandle();
+    }
+    if (sheet) {
+        iconTexture_ = engine_.textures()->texture(sheet);
+    }
+    if (ui_) {
+        ui_->resolveImages([this](const std::string& source) { return image(source); });
+    }
 }
 
 /**
@@ -241,6 +267,8 @@ void Renderer::draw() {
     if (!screen_->begin(shell_->ui().get())) {
         return;
     }
+    // a change of scale changes the icon size, and the icons are drawn again at the new one
+    drawIcons();
     const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
     if (!frame) {
         return;

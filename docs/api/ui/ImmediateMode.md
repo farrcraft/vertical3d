@@ -40,9 +40,11 @@ default-constructed `Input` is no cursor at all.
 | `window(title, area, alpha)` / `endWindow()` | a window with a title bar | whether to draw its contents |
 | `region(name, area, alpha)` / `endRegion()` | a panel with no title bar at a fixed place | |
 | `text`, `textDisabled`, `textWrapped`, `bulletText` | a line of text | |
+| `text(line, colour)` | a line of text in a colour of its own | |
+| `image(picture, size, tint)` | an image the size given, tinted, centred down a line when it is shorter than one | |
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
-| `treeRow(label, { .depth, .open, .selected })` | a full-width row of a tree, indented by its depth, with a fold mark when `open` is given | true when clicked anywhere but the mark |
+| `treeRow(label, { .depth, .open, .selected, .icon, .iconTint })` | a full-width row of a tree, indented by its depth, with a fold mark when `open` is given, and its icon, tinted, before the label | true when clicked anywhere but the mark |
 | `dragInt(label, &value, low, high)` | an integer scrubbed by dragging across it | true when the value changed |
 | `dragFloat(label, &value, speed)` | a number scrubbed by dragging across it, or typed into after a click | true when the value changed |
 | `sliderFloat(label, &value, low, high)` | a number set by pressing or dragging along a track | true when the value changed |

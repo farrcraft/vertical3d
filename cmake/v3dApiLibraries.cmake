@@ -75,7 +75,7 @@ set(V3D_API_grid_PACKAGES glm)
 
 set(V3D_API_image_PATH "image")
 set(V3D_API_image_REQUIRES log)
-set(V3D_API_image_PACKAGES PNG JPEG glm)
+set(V3D_API_image_PACKAGES PNG JPEG NanoSVG glm)
 
 set(V3D_API_input_PATH "input")
 set(V3D_API_input_REQUIRES event type)
@@ -141,6 +141,8 @@ set(V3D_PACKAGE_TARGETS
 	"Freetype::Freetype=Freetype"
 	"PNG::PNG=PNG"
 	"JPEG::JPEG=JPEG"
+	"NanoSVG::nanosvg=NanoSVG"
+	"NanoSVG::nanosvgrast=NanoSVG"
 	"glm::glm=glm"
 	"EnTT::EnTT=EnTT"
 	"spdlog::spdlog=spdlog"

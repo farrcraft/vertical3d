@@ -36,6 +36,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | glm | |
 | libjpeg-turbo | |
 | libpng | |
+| nanosvg | `v3dlib_image` rasterises SVG through it, as the `NanoSVG::nanosvg` and `NanoSVG::nanosvgrast` targets of the `NanoSVG` config package, linked PRIVATE because no public header includes it. vcpkg builds it static on Windows |
 | sdl3 | The window, input, events and platform paths. There is no SDL2 in the tree. **It must have its `vulkan` feature.** Without it SDL is built without Vulkan support, and `SDL_Vulkan_LoadLibrary` fails at startup with "No dynamic Vulkan support in current SDL video driver (windows)" |
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |

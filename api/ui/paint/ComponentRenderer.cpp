@@ -448,19 +448,19 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         }
     }
 
-    // a resolved icon is drawn instead of the label, not as well as it. Until the image has
-    // been resolved, the button draws its label
+    // a resolved icon is drawn instead of the label, not as well as it, and tinted the colour the
+    // label would have been. Until the image has been resolved, the button draws its label
+    const glm::vec4 shade = easing_->toward(&button->motion().ink, ink(*button, base(), lit ? base().activeText : base().text));
     const v3d::ui::Image& picture = button->image();
     if (picture.valid()) {
         const float side = std::min(base().iconSize, std::min(size.x, size.y));
         const glm::vec2 corner = min + (size - glm::vec2(side, side)) * 0.5F;
-        canvas->rect(corner, corner + glm::vec2(side, side), picture.uv0, picture.uv1,
-            ink(*button, base(), glm::vec4(1.0F, 1.0F, 1.0F, 1.0F)), picture.texture);
+        canvas->rect(corner, corner + glm::vec2(side, side), picture.uv0, picture.uv1, shade, picture.texture);
         return;
     }
 
     const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5F), min.y + (size.y * WIDGET_BASELINE));
-    write_(label, baseline, easing_->toward(&button->motion().ink, ink(*button, base(), lit ? base().activeText : base().text)));
+    write_(label, baseline, shade);
 }
 
 /**

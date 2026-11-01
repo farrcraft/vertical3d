@@ -2,7 +2,7 @@ v3d_add_api_library(image
 	"format/BmpFileHeader.h" "format/BmpInfoHeader.h" "format/BmpRgbQuad.h"
 	"Image.h" "Image.cxx" "Channels.h" "Channels.cxx" "Compare.h" "Compare.cxx" "Crop.h" "Crop.cxx" "Pack.h" "Pack.cxx" "Factory.h" "Factory.cxx" "File.h" "File.cxx" "format/JpegError.h" "Reader.h" "Reader.cxx" "Writer.h" "Writer.cxx"
 	"TextureAtlas.h" "TextureAtlas.cxx" "reader/Bmp.h" "reader/Bmp.cxx" "reader/Jpeg.h" "reader/Jpeg.cxx"
-	"reader/Png.h" "reader/Png.cxx" "reader/Tga.h" "reader/Tga.cxx" "writer/Bmp.h" "writer/Bmp.cxx"
+	"reader/Png.h" "reader/Png.cxx" "reader/Svg.h" "reader/Svg.cxx" "reader/Tga.h" "reader/Tga.cxx" "writer/Bmp.h" "writer/Bmp.cxx"
 	"writer/Jpeg.h" "writer/Jpeg.cxx" "writer/Png.h" "writer/Png.cxx" "writer/Tga.h" "writer/Tga.cxx"
 	"reader/internal/Cursor.h"
 	"writer/internal/Destination.h" "writer/internal/Picture.h" "writer/internal/Reporting.h"
@@ -22,6 +22,9 @@ target_link_libraries(v3dlib_image PUBLIC glm::glm)
 # the jpeg header, and only the two jpeg sources and writer/internal/ include it, so no consumer
 # needs it. writer/internal/Picture.h includes the png header, and only writer/Png.cxx includes it.
 target_link_libraries(v3dlib_image PRIVATE PNG::PNG JPEG::JPEG)
+
+# PRIVATE: only reader/Svg.cxx includes the parser and the rasteriser, which compile in it.
+target_link_libraries(v3dlib_image PRIVATE NanoSVG::nanosvg NanoSVG::nanosvgrast)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

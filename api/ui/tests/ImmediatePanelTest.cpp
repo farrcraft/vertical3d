@@ -3,14 +3,18 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 #include "Layer.h"
 
@@ -164,6 +168,56 @@ BOOST_AUTO_TEST_CASE(a_chosen_tree_row_is_highlighted) {
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
     BOOST_CHECK(written[0].colour == ui.dressing().activeText);
     BOOST_CHECK(written[1].colour == ui.dressing().text);
+}
+
+/**
+ * A row with an icon draws it after the mark's place, tinted, and moves its label past it.
+ **/
+BOOST_AUTO_TEST_CASE(a_tree_row_leads_with_its_icon) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 tint(0.9F, 0.6F, 0.2F, 1.0F);
+    const v3d::ui::Image icon(v3d::render::realtime::TextureHandle(5));
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.treeRow("Cube", {.depth = 0, .open = nullptr, .selected = false, .icon = icon, .iconTint = tint});
+    ui.end();
+
+    const float line = ui.dressing().lineHeight;
+    const float side = std::min(ui.dressing().iconSize, line);
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK_CLOSE(written[0].pen.x, line + side + (ui.dressing().padding * 0.5F), 0.001F);
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_CLOSE(drawn->position.x, line, 0.001F);
+}
+
+/**
+ * Text can be written in a colour of its own, and an image is drawn the size given, tinted,
+ * and centred down a line when it is shorter than one.
+ **/
+BOOST_AUTO_TEST_CASE(text_in_a_colour_and_an_image_at_the_pen) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const glm::vec4 red(0.85F, 0.35F, 0.37F, 1.0F);
+    const glm::vec4 tint(0.2F, 0.7F, 0.3F, 1.0F);
+
+    ui.begin(&canvas, hover(nowhere));
+    ui.image(v3d::ui::Image(v3d::render::realtime::TextureHandle(5)), glm::vec2(10.0F, 10.0F), tint);
+    ui.text("X", red);
+    ui.end();
+
+    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_CHECK(written[0].colour == red);
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&tint](const auto& vertex) { return vertex.colour == tint; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    // the first item is at the origin, and the image is centred down its line
+    BOOST_CHECK_CLOSE(drawn->position.x, 0.0F, 0.001F);
+    BOOST_CHECK_CLOSE(drawn->position.y, (ui.dressing().lineHeight - 10.0F) * 0.5F, 0.001F);
 }
 
 /**

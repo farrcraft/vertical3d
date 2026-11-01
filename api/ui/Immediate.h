@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/type/geometry/Bound2D.h>
+#include <api/ui/Image.h>
 #include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
@@ -21,6 +22,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::canvas {
 class Canvas;
@@ -211,6 +213,17 @@ class Immediate {
     void text(const std::string& line);
 
     /**
+     * One line of text at the pen, in a colour of its own, such as an axis's.
+     **/
+    void text(const std::string& line, const glm::vec4& colour);
+
+    /**
+     * An image at the pen, the size given, tinted by the colour. One shorter than a line is
+     * centred down the line, so it sits level with text beside it.
+     **/
+    void image(const Image& picture, const glm::vec2& size, const glm::vec4& tint = glm::vec4(1.0F));
+
+    /**
      * A line of text in the disabled-text colour, for secondary text.
      **/
     void textDisabled(const std::string& line);
@@ -244,18 +257,22 @@ class Immediate {
     bool selectable(const std::string& label, bool selected);
 
     /**
-     * How a row of a tree sits: how deep it is, whether it folds, and whether it is chosen.
+     * How a row of a tree sits: how deep it is, whether it folds, whether it is chosen, and the
+     * icon it leads with.
      **/
     struct TreeRow final {
         unsigned int depth = 0;  /**< how many levels down, each indenting the row by a line **/
         bool* open = nullptr;    /**< read and written - whether what is beneath it shows, or null for a row with nothing beneath it **/
         bool selected = false;   /**< drawn highlighted **/
+        Image icon;              /**< drawn before the label, or nothing when it is not valid **/
+        glm::vec4 iconTint{1.0F};  /**< what the icon is tinted **/
     };
 
     /**
      * A row of a tree that spans the width, indented by its depth. A row with something
      * beneath it has a mark before its label, pointing right while folded and down while open,
-     * and a click on the mark folds or opens it.
+     * and a click on the mark folds or opens it. A row with an icon draws it between the mark's
+     * place and the label, at the dressing's icon size or a line, whichever is smaller.
      *
      * @return whether the row was clicked anywhere but its mark
      **/

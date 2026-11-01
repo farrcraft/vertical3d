@@ -7,6 +7,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/Checked.h>
+#include <api/ui/Image.h>
 #include <api/ui/Transition.h>
 #include <api/ui/immediate/Context.h>
 #include <api/ui/paint/Dressing.h>
@@ -28,6 +29,7 @@
 #include <string_view>
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 
@@ -177,6 +179,26 @@ void Immediate::text(const std::string& line) {
     context_->label(line, context_->place(size), size, context_->ink(context_->dressing.text));
 }
 
+void Immediate::text(const std::string& line, const glm::vec4& colour) {
+    if (context_->canvas == nullptr) {
+        return;
+    }
+    const glm::vec2 size(context_->measure(line), context_->dressing.lineHeight);
+    context_->label(line, context_->place(size), size, context_->ink(colour));
+}
+
+void Immediate::image(const Image& picture, const glm::vec2& size, const glm::vec4& tint) {
+    if (context_->canvas == nullptr) {
+        return;
+    }
+    // the item is at least a line tall, so it keeps the row's height beside text
+    const glm::vec2 room(size.x, std::max(size.y, context_->dressing.lineHeight));
+    const glm::vec2 corner = context_->place(room) + glm::vec2(0.0F, (room.y - size.y) * 0.5F);
+    if (picture.valid()) {
+        context_->canvas->rect(corner, corner + size, picture.uv0, picture.uv1, context_->ink(tint), picture.texture);
+    }
+}
+
 void Immediate::textDisabled(const std::string& line) {
     if (context_->canvas == nullptr) {
         return;
@@ -293,7 +315,15 @@ bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
         context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
         context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
     }
-    context_->label(label, glm::vec2(markMax.x, min.y), glm::vec2(max.x - markMax.x, line), ink);
+    // the icon sits between the mark's place and the label, centred down the row
+    float left = markMax.x;
+    if (row.icon.valid()) {
+        const float side = std::min(context_->dressing.iconSize, line);
+        const glm::vec2 corner(left, min.y + ((line - side) * 0.5F));
+        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.icon.uv0, row.icon.uv1, context_->ink(row.iconTint), row.icon.texture);
+        left += side + (context_->dressing.padding * 0.5F);
+    }
+    context_->label(label, glm::vec2(left, min.y), glm::vec2(max.x - left, line), ink);
     return reaction.clicked;
 }
 

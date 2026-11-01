@@ -18,6 +18,7 @@
     "glm",
     "libjpeg-turbo",
     "libpng",
+    "nanosvg",
     {
       "name": "sdl3",
       "features": [

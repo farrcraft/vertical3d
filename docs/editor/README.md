@@ -62,8 +62,17 @@ The menu bar holds File, Edit, Create, Select, Modify, View, Animate, Render, Wi
 Beside it are a tab for each workspace, the project's name, and a Search button. While a menu is
 open, the arrow keys walk it, as [api/ui/Components.md](../api/ui/Components.md) describes. The
 tool shelf down the left holds the transform tools and the modelling operations, each with a
-tooltip beside it, and its icons are cells of `data/icons/icons.png`, which `data/icons.json`
-names.
+tooltip beside it.
+
+**Icons.** Each icon is an SVG file in `data/icons/`, drawn in white, and `data/icons.json` names
+them. The renderer draws every icon into one image, each scaled to fit a square cell at the ui's
+icon size in device pixels. When the scale changes, it draws them again and points the ui's
+images at the new texture. Whatever draws an icon tints it: a button or menu item the colour of
+its label, and the editor's own panels as they choose. An icon is named in the ui as `icon:` and
+its name. Only the subset of SVG that NanoSVG draws is drawn: shapes, paths, fills, strokes and
+dashes, with no text, filters or embedded images.
+
+Background: [ADR-0139](../adr/0139-editor-icons-are-svg-drawn-at-the-ui-scale.md)
 
 ## Source layout
 

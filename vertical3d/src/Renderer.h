@@ -119,7 +119,8 @@ class Renderer final {
 
     /**
      * The sheet an image source naming an icon is resolved from. Set it before the ui, whose
-     * images are resolved when it arrives.
+     * images are resolved when it arrives. The icons are drawn at once, at the ui's icon size,
+     * and drawn again whenever that size changes.
      **/
     void icons(const control::IconSheet& sheet);
 
@@ -287,6 +288,12 @@ class Renderer final {
     v3d::ui::Image image(const std::string& source);
 
     /**
+     * Draw the icon sheet at the ui's icon size in device pixels, when it was last drawn at
+     * another, and point every image the ui holds at the new texture.
+     **/
+    void drawIcons();
+
+    /**
      * @return the texture an image becomes, uploading it the first time it is asked for, or an
      *         unset handle when the image cannot be loaded
      **/
@@ -352,6 +359,9 @@ class Renderer final {
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;
     control::IconSheet icons_;
+    // the icon sheet's texture, and the side of a cell it was drawn at
+    v3d::render::realtime::TextureHandle iconTexture_;
+    unsigned int iconSide_ = 0;
     // the textures the ui's images became, by source, so a component built again reuses them
     std::map<std::string, v3d::render::realtime::TextureHandle> images_;
     v3d::shell::Shell* shell_;

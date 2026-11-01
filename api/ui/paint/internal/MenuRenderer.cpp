@@ -346,10 +346,13 @@ void MenuRenderer::entry(v3d::render::realtime::canvas::Canvas* canvas, const bo
         canvas->rect(centre - glm::vec2(mark, mark), centre + glm::vec2(mark, mark), base().activeText);
     } else if (picture.valid()) {
         // a check mark takes the column before an icon does, so a checked item shows its state.
-        // An item that cannot be used greys its icon as it greys its label
+        // An icon is tinted the colour of its label, so an item that cannot be used greys both
         const float half = std::min(base().iconSize, column) * 0.5F;
-        canvas->rect(centre - glm::vec2(half, half), centre + glm::vec2(half, half), picture.uv0, picture.uv1,
-            usable(*item) ? glm::vec4(1.0F, 1.0F, 1.0F, 1.0F) : base().disabledText, picture.texture);
+        glm::vec4 shade = selected ? base().activeText : base().text;
+        if (!usable(*item)) {
+            shade = base().disabledText;
+        }
+        canvas->rect(centre - glm::vec2(half, half), centre + glm::vec2(half, half), picture.uv0, picture.uv1, shade, picture.texture);
     }
 
     if (item->itemType() == component::menu::ItemType::Submenu) {

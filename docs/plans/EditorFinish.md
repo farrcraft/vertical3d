@@ -137,6 +137,7 @@ view beside the properties. Rendering puts the render view beside the render set
 | Editor: the scene's unit of length. Open: no unit, metres, or a unit each project chooses. | 6 |
 | Editor: what the console runs. Open: the editor's commands by name, or a scripting language. | 13 |
 | Editor: where a render is shown. Open: an editor in an area, a floating window, or both. | 14 |
+| Editor: how icons are made. Decided in ADR-0139: SVG files, drawn at the ui's scale. | 4 |
 
 Each decision is researched against how established tools answer it before it is drafted as an
 ADR.
@@ -194,12 +195,26 @@ ADR.
 
 ### Step 4 — Images in the immediate layer and the icon sheet
 
-**Open.**
+**Closed.** ADR-0139 decided how the icons are made, after weighing SVG drawn to a sheet by a
+script, an icon font, and the hand-drawn sheet.
 
-- `api/ui`: the immediate layer draws an image at a size, inline with the item beside it. A
-  tree row may lead with an image. A label may be drawn in a colour of its own.
-- The icon sheet gains a cell for each kind of item, each kind of editor, a mouse with each
-  button lit, a check, a cross, and the app's mark.
+- Each icon is an SVG file in white. The renderer draws every icon into one image at the ui's
+  icon size in device pixels, draws them again when the scale changes, and points the ui's
+  images at the new texture. The hand-drawn sheet is gone, and its ten icons are redrawn from
+  the design's paths.
+- `v3dlib_image` gains `reader::Svg`, which draws a document at its own size or scaled to fit a
+  size and centred, through NanoSVG. Both manifests name the port.
+- The sheet gains icons for each kind of item and of editor, a mouse with each button lit, a
+  check, a cross, the app's mark, a drop mark and the Overlays mark.
+- `api/ui`: a button's icon is tinted the colour its label would be, and a menu item's the
+  colour of its label. The immediate layer draws an image at a size, centred down a line, and
+  text in a colour of its own, and a tree row may lead with a tinted icon.
+- The image suite covers drawing at both sizes and what cannot be drawn. The ui suite covers
+  the tint, the image, the coloured text and the row's icon. The editor suite covers the
+  sheet's grid, drawing into cells, and every shipped icon drawing. The editor was
+  photographed with the shelf drawn from SVG.
+- The decision was not foreseen when the plan was drafted. It is recorded in the decisions
+  above.
 
 ### Step 5 — The outliner
 

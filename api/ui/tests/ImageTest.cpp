@@ -465,6 +465,46 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 }
 
 /**
+ * A button's icon is tinted the colour its label would be drawn in, so an icon drawn in white
+ * takes the theme's text colour, and the active text colour while the button is checked.
+ **/
+BOOST_AUTO_TEST_CASE(a_button_icon_takes_its_label_colour) {
+    bool loaded = false;
+    const boost::shared_ptr<v3d::ui::Interface> ui = load(R"({
+        "themes": [ { "name": "dark" } ],
+        "containers": [ { "name": "editor", "visible": true, "components": [
+            { "type": "toolbar", "name": "tools", "edge": "left", "buttons": [
+                { "label": "Select", "icon": "icons/select.png", "toggle": true }
+            ] }
+        ] } ]
+    })", &loaded);
+    BOOST_REQUIRE(loaded);
+    Uploader uploader;
+    ui->resolveImages([&uploader](const std::string& source) { return uploader(source); });
+
+    v3d::ui::paint::ComponentRenderer drawing(
+        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
+        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(800, 600));
+    const auto icon = [&canvas]() {
+        // the icon is the last quad drawn
+        return canvas.vertices()[canvas.vertices().size() - 1].colour;
+    };
+
+    drawing.draw(&canvas, *ui);
+    BOOST_CHECK(icon() == drawing.dressing().text);
+
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(ui->container("editor")->get("tools"));
+    BOOST_REQUIRE(bar);
+    bar->button(0)->checked(true);
+    canvas.clear();
+    drawing.draw(&canvas, *ui);
+    BOOST_CHECK(icon() == drawing.dressing().activeText);
+}
+
+/**
  * A button whose icon was never resolved falls back to its label, so a missing image does
  * not leave an unreadable strip.
  **/
