@@ -27,6 +27,7 @@
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/ConstructionPlane.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -226,6 +227,13 @@ class Renderer final {
     static constexpr float NOTICE_MARGIN = 16.0F;
 
     /**
+     * How much stronger an emphasised grid line is than an ordinary one, and how strongly the
+     * lines through the origin show their axis colours.
+     **/
+    static constexpr float GRID_MAJOR = 2.0F;
+    static constexpr float GRID_AXIS = 0.75F;
+
+    /**
      * What separates the parts of the right side of the status bar.
      **/
     static constexpr const char* STATUS_GAP = "     ";
@@ -286,6 +294,13 @@ class Renderer final {
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
     void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+
+    /**
+     * @return the colours of a view's grid: the theme's hairline over the view's background,
+     *         twice as strong on an emphasised line, and the axis colours on the lines through
+     *         the origin
+     **/
+    view::ConstructionPlane::Colours gridColours() const;
 
     /**
      * Keep the frame's passes to the views shown. A pass stays in the frame and clears its

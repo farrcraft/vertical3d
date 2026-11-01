@@ -36,6 +36,7 @@
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaFrame.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/ConstructionPlane.h>
 #include <vertical3d/src/view/ShadedPass.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -52,6 +53,7 @@
 #include <boost/shared_ptr.hpp>
 #include <glm/common.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::editor {
@@ -257,6 +259,7 @@ void Renderer::draw() {
     static const std::vector<boost::shared_ptr<view::ViewPort>> none;
     const std::vector<boost::shared_ptr<view::ViewPort>>& views = views_ ? views_->shown() : none;
     retire(frame.get(), views);
+    const view::ConstructionPlane::Colours grid = gridColours();
     canvases_.resize(views.size());
     overlays_.resize(views.size());
     for (std::size_t index = 0; index < views.size(); index++) {
@@ -265,6 +268,7 @@ void Renderer::draw() {
             continue;
         }
 
+        view->grid().colours(grid);
         view->draw(scene, &canvases_[index], select_ ? select_->mask() : selection::SelectMask::Object);
         // the handles go to a canvas of their own because they are an overlay, drawn in a
         // second pass that does not depth test. On the scene's canvas a handle would be in
@@ -372,6 +376,18 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());
+}
+
+/**
+ **/
+view::ConstructionPlane::Colours Renderer::gridColours() const {
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    // a line is drawn opaque, so the theme's hairline is laid over the view's background here
+    const auto over = [this](const glm::vec4& colour, float alpha) {
+        return glm::vec4(glm::mix(glm::vec3(background_), glm::vec3(colour), std::clamp(alpha, 0.0F, 1.0F)), 1.0F);
+    };
+    return { .minor = over(dress.hairline, dress.hairline.a), .major = over(dress.hairline, dress.hairline.a * GRID_MAJOR),
+        .axes = { over(view::OverlayLook::X_AXIS, GRID_AXIS), over(view::OverlayLook::Y_AXIS, GRID_AXIS), over(view::OverlayLook::Z_AXIS, GRID_AXIS) } };
 }
 
 /**

@@ -189,9 +189,8 @@ void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& 
     }
     const glm::vec2 centre = gizmoCentre(region, metrics);
     const float reach = metrics.gizmo + metrics.ball;
-    if (cursor && glm::distance(*cursor, centre) <= reach) {
-        canvas->circle(centre, reach, DISC_SIDES, look.hover);
-    }
+    const bool over = cursor && glm::distance(*cursor, centre) <= reach;
+    canvas->circle(centre, reach, DISC_SIDES, over ? look.hover : look.rest);
     const std::optional<AxisEnd> lit = cursor ? gizmoAt(view, metrics, *cursor) : std::nullopt;
     const float sweep = glm::two_pi<float>();
     for (const AxisEnd& end : axisEnds(camera, centre, metrics.gizmo, true)) {

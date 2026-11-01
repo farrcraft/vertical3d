@@ -497,6 +497,10 @@ The renderer turns each view into two passes, then adds one more pass for the ui
 All views share one depth buffer. The handle pass has no depth test so that the manipulator is
 always visible, including where it lies in the same plane as the grid's axis lines.
 
+A pass stays in the frame and clears its region every frame until it is removed. When a view is
+no longer shown, its two passes are removed. When a view is shown that was not, the `ui` pass is
+removed too, and is made again after the new view's, so the ui is always drawn last.
+
 **Display flags.** `ViewPort::SHOW_GRID`, `SHOW_MESH`, `SHOW_CAMERA`, `SHOW_LIGHT` and
 `SHOW_HANDLE` all start on. The show commands (`view::show::grid`, `mesh`, `camera`, `light` and
 `handle`) toggle them on the *active view*, which is the view under the cursor. `SHOW_HANDLE`
@@ -520,8 +524,18 @@ A camera does not hold the shape of its picture, which a render's settings give,
 draws 4:3.
 
 **The construction grid.** `ConstructionPlane` draws evenly spaced lines, with every nth line
-and the two axis lines in stronger colours. An orthographic view gets a grid in the plane of
-the two axes it looks across. A perspective view gets the ground plane.
+in a stronger colour. An orthographic view gets a grid in the plane of the two axes it looks
+across. A perspective view gets the ground plane. The renderer gives each grid its colours
+every frame:
+
+- An ordinary line is the theme's hairline laid over the view's background, and every tenth
+  line is twice as strong. Lines are drawn opaque, so the blend is made before the line is.
+- A line through the origin is the colour of the world axis it runs along, at 75% over the
+  background.
+
+**Selection colour.** A selected item and a selected component are drawn in one amber,
+`#f2a33a`. It is a colour of the views, and not the theme's `selected` role, which tints a
+chosen row.
 
 **Active view.** The view under the cursor becomes active as the mouse moves. It does not
 change while a drag is under way, so a drag that crosses a border keeps its camera. The camera,
@@ -548,8 +562,8 @@ checked while the camera is orthographic.
 - **A navigation gizmo**, in a perspective view only, 8 pixels in from the upper right corner and
   below the header. A ball 9 pixels in radius sits 30 pixels from its centre at each end of each
   axis. At a positive end it is filled, with the axis's letter and a line back to the centre. At a
-  negative end it is a ring. A faint disc lies behind it while the cursor is over it, and a ring
-  around the ball under the cursor.
+  negative end it is a ring. A disc of white at 5% lies behind it, at 10% while the cursor is
+  over it, and a ring goes around the ball under the cursor.
 
 The axes are drawn as an orthographic camera would show them, so perspective does not bend
 them. X is `#d9595f`, Y `#72b052` and Z `#5590e8`. The sizes are multiplied by the ui's scale.

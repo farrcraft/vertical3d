@@ -102,14 +102,12 @@ class WireframeVisitor final : public scene::Visitor {
      **/
     static constexpr glm::vec4 glyph{ 0.95F, 0.82F, 0.42F, 1.0F };
     /**
-     * An item selected as a whole, which is object mode selection.
+     * What is selected, in amber, whether it is an item selected as a whole or a component: an
+     * edge, the boundary of a selected face, or the marker drawn at a selected vertex.
      **/
-    static constexpr glm::vec4 object{ 0.35F, 0.72F, 1.0F, 1.0F };
-    /**
-     * A selected component: an edge, the boundary of a selected face, or the marker
-     * drawn at a selected vertex.
-     **/
-    static constexpr glm::vec4 component{ 1.0F, 0.62F, 0.19F, 1.0F };
+    static constexpr glm::vec4 selection{ 0.949F, 0.639F, 0.227F, 1.0F };
+    static constexpr glm::vec4 object = selection;
+    static constexpr glm::vec4 component = selection;
     /**
      * How big a selected vertex's marker is, as a fraction of the mesh's largest
      * dimension. A line canvas is world space, so the marker cannot be sized in pixels

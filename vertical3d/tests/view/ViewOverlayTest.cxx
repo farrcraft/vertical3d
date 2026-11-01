@@ -192,7 +192,8 @@ BOOST_AUTO_TEST_CASE(a_camera_facing_away_turns_about_a_near_point) {
 
 /**
  * A view draws its marker's letters, less that of an axis seen end on, and a perspective view
- * also the gizmo's three. The disc behind the gizmo shows only while the cursor is over it.
+ * also the gizmo's three. The disc behind the gizmo is faint at rest and brighter while the
+ * cursor is over it.
  **/
 BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     const OverlayMetrics metrics;
@@ -212,14 +213,16 @@ BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     const ViewPort perspective = view(glm::vec3(4.0F, 5.0F, -20.0F), false);
     v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, std::nullopt);
     BOOST_CHECK_EQUAL(letters.size(), 6U);
-    const auto hovered = [&canvas, &look]() {
-        return std::ranges::any_of(canvas.vertices(), [&look](const auto& vertex) { return vertex.colour == look.hover; });
+    const auto drawn = [&canvas](const glm::vec4& colour) {
+        return std::ranges::any_of(canvas.vertices(), [&colour](const auto& vertex) { return vertex.colour == colour; });
     };
-    BOOST_CHECK(!hovered());
+    BOOST_CHECK(drawn(look.rest));
+    BOOST_CHECK(!drawn(look.hover));
 
     canvas.clear();
     v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, v3d::editor::view::gizmoCentre(perspective.region(), metrics));
-    BOOST_CHECK(hovered());
+    BOOST_CHECK(drawn(look.hover));
+    BOOST_CHECK(!drawn(look.rest));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

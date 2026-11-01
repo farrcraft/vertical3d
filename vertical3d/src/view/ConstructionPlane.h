@@ -8,6 +8,8 @@
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/camera/Camera.h>
 
+#include <array>
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
@@ -64,6 +66,25 @@ class ConstructionPlane final {
     unsigned int lines() const noexcept;
 
     /**
+     * The colours the grid is drawn in.
+     **/
+    struct Colours final {
+        glm::vec4 minor;                   /**< an ordinary line **/
+        glm::vec4 major;                   /**< a line on an emphasised interval **/
+        std::array<glm::vec4, 3> axes;     /**< a line through the origin, by the world axis it runs along: x, y and z **/
+    };
+
+    /**
+     * Draw the grid in these colours.
+     **/
+    void colours(const Colours& colours) noexcept;
+
+    /**
+     * @return the colours the grid is drawn in
+     **/
+    const Colours& colours() const noexcept;
+
+    /**
      * Append the grid to a canvas, in the plane chosen for the camera.
      *
      * @param camera the view the grid is being drawn for, which decides its plane
@@ -78,7 +99,8 @@ class ConstructionPlane final {
     static constexpr unsigned int defaultIntervals = 10;
     static constexpr unsigned int defaultLines = 60;
     /**
-     * The colours of an ordinary line, an emphasised line and the lines through the origin.
+     * The colours of an ordinary line, an emphasised line and the lines through the origin,
+     * until the grid is given colours of its own.
      **/
     static constexpr glm::vec4 minorColour{ 0.30F, 0.30F, 0.30F, 1.0F };
     static constexpr glm::vec4 majorColour{ 0.42F, 0.42F, 0.52F, 1.0F };
@@ -98,9 +120,7 @@ class ConstructionPlane final {
     float spacing_;
     unsigned int intervals_;
     unsigned int lines_;
-    glm::vec4 minor_;
-    glm::vec4 major_;
-    glm::vec4 origin_;
+    Colours colours_;
 };
 
 };  // namespace v3d::editor::view

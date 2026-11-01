@@ -56,7 +56,7 @@ clears the component selection.
 box at each control point, and the lines between a NURBS curve's points. While the view also
 shows handles, it draws a line from each Bezier point to each of its handles, with a box at the
 handle's end. `view::show::handle` therefore shows a curve's handles and a manipulator's together.
-A selected point or handle is drawn in the component colour.
+A selected point or handle is drawn in the selection's amber.
 
 **What a click does.** `tool::Select` picks on the press, not the release.
 

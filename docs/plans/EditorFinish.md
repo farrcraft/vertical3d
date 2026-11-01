@@ -35,8 +35,8 @@ down the right. The status bar, the notices and the command search are all prese
 * **The views draw outside the theme.** The grid's lines are grey with a blue tint and its
   lines through the origin are near white (`vertical3d/src/view/ConstructionPlane.h:83-85`). The
   design draws the origin lines in the axis colours. A selected object is drawn light blue
-  (`vertical3d/src/view/WireframeVisitor.h:107`), where the design and the theme's `selected`
-  role are amber.
+  (`vertical3d/src/view/WireframeVisitor.h:107`), where the design draws selected geometry in
+  amber.
 * **A viewport's header does not read as menus.** It is an opaque strip of plain words:
   "Viewport", the camera, the shading and the mask. The design draws it at 80% opacity over
   the scene, with the view's name semibold in a pill and a drop mark on each menu. It adds an
@@ -90,7 +90,7 @@ the theme's palette already. These are the parts this plan adds:
 |---|---|
 | Grid lines | The theme's hairline over the area colour, every tenth line a step brighter |
 | Lines through the origin | The two axes in the view's plane, in their axis colours at 75% |
-| A selected object | The theme's `selected` role, `#f2a33a` |
+| A selected object or component | `#f2a33a` |
 | Gizmo | A disc of white at 5% behind it always, brighter under the cursor |
 
 **A viewport's header**, 28 pixels, at 80% of the area header colour over the scene:
@@ -121,7 +121,7 @@ frame; the range; the rate; Auto key. Below them, a row for each selected item w
 as diamonds, and the playhead across all of them in the accent.
 
 **The graph editor:** each curve of the selected items in its axis colour over a grid of
-frames and values, with the chosen key and its handles in the `selected` role.
+frames and values, with the chosen key and its handles in the selection's amber.
 
 **The console:** what was run and what it said, above a line that takes a command.
 
@@ -160,13 +160,18 @@ icons from the result. The design's row heights, 22 to 26 pixels, follow from th
 
 ### Step 2 — Views drawn from the theme
 
-**Open.**
+**Closed.**
 
-- The grid takes its lines from the theme's hairline, with every tenth line a step brighter.
-- The lines through the origin take the axis colours at 75%.
-- A selected object takes the theme's `selected` role. A selected component already draws in
-  amber.
-- The gizmo keeps a faint disc behind it at rest.
+- The renderer gives each view's grid its colours every frame. An ordinary line is the theme's
+  hairline laid over the view's background, and every tenth line is twice as strong. A line is
+  drawn opaque, so the blend is made before the line is.
+- A line through the origin takes the colour of the world axis it runs along, at 75%.
+- A selected object and a selected component share one amber, `#f2a33a`. The theme's
+  `selected` role is the accent at 24%, a tint behind a chosen row, so it is not the colour
+  geometry is selected in.
+- The gizmo keeps a disc of white at 5% behind it at rest, and 10% under the cursor.
+- The grid suite covers the axis colours by direction, and the overlay suite the disc at rest
+  and under the cursor. The editor was photographed with a cube selected.
 
 ### Step 3 — A viewport's header
 
@@ -251,7 +256,7 @@ icons from the result. The design's row heights, 22 to 26 pixels, follow from th
 - A timeline is a kind of editor an area can hold.
 - Its controls play, stop, step and jump through the keys as the Animate menu does. Its fields
   edit the frame, the range and the rate.
-- A row per selected item shows its keys as diamonds, the chosen keys in the `selected` role.
+- A row per selected item shows its keys as diamonds, the chosen keys in the selection's amber.
   A click moves the playhead there. A drag along the frames scrubs.
 - A key can be chosen, moved along the frames and deleted, with undo.
 
