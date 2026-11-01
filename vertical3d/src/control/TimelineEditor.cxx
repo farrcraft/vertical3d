@@ -41,19 +41,19 @@ namespace {
 constexpr std::int32_t FRAME_LIMIT = 1000000;
 
 /**
+ * The steps the ruler counts frames in are these times a power of ten: 1, 2, 5, 10, 20, 50 and
+ * so on.
+ **/
+constexpr std::array<std::int64_t, 3> MANTISSAS{ 1, 2, 5 };
+constexpr std::int64_t DECADE = 10;
+
+/**
  * @return a number from the ui as the nearest whole frame, or nothing when it is too far away
  *         to be one
  **/
 std::optional<int> whole(float frame) {
     return v3d::type::toInteger(std::round(frame), { .minimum = -FRAME_LIMIT, .maximum = FRAME_LIMIT });
 }
-
-/**
- * The steps the ruler counts frames in are these times a power of ten: 1, 2, 5, 10, 20, 50 and
- * so on.
- **/
-constexpr std::array<std::int64_t, 3> MANTISSAS{ 1, 2, 5 };
-constexpr std::int64_t DECADE = 10;
 
 /**
  * @return the smallest step that leaves room between numbers, or one as long as the range

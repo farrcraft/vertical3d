@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/animation/Curve.h>
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Stack.h>
@@ -123,6 +124,12 @@ class Document final {
      **/
     Outcome moveKeys(const std::vector<scene::FrameKey>& keys, int offset);
     Outcome deleteKeys(const std::vector<scene::FrameKey>& keys);
+
+    /**
+     * Give one of an item's curves new keys, as a graph's drag leaves it. A path the item has no
+     * curve on, or a curve the same as the one it has, changes nothing.
+     **/
+    Outcome reshape(unsigned int item, const std::string& path, const v3d::animation::Curve& curve);
 
     /**
      * Take new render settings. The same settings change nothing.

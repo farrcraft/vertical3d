@@ -25,6 +25,7 @@
 #include <vertical3d/src/app/WorkspaceSwitcher.h>
 #include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/StatusBar.h>
@@ -285,6 +286,8 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::CommandSearch> search_;
     control::Outliner outliner_;
     boost::shared_ptr<control::PropertiesEditor> properties_;
+    // every graph editor, which share the chosen key
+    boost::shared_ptr<control::GraphEditor> graph_;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<control::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;

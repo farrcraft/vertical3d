@@ -350,6 +350,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f6",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::graph"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "delete",
         "state": "pressed"
       },

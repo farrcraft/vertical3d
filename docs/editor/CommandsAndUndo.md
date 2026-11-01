@@ -52,7 +52,7 @@ lens, emission and style from the start and the end of the edit, and undo and re
 end back whole. An edit that changed nothing records nothing.
 
 While auto key is on, a `command::Transform` or a `command::Edit` is recorded inside a
-`command::Keyed` with the key it set, as [Animation.md](Animation.md#the-timeline) describes.
+`command::Keyed` with the key it set, as [Animation.md](Animation.md#auto-key) describes.
 Undo takes back the key and then the edit, and redo makes the edit and then the key.
 
 The rules:

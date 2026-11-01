@@ -82,6 +82,31 @@ BOOST_AUTO_TEST_CASE(keys_remove_test) {
     BOOST_CHECK(keyed.frames("translation.x") == std::vector<float>({ 1.0F, 10.0F }));
 }
 
+BOOST_AUTO_TEST_CASE(keys_replace_test) {
+    const Keyed keyed;
+    v3d::animation::Curve reshaped = keyed.scene->curves(keyed.mesh->id()).at("translation.x");
+    reshaped.set(10.0F, 8.0F);
+    reshaped.slopes(1.0F, { .in = 0.5F, .out = 0.5F });
+
+    // the one curve takes the new keys, and the others are left alone
+    const boost::shared_ptr<v3d::editor::command::Keys> command =
+        v3d::editor::command::Keys::replace(keyed.scene, keyed.mesh->id(), "translation.x", reshaped);
+    BOOST_CHECK_EQUAL(command->name(), "edit curve");
+    BOOST_CHECK(!command->empty());
+    command->redo();
+    BOOST_CHECK(keyed.scene->curves(keyed.mesh->id()).at("translation.x") == reshaped);
+    BOOST_CHECK(keyed.frames("scale.x") == std::vector<float>({ 10.0F }));
+
+    command->undo();
+    BOOST_CHECK_EQUAL(keyed.scene->curves(keyed.mesh->id()).at("translation.x").keys()[1].value, 5.0F);
+
+    // the same curve, a path with no curve, or an item the scene does not hold changes nothing
+    BOOST_CHECK(v3d::editor::command::Keys::replace(keyed.scene, keyed.mesh->id(), "translation.x",
+        keyed.scene->curves(keyed.mesh->id()).at("translation.x"))->empty());
+    BOOST_CHECK(v3d::editor::command::Keys::replace(keyed.scene, keyed.mesh->id(), "translation.y", reshaped)->empty());
+    BOOST_CHECK(v3d::editor::command::Keys::replace(keyed.scene, 99, "translation.x", reshaped)->empty());
+}
+
 BOOST_AUTO_TEST_CASE(keys_nothing_test) {
     const Keyed keyed;
 

@@ -70,6 +70,25 @@ boost::shared_ptr<Keys> Keys::remove(const boost::shared_ptr<scene::Scene>& scen
 
 /**
  **/
+boost::shared_ptr<Keys> Keys::replace(const boost::shared_ptr<scene::Scene>& scene, unsigned int item, const std::string& path,
+    const v3d::animation::Curve& curve) {
+    boost::shared_ptr<Keys> made(new Keys(scene, {}, &moved, 0.0F));
+    made->what_ = "edit curve";
+    const boost::shared_ptr<scene::Item> found = scene ? scene->item(item) : boost::shared_ptr<scene::Item>();
+    if (!found) {
+        return made;
+    }
+    const scene::Curves curves = scene->curves(item);
+    const auto had = curves.find(path);
+    if (had != curves.end() && had->second != curve) {
+        made->changes_.push_back({ .item = found, .path = path, .before = had->second, .after = curve });
+        made->count_ = 1;
+    }
+    return made;
+}
+
+/**
+ **/
 Keys::Keys(const boost::shared_ptr<scene::Scene>& scene, const std::vector<scene::FrameKey>& keys, const Edit& edit, float offset) :
     scene_(scene) {
     if (!scene_) {

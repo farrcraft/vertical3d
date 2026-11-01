@@ -387,6 +387,7 @@ BOOST_FIXTURE_TEST_CASE(the_area_menu_marks_the_kind_shown, Chrome) {
 
     // a timeline is one of the kinds offered
     BOOST_CHECK(header(0)->find("area::editor::timeline"));
+    BOOST_CHECK(header(0)->find("area::editor::graph"));
 }
 
 /**

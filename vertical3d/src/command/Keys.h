@@ -21,7 +21,7 @@
 namespace v3d::editor::command {
 
 /**
- * Keys already set, moved along the frames or deleted.
+ * Keys already set, moved along the frames or deleted, or one curve's keys reshaped.
  *
  * A key here is a FrameKey: every key one item has on one frame, across all its curves. A move
  * keeps each key's value, interpolation and slopes, and a moved key replaces one it lands on.
@@ -43,6 +43,14 @@ class Keys final : public Command {
      * @param keys what to delete. A key no curve of its item has is skipped
      **/
     static boost::shared_ptr<Keys> remove(const boost::shared_ptr<scene::Scene>& scene, const std::vector<scene::FrameKey>& keys);
+
+    /**
+     * Give one curve the keys of another, as a key or a slope is dragged in a graph.
+     * @param path a curve the item has already. Any other path, or a curve that is the same as
+     *        the one it has, changes nothing
+     **/
+    static boost::shared_ptr<Keys> replace(const boost::shared_ptr<scene::Scene>& scene, unsigned int item, const std::string& path,
+        const v3d::animation::Curve& curve);
 
     void undo() override;
     void redo() override;

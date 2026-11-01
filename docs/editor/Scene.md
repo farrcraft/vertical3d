@@ -378,8 +378,8 @@ built as the editor runs and put before the editor's own container so its menus 
   and shows that kind's icon. It holds Editor, which offers each kind of editor and marks the
   one shown. Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom
   or Below, and then New Tab, Close Tab and Maximise. A maximise button sits at the header's
-  right end. Shift+F5, Shift+F7, Shift+F9 and Shift+F12 show a viewport, the properties editor,
-  the outliner and the timeline in the area under the cursor.
+  right end. Shift+F5, Shift+F6, Shift+F7, Shift+F9 and Shift+F12 show a viewport, the graph
+  editor, the properties editor, the outliner and the timeline in the area under the cursor.
 - **A viewport's header** has four more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
     Back, Left, Right, Top, Bottom and Perspective, and Orthographic. While the area is active,
@@ -687,6 +687,10 @@ and edits them. `PropertiesEditor` in `src/control/` draws it.
 **The timeline** (`timeline`) plays the frames and shows the selected items' keys along them.
 `TimelineEditor` in `src/control/` draws it, and [Animation.md](Animation.md#the-timeline-editor)
 describes what it does.
+
+**The graph editor** (`graph`) draws the selected items' curves over frames and values, and
+reshapes their keys. `GraphEditor` in `src/control/` draws it, and
+[Animation.md](Animation.md#the-graph-editor) describes what it does.
 
 ## Shaded views
 

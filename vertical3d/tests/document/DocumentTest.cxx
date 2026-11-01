@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/animation/Curve.h>
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
@@ -298,6 +299,28 @@ BOOST_AUTO_TEST_CASE(keys_are_moved_and_deleted) {
 
     edited.undo();
     BOOST_CHECK(edited.scene()->keyedFrames(edited.scene()->items()) == std::vector<float>({ 3.0F }));
+}
+
+/**
+ * A curve is reshaped as one change, and a curve the same as the one there changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_curve_is_reshaped) {
+    const Scratch scratch("reshape");
+    v3d::editor::document::Document edited = document(scratch.path());
+    edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    const unsigned int cube = edited.scene()->items()[0]->id();
+    edited.key(edited.scene()->items(), 5);
+    v3d::animation::Curve curve = edited.scene()->curves(cube).at("translation.y");
+    curve.set(5.0F, 2.0F);
+
+    const v3d::editor::document::Outcome reshaped = edited.reshape(cube, "translation.y", curve);
+    BOOST_CHECK(reshaped.done);
+    BOOST_CHECK(reshaped.undoable);
+    BOOST_CHECK_EQUAL(reshaped.message, "edited translation.y");
+    BOOST_CHECK(!edited.reshape(cube, "translation.y", curve).done);
+
+    edited.undo();
+    BOOST_CHECK_EQUAL(edited.scene()->curves(cube).at("translation.y").keys()[0].value, 0.0F);
 }
 
 /**

@@ -1,8 +1,8 @@
 # Animation and the timeline
 
 The editor keys the properties of scene items on frames and plays them back. This page covers
-what can be keyed, how a curve behaves, how the scene is evaluated at a frame, and the Timeline
-menu. [Files.md](Files.md#scene-documents) covers how curves are saved.
+what can be keyed, how a curve behaves, how the scene is evaluated at a frame, the Animate menu,
+the timeline and graph editors, and auto key. [Files.md](Files.md#scene-documents) covers how curves are saved.
 
 ## What is keyed
 
@@ -131,6 +131,39 @@ immediate layer.
   `delete keys`. A curve left with no keys is removed.
 - The chosen keys are shared by every timeline editor. A key stops being chosen when its item
   stops being selected or its frame is no longer keyed.
+
+## The graph editor
+
+An area can hold a graph, the `graph` editor, which `GraphEditor` draws in the immediate layer.
+
+- **The graph** draws each curve of the selected items over a grid of frames and values. A
+  curve whose path ends in `x`, `y` or `z` is drawn in that axis's colour, as the views draw the
+  axes, and every other curve in the theme's text colour. Each key is a diamond. The grid's lines
+  are 1, 2 or 5 times a power of ten apart, the smallest step that leaves room for each number,
+  and each value line is numbered.
+- **The ruler** above the graph numbers its frames. A press on it moves the frame to where it
+  landed, and a drag scrubs. The playhead runs down the ruler and the graph in the theme's
+  highlight.
+- **A press on a key** chooses that one key of that one curve, a `GraphEditor::CurveKey`. A press
+  away from every key chooses none. A drag moves the chosen key by whole frames and by any value,
+  drawn where it will land, and records the move when it is let go. A moved key keeps its
+  interpolation and slopes, and replaces a key it lands on.
+- **The chosen key** is drawn in the selection's amber with its handles. A key has a handle
+  toward each neighbour the curve is a cubic to, reaching a third of the way to that neighbour
+  along its slope. A drag on a handle gives both of the key's slopes the slope from the key to
+  the handle, and the key stops being automatic. A handle stays on its own side of the key.
+- A move or a turn is one change, `edit curve`, which `Document::reshape()` makes. It refuses a
+  path the item has no curve on, and a curve the same as the one there.
+- **The view moves as an orthographic viewport's does.** While the truck move is held (Left
+  Ctrl) or latched, a drag moves the view. While the zoom or dolly move is (Left Alt), a drag
+  right shows fewer frames and a drag up fewer values, about where the drag began. The wheel
+  shows less about the cursor for a notch away from the reader, and more for a notch toward.
+- **Frame All** fits the view to the selected items' curves, with a tenth of their span to spare
+  each side and at least ten frames across. With no curves it shows the range, from -1 to 1. A
+  new graph editor is fitted when it is first drawn. Each editor keeps its own view, and every
+  graph editor shares the chosen key.
+
+## Auto key
 
 **Auto key keys an edit as it is recorded.** While it is on, an edit to a number a curve can
 drive keys that number at the current frame, and the edit and its keys are one change, which one

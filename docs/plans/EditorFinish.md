@@ -347,13 +347,23 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 12 — The graph editor
 
-**Open.** Needs step 11.
+**Closed.**
 
-- A graph editor is a kind of editor an area can hold. It shares the timeline's frames and
-  playhead.
-- It draws each curve of the selected items, in its axis colour where it has one.
-- A key and its handles can be chosen and dragged, with undo. The view pans and zooms as an
-  orthographic viewport does.
+- A graph editor, `GraphEditor`, is a kind of editor an area can hold, and Shift+F6 shows one.
+  A ruler above it scrubs the scene's frame, and the playhead runs down both in the accent.
+- It draws each curve of the selected items over a grid of frames and values, in its axis's
+  colour where its path ends in x, y or z.
+- A key of one curve is chosen by a press and dragged by whole frames and any value. The chosen
+  key's handles reach a third of the way to each neighbour it has a cubic to, and a drag on one
+  gives both slopes its slope and makes the key manual. Either drag is one change,
+  `Document::reshape()`, through `command::Keys::replace()`.
+- The truck move pans the view and the zoom and dolly moves zoom it, as in an orthographic
+  viewport, and the wheel zooms about the cursor. Frame All fits the view to the curves.
+- `api/animation`: `Curve::slopes()` gives a key slopes of its own. `api/ui`: a surface reports
+  the wheel turned over it, and `Immediate::roomBelow()` gives a widget the rest of its region.
+- The curve, ui, keys and document suites cover the slopes, the wheel and the room, the
+  replacement and the operation. The graph editor suite covers the view's mapping, the colours,
+  fitting, panning and zooming, scrubbing, moving a key and turning a handle.
 
 ### Step 13 — The console
 

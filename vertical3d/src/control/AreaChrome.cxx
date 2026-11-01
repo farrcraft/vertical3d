@@ -16,6 +16,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/TimelineEditor.h>
@@ -249,6 +250,7 @@ const std::vector<AreaChrome::Kind>& AreaChrome::kinds() {
         { .kind = std::string(Outliner::KIND), .label = "Outliner" },
         { .kind = std::string(PropertiesEditor::KIND), .label = "Properties" },
         { .kind = std::string(TimelineEditor::KIND), .label = "Timeline" },
+        { .kind = std::string(GraphEditor::KIND), .label = "Graph Editor" },
     };
     return each;
 }

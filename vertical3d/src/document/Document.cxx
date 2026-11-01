@@ -5,6 +5,7 @@
 
 #include "Document.h"
 
+#include <api/animation/Curve.h>
 #include <api/brep/Primitives.h>
 #include <api/interchange/Gltf.h>
 #include <api/interchange/Scene.h>
@@ -234,6 +235,16 @@ Outcome Document::deleteKeys(const std::vector<scene::FrameKey>& keys) {
     command->redo();
     history_->push(command);
     return { .done = true, .message = "deleted " + Document::keys(command->count()), .undoable = true };
+}
+
+Outcome Document::reshape(unsigned int item, const std::string& path, const v3d::animation::Curve& curve) {
+    const boost::shared_ptr<command::Keys> command = command::Keys::replace(scene_, item, path, curve);
+    if (command->empty()) {
+        return { .done = false, .message = "the curve " + path + " is already that shape, or there is no such curve" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "edited " + path, .undoable = true };
 }
 
 Outcome Document::settings(const scene::RenderSettings& settings) {

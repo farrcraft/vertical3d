@@ -35,6 +35,7 @@
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
+#include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/Pointer.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
@@ -248,6 +249,7 @@ bool Controller::buildUi() {
     properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
     context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
+    graph_ = boost::make_shared<control::GraphEditor>(context_.document, [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
@@ -438,6 +440,19 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
     layer->begin(canvas, input);
     // a panel starts under its area's header
     const float header = renderer_->barHeight();
+    // a graph moves its view by the camera move in force, as an orthographic view does
+    control::GraphEditor::Navigate navigate = control::GraphEditor::Navigate::None;
+    switch (context_.cameraTool->mode()) {
+        case tool::CameraControl::CAMERA_MODE_TRUCK:
+            navigate = control::GraphEditor::Navigate::Pan;
+            break;
+        case tool::CameraControl::CAMERA_MODE_ZOOM:
+        case tool::CameraControl::CAMERA_MODE_DOLLY:
+            navigate = control::GraphEditor::Navigate::Zoom;
+            break;
+        default:
+            break;
+    }
     std::vector<std::size_t> outliners;
     for (const view::AreaLayout::Area& area : context_.layout->areas()) {
         const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
@@ -452,6 +467,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
             properties_->draw(layer, context_.document->scene(), editor.id, region);
         } else if (editor.kind == control::TimelineEditor::KIND && context_.timeline) {
             context_.timeline->draw(layer, editor.id, region);
+        } else if (editor.kind == control::GraphEditor::KIND && graph_) {
+            graph_->draw(layer, editor.id, region, navigate);
         }
     }
     layer->end();
