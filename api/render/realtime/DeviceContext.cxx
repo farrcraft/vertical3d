@@ -12,12 +12,12 @@
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/renderer/Line.h>
 #include <api/render/realtime/renderer/Quad.h>
 #include <api/render/realtime/renderer/World.h>
 
-#include "Textures.h"
+#include <api/render/realtime/resource/Textures.h>
 
 #include <cstdint>
 
@@ -35,9 +35,9 @@ extent_(extent),
 depthFormat_(VK_FORMAT_UNDEFINED) {
     ring_ = boost::make_shared<vulkan::frame::Ring>(device_, framesInFlight);
     pipelineCache_ = boost::make_shared<vulkan::pipeline::Cache>(device_);
-    resources_ = boost::make_shared<Resources>(device_, ring_);
+    resources_ = boost::make_shared<resource::Resources>(device_, ring_);
     uploader_ = boost::make_shared<vulkan::memory::Uploader>(device_, ring_);
-    textures_ = boost::make_shared<Textures>(device_, resources_, ring_, uploader_);
+    textures_ = boost::make_shared<resource::Textures>(device_, resources_, ring_, uploader_);
     frameUniforms_ = boost::make_shared<vulkan::frame::FrameUniforms>(device_, ring_);
     // settled here even though the image may never be built, because every pipeline that
     // could draw into a depth pass is built against it
@@ -81,7 +81,7 @@ boost::shared_ptr<vulkan::pipeline::Cache> DeviceContext::pipelineCache() const 
 
 /**
  **/
-boost::shared_ptr<Resources> DeviceContext::resources() const {
+boost::shared_ptr<resource::Resources> DeviceContext::resources() const {
     return resources_;
 }
 
@@ -147,7 +147,7 @@ bool DeviceContext::hasDepth() const noexcept {
 
 /**
  **/
-boost::shared_ptr<Textures> DeviceContext::textures() const {
+boost::shared_ptr<resource::Textures> DeviceContext::textures() const {
     return textures_;
 }
 

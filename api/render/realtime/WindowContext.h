@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Present.h>
+#include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
@@ -39,7 +39,7 @@ class WindowContext : public DeviceContext {
     WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
         vulkan::memory::Allocator::Kind allocations = vulkan::memory::Allocator::Kind::Suballocated,
-        Present present = Present::Uncapped);
+        frame::Present present = frame::Present::Uncapped);
 
     /**
      **/
@@ -65,7 +65,7 @@ class WindowContext : public DeviceContext {
      * Ask for a different present mode, and recreate the swapchain to take it, as resize()
      * does. swapchain()->presenting() then says which mode was granted.
      **/
-    void present(Present present);
+    void present(frame::Present present);
 
  private:
     /**

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -29,7 +29,7 @@ class Create final : public Command {
      * @param kind what the item is called, which is the name the command reports
      **/
     Create(const boost::shared_ptr<scene::Scene>& scene,
-        const boost::shared_ptr<scene::Item>& item,
+        const boost::shared_ptr<scene::item::Item>& item,
         const std::string& kind);
 
     void undo() override;
@@ -38,7 +38,7 @@ class Create final : public Command {
 
  private:
     boost::shared_ptr<scene::Scene> scene_;
-    boost::shared_ptr<scene::Item> item_;
+    boost::shared_ptr<scene::item::Item> item_;
     std::string kind_;
 };
 

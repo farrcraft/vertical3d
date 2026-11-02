@@ -4,18 +4,18 @@
  **/
 
 #include <api/image/Image.h>
-#include <api/render/offline/Noise.h>
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/sl/Builtins.h>
-#include <api/render/offline/sl/Compiler.h>
-#include <api/render/offline/sl/Emitter.h>
-#include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/compiler/Builtins.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/syntax/Function.h>
 #include <api/render/offline/sl/syntax/Shader.h>
+#include <api/render/offline/texture/Noise.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include <set>
 #include <sstream>
@@ -46,12 +46,12 @@ class Shaded final {
         v3d::render::offline::sl::runtime::Renderer* renderer = nullptr) {
         const std::string source = "surface test() {\n" + body + "\n}\n";
         std::istringstream stream(source);
-        v3d::render::offline::sl::Parser parser(stream);
+        v3d::render::offline::sl::compiler::Parser parser(stream);
         std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
         BOOST_REQUIRE_MESSAGE(shaders.size() == 1, parser.error() + " in: " + body);
-        v3d::render::offline::sl::Compiler compiler(shaders[0]);
+        v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
         BOOST_REQUIRE_MESSAGE(compiler.compile(), compiler.error() + " in: " + body);
-        v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+        v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
         BOOST_REQUIRE_MESSAGE(emitter.emit(&program_), emitter.error() + " in: " + body);
         machine_.renderer(renderer);
         machine_.prepare(program_, batch);
@@ -79,7 +79,7 @@ class Shaded final {
     Machine machine_;
 };
 
-v3d::render::offline::Texture quartered();
+v3d::render::offline::texture::Texture quartered();
 
 /**
  * A renderer holding one texture, under the name "quarters".
@@ -90,12 +90,12 @@ class Textured final : public v3d::render::offline::sl::runtime::Renderer {
         return false;
     }
 
-    const v3d::render::offline::Texture* texture(const std::string & name) override {
+    const v3d::render::offline::texture::Texture* texture(const std::string & name) override {
         return name == "quarters" ? &texture_ : nullptr;
     }
 
  private:
-    v3d::render::offline::Texture texture_ = quartered();
+    v3d::render::offline::texture::Texture texture_ = quartered();
 };
 
 /**
@@ -181,7 +181,7 @@ float answer(const std::string & expression) {
 /**
  * Two by two texels: red and green across the top, blue and white across the bottom.
  **/
-v3d::render::offline::Texture quartered() {
+v3d::render::offline::texture::Texture quartered() {
     v3d::image::Image image(glm::uvec2(2, 2), 24);
     const unsigned char texels[12] = {
         255, 0, 0,   0, 255, 0,
@@ -190,7 +190,7 @@ v3d::render::offline::Texture quartered() {
     for (unsigned int i = 0; i < 12; i++) {
         image[i] = texels[i];
     }
-    return v3d::render::offline::Texture(image);
+    return v3d::render::offline::texture::Texture(image);
 }
 
 /**
@@ -516,8 +516,8 @@ BOOST_AUTO_TEST_CASE(sllibrary_noise_test) {
         "point moved = point noise(2.6);");
 
     BOOST_CHECK_EQUAL(shaded.number("line"), shaded.number("plane"));
-    BOOST_CHECK_EQUAL(shaded.number("line"), v3d::render::offline::noise(glm::vec3(1.3F, 0.0F, 0.0F)));
-    BOOST_CHECK_EQUAL(shaded.number("space"), v3d::render::offline::noise(glm::vec3(1.3F, 0.7F, 2.1F)));
+    BOOST_CHECK_EQUAL(shaded.number("line"), v3d::render::offline::texture::noise(glm::vec3(1.3F, 0.0F, 0.0F)));
+    BOOST_CHECK_EQUAL(shaded.number("space"), v3d::render::offline::texture::noise(glm::vec3(1.3F, 0.7F, 2.1F)));
     const glm::vec3 tint = shaded.triple("tint");
     BOOST_CHECK_EQUAL(tint.r, shaded.number("space"));
     BOOST_CHECK_NE(tint.r, tint.g);
@@ -784,15 +784,15 @@ BOOST_AUTO_TEST_CASE(sllibrary_calculatenormal_without_neighbours_is_zero_test) 
  **/
 BOOST_AUTO_TEST_CASE(sllibrary_bodies_test) {
     std::set<std::string> written;
-    for (const v3d::render::offline::sl::syntax::Function & function : v3d::render::offline::sl::sources()) {
+    for (const v3d::render::offline::sl::syntax::Function & function : v3d::render::offline::sl::compiler::sources()) {
         written.insert(function.name);
     }
     std::set<std::string> declared;
     std::set<std::string> stubs;
-    for (const v3d::render::offline::sl::Signature & signature : v3d::render::offline::sl::builtins()) {
-        if (signature.body == v3d::render::offline::sl::Signature::Body::SOURCE) {
+    for (const v3d::render::offline::sl::compiler::Signature & signature : v3d::render::offline::sl::compiler::builtins()) {
+        if (signature.body == v3d::render::offline::sl::compiler::Signature::Body::SOURCE) {
             declared.insert(signature.name);
-        } else if (signature.body == v3d::render::offline::sl::Signature::Body::STUB) {
+        } else if (signature.body == v3d::render::offline::sl::compiler::Signature::Body::STUB) {
             stubs.insert(signature.name);
         }
     }

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Lexeme.h>
+#include <api/render/offline/source/Lexeme.h>
 
 #include <cstdint>
 #include <string>
@@ -29,17 +29,17 @@ enum class TokenKind : std::uint8_t {
  * two array delimiters. A request name is the only identifier, so the reader can skip an
  * unrecognised request without knowing how many arguments it takes.
  **/
-class Token final : public v3d::render::offline::Lexeme<TokenKind> {
+class Token final : public v3d::render::offline::source::Lexeme<TokenKind> {
  public:
     typedef TokenKind Kind;
 
     Token() = default;
-    Token(Kind kind, const v3d::render::offline::Position & at) : Lexeme(kind, at) {
+    Token(Kind kind, const v3d::render::offline::source::Position & at) : Lexeme(kind, at) {
     }
-    Token(Kind kind, const std::string & text, const v3d::render::offline::Position & at) :
+    Token(Kind kind, const std::string & text, const v3d::render::offline::source::Position & at) :
         Lexeme(kind, text, at) {
     }
-    Token(float value, const v3d::render::offline::Position & at) : Lexeme(Kind::NUMBER, value, at) {
+    Token(float value, const v3d::render::offline::source::Position & at) : Lexeme(Kind::NUMBER, value, at) {
     }
 };
 

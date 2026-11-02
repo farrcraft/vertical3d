@@ -6,13 +6,13 @@ the shadow functions are in `realtime::lighting`, in `api/render/realtime/lighti
 
 ## A lit scene
 
-`LitScene` is the lit pass with everything around it: the shadow map, the sRGB target the scene
-is drawn into, the lit renderer, and the grade that carries the scene into the app's own pass.
+`lighting::LitScene` is the lit pass with everything around it: the shadow map, the sRGB target the
+scene is drawn into, the lit renderer, and the grade that carries the scene into the app's own pass.
 An app builds one and calls `draw()` once a frame.
 
 ```cpp
 auto context = renderer_->context();
-scene_ = boost::make_shared<LitScene>(*context, LitScene::Spec{.width = width, .height = height,
+scene_ = boost::make_shared<lighting::LitScene>(*context, lighting::LitScene::Spec{.width = width, .height = height,
     .output = context->colourFormat(), .shadowTexels = 2048, .cascades = 3});
 
 void MyApp::tick(unsigned int delta) {
@@ -22,12 +22,12 @@ void MyApp::tick(unsigned int delta) {
     }
     const auto cascades = lighting::fitCascades(camera.projection() * camera.view(),
         lighting::splitView(near, 120.0F, 3, 0.75F), settings.light, {.texels = 2048});
-    LitScene::Shadows shadows;  // nothing, when the view gives no cascades
+    lighting::LitScene::Shadows shadows;  // nothing, when the view gives no cascades
     if (cascades) {
         shadows = *cascades;
     }
-    boost::shared_ptr<Frame> frame = renderer_->frame();
-    Pass* lit = scene_->draw(frame.get(), frame->pass(WindowRenderer::colourPass).get(), registry(),
+    boost::shared_ptr<frame::Frame> frame = renderer_->frame();
+    frame::Pass* lit = scene_->draw(frame.get(), frame->pass(WindowRenderer::colourPass).get(), registry(),
         *meshes_, {.view = camera.view(), .projection = camera.projection(), .settings = settings,
         .shadows = shadows, .alpha = alpha(), .poses = entity::poses(registry(), alpha(), *meshes_)});
     worldQuads_->submit(effects, lit);  // a World built against scene_->target()'s formats
@@ -63,8 +63,8 @@ The sections below describe those parts, for an app that composes the passes its
 
 ## The lit pass
 
-`renderer::Lit` draws registered meshes with light, cast shadows and an outline. A lit
-model is three things: a `MeshRegistry` entry, an entity with `ecs::component::Transform` and
+`renderer::Lit` draws registered meshes with light, cast shadows and an outline. A lit model is
+three things: a `resource::MeshRegistry` entry, an entity with `ecs::component::Transform` and
 `component::Mesh`, and a `Lit`.
 
 The look is cel shading: a key light plus a fill from above and opposite it, quantised into
@@ -77,10 +77,10 @@ Build the targets and the renderer once:
 
 ```cpp
 auto context = renderer_->context();
-auto scene = boost::make_shared<RenderTarget>(*context,
-    RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
-auto map = boost::make_shared<RenderTarget>(*context,
-    RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true,
+auto scene = boost::make_shared<frame::RenderTarget>(*context,
+    frame::RenderTarget::Spec{.width = width, .height = height, .colour = VK_FORMAT_R8G8B8A8_SRGB, .depth = true});
+auto map = boost::make_shared<frame::RenderTarget>(*context,
+    frame::RenderTarget::Spec{.width = mapSize, .height = mapSize, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true,
         .images = 1, .layers = cascades});  // a layer per cascade
 
 renderer::Lit lit(*context, {.colour = scene->format(), .depth = scene->depthFormat(), .shadow = map->depthFormat()});
@@ -112,8 +112,8 @@ const glm::mat4 light = lighting::shadowLight(settings.light, bounds);
 VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, light, 1.0F / mapSize),
     context->textures()->depthTexture(*map));
 
-boost::shared_ptr<Pass> pass = frame->pass("lit");       // may be created first
-boost::shared_ptr<Pass> casting = frame->pass("shadow");
+boost::shared_ptr<frame::Pass> pass = frame->pass("lit");       // may be created first
+boost::shared_ptr<frame::Pass> casting = frame->pass("shadow");
 casting->target(map);
 casting->depth(true);
 casting->scene(sceneSet);
@@ -131,7 +131,7 @@ VkDescriptorSet sceneSet = lit.scene(lighting::pack(settings, *cascades, 1.0F / 
     context->textures()->depthTexture(*map));
 
 for (uint32_t cascade = 0; cascade < cascades->count; cascade++) {
-    boost::shared_ptr<Pass> casting = frame->pass("shadow " + std::to_string(cascade));
+    boost::shared_ptr<frame::Pass> casting = frame->pass("shadow " + std::to_string(cascade));
     casting->target(map);
     casting->layer(cascade);
     casting->depth(true);

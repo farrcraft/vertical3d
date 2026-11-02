@@ -5,8 +5,8 @@
 
 #include "GlyphPages.h"
 
-#include <api/font/GlyphStore.h>
-#include <api/render/realtime/Handle.h>
+#include <api/font/glyph/Store.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -28,7 +28,7 @@ GlyphPages::GlyphPages(Create create, Update update, Release release) :
 
 /**
  **/
-void GlyphPages::sync(font::GlyphStore* store) {
+void GlyphPages::sync(font::glyph::Store* store) {
     while (textures_.size() > store->pages()) {
         release_(textures_.back());
         textures_.pop_back();
@@ -40,7 +40,7 @@ void GlyphPages::sync(font::GlyphStore* store) {
     for (std::size_t page = kept; page < store->pages(); page++) {
         textures_.push_back(create_(store->pixels(page).data(), side, channels));
     }
-    for (const font::GlyphRegion& region : store->regions()) {
+    for (const font::glyph::Region& region : store->regions()) {
         if (region.page >= kept) {
             continue;
         }
@@ -57,8 +57,8 @@ void GlyphPages::sync(font::GlyphStore* store) {
 
 /**
  **/
-render::realtime::TextureHandle GlyphPages::texture(std::size_t page) const {
-    return page < textures_.size() ? textures_[page] : render::realtime::TextureHandle();
+render::realtime::resource::TextureHandle GlyphPages::texture(std::size_t page) const {
+    return page < textures_.size() ? textures_[page] : render::realtime::resource::TextureHandle();
 }
 
 /**

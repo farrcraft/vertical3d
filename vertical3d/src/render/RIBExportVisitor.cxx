@@ -18,13 +18,13 @@
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 
 #include <array>
@@ -132,7 +132,7 @@ void RIBExportVisitor::open() {
     }
 }
 
-void RIBExportVisitor::leave(const boost::shared_ptr<scene::Item>& /*item*/) {
+void RIBExportVisitor::leave(const boost::shared_ptr<scene::item::Item>& /*item*/) {
     if (blocks_.empty()) {
         return;
     }
@@ -142,7 +142,7 @@ void RIBExportVisitor::leave(const boost::shared_ptr<scene::Item>& /*item*/) {
     blocks_.pop_back();
 }
 
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) {
     // the scene calls leave() for every item it visits, so every visit enters a block
     meshes_++;
     enter("mesh" + std::to_string(meshes_), placed.local);
@@ -171,21 +171,21 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const s
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::Camera>& /*camera*/, const scene::Placed& placed, const scene::Camera::Lens& /*lens*/) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Camera>& /*camera*/, const scene::Placed& placed, const scene::item::Camera::Lens& /*lens*/) {
     cameras_++;
     enter("camera" + std::to_string(cameras_), placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::Group>& /*group*/, const scene::Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Group>& /*group*/, const scene::Placed& placed) {
     groups_++;
     enter("group" + std::to_string(groups_), placed.local);
 }
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) {
     curves_++;
     enter("curve" + std::to_string(curves_), placed.local);
     if (!curve || !curve->style().renders || curve->geometry()->empty()) {
@@ -234,7 +234,7 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::Curve>& curve, const
 
 /**
  **/
-void RIBExportVisitor::visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) {
+void RIBExportVisitor::visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) {
     lights_++;
     enter("light" + std::to_string(lights_), placed.local);
     if (!light) {
@@ -246,13 +246,13 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::Light>& light, const
 
     std::string shader;
     switch (emission.type) {
-        case scene::Light::Type::Point:
+        case scene::item::Light::Type::Point:
             shader = "pointlight";
             break;
-        case scene::Light::Type::Distant:
+        case scene::item::Light::Type::Distant:
             shader = "distantlight";
             break;
-        case scene::Light::Type::Spot:
+        case scene::item::Light::Type::Spot:
             shader = "spotlight";
             break;
     }
@@ -260,10 +260,10 @@ void RIBExportVisitor::visit(const boost::shared_ptr<scene::Light>& light, const
     list.add("intensity", UNIFORM_FLOAT, { emission.intensity }, {});
     list.add("lightcolor", Declaration(Declaration::Storage::UNIFORM, Declaration::Type::COLOR, 1), floats(emission.colour), {});
     list.add("from", UNIFORM_POINT, floats(from), {});
-    if (emission.type != scene::Light::Type::Point) {
+    if (emission.type != scene::item::Light::Type::Point) {
         list.add("to", UNIFORM_POINT, floats(to), {});
     }
-    if (emission.type == scene::Light::Type::Spot) {
+    if (emission.type == scene::item::Light::Type::Spot) {
         list.add("coneangle", UNIFORM_FLOAT, { emission.cone }, {});
         list.add("conedeltaangle", UNIFORM_FLOAT, { emission.delta }, {});
     }

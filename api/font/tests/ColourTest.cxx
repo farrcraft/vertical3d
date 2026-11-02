@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/ColourGlyph.h>
-#include <api/font/CurveStore.h>
-#include <api/font/Face.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Family.h>
-#include <api/font/GlyphStore.h>
-#include <api/font/Library.h>
-#include <api/font/Paint.h>
-#include <api/font/ShapedRun.h>
-#include <api/font/Shaper.h>
+#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/CurveStore.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Family.h>
+#include <api/font/glyph/Store.h>
+#include <api/font/face/Library.h>
+#include <api/font/glyph/Paint.h>
+#include <api/font/text/ShapedRun.h>
+#include <api/font/text/Shaper.h>
 #include <api/font/internal/Composite.h>
 #include <api/font/internal/FaceHandle.h>
 #include <api/font/internal/SvgDocuments.h>
@@ -50,7 +50,7 @@ constexpr float SIZE = 20.0F;
 struct Fonts {
     Fonts() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
+        library(boost::make_shared<v3d::font::face::Library>()),
         colr0(open("fonts/colr0.ttf")),
         colr1(open("fonts/colr1.ttf")),
         svg(open("fonts/svg.ttf")),
@@ -59,8 +59,8 @@ struct Fonts {
         inter(open("data/fonts/Inter-Regular.ttf")) {
     }
 
-    boost::shared_ptr<v3d::font::Face> open(const std::string& filename) const {
-        boost::shared_ptr<v3d::font::Face> face = v3d::font::Face::open(library, filename, logger);
+    boost::shared_ptr<v3d::font::face::Face> open(const std::string& filename) const {
+        boost::shared_ptr<v3d::font::face::Face> face = v3d::font::face::Face::open(library, filename, logger);
         BOOST_REQUIRE(face);
         return face;
     }
@@ -68,25 +68,25 @@ struct Fonts {
     /**
      * @return the key of a fixture's colour glyph by its place after the first
      **/
-    static v3d::font::GlyphKey key(const boost::shared_ptr<v3d::font::Face>& face, unsigned int glyph, float size = SIZE) {
-        return v3d::font::GlyphKey{ .face = face.get(), .index = face->glyphIndex(FIRST + glyph), .size = size, .mode = v3d::font::GlyphMode::Colour,
-            .foreground = v3d::font::packColour(glm::vec4(1.0F)) };
+    static v3d::font::glyph::Key key(const boost::shared_ptr<v3d::font::face::Face>& face, unsigned int glyph, float size = SIZE) {
+        return v3d::font::glyph::Key{ .face = face.get(), .index = face->glyphIndex(FIRST + glyph), .size = size, .mode = v3d::font::glyph::Mode::Colour,
+            .foreground = v3d::font::glyph::packColour(glm::vec4(1.0F)) };
     }
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::Face> colr0;
-    boost::shared_ptr<v3d::font::Face> colr1;
-    boost::shared_ptr<v3d::font::Face> svg;
-    boost::shared_ptr<v3d::font::Face> cbdt;
-    boost::shared_ptr<v3d::font::Face> sbix;
-    boost::shared_ptr<v3d::font::Face> inter;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::face::Face> colr0;
+    boost::shared_ptr<v3d::font::face::Face> colr1;
+    boost::shared_ptr<v3d::font::face::Face> svg;
+    boost::shared_ptr<v3d::font::face::Face> cbdt;
+    boost::shared_ptr<v3d::font::face::Face> sbix;
+    boost::shared_ptr<v3d::font::face::Face> inter;
 };
 
 /**
  * @return a pixel of a colour bitmap, as red, green, blue and alpha bytes
  **/
-glm::ivec4 at(const v3d::font::GlyphBitmap& bitmap, unsigned int x, unsigned int y) {
+glm::ivec4 at(const v3d::font::glyph::Bitmap& bitmap, unsigned int x, unsigned int y) {
     const std::size_t pixel = ((static_cast<std::size_t>(y) * bitmap.size.x) + x) * 4;
     return glm::ivec4(bitmap.pixels[pixel], bitmap.pixels[pixel + 1], bitmap.pixels[pixel + 2], bitmap.pixels[pixel + 3]);
 }
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_coloured_by_any_table) {
  **/
 BOOST_AUTO_TEST_CASE(layers_read_in_a_palette) {
     const unsigned int index = colr0->glyphIndex(FIRST);
-    const v3d::font::ColourGlyph first = v3d::font::colour(*colr0, index, 0, SIZE);
+    const v3d::font::glyph::ColourGlyph first = v3d::font::glyph::colour(*colr0, index, 0, SIZE);
     BOOST_REQUIRE_EQUAL(first.layers.size(), 2U);
     BOOST_REQUIRE_EQUAL(first.layers[0].fill.stops.size(), 1U);
     BOOST_CHECK(first.layers[0].fill.stops[0].colour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
@@ -151,21 +151,21 @@ BOOST_AUTO_TEST_CASE(layers_read_in_a_palette) {
     BOOST_CHECK_CLOSE(first.max.x, 1.0F, 0.01F);
     BOOST_CHECK(!first.foreground());
 
-    const v3d::font::ColourGlyph second = v3d::font::colour(*colr0, index, 1, SIZE);
+    const v3d::font::glyph::ColourGlyph second = v3d::font::glyph::colour(*colr0, index, 1, SIZE);
     BOOST_REQUIRE_EQUAL(second.layers.size(), 2U);
     BOOST_CHECK(second.layers[0].fill.stops[0].colour == glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     // a palette the face does not have is its first
-    BOOST_CHECK(v3d::font::colour(*colr0, index, 9, SIZE).layers[0].fill.stops[0].colour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    BOOST_CHECK(v3d::font::glyph::colour(*colr0, index, 9, SIZE).layers[0].fill.stops[0].colour == glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
 }
 
 BOOST_AUTO_TEST_CASE(a_glyph_without_colour_reads_empty) {
-    BOOST_CHECK(v3d::font::colour(*inter, inter->glyphIndex(U'A'), 0, SIZE).empty());
-    BOOST_CHECK(v3d::font::colour(*colr0, 1, 0, SIZE).empty());
-    BOOST_CHECK(v3d::font::paint(v3d::font::GlyphKey{ .face = inter.get(), .index = 1, .size = SIZE, .mode = v3d::font::GlyphMode::Colour }).pixels.empty());
+    BOOST_CHECK(v3d::font::glyph::colour(*inter, inter->glyphIndex(U'A'), 0, SIZE).empty());
+    BOOST_CHECK(v3d::font::glyph::colour(*colr0, 1, 0, SIZE).empty());
+    BOOST_CHECK(v3d::font::glyph::paint(v3d::font::glyph::Key{ .face = inter.get(), .index = 1, .size = SIZE, .mode = v3d::font::glyph::Mode::Colour }).pixels.empty());
 }
 
 BOOST_AUTO_TEST_CASE(layers_are_painted_on_whole_pixels) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(colr0, 0));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(colr0, 0));
     BOOST_REQUIRE_EQUAL(painted.channels, 4U);
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(painted.bearing == glm::ivec2(0, -16));
@@ -177,10 +177,10 @@ BOOST_AUTO_TEST_CASE(layers_are_painted_on_whole_pixels) {
  * A layer in the text's colour takes the colour the key holds, and keeps its alpha.
  **/
 BOOST_AUTO_TEST_CASE(a_layer_takes_the_text_colour) {
-    BOOST_CHECK(v3d::font::colour(*colr0, colr0->glyphIndex(FIRST + 1), 0, SIZE).foreground());
-    v3d::font::GlyphKey tinted = key(colr0, 1);
-    tinted.foreground = v3d::font::packColour(glm::vec4(0.0F, 1.0F, 0.0F, 0.5F));
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(tinted);
+    BOOST_CHECK(v3d::font::glyph::colour(*colr0, colr0->glyphIndex(FIRST + 1), 0, SIZE).foreground());
+    v3d::font::glyph::Key tinted = key(colr0, 1);
+    tinted.foreground = v3d::font::glyph::packColour(glm::vec4(0.0F, 1.0F, 0.0F, 0.5F));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(tinted);
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(near(at(painted, 2, 10), red()));
     BOOST_CHECK(near(at(painted, 17, 10), glm::ivec4(0, 255, 0, 128)));
@@ -190,21 +190,21 @@ BOOST_AUTO_TEST_CASE(a_layer_takes_the_text_colour) {
  * A step of a pixel moves the glyph right, so its last column is only partly covered.
  **/
 BOOST_AUTO_TEST_CASE(a_step_moves_the_glyph_right) {
-    v3d::font::GlyphKey moved = key(colr0, 0);
+    v3d::font::glyph::Key moved = key(colr0, 0);
     moved.subpixel = 2;
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(moved);
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(moved);
     BOOST_REQUIRE(painted.size == glm::uvec2(21, 20));
     BOOST_CHECK_LE(std::abs(at(painted, 0, 10).w - 128), 2);
     BOOST_CHECK_LE(std::abs(at(painted, 20, 10).w - 128), 2);
 }
 
 BOOST_AUTO_TEST_CASE(a_linear_gradient_runs_across_its_glyph) {
-    const v3d::font::ColourGlyph read = v3d::font::colour(*colr1, colr1->glyphIndex(FIRST), 0, SIZE);
+    const v3d::font::glyph::ColourGlyph read = v3d::font::glyph::colour(*colr1, colr1->glyphIndex(FIRST), 0, SIZE);
     BOOST_REQUIRE_EQUAL(read.layers.size(), 1U);
-    BOOST_CHECK(read.layers[0].fill.kind == v3d::font::ColourFill::Kind::Linear);
+    BOOST_CHECK(read.layers[0].fill.kind == v3d::font::glyph::ColourFill::Kind::Linear);
     BOOST_CHECK_EQUAL(read.layers[0].fill.stops.size(), 2U);
 
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(colr1, 0));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(colr1, 0));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     // each pixel's centre is a fortieth of the em further across, starting at a fortieth
     BOOST_CHECK(near(at(painted, 0, 10), glm::ivec4(249, 0, 6, 255)));
@@ -215,10 +215,10 @@ BOOST_AUTO_TEST_CASE(a_linear_gradient_runs_across_its_glyph) {
 }
 
 BOOST_AUTO_TEST_CASE(layers_take_the_palette_and_the_text_colour) {
-    v3d::font::GlyphKey tinted = key(colr1, 1);
-    tinted.foreground = v3d::font::packColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
+    v3d::font::glyph::Key tinted = key(colr1, 1);
+    tinted.foreground = v3d::font::glyph::packColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
     tinted.palette = 1;
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(tinted);
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(tinted);
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(near(at(painted, 2, 10), blue()));
     BOOST_CHECK(near(at(painted, 17, 10), green()));
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(layers_take_the_palette_and_the_text_colour) {
  * The radial gradient grows from red at the centre to blue half an em out, then pads.
  **/
 BOOST_AUTO_TEST_CASE(a_radial_gradient_grows_from_its_centre) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(colr1, 2));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(colr1, 2));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     // the pixel beside the centre is a fortieth of the em across and down from it
     const int beside = static_cast<int>(std::lround(255.0 * std::sqrt(2.0) / 40.0 / 0.5));
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(a_radial_gradient_grows_from_its_centre) {
  * round.
  **/
 BOOST_AUTO_TEST_CASE(a_sweep_gradient_turns_about_its_centre) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(colr1, 3));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(colr1, 3));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     // just above the centre's right, and just below it, the sweep's two ends meet
     BOOST_CHECK(near(at(painted, 19, 9), glm::ivec4(253, 0, 2, 255)));
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(a_sweep_gradient_turns_about_its_centre) {
 }
 
 BOOST_AUTO_TEST_CASE(a_transform_moves_a_layer) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(colr1, 4));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(colr1, 4));
     BOOST_REQUIRE(painted.size == glm::uvec2(10, 20));
     BOOST_CHECK(painted.bearing == glm::ivec2(10, -16));
     BOOST_CHECK(near(at(painted, 5, 10), green()));
@@ -263,17 +263,17 @@ BOOST_AUTO_TEST_CASE(a_transform_moves_a_layer) {
  **/
 BOOST_AUTO_TEST_CASE(a_bitmap_glyph_is_its_strike_scaled) {
     for (const auto& face : { cbdt, sbix }) {
-        const v3d::font::ColourGlyph read = v3d::font::colour(*face, face->glyphIndex(FIRST), 0, 32.0F);
+        const v3d::font::glyph::ColourGlyph read = v3d::font::glyph::colour(*face, face->glyphIndex(FIRST), 0, 32.0F);
         BOOST_REQUIRE_EQUAL(read.images.size(), 1U);
         BOOST_CHECK(read.images[0].size == glm::uvec2(32));
 
-        const v3d::font::GlyphBitmap whole = v3d::font::paint(key(face, 0, 32.0F));
+        const v3d::font::glyph::Bitmap whole = v3d::font::glyph::paint(key(face, 0, 32.0F));
         BOOST_REQUIRE(whole.size == glm::uvec2(32));
         BOOST_CHECK(whole.bearing == glm::ivec2(0, -26));
         BOOST_CHECK(near(at(whole, 0, 0), red()));
         BOOST_CHECK(near(at(whole, 31, 31), blue()));
 
-        const v3d::font::GlyphBitmap half = v3d::font::paint(key(face, 0, 16.0F));
+        const v3d::font::glyph::Bitmap half = v3d::font::glyph::paint(key(face, 0, 16.0F));
         BOOST_REQUIRE(half.size == glm::uvec2(16));
         BOOST_CHECK(near(at(half, 3, 8), red()));
         BOOST_CHECK(near(at(half, 12, 8), blue()));
@@ -284,12 +284,12 @@ BOOST_AUTO_TEST_CASE(a_bitmap_glyph_is_its_strike_scaled) {
  * An SVG glyph is its element in the document, with the rectangle each half uses drawn twice.
  **/
 BOOST_AUTO_TEST_CASE(an_svg_glyph_is_read_from_its_element) {
-    const v3d::font::ColourGlyph read = v3d::font::colour(*svg, svg->glyphIndex(FIRST), 0, SIZE);
+    const v3d::font::glyph::ColourGlyph read = v3d::font::glyph::colour(*svg, svg->glyphIndex(FIRST), 0, SIZE);
     BOOST_REQUIRE_EQUAL(read.layers.size(), 2U);
     BOOST_CHECK_CLOSE(read.min.y, -0.2F, 0.01F);
     BOOST_CHECK_CLOSE(read.max.y, 0.8F, 0.01F);
 
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 0));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(svg, 0));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(painted.bearing == glm::ivec2(0, -16));
     BOOST_CHECK(near(at(painted, 2, 10), red()));
@@ -304,13 +304,13 @@ BOOST_AUTO_TEST_CASE(an_svg_document_is_parsed_once) {
     const v3d::font::internal::SvgDocuments& documents = *svg->handle().documents;
     const std::size_t before = documents.parsed();
     for (unsigned int glyph = 0; glyph < 4; glyph++) {
-        BOOST_CHECK(!v3d::font::colour(*svg, svg->glyphIndex(FIRST + glyph), 0, SIZE).empty());
+        BOOST_CHECK(!v3d::font::glyph::colour(*svg, svg->glyphIndex(FIRST + glyph), 0, SIZE).empty());
     }
     BOOST_CHECK_EQUAL(documents.parsed(), before + 1);
 }
 
 BOOST_AUTO_TEST_CASE(an_svg_gradient_runs_across_its_glyph) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 1));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(svg, 1));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(near(at(painted, 0, 10), glm::ivec4(249, 0, 6, 255)));
     BOOST_CHECK(near(at(painted, 10, 10), glm::ivec4(121, 0, 134, 255)));
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(an_svg_gradient_runs_across_its_glyph) {
  * A stroke is the outline drawn around its path, as thick as its width, with butt ends.
  **/
 BOOST_AUTO_TEST_CASE(an_svg_stroke_is_drawn_around_its_path) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 2));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(svg, 2));
     BOOST_REQUIRE(painted.size == glm::uvec2(20, 4));
     BOOST_CHECK(painted.bearing == glm::ivec2(0, -8));
     BOOST_CHECK(near(at(painted, 0, 0), green()));
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(an_svg_stroke_is_drawn_around_its_path) {
 }
 
 BOOST_AUTO_TEST_CASE(an_svg_path_is_filled_by_its_rule) {
-    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 3));
+    const v3d::font::glyph::Bitmap painted = v3d::font::glyph::paint(key(svg, 3));
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(near(at(painted, 2, 10), blue()));
     BOOST_CHECK_EQUAL(at(painted, 10, 10).w, 0);
@@ -339,23 +339,23 @@ BOOST_AUTO_TEST_CASE(an_svg_path_is_filled_by_its_rule) {
  * to one glyph drawn in colour. The letter before it is set in Inter.
  **/
 BOOST_AUTO_TEST_CASE(an_emoji_sequence_is_shaped_to_one_glyph) {
-    const boost::shared_ptr<v3d::font::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
+    const boost::shared_ptr<v3d::font::face::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
     BOOST_CHECK(emoji->colour().paint);
-    const boost::shared_ptr<v3d::font::FallbackChain> chain = boost::make_shared<v3d::font::FallbackChain>();
+    const boost::shared_ptr<v3d::font::face::FallbackChain> chain = boost::make_shared<v3d::font::face::FallbackChain>();
     for (const auto& face : { inter, emoji }) {
-        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(face->family());
+        const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>(face->family());
         family->add(face);
         chain->add(family);
     }
-    const v3d::font::Shaper shaper(chain);
-    const std::vector<v3d::font::ShapedRun> runs = shaper.shape("a\U0001F469\u200D\U0001F4BB", {}, SIZE, {});
+    const v3d::font::text::Shaper shaper(chain);
+    const std::vector<v3d::font::text::ShapedRun> runs = shaper.shape("a\U0001F469\u200D\U0001F4BB", {}, SIZE, {});
     BOOST_REQUIRE_EQUAL(runs.size(), 2U);
     BOOST_CHECK(runs[0].face == inter);
     BOOST_REQUIRE(runs[1].face == emoji);
     BOOST_REQUIRE_EQUAL(runs[1].glyphs.size(), 1U);
     const unsigned int index = runs[1].glyphs[0].index;
     BOOST_CHECK(emoji->coloured(index));
-    BOOST_CHECK(!v3d::font::colour(*emoji, index, 0, SIZE).empty());
+    BOOST_CHECK(!v3d::font::glyph::colour(*emoji, index, 0, SIZE).empty());
 }
 
 /**
@@ -364,28 +364,28 @@ BOOST_AUTO_TEST_CASE(an_emoji_sequence_is_shaped_to_one_glyph) {
  * emoji face, though the text face has the digit.
  **/
 BOOST_AUTO_TEST_CASE(a_cluster_asking_for_emoji_is_set_in_the_emoji_face) {
-    const boost::shared_ptr<v3d::font::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
-    const boost::shared_ptr<v3d::font::FallbackChain> chain = boost::make_shared<v3d::font::FallbackChain>();
+    const boost::shared_ptr<v3d::font::face::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
+    const boost::shared_ptr<v3d::font::face::FallbackChain> chain = boost::make_shared<v3d::font::face::FallbackChain>();
     for (const auto& face : { inter, emoji }) {
-        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(face->family());
+        const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>(face->family());
         family->add(face);
         chain->add(family);
     }
-    const v3d::font::Shaper shaper(chain);
-    const std::vector<v3d::font::ShapedRun> spaced = shaper.shape("\U0001F600 a", {}, SIZE, {});
+    const v3d::font::text::Shaper shaper(chain);
+    const std::vector<v3d::font::text::ShapedRun> spaced = shaper.shape("\U0001F600 a", {}, SIZE, {});
     BOOST_REQUIRE_EQUAL(spaced.size(), 2U);
     BOOST_CHECK(spaced[0].face == emoji);
     BOOST_CHECK_EQUAL(spaced[0].end, 4U);
     BOOST_CHECK(spaced[1].face == inter);
 
-    const std::vector<v3d::font::ShapedRun> keycap = shaper.shape("1️⃣", {}, SIZE, {});
+    const std::vector<v3d::font::text::ShapedRun> keycap = shaper.shape("1️⃣", {}, SIZE, {});
     BOOST_REQUIRE_EQUAL(keycap.size(), 1U);
     BOOST_CHECK(keycap[0].face == emoji);
     BOOST_REQUIRE_EQUAL(keycap[0].glyphs.size(), 1U);
     BOOST_CHECK(emoji->coloured(keycap[0].glyphs[0].index));
 
     // the text variation selector keeps a digit in the text face
-    const std::vector<v3d::font::ShapedRun> text = shaper.shape("1︎", {}, SIZE, {});
+    const std::vector<v3d::font::text::ShapedRun> text = shaper.shape("1︎", {}, SIZE, {});
     BOOST_REQUIRE_EQUAL(text.size(), 1U);
     BOOST_CHECK(text[0].face == inter);
 }
@@ -395,8 +395,8 @@ BOOST_AUTO_TEST_CASE(a_cluster_asking_for_emoji_is_set_in_the_emoji_face) {
  * stored as a glyph's outline is, its gradient's mapping from em units, and its stops.
  **/
 BOOST_AUTO_TEST_CASE(a_colour_glyph_is_stored_as_a_program) {
-    v3d::font::CurveStore store;
-    const v3d::font::StoredColour& linear = store.colour(*colr1, colr1->glyphIndex(FIRST), 0);
+    v3d::font::glyph::CurveStore store;
+    const v3d::font::glyph::StoredColour& linear = store.colour(*colr1, colr1->glyphIndex(FIRST), 0);
     BOOST_REQUIRE(!linear.empty);
     BOOST_CHECK(!linear.pictures);
     BOOST_CHECK_CLOSE(linear.max.y, 0.8F, 0.01F);
@@ -420,9 +420,9 @@ BOOST_AUTO_TEST_CASE(a_colour_glyph_is_stored_as_a_program) {
     BOOST_CHECK_EQUAL(at(stops + 9), 1.0F);
 
     // a layer in the text's colour marks its stop, and a glyph is read once for each palette
-    const v3d::font::StoredColour& layers = store.colour(*colr1, colr1->glyphIndex(FIRST + 1), 0);
+    const v3d::font::glyph::StoredColour& layers = store.colour(*colr1, colr1->glyphIndex(FIRST + 1), 0);
     BOOST_CHECK_EQUAL(at(layers.program), 2.0F);
-    const auto second = static_cast<std::uint32_t>(at(layers.program + 4 + v3d::font::CurveStore::STEP + 11));
+    const auto second = static_cast<std::uint32_t>(at(layers.program + 4 + v3d::font::glyph::CurveStore::STEP + 11));
     BOOST_CHECK_EQUAL(at(second + 5), 1.0F);
     const std::size_t read = store.read();
     store.colour(*colr1, colr1->glyphIndex(FIRST), 0);
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(a_colour_glyph_is_stored_as_a_program) {
 BOOST_AUTO_TEST_CASE(composites_put_one_colour_on_another) {
     const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
     const glm::vec4 halfBlue(0.0F, 0.0F, 0.5F, 0.5F);
-    using v3d::font::ColourComposite;
+    using v3d::font::glyph::ColourComposite;
     using v3d::font::internal::composite;
     BOOST_CHECK(composite(halfBlue, red, ColourComposite::SourceOver) == glm::vec4(0.5F, 0.0F, 0.5F, 1.0F));
     BOOST_CHECK(composite(halfBlue, red, ColourComposite::DestinationIn) == glm::vec4(0.5F, 0.0F, 0.0F, 0.5F));

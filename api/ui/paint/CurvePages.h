@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/font/CurveStore.h>
-#include <api/render/realtime/Handle.h>
+#include <api/font/glyph/CurveStore.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstdint>
 #include <functional>
@@ -33,49 +33,49 @@ class CurvePages final {
     /**
      * Make a float texture of four floats a texel, width by height texels.
      **/
-    using Create = std::function<render::realtime::TextureHandle(const float* texels, std::uint32_t width, std::uint32_t height)>;
+    using Create = std::function<render::realtime::resource::TextureHandle(const float* texels, std::uint32_t width, std::uint32_t height)>;
 
     /**
      * Copy rows of four floats a texel into a region of a float texture, at a place.
      **/
-    using Update = std::function<void(const render::realtime::TextureHandle& texture, const glm::uvec2& at, const float* texels,
+    using Update = std::function<void(const render::realtime::resource::TextureHandle& texture, const glm::uvec2& at, const float* texels,
         const glm::uvec2& size)>;
 
     /**
      * Release a texture.
      **/
-    using Release = std::function<void(const render::realtime::TextureHandle& texture)>;
+    using Release = std::function<void(const render::realtime::resource::TextureHandle& texture)>;
 
     CurvePages(Create create, Update update, Release release);
 
     /**
      * Bring the textures in step with the store.
      **/
-    void sync(font::CurveStore* store);
+    void sync(font::glyph::CurveStore* store);
 
     /**
      * @return the curves' texture, unset until the store holds a curve and has been synced
      **/
-    render::realtime::TextureHandle curves() const noexcept;
+    render::realtime::resource::TextureHandle curves() const noexcept;
 
     /**
      * @return the bands' texture, likewise
      **/
-    render::realtime::TextureHandle bands() const noexcept;
+    render::realtime::resource::TextureHandle bands() const noexcept;
 
  private:
     /**
      * One array's texture and how many rows it was made with.
      **/
     struct Page {
-        render::realtime::TextureHandle texture;
+        render::realtime::resource::TextureHandle texture;
         std::uint32_t rows = 0;
     };
 
     /**
      * Bring one array's texture in step with its rows.
      **/
-    void sync(Page* page, const float* floats, std::uint32_t rows, const font::CurveStore::Changed& changed);
+    void sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::CurveStore::Changed& changed);
 
     Create create_;
     Update update_;

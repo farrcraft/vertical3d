@@ -10,7 +10,7 @@
 #include <api/image/Image.h>
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/shell/Shell.h>
 #include <api/type/geometry/Bound2D.h>
@@ -144,7 +144,7 @@ void TetrisRenderer::draw() {
 
     shell_->draw();
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(screen_->canvas(), pass.get());
 

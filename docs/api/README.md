@@ -264,8 +264,9 @@ Terms are grouped by subject. Each entry links to the document that covers it.
   tick and recorded by `WindowRenderer::renderFrame()`. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Pass** — one drawing operation into one target, with its own camera, clear, depth test and
   list of draw items. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
-- **Draw item** — `DrawItem`, a description of one draw: pipeline and material handles, push
-  constants and a sort key. The renderer records it later. See [rendering/](rendering/README.md).
+- **Draw item** — `realtime::frame::DrawItem`, a description of one draw: pipeline and material
+  handles, push constants and a sort key. The renderer records it later. See
+  [rendering/](rendering/README.md).
 - **Sort key** — the value a pass sorts its draw items by when sorting is on: layer, then
   pipeline, then material, then depth. See [rendering/FramesAndTargets.md](rendering/FramesAndTargets.md).
 - **Canvas** — a buffer of 2D quads an app fills during the tick and submits to a pass.

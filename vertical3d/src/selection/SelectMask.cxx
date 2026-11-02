@@ -5,8 +5,8 @@
 
 #include "SelectMask.h"
 
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <optional>
 #include <string>
@@ -91,18 +91,18 @@ bool selectsItems(SelectMask mask) {
 
 /**
  **/
-bool takes(SelectMask mask, scene::Item::Kind kind) {
+bool takes(SelectMask mask, scene::item::Item::Kind kind) {
     switch (mask) {
     case SelectMask::Object:
         return true;
     case SelectMask::Mesh:
-        return kind == scene::Item::Kind::Mesh;
+        return kind == scene::item::Item::Kind::Mesh;
     case SelectMask::Light:
-        return kind == scene::Item::Kind::Light;
+        return kind == scene::item::Item::Kind::Light;
     case SelectMask::Camera:
-        return kind == scene::Item::Kind::Camera;
+        return kind == scene::item::Item::Kind::Camera;
     case SelectMask::Curve:
-        return kind == scene::Item::Kind::Curve;
+        return kind == scene::item::Item::Kind::Curve;
     case SelectMask::Vertex:
     case SelectMask::Edge:
     case SelectMask::Face:
@@ -114,16 +114,16 @@ bool takes(SelectMask mask, scene::Item::Kind kind) {
 
 /**
  **/
-std::optional<scene::Component> componentOf(SelectMask mask) {
+std::optional<scene::item::Component> componentOf(SelectMask mask) {
     switch (mask) {
         case SelectMask::Vertex:
-            return scene::Component::Vertex;
+            return scene::item::Component::Vertex;
         case SelectMask::Edge:
-            return scene::Component::Edge;
+            return scene::item::Component::Edge;
         case SelectMask::Face:
-            return scene::Component::Face;
+            return scene::item::Component::Face;
         case SelectMask::Handle:
-            return scene::Component::Handle;
+            return scene::item::Component::Handle;
         case SelectMask::Object:
         case SelectMask::Mesh:
         case SelectMask::Camera:

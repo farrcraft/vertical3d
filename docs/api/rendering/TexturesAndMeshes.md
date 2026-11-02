@@ -4,13 +4,13 @@ How images and models get onto the GPU, how an app refers to them, and how it le
 
 ## Textures
 
-`Textures` (from `renderer_->textures()` or `context->textures()`) uploads images and makes
-them drawable.
+`resource::Textures` (from `renderer_->textures()` or `context->textures()`) uploads images and
+makes them drawable.
 
 ```cpp
-boost::shared_ptr<Textures> textures = renderer_->textures();
-TextureHandle sprite = textures->texture(image);                     // a v3d::image::Image
-TextureHandle atlas = textures->texture(pixels, width, height, 1);    // raw bytes; 1 channel for a glyph atlas
+boost::shared_ptr<resource::Textures> textures = renderer_->textures();
+resource::TextureHandle sprite = textures->texture(image);                     // a v3d::image::Image
+resource::TextureHandle atlas = textures->texture(pixels, width, height, 1);    // raw bytes; 1 channel for a glyph atlas
 uint32_t slot = textures->slot(sprite);                               // for a DrawItem of your own
 textures->release(sprite);                                            // see Releasing resources
 ```
@@ -36,9 +36,7 @@ textures->release(sprite);                                            // see Rel
 - **`update(handle, at, pixels)` copies pixels into a region of a texture** made by
   `texture()`, or by `request()` once its image has arrived, while frames are drawing it:
 
-  ```cpp
-  textures->update(atlas, glm::uvec2(x, y), { .data = glyph, .width = w, .height = h, .channels = 1 });
-  ```
+  ```cpp textures->update(atlas, glm::uvec2(x, y), { .data = glyph, .width = w, .height = h, .channels = 1 }); ```
 
   It returns without waiting. The frames submitted before it draw what the texture held, and
   the device waits for them to finish sampling it before it copies. The frame being recorded and
@@ -50,15 +48,15 @@ textures->release(sprite);                                            // see Rel
   or as many as the device allows, whichever is fewer. `capacity()` says how many. Registering
   one more than that throws.
 
-A canvas names textures by `TextureHandle`, and the renderers turn each into its slot when they
-submit. A `DrawItem` of your own names `material()`, the one material that binds the array and
-is the same for every texture. It hands its shader `slot(texture)`, in a push constant or in
-data it reads per object. **Read the slot each frame rather than keeping it**, because a texture
+A canvas names textures by `resource::TextureHandle`, and the renderers turn each into its slot when
+they submit. A `frame::DrawItem` of your own names `material()`, the one material that binds the
+array and is the same for every texture. It hands its shader `slot(texture)`, in a push constant or
+in data it reads per object. **Read the slot each frame rather than keeping it**, because a texture
 filled or replaced later moves to another slot. A shader declares the array as
 `layout(set = 1, binding = 0) uniform sampler2D textures[]` and reads `textures[slot]`, with
-`GL_EXT_nonuniform_qualifier` enabled. An index that may differ between the fragments of one
-draw, such as one read per instance, is wrapped in `nonuniformEXT()`. An unset or released
-handle's slot is the white texture's.
+`GL_EXT_nonuniform_qualifier` enabled. An index that may differ between the fragments of one draw,
+such as one read per instance, is wrapped in `nonuniformEXT()`. An unset or released handle's slot
+is the white texture's.
 
 - **A float texture holds data rather than a picture.** `texture(texels)` takes four 32 bit floats
   a texel, as `TextureFactory::Texels`, and makes a texture a shader reads as stored with
@@ -68,31 +66,31 @@ handle's slot is the white texture's.
 
 ## Meshes and the mesh registry
 
-`MeshRegistry` turns a model into GPU buffers once and hands back a `MeshHandle`. A hundred props
-drawn from one file are one upload.
+`resource::MeshRegistry` turns a model into GPU buffers once and hands back a
+`resource::MeshHandle`. A hundred props drawn from one file are one upload.
 
 ```cpp
-MeshRegistry meshes(logger(), renderer_->context(), assets());
-MeshHandle crate = meshes.load("models/crate.gltf");    // relative to the asset manager's root
-MeshHandle floor = meshes.add("floor", model);           // a model::Model built in code
-const MeshRegistry::Entry* entry = meshes.resolve(crate);  // nullptr once released
+resource::MeshRegistry meshes(logger(), renderer_->context(), assets());
+resource::MeshHandle crate = meshes.load("models/crate.gltf");  // relative to the asset root
+resource::MeshHandle floor = meshes.add("floor", model);         // a model::Model built in code
+const resource::MeshRegistry::Entry* entry = meshes.resolve(crate);  // nullptr once released
 meshes.release(crate);
 ```
 
 - `load()` reads glTF. Asking for the same path again returns the same handle.
 - `add()` registers a model built in code under a name. Names and paths share one namespace.
   It can take an image per material where you have pixels instead of a file name.
-- **Reading and decoding are separate from uploading.** `decodeModel(assets, path)` reads a
-  glTF file and decodes the albedo each material uses, and makes no device call. It returns a
-  `DecodedModel`, which `add(decoded)` uploads without reading any file. `load(path)` is the
-  two together, and skips decoding an albedo an entry already uploaded.
+- **Reading and decoding are separate from uploading.** `resource::decodeModel(assets, path)` reads
+  a glTF file and decodes the albedo each material uses, and makes no device call. It returns a
+  `resource::DecodedModel`, which `add(decoded)` uploads without reading any file. `load(path)` is
+  the two together, and skips decoding an albedo an entry already uploaded.
 - An entry is drawn one *part* at a time. A part is a range of the indices, an albedo texture
   and a base colour, and is one draw.
 - A texture a model names that cannot be found is logged and drawn white.
 - Parts that name the same image share one texture, across all entries.
 - A model with a part outside its indices or materials is refused with `std::runtime_error`.
 - The vertex layout is `model::Model::Vertex`: position, normal and uv, 32 bytes. A model with a
-  skeleton is uploaded as `MeshRegistry::SkinnedVertex`, 56 bytes, which adds four joint
+  skeleton is uploaded as `resource::MeshRegistry::SkinnedVertex`, 56 bytes, which adds four joint
   indices and four weights.
 - `clip(handle, name)` returns the index of a skinned entry's animation clip, for
   `ecs::component::play()`.
@@ -104,8 +102,8 @@ decoded on the worker thread and uploaded by a later `poll()`, so a load costs t
 its upload.
 
 ```cpp
-MeshRegistry meshes(logger(), renderer_->context(), assets(), worker_);
-MeshHandle tree = meshes.request("models/tree.glb");  // resolves to nothing for now
+resource::MeshRegistry meshes(logger(), renderer_->context(), assets(), worker_);
+resource::MeshHandle tree = meshes.request("models/tree.glb");  // resolves to nothing for now
 
 void MyApp::tick(unsigned int delta) {
     worker_->poll();  // the decoded models arrive
@@ -116,10 +114,10 @@ void MyApp::tick(unsigned int delta) {
 - **A requested handle resolves to nothing until a poll uploads it.** A draw skips such a
   handle, so a model still loading is not drawn. Asking for the path again returns the same
   handle.
-- **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops
-  once the vertex, index and albedo bytes reach the budget. The default is
-  `MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 1 MiB, the same as a texture poll's, which keeps a poll
-  inside an eighth of a 60 Hz frame on the machine it was measured on. The rest wait for the
+- **`poll(budget)` uploads in request order**, at least one model when any is ready, and stops once
+  the vertex, index and albedo bytes reach the budget. The default is
+  `resource::MeshRegistry::DEFAULT_UPLOAD_BUDGET`, 1 MiB, the same as a texture poll's, which keeps
+  a poll inside an eighth of a 60 Hz frame on the machine it was measured on. The rest wait for the
   next poll.
 - **`pending(handle)` is true while a request is decoding or waiting for a poll.** A handle that
   is not pending and resolves to nothing failed or was released.
@@ -132,12 +130,12 @@ void MyApp::tick(unsigned int delta) {
 
 ### Requesting a texture
 
-`Textures` can request an image by path in the same way, once it is told where to read from and
-what to decode on.
+`resource::Textures` can request an image by path in the same way, once it is told where to read
+from and what to decode on.
 
 ```cpp
 textures->requestFrom(assets(), worker_, logger());
-TextureHandle sky = textures->request("textures/sky.png");  // draws white for now
+resource::TextureHandle sky = textures->request("textures/sky.png");  // draws white for now
 
 void MyApp::tick(unsigned int delta) {
     worker_->poll();     // the decoded images arrive
@@ -149,8 +147,8 @@ void MyApp::tick(unsigned int delta) {
   slot is the white texture's until then, and the texture's own from the next draw submitted
   after the poll. A canvas or a mesh naming the handle needs no change when it fills.
 - **`poll(budget)` uploads in request order**, at least one image when any is ready, and stops
-  once the texel bytes reach the budget. The default is `Textures::DEFAULT_UPLOAD_BUDGET`,
-  which `MeshRegistry` shares.
+  once the texel bytes reach the budget. The default is `resource::Textures::DEFAULT_UPLOAD_BUDGET`,
+  which `resource::MeshRegistry` shares.
 - Asking for a path again returns the same handle, uploaded or not.
 - **A file that cannot be read or uploaded is reported in the log**, and its handle draws white
   until it is released. The path is freed, so asking for it again reads the file again as a new
@@ -161,9 +159,9 @@ void MyApp::tick(unsigned int delta) {
   throws `std::logic_error`.
 
 A registered mesh is drawn by the [lit pass](Lighting.md#the-lit-pass). Geometry an app builds
-and draws itself (voxel's chunks, for instance) is a `Mesh` owned by the app. A
-`DrawItem` refers to its buffers directly and is valid only while the mesh is alive.
-`Mesh::describe(&item)` fills an item's geometry fields.
+and draws itself (voxel's chunks, for instance) is a `resource::Mesh` owned by the app. A
+`frame::DrawItem` refers to its buffers directly and is valid only while the mesh is alive.
+`resource::Mesh::describe(&item)` fills an item's geometry fields.
 
 ## Releasing resources
 
@@ -182,15 +180,15 @@ resolves to nothing after that.
 | A post pass source | `fullScreen.release(source)`, `grade.release(source)` |
 | A target registration after a resize | `textures->release(handle)`, then register again |
 | Pipelines | Never released. They live as long as the context. |
-| Your own `Mesh` | Yours. Keep it alive while any draw item names it. |
+| Your own `resource::Mesh` | Yours. Keep it alive while any draw item names it. |
 
 **Release the renderer in `release()`.** The engine calls an app's `release()` before it
 destroys the window. The GPU device keeps the window's surface alive, so the renderer must be gone
 by then or the surface leaks. In `release()`:
 
 1. Call `renderer_->shutdown()`. It waits for the GPU to finish everything in flight.
-2. Drop everything you built from the context: a `MeshRegistry`, a `Lit`, a `Grade`, your
-   render targets and your own renderers.
+2. Drop everything you built from the context: a `resource::MeshRegistry`, a `Lit`, a
+   `renderer::Grade`, your render targets and your own renderers.
 
-`MeshRegistry` destroys its meshes at once when it is destroyed, so destroy it only after the
-GPU is idle. The app lifecycle is described in [engine/](../engine/README.md).
+`resource::MeshRegistry` destroys its meshes at once when it is destroyed, so destroy it only after
+the GPU is idle. The app lifecycle is described in [engine/](../engine/README.md).

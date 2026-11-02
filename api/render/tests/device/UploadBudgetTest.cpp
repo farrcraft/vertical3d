@@ -12,8 +12,8 @@
 #include <api/image/Image.h>
 #include <api/model/Model.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 
 #include <algorithm>
@@ -35,8 +35,8 @@
 #include "Headless.h"
 
 using v3d::asset::Worker;
-using v3d::render::realtime::MeshRegistry;
-using v3d::render::realtime::Textures;
+using v3d::render::realtime::resource::MeshRegistry;
+using v3d::render::realtime::resource::Textures;
 
 namespace {
 

@@ -4,10 +4,10 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/font/Paragraph.h>
-#include <api/font/TextStyle.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
@@ -63,14 +63,14 @@ boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const v3d::ui::paint::T
                 device->created++;
                 device->colourPages += channels == 4 ? 1 : 0;
             }
-            return v3d::render::realtime::TextureHandle(pageHandle(channels));
+            return v3d::render::realtime::resource::TextureHandle(pageHandle(channels));
         },
-        [device](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {
+        [device](const v3d::render::realtime::resource::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {
             if (device != nullptr) {
                 device->updated++;
             }
         },
-        [](const v3d::render::realtime::TextureHandle&) {});
+        [](const v3d::render::realtime::resource::TextureHandle&) {});
     return boost::make_shared<v3d::ui::paint::TextRenderer>(assets, logger, std::move(pages), v3d::ui::paint::TextRenderer::baseSize, faces);
 }
 
@@ -259,11 +259,11 @@ BOOST_AUTO_TEST_CASE(effects_are_drawn_beneath_a_paragraph) {
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(640, 480));
-    v3d::font::TextStyle style = text->style(24.0F);
+    v3d::font::text::Style style = text->style(24.0F);
     style.colour = glm::vec4(1.0F, 0.5F, 0.0F, 1.0F);
-    style.effects = { v3d::font::TextEffect{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.25F), .width = 1.5F, .offset = glm::vec2(2.0F, 3.0F) },
-        v3d::font::TextEffect{ .width = 1.5F } };
-    text->draw(&canvas, v3d::font::Paragraph(text->shaping(), "lo", style), glm::vec2(10.0F, 100.0F));
+    style.effects = { v3d::font::text::Effect{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.25F), .width = 1.5F, .offset = glm::vec2(2.0F, 3.0F) },
+        v3d::font::text::Effect{ .width = 1.5F } };
+    text->draw(&canvas, v3d::font::text::Paragraph(text->shaping(), "lo", style), glm::vec2(10.0F, 100.0F));
 
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 24U);
     BOOST_REQUIRE_GE(canvas.batches().size(), 2U);
@@ -290,10 +290,10 @@ BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer();
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(640, 480));
-    v3d::font::TextStyle style = text->style(24.0F);
+    v3d::font::text::Style style = text->style(24.0F);
     style.contrast = 0.4F;
-    style.effects = { v3d::font::TextEffect{ .width = 1.0F } };
-    text->draw(&canvas, v3d::font::Paragraph(text->shaping(), "l", style), glm::vec2(10.0F, 100.0F));
+    style.effects = { v3d::font::text::Effect{ .width = 1.0F } };
+    text->draw(&canvas, v3d::font::text::Paragraph(text->shaping(), "l", style), glm::vec2(10.0F, 100.0F));
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
     BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.0F);
     BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.4F);
@@ -356,8 +356,8 @@ BOOST_AUTO_TEST_CASE(a_variable_face_is_drawn_at_its_style_coordinates) {
     faces.semiBold.clear();
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer(faces);
     BOOST_REQUIRE(text->loaded());
-    v3d::font::TextStyle style = text->style(100.0F);
-    style.effects = { v3d::font::TextEffect{ .width = 2.0F } };
+    v3d::font::text::Style style = text->style(100.0F);
+    style.effects = { v3d::font::text::Effect{ .width = 2.0F } };
     const auto widths = [&text, &style]() {
         v3d::render::realtime::canvas::Canvas canvas;
         text->draw(&canvas, "\uE000", glm::vec2(10.0F, 150.0F), style);

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <array>
 #include <cstdint>
@@ -60,8 +60,8 @@ class World final {
     struct Glyph final {
         std::array<glm::vec2, 4> em{};
         uint32_t bands = 0;
-        TextureHandle curveTexture;  /**< the float texture of the glyph's curves **/
-        TextureHandle bandTexture;   /**< and of its bands **/
+        resource::TextureHandle curveTexture;  /**< the float texture of the glyph's curves **/
+        resource::TextureHandle bandTexture;   /**< and of its bands **/
         float contrast = 0.0F;       /**< how much its coverage is strengthened, from 0 to 1 **/
     };
 
@@ -72,8 +72,8 @@ class World final {
     struct Batch final {
         Batch() noexcept;
 
-        TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
-        TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
+        resource::TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        resource::TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
         bool field;             /**< whether the run samples a distance field **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
@@ -153,7 +153,7 @@ class World final {
      * @param colour multiplied with what is sampled, so white leaves the texture alone
      **/
     void quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture);
+        const glm::vec4& colour, const resource::TextureHandle& texture);
 
     /**
      * A glyph drawn from its curves over a quad, sharp at any distance and angle. Its corners
@@ -171,7 +171,7 @@ class World final {
      * @param contrast how much its coverage is strengthened, as text's is
      **/
     void field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
-        const TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
+        const resource::TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
 
     /**
      * @return the vertex stream, in the layout the world quad pipeline declares
@@ -201,7 +201,7 @@ class World final {
      * Start a batch, or extend the open one when it draws against the same texture and bands,
      * and is a field or not as it is.
      **/
-    void open(const TextureHandle& texture, const TextureHandle& bands = TextureHandle(), bool field = false);
+    void open(const resource::TextureHandle& texture, const resource::TextureHandle& bands = resource::TextureHandle(), bool field = false);
 
     /**
      * Add a vertex with the current transform and tint applied.

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Texture.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include <cstdint>
 #include <string>
@@ -174,7 +174,7 @@ class Renderer {
      * @return null when the name cannot be read, or when the renderer holds no textures;
      *         the machine then returns black and reports it
      **/
-    virtual const Texture* texture(const std::string & name);
+    virtual const texture::Texture* texture(const std::string & name);
 
     /**
      * RI's message passing: the output parameter `name` of another shader running on the same

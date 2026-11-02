@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/render/offline/Position.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/source/Position.h>
 
 #include <cstdint>
 
@@ -38,7 +38,7 @@ class Expression {
         INDEX
     };
 
-    Expression(Kind kind, const v3d::render::offline::Position & at);
+    Expression(Kind kind, const v3d::render::offline::source::Position & at);
     virtual ~Expression();
 
     Kind kind;

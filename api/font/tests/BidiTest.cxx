@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Bidi.h>
+#include <api/font/text/Bidi.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -23,7 +23,7 @@ constexpr std::string_view kHebrewInEnglish = "I said \xD7\xA9\xD7\x9C\xD7\x95\x
 /**
  * Check runs against the starts, ends and levels expected.
  **/
-void same(const std::vector<v3d::font::LevelRun>& found, const std::vector<v3d::font::LevelRun>& expected) {
+void same(const std::vector<v3d::font::text::LevelRun>& found, const std::vector<v3d::font::text::LevelRun>& expected) {
     BOOST_REQUIRE_EQUAL(found.size(), expected.size());
     for (std::size_t run = 0; run < found.size(); ++run) {
         BOOST_CHECK_EQUAL(found[run].start, expected[run].start);
@@ -37,7 +37,7 @@ void same(const std::vector<v3d::font::LevelRun>& found, const std::vector<v3d::
  * because the paragraph reads left to right.
  **/
 BOOST_AUTO_TEST_CASE(hebrew_in_english_is_its_own_level) {
-    const v3d::font::Bidi bidi(kHebrewInEnglish, v3d::font::BaseDirection::Auto);
+    const v3d::font::text::Bidi bidi(kHebrewInEnglish, v3d::font::text::BaseDirection::Auto);
     BOOST_CHECK(!bidi.rightToLeft(0));
     same(bidi.runs(), {{0, 7, 0}, {7, 15, 1}, {15, 21, 0}});
     BOOST_CHECK(bidi.runs()[1].rightToLeft());
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(hebrew_in_english_is_its_own_level) {
 BOOST_AUTO_TEST_CASE(a_number_in_arabic_reads_left_to_right) {
     // adad, a space, 123, a space, huna
     const std::string text = "\xD8\xB9\xD8\xAF\xD8\xAF 123 \xD9\x87\xD9\x86\xD8\xA7";
-    const v3d::font::Bidi bidi(text, v3d::font::BaseDirection::Auto);
+    const v3d::font::text::Bidi bidi(text, v3d::font::text::BaseDirection::Auto);
     BOOST_CHECK(bidi.rightToLeft(0));
     same(bidi.runs(), {{0, 7, 1}, {7, 10, 2}, {10, 17, 1}});
     BOOST_CHECK_EQUAL(static_cast<int>(bidi.level(8)), 2);
@@ -63,8 +63,8 @@ BOOST_AUTO_TEST_CASE(a_number_in_arabic_reads_left_to_right) {
  * the character after it are drawn against different characters.
  **/
 BOOST_AUTO_TEST_CASE(a_caret_at_a_boundary_follows_its_affinity) {
-    const v3d::font::Bidi bidi(kHebrewInEnglish, v3d::font::BaseDirection::Auto);
-    using v3d::font::Affinity;
+    const v3d::font::text::Bidi bidi(kHebrewInEnglish, v3d::font::text::BaseDirection::Auto);
+    using v3d::font::text::Affinity;
 
     // after the space: the space's right edge, or the right edge where shin starts
     BOOST_CHECK_EQUAL(bidi.caret(7, Affinity::Upstream).character, 6U);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(a_caret_at_a_boundary_follows_its_affinity) {
     BOOST_CHECK(bidi.caret(kHebrewInEnglish.size(), Affinity::Downstream).right);
 
     // an empty paragraph read right to left starts at its right edge
-    BOOST_CHECK(v3d::font::Bidi("", v3d::font::BaseDirection::RightToLeft).caret(0, Affinity::Upstream).right);
+    BOOST_CHECK(v3d::font::text::Bidi("", v3d::font::text::BaseDirection::RightToLeft).caret(0, Affinity::Upstream).right);
 }
 
 /**
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(a_caret_at_a_boundary_follows_its_affinity) {
  * line ends at that space, which then takes the paragraph's level and is drawn at its left.
  **/
 BOOST_AUTO_TEST_CASE(trailing_space_takes_the_paragraph_level) {
-    const v3d::font::Bidi bidi("abc def", v3d::font::BaseDirection::RightToLeft);
+    const v3d::font::text::Bidi bidi("abc def", v3d::font::text::BaseDirection::RightToLeft);
     same(bidi.runs(), {{0, 7, 2}});
     same(bidi.line(0, 4), {{3, 4, 1}, {0, 3, 2}});
 }
@@ -105,14 +105,14 @@ BOOST_AUTO_TEST_CASE(trailing_space_takes_the_paragraph_level) {
 BOOST_AUTO_TEST_CASE(paragraphs_are_resolved_apart) {
     // abc, a newline, then alef bet
     const std::string text = "abc\n\xD7\x90\xD7\x91";
-    const v3d::font::Bidi bidi(text, v3d::font::BaseDirection::Auto);
+    const v3d::font::text::Bidi bidi(text, v3d::font::text::BaseDirection::Auto);
     BOOST_CHECK(!bidi.rightToLeft(0));
     BOOST_CHECK(bidi.rightToLeft(5));
     BOOST_CHECK_EQUAL(bidi.line(0, 4).size(), 1U);
     BOOST_CHECK(bidi.line(0, text.size()).empty());
     BOOST_CHECK(bidi.line(2, 2).empty());
     BOOST_CHECK(bidi.line(0, text.size() + 1).empty());
-    BOOST_CHECK(v3d::font::Bidi("", v3d::font::BaseDirection::Auto).runs().empty());
+    BOOST_CHECK(v3d::font::text::Bidi("", v3d::font::text::BaseDirection::Auto).runs().empty());
 }
 
 };  // namespace

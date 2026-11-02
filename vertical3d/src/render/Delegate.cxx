@@ -7,7 +7,7 @@
 
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -54,8 +54,8 @@ Delegate::Signature Delegate::Signature::of(const scene::Scene& scene, const v3d
     const scene::RenderSettings& settings) {
     Signature signature;
     const scene::Evaluation evaluation = scene.evaluate();
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
-        const boost::shared_ptr<scene::Item> parent = scene.parent(item->id());
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
+        const boost::shared_ptr<scene::item::Item> parent = scene.parent(item->id());
         signature.items.emplace_back(item->documentId(), item->revision(), parent ? parent->documentId() : 0);
         signature.poses.push_back(values(item->kind(), evaluation.pose(*item), glm::vec3(0.0F)));
     }

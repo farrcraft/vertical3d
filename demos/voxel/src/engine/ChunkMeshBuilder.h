@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/render/realtime/vulkan/device/Device.h>
-#include <api/render/realtime/Mesh.h>
+#include <api/render/realtime/resource/Mesh.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 
 #include <boost/shared_ptr.hpp>
@@ -34,7 +34,7 @@ class ChunkMeshBuilder {
      * @return the mesh, or null when the cache holds no geometry
      * @throw std::runtime_error if the buffers cannot be created or filled
      **/
-    boost::shared_ptr<v3d::render::realtime::Mesh> build(const boost::shared_ptr<MeshCache>& mesh) const;
+    boost::shared_ptr<v3d::render::realtime::resource::Mesh> build(const boost::shared_ptr<MeshCache>& mesh) const;
 
  private:
     boost::shared_ptr<v3d::render::realtime::vulkan::device::Device> device_;

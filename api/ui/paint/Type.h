@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/font/Paragraph.h>
-#include <api/font/TextStyle.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/Style.h>
 
 #include <optional>
 #include <string>
@@ -61,7 +61,7 @@ class Type final {
      * @return a string laid out on one line, for a caret, a hit or a selection in it. A type with
      *         no renderer gives nothing
      **/
-    std::optional<font::Paragraph> paragraph(const std::string& text) const;
+    std::optional<font::text::Paragraph> paragraph(const std::string& text) const;
 
     /**
      * Draw a string with its pen on the baseline.
@@ -88,7 +88,7 @@ class Type final {
     /**
      * @return the style it sets text in, from its renderer, with its features
      **/
-    font::TextStyle style() const;
+    font::text::Style style() const;
 
     const boost::shared_ptr<TextRenderer>& renderer() const noexcept;
 

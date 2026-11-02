@@ -132,7 +132,7 @@ class Renderer final {
 
     v3d::render::realtime::WindowRenderer engine_;
 
-    v3d::render::realtime::TextureHandle sprite_;
+    v3d::render::realtime::resource::TextureHandle sprite_;
 
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;

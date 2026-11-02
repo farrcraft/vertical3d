@@ -8,11 +8,11 @@
 #include "Clip.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Resources.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Resources.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -121,7 +121,7 @@ void Quad::createPipelines(const vulkan::pipeline::Formats & formats) {
 
 /**
  **/
-void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
+void Quad::submit(const canvas::Canvas& canvas, frame::Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
@@ -139,13 +139,13 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    const resource::PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
     const vulkan::pipeline::Pipeline* pipeline = resources_->pipeline(handle);
     for (const canvas::Canvas::Batch& batch : canvas.batches()) {
         if (batch.indices == 0) {
             continue;
         }
-        DrawItem item;
+        frame::DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
         item.material = textures_->material();

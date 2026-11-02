@@ -9,7 +9,7 @@
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/WindowRenderer.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/shell/Shell.h>
@@ -21,11 +21,11 @@
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
-#include <vertical3d/src/control/DividerHint.h>
+#include <vertical3d/src/control/chrome/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
-#include <vertical3d/src/control/Notices.h>
-#include <vertical3d/src/control/Pointer.h>
-#include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/control/chrome/Notices.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -92,17 +92,17 @@ class Renderer final {
      * What decides the frame drawn around the areas: the active area and the lit divider. The
      * frame is drawn under the ui and over the views.
      **/
-    void pointer(const boost::shared_ptr<control::Pointer>& pointer);
+    void pointer(const boost::shared_ptr<control::chrome::Pointer>& pointer);
 
     /**
      * What the status bar along the foot of the window says this frame.
      **/
-    void status(const control::Status& status);
+    void status(const control::chrome::Status& status);
 
     /**
      * The notices drawn at the foot of the active area, or null for none.
      **/
-    void notices(const boost::shared_ptr<control::Notices>& notices);
+    void notices(const boost::shared_ptr<control::chrome::Notices>& notices);
 
     /**
      * The one scene every view draws.
@@ -200,7 +200,7 @@ class Renderer final {
      *
      * @return the texture, or an unset handle for no picture
      **/
-    v3d::render::realtime::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
+    v3d::render::realtime::resource::TextureHandle picture(const boost::shared_ptr<v3d::image::Image>& image);
 
     /**
      * Wait for everything in flight, before the window the device draws to goes away.
@@ -294,7 +294,7 @@ class Renderer final {
     /**
      * @return the colour the frame rate is written in
      **/
-    static glm::vec4 healthColour(control::Status::Health health);
+    static glm::vec4 healthColour(control::chrome::Status::Health health);
 
     /**
      * What separates the parts of the right side of the status bar.
@@ -352,12 +352,12 @@ class Renderer final {
      * @return the texture an image becomes, uploading it the first time it is asked for, or an
      *         unset handle when the image cannot be loaded
      **/
-    v3d::render::realtime::TextureHandle texture(const std::string& source);
+    v3d::render::realtime::resource::TextureHandle texture(const std::string& source);
 
     /**
      * Fill the ui canvas and add the pass that draws it to the frame.
      **/
-    void drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame);
+    void drawUi(const boost::shared_ptr<v3d::render::realtime::frame::Frame>& frame);
 
     /**
      * @return the colours of a view's grid: the theme's hairline over the view's background,
@@ -372,7 +372,7 @@ class Renderer final {
      * removed. A new view's pass is added after the ui pass, so the ui pass is removed too, and
      * is made again after every view's.
      **/
-    void retire(v3d::render::realtime::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views);
+    void retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views);
 
     /**
      * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
@@ -406,10 +406,10 @@ class Renderer final {
     boost::shared_ptr<tool::Transform> transform_;
     boost::shared_ptr<tool::Select> select_;
     boost::shared_ptr<view::AreaViews> views_;
-    boost::shared_ptr<control::Pointer> pointer_;
-    control::Status status_;
-    boost::shared_ptr<control::Notices> notices_;
-    control::DividerHint dividerHint_;
+    boost::shared_ptr<control::chrome::Pointer> pointer_;
+    control::chrome::Status status_;
+    boost::shared_ptr<control::chrome::Notices> notices_;
+    control::chrome::DividerHint dividerHint_;
     // one canvas per view shown. Each view fills its own and submits it before the next view
     // draws, and the submit copies it
     std::vector<v3d::render::realtime::canvas::Line> canvases_;
@@ -422,17 +422,17 @@ class Renderer final {
     Panels panels_;
     control::IconSheet icons_;
     // the icon sheet's texture, and the side of a cell it was drawn at
-    v3d::render::realtime::TextureHandle iconTexture_;
+    v3d::render::realtime::resource::TextureHandle iconTexture_;
     unsigned int iconSide_ = 0;
     // the textures the ui's images became, by source, so a component built again reuses them
-    std::map<std::string, v3d::render::realtime::TextureHandle> images_;
+    std::map<std::string, v3d::render::realtime::resource::TextureHandle> images_;
     v3d::shell::Shell* shell_;
     // the shell's screen, built over engine_
     v3d::ui::shell::Screen* screen_ = nullptr;
 
     glm::vec4 background_;
     // the last rendered picture's texture, released when the next one arrives
-    v3d::render::realtime::TextureHandle picture_;
+    v3d::render::realtime::resource::TextureHandle picture_;
 };
 
 };  // namespace v3d::editor

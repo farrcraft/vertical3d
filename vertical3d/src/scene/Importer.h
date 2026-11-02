@@ -8,11 +8,11 @@
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
 #include <api/interchange/Scene.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Import.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <array>
 #include <cstddef>
@@ -46,8 +46,8 @@ class Importer final {
      * A file's perspective angle runs from the bottom of the picture to the top, and the editor's
      * across the shorter side, which is the width when the picture is taller than it is wide.
      **/
-    static Camera::Lens lensOf(const v3d::interchange::Camera& camera);
-    static Light::Emission emissionOf(const v3d::interchange::Light& light);
+    static item::Camera::Lens lensOf(const v3d::interchange::Camera& camera);
+    static item::Light::Emission emissionOf(const v3d::interchange::Light& light);
 
     /**
      * The turn of a node's parent's item against the parent node's frame, which the node's own
@@ -61,11 +61,11 @@ class Importer final {
      * A curve item holding a node's curves. Curves a file holds are ones its tool draws, so the
      * item renders, at the file's width when it gives one that is valid.
      **/
-    static boost::shared_ptr<v3d::editor::scene::Curve> curves(const v3d::interchange::Curves& read);
+    static boost::shared_ptr<v3d::editor::scene::item::Curve> curves(const v3d::interchange::Curves& read);
 
-    static bool turned(const Item& item);
+    static bool turned(const item::Item& item);
 
-    std::size_t add(const boost::shared_ptr<Item>& item, std::optional<std::size_t> parent);
+    std::size_t add(const boost::shared_ptr<item::Item>& item, std::optional<std::size_t> parent);
 
     /**
      * A mesh's geometry, built the first time a node asks for it, or null when it cannot be.

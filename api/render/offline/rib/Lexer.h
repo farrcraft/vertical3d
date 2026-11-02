@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Characters.h>
+#include <api/render/offline/source/Characters.h>
 
 #include <iosfwd>
 #include <string>
@@ -77,7 +77,7 @@ class Lexer final {
     void skipSpace();
     Token fail(const std::string & message, unsigned int line, unsigned int column);
 
-    v3d::render::offline::Characters in_;
+    v3d::render::offline::source::Characters in_;
     Token peeked_;
     bool peeking_ = false;
     std::string error_;

@@ -16,7 +16,7 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/tests/Typeset.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -40,7 +40,7 @@
 
 namespace {
 
-using v3d::editor::control::AreaChrome;
+using v3d::editor::control::chrome::Area;
 using v3d::editor::view::AreaLayout;
 using v3d::editor::view::AreaViews;
 using v3d::editor::view::ViewPort;
@@ -90,7 +90,7 @@ struct Chrome {
     }
 
     boost::shared_ptr<v3d::ui::Container> container(std::size_t area) const {
-        return ui->container(AreaChrome::name(layout.areas()[area].id));
+        return ui->container(Area::name(layout.areas()[area].id));
     }
 
     /**
@@ -108,7 +108,7 @@ struct Chrome {
     boost::shared_ptr<AreaLayout> held;
     AreaLayout& layout;
     boost::shared_ptr<AreaViews> views;
-    AreaChrome chrome;
+    Area chrome;
     v3d::editor::selection::SelectMask mask = v3d::editor::selection::SelectMask::Object;
     std::size_t active = 0;
     v3d::render::realtime::canvas::Canvas canvas;
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_SUITE(area_chrome_test)
 BOOST_FIXTURE_TEST_CASE(each_area_has_a_header_before_the_editors_ui, Chrome) {
     sync();
     BOOST_REQUIRE_EQUAL(ui->containers().size(), 3U);
-    BOOST_CHECK_EQUAL(ui->containers()[0]->name(), AreaChrome::name(layout.areas()[0].id));
+    BOOST_CHECK_EQUAL(ui->containers()[0]->name(), Area::name(layout.areas()[0].id));
     BOOST_CHECK_EQUAL(ui->containers()[2]->name(), "editor");
 
     const int id = static_cast<int>(layout.areas()[1].id);
@@ -307,7 +307,7 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_is_dressed_as_menus, Chrome) {
     views->of(1)->show(ViewPort::SHOW_GRID, false);
     sync();
     const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
-    BOOST_CHECK_CLOSE(bar->opacity(), static_cast<float>(AreaChrome::HEADER_OPACITY), 0.001F);
+    BOOST_CHECK_CLOSE(bar->opacity(), static_cast<float>(Area::HEADER_OPACITY), 0.001F);
     BOOST_CHECK_EQUAL(bar->menu(0)->icon(), "icon:editor-viewport");
     for (std::size_t index = 0; index < bar->count(); index++) {
         BOOST_CHECK_MESSAGE(bar->menu(index)->drop(), bar->label(index));
@@ -349,13 +349,13 @@ BOOST_FIXTURE_TEST_CASE(a_new_camera_renames_the_header, Chrome) {
  **/
 BOOST_AUTO_TEST_CASE(the_shading_menu_names_the_front_fill_or_the_shading) {
     ViewPort::Display display;
-    BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Flat");
+    BOOST_CHECK_EQUAL(Area::shading(display), "Flat");
     display.shading = v3d::editor::view::Shading::Smooth;
-    BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Smooth");
+    BOOST_CHECK_EQUAL(Area::shading(display), "Smooth");
     display.front = ViewPort::Fill::Lines;
-    BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Wireframe");
+    BOOST_CHECK_EQUAL(Area::shading(display), "Wireframe");
     display.front = ViewPort::Fill::Points;
-    BOOST_CHECK_EQUAL(AreaChrome::shading(display), "Points");
+    BOOST_CHECK_EQUAL(Area::shading(display), "Points");
 }
 
 /**
@@ -394,8 +394,8 @@ BOOST_FIXTURE_TEST_CASE(the_area_menu_marks_the_kind_shown, Chrome) {
  * A tab names a viewport's camera, and any other editor's kind with a capital.
  **/
 BOOST_AUTO_TEST_CASE(a_tab_names_its_editor) {
-    BOOST_CHECK_EQUAL(AreaChrome::label({ .id = 1, .kind = "viewport", .state = boost::json::parse(R"({"camera": "Top"})").as_object() }), "Top");
-    BOOST_CHECK_EQUAL(AreaChrome::label({ .id = 2, .kind = "outliner", .state = {} }), "Outliner");
+    BOOST_CHECK_EQUAL(Area::label({ .id = 1, .kind = "viewport", .state = boost::json::parse(R"({"camera": "Top"})").as_object() }), "Top");
+    BOOST_CHECK_EQUAL(Area::label({ .id = 2, .kind = "outliner", .state = {} }), "Outliner");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

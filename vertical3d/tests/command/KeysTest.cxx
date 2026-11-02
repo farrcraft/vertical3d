@@ -6,7 +6,7 @@
 #include <api/animation/Curve.h>
 #include <api/brep/BRep.h>
 #include <vertical3d/src/command/Keys.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <vector>
@@ -24,7 +24,7 @@ namespace {
 struct Keyed final {
     Keyed() :
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        mesh(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())) {
+        mesh(boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>())) {
         scene->add(mesh);
         v3d::animation::Curve moving;
         moving.set(1.0F, 0.0F);
@@ -44,7 +44,7 @@ struct Keyed final {
     }
 
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> mesh;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh;
 };
 
 BOOST_AUTO_TEST_CASE(keys_move_test) {

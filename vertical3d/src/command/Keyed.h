@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -28,7 +28,7 @@ class Keyed final : public Command {
      * One item an edit changed, and its pose at both ends of the edit.
      **/
     struct Change {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         scene::Pose before;
         scene::Pose after;
     };

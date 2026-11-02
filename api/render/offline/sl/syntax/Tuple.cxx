@@ -5,13 +5,13 @@
 
 #include "Tuple.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
 namespace v3d::render::offline::sl::syntax {
 
-Tuple::Tuple(const v3d::render::offline::Position & at) :
+Tuple::Tuple(const v3d::render::offline::source::Position & at) :
     Expression(Kind::TUPLE, at) {
 }
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <functional>
 #include <string>
@@ -64,7 +64,7 @@ class Recorder final : public Handler {
     void shutter(const Shutter & request) override;
 
     void pixelSamples(const glm::uvec2 & samples) override;
-    void pixelFilter(Filter filter, float xwidth, float ywidth) override;
+    void pixelFilter(film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     void display(const Display & request, const ParameterList & parameters) override;
 

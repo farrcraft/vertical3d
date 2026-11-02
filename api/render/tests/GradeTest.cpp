@@ -4,7 +4,7 @@
  **/
 
 #include <api/image/Image.h>
-#include <api/render/realtime/Grade.h>
+#include <api/render/realtime/renderer/Grade.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -13,7 +13,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
-using v3d::render::realtime::Grade;
+using v3d::render::realtime::renderer::Grade;
 
 namespace {
 

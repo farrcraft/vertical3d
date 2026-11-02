@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -16,8 +16,8 @@
 
 #include <boost/make_shared.hpp>
 
-using v3d::render::realtime::Frame;
-using Node = v3d::render::realtime::Frame::Node;
+using v3d::render::realtime::frame::Frame;
+using Node = v3d::render::realtime::frame::Frame::Node;
 
 namespace {
 
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_SUITE(frame_test)
  * A frame starts with no passes. The engine adds the pass it draws through.
  **/
 BOOST_AUTO_TEST_CASE(frame_starts_empty) {
-    const v3d::render::realtime::Frame frame;
+    const v3d::render::realtime::frame::Frame frame;
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 0);
 }
@@ -49,11 +49,11 @@ BOOST_AUTO_TEST_CASE(frame_starts_empty) {
  * parts of an app can submit into one pass without co-ordinating.
  **/
 BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
-    v3d::render::realtime::Frame frame;
+    v3d::render::realtime::frame::Frame frame;
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
-    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
-    const boost::shared_ptr<v3d::render::realtime::Pass> again = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> scene = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = frame.pass("overlay");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> again = frame.pass("scene");
 
     BOOST_CHECK_EQUAL(frame.passes().size(), 2);
     BOOST_CHECK(scene == again);
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(passes_are_created_once_and_kept_in_order) {
  * A removed pass is no longer in the frame, and the others keep their order.
  **/
 BOOST_AUTO_TEST_CASE(a_removed_pass_leaves_the_frame) {
-    v3d::render::realtime::Frame frame;
+    v3d::render::realtime::frame::Frame frame;
     frame.pass("left");
     frame.pass("right");
     frame.pass("ui");
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(a_removed_pass_leaves_the_frame) {
  * Removing a name the frame does not hold changes nothing.
  **/
 BOOST_AUTO_TEST_CASE(removing_an_unknown_pass_changes_nothing) {
-    v3d::render::realtime::Frame frame;
+    v3d::render::realtime::frame::Frame frame;
     frame.pass("scene");
 
     BOOST_CHECK(!frame.remove("missing"));
@@ -92,13 +92,13 @@ BOOST_AUTO_TEST_CASE(removing_an_unknown_pass_changes_nothing) {
  * Asking for a removed name again makes a new pass at the end, so a pass can be moved last.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_asked_for_after_removal_is_new_and_last) {
-    v3d::render::realtime::Frame frame;
-    const boost::shared_ptr<v3d::render::realtime::Pass> first = frame.pass("ui");
+    v3d::render::realtime::frame::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> first = frame.pass("ui");
     first->keepColour();
     frame.pass("view");
 
     frame.remove("ui");
-    const boost::shared_ptr<v3d::render::realtime::Pass> again = frame.pass("ui");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> again = frame.pass("ui");
 
     BOOST_CHECK(again != first);
     BOOST_CHECK(again->clears());
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(a_pass_asked_for_after_removal_is_new_and_last) {
  * from a known image rather than from whatever was last presented.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_clears_by_default) {
-    v3d::render::realtime::Pass pass("colour");
+    v3d::render::realtime::frame::Pass pass("colour");
 
     BOOST_CHECK(pass.clears());
     BOOST_CHECK(!pass.depth());
@@ -129,14 +129,14 @@ BOOST_AUTO_TEST_CASE(a_pass_clears_by_default) {
  * unsorted pass never reorders its items.
  **/
 BOOST_AUTO_TEST_CASE(items_keep_submission_order) {
-    v3d::render::realtime::Pass pass("colour");
+    v3d::render::realtime::frame::Pass pass("colour");
 
-    v3d::render::realtime::DrawItem first;
+    v3d::render::realtime::frame::DrawItem first;
     first.key.layer = 5;
     first.vertices = 6;
     pass.submit(first);
 
-    v3d::render::realtime::DrawItem second;
+    v3d::render::realtime::frame::DrawItem second;
     second.key.layer = 1;
     second.vertices = 3;
     pass.submit(second);
@@ -151,12 +151,12 @@ BOOST_AUTO_TEST_CASE(items_keep_submission_order) {
  * because the engine builds them once and draws with them every frame after that.
  **/
 BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
-    v3d::render::realtime::Frame frame;
+    v3d::render::realtime::frame::Frame frame;
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
-    pass->submit(v3d::render::realtime::DrawItem());
-    pass->submit(v3d::render::realtime::DrawItem());
+    pass->submit(v3d::render::realtime::frame::DrawItem());
+    pass->submit(v3d::render::realtime::frame::DrawItem());
 
     BOOST_CHECK_EQUAL(pass->items().size(), 2);
 
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(reset_empties_the_queues_and_keeps_the_passes) {
  * A draw item defaults to one instance, since every draw is at least that.
  **/
 BOOST_AUTO_TEST_CASE(a_draw_item_defaults_to_one_instance) {
-    const v3d::render::realtime::DrawItem item;
+    const v3d::render::realtime::frame::DrawItem item;
 
     BOOST_CHECK_EQUAL(item.instances, 1);
     BOOST_CHECK_EQUAL(item.vertices, 0);
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(a_draw_item_defaults_to_one_instance) {
  * more, because a canvas carries its own projection in a push constant and reads nothing at set 0.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_has_an_identity_camera_until_it_is_given_one) {
-    v3d::render::realtime::Pass pass("scene");
+    v3d::render::realtime::frame::Pass pass("scene");
 
     BOOST_CHECK_EQUAL(pass.view()[3][3], 1.0F);
     BOOST_CHECK_EQUAL(pass.view()[3][0], 0.0F);
@@ -207,21 +207,21 @@ BOOST_AUTO_TEST_CASE(a_pass_has_an_identity_camera_until_it_is_given_one) {
  * canvas's batches would therefore put a panel over the text drawn on it.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_records_in_submission_order_by_default) {
-    v3d::render::realtime::Pass pass("overlay");
+    v3d::render::realtime::frame::Pass pass("overlay");
 
-    v3d::render::realtime::DrawItem panel;
-    panel.material = v3d::render::realtime::MaterialHandle(9);
+    v3d::render::realtime::frame::DrawItem panel;
+    panel.material = v3d::render::realtime::resource::MaterialHandle(9);
     panel.vertices = 6;
     pass.submit(panel);
 
-    v3d::render::realtime::DrawItem text;
-    text.material = v3d::render::realtime::MaterialHandle(2);
+    v3d::render::realtime::frame::DrawItem text;
+    text.material = v3d::render::realtime::resource::MaterialHandle(2);
     text.vertices = 12;
     pass.submit(text);
 
     BOOST_CHECK(!pass.sorts());
 
-    std::vector<const v3d::render::realtime::DrawItem*> ordered;
+    std::vector<const v3d::render::realtime::frame::DrawItem*> ordered;
     pass.ordered(&ordered);
 
     BOOST_REQUIRE_EQUAL(ordered.size(), 2);
@@ -234,29 +234,29 @@ BOOST_AUTO_TEST_CASE(a_pass_records_in_submission_order_by_default) {
  * then material. The recorder can then skip rebinding between adjacent items.
  **/
 BOOST_AUTO_TEST_CASE(a_sorted_pass_records_in_key_order) {
-    v3d::render::realtime::Pass pass("scene");
+    v3d::render::realtime::frame::Pass pass("scene");
     pass.sort(true);
 
-    v3d::render::realtime::DrawItem overlay;
+    v3d::render::realtime::frame::DrawItem overlay;
     overlay.key.layer = 1;
-    overlay.pipeline = v3d::render::realtime::PipelineHandle(0);
+    overlay.pipeline = v3d::render::realtime::resource::PipelineHandle(0);
     pass.submit(overlay);
 
-    v3d::render::realtime::DrawItem second;
+    v3d::render::realtime::frame::DrawItem second;
     second.key.layer = 0;
-    second.pipeline = v3d::render::realtime::PipelineHandle(3);
-    second.material = v3d::render::realtime::MaterialHandle(1);
+    second.pipeline = v3d::render::realtime::resource::PipelineHandle(3);
+    second.material = v3d::render::realtime::resource::MaterialHandle(1);
     pass.submit(second);
 
-    v3d::render::realtime::DrawItem first;
+    v3d::render::realtime::frame::DrawItem first;
     first.key.layer = 0;
-    first.pipeline = v3d::render::realtime::PipelineHandle(3);
-    first.material = v3d::render::realtime::MaterialHandle(0);
+    first.pipeline = v3d::render::realtime::resource::PipelineHandle(3);
+    first.material = v3d::render::realtime::resource::MaterialHandle(0);
     pass.submit(first);
 
     BOOST_CHECK(pass.sorts());
 
-    std::vector<const v3d::render::realtime::DrawItem*> ordered;
+    std::vector<const v3d::render::realtime::frame::DrawItem*> ordered;
     pass.ordered(&ordered);
 
     BOOST_REQUIRE_EQUAL(ordered.size(), 3);
@@ -271,16 +271,16 @@ BOOST_AUTO_TEST_CASE(a_sorted_pass_records_in_key_order) {
  * stays on top.
  **/
 BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
-    v3d::render::realtime::Pass pass("scene");
+    v3d::render::realtime::frame::Pass pass("scene");
     pass.sort(true);
 
     for (uint32_t index = 0; index < 4; index++) {
-        v3d::render::realtime::DrawItem item;
+        v3d::render::realtime::frame::DrawItem item;
         item.firstIndex = index;
         pass.submit(item);
     }
 
-    std::vector<const v3d::render::realtime::DrawItem*> ordered;
+    std::vector<const v3d::render::realtime::frame::DrawItem*> ordered;
     pass.ordered(&ordered);
 
     BOOST_REQUIRE_EQUAL(ordered.size(), 4);
@@ -294,13 +294,13 @@ BOOST_AUTO_TEST_CASE(sorting_a_pass_is_stable) {
  * frame, as a game that draws an overlay over a 3D world does.
  **/
 BOOST_AUTO_TEST_CASE(sorting_is_configured_per_pass) {
-    v3d::render::realtime::Frame frame;
+    v3d::render::realtime::frame::Frame frame;
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> scene = frame.pass("scene");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> scene = frame.pass("scene");
     scene->depth(true);
     scene->sort(true);
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame.pass("overlay");
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = frame.pass("overlay");
 
     BOOST_CHECK(scene->depth());
     BOOST_CHECK(scene->sorts());
@@ -366,9 +366,9 @@ BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
     Frame frame;
     frame.pass("first");
     frame.pass("second");
-    frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::RenderTarget>());
+    frame.pass("second")->reads(boost::shared_ptr<v3d::render::realtime::frame::RenderTarget>());
 
-    const std::vector<boost::shared_ptr<v3d::render::realtime::Pass>> ordered = frame.ordered();
+    const std::vector<boost::shared_ptr<v3d::render::realtime::frame::Pass>> ordered = frame.ordered();
     BOOST_REQUIRE_EQUAL(ordered.size(), 2U);
     BOOST_CHECK_EQUAL(ordered[0]->name(), "first");
     BOOST_CHECK_EQUAL(ordered[1]->name(), "second");
@@ -381,17 +381,17 @@ BOOST_AUTO_TEST_CASE(a_frame_with_no_reads_records_as_created) {
  * past sixteen bits groups at the end rather than wrapping to the front.
  **/
 BOOST_AUTO_TEST_CASE(a_pass_keys_an_item_by_what_it_binds) {
-    v3d::render::realtime::Pass pass("scene");
+    v3d::render::realtime::frame::Pass pass("scene");
 
-    v3d::render::realtime::DrawItem told;
-    told.pipeline = v3d::render::realtime::PipelineHandle(4);
-    told.material = v3d::render::realtime::MaterialHandle(7);
+    v3d::render::realtime::frame::DrawItem told;
+    told.pipeline = v3d::render::realtime::resource::PipelineHandle(4);
+    told.material = v3d::render::realtime::resource::MaterialHandle(7);
     told.key.pipeline = 1;
     told.key.material = 1;
     pass.submit(told);
 
-    v3d::render::realtime::DrawItem far;
-    far.material = v3d::render::realtime::MaterialHandle(0x10001);
+    v3d::render::realtime::frame::DrawItem far;
+    far.material = v3d::render::realtime::resource::MaterialHandle(0x10001);
     pass.submit(far);
 
     BOOST_CHECK_EQUAL(pass.items()[0].key.pipeline, 4);

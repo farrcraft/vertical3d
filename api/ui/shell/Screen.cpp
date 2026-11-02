@@ -8,8 +8,8 @@
 #include <api/asset/Manager.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
@@ -52,18 +52,18 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
 
     // the glyph pages are textures on the device, and these three are the only lines here that
     // need one
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = engine != nullptr ? engine->textures() : nullptr;
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = engine != nullptr ? engine->textures() : nullptr;
     paint::GlyphPages pages(
         [textures](const unsigned char* pixels, std::uint32_t side, std::uint32_t channels) {
-            return textures ? textures->texture(pixels, side, side, channels) : v3d::render::realtime::TextureHandle();
+            return textures ? textures->texture(pixels, side, side, channels) : v3d::render::realtime::resource::TextureHandle();
         },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+        [textures](const v3d::render::realtime::resource::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
             std::uint32_t channels) {
             if (textures) {
                 textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
             }
         },
-        [textures](const v3d::render::realtime::TextureHandle& page) {
+        [textures](const v3d::render::realtime::resource::TextureHandle& page) {
             if (textures) {
                 textures->release(page);
             }

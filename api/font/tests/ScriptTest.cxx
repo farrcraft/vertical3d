@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Face.h>
-#include <api/font/Family.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Library.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapedGlyph.h>
-#include <api/font/ShapedRun.h>
-#include <api/font/Shaper.h>
-#include <api/font/ShapingCache.h>
-#include <api/font/TextStyle.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Family.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Library.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapedGlyph.h>
+#include <api/font/text/ShapedRun.h>
+#include <api/font/text/Shaper.h>
+#include <api/font/text/ShapingCache.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>
@@ -35,8 +35,8 @@ const float kSize = 48.0F;
 struct Scripts {
     Scripts() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
-        chain(boost::make_shared<v3d::font::FallbackChain>()),
+        library(boost::make_shared<v3d::font::face::Library>()),
+        chain(boost::make_shared<v3d::font::face::FallbackChain>()),
         noto(add("data/fonts/NotoSans-Regular.ttf")),
         arabic(add("data/fonts/NotoSansArabic.ttf")),
         hebrew(add("data/fonts/NotoSansHebrew.ttf")),
@@ -49,10 +49,10 @@ struct Scripts {
     /**
      * @return a face opened as a family of its own at the end of the chain
      **/
-    boost::shared_ptr<v3d::font::Face> add(const std::string& file) {
-        const boost::shared_ptr<v3d::font::Face> face = v3d::font::Face::open(library, file, logger);
+    boost::shared_ptr<v3d::font::face::Face> add(const std::string& file) {
+        const boost::shared_ptr<v3d::font::face::Face> face = v3d::font::face::Face::open(library, file, logger);
         BOOST_REQUIRE(face);
-        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(file);
+        const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>(file);
         family->add(face);
         chain->add(family);
         return face;
@@ -61,22 +61,22 @@ struct Scripts {
     /**
      * @return a string shaped at the test size, which has to be one run
      **/
-    v3d::font::ShapedRun run(std::string_view text, std::string_view language = {}) const {
-        const std::vector<v3d::font::ShapedRun> runs = shaper.shape(text, {}, kSize, {}, {}, language);
+    v3d::font::text::ShapedRun run(std::string_view text, std::string_view language = {}) const {
+        const std::vector<v3d::font::text::ShapedRun> runs = shaper.shape(text, {}, kSize, {}, {}, language);
         BOOST_REQUIRE_EQUAL(runs.size(), 1U);
         return runs.front();
     }
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::FallbackChain> chain;
-    boost::shared_ptr<v3d::font::Face> noto;
-    boost::shared_ptr<v3d::font::Face> arabic;
-    boost::shared_ptr<v3d::font::Face> hebrew;
-    boost::shared_ptr<v3d::font::Face> devanagari;
-    boost::shared_ptr<v3d::font::Face> thai;
-    boost::shared_ptr<v3d::font::Face> cjk;
-    v3d::font::Shaper shaper;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::face::FallbackChain> chain;
+    boost::shared_ptr<v3d::font::face::Face> noto;
+    boost::shared_ptr<v3d::font::face::Face> arabic;
+    boost::shared_ptr<v3d::font::face::Face> hebrew;
+    boost::shared_ptr<v3d::font::face::Face> devanagari;
+    boost::shared_ptr<v3d::font::face::Face> thai;
+    boost::shared_ptr<v3d::font::face::Face> cjk;
+    v3d::font::text::Shaper shaper;
 };
 
 BOOST_FIXTURE_TEST_SUITE(script_test, Scripts)
@@ -89,14 +89,14 @@ BOOST_FIXTURE_TEST_SUITE(script_test, Scripts)
 BOOST_AUTO_TEST_CASE(an_arabic_word_is_joined) {
     // beh, yeh, teh: "bayt", a house. Each letter is two bytes
     const std::string word = "\xD8\xA8\xD9\x8A\xD8\xAA";
-    const v3d::font::ShapedRun shaped = run(word);
+    const v3d::font::text::ShapedRun shaped = run(word);
     BOOST_CHECK(shaped.face == arabic);
     BOOST_CHECK_EQUAL(shaped.script, "Arab");
-    BOOST_CHECK(shaped.direction == v3d::font::ShapedRun::Direction::RightToLeft);
+    BOOST_CHECK(shaped.direction == v3d::font::text::ShapedRun::Direction::RightToLeft);
     // the glyph that advances for the letter at a byte offset
-    const auto form = [](const v3d::font::ShapedRun& from, std::size_t cluster) {
+    const auto form = [](const v3d::font::text::ShapedRun& from, std::size_t cluster) {
         unsigned int found = 0;
-        for (const v3d::font::ShapedGlyph& glyph : from.glyphs) {
+        for (const v3d::font::text::ShapedGlyph& glyph : from.glyphs) {
             found = glyph.cluster == cluster && glyph.advance > 0.0F ? glyph.index : found;
         }
         return found;
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(an_arabic_word_is_joined) {
  **/
 BOOST_AUTO_TEST_CASE(a_devanagari_syllable_is_reordered) {
     // ka, then the vowel sign i
-    const v3d::font::ShapedRun shaped = run("\xE0\xA4\x95\xE0\xA4\xBF");
+    const v3d::font::text::ShapedRun shaped = run("\xE0\xA4\x95\xE0\xA4\xBF");
     BOOST_CHECK(shaped.face == devanagari);
     BOOST_CHECK_EQUAL(shaped.script, "Deva");
     BOOST_REQUIRE_EQUAL(shaped.glyphs.size(), 2U);
@@ -131,12 +131,12 @@ BOOST_AUTO_TEST_CASE(a_devanagari_syllable_is_reordered) {
  **/
 BOOST_AUTO_TEST_CASE(hebrew_and_thai_are_set_in_their_faces) {
     // shalom
-    const v3d::font::ShapedRun shalom = run("\xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D");
+    const v3d::font::text::ShapedRun shalom = run("\xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D");
     BOOST_CHECK(shalom.face == hebrew);
-    BOOST_CHECK(shalom.direction == v3d::font::ShapedRun::Direction::RightToLeft);
+    BOOST_CHECK(shalom.direction == v3d::font::text::ShapedRun::Direction::RightToLeft);
 
     // sawatdi: so suea, wo waen, mai han akat above it, then so suea, do dek, sara i
-    const v3d::font::ShapedRun sawatdi = run("\xE0\xB8\xAA\xE0\xB8\xA7\xE0\xB8\xB1\xE0\xB8\xAA\xE0\xB8\x94\xE0\xB8\xB5");
+    const v3d::font::text::ShapedRun sawatdi = run("\xE0\xB8\xAA\xE0\xB8\xA7\xE0\xB8\xB1\xE0\xB8\xAA\xE0\xB8\x94\xE0\xB8\xB5");
     BOOST_CHECK(sawatdi.face == thai);
     BOOST_CHECK_EQUAL(sawatdi.script, "Thai");
     BOOST_REQUIRE_EQUAL(sawatdi.glyphs.size(), 6U);
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(hebrew_and_thai_are_set_in_their_faces) {
  **/
 BOOST_AUTO_TEST_CASE(cjk_text_is_set_in_the_cjk_face) {
     for (const std::string_view text : { "\xE4\xB8\xAD\xE6\x96\x87", "\xE3\x81\x8B\xE3\x81\xAA", "\xED\x95\x9C\xEA\xB8\x80" }) {
-        const v3d::font::ShapedRun shaped = run(text);
+        const v3d::font::text::ShapedRun shaped = run(text);
         BOOST_CHECK(shaped.face == cjk);
         BOOST_REQUIRE_EQUAL(shaped.glyphs.size(), 2U);
         BOOST_CHECK_NE(shaped.glyphs[0].index, 0U);
@@ -177,9 +177,9 @@ BOOST_AUTO_TEST_CASE(a_paragraph_is_shaped_in_its_language) {
     const std::string straight = "\xE7\x9B\xB4";
     const unsigned int japanese = run(straight, "ja").glyphs.front().index;
     const auto shaped = [&](const std::string& locale, const std::string& language) {
-        v3d::font::TextStyle style{ .fonts = chain, .size = kSize };
+        v3d::font::text::Style style{ .fonts = chain, .size = kSize };
         style.language = language;
-        const v3d::font::Paragraph paragraph(boost::make_shared<v3d::font::ShapingCache>(locale, logger), straight, style);
+        const v3d::font::text::Paragraph paragraph(boost::make_shared<v3d::font::text::ShapingCache>(locale, logger), straight, style);
         BOOST_REQUIRE_EQUAL(paragraph.lines().size(), 1U);
         BOOST_REQUIRE_EQUAL(paragraph.lines().front().runs.size(), 1U);
         return paragraph.lines().front().runs.front().glyphs.front().index;

@@ -7,21 +7,21 @@
 
 #include <api/asset/Manager.h>
 #include <api/ecs/component/Transform.h>
-#include <api/font/Face.h>
-#include <api/font/Family.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Library.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapingCache.h>
-#include <api/font/TextStyle.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Family.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Library.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/LitScene.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/lighting/LitScene.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -62,7 +62,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     shell_(shell),
     engine_(logger) {
     engine_.initialize(window);
-    meshes_ = boost::make_shared<v3d::render::realtime::MeshRegistry>(logger, engine_.context(), assets);
+    meshes_ = boost::make_shared<v3d::render::realtime::resource::MeshRegistry>(logger, engine_.context(), assets);
     camera_.profile().clipping(CLIPPING);
 
     // after the engine is initialized, because the screen's atlas is uploaded through it
@@ -70,45 +70,45 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     screen_ = shell_->screen();
 
     // the sign's face, opened through a library of its own and held by the paragraph's style
-    const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>("sign");
-    family->add(v3d::font::Face::open(boost::make_shared<v3d::font::Library>(), assets->path(SIGN_FONT), logger));
+    const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>("sign");
+    family->add(v3d::font::face::Face::open(boost::make_shared<v3d::font::face::Library>(), assets->path(SIGN_FONT), logger));
     if (family->empty()) {
         logger->get()->warn("{} could not be opened, so the well has no sign", SIGN_FONT);
         return;
     }
-    v3d::font::TextStyle style;
-    style.fonts = boost::make_shared<v3d::font::FallbackChain>();
+    v3d::font::text::Style style;
+    style.fonts = boost::make_shared<v3d::font::face::FallbackChain>();
     style.fonts->add(family);
     style.size = SIGN_SIZE;
     style.colour = SIGN_COLOUR;
     // a shadow beneath an outline, so the sign reads against the grass and the sky alike
     style.effects = {
-        v3d::font::TextEffect{.colour = SIGN_SHADOW_COLOUR, .width = SIGN_OUTLINE_WIDTH, .softness = SIGN_SHADOW_SOFTNESS, .offset = SIGN_SHADOW_OFFSET},
-        v3d::font::TextEffect{.colour = SIGN_OUTLINE_COLOUR, .width = SIGN_OUTLINE_WIDTH}};
-    shaping_ = boost::make_shared<v3d::font::ShapingCache>("", logger);
+        v3d::font::text::Effect{.colour = SIGN_SHADOW_COLOUR, .width = SIGN_OUTLINE_WIDTH, .softness = SIGN_SHADOW_SOFTNESS, .offset = SIGN_SHADOW_OFFSET},
+        v3d::font::text::Effect{.colour = SIGN_OUTLINE_COLOUR, .width = SIGN_OUTLINE_WIDTH}};
+    shaping_ = boost::make_shared<v3d::font::text::ShapingCache>("", logger);
     sign_.emplace(shaping_, SIGN, style);
 
     // the sign's curves, and the fields its effects are drawn from, are textures on the device
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = engine_.textures();
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = engine_.textures();
     signText_ = boost::make_shared<v3d::ui::paint::CurveText>(v3d::ui::paint::CurvePages(
         [textures](const float* texels, uint32_t width, uint32_t height) { return textures->texture({.data = texels, .width = width, .height = height}); },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const float* texels, const glm::uvec2& size) {
+        [textures](const v3d::render::realtime::resource::TextureHandle& page, const glm::uvec2& at, const float* texels, const glm::uvec2& size) {
             textures->update(page, at, {.data = texels, .width = size.x, .height = size.y});
         },
-        [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }),
+        [textures](const v3d::render::realtime::resource::TextureHandle& page) { textures->release(page); }),
         v3d::ui::paint::GlyphPages(
         [textures](const unsigned char* pixels, uint32_t side, uint32_t channels) { return textures->texture(pixels, side, side, channels); },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+        [textures](const v3d::render::realtime::resource::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
             uint32_t channels) {
             textures->update(page, at, {.data = pixels, .width = size.x, .height = size.y, .channels = channels});
         },
-        [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }));
+        [textures](const v3d::render::realtime::resource::TextureHandle& page) { textures->release(page); }));
 }
 
 /**
  **/
 bool Renderer::place(entt::registry* registry, const std::vector<Placement>& placements) {
-    std::map<std::string, v3d::render::realtime::MeshHandle> loaded;
+    std::map<std::string, v3d::render::realtime::resource::MeshHandle> loaded;
     for (const Placement& placement : placements) {
         if (!loaded.contains(placement.model)) {
             try {
@@ -139,7 +139,7 @@ bool Renderer::place(entt::registry* registry, const std::vector<Placement>& pla
 void Renderer::resize(uint32_t width, uint32_t height) {
     if (!scene_) {
         const boost::shared_ptr<v3d::render::realtime::DeviceContext> context = engine_.context();
-        scene_ = boost::make_shared<v3d::render::realtime::LitScene>(*context, v3d::render::realtime::LitScene::Spec{
+        scene_ = boost::make_shared<v3d::render::realtime::lighting::LitScene>(*context, v3d::render::realtime::lighting::LitScene::Spec{
             .width = width, .height = height, .output = context->colourFormat(), .shadowTexels = SHADOW_TEXELS,
             .clearColour = SKY});
         // the sign is drawn into the lit pass, so its quads are built for that pass's target
@@ -167,7 +167,7 @@ void Renderer::draw(const v3d::type::camera::Isometric& orbit, const glm::vec3& 
     camera_.createView();
 
     settings_.light = light;
-    v3d::render::realtime::LitScene::Shot shot{.view = camera_.view(), .projection = camera_.projection(),
+    v3d::render::realtime::lighting::LitScene::Shot shot{.view = camera_.view(), .projection = camera_.projection(),
         .settings = settings_, .alpha = alpha};
     if (bounds_) {
         shot.shadows = v3d::render::realtime::lighting::shadowLight(light, *bounds_);
@@ -175,9 +175,9 @@ void Renderer::draw(const v3d::type::camera::Isometric& orbit, const glm::vec3& 
 
     // the grade covers the whole of the colour pass, so the scene goes into it first, and the
     // menu and the statistics are drawn over it in submission order
-    const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
-    const boost::shared_ptr<v3d::render::realtime::Pass> colour = frame->pass(v3d::render::realtime::WindowRenderer::colourPass);
-    v3d::render::realtime::Pass* lit = scene_->draw(frame.get(), colour.get(), registry, *meshes_, shot);
+    const boost::shared_ptr<v3d::render::realtime::frame::Frame> frame = engine_.frame();
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> colour = frame->pass(v3d::render::realtime::WindowRenderer::colourPass);
+    v3d::render::realtime::frame::Pass* lit = scene_->draw(frame.get(), colour.get(), registry, *meshes_, shot);
     drawSign(lit);
 
     shell_->draw();
@@ -188,7 +188,7 @@ void Renderer::draw(const v3d::type::camera::Isometric& orbit, const glm::vec3& 
 
 /**
  **/
-void Renderer::drawSign(v3d::render::realtime::Pass* lit) {
+void Renderer::drawSign(v3d::render::realtime::frame::Pass* lit) {
     if (!sign_ || !signText_ || !signs_ || lit == nullptr) {
         return;
     }

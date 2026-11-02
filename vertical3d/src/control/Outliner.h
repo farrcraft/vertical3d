@@ -7,7 +7,7 @@
 
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -50,7 +50,7 @@ class Outliner final {
      * One row the outliner shows.
      **/
     struct Row final {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         unsigned int depth = 0;
         bool parent = false;   /**< whether it has children, so it can be folded **/
         bool open = false;     /**< whether its children are shown **/
@@ -59,12 +59,12 @@ class Outliner final {
     /**
      * @return what a row calls an item: its name, or its kind when it has none
      **/
-    static std::string label(const scene::Item& item);
+    static std::string label(const scene::item::Item& item);
 
     /**
      * @return a kind of item as a person reads it, with a capital, such as "Mesh"
      **/
-    static std::string kind(scene::Item::Kind kind);
+    static std::string kind(scene::item::Item::Kind kind);
 
     /**
      * What a row shows before its label: an icon's source, and the colour it is tinted.
@@ -78,7 +78,7 @@ class Outliner final {
      * @return the mark of a kind of item: a camera in grey, a light in yellow, a mesh in orange,
      *         a curve in green and a group in a darker grey
      **/
-    static Mark mark(scene::Item::Kind kind);
+    static Mark mark(scene::item::Item::Kind kind);
 
     /**
      * @return the mark of the Scene row
@@ -154,7 +154,7 @@ class Outliner final {
      * Add the rows of an item and everything beneath it that is shown.
      * @return whether the item is shown
      **/
-    static bool gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into);
+    static bool gather(const Walk& walk, const boost::shared_ptr<scene::item::Item>& item, unsigned int depth, std::vector<Row>* into);
 
     std::map<std::size_t, State> states_;
     Icons icons_;

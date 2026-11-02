@@ -6,17 +6,17 @@
 #include "Renderer.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/frame/DrawItem.h>
 #include <api/render/realtime/WindowRenderer.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/memory/DeviceBuffer.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/Material.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Material.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/Frustum.h>
 #include <api/shell/Shell.h>
@@ -189,7 +189,7 @@ void Renderer::createUniforms() {
     vkUpdateDescriptorSets(context_->device()->handle(), 1, &write, 0, nullptr);
 
     // a material here is a descriptor set and no texture, which is all the recorder binds
-    v3d::render::realtime::Material material;
+    v3d::render::realtime::resource::Material material;
     material.set = set;
     material_ = context_->resources()->add(material);
 }
@@ -221,7 +221,7 @@ void Renderer::createPipeline() {
 
 /**
  **/
-void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
+void Renderer::drawTerrain(v3d::render::realtime::frame::Pass* pass) {
     const v3d::type::camera::Camera& camera = scene_->player()->camera();
     const glm::vec3 eye = camera.profile().eye();
     const v3d::type::geometry::Frustum frustum(camera.projection() * camera.view());
@@ -240,7 +240,7 @@ void Renderer::drawTerrain(v3d::render::realtime::Pass* pass) {
         }
         drawnChunks_++;
 
-        v3d::render::realtime::DrawItem item;
+        v3d::render::realtime::frame::DrawItem item;
         entry.mesh->describe(&item);
         item.pipeline = pipeline_;
         item.material = material_;
@@ -297,7 +297,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
         resize(glm::ivec2(static_cast<int>(canvas.width()), static_cast<int>(canvas.height())));
     }
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> terrain = engine_.frame()->pass(terrainPass);
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> terrain = engine_.frame()->pass(terrainPass);
     terrain->depth(true);
     // one item per chunk through one pipeline and one material, so what the sort does here
     // is order them front to back for the depth test
@@ -312,7 +312,7 @@ void Renderer::draw(const v3d::ui::shell::StatisticsOverlay::Sample& statistics,
 
     // the text goes in a second pass. The terrain pass is depth tested and sorted front to
     // back, and the text over it must be drawn in painter order with no depth test
-    const boost::shared_ptr<v3d::render::realtime::Pass> overlay = engine_.frame()->pass(overlayPass);
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = engine_.frame()->pass(overlayPass);
     overlay->keepColour();
     overlay->depth(false);
     engine_.quads()->submit(canvas, overlay.get());

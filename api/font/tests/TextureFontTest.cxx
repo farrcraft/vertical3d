@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/TextureFont.h>
-#include <api/font/TextureFontCache.h>
+#include <api/font/texture/Font.h>
+#include <api/font/texture/FontCache.h>
 #include <api/image/Image.h>
 #include <api/image/TextureAtlas.h>
 #include <api/log/Logger.h>
@@ -32,10 +32,10 @@ const char32_t kDzCaronCode = 0x01C4;
 /**
  * A face packing into a shared atlas.
  **/
-boost::shared_ptr<v3d::font::TextureFont> face(const char* file, v3d::font::TextureFontCache* cache,
+boost::shared_ptr<v3d::font::texture::Font> face(const char* file, v3d::font::texture::FontCache* cache,
     const boost::shared_ptr<v3d::log::Logger>& logger) {
-    const boost::shared_ptr<v3d::font::TextureFont> made =
-        boost::make_shared<v3d::font::TextureFont>(file, kBase, logger, kSpread);
+    const boost::shared_ptr<v3d::font::texture::Font> made =
+        boost::make_shared<v3d::font::texture::Font>(file, kBase, logger, kSpread);
     made->atlas(cache->atlas());
     return made;
 }
@@ -48,10 +48,10 @@ BOOST_AUTO_TEST_SUITE(texture_font_test)
  **/
 BOOST_AUTO_TEST_CASE(a_missing_code_point_is_packed_from_the_fallback) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    v3d::font::TextureFontCache cache(1024, 1024, 1, logger);
+    v3d::font::texture::FontCache cache(1024, 1024, 1, logger);
 
-    const boost::shared_ptr<v3d::font::TextureFont> noto = face(kNoto, &cache, logger);
-    const boost::shared_ptr<v3d::font::TextureFont> inter = face(kInter, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> noto = face(kNoto, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> inter = face(kInter, &cache, logger);
     inter->fallback(noto);
     BOOST_REQUIRE(inter->loadGlyphs(std::string("A") + kDzCaron));
 
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(a_missing_code_point_is_packed_from_the_fallback) {
     BOOST_CHECK_CLOSE(inter->width(kDzCaron), noto->width(kDzCaron), 0.01F);
     BOOST_CHECK(!noto->packed(U'A'));
 
-    const boost::shared_ptr<v3d::font::TextureFont> alone = face(kInter, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> alone = face(kInter, &cache, logger);
     BOOST_REQUIRE(alone->loadGlyphs(kDzCaron));
     BOOST_REQUIRE(alone->packed(kDzCaronCode));
     BOOST_CHECK(alone->packed(kDzCaronCode) != noto->packed(kDzCaronCode));
@@ -71,11 +71,11 @@ BOOST_AUTO_TEST_CASE(a_missing_code_point_is_packed_from_the_fallback) {
  **/
 BOOST_AUTO_TEST_CASE(a_shared_fallback_packs_a_code_point_once) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    v3d::font::TextureFontCache cache(1024, 1024, 1, logger);
+    v3d::font::texture::FontCache cache(1024, 1024, 1, logger);
 
-    const boost::shared_ptr<v3d::font::TextureFont> noto = face(kNoto, &cache, logger);
-    const boost::shared_ptr<v3d::font::TextureFont> regular = face(kInter, &cache, logger);
-    const boost::shared_ptr<v3d::font::TextureFont> semiBold = face(kInterSemiBold, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> noto = face(kNoto, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> regular = face(kInter, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> semiBold = face(kInterSemiBold, &cache, logger);
     regular->fallback(noto);
     semiBold->fallback(noto);
     BOOST_REQUIRE(regular->loadGlyphs(kDzCaron));
@@ -96,15 +96,15 @@ BOOST_AUTO_TEST_CASE(a_shared_fallback_packs_a_code_point_once) {
  **/
 BOOST_AUTO_TEST_CASE(code_points_drawn_with_one_glyph_pack_it_once) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
-    v3d::font::TextureFontCache cache(1024, 1024, 1, logger);
+    v3d::font::texture::FontCache cache(1024, 1024, 1, logger);
 
-    const boost::shared_ptr<v3d::font::TextureFont> noto = face(kNoto, &cache, logger);
-    const boost::shared_ptr<v3d::font::TextureFont> inter = face(kInter, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> noto = face(kNoto, &cache, logger);
+    const boost::shared_ptr<v3d::font::texture::Font> inter = face(kInter, &cache, logger);
     inter->fallback(noto);
     // two CJK ideographs, U+4E00 and U+4E01, as UTF-8. Neither face has them
     BOOST_REQUIRE(inter->loadGlyphs("\xE4\xB8\x80\xE4\xB8\x81"));
 
-    const boost::shared_ptr<v3d::font::TextureFont::Glyph> first = inter->packed(0x4E00);
+    const boost::shared_ptr<v3d::font::texture::Font::Glyph> first = inter->packed(0x4E00);
     BOOST_REQUIRE(first);
     BOOST_CHECK(inter->packed(0x4E01) == first);
     BOOST_CHECK_EQUAL(first->index_, 0U);

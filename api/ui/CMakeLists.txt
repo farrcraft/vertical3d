@@ -80,7 +80,7 @@ v3d_add_api_library(ui
 # way: nothing in the renderer names a ui component, and Canvas carries no vulkan of its own.
 # GlyphPages.h keeps that true by taking the glyph pages' uploads as callbacks rather than
 # naming a renderer.
-# v3dlib_font: TextRenderer.h holds a font::GlyphStore and a font::ShapingCache.
+# v3dlib_font: TextRenderer.h holds a font::glyph::Store and a font::text::ShapingCache.
 # Boost::json: Interface.h names a boost::json::object for the theme it is handed.
 # Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC

@@ -3,11 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Face.h>
-#include <api/font/FaceGlyph.h>
-#include <api/font/Family.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Library.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Glyph.h>
+#include <api/font/face/Family.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Library.h>
 #include <api/log/Logger.h>
 
 #include <string>
@@ -33,12 +33,12 @@ const char32_t kIdeograph = 0x4E00;
 struct Faces {
     Faces() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
-        regular(v3d::font::Face::open(library, kInter, logger)),
-        semiBold(v3d::font::Face::open(library, kInterSemiBold, logger)),
-        noto(v3d::font::Face::open(library, kNoto, logger)),
-        inter(boost::make_shared<v3d::font::Family>("Inter")),
-        fallback(boost::make_shared<v3d::font::Family>("Noto Sans")) {
+        library(boost::make_shared<v3d::font::face::Library>()),
+        regular(v3d::font::face::Face::open(library, kInter, logger)),
+        semiBold(v3d::font::face::Face::open(library, kInterSemiBold, logger)),
+        noto(v3d::font::face::Face::open(library, kNoto, logger)),
+        inter(boost::make_shared<v3d::font::face::Family>("Inter")),
+        fallback(boost::make_shared<v3d::font::face::Family>("Noto Sans")) {
         BOOST_REQUIRE(regular && semiBold && noto);
         inter->add(regular);
         inter->add(semiBold);
@@ -46,12 +46,12 @@ struct Faces {
     }
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::Face> regular;
-    boost::shared_ptr<v3d::font::Face> semiBold;
-    boost::shared_ptr<v3d::font::Face> noto;
-    boost::shared_ptr<v3d::font::Family> inter;
-    boost::shared_ptr<v3d::font::Family> fallback;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::face::Face> regular;
+    boost::shared_ptr<v3d::font::face::Face> semiBold;
+    boost::shared_ptr<v3d::font::face::Face> noto;
+    boost::shared_ptr<v3d::font::face::Family> inter;
+    boost::shared_ptr<v3d::font::face::Family> fallback;
 };
 
 BOOST_FIXTURE_TEST_SUITE(fallback_chain_test, Faces)
@@ -76,14 +76,14 @@ BOOST_AUTO_TEST_CASE(a_face_reads_its_name_weight_and_glyphs) {
  * family with no faces.
  **/
 BOOST_AUTO_TEST_CASE(a_face_that_will_not_open_is_left_out) {
-    const boost::shared_ptr<v3d::font::Face> missing = v3d::font::Face::open(library, "data/fonts/missing.ttf", logger);
+    const boost::shared_ptr<v3d::font::face::Face> missing = v3d::font::face::Face::open(library, "data/fonts/missing.ttf", logger);
     BOOST_CHECK(!missing);
-    const boost::shared_ptr<v3d::font::Family> empty = boost::make_shared<v3d::font::Family>("missing");
+    const boost::shared_ptr<v3d::font::face::Family> empty = boost::make_shared<v3d::font::face::Family>("missing");
     empty->add(missing);
     BOOST_CHECK(empty->empty());
     BOOST_CHECK(!empty->face({ .weight = 400 }));
 
-    v3d::font::FallbackChain chain;
+    v3d::font::face::FallbackChain chain;
     chain.add(empty);
     chain.add(inter);
     BOOST_REQUIRE_EQUAL(chain.families().size(), 1U);
@@ -112,16 +112,16 @@ BOOST_AUTO_TEST_CASE(a_family_chooses_a_weight_as_css_does) {
  * A code point is drawn from the first family in the chain that has it.
  **/
 BOOST_AUTO_TEST_CASE(the_chain_tries_its_families_in_order) {
-    v3d::font::FallbackChain chain;
+    v3d::font::face::FallbackChain chain;
     chain.add(inter);
     chain.add(fallback);
     BOOST_CHECK(chain.find(U'A', { .weight = 400 }).face == regular);
     BOOST_CHECK(chain.find(U'A', { .weight = 600 }).face == semiBold);
-    const v3d::font::FaceGlyph dz = chain.find(kDzCaron, { .weight = 600 });
+    const v3d::font::face::Glyph dz = chain.find(kDzCaron, { .weight = 600 });
     BOOST_CHECK(dz.face == noto);
     BOOST_CHECK_EQUAL(dz.index, noto->glyphIndex(kDzCaron));
 
-    v3d::font::FallbackChain reversed;
+    v3d::font::face::FallbackChain reversed;
     reversed.add(fallback);
     reversed.add(inter);
     BOOST_CHECK(reversed.find(U'A', { .weight = 400 }).face == noto);
@@ -132,14 +132,14 @@ BOOST_AUTO_TEST_CASE(the_chain_tries_its_families_in_order) {
  * families draws nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_code_point_no_face_has_is_the_first_faces_missing_glyph) {
-    v3d::font::FallbackChain chain;
+    v3d::font::face::FallbackChain chain;
     chain.add(inter);
     chain.add(fallback);
-    const v3d::font::FaceGlyph missing = chain.find(kIdeograph, { .weight = 600 });
+    const v3d::font::face::Glyph missing = chain.find(kIdeograph, { .weight = 600 });
     BOOST_CHECK(missing.face == semiBold);
     BOOST_CHECK_EQUAL(missing.index, 0U);
 
-    BOOST_CHECK(!v3d::font::FallbackChain().find(U'A', { .weight = 400 }).face);
+    BOOST_CHECK(!v3d::font::face::FallbackChain().find(U'A', { .weight = 400 }).face);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

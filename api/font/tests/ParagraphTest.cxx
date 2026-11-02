@@ -3,14 +3,14 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Bidi.h>
-#include <api/font/Face.h>
-#include <api/font/Family.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Library.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapingCache.h>
-#include <api/font/TextStyle.h>
+#include <api/font/text/Bidi.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Family.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Library.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
 
 #include <cstddef>
@@ -34,15 +34,15 @@ const float kTolerance = 0.001F;
 struct Typesetting {
     Typesetting() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
-        chain(boost::make_shared<v3d::font::FallbackChain>()),
-        cache(boost::make_shared<v3d::font::ShapingCache>("", logger)) {
-        const boost::shared_ptr<v3d::font::Face> inter = v3d::font::Face::open(library, "data/fonts/Inter-Regular.ttf", logger);
-        const boost::shared_ptr<v3d::font::Face> noto = v3d::font::Face::open(library, "data/fonts/NotoSans-Regular.ttf", logger);
+        library(boost::make_shared<v3d::font::face::Library>()),
+        chain(boost::make_shared<v3d::font::face::FallbackChain>()),
+        cache(boost::make_shared<v3d::font::text::ShapingCache>("", logger)) {
+        const boost::shared_ptr<v3d::font::face::Face> inter = v3d::font::face::Face::open(library, "data/fonts/Inter-Regular.ttf", logger);
+        const boost::shared_ptr<v3d::font::face::Face> noto = v3d::font::face::Face::open(library, "data/fonts/NotoSans-Regular.ttf", logger);
         BOOST_REQUIRE(inter && noto);
-        const boost::shared_ptr<v3d::font::Family> primary = boost::make_shared<v3d::font::Family>("Inter");
+        const boost::shared_ptr<v3d::font::face::Family> primary = boost::make_shared<v3d::font::face::Family>("Inter");
         primary->add(inter);
-        const boost::shared_ptr<v3d::font::Family> fallback = boost::make_shared<v3d::font::Family>("Noto Sans");
+        const boost::shared_ptr<v3d::font::face::Family> fallback = boost::make_shared<v3d::font::face::Family>("Noto Sans");
         fallback->add(noto);
         chain->add(primary);
         chain->add(fallback);
@@ -53,8 +53,8 @@ struct Typesetting {
     /**
      * @return a paragraph of a text in the test style
      **/
-    v3d::font::Paragraph paragraph(const std::string& text, const v3d::font::ParagraphStyle& paragraphStyle = {}) const {
-        return v3d::font::Paragraph(cache, text, style, paragraphStyle);
+    v3d::font::text::Paragraph paragraph(const std::string& text, const v3d::font::text::ParagraphStyle& paragraphStyle = {}) const {
+        return v3d::font::text::Paragraph(cache, text, style, paragraphStyle);
     }
 
     /**
@@ -65,10 +65,10 @@ struct Typesetting {
     }
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::FallbackChain> chain;
-    boost::shared_ptr<v3d::font::ShapingCache> cache;
-    v3d::font::TextStyle style;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::face::FallbackChain> chain;
+    boost::shared_ptr<v3d::font::text::ShapingCache> cache;
+    v3d::font::text::Style style;
 };
 
 BOOST_FIXTURE_TEST_SUITE(paragraph_test, Typesetting)
@@ -78,14 +78,14 @@ BOOST_FIXTURE_TEST_SUITE(paragraph_test, Typesetting)
  * a word wider than the line breaks between its clusters.
  **/
 BOOST_AUTO_TEST_CASE(lines_wrap_at_words_then_clusters) {
-    const v3d::font::Paragraph wrapped = paragraph("one two three", { .width = width("one two") + 1.0F });
+    const v3d::font::text::Paragraph wrapped = paragraph("one two three", { .width = width("one two") + 1.0F });
     BOOST_REQUIRE_EQUAL(wrapped.lines().size(), 2U);
     BOOST_CHECK_EQUAL(wrapped.lines()[0].end, 8U);
     BOOST_CHECK_EQUAL(wrapped.lines()[1].start, 8U);
     BOOST_CHECK_CLOSE(wrapped.lines()[0].width, width("one two"), kTolerance);
     BOOST_CHECK_CLOSE(wrapped.lines()[1].top, wrapped.lines()[0].height, kTolerance);
 
-    const v3d::font::Paragraph word = paragraph("WWWW", { .width = width("W") * 1.5F });
+    const v3d::font::text::Paragraph word = paragraph("WWWW", { .width = width("W") * 1.5F });
     BOOST_REQUIRE_EQUAL(word.lines().size(), 4U);
     BOOST_CHECK_EQUAL(word.lines()[1].start, 1U);
 }
@@ -96,16 +96,16 @@ BOOST_AUTO_TEST_CASE(lines_wrap_at_words_then_clusters) {
  **/
 BOOST_AUTO_TEST_CASE(lines_align_across_the_width) {
     const float across = 300.0F;
-    const auto offset = [this, across](v3d::font::Alignment alignment) {
+    const auto offset = [this, across](v3d::font::text::Alignment alignment) {
         return paragraph("one", { .alignment = alignment, .width = across }).lines()[0].x;
     };
     const float room = across - width("one");
-    BOOST_CHECK_SMALL(offset(v3d::font::Alignment::Left), kTolerance);
-    BOOST_CHECK_CLOSE(offset(v3d::font::Alignment::Right), room, kTolerance);
-    BOOST_CHECK_CLOSE(offset(v3d::font::Alignment::Center), room / 2.0F, kTolerance);
-    BOOST_CHECK_SMALL(offset(v3d::font::Alignment::Start), kTolerance);
-    BOOST_CHECK_CLOSE(offset(v3d::font::Alignment::End), room, kTolerance);
-    const v3d::font::Paragraph rightToLeft = paragraph("one", { .direction = v3d::font::BaseDirection::RightToLeft, .width = across });
+    BOOST_CHECK_SMALL(offset(v3d::font::text::Alignment::Left), kTolerance);
+    BOOST_CHECK_CLOSE(offset(v3d::font::text::Alignment::Right), room, kTolerance);
+    BOOST_CHECK_CLOSE(offset(v3d::font::text::Alignment::Center), room / 2.0F, kTolerance);
+    BOOST_CHECK_SMALL(offset(v3d::font::text::Alignment::Start), kTolerance);
+    BOOST_CHECK_CLOSE(offset(v3d::font::text::Alignment::End), room, kTolerance);
+    const v3d::font::text::Paragraph rightToLeft = paragraph("one", { .direction = v3d::font::text::BaseDirection::RightToLeft, .width = across });
     BOOST_CHECK_CLOSE(rightToLeft.lines()[0].x, room, kTolerance);
 }
 
@@ -114,9 +114,9 @@ BOOST_AUTO_TEST_CASE(lines_align_across_the_width) {
  **/
 BOOST_AUTO_TEST_CASE(a_cut_line_ends_in_an_ellipsis) {
     const float across = width("one two") + 1.0F;
-    const v3d::font::Paragraph cut = paragraph("one two three", { .width = across, .maxLines = 1 });
+    const v3d::font::text::Paragraph cut = paragraph("one two three", { .width = across, .maxLines = 1 });
     BOOST_REQUIRE_EQUAL(cut.lines().size(), 1U);
-    const v3d::font::Line& line = cut.lines()[0];
+    const v3d::font::text::Line& line = cut.lines()[0];
     BOOST_REQUIRE(!line.runs.empty());
     BOOST_CHECK(line.runs.back().ellipsis);
     BOOST_CHECK(line.end < 8U);
@@ -128,11 +128,11 @@ BOOST_AUTO_TEST_CASE(a_cut_line_ends_in_an_ellipsis) {
  * at the text's width.
  **/
 BOOST_AUTO_TEST_CASE(a_caret_follows_kerning) {
-    const v3d::font::Paragraph kerned = paragraph("AV");
+    const v3d::font::text::Paragraph kerned = paragraph("AV");
     const float first = kerned.lines()[0].runs[0].glyphs[0].advance;
     BOOST_CHECK(first < width("A"));
-    BOOST_CHECK_CLOSE(kerned.caret(1, v3d::font::Affinity::Downstream).x, first, kTolerance);
-    BOOST_CHECK_CLOSE(kerned.caret(2, v3d::font::Affinity::Upstream).x, kerned.size().x, kTolerance);
+    BOOST_CHECK_CLOSE(kerned.caret(1, v3d::font::text::Affinity::Downstream).x, first, kTolerance);
+    BOOST_CHECK_CLOSE(kerned.caret(2, v3d::font::text::Affinity::Upstream).x, kerned.size().x, kTolerance);
 }
 
 /**
@@ -141,16 +141,16 @@ BOOST_AUTO_TEST_CASE(a_caret_follows_kerning) {
  **/
 BOOST_AUTO_TEST_CASE(a_caret_follows_reordered_text) {
     // "I said ", shalom, " today": the Hebrew is bytes 7 to 15
-    const v3d::font::Paragraph mixed = paragraph("I said \xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D today");
-    const std::vector<v3d::font::LineRun>& runs = mixed.lines()[0].runs;
+    const v3d::font::text::Paragraph mixed = paragraph("I said \xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D today");
+    const std::vector<v3d::font::text::LineRun>& runs = mixed.lines()[0].runs;
     BOOST_REQUIRE_EQUAL(runs.size(), 3U);
     BOOST_CHECK(runs[1].rightToLeft);
     const float left = runs[1].x;
     const float right = runs[1].x + runs[1].advance;
-    BOOST_CHECK_CLOSE(mixed.caret(7, v3d::font::Affinity::Upstream).x, left, kTolerance);
-    BOOST_CHECK_CLOSE(mixed.caret(7, v3d::font::Affinity::Downstream).x, right, kTolerance);
-    BOOST_CHECK_CLOSE(mixed.caret(15, v3d::font::Affinity::Upstream).x, left, kTolerance);
-    BOOST_CHECK_CLOSE(mixed.caret(15, v3d::font::Affinity::Downstream).x, right, kTolerance);
+    BOOST_CHECK_CLOSE(mixed.caret(7, v3d::font::text::Affinity::Upstream).x, left, kTolerance);
+    BOOST_CHECK_CLOSE(mixed.caret(7, v3d::font::text::Affinity::Downstream).x, right, kTolerance);
+    BOOST_CHECK_CLOSE(mixed.caret(15, v3d::font::text::Affinity::Upstream).x, left, kTolerance);
+    BOOST_CHECK_CLOSE(mixed.caret(15, v3d::font::text::Affinity::Downstream).x, right, kTolerance);
 }
 
 /**
@@ -158,14 +158,14 @@ BOOST_AUTO_TEST_CASE(a_caret_follows_reordered_text) {
  * after it. Past the end of the text it is the end, and below the last line it is that line.
  **/
 BOOST_AUTO_TEST_CASE(a_hit_takes_the_nearer_edge) {
-    const v3d::font::Paragraph text = paragraph("AB");
+    const v3d::font::text::Paragraph text = paragraph("AB");
     const float first = text.lines()[0].runs[0].glyphs[0].advance;
-    const v3d::font::Hit left = text.hitTest(glm::vec2(first * 0.25F, 1.0F));
+    const v3d::font::text::Hit left = text.hitTest(glm::vec2(first * 0.25F, 1.0F));
     BOOST_CHECK_EQUAL(left.index, 0U);
-    BOOST_CHECK(left.affinity == v3d::font::Affinity::Downstream);
-    const v3d::font::Hit right = text.hitTest(glm::vec2(first * 0.75F, 1.0F));
+    BOOST_CHECK(left.affinity == v3d::font::text::Affinity::Downstream);
+    const v3d::font::text::Hit right = text.hitTest(glm::vec2(first * 0.75F, 1.0F));
     BOOST_CHECK_EQUAL(right.index, 1U);
-    BOOST_CHECK(right.affinity == v3d::font::Affinity::Upstream);
+    BOOST_CHECK(right.affinity == v3d::font::text::Affinity::Upstream);
     BOOST_CHECK_EQUAL(text.hitTest(glm::vec2(1000.0F, 1000.0F)).index, 2U);
 }
 
@@ -174,26 +174,26 @@ BOOST_AUTO_TEST_CASE(a_hit_takes_the_nearer_edge) {
  * on the line above upstream and on the line below downstream.
  **/
 BOOST_AUTO_TEST_CASE(a_selection_and_a_caret_cross_a_wrap) {
-    const v3d::font::Paragraph wrapped = paragraph("one two three", { .width = width("one two") + 1.0F });
-    const std::vector<v3d::font::SelectionRect> rects = wrapped.selection(4, 11);
+    const v3d::font::text::Paragraph wrapped = paragraph("one two three", { .width = width("one two") + 1.0F });
+    const std::vector<v3d::font::text::SelectionRect> rects = wrapped.selection(4, 11);
     BOOST_REQUIRE_EQUAL(rects.size(), 2U);
     BOOST_CHECK_SMALL(rects[0].position.y, kTolerance);
     BOOST_CHECK_CLOSE(rects[1].position.y, wrapped.lines()[1].top, kTolerance);
-    BOOST_CHECK_SMALL(wrapped.caret(8, v3d::font::Affinity::Upstream).top, kTolerance);
-    BOOST_CHECK_CLOSE(wrapped.caret(8, v3d::font::Affinity::Downstream).top, wrapped.lines()[1].top, kTolerance);
+    BOOST_CHECK_SMALL(wrapped.caret(8, v3d::font::text::Affinity::Upstream).top, kTolerance);
+    BOOST_CHECK_CLOSE(wrapped.caret(8, v3d::font::text::Affinity::Downstream).top, wrapped.lines()[1].top, kTolerance);
 }
 
 /**
  * Empty text is one empty line as tall as its font, and a newline at the end starts another.
  **/
 BOOST_AUTO_TEST_CASE(an_empty_line_has_height) {
-    const v3d::font::Paragraph empty = paragraph("");
+    const v3d::font::text::Paragraph empty = paragraph("");
     BOOST_REQUIRE_EQUAL(empty.lines().size(), 1U);
     BOOST_CHECK(empty.lines()[0].height > 0.0F);
-    const v3d::font::Paragraph ended = paragraph("a\n");
+    const v3d::font::text::Paragraph ended = paragraph("a\n");
     BOOST_REQUIRE_EQUAL(ended.lines().size(), 2U);
     BOOST_CHECK_EQUAL(ended.lines()[1].start, 2U);
-    BOOST_CHECK_CLOSE(ended.caret(2, v3d::font::Affinity::Upstream).top, ended.lines()[1].top, kTolerance);
+    BOOST_CHECK_CLOSE(ended.caret(2, v3d::font::text::Affinity::Upstream).top, ended.lines()[1].top, kTolerance);
 }
 
 /**
@@ -201,13 +201,13 @@ BOOST_AUTO_TEST_CASE(an_empty_line_has_height) {
  * found, and a new size shapes it again.
  **/
 BOOST_AUTO_TEST_CASE(shaping_is_kept_and_shared) {
-    v3d::font::Paragraph text = paragraph("one two three");
+    v3d::font::text::Paragraph text = paragraph("one two three");
     text.lines();
     const float narrow = width("one");
     const std::size_t shaped = cache->shaped();
     text.setWidth(narrow);
     BOOST_CHECK(text.lines().size() > 1U);
-    v3d::font::TextStyle red = style;
+    v3d::font::text::Style red = style;
     red.colour = glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
     text.setStyle(0, 3, red);
     text.lines();
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(shaping_is_kept_and_shared) {
     paragraph("one two three").lines();
     BOOST_CHECK_EQUAL(cache->shaped(), shaped);
 
-    v3d::font::TextStyle larger = style;
+    v3d::font::text::Style larger = style;
     larger.size = kSize * 2.0F;
     text.setStyle(4, 7, larger);
     text.lines();
@@ -227,8 +227,8 @@ BOOST_AUTO_TEST_CASE(shaping_is_kept_and_shared) {
  * Styling the middle of a range splits it in three, and styling it back joins it again.
  **/
 BOOST_AUTO_TEST_CASE(styles_split_and_join) {
-    v3d::font::Paragraph text = paragraph("one two three");
-    v3d::font::TextStyle red = style;
+    v3d::font::text::Paragraph text = paragraph("one two three");
+    v3d::font::text::Style red = style;
     red.colour = glm::vec4(1.0F, 0.0F, 0.0F, 1.0F);
     text.setStyle(4, 7, red);
     BOOST_REQUIRE_EQUAL(text.styles().size(), 3U);
@@ -244,8 +244,8 @@ BOOST_AUTO_TEST_CASE(styles_split_and_join) {
  **/
 BOOST_AUTO_TEST_CASE(trailing_space_hangs_left_in_right_to_left_text) {
     const float across = 300.0F;
-    const v3d::font::Paragraph text = paragraph("abc ", { .direction = v3d::font::BaseDirection::RightToLeft, .width = across });
-    const v3d::font::Line& line = text.lines()[0];
+    const v3d::font::text::Paragraph text = paragraph("abc ", { .direction = v3d::font::text::BaseDirection::RightToLeft, .width = across });
+    const v3d::font::text::Line& line = text.lines()[0];
     BOOST_CHECK_CLOSE(line.width, width("abc"), kTolerance);
     BOOST_CHECK_CLOSE(line.x, across - width("abc"), kTolerance);
     BOOST_REQUIRE_EQUAL(line.runs.size(), 2U);
@@ -258,12 +258,12 @@ BOOST_AUTO_TEST_CASE(trailing_space_hangs_left_in_right_to_left_text) {
  * newline is dropped without an ellipsis.
  **/
 BOOST_AUTO_TEST_CASE(a_line_limit_cuts_only_hidden_text) {
-    const v3d::font::Paragraph plain = paragraph("one two three", { .width = width("one two") + 1.0F, .maxLines = 1, .ellipsis = false });
+    const v3d::font::text::Paragraph plain = paragraph("one two three", { .width = width("one two") + 1.0F, .maxLines = 1, .ellipsis = false });
     BOOST_REQUIRE_EQUAL(plain.lines().size(), 1U);
     BOOST_CHECK(!plain.lines()[0].runs.back().ellipsis);
     BOOST_CHECK_EQUAL(plain.lines()[0].end, 7U);
 
-    const v3d::font::Paragraph ended = paragraph("a\n", { .maxLines = 1 });
+    const v3d::font::text::Paragraph ended = paragraph("a\n", { .maxLines = 1 });
     BOOST_REQUIRE_EQUAL(ended.lines().size(), 1U);
     BOOST_CHECK(!ended.lines()[0].runs.back().ellipsis);
 }
@@ -273,21 +273,21 @@ BOOST_AUTO_TEST_CASE(a_line_limit_cuts_only_hidden_text) {
  * capacity lets the text used longest ago go.
  **/
 BOOST_AUTO_TEST_CASE(a_direction_reshapes_and_the_cache_forgets) {
-    v3d::font::Paragraph text = paragraph("one");
+    v3d::font::text::Paragraph text = paragraph("one");
     text.lines();
     const std::size_t shaped = cache->shaped();
-    text.setParagraphStyle({ .alignment = v3d::font::Alignment::Center });
+    text.setParagraphStyle({ .alignment = v3d::font::text::Alignment::Center });
     text.lines();
     BOOST_CHECK_EQUAL(cache->shaped(), shaped);
-    text.setParagraphStyle({ .direction = v3d::font::BaseDirection::RightToLeft });
+    text.setParagraphStyle({ .direction = v3d::font::text::BaseDirection::RightToLeft });
     text.lines();
     BOOST_CHECK_EQUAL(cache->shaped(), shaped + 1);
 
-    v3d::font::ShapingCache small("", logger, 1);
-    const std::vector<v3d::font::StyledRange> ranges{ { .start = 0, .end = 1, .style = style } };
-    small.shape("a", ranges, v3d::font::BaseDirection::Auto);
-    small.shape("b", ranges, v3d::font::BaseDirection::Auto);
-    small.shape("a", ranges, v3d::font::BaseDirection::Auto);
+    v3d::font::text::ShapingCache small("", logger, 1);
+    const std::vector<v3d::font::text::StyledRange> ranges{ { .start = 0, .end = 1, .style = style } };
+    small.shape("a", ranges, v3d::font::text::BaseDirection::Auto);
+    small.shape("b", ranges, v3d::font::text::BaseDirection::Auto);
+    small.shape("a", ranges, v3d::font::text::BaseDirection::Auto);
     BOOST_CHECK_EQUAL(small.shaped(), 3U);
     BOOST_CHECK_EQUAL(small.size(), 1U);
 }

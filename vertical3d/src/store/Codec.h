@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/store/Blob.h>
 
 #include <cstddef>
@@ -55,7 +55,7 @@ class Codec {
     /**
      * @return the kind of item the codec writes
      **/
-    virtual scene::Item::Kind kind() const noexcept = 0;
+    virtual scene::item::Item::Kind kind() const noexcept = 0;
 
     /**
      * @return the name the kind's rows carry, such as "mesh"
@@ -76,13 +76,13 @@ class Codec {
     /**
      * @return the fields the kind adds, for an item of the codec's kind
      **/
-    virtual boost::json::object payload(const scene::Item& item) const = 0;
+    virtual boost::json::object payload(const scene::item::Item& item) const = 0;
 
     /**
      * @return the blobs the kind adds, for an item of the codec's kind, which is none unless
      *         the kind is buffered
      **/
-    virtual std::vector<Buffer> buffers(const scene::Item& item) const;
+    virtual std::vector<Buffer> buffers(const scene::item::Item& item) const;
 
     /**
      * Make an item from a row's payload and blobs, which are at the codec's version.
@@ -90,13 +90,13 @@ class Codec {
      * @return the item, without its id or placement, or an empty pointer with the reason in
      *         problem
      **/
-    virtual boost::shared_ptr<scene::Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const = 0;
+    virtual boost::shared_ptr<scene::item::Item> read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const = 0;
 };
 
 /**
  * @return the codec of a kind of item. Every kind has one
  **/
-const Codec& codecOf(scene::Item::Kind kind);
+const Codec& codecOf(scene::item::Item::Kind kind);
 
 /**
  * @return the codec of every kind of item a document holds

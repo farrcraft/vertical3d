@@ -6,7 +6,7 @@
 #include "PongRenderer.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/shell/Shell.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/shell/Screen.h>
@@ -71,7 +71,7 @@ void PongRenderer::draw(float alpha) {
     shell_->draw();
 
     // the screen's canvas is a layer of its own, in front of the court
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(court_, pass.get(), 0);
     engine_.quads()->submit(ui, pass.get(), 1);

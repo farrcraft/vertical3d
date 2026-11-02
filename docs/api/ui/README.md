@@ -58,7 +58,7 @@ app's Canvas  <--  ComponentRenderer::draw(canvas, engine)   the retained tree
 ### Text is supplied by the app
 
 Both models measure, wrap and draw their text through a `paint::TextRenderer`, which the app's
-screen owns and passes to them. Each piece of text is laid out as a `font::Paragraph`.
+screen owns and passes to them. Each piece of text is laid out as a `font::text::Paragraph`.
 
 - **`paint::Type`** ([`paint/Type.h`](../../../api/ui/paint/Type.h)) is a renderer at one size
   and in one weight. `width(text)` measures a string, `rows(text, width)` breaks it as a
@@ -108,9 +108,9 @@ face's Simplified Chinese forms.
 Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md),
 [ADR-0151](../../adr/0151-ui-noto-faces-for-each-script-in-the-tree.md)
 
-Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::Paragraph`. Any character
+Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::text::Paragraph`. Any character
 the faces have is drawn, with no set of glyphs named up front: a glyph is rasterized the first
-time it is drawn, at the size it is drawn at, into a `font::GlyphStore`. Its pen is kept to a
+time it is drawn, at the size it is drawn at, into a `font::glyph::Store`. Its pen is kept to a
 quarter of a pixel and each line's baseline is on a whole pixel. It is hinted vertically, so
 text on the pixel grid is drawn at its exact size and sharp. A change of scale draws at the new
 size. A `Screen` calls `beginFrame()` on its text renderer each frame, so a glyph unused since
@@ -125,8 +125,8 @@ How a face draws each glyph is read once and kept.
 `width()` counts the space at the end of a string, so a caret placed after it lands past it.
 `draw()` starts a new line below at a newline.
 
-`draw(canvas, paragraph, pen)` draws a `font::Paragraph`, each glyph in its style's colour, placed
-as a string is. Build the paragraph with `shaping()`, the renderer's cache, and a style from
+`draw(canvas, paragraph, pen)` draws a `font::text::Paragraph`, each glyph in its style's colour,
+placed as a string is. Build the paragraph with `shaping()`, the renderer's cache, and a style from
 `style(size, weight)`, which names the renderer's faces. A style's effects are drawn beneath the
 text from each glyph's distance field, kept in the same glyph store, as
 [Fonts.md](../Fonts.md#effect-fields) describes. Each glyph carries its style's contrast, so it
@@ -143,8 +143,8 @@ Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-whe
 
 ### Curve text
 
-`paint::CurveText` draws a `font::Paragraph` from its glyphs' curves, sharp at any size and under
-any transform: scaled, turned or animated. **`draw(canvas, paragraph, transform)`** places the
+`paint::CurveText` draws a `font::text::Paragraph` from its glyphs' curves, sharp at any size and
+under any transform: scaled, turned or animated. **`draw(canvas, paragraph, transform)`** places the
 paragraph, in pixels with y downwards, through an affine `glm::mat3` into the canvas.
 
 - Each glyph is a quad over its outline, a pixel of the canvas wider on every side so its edge
@@ -158,12 +158,12 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   from a bitmap table, is painted at its size onto a page of four channels. It is drawn as a
   picture through the same transform, so it softens when it is scaled up.
 - A style's effects are drawn beneath the text from each glyph's distance field, every glyph's
-  effects before any glyph. The fields are kept in a `font::GlyphStore` of the curve text's own,
+  effects before any glyph. The fields are kept in a `font::glyph::Store` of the curve text's own,
   whose pages reach the device through the `GlyphPages` given with the `CurvePages`, as are the
   pictures of colour glyphs. Call
   `beginFrame()` once a frame, so the store can make room for new fields.
-- The curves come from a `font::CurveStore`, read the first time a glyph is drawn at any size.
-  A variable face's glyph is read at its run's coordinates, and each point on its axes is kept
+- The curves come from a `font::glyph::CurveStore`, read the first time a glyph is drawn at any
+  size. A variable face's glyph is read at its run's coordinates, and each point on its axes is kept
   apart.
   `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three
   callbacks as `GlyphPages` does. With a context's `Textures`, create is
@@ -187,7 +187,7 @@ Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-whe
 
 ### Glyph pages
 
-`paint::GlyphPages` keeps the device's copy of a `font::GlyphStore`'s pages, one texture for
+`paint::GlyphPages` keeps the device's copy of a `font::glyph::Store`'s pages, one texture for
 each, in the store's channels: one byte a pixel, or four for colour glyphs. A `TextRenderer`
 copies the pages it is given, one for each of its stores. `sync(store)` is called once a frame,
 after the frame's glyphs have been asked of the store and before the frame is submitted:

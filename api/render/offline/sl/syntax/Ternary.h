@@ -18,7 +18,7 @@ class Ternary final : public Expression {
         ExpressionPtr whenFalse;
     };
 
-    Ternary(const Branches & branches, const v3d::render::offline::Position & at);
+    Ternary(const Branches & branches, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr condition;
     ExpressionPtr whenTrue;

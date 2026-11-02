@@ -10,7 +10,7 @@
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
-#include <api/render/realtime/Recorder.h>
+#include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Timings.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 #include <api/render/realtime/renderer/Line.h>
@@ -19,9 +19,9 @@
 #include <api/window/Window.h>
 
 #include "DeviceContext.h"
-#include "Frame.h"
-#include "Present.h"
-#include "Textures.h"
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Present.h>
+#include <api/render/realtime/resource/Textures.h>
 #include "WindowContext.h"
 
 #include <string>
@@ -42,7 +42,7 @@ WindowRenderer::WindowRenderer(const boost::shared_ptr<v3d::log::Logger>& logger
     clearColour_(DEFAULT_CLEAR_COLOUR),
     preferred_(preferred),
     allocations_(allocations),
-    present_(Present::Uncapped) {
+    present_(frame::Present::Uncapped) {
 }
 
 /**
@@ -54,7 +54,7 @@ void WindowRenderer::initialize(const boost::shared_ptr<v3d::window::Window>& wi
     context_ = boost::make_shared<WindowContext>(logger_, window, preferred_, allocations_, present_);
     pendingPresent_.reset();
 
-    frame_ = boost::make_shared<Frame>();
+    frame_ = boost::make_shared<frame::Frame>();
     frame_->pass(colourPass)->clearColour(clearColour_);
 }
 
@@ -85,7 +85,7 @@ boost::shared_ptr<DeviceContext> WindowRenderer::context() {
 
 /**
  **/
-boost::shared_ptr<Frame> WindowRenderer::frame() const {
+boost::shared_ptr<frame::Frame> WindowRenderer::frame() const {
     return frame_;
 }
 
@@ -104,8 +104,8 @@ boost::shared_ptr<renderer::Quad> WindowRenderer::quads() const {
 
 /**
  **/
-boost::shared_ptr<Textures> WindowRenderer::textures() const {
-    return context_ ? context_->textures() : boost::shared_ptr<Textures>();
+boost::shared_ptr<resource::Textures> WindowRenderer::textures() const {
+    return context_ ? context_->textures() : boost::shared_ptr<resource::Textures>();
 }
 
 /**
@@ -160,7 +160,7 @@ bool WindowRenderer::beginFrame(glm::ivec2* size) {
 
 /**
  **/
-void WindowRenderer::present(Present present) {
+void WindowRenderer::present(frame::Present present) {
     present_ = present;
     if (context_) {
         pendingPresent_ = present;
@@ -169,8 +169,8 @@ void WindowRenderer::present(Present present) {
 
 /**
  **/
-Present WindowRenderer::presenting() const noexcept {
-    return context_ ? granted(context_->swapchain()->presenting()) : present_;
+frame::Present WindowRenderer::presenting() const noexcept {
+    return context_ ? frame::granted(context_->swapchain()->presenting()) : present_;
 }
 
 /**
@@ -218,7 +218,7 @@ void WindowRenderer::renderFrame() {
 
     const boost::shared_ptr<vulkan::frame::Swapchain> swapchain = context_->swapchain();
 
-    Recorder::Target target;
+    frame::Recorder::Target target;
     target.image = swapchain->images()[acquisition.image];
     target.view = swapchain->views()[acquisition.image];
     target.extent = swapchain->extent();
@@ -239,7 +239,7 @@ void WindowRenderer::renderFrame() {
     // the slots of the frame about to be recorded are free - acquire() waited on its fence
     uniforms->begin(context_->ring()->frame());
 
-    Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
+    frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
 
     // a swapchain recreated since the request may have lost TRANSFER_SRC, and Capture throws

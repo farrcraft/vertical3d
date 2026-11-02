@@ -10,8 +10,8 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/Polygon.h>
@@ -37,7 +37,7 @@ namespace v3d::moya::reference {
 
 void pixelCentres(v3d::moya::state::RenderContext & rc) {
     rc.sampling().samples = glm::uvec2(1, 1);
-    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().filter = v3d::render::offline::film::Filter::Box;
     rc.sampling().width = glm::vec2(1.0F, 1.0F);
 }
 
@@ -157,7 +157,7 @@ void focusScene(v3d::moya::state::RenderContext & rc, bool lens) {
     rc.addPolygon(far);
 }
 
-unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, const Run & run) {
+unsigned int partial(const v3d::render::offline::film::FrameBuffer & planes, unsigned int coverage, const Run & run) {
     unsigned int count = 0;
     for (unsigned int column = run.from; column <= run.to; column++) {
         const float value = planes.value(coverage, column, run.row);
@@ -168,7 +168,7 @@ unsigned int partial(const v3d::render::offline::FrameBuffer & planes, unsigned 
     return count;
 }
 
-float largest(const v3d::render::offline::FrameBuffer & first, const v3d::render::offline::FrameBuffer & second,
+float largest(const v3d::render::offline::film::FrameBuffer & first, const v3d::render::offline::film::FrameBuffer & second,
     const Columns & columns) {
     float worst = 0.0F;
     for (unsigned int plane = 0; plane < first.planes(); plane++) {
@@ -229,7 +229,7 @@ void motionScene(v3d::moya::state::RenderContext & rc) {
     rc.attributeEnd();
 }
 
-void checkRamp(const v3d::render::offline::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
+void checkRamp(const v3d::render::offline::film::FrameBuffer & planes, unsigned int coverage, unsigned int row) {
     BOOST_CHECK_EQUAL(planes.value(coverage, 7, row), 0.0F);
     for (unsigned int k = 0; k < 12; k++) {
         BOOST_TEST_CONTEXT("pixel " << 8 + k << " and " << 32 + k) {
@@ -271,7 +271,7 @@ void check(const boost::shared_ptr<v3d::image::Image> & rendered, const char* re
         difference.description() + " - what was rendered instead is in " + output);
 }
 
-boost::shared_ptr<v3d::render::offline::FrameBuffer> read(const Scene & scene) {
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> read(const Scene & scene) {
     v3d::moya::ri::RIBHandler handler;
     if (scene.hider != nullptr) {
         handler.context().hider(scene.hider);
@@ -421,7 +421,7 @@ void spheresScene(v3d::moya::state::RenderContext & rc) {
 void slidingQuad(v3d::moya::state::RenderContext & rc) {
     rc.imageResolution({64, 48}, 1.0F);
     rc.sampling().samples = glm::uvec2(8, 8);
-    rc.sampling().filter = v3d::render::offline::Filter::Box;
+    rc.sampling().filter = v3d::render::offline::film::Filter::Box;
     rc.sampling().width = glm::vec2(1.0F);
     rc.sampling().shutter = glm::vec2(0.0F, 1.0F);
     rc.clipping({.hither = 0.1F, .yon = 100.0F});

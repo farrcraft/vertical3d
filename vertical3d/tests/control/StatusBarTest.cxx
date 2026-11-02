@@ -9,10 +9,10 @@
 #include <api/log/Logger.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
-#include <vertical3d/src/control/StatusBar.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -30,8 +30,8 @@
 
 namespace {
 
-using v3d::editor::control::Status;
-using v3d::editor::control::StatusBar;
+using v3d::editor::control::chrome::Status;
+using v3d::editor::control::chrome::StatusBar;
 
 /**
  * A scene holding one cube, and the three tools over it.
@@ -39,7 +39,7 @@ using v3d::editor::control::StatusBar;
 struct Tools {
     Tools() :
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
         select(scene, boost::make_shared<v3d::log::Logger>()),
         handles(scene, boost::make_shared<v3d::log::Logger>()) {
         scene->add(cube);
@@ -56,7 +56,7 @@ struct Tools {
     }
 
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
     v3d::editor::tool::CameraControl camera;
     v3d::editor::tool::Select select;
     v3d::editor::tool::Transform handles;
@@ -160,32 +160,32 @@ BOOST_FIXTURE_TEST_CASE(the_selection_is_counted_under_the_mask, Tools) {
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Object), "Mesh · Vertices 8 · Faces 6");
     cube->name("Box");
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Object), "Box · Vertices 8 · Faces 6");
-    const boost::shared_ptr<v3d::editor::scene::Light> light = boost::make_shared<v3d::editor::scene::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> light = boost::make_shared<v3d::editor::scene::item::Light>();
     scene->add(light);
     light->selected(true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Object), "1 mesh · 1 light");
-    const boost::shared_ptr<v3d::editor::scene::Mesh> second = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> second = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     scene->add(second);
     second->selected(true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Object), "2 meshes · 1 light");
 
-    v3d::editor::scene::Components& parts = scene->components();
+    v3d::editor::scene::item::Components& parts = scene->components();
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Face), "Nothing selected");
-    parts.select(cube->id(), v3d::editor::scene::Component::Face, 0, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Face, 0, true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Face), "1 face");
-    parts.select(cube->id(), v3d::editor::scene::Component::Vertex, 0, true);
-    parts.select(cube->id(), v3d::editor::scene::Component::Vertex, 1, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Vertex, 0, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Vertex, 1, true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Vertex), "2 vertices");
 
     const v3d::brep::BRep& mesh = *cube->geometry();
     const v3d::brep::Index pair = mesh.edge(0)->pair();
     BOOST_REQUIRE(pair != v3d::brep::INVALID_ID);
-    parts.select(cube->id(), v3d::editor::scene::Component::Edge, pair, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Edge, pair, true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Edge), "1 edge");
-    parts.select(cube->id(), v3d::editor::scene::Component::Edge, 0, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Edge, 0, true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Edge), "1 edge");
     const v3d::brep::Index next = mesh.edge(0)->next();
-    parts.select(cube->id(), v3d::editor::scene::Component::Edge, next, true);
+    parts.select(cube->id(), v3d::editor::scene::item::Component::Edge, next, true);
     BOOST_CHECK_EQUAL(StatusBar::selection(*scene, v3d::editor::selection::SelectMask::Edge), "2 edges");
 }
 

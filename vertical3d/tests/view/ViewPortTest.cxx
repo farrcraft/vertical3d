@@ -6,8 +6,8 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE(viewport_shows_cameras_and_lights_test) {
     BOOST_CHECK(view.shows(v3d::editor::view::ViewPort::SHOW_LIGHT));
 
     v3d::editor::scene::Scene scene;
-    scene.add(boost::make_shared<v3d::editor::scene::Camera>());
-    scene.add(boost::make_shared<v3d::editor::scene::Light>());
+    scene.add(boost::make_shared<v3d::editor::scene::item::Camera>());
+    scene.add(boost::make_shared<v3d::editor::scene::item::Light>());
     view.show(v3d::editor::view::ViewPort::SHOW_GRID, false);
     const auto drawn = [&]() {
         v3d::render::realtime::canvas::Line canvas;

@@ -6,14 +6,14 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Uploader.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/renderer/Line.h>
 #include <api/render/realtime/renderer/Quad.h>
 #include <api/render/realtime/renderer/World.h>
@@ -77,7 +77,7 @@ class DeviceContext {
     /**
      * @return the pipelines, materials and textures a draw item can name by handle
      **/
-    boost::shared_ptr<Resources> resources() const;
+    boost::shared_ptr<resource::Resources> resources() const;
 
     /**
      * @return set 0, where each pass's camera is written and bound from
@@ -128,7 +128,7 @@ class DeviceContext {
      * gets it here, and so does an app. Built with the context, because a context that draws
      * nothing still loads textures.
      **/
-    boost::shared_ptr<Textures> textures() const;
+    boost::shared_ptr<resource::Textures> textures() const;
 
     /**
      * @return the batched quad primitive, which all 2D drawing goes through
@@ -185,14 +185,14 @@ class DeviceContext {
     // waits for the device and runs what they retired
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::pipeline::Cache> pipelineCache_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::memory::Uploader> uploader_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> frameUniforms_;
     boost::shared_ptr<vulkan::frame::DepthBuffer> depth_;
     VkFormat colourFormat_;
     VkExtent2D extent_;
     VkFormat depthFormat_;
-    boost::shared_ptr<Textures> textures_;
+    boost::shared_ptr<resource::Textures> textures_;
     boost::shared_ptr<renderer::Quad> quads_;
     boost::shared_ptr<renderer::Line> lines_;
     boost::shared_ptr<renderer::World> worldQuads_;

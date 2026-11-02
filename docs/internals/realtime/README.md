@@ -4,15 +4,22 @@ These pages are for someone changing `api/render/realtime`. How an app uses the 
 [api/rendering/](../../api/rendering/README.md), and these pages do not repeat it.
 
 Names are in `v3d::render::realtime`; `vulkan::` is `v3d::render::realtime::vulkan`. The code is
-in [api/render/realtime](../../../api/render/realtime). The root holds what an app names: the
-contexts, the frame and its recorder, render targets, meshes, materials, the handle registry and
-the stores a context owns. The lit scene and the grade there compose renderers into passes.
-`renderer/` holds the renderers, `canvas/` the canvases an app fills on the CPU, `entity/` the
-functions that draw ECS entities, and `lighting/` the lit pass's settings and shadow fitting.
+in [api/render/realtime](../../../api/render/realtime). The root holds what an app opens: the
+window renderer, the window and device contexts, and the shared instance. Each subdirectory does
+one job:
+
+| Directory | Namespace | Holds |
+|---|---|---|
+| `frame/` | `frame::` | The frame, its passes and draw items, sort keys, render targets, the present mode, and the recorder that turns a frame into commands |
+| `resource/` | `resource::` | Handles and their registry, the resource store, materials, meshes and the mesh registry, decoded models, the texture store, and upload queues |
+| `renderer/` | `renderer::` | The renderers, and the grade, a full-screen pass over a scene |
+| `canvas/` | `canvas::` | The canvases an app fills on the CPU |
+| `entity/` | `entity::` | The functions that draw ECS entities |
+| `lighting/` | `lighting::` | The lit scene, which composes renderers into passes, and the lit pass's settings and shadow fitting |
 
 `vulkan/` holds the wrappers over Vulkan objects, split into `vulkan/device`, `vulkan/frame`,
 `vulkan/memory` and `vulkan/pipeline`. **Nothing in `vulkan/` includes a header above it.** It
-speaks Vulkan's own terms, and the root turns an app's terms into them: `Present` becomes the
+speaks Vulkan's own terms, and the root turns an app's terms into them: `frame::Present` becomes the
 swapchain's list of present modes, for one. An app names `vulkan::` only when it builds a pipeline
 or a buffer of its own.
 
@@ -30,7 +37,7 @@ or a buffer of its own.
 ```
 window::Window             the SDL window, in its own library; holds no Vulkan object
 sharedInstance()           the process's vulkan::device::Instance, shared by every window
-WindowRenderer             owns the WindowContext and the Frame being built
+WindowRenderer             owns the WindowContext and the frame::Frame being built
   WindowContext : DeviceContext
     vulkan::frame::Swapchain   the images presented to the window
     vulkan::frame::Presenter   acquire, submit, present, and their semaphores
@@ -39,13 +46,13 @@ WindowRenderer             owns the WindowContext and the Frame being built
                                Surface WindowContext made for the window
     vulkan::frame::Ring        frames in flight: a command buffer and a fence each
     vulkan::pipeline::Cache    the VkPipelineCache
-    Resources                  pipelines, materials and textures, by handle
+    resource::Resources        pipelines, materials and textures, by handle
     vulkan::memory::Uploader   one-shot copies to device-local memory
     vulkan::frame::FrameUniforms set 0: one camera per pass per frame in flight
     vulkan::frame::DepthBuffer the window's depth image, made on first request
-    Textures                   texture factory, the texture array at set 1, white texture, slots
+    resource::Textures         texture factory, the texture array at set 1, white texture, slots
     renderer::Quad / Line / World   built on first request
-Frame -> Pass -> DrawItem
+frame::Frame -> frame::Pass -> frame::DrawItem
 ```
 
 There is one window class for 2D and 3D. A 2D app differs only in what its passes ask for: an
@@ -90,7 +97,7 @@ Background: [ADR-0003](../../adr/0003-rendering-one-engine-for-2d-and-3d.md),
   `depthFormat()`, never a requested or default format. The recorder throws on a mismatch.
 - **Every pipeline declares set 0 first.** Add `FrameUniforms::layout()` with the first `set()`
   call, even if the shader reads nothing from it.
-- **Per-object data goes in push constants**, within `DrawItem::pushCapacity` (128 bytes),
+- **Per-object data goes in push constants**, within `frame::DrawItem::pushCapacity` (128 bytes),
   except in a lit pipeline, which reads it from the scene's object buffer by instance index.
 - **Never write a barrier inline.** Use or add a function in `memory/Barriers.h`.
 - **Never destroy a GPU object a frame may still use.** Retire it through `Ring::retire()`. This

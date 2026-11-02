@@ -5,7 +5,7 @@
 
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/GlyphPages.h>
@@ -147,9 +147,9 @@ BOOST_AUTO_TEST_CASE(a_named_device_is_the_top_line) {
 BOOST_AUTO_TEST_CASE(the_readout_is_drawn_in_the_dressing_it_is_given) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", logger);
-    v3d::ui::paint::GlyphPages pages([](const unsigned char*, std::uint32_t, std::uint32_t) { return v3d::render::realtime::TextureHandle(1); },
-        [](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {},
-        [](const v3d::render::realtime::TextureHandle&) {});
+    v3d::ui::paint::GlyphPages pages([](const unsigned char*, std::uint32_t, std::uint32_t) { return v3d::render::realtime::resource::TextureHandle(1); },
+        [](const v3d::render::realtime::resource::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {},
+        [](const v3d::render::realtime::resource::TextureHandle&) {});
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = boost::make_shared<v3d::ui::paint::TextRenderer>(assets, logger, std::move(pages));
     BOOST_REQUIRE(text->loaded());
     v3d::ui::shell::StatisticsOverlay overlay(text, v3d::ui::shell::StatisticsOverlay::defaultSize);

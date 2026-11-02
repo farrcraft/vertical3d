@@ -9,11 +9,11 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -104,13 +104,13 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
 BOOST_AUTO_TEST_CASE(a_curve_is_created_as_one_change) {
     const Scratch scratch("curve");
     v3d::editor::document::Document edited = document(scratch.path());
-    const v3d::editor::document::Outcome made = edited.createCurve(v3d::editor::scene::CurveType::Nurbs);
+    const v3d::editor::document::Outcome made = edited.createCurve(v3d::editor::scene::item::CurveType::Nurbs);
     BOOST_CHECK(made.done);
     BOOST_CHECK_EQUAL(made.message, "created a NURBS curve - 1 item");
     BOOST_REQUIRE_EQUAL(edited.scene()->count(), 1U);
     // a new item is named for its kind, each word begun in capitals
     BOOST_CHECK_EQUAL(edited.scene()->items()[0]->name(), "NURBS Curve");
-    const boost::shared_ptr<v3d::editor::scene::Curve> curve = v3d::editor::scene::as<v3d::editor::scene::Curve>(edited.scene()->items()[0]);
+    const boost::shared_ptr<v3d::editor::scene::item::Curve> curve = v3d::editor::scene::item::as<v3d::editor::scene::item::Curve>(edited.scene()->items()[0]);
     BOOST_REQUIRE(curve);
     BOOST_REQUIRE_EQUAL(curve->geometry()->size(), 1U);
     BOOST_CHECK(std::holds_alternative<v3d::curve::Nurbs>(curve->geometry()->curve(0).shape));
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(an_operation_acts_on_what_it_is_given) {
     const Scratch scratch("arguments");
     v3d::editor::document::Document edited = document(scratch.path());
     const v3d::type::camera::Profile at("Perspective");
-    edited.createCamera(at, v3d::editor::scene::Camera::Projection::Perspective);
+    edited.createCamera(at, v3d::editor::scene::item::Camera::Projection::Perspective);
     edited.createPrimitive(v3d::editor::document::Document::Primitive::Plane);
     const v3d::editor::scene::Items items = edited.scene()->items();
     BOOST_REQUIRE_EQUAL(items.size(), 2U);
@@ -340,17 +340,17 @@ BOOST_AUTO_TEST_CASE(a_gltf_file_imports_as_one_change) {
     const auto check = [&edited]() {
         const boost::shared_ptr<v3d::editor::scene::Scene>& scene = edited.scene();
         BOOST_REQUIRE_EQUAL(scene->count(), 4U);
-        boost::shared_ptr<v3d::editor::scene::Mesh> box;
-        for (const boost::shared_ptr<v3d::editor::scene::Item>& item : scene->items()) {
-            if (item->kind() == v3d::editor::scene::Item::Kind::Mesh) {
-                box = v3d::editor::scene::as<v3d::editor::scene::Mesh>(item);
+        boost::shared_ptr<v3d::editor::scene::item::Mesh> box;
+        for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : scene->items()) {
+            if (item->kind() == v3d::editor::scene::item::Item::Kind::Mesh) {
+                box = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(item);
             }
         }
         BOOST_REQUIRE(box);
         BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
-        const boost::shared_ptr<v3d::editor::scene::Item> rig = scene->parent(box->id());
+        const boost::shared_ptr<v3d::editor::scene::item::Item> rig = scene->parent(box->id());
         BOOST_REQUIRE(rig);
-        BOOST_CHECK(rig->kind() == v3d::editor::scene::Item::Kind::Group);
+        BOOST_CHECK(rig->kind() == v3d::editor::scene::item::Item::Kind::Group);
         BOOST_CHECK(rig->selected());
         BOOST_CHECK_EQUAL(scene->curves(box->id()).count("translation.x"), 1U);
     };
@@ -376,15 +376,15 @@ BOOST_AUTO_TEST_CASE(a_usd_stage_imports_as_one_change) {
     BOOST_CHECK_EQUAL(imported.message, "imported 8 items from scene.usda");
 
     const boost::shared_ptr<v3d::editor::scene::Scene>& scene = edited.scene();
-    boost::shared_ptr<v3d::editor::scene::Mesh> box;
-    for (const boost::shared_ptr<v3d::editor::scene::Item>& item : scene->items()) {
-        if (item->kind() == v3d::editor::scene::Item::Kind::Mesh) {
-            box = v3d::editor::scene::as<v3d::editor::scene::Mesh>(item);
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> box;
+    for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : scene->items()) {
+        if (item->kind() == v3d::editor::scene::item::Item::Kind::Mesh) {
+            box = v3d::editor::scene::item::as<v3d::editor::scene::item::Mesh>(item);
         }
     }
     BOOST_REQUIRE(box);
     BOOST_CHECK_EQUAL(box->geometry()->faceCount(), 6U);
-    const boost::shared_ptr<v3d::editor::scene::Item> holder = scene->parent(box->id());
+    const boost::shared_ptr<v3d::editor::scene::item::Item> holder = scene->parent(box->id());
     BOOST_REQUIRE(holder);
     BOOST_CHECK_EQUAL(scene->curves(holder->id()).count("translation.x"), 1U);
     BOOST_CHECK(edited.undo().done);

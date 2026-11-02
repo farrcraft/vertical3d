@@ -5,17 +5,17 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
 #include <api/render/realtime/vulkan/memory/Buffer.h>
 #include <api/render/realtime/vulkan/pipeline/Cache.h>
 #include <api/render/realtime/vulkan/pipeline/DescriptorPool.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 
 #include <vulkan/vulkan.h>
@@ -140,18 +140,18 @@ class Lit final {
     /**
      * @return the pipeline a model's surface is drawn with
      **/
-    PipelineHandle cel() const noexcept;
+    resource::PipelineHandle cel() const noexcept;
 
     /**
      * @return where a texture sits in the texture array, for an Object's albedo. Read it each
      *         frame, because a texture filled or replaced later moves to another slot
      **/
-    uint32_t slot(const TextureHandle& texture) const;
+    uint32_t slot(const resource::TextureHandle& texture) const;
 
     /**
      * @return the pipeline a model's outline is drawn with, before its surface
      **/
-    PipelineHandle outline() const noexcept;
+    resource::PipelineHandle outline() const noexcept;
 
     /**
      * The pipeline a caster is drawn into a shadow map with. It is built with depth bias, so
@@ -160,7 +160,7 @@ class Lit final {
      *
      * @return the pipeline, or an unset handle when this was built with no shadow format
      **/
-    PipelineHandle shadow() const noexcept;
+    resource::PipelineHandle shadow() const noexcept;
 
     /**
      * The push constant a draw with shadow() or skinnedShadow() carries: which cascade, and so
@@ -175,9 +175,9 @@ class Lit final {
      * Their vertex is a model::Model::Vertex followed by its model::Model::Influence, which is
      * MeshRegistry::SkinnedVertex.
      **/
-    PipelineHandle skinnedCel() const noexcept;
-    PipelineHandle skinnedOutline() const noexcept;
-    PipelineHandle skinnedShadow() const noexcept;
+    resource::PipelineHandle skinnedCel() const noexcept;
+    resource::PipelineHandle skinnedOutline() const noexcept;
+    resource::PipelineHandle skinnedShadow() const noexcept;
 
     /**
      * Write this frame's scene and return the set a lit pass names as its scene.
@@ -191,7 +191,7 @@ class Lit final {
      *        per cascade, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame, from entity::Poses::palette()
      **/
-    VkDescriptorSet scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap = TextureHandle(),
+    VkDescriptorSet scene(const lighting::SceneUniforms& uniforms, const resource::TextureHandle& shadowMap = resource::TextureHandle(),
         const std::vector<glm::mat4>& palette = {});
 
     /**
@@ -290,10 +290,10 @@ class Lit final {
 
     boost::shared_ptr<vulkan::device::Device> device_;
     boost::shared_ptr<vulkan::pipeline::Cache> cache_;
-    boost::shared_ptr<Resources> resources_;
+    boost::shared_ptr<resource::Resources> resources_;
     boost::shared_ptr<vulkan::frame::Ring> ring_;
     boost::shared_ptr<vulkan::frame::FrameUniforms> uniforms_;
-    boost::shared_ptr<Textures> textures_;
+    boost::shared_ptr<resource::Textures> textures_;
     boost::shared_ptr<vulkan::pipeline::DescriptorPool> scenes_;
     std::vector<Slot> slots_;
     Slot* current_ = nullptr;   /**< the slot the last scene() wrote **/
@@ -301,14 +301,14 @@ class Lit final {
      * A shadow map of one layer cleared to the far plane, which a scene with no shadow map
      * reads, so that nothing is in shadow
      **/
-    boost::shared_ptr<RenderTarget> unshadowed_;
+    boost::shared_ptr<frame::RenderTarget> unshadowed_;
     vulkan::pipeline::Texture unshadowedTexture_;
-    PipelineHandle cel_;
-    PipelineHandle outline_;
-    PipelineHandle shadow_;
-    PipelineHandle skinnedCel_;
-    PipelineHandle skinnedOutline_;
-    PipelineHandle skinnedShadow_;
+    resource::PipelineHandle cel_;
+    resource::PipelineHandle outline_;
+    resource::PipelineHandle shadow_;
+    resource::PipelineHandle skinnedCel_;
+    resource::PipelineHandle skinnedOutline_;
+    resource::PipelineHandle skinnedShadow_;
 };
 
 };  // namespace v3d::render::realtime::renderer

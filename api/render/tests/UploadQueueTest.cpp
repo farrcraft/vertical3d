@@ -4,8 +4,8 @@
  **/
 
 #include <api/asset/Worker.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/UploadQueue.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/UploadQueue.h>
 
 #include <chrono>
 #include <cstddef>
@@ -21,12 +21,12 @@
 #include <boost/test/unit_test.hpp>
 
 using v3d::asset::Worker;
-using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::TextureTag;
+using v3d::render::realtime::resource::TextureHandle;
+using v3d::render::realtime::resource::TextureTag;
 
 namespace {
 
-using Queue = v3d::render::realtime::UploadQueue<TextureTag, std::size_t>;
+using Queue = v3d::render::realtime::resource::UploadQueue<TextureTag, std::size_t>;
 
 /**
  * Poll a worker until every job's completion has run, or ten seconds pass.

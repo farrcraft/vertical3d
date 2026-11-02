@@ -5,7 +5,7 @@
 
 #include <api/ecs/component/Emitter.h>
 #include <api/ecs/component/Transform.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Particles.h>
 #include <api/render/realtime/entity/Sprites.h>
@@ -30,7 +30,7 @@
 
 using v3d::ecs::component::Emitter;
 using v3d::render::realtime::canvas::DepthOrder;
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 using v3d::render::realtime::component::Particles;
 using v3d::animation::SpriteClip;
 using v3d::animation::Track;

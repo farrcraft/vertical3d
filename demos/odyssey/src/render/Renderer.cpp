@@ -11,7 +11,7 @@
 #include <api/grid/TileCoord.h>
 #include <api/grid/TileGrid.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/shell/Shell.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
@@ -99,7 +99,7 @@ void Renderer::draw() {
 
     shell_->draw();
 
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass =
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
         engine_.frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
     engine_.quads()->submit(screen_->canvas(), pass.get());
 

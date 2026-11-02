@@ -23,13 +23,13 @@
 #include <vertical3d/src/app/ToolCommands.h>
 #include <vertical3d/src/app/ViewCommands.h>
 #include <vertical3d/src/app/WorkspaceSwitcher.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
-#include <vertical3d/src/control/StatusBar.h>
-#include <vertical3d/src/control/TopBar.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
+#include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/tool/Router.h>
 
 #include <string>
@@ -239,7 +239,7 @@ class Controller final : public v3d::engine::Engine {
      * @return what the top bar shows: the workspaces, the one shown, and the project's name and
      *         whether it has unsaved changes
      **/
-    control::TopBar::State topState() const;
+    control::chrome::TopBar::State topState() const;
 
     /**
      * Put the command search up over every command on the editor's menu bar and an area's
@@ -255,7 +255,7 @@ class Controller final : public v3d::engine::Engine {
     /**
      * @return what the status bar says this frame
      **/
-    control::Status status() const;
+    control::chrome::Status status() const;
 
     /**
      * Divide the window, less the ui's strips, between the views.
@@ -282,14 +282,14 @@ class Controller final : public v3d::engine::Engine {
     // what the caption was last set to
     std::string caption_;
     // each area's header and tabs
-    boost::shared_ptr<control::AreaChrome> chrome_;
+    boost::shared_ptr<control::chrome::Area> chrome_;
     boost::shared_ptr<control::CommandSearch> search_;
     control::Outliner outliner_;
     boost::shared_ptr<control::PropertiesEditor> properties_;
     // every graph editor, which share the chosen key
     boost::shared_ptr<control::GraphEditor> graph_;
     // the workspaces, the project and the search, beside the menus
-    boost::shared_ptr<control::TopBar> topBar_;
+    boost::shared_ptr<control::chrome::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;
     boost::shared_ptr<Renderer> renderer_;
 

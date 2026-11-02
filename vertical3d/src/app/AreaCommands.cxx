@@ -11,7 +11,7 @@
 #include <api/event/State.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 
@@ -91,7 +91,7 @@ void AreaCommands::registerTabs(CommandTable* table) const {
         const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
         context.layout->add(area, boost::json::object{ { "kind", view::AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
     });
-    for (const control::AreaChrome::Kind& kind : control::AreaChrome::kinds()) {
+    for (const control::chrome::Area::Kind& kind : control::chrome::Area::kinds()) {
         const std::string named = kind.kind;
         change(table, "area::editor::" + named, [&context, named](const v3d::event::Event& event) {
             const std::size_t area = context.areaOf(event);

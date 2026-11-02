@@ -3,17 +3,17 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Curves.h>
-#include <api/font/CurveStore.h>
-#include <api/font/Face.h>
-#include <api/font/Family.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/Library.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapingCache.h>
-#include <api/font/TextStyle.h>
+#include <api/font/glyph/Curves.h>
+#include <api/font/glyph/CurveStore.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Family.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/face/Library.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/canvas/World.h>
@@ -35,7 +35,7 @@
 
 namespace {
 
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 
 /**
  * The texture every page of distance fields is given.
@@ -45,12 +45,12 @@ constexpr std::uint32_t FIELD_PAGE = 100;
 /**
  * An outline two pixels wide.
  **/
-constexpr v3d::font::TextEffect kOutline{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), .width = 2.0F };
+constexpr v3d::font::text::Effect kOutline{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), .width = 2.0F };
 
 /**
  * A soft shadow three pixels below and to the right.
  **/
-constexpr v3d::font::TextEffect kShadow{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), .softness = 2.0F, .offset = glm::vec2(3.0F) };
+constexpr v3d::font::text::Effect kShadow{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), .softness = 2.0F, .offset = glm::vec2(3.0F) };
 
 /**
  * What the curve pages asked of the device.
@@ -66,8 +66,8 @@ struct Device {
 struct Drawing {
     Drawing() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
-        cache(boost::make_shared<v3d::font::ShapingCache>("", logger)),
+        library(boost::make_shared<v3d::font::face::Library>()),
+        cache(boost::make_shared<v3d::font::text::ShapingCache>("", logger)),
         text(v3d::ui::paint::CurvePages(
             [this](const float*, std::uint32_t, std::uint32_t) {
                 device.created++;
@@ -79,10 +79,10 @@ struct Drawing {
             [](const unsigned char*, std::uint32_t, std::uint32_t) { return TextureHandle(FIELD_PAGE); },
             [](const TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {},
             [](const TextureHandle&) {})) {
-        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>("Inter");
-        family->add(v3d::font::Face::open(library, "data/fonts/Inter-Regular.ttf", logger));
+        const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>("Inter");
+        family->add(v3d::font::face::Face::open(library, "data/fonts/Inter-Regular.ttf", logger));
         BOOST_REQUIRE(!family->empty());
-        style.fonts = boost::make_shared<v3d::font::FallbackChain>();
+        style.fonts = boost::make_shared<v3d::font::face::FallbackChain>();
         style.fonts->add(family);
         style.size = 40.0F;
         canvas.resize(glm::uvec2(640, 480));
@@ -92,10 +92,10 @@ struct Drawing {
      * Set text in one face alone.
      **/
     void only(const std::string& file) {
-        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(file);
-        family->add(v3d::font::Face::open(library, file, logger));
+        const boost::shared_ptr<v3d::font::face::Family> family = boost::make_shared<v3d::font::face::Family>(file);
+        family->add(v3d::font::face::Face::open(library, file, logger));
         BOOST_REQUIRE(!family->empty());
-        style.fonts = boost::make_shared<v3d::font::FallbackChain>();
+        style.fonts = boost::make_shared<v3d::font::face::FallbackChain>();
         style.fonts->add(family);
     }
 
@@ -103,15 +103,15 @@ struct Drawing {
      * Draw a string through a transform.
      **/
     void draw(const std::string& string, const glm::mat3& transform = glm::mat3(1.0F)) {
-        const v3d::font::Paragraph paragraph(cache, string, style);
+        const v3d::font::text::Paragraph paragraph(cache, string, style);
         text.draw(&canvas, paragraph, transform);
     }
 
     Device device;
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::ShapingCache> cache;
-    v3d::font::TextStyle style;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::text::ShapingCache> cache;
+    v3d::font::text::Style style;
     v3d::ui::paint::CurveText text;
     v3d::render::realtime::canvas::Canvas canvas;
 };
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(a_colour_glyph_is_drawn_from_its_program) {
     style.colour = glm::vec4(0.0F, 1.0F, 0.0F, 0.5F);
     draw("\uE000");
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_NE(canvas.vertices()[0].glyph & v3d::font::CurveStore::COLOUR, 0U);
+    BOOST_CHECK_NE(canvas.vertices()[0].glyph & v3d::font::glyph::CurveStore::COLOUR, 0U);
     BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
     BOOST_CHECK(canvas.vertices()[0].colour == style.colour);
     BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(a_transform_places_the_quads) {
  * world margin around each outline, and among other quads by its key.
  **/
 BOOST_AUTO_TEST_CASE(a_paragraph_stands_in_the_world) {
-    const v3d::font::Paragraph paragraph(cache, "H", style);
+    const v3d::font::text::Paragraph paragraph(cache, "H", style);
     v3d::render::realtime::canvas::World world;
     // a paragraph pixel is a hundredth of a world unit, laid on the ground plane
     glm::mat4 ground(1.0F);
@@ -221,14 +221,14 @@ BOOST_AUTO_TEST_CASE(a_paragraph_stands_in_the_world) {
         BOOST_CHECK_EQUAL(corner.position.y, 0.0F);
     }
     // the quad is as wide as the outline, and the world margin on either side
-    const boost::shared_ptr<v3d::font::Face> face = style.fonts->faces({}).front();
-    const v3d::font::CurveGlyph outlined = v3d::font::outline(*face, face->glyphIndex(U'H'));
+    const boost::shared_ptr<v3d::font::face::Face> face = style.fonts->faces({}).front();
+    const v3d::font::glyph::CurveGlyph outlined = v3d::font::glyph::outline(*face, face->glyphIndex(U'H'));
     BOOST_CHECK_CLOSE(world.vertices()[1].uv.x - world.vertices()[0].uv.x,
         (outlined.max.x - outlined.min.x) + (2.0F * v3d::ui::paint::CurveText::WORLD_MARGIN), 0.01F);
 
     v3d::render::realtime::canvas::DepthOrder order;
     text.draw(&order, 1.0F, paragraph, ground);
-    text.draw(&order, 2.0F, v3d::font::Paragraph(cache, "Hi", style), ground);
+    text.draw(&order, 2.0F, v3d::font::text::Paragraph(cache, "Hi", style), ground);
     v3d::render::realtime::canvas::World sorted;
     order.into(&sorted);
     // the further paragraph, of two glyphs, comes out first
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(a_field_is_made_once) {
     draw("H");
     // twice the size and twice the width reach as far into the em
     style.size = 80.0F;
-    style.effects = { v3d::font::TextEffect{ .width = 4.0F } };
+    style.effects = { v3d::font::text::Effect{ .width = 4.0F } };
     text.beginFrame();
     draw("H");
     BOOST_CHECK_EQUAL(text.fields().made(), 1U);
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE(a_field_is_made_once) {
  **/
 BOOST_AUTO_TEST_CASE(effects_stand_in_the_world_beneath_the_glyphs) {
     style.effects = { kShadow, kOutline };
-    const v3d::font::Paragraph paragraph(cache, "Hi", style);
+    const v3d::font::text::Paragraph paragraph(cache, "Hi", style);
     v3d::render::realtime::canvas::World world;
     text.draw(&world, paragraph, glm::mat4(1.0F));
     BOOST_REQUIRE_EQUAL(world.vertices().size(), 24U);
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
     BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.6F);
 
     v3d::render::realtime::canvas::World world;
-    text.draw(&world, v3d::font::Paragraph(cache, "H", style), glm::mat4(1.0F));
+    text.draw(&world, v3d::font::text::Paragraph(cache, "H", style), glm::mat4(1.0F));
     BOOST_REQUIRE_EQUAL(world.vertices().size(), 4U);
     BOOST_CHECK_EQUAL(world.vertices()[0].contrast, 0.6F);
 }

@@ -10,8 +10,8 @@
 #include <api/brep/Index.h>
 #include <api/brep/Operations.h>
 #include <api/brep/Topology.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -49,9 +49,9 @@ boost::shared_ptr<Topology> refuse(std::string* problem, const std::string& why)
  **/
 scene::Meshes selectedMeshes(const scene::Scene& scene) {
     scene::Meshes meshes;
-    for (const boost::shared_ptr<scene::Mesh>& item : scene.selected<scene::Mesh>()) {
+    for (const boost::shared_ptr<scene::item::Mesh>& item : scene.selected<scene::item::Mesh>()) {
         const bool seen = std::any_of(meshes.begin(), meshes.end(),
-            [&item](const boost::shared_ptr<scene::Mesh>& other) { return other->geometry() == item->geometry(); });
+            [&item](const boost::shared_ptr<scene::item::Mesh>& other) { return other->geometry() == item->geometry(); });
         if (!seen) {
             meshes.push_back(item);
         }
@@ -62,7 +62,7 @@ scene::Meshes selectedMeshes(const scene::Scene& scene) {
 /**
  * The selected parts of one kind of a mesh item that its geometry holds, rising.
  **/
-std::vector<v3d::brep::Index> selectedParts(const scene::Scene& scene, const scene::Mesh& item, scene::Component kind, std::size_t count) {
+std::vector<v3d::brep::Index> selectedParts(const scene::Scene& scene, const scene::item::Mesh& item, scene::item::Component kind, std::size_t count) {
     std::vector<v3d::brep::Index> parts = scene.components().of(item.id(), kind);
     std::erase_if(parts, [count](v3d::brep::Index index) { return index >= count; });
     return parts;
@@ -73,7 +73,7 @@ std::vector<v3d::brep::Index> selectedParts(const scene::Scene& scene, const sce
  * other item that shows the geometry loses its component selection, since an index it held
  * could name another part now.
  **/
-void reselect(scene::Scene* scene, const scene::Mesh& item, scene::Component kind, const std::vector<v3d::brep::Index>& parts) {
+void reselect(scene::Scene* scene, const scene::item::Mesh& item, scene::item::Component kind, const std::vector<v3d::brep::Index>& parts) {
     scene->deselectComponents(item.geometry().get());
     for (const v3d::brep::Index part : parts) {
         scene->components().select(item.id(), kind, part, true);
@@ -89,9 +89,9 @@ void reselect(scene::Scene* scene, const scene::Mesh& item, scene::Component kin
 boost::shared_ptr<Topology> onSelectedFaces(const boost::shared_ptr<scene::Scene>& scene, const std::string& name,
     const std::function<void(v3d::brep::BRep*, const std::vector<v3d::brep::Index>&)>& operation) {
     std::vector<Topology::Change> changes;
-    for (const boost::shared_ptr<scene::Mesh>& item : selectedMeshes(*scene)) {
+    for (const boost::shared_ptr<scene::item::Mesh>& item : selectedMeshes(*scene)) {
         const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
-        const std::vector<v3d::brep::Index> faces = selectedParts(*scene, *item, scene::Component::Face, mesh->faceCount());
+        const std::vector<v3d::brep::Index> faces = selectedParts(*scene, *item, scene::item::Component::Face, mesh->faceCount());
         if (faces.empty()) {
             continue;
         }
@@ -101,7 +101,7 @@ boost::shared_ptr<Topology> onSelectedFaces(const boost::shared_ptr<scene::Scene
         operation(mesh.get(), faces);
         change.after = mesh->snapshot();
         changes.push_back(change);
-        reselect(scene.get(), *item, scene::Component::Face, faces);
+        reselect(scene.get(), *item, scene::item::Component::Face, faces);
     }
     if (changes.empty()) {
         return boost::shared_ptr<Topology>();
@@ -114,11 +114,11 @@ boost::shared_ptr<Topology> onSelectedFaces(const boost::shared_ptr<scene::Scene
  *
  * @return false when vertices of two meshes are selected
  **/
-bool selectedVertices(const scene::Scene& scene, boost::shared_ptr<scene::Mesh>* owner, std::vector<v3d::brep::Index>* vertices) {
-    std::vector<std::pair<boost::shared_ptr<scene::Mesh>, std::vector<v3d::brep::Index>>> found;
-    for (const boost::shared_ptr<scene::Mesh>& item : selectedMeshes(scene)) {
+bool selectedVertices(const scene::Scene& scene, boost::shared_ptr<scene::item::Mesh>* owner, std::vector<v3d::brep::Index>* vertices) {
+    std::vector<std::pair<boost::shared_ptr<scene::item::Mesh>, std::vector<v3d::brep::Index>>> found;
+    for (const boost::shared_ptr<scene::item::Mesh>& item : selectedMeshes(scene)) {
         std::vector<v3d::brep::Index> parts =
-            selectedParts(scene, *item, scene::Component::Vertex, item->geometry()->vertexCount());
+            selectedParts(scene, *item, scene::item::Component::Vertex, item->geometry()->vertexCount());
         if (!parts.empty()) {
             found.emplace_back(item, std::move(parts));
         }
@@ -139,7 +139,7 @@ bool selectedVertices(const scene::Scene& scene, boost::shared_ptr<scene::Mesh>*
  **/
 boost::shared_ptr<Topology> splitEdges(const boost::shared_ptr<scene::Scene>& scene) {
     std::vector<Topology::Change> changes;
-    for (const boost::shared_ptr<scene::Mesh>& item : selectedMeshes(*scene)) {
+    for (const boost::shared_ptr<scene::item::Mesh>& item : selectedMeshes(*scene)) {
         const boost::shared_ptr<v3d::brep::BRep>& mesh = item->geometry();
         // a selected edge is either of its halves, and is split once through the half that
         // stands for it
@@ -167,7 +167,7 @@ boost::shared_ptr<Topology> splitEdges(const boost::shared_ptr<scene::Scene>& sc
         }
         change.after = mesh->snapshot();
         changes.push_back(change);
-        reselect(scene.get(), *item, scene::Component::Edge, halves);
+        reselect(scene.get(), *item, scene::item::Component::Edge, halves);
     }
     if (changes.empty()) {
         return boost::shared_ptr<Topology>();
@@ -178,7 +178,7 @@ boost::shared_ptr<Topology> splitEdges(const boost::shared_ptr<scene::Scene>& sc
 /**
  **/
 boost::shared_ptr<Topology> splitFace(const boost::shared_ptr<scene::Scene>& scene, std::string* problem) {
-    boost::shared_ptr<scene::Mesh> item;
+    boost::shared_ptr<scene::item::Mesh> item;
     std::vector<v3d::brep::Index> vertices;
     if (!selectedVertices(*scene, &item, &vertices)) {
         return refuse(problem, "the two vertices are in different meshes");
@@ -200,7 +200,7 @@ boost::shared_ptr<Topology> splitFace(const boost::shared_ptr<scene::Scene>& sce
         if (v3d::brep::splitFace(*owner, face, vertices[0], vertices[1])) {
             const Topology::Change change{.mesh = owner, .before = before, .after = owner->snapshot()};
             // a split adds parts and renumbers none, so the two vertices stay selected
-            reselect(scene.get(), *item, scene::Component::Vertex, vertices);
+            reselect(scene.get(), *item, scene::item::Component::Vertex, vertices);
             return boost::make_shared<Topology>(scene, std::vector<Topology::Change>{change}, "split face");
         }
     }
@@ -227,7 +227,7 @@ boost::shared_ptr<Topology> insetFaces(const boost::shared_ptr<scene::Scene>& sc
 /**
  **/
 boost::shared_ptr<Topology> mergeVertices(const boost::shared_ptr<scene::Scene>& scene, std::string* problem) {
-    boost::shared_ptr<scene::Mesh> item;
+    boost::shared_ptr<scene::item::Mesh> item;
     std::vector<v3d::brep::Index> vertices;
     if (!selectedVertices(*scene, &item, &vertices)) {
         return refuse(problem, "the vertices are in different meshes");
@@ -244,7 +244,7 @@ boost::shared_ptr<Topology> mergeVertices(const boost::shared_ptr<scene::Scene>&
     }
     const Topology::Change change{.mesh = owner, .before = before, .after = owner->snapshot()};
     // the merge renumbers the mesh, so the merged vertex is all that is selected after it
-    reselect(scene.get(), *item, scene::Component::Vertex, { *merged });
+    reselect(scene.get(), *item, scene::item::Component::Vertex, { *merged });
     return boost::make_shared<Topology>(scene, std::vector<Topology::Change>{change}, "merge vertices");
 }
 

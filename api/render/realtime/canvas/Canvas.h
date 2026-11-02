@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstdint>
 #include <span>
@@ -71,9 +71,9 @@ class Canvas final {
     struct Batch final {
         Batch() noexcept;
 
-        TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        resource::TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         bool text;              /**< whether the run samples a distance field **/
-        TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
+        resource::TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
         bool clipped;           /**< whether the run is cut to clip **/
         glm::vec4 clip;         /**< the rectangle it is cut to: min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
@@ -222,7 +222,7 @@ class Canvas final {
      * @param colour multiplied with what is sampled, so white leaves the texture alone
      **/
     void rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture);
+        const glm::vec4& colour, const resource::TextureHandle& texture);
 
     /**
      * The colour at each corner of a rectangle, which blend across it.
@@ -331,7 +331,7 @@ class Canvas final {
      * @param indices three per triangle, each naming one of these vertices
      * @param atlas the texture the glyphs were packed into
      **/
-    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
+    void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& atlas);
 
     /**
      * Append coverage glyphs that have already been laid out, as vertices and the triangles over
@@ -342,7 +342,7 @@ class Canvas final {
      * @param vertices positions, page coordinates, colours and contrasts, copied rather than kept
      * @param indices three per triangle, each naming one of these vertices
      **/
-    void glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& page);
+    void glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& page);
 
     /**
      * Append glyphs drawn from their curves, as vertices and the triangles over them.
@@ -357,7 +357,7 @@ class Canvas final {
      * @param curves the texture of float texels holding the glyphs' curves
      * @param bands the texture of float texels holding each glyph's bands
      **/
-    void curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& curves, const TextureHandle& bands);
+    void curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& curves, const resource::TextureHandle& bands);
 
     /**
      * @return the vertex stream, in the layout the quad pipeline declares
@@ -394,7 +394,7 @@ class Canvas final {
      * sprites would threshold the sprites. A scissor belongs to a whole draw, so two runs
      * cut differently cannot be one.
      **/
-    void open(const TextureHandle& texture, bool text = false, const TextureHandle& bands = TextureHandle());
+    void open(const resource::TextureHandle& texture, bool text = false, const resource::TextureHandle& bands = resource::TextureHandle());
 
     /**
      * @return whether a run laid out by the caller has triangles, and names only its own vertices

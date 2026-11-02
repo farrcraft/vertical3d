@@ -72,9 +72,13 @@ Background: [ADR-0048](../adr/0048-includes-name-headers-from-the-repository-roo
 - A class nested inside another class stays in its owner's header.
 - **A header that only its own library's sources include goes in an `internal/` directory** of
   the directory it serves, such as `api/interchange/usd/internal/Reader.h`. Under `api/` it takes
-  the namespace that directory gives it. Only files in the directory that holds `internal/` may
-  include it, so what it includes is linked PRIVATE. This holds for an app library such as
-  `v3dlib_editor` too, whose executable and suites include its other headers.
+  the namespace that directory gives it. Only files in the directory that holds `internal/`, or in
+  a directory below it, may include it, so what it includes is linked PRIVATE. This holds for an
+  app library such as `v3dlib_editor` too, whose executable and suites include its other headers.
+- A header that several subdirectories of one library share goes in the `internal/` of the
+  directory above them. `api/font/internal/` holds the FreeType handles that `face/`, `text/`,
+  `glyph/` and `texture/` all use. A header that one subdirectory uses goes in that
+  subdirectory's own `internal/`.
 - A typedef or an enum goes in the header of the class that gives it meaning.
 - When splitting leaves a family of headers that are only used together, such as an AST's node
   types or an app's ECS components, put them in a subdirectory of their own.
@@ -141,10 +145,18 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 
 ### Directories
 
-- **Split a directory when its files serve different purposes, not when it reaches a certain
-  size.** `api/grid` has sixteen files that all implement one concept, so it stays one
-  directory. `api/ui` is split into `paint/`, `input/`, `shell/` and `style/` because those are
-  separate jobs.
+- **Split a directory when its files serve different purposes.** `api/ui` is split into
+  `paint/`, `input/`, `shell/` and `style/` because those are separate jobs. `api/font` is split
+  into `face/`, `text/`, `glyph/` and `texture/` for the same reason. `api/grid` has thirteen
+  headers that all implement one concept, so it stays one directory.
+- **A directory holds at most 15 headers, not counting those under `tests/`.** A directory past
+  that size almost always does several jobs, so split it by them. The exception is a directory
+  whose headers all belong to one family that is used together, such as
+  `api/render/offline/sl/syntax`, which holds one header for each kind of syntax tree node. List
+  such a directory in `COHESIVE` in `scripts/dirsize.ts`, with the family it holds. Headers are
+  counted rather than sources, because each class has one header and may have no source of its
+  own. `scripts/dirsize.ts` reports a directory over the limit that is not listed, and a listed
+  directory that is back within the limit.
 - A namespace follows its directory. A class in a subdirectory drops the subdirectory's name
   from its own name: `pipeline::Builder`, not `pipeline::PipelineBuilder`. When the subdirectory
   name is the class's noun, the class keeps it: `device::Device`.

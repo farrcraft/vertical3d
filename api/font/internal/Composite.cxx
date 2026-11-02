@@ -5,7 +5,7 @@
 
 #include "Composite.h"
 
-#include <api/font/ColourGlyph.h>
+#include <api/font/glyph/ColourGlyph.h>
 
 #include <algorithm>
 #include <cmath>
@@ -47,45 +47,45 @@ constexpr float SOFT_LINEAR = 4.0F;
  * @return how much of the source and of the destination a Porter and Duff mode keeps, by the
  *         source's and the destination's alpha, or nothing for a mode that blends
  **/
-bool porterDuff(ColourComposite mode, float source, float destination, glm::vec2* keeps) {
+bool porterDuff(glyph::ColourComposite mode, float source, float destination, glm::vec2* keeps) {
     switch (mode) {
-    case ColourComposite::Clear:
+    case glyph::ColourComposite::Clear:
         *keeps = glm::vec2(0.0F, 0.0F);
         return true;
-    case ColourComposite::Source:
+    case glyph::ColourComposite::Source:
         *keeps = glm::vec2(1.0F, 0.0F);
         return true;
-    case ColourComposite::Destination:
+    case glyph::ColourComposite::Destination:
         *keeps = glm::vec2(0.0F, 1.0F);
         return true;
-    case ColourComposite::SourceOver:
+    case glyph::ColourComposite::SourceOver:
         *keeps = glm::vec2(1.0F, 1.0F - source);
         return true;
-    case ColourComposite::DestinationOver:
+    case glyph::ColourComposite::DestinationOver:
         *keeps = glm::vec2(1.0F - destination, 1.0F);
         return true;
-    case ColourComposite::SourceIn:
+    case glyph::ColourComposite::SourceIn:
         *keeps = glm::vec2(destination, 0.0F);
         return true;
-    case ColourComposite::DestinationIn:
+    case glyph::ColourComposite::DestinationIn:
         *keeps = glm::vec2(0.0F, source);
         return true;
-    case ColourComposite::SourceOut:
+    case glyph::ColourComposite::SourceOut:
         *keeps = glm::vec2(1.0F - destination, 0.0F);
         return true;
-    case ColourComposite::DestinationOut:
+    case glyph::ColourComposite::DestinationOut:
         *keeps = glm::vec2(0.0F, 1.0F - source);
         return true;
-    case ColourComposite::SourceAtop:
+    case glyph::ColourComposite::SourceAtop:
         *keeps = glm::vec2(destination, 1.0F - source);
         return true;
-    case ColourComposite::DestinationAtop:
+    case glyph::ColourComposite::DestinationAtop:
         *keeps = glm::vec2(1.0F - destination, source);
         return true;
-    case ColourComposite::Xor:
+    case glyph::ColourComposite::Xor:
         *keeps = glm::vec2(1.0F - destination, 1.0F - source);
         return true;
-    case ColourComposite::Plus:
+    case glyph::ColourComposite::Plus:
         *keeps = glm::vec2(1.0F, 1.0F);
         return true;
     default:
@@ -130,28 +130,28 @@ float colourBurn(float backdrop, float source) {
 /**
  * @return one channel of a separable blend mode
  **/
-float separable(ColourComposite mode, float backdrop, float source) {
+float separable(glyph::ColourComposite mode, float backdrop, float source) {
     switch (mode) {
-    case ColourComposite::Screen:
+    case glyph::ColourComposite::Screen:
         return screen(backdrop, source);
-    case ColourComposite::Overlay:
+    case glyph::ColourComposite::Overlay:
         // overlay is hard light with its layers the other way round
         return hardLight(source, backdrop);  // NOLINT(readability-suspicious-call-argument) - swapped on purpose
-    case ColourComposite::Darken:
+    case glyph::ColourComposite::Darken:
         return std::min(backdrop, source);
-    case ColourComposite::Lighten:
+    case glyph::ColourComposite::Lighten:
         return std::max(backdrop, source);
-    case ColourComposite::ColourDodge:
+    case glyph::ColourComposite::ColourDodge:
         return colourDodge(backdrop, source);
-    case ColourComposite::ColourBurn:
+    case glyph::ColourComposite::ColourBurn:
         return colourBurn(backdrop, source);
-    case ColourComposite::HardLight:
+    case glyph::ColourComposite::HardLight:
         return hardLight(backdrop, source);
-    case ColourComposite::SoftLight:
+    case glyph::ColourComposite::SoftLight:
         return softLight(backdrop, source);
-    case ColourComposite::Difference:
+    case glyph::ColourComposite::Difference:
         return std::abs(backdrop - source);
-    case ColourComposite::Exclusion:
+    case glyph::ColourComposite::Exclusion:
         return backdrop + source - (2.0F * backdrop * source);
     default:
         return multiply(backdrop, source);
@@ -210,15 +210,15 @@ glm::vec3 withSaturation(const glm::vec3& colour, float sat) {
 /**
  * @return the colour of a blend mode, unpremultiplied
  **/
-glm::vec3 blend(ColourComposite mode, const glm::vec3& backdrop, const glm::vec3& source) {
+glm::vec3 blend(glyph::ColourComposite mode, const glm::vec3& backdrop, const glm::vec3& source) {
     switch (mode) {
-    case ColourComposite::Hue:
+    case glyph::ColourComposite::Hue:
         return withLuminosity(withSaturation(source, saturation(backdrop)), luminosity(backdrop));
-    case ColourComposite::Saturation:
+    case glyph::ColourComposite::Saturation:
         return withLuminosity(withSaturation(backdrop, saturation(source)), luminosity(backdrop));
-    case ColourComposite::Colour:
+    case glyph::ColourComposite::Colour:
         return withLuminosity(source, luminosity(backdrop));
-    case ColourComposite::Luminosity:
+    case glyph::ColourComposite::Luminosity:
         return withLuminosity(backdrop, luminosity(source));
     default:
         return glm::vec3(separable(mode, backdrop.r, source.r), separable(mode, backdrop.g, source.g), separable(mode, backdrop.b, source.b));
@@ -227,7 +227,7 @@ glm::vec3 blend(ColourComposite mode, const glm::vec3& backdrop, const glm::vec3
 
 };  // namespace
 
-glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, ColourComposite mode) {
+glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, glyph::ColourComposite mode) {
     glm::vec2 keeps(0.0F);
     if (porterDuff(mode, source.a, destination.a, &keeps)) {
         return glm::min((source * keeps.x) + (destination * keeps.y), glm::vec4(1.0F));

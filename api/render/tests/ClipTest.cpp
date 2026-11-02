@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/frame/DrawItem.h>
 #include <api/render/realtime/renderer/Clip.h>
 
 #include <limits>
@@ -11,7 +11,7 @@
 #include <boost/test/unit_test.hpp>
 #include <glm/vec4.hpp>
 
-using v3d::render::realtime::DrawItem;
+using v3d::render::realtime::frame::DrawItem;
 using v3d::render::realtime::renderer::clip;
 
 namespace {

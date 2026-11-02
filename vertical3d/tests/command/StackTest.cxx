@@ -11,11 +11,11 @@
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Transform.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstdint>
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(command_stack_clear_is_saved_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const unsigned int id = cube->id();
 
     const boost::shared_ptr<v3d::editor::command::Create> command =
@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_CASE(create_command_test) {
 
 BOOST_AUTO_TEST_CASE(create_command_selection_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> plane = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::plane());
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> plane = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::plane());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
 
     plane->selected(true);
     scene->add(plane);
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(create_command_selection_test) {
 }
 
 BOOST_AUTO_TEST_CASE(transform_command_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
 
     const v3d::type::Transform before = cube->placement();
 
@@ -350,11 +350,11 @@ BOOST_AUTO_TEST_CASE(create_camera_and_light_command_test) {
     // a camera and a light made at a view, as the Create menu makes them
     v3d::type::camera::Profile view("view");
     view.eye(glm::vec3(0.0F, 2.0F, -5.0F));
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera =
-        v3d::editor::scene::create_camera(view, v3d::editor::scene::Camera::Projection::Perspective);
-    const boost::shared_ptr<v3d::editor::scene::Light> light = v3d::editor::scene::create_light(view, v3d::editor::scene::Light::Type::Spot);
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera =
+        v3d::editor::scene::item::create_camera(view, v3d::editor::scene::item::Camera::Projection::Perspective);
+    const boost::shared_ptr<v3d::editor::scene::item::Light> light = v3d::editor::scene::item::create_light(view, v3d::editor::scene::item::Light::Type::Spot);
 
-    for (const boost::shared_ptr<v3d::editor::scene::Item>& item : v3d::editor::scene::Items{ camera, light }) {
+    for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : v3d::editor::scene::Items{ camera, light }) {
         const boost::shared_ptr<v3d::editor::command::Create> command =
             boost::make_shared<v3d::editor::command::Create>(scene, item, "item");
         command->redo();

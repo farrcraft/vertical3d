@@ -13,7 +13,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class Tuple final : public Expression {
  public:
-    Tuple(const v3d::render::offline::Position & at);
+    Tuple(const v3d::render::offline::source::Position & at);
 
     std::vector<ExpressionPtr> elements;
 };

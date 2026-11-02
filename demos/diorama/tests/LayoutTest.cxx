@@ -6,7 +6,7 @@
 #include <api/asset/Manager.h>
 #include <api/asset/media/Loaders.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/DecodedModel.h>
+#include <api/render/realtime/resource/DecodedModel.h>
 #include <demos/diorama/src/Layout.h>
 
 #include <algorithm>
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(every_placed_model_decodes) {
     BOOST_REQUIRE_EQUAL(models.size(), 4U);
     for (const std::string& model : models) {
         BOOST_TEST_CONTEXT(model) {
-            const v3d::render::realtime::DecodedModel decoded = v3d::render::realtime::decodeModel(assets, model);
+            const v3d::render::realtime::resource::DecodedModel decoded = v3d::render::realtime::resource::decodeModel(assets, model);
             BOOST_REQUIRE(decoded.model);
             BOOST_TEST(!decoded.model->parts().empty());
             BOOST_TEST(decoded.albedos.size() == decoded.model->materials().size());

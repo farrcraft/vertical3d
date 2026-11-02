@@ -13,14 +13,14 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/render/realtime/canvas/Line.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/CurveParts.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/Glyphs.h>
@@ -154,12 +154,12 @@ bool Picker::begin(const view::ViewPort& view, selection::SelectMask mask) {
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) {
+void Picker::visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) {
     if (!item || camera_ == nullptr) {
         return;
     }
 
-    if (selectsItems(mask_) ? !takes(mask_, scene::Item::Kind::Mesh) : (!item->selected() || mask_ == selection::SelectMask::Handle)) {
+    if (selectsItems(mask_) ? !takes(mask_, scene::item::Item::Kind::Mesh) : (!item->selected() || mask_ == selection::SelectMask::Handle)) {
         // an object has to be selected before any of its components may be, so a component
         // click stays inside the mesh the user is working on. A mesh has no handles
         return;
@@ -196,8 +196,8 @@ void Picker::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Plac
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) {
-    if (!camera || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Camera)) {
+void Picker::visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) {
+    if (!camera || camera_ == nullptr || !takes(mask_, scene::item::Item::Kind::Camera)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
@@ -207,8 +207,8 @@ void Picker::visit(const boost::shared_ptr<scene::Camera>& camera, const scene::
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) {
-    if (!light || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Light)) {
+void Picker::visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) {
+    if (!light || camera_ == nullptr || !takes(mask_, scene::item::Item::Kind::Light)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
@@ -218,8 +218,8 @@ void Picker::visit(const boost::shared_ptr<scene::Light>& light, const scene::Pl
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) {
-    if (!group || camera_ == nullptr || !takes(mask_, scene::Item::Kind::Group)) {
+void Picker::visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) {
+    if (!group || camera_ == nullptr || !takes(mask_, scene::item::Item::Kind::Group)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
@@ -229,7 +229,7 @@ void Picker::visit(const boost::shared_ptr<scene::Group>& group, const scene::Pl
 
 /**
  **/
-void Picker::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) {
+void Picker::visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) {
     if (!curve || camera_ == nullptr) {
         return;
     }
@@ -239,11 +239,11 @@ void Picker::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Pl
             model_ = placed.world;
             current_ = curve->id();
             const v3d::curve::Curves& geometry = *curve->geometry();
-            points(mask_ == selection::SelectMask::Vertex ? scene::controlPoints(geometry) : scene::handlePoints(geometry));
+            points(mask_ == selection::SelectMask::Vertex ? scene::item::controlPoints(geometry) : scene::item::handlePoints(geometry));
         }
         return;
     }
-    if (!takes(mask_, scene::Item::Kind::Curve)) {
+    if (!takes(mask_, scene::item::Item::Kind::Curve)) {
         return;
     }
     v3d::render::realtime::canvas::Line drawn;
@@ -253,7 +253,7 @@ void Picker::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Pl
 
 /**
  **/
-void Picker::lines(const scene::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn) {
+void Picker::lines(const scene::item::Item& item, const glm::mat4& model, const v3d::render::realtime::canvas::Line& drawn) {
     model_ = model;
     current_ = item.id();
     const std::vector<v3d::render::realtime::canvas::Line::Vertex>& points = drawn.vertices();

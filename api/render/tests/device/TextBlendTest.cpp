@@ -5,11 +5,11 @@
 
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/RenderTarget.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/frame/RenderTarget.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/FieldRamp.h>
 #include <api/render/realtime/canvas/World.h>
@@ -34,7 +34,7 @@
 
 namespace {
 
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 using v3d::render::realtime::canvas::Canvas;
 
 const uint32_t kSize = 8;
@@ -53,13 +53,13 @@ constexpr int kLinearHalf = 188;
  * A target of a format, cleared to black, that a frame draws one pass into.
  **/
 struct Drawn {
-    boost::shared_ptr<v3d::render::realtime::RenderTarget> target;
-    v3d::render::realtime::Frame frame;
-    boost::shared_ptr<v3d::render::realtime::Pass> pass;
+    boost::shared_ptr<v3d::render::realtime::frame::RenderTarget> target;
+    v3d::render::realtime::frame::Frame frame;
+    boost::shared_ptr<v3d::render::realtime::frame::Pass> pass;
 
     Drawn(v3d::test::Headless* headless, VkFormat format) :
-        target(boost::make_shared<v3d::render::realtime::RenderTarget>(*headless->context,
-            v3d::render::realtime::RenderTarget::Spec{ .width = kSize, .height = kSize, .colour = format })),
+        target(boost::make_shared<v3d::render::realtime::frame::RenderTarget>(*headless->context,
+            v3d::render::realtime::frame::RenderTarget::Spec{ .width = kSize, .height = kSize, .colour = format })),
         pass(frame.pass("text")) {
         pass->target(target);
         pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));

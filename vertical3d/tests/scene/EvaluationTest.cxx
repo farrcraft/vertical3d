@@ -5,8 +5,8 @@
 
 #include <api/brep/BRep.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cmath>
@@ -26,8 +26,8 @@
 
 namespace {
 
-boost::shared_ptr<v3d::editor::scene::Mesh> emptyMesh() {
-    return boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::item::Mesh> emptyMesh() {
+    return boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
 }
 
 /**
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(evaluation_origin_test) {
 
 BOOST_AUTO_TEST_CASE(evaluation_root_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
     mesh->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     mesh->scale(glm::vec3(2.0F, 1.0F, 1.0F));
     scene.add(mesh);
@@ -69,9 +69,9 @@ BOOST_AUTO_TEST_CASE(evaluation_root_test) {
 
 BOOST_AUTO_TEST_CASE(evaluation_compose_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Mesh> leaf = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Group> inner = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Group> outer = boost::make_shared<v3d::editor::scene::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> leaf = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> inner = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> outer = boost::make_shared<v3d::editor::scene::item::Group>();
     // the children come before their parents in the scene, which the order of composing
     // must not depend on
     scene.add(leaf);
@@ -104,8 +104,8 @@ BOOST_AUTO_TEST_CASE(evaluation_compose_test) {
 
 BOOST_AUTO_TEST_CASE(evaluation_is_a_copy_test) {
     v3d::editor::scene::Scene scene;
-    const boost::shared_ptr<v3d::editor::scene::Group> group = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
     scene.add(group);
     scene.add(mesh);
     scene.parent(mesh->id(), group->id());
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(evaluation_is_a_copy_test) {
 
 BOOST_AUTO_TEST_CASE(evaluation_orientation_test) {
     const glm::quat turn = glm::angleAxis(glm::radians(30.0F), glm::normalize(glm::vec3(1.0F, 2.0F, 3.0F)));
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     group.translation(glm::vec3(4.0F, 5.0F, 6.0F));
     group.rotation(turn);
     group.scale(glm::vec3(3.0F, 0.5F, 2.0F));

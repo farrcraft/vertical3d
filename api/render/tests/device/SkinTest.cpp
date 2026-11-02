@@ -10,20 +10,20 @@
 #include <api/ecs/component/Transform.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/lighting/Settings.h>
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/entity/Meshes.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/entity/Poses.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/renderer/Lit.h>
 #include <api/model/Model.h>
 #include <api/type/camera/Camera.h>
@@ -46,14 +46,14 @@
 
 using v3d::ecs::component::Playback;
 using v3d::ecs::component::Transform;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::MeshHandle;
-using v3d::render::realtime::MeshRegistry;
-using v3d::render::realtime::Pass;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::resource::MeshHandle;
+using v3d::render::realtime::resource::MeshRegistry;
+using v3d::render::realtime::frame::Pass;
 using v3d::render::realtime::entity::Poses;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::renderer::Lit;
 
 namespace lighting = v3d::render::realtime::lighting;
@@ -129,7 +129,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, const e
     pass->clearColour(glm::vec4(0.0F, 0.0F, 1.0F, 1.0F));
     pass->camera(camera.view(), camera.projection());
     pass->scene(lit->scene(lighting::pack(settings, glm::mat4(1.0F), 0.0F),
-        v3d::render::realtime::TextureHandle(), poses.palette()));
+        v3d::render::realtime::resource::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, lit, settings.outline, pass.get(), poses);
 
     Capture capture(headless->device, headless->context->ring(), headless->logger);
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_caster_casts_its_pose) {
     pass->target(map);
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), light, 1.0F / size),
-        v3d::render::realtime::TextureHandle(), poses.palette()));
+        v3d::render::realtime::resource::TextureHandle(), poses.palette()));
     pass->depthBias(0.0F, 0.0F);
     v3d::render::realtime::entity::casters(registry, 1.0F, meshes, &lit, pass.get(), poses);
     BOOST_CHECK_EQUAL(pass->items().size(), 1U);
@@ -417,7 +417,7 @@ BOOST_AUTO_TEST_CASE(a_skinned_mesh_released_in_flight_outlives_its_frame) {
     pass->target(target);
     pass->depth(true);
     pass->scene(lit.scene(lighting::pack(lighting::Settings(), glm::mat4(1.0F), 0.0F),
-        v3d::render::realtime::TextureHandle(), poses.palette()));
+        v3d::render::realtime::resource::TextureHandle(), poses.palette()));
     v3d::render::realtime::entity::meshes(registry, 1.0F, meshes, &lit, 0.0F, pass.get(), poses);
 
     VkCommandBuffer commands = headless.context->ring()->begin();

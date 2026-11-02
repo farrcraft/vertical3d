@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/Texture.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include <string>
 #include <vector>
@@ -92,7 +92,7 @@ class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
     bool trace(const v3d::render::offline::sl::runtime::Value & origin,
         const v3d::render::offline::sl::runtime::Value & direction,
         v3d::render::offline::sl::runtime::Value* colour) override;
-    const v3d::render::offline::Texture* texture(const std::string & name) override;
+    const v3d::render::offline::texture::Texture* texture(const std::string & name) override;
     /**
      * A light reads the surface being shaded, and a surface's illuminance loop reads the light
      * it is running for. A traced primitive was displaced when it was diced, so a hit has no

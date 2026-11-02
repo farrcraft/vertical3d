@@ -10,11 +10,11 @@
 #include <api/render/offline/Camera.h>
 #include <api/render/offline/CameraOptions.h>
 #include <api/render/offline/MovingTransform.h>
-#include <api/render/offline/Sampling.h>
-#include <api/render/offline/Textures.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
+#include <api/render/offline/texture/Textures.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/Polygon.h>
@@ -342,7 +342,7 @@ class RenderContext {
          * The images the scene's shaders read, each loaded once, and where a relative
          * name is looked for, from Option "searchpath" "texture".
          **/
-        v3d::render::offline::Textures & textures();
+        v3d::render::offline::texture::Textures & textures();
 
         /**
          * The surface shader, its placement, the opacity and the lights that are on, for
@@ -413,7 +413,7 @@ class RenderContext {
          * The planes the frame is drawn into, indexed by Planes::Plane. Null until
          * prepareWorld().
          **/
-        boost::shared_ptr<v3d::render::offline::FrameBuffer> picture() const;
+        boost::shared_ptr<v3d::render::offline::film::FrameBuffer> picture() const;
         /** How many primitives the hider has bucketed and not yet rendered. **/
         std::size_t bucketed() const;
 
@@ -426,8 +426,8 @@ class RenderContext {
          * How the frame is sampled: what RiPixelSamples, RiPixelFilter,
          * RiPixelVariance, RiShutter and RiDepthOfField asked for.
          **/
-        v3d::render::offline::Sampling & sampling();
-        const v3d::render::offline::Sampling & sampling() const;
+        v3d::render::offline::film::Sampling & sampling();
+        const v3d::render::offline::film::Sampling & sampling() const;
         /**
          * How many samples a pixel took in the last render under the ray hider, or
          * zero under the reyes hider, which takes what PixelSamples names.
@@ -478,13 +478,13 @@ class RenderContext {
         boost::shared_ptr<reyes::GridShader> shader_;
         Lights lights_;
         raytrace::Scene traced_;
-        boost::shared_ptr<v3d::render::offline::FrameBuffer> planes_;
+        boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes_;
         Progress progress_;
         v3d::render::offline::CameraOptions options_;
         v3d::render::offline::Camera camera_;
         Display display_;
         boost::shared_ptr<Hider> hider_;
-        v3d::render::offline::Sampling sampling_;
+        v3d::render::offline::film::Sampling sampling_;
 
         /*
          * The framebuffer is tiled into buckets of bucketWidth_ by bucketHeight_ pixels.

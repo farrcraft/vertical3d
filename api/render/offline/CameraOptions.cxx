@@ -6,7 +6,7 @@
 #include "CameraOptions.h"
 
 #include <api/render/offline/Camera.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Requests.h>
 
 #include <cmath>
@@ -21,7 +21,7 @@ bool CameraOptions::format(const glm::ivec2 & resolution, float pixelAspect) {
     // RI reads a side of zero or less as the device's default for that side
     const unsigned int width = resolution.x > 0 ? static_cast<unsigned int>(resolution.x) : defaultWidth;
     const unsigned int height = resolution.y > 0 ? static_cast<unsigned int>(resolution.y) : defaultHeight;
-    if (width > largestResolution || height > largestResolution) {
+    if (width > film::largestResolution || height > film::largestResolution) {
         return false;
     }
     width_ = width;

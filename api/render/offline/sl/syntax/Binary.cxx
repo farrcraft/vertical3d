@@ -5,7 +5,7 @@
 
 #include "Binary.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
@@ -13,7 +13,7 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Binary::Binary(const std::string & op, const Operands & operands, const v3d::render::offline::Position & at) :
+Binary::Binary(const std::string & op, const Operands & operands, const v3d::render::offline::source::Position & at) :
     Expression(Kind::BINARY, at),
     op(op),
     left(operands.left),

@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/Textures.h>
-#include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
+#include <api/render/offline/texture/Textures.h>
 #include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
 
@@ -43,7 +43,7 @@ class Tracer final {
      * @param textures the images a shader may name, or null for a scene that names none,
      *        which leaves every texture() black
      **/
-    explicit Tracer(const Scene* scene, v3d::render::offline::Textures* textures = nullptr);
+    explicit Tracer(const Scene* scene, v3d::render::offline::texture::Textures* textures = nullptr);
 
     /**
      * What a ray sees: every surface along it composited front to back by its Oi, until
@@ -138,7 +138,7 @@ class Tracer final {
      * of this size, so that a register file stays a modest size.
      **/
     static constexpr unsigned int BATCH = 64;
-    v3d::render::offline::Textures* textures() const;
+    v3d::render::offline::texture::Textures* textures() const;
 
     /**
      * A machine sized for one program and a batch, and that program's globals. Kept between
@@ -152,7 +152,7 @@ class Tracer final {
      public:
         v3d::render::offline::sl::runtime::Machine machine;
         const v3d::render::offline::sl::runtime::Program* program = nullptr;
-        v3d::render::offline::sl::Globals globals;
+        v3d::render::offline::sl::runtime::Globals globals;
         unsigned int batch = 0;
     };
 
@@ -205,7 +205,7 @@ class Tracer final {
         std::vector<glm::vec3>* opacities);
 
     const Scene* scene_;
-    v3d::render::offline::Textures* textures_;
+    v3d::render::offline::texture::Textures* textures_;
     float time_ = 0.0F;
     Scene::Poses poses_;
     /**

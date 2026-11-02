@@ -5,9 +5,9 @@
 
 #include "Type.h"
 
-#include <api/font/Feature.h>
-#include <api/font/Paragraph.h>
-#include <api/font/TextStyle.h>
+#include <api/font/text/Feature.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/Style.h>
 
 #include <optional>
 #include <string>
@@ -51,18 +51,18 @@ std::vector<std::string> Type::rows(std::string_view text, float width) const {
 
 /**
  **/
-std::optional<font::Paragraph> Type::paragraph(const std::string& text) const {
+std::optional<font::text::Paragraph> Type::paragraph(const std::string& text) const {
     if (!text_ || !text_->loaded()) {
         return std::nullopt;
     }
-    return font::Paragraph(text_->shaping(), text, style());
+    return font::text::Paragraph(text_->shaping(), text, style());
 }
 
 /**
  **/
 void Type::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour) const {
     if (text_) {
-        font::TextStyle styled = style();
+        font::text::Style styled = style();
         styled.colour = colour;
         text_->draw(canvas, text, pen, styled);
     }
@@ -98,13 +98,13 @@ Type Type::tabular() const {
 
 /**
  **/
-font::TextStyle Type::style() const {
+font::text::Style Type::style() const {
     if (!text_) {
-        return font::TextStyle();
+        return font::text::Style();
     }
-    font::TextStyle styled = text_->style(size_, weight_);
+    font::text::Style styled = text_->style(size_, weight_);
     if (tabular_) {
-        styled.features.push_back(font::Feature{ .tag = "tnum" });
+        styled.features.push_back(font::text::Feature{ .tag = "tnum" });
     }
     return styled;
 }

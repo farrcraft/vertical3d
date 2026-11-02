@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <string>
@@ -46,7 +46,7 @@ class Group final : public Command {
     /**
      * @return the group the items go beneath
      **/
-    const boost::shared_ptr<scene::Group>& group() const noexcept;
+    const boost::shared_ptr<scene::item::Group>& group() const noexcept;
 
     /**
      * @return whether there is anything to group. A command with nothing does nothing
@@ -56,16 +56,16 @@ class Group final : public Command {
  private:
     /** One item grouped, its parent before, and its placement before and after. **/
     struct Member {
-        boost::shared_ptr<scene::Item> item;
-        boost::shared_ptr<scene::Item> parent;
+        boost::shared_ptr<scene::item::Item> item;
+        boost::shared_ptr<scene::item::Item> parent;
         v3d::type::Transform before;
         v3d::type::Transform after;
     };
 
     boost::shared_ptr<scene::Scene> scene_;
-    boost::shared_ptr<scene::Group> group_;
+    boost::shared_ptr<scene::item::Group> group_;
     // the group's own parent, or empty when it has none
-    boost::shared_ptr<scene::Item> parent_;
+    boost::shared_ptr<scene::item::Item> parent_;
     std::vector<Member> members_;
 };
 

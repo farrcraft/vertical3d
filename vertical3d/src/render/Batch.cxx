@@ -7,9 +7,9 @@
 
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -66,15 +66,15 @@ std::vector<Batch::Job> Batch::start(const scene::Scene* scene, const v3d::type:
     }
 
     // each camera is named by its document id, which no other camera of the document has
-    std::vector<std::pair<std::string, boost::shared_ptr<scene::Camera>>> sources;
-    for (const boost::shared_ptr<scene::Item>& item : scene->items()) {
-        const boost::shared_ptr<scene::Camera> camera = as<scene::Camera>(item);
+    std::vector<std::pair<std::string, boost::shared_ptr<scene::item::Camera>>> sources;
+    for (const boost::shared_ptr<scene::item::Item>& item : scene->items()) {
+        const boost::shared_ptr<scene::item::Camera> camera = as<scene::item::Camera>(item);
         if (camera) {
             sources.emplace_back("camera" + std::to_string(camera->documentId()), camera);
         }
     }
     if (sources.empty()) {
-        sources.emplace_back("view", boost::shared_ptr<scene::Camera>());
+        sources.emplace_back("view", boost::shared_ptr<scene::item::Camera>());
     }
 
     const scene::Timeline timeline = scene->timeline();

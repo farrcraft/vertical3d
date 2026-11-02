@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/DrawItem.h>
+#include <api/render/realtime/frame/DrawItem.h>
 
 #include <vulkan/vulkan.h>
 
@@ -23,7 +23,7 @@ namespace v3d::render::realtime::renderer {
  * is taken as the image's edge, and a NaN right or bottom edge clips the draw to nothing. Every
  * edge is held within 2^24 pixels, far past any image, so each converts to an integer exactly.
  **/
-inline void clip(DrawItem* item, const glm::vec4& rectangle) {
+inline void clip(frame::DrawItem* item, const glm::vec4& rectangle) {
     const float limit = 16777216.0F;
     // std::max(a, b) returns a when a comparison with NaN is false, so naming the bound first
     // turns a NaN edge into the bound

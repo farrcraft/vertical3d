@@ -20,7 +20,7 @@ class Jump final : public Statement {
         RETURN
     };
 
-    Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::Position & at);
+    Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::source::Position & at);
 
     Where where = Where::RETURN;
     /** What a return returns, or null for a bare one and for the other two. **/

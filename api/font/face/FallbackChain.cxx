@@ -1,0 +1,49 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "FallbackChain.h"
+
+#include <vector>
+
+#include "Face.h"
+#include "Glyph.h"
+#include "Style.h"
+#include "Family.h"
+
+#include <boost/shared_ptr.hpp>
+
+namespace v3d::font::face {
+
+void FallbackChain::add(const boost::shared_ptr<Family>& family) {
+    if (family && !family->empty()) {
+        families_.push_back(family);
+    }
+}
+
+const std::vector<boost::shared_ptr<Family>>& FallbackChain::families() const noexcept {
+    return families_;
+}
+
+std::vector<boost::shared_ptr<Face>> FallbackChain::faces(const Style& style) const {
+    std::vector<boost::shared_ptr<Face>> found;
+    found.reserve(families_.size());
+    for (const boost::shared_ptr<Family>& family : families_) {
+        found.push_back(family->face(style));
+    }
+    return found;
+}
+
+Glyph FallbackChain::find(char32_t charcode, const Style& style) const {
+    const std::vector<boost::shared_ptr<Face>> tried = faces(style);
+    for (const boost::shared_ptr<Face>& face : tried) {
+        const unsigned int index = face->glyphIndex(charcode);
+        if (index != 0) {
+            return { .face = face, .index = index };
+        }
+    }
+    return { .face = tried.empty() ? boost::shared_ptr<Face>() : tried.front(), .index = 0 };
+}
+
+};  // namespace v3d::font::face

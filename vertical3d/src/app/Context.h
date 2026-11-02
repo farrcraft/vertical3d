@@ -12,9 +12,9 @@
 #include <api/type/camera/Profile.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Prompt.h>
-#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Playback.h>
-#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/control/RenderWindow.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
@@ -96,11 +96,11 @@ struct Context final {
     boost::shared_ptr<view::AreaLayout> layout;
     boost::shared_ptr<view::AreaViews> views;
     // what commands said, shown at the foot of the active area
-    boost::shared_ptr<control::Notices> notices;
+    boost::shared_ptr<control::chrome::Notices> notices;
     boost::shared_ptr<tool::CameraControl> cameraTool;
     boost::shared_ptr<tool::Select> selectTool;
     boost::shared_ptr<tool::Transform> transformTool;
-    boost::shared_ptr<control::Pointer> pointer;
+    boost::shared_ptr<control::chrome::Pointer> pointer;
     boost::shared_ptr<control::Playback> playback;
     // every timeline editor, which share the chosen keys
     boost::shared_ptr<control::TimelineEditor> timeline;

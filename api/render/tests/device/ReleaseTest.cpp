@@ -6,18 +6,18 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Mesh.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/Mesh.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -32,12 +32,12 @@
 #include "Headless.h"
 
 using v3d::render::realtime::canvas::Canvas;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::Pass;
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::frame::Pass;
+using v3d::render::realtime::resource::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 
 namespace {
 
@@ -203,12 +203,12 @@ BOOST_AUTO_TEST_CASE(a_sprite_whose_texture_is_released_after_it_is_queued_draws
  **/
 BOOST_AUTO_TEST_CASE(a_released_handle_is_held_until_its_frame_finishes) {
     v3d::test::Headless headless(colourFormat, width, height);
-    const boost::shared_ptr<v3d::render::realtime::Resources> resources = headless.context->resources();
+    const boost::shared_ptr<v3d::render::realtime::resource::Resources> resources = headless.context->resources();
 
     idle(&headless);
     const std::size_t before = resources->textureCount();
     const TextureHandle texture = flat(&headless, 0xFF, 0x00, 0x00);
-    const v3d::render::realtime::MaterialHandle material = resources->add(v3d::render::realtime::Material());
+    const v3d::render::realtime::resource::MaterialHandle material = resources->add(v3d::render::realtime::resource::Material());
 
     BOOST_CHECK(resources->release(material));
     BOOST_CHECK(!resources->release(material));
@@ -560,7 +560,7 @@ BOOST_AUTO_TEST_CASE(a_context_destroys_its_ring_whatever_was_retired_into_it) {
             headless.logger, headless.device, colourFormat, VkExtent2D{width, height});
         ring = context->ring();
         const std::vector<float> vertices(9, 0.0F);
-        const boost::shared_ptr<v3d::render::realtime::Mesh> mesh = boost::make_shared<v3d::render::realtime::Mesh>(context->device(),
+        const boost::shared_ptr<v3d::render::realtime::resource::Mesh> mesh = boost::make_shared<v3d::render::realtime::resource::Mesh>(context->device(),
             context->uploader(), std::as_bytes(std::span(vertices)), 3U);
         context->ring()->retire([mesh]() {});
     }

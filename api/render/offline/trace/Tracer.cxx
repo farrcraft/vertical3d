@@ -5,8 +5,8 @@
 
 #include "Tracer.h"
 
-#include <api/render/offline/Textures.h>
 #include <api/render/offline/sl/Instance.h>
+#include <api/render/offline/texture/Textures.h>
 #include <api/type/geometry/Line.h>
 #include <api/type/geometry/Ray.h>
 
@@ -42,7 +42,7 @@ bool Tracer::composite(Tracer::Seen* seen, const glm::vec3 & colour, const glm::
     return std::min(seen->opacity.r, std::min(seen->opacity.g, seen->opacity.b)) >= 1.0F;
 }
 
-Tracer::Tracer(const Scene* scene, v3d::render::offline::Textures* textures) :
+Tracer::Tracer(const Scene* scene, v3d::render::offline::texture::Textures* textures) :
     scene_(scene), textures_(textures) {
     if (scene_ != nullptr) {
         poses_ = scene_->poses(0.0F);
@@ -53,7 +53,7 @@ const Scene* Tracer::scene() const {
     return scene_;
 }
 
-v3d::render::offline::Textures* Tracer::textures() const {
+v3d::render::offline::texture::Textures* Tracer::textures() const {
     return textures_;
 }
 
@@ -65,7 +65,7 @@ Tracer::Run & Tracer::run(const v3d::render::offline::sl::InstancePtr & shader, 
     held.program = &shader->program();
     held.batch = batch;
     held.machine.prepare(shader->program(), batch);
-    held.globals = v3d::render::offline::sl::Globals(shader->program());
+    held.globals = v3d::render::offline::sl::runtime::Globals(shader->program());
     return held;
 }
 

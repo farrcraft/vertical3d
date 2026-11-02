@@ -11,9 +11,9 @@
 #include <api/asset/media/kind/Image.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/renderer/Line.h>
 #include <api/shell/Shell.h>
@@ -31,11 +31,11 @@
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
-#include <vertical3d/src/control/DividerHint.h>
+#include <vertical3d/src/control/chrome/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
-#include <vertical3d/src/control/Notices.h>
-#include <vertical3d/src/control/Pointer.h>
-#include <vertical3d/src/control/StatusBar.h>
+#include <vertical3d/src/control/chrome/Notices.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaFrame.h>
@@ -108,19 +108,19 @@ void Renderer::views(const boost::shared_ptr<view::AreaViews>& views) {
 
 /**
  **/
-void Renderer::pointer(const boost::shared_ptr<control::Pointer>& pointer) {
+void Renderer::pointer(const boost::shared_ptr<control::chrome::Pointer>& pointer) {
     pointer_ = pointer;
 }
 
 /**
  **/
-void Renderer::status(const control::Status& status) {
+void Renderer::status(const control::chrome::Status& status) {
     status_ = status;
 }
 
 /**
  **/
-void Renderer::notices(const boost::shared_ptr<control::Notices>& notices) {
+void Renderer::notices(const boost::shared_ptr<control::chrome::Notices>& notices) {
     notices_ = notices;
 }
 
@@ -217,7 +217,7 @@ void Renderer::drawIcons() {
     // the old texture is reclaimed once the frame in flight has finished with it
     if (iconTexture_.valid()) {
         engine_.textures()->release(iconTexture_);
-        iconTexture_ = v3d::render::realtime::TextureHandle();
+        iconTexture_ = v3d::render::realtime::resource::TextureHandle();
     }
     if (sheet) {
         iconTexture_ = engine_.textures()->texture(sheet);
@@ -229,16 +229,16 @@ void Renderer::drawIcons() {
 
 /**
  **/
-v3d::render::realtime::TextureHandle Renderer::texture(const std::string& source) {
+v3d::render::realtime::resource::TextureHandle Renderer::texture(const std::string& source) {
     const auto found = images_.find(source);
     if (found != images_.end()) {
         return found->second;
     }
     const boost::shared_ptr<v3d::asset::media::kind::Image> asset = assetManager_->load<v3d::asset::media::kind::Image>(source);
     if (!asset || !asset->image()) {
-        return v3d::render::realtime::TextureHandle();
+        return v3d::render::realtime::resource::TextureHandle();
     }
-    const v3d::render::realtime::TextureHandle made = engine_.textures()->texture(asset->image());
+    const v3d::render::realtime::resource::TextureHandle made = engine_.textures()->texture(asset->image());
     images_[source] = made;
     return made;
 }
@@ -278,7 +278,7 @@ void Renderer::draw() {
     }
     // a change of scale changes the icon size, and the icons are drawn again at the new one
     drawIcons();
-    const boost::shared_ptr<v3d::render::realtime::Frame> frame = engine_.frame();
+    const boost::shared_ptr<v3d::render::realtime::frame::Frame> frame = engine_.frame();
     if (!frame) {
         return;
     }
@@ -315,7 +315,7 @@ void Renderer::draw() {
             manipulator->draw(target, manipulator::Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
         }
 
-        const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(view->name());
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame->pass(view->name());
         pass->viewport(view->region());
         pass->clearColour(background_);
         // every view depth tests, so a wireframe is occluded by what is in front of it.
@@ -325,7 +325,7 @@ void Renderer::draw() {
 
         // the handles are drawn over what the scene pass left, without a depth test, so
         // a handle lying in the plane of the grid is not hidden by it
-        const boost::shared_ptr<v3d::render::realtime::Pass> overlay = frame->pass(view->name() + handleSuffix);
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = frame->pass(view->name() + handleSuffix);
         overlay->viewport(view->region());
         overlay->keepColour();
         overlay->depth(false);
@@ -353,7 +353,7 @@ void Renderer::draw() {
 
 /**
  **/
-void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& frame) {
+void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::frame::Frame>& frame) {
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     // each view's axis marker and gizmo go under the frame, whose corners cover the views' own
     if (views_ && pointer_) {
@@ -381,7 +381,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
         const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
             .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
             .radius = view::FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
-        const std::optional<control::Pointer::Drop> landing = pointer_->drop();
+        const std::optional<control::chrome::Pointer::Drop> landing = pointer_->drop();
         drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit(),
             landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
     }
@@ -409,7 +409,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
 
     // this pass covers the whole window, over what every view drew. A canvas carries its
     // own projection, so this pass needs no camera
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame->pass(uiPass);
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame->pass(uiPass);
     pass->keepColour();
     pass->depth(false);
     engine_.quads()->submit(canvas, pass.get());
@@ -429,7 +429,7 @@ view::ConstructionPlane::Colours Renderer::gridColours() const {
 
 /**
  **/
-void Renderer::retire(v3d::render::realtime::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views) {
+void Renderer::retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views) {
     std::vector<std::string> names;
     for (const boost::shared_ptr<view::ViewPort>& view : views) {
         if (view) {
@@ -477,7 +477,7 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     // for each button: the key held with it on a chip, the mouse with the button lit, and what
     // it does, then a wider gap before the next
     float x = left + dress.padding;
-    for (const control::Status::Button& button : status_.buttons) {
+    for (const control::chrome::Status::Button& button : status_.buttons) {
         if (!button.modifier.empty()) {
             const float chip = type.width(button.modifier) + (dress.padding * STATUS_CHIP_INSET * 2.0F);
             v3d::ui::paint::fillBox(canvas, glm::vec2(x, middle - (size * STATUS_CHIP)), glm::vec2(x + chip, middle + (size * STATUS_CHIP)), dress.radius,
@@ -510,7 +510,7 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     float end = width - dress.padding;
     if (!status_.rate.empty()) {
         figures.draw(canvas, status_.rate, glm::vec2(end - figures.width(status_.rate), baseline), healthColour(status_.health));
-        end -= control::StatusBar::rateRoom(figures, status_.rate) + figures.width(STATUS_GAP);
+        end -= control::chrome::StatusBar::rateRoom(figures, status_.rate) + figures.width(STATUS_GAP);
     }
     figures.draw(canvas, right, glm::vec2(end - figures.width(right), baseline), dress.secondaryText);
 }
@@ -525,10 +525,10 @@ void Renderer::drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas) {
     const float size = screen_->size();
     const v3d::ui::paint::Type type(screen_->text(), size);
     float wide = 0.0F;
-    for (const std::string_view line : control::DividerHint::LINES) {
+    for (const std::string_view line : control::chrome::DividerHint::LINES) {
         wide = std::max(wide, type.width(line));
     }
-    const glm::vec2 plate(wide + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(control::DividerHint::LINES.size())) + dress.padding);
+    const glm::vec2 plate(wide + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(control::chrome::DividerHint::LINES.size())) + dress.padding);
     // beside the cursor, and kept on the canvas
     const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
     const glm::vec2 offset = glm::vec2(HINT_OFFSET) * screen_->factor();
@@ -538,8 +538,8 @@ void Renderer::drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas) {
     v3d::ui::paint::shadowBox(canvas, min + drop, max + drop, { .radius = dress.radius, .reach = dress.shadowSize, .colour = dress.shadow });
     v3d::ui::paint::plateBox(canvas, min, max, dress.radius, dress.borderWidth, { .inside = dress.panel, .outline = dress.border });
     float top = min.y + (dress.padding / 2.0F);
-    for (std::size_t index = 0; index < control::DividerHint::LINES.size(); index++) {
-        type.draw(canvas, control::DividerHint::LINES[index], glm::vec2(min.x + dress.padding, top + (dress.lineHeight / 2.0F) + (size * BASELINE)),
+    for (std::size_t index = 0; index < control::chrome::DividerHint::LINES.size(); index++) {
+        type.draw(canvas, control::chrome::DividerHint::LINES[index], glm::vec2(min.x + dress.padding, top + (dress.lineHeight / 2.0F) + (size * BASELINE)),
             index == 0 ? dress.text : dress.secondaryText);
         top += dress.lineHeight;
     }
@@ -554,13 +554,13 @@ v3d::ui::Image Renderer::icon(const std::string& source) const {
 
 /**
  **/
-glm::vec4 Renderer::healthColour(control::Status::Health health) {
+glm::vec4 Renderer::healthColour(control::chrome::Status::Health health) {
     switch (health) {
-        case control::Status::Health::Good:
+        case control::chrome::Status::Health::Good:
             return HEALTH_GOOD;
-        case control::Status::Health::Low:
+        case control::chrome::Status::Health::Low:
             return HEALTH_LOW;
-        case control::Status::Health::Poor:
+        case control::chrome::Status::Health::Poor:
             return HEALTH_POOR;
     }
     return HEALTH_GOOD;
@@ -572,7 +572,7 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     if (!notices_ || !views_ || !pointer_ || views_->layout()->areas().empty()) {
         return;
     }
-    const std::optional<control::Notices::Shown> shown = notices_->shown(screen_->clock().now);
+    const std::optional<control::chrome::Notices::Shown> shown = notices_->shown(screen_->clock().now);
     const glm::vec4& content = views_->layout()->areas()[pointer_->activeArea()].content;
     if (!shown || content.z <= 0.0F || content.w <= 0.0F) {
         return;
@@ -619,12 +619,12 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
 
 /**
  **/
-v3d::render::realtime::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
+v3d::render::realtime::resource::TextureHandle Renderer::picture(const boost::shared_ptr<v3d::image::Image>& image) {
     // the ui stops drawing the old texture this frame, and its image is reclaimed once the
     // frame in flight has finished with it
     if (picture_.valid()) {
         engine_.textures()->release(picture_);
-        picture_ = v3d::render::realtime::TextureHandle();
+        picture_ = v3d::render::realtime::resource::TextureHandle();
     }
     if (image) {
         picture_ = engine_.textures()->texture(image);

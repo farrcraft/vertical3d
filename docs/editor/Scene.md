@@ -150,9 +150,9 @@ can be tested without it.
 It holds scene items of every kind in one list, finds them by id, and keeps them in insertion
 order. `Scene::add` appends. It also holds the hierarchy, which [Hierarchy](#hierarchy) describes.
 
-**Items.** A scene item is a `v3d::editor::scene::Item`. It has an id unique within one run of the
-editor, a placement that is a `type::Transform`, and the object selection flag. There are five
-kinds:
+**Items.** A scene item is a `v3d::editor::scene::item::Item`. It has an id unique within one run
+of the editor, a placement that is a `type::Transform`, and the object selection flag. There are
+five kinds:
 
 | Kind | Class | Holds |
 |---|---|---|
@@ -212,12 +212,12 @@ kinds:
 - **Making a camera or a light.** The Create menu's Camera and Light items make one at the
   active view's eye, facing the way the view looks, through a `command::Create`, so the new item
   is the selection and one undo removes it. `create_camera()` and `create_light()` in
-  `src/scene/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
+  `src/scene/item/CreateItem.h` do the placing. A camera takes the view's lens, and the default lens
   when the view's would not be valid. A light takes RI's default emission for its type.
 - **Making a curve.** The Create menu's Curve items make one curve of a type, poly, Bezier,
   Catmull-Rom or NURBS, at the origin through a `command::Create`, as a primitive is made.
-  `create_curve()` in `src/scene/CreateItem.h` makes an S on the ground through four points from
-  -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
+  `create_curve()` in `src/scene/item/CreateItem.h` makes an S on the ground through four points
+  from -1.5 to 1.5 along x. A Bezier curve's handles are automatic, and a NURBS curve is cubic over
   clamped knots.
 
 Background: [ADR-0099](../adr/0099-editor-scene-items-own-identity-and-placement.md),
@@ -347,7 +347,7 @@ dividers meet, the outer split's is taken.
   room.
 - A divider lit for half a second, and not held, shows a hint beside the cursor on a tooltip's
   plate: "Drag to resize", then how a double click, Escape and Ctrl act on it. It goes when the
-  divider is held or no longer lit. `DividerHint` in `src/control/` times it.
+  divider is held or no longer lit. `DividerHint` in `src/control/chrome/` times it.
 
 The shares are saved with the rest of the layout, as [Workspaces](#workspaces) describes.
 
@@ -369,7 +369,7 @@ A split, a join, a move that empties an area and a drop renumber the areas, let 
 divider and give a maximised area's room back. A split left with one child becomes that child,
 and a split inside one that runs the same way gives its children to that one.
 
-**Headers and tabs.** `AreaChrome` gives each area a ui container, `area-` and the area's id,
+**Headers and tabs.** `chrome::Area` gives each area a ui container, `area-` and the area's id,
 built as the editor runs and put before the editor's own container so its menus drop over them.
 
 - **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
@@ -395,7 +395,7 @@ built as the editor runs and put before the editor's own container so its menus 
 
   Each item marks what its own view holds, whichever view is active. These are the View menu's
   `view::camera::`, `view::shade::`, `view::rendermode::`, `view::cull::` and `view::show::`
-  commands and the Select menu's `select::mask::` commands, which `AreaChrome::marks()` reads
+  commands and the Select menu's `select::mask::` commands, which `chrome::Area::marks()` reads
   for both.
 - **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
   across its top. The editor draws under the strip and the header sits at the top of the
@@ -558,7 +558,7 @@ view: Front, Back, Left, Right, Top, Bottom and Perspective, each a profile in
 keeps its region and its camera object, so the camera tools keep driving it. Its editor's state
 names the new camera, so its tab and a saved layout show it. A menu marks the item for the
 profile its view shows. A view laid out from a profile no fixed view is marks none.
-`AreaChrome::fixedViews()` lists each command and its profile.
+`chrome::Area::fixedViews()` lists each command and its profile.
 
 **Orthographic** (`view::camera::orthographic`, the P key) switches a view's camera between an
 orthographic and a perspective projection, and leaves the camera where it is. The menu item is
@@ -587,7 +587,7 @@ and the drawing.
 
 **The status bar** runs along the foot of the window, as tall as a menu bar, from the right of
 the toolbar down the left. The areas are laid out above it. It is drawn in the theme's `bar`,
-with a `hairline` along its top. `StatusBar` in `src/control/` says what it shows:
+with a `hairline` along its top. `StatusBar` in `src/control/chrome/` says what it shows:
 
 - Its text is 11 pixels at a scale of one, a step below the ui's.
 - On the left, what each mouse button does in the active view, each as a mouse with that button
@@ -618,7 +618,7 @@ was done, and a red cross that it was refused. A change undo takes back, the ope
 redo say the name of what they undid or redid, and a redo can itself be undone. A notice shows
 for 2.5 seconds on the ui's clock, from the first frame it is drawn, and fades in and out over
 0.15 seconds of that. A new notice replaces the one showing. `Notices` in
-`src/control/` times it.
+`src/control/chrome/` times it.
 
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with

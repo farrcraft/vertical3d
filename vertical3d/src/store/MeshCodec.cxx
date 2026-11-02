@@ -10,8 +10,8 @@
 #include <api/brep/HalfEdge.h>
 #include <api/brep/Index.h>
 #include <api/brep/Vertex.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -84,8 +84,8 @@ bool MeshCodec::decode(const Blobs& blobs, v3d::brep::BRep* mesh, std::string* p
 
 /**
  **/
-scene::Item::Kind MeshCodec::kind() const noexcept {
-    return scene::Item::Kind::Mesh;
+scene::item::Item::Kind MeshCodec::kind() const noexcept {
+    return scene::item::Item::Kind::Mesh;
 }
 
 /**
@@ -108,14 +108,14 @@ bool MeshCodec::buffered() const noexcept {
 
 /**
  **/
-boost::json::object MeshCodec::payload(const scene::Item& /*item*/) const {
+boost::json::object MeshCodec::payload(const scene::item::Item& /*item*/) const {
     return boost::json::object();
 }
 
 /**
  **/
-std::vector<Buffer> MeshCodec::buffers(const scene::Item& item) const {
-    const v3d::brep::BRep& mesh = *static_cast<const scene::Mesh&>(item).geometry();
+std::vector<Buffer> MeshCodec::buffers(const scene::item::Item& item) const {
+    const v3d::brep::BRep& mesh = *static_cast<const scene::item::Mesh&>(item).geometry();
     Buffer vertices{ .role = "vertices", .count = mesh.vertexCount() };
     for (v3d::brep::Index id = 0; id < mesh.vertexCount(); id++) {
         put(&vertices.data, mesh.vertex(id)->point());
@@ -139,7 +139,7 @@ std::vector<Buffer> MeshCodec::buffers(const scene::Item& item) const {
 
 /**
  **/
-boost::shared_ptr<scene::Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
+boost::shared_ptr<scene::item::Item> MeshCodec::read(const boost::json::object& payload, const Blobs& blobs, std::string* problem) const {
     if (!exactly(payload, {}, problem)) {
         return nullptr;
     }
@@ -147,7 +147,7 @@ boost::shared_ptr<scene::Item> MeshCodec::read(const boost::json::object& payloa
     if (!decode(blobs, geometry.get(), problem)) {
         return nullptr;
     }
-    return boost::make_shared<scene::Mesh>(geometry);
+    return boost::make_shared<scene::item::Mesh>(geometry);
 }
 
 };  // namespace v3d::editor::store

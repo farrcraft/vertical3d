@@ -6,7 +6,7 @@
 #include "WindowContext.h"
 
 #include <api/log/Logger.h>
-#include <api/render/realtime/Present.h>
+#include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/SharedInstance.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
@@ -39,11 +39,11 @@ boost::shared_ptr<vulkan::device::Device> WindowContext::deviceFor(const boost::
 /**
  **/
 WindowContext::WindowContext(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<v3d::window::Window>& window,
-    VkFormat preferred, vulkan::memory::Allocator::Kind allocations, Present present) :
+    VkFormat preferred, vulkan::memory::Allocator::Kind allocations, frame::Present present) :
     DeviceContext(logger, deviceFor(logger, window, allocations)),
     window_(window) {
     swapchain_ = boost::make_shared<vulkan::frame::Swapchain>(logger, device(), static_cast<uint32_t>(window_->width()),
-        static_cast<uint32_t>(window_->height()), preferred, presentModes(present));
+        static_cast<uint32_t>(window_->height()), preferred, frame::presentModes(present));
     presenter_ = boost::make_shared<vulkan::frame::Presenter>(logger, swapchain_, ring());
     describe(swapchain_->format(), swapchain_->extent());
 }
@@ -82,8 +82,8 @@ void WindowContext::resize() {
 
 /**
  **/
-void WindowContext::present(Present present) {
-    swapchain_->request(presentModes(present));
+void WindowContext::present(frame::Present present) {
+    swapchain_->request(frame::presentModes(present));
     resize();
 }
 

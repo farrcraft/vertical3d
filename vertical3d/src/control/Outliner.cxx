@@ -8,7 +8,7 @@
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/control/Text.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -26,23 +26,23 @@ namespace v3d::editor::control {
 
 /**
  **/
-std::string Outliner::label(const scene::Item& item) {
+std::string Outliner::label(const scene::item::Item& item) {
     return item.name().empty() ? kind(item.kind()) : item.name();
 }
 
 /**
  **/
-Outliner::Mark Outliner::mark(scene::Item::Kind kind) {
+Outliner::Mark Outliner::mark(scene::item::Item::Kind kind) {
     switch (kind) {
-        case scene::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Mesh:
             return { .icon = "icon:item-mesh", .colour = MESH };
-        case scene::Item::Kind::Camera:
+        case scene::item::Item::Kind::Camera:
             return { .icon = "icon:item-camera", .colour = CAMERA };
-        case scene::Item::Kind::Light:
+        case scene::item::Item::Kind::Light:
             return { .icon = "icon:item-light", .colour = LIGHT };
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Group:
             return { .icon = "icon:item-group", .colour = GROUP };
-        case scene::Item::Kind::Curve:
+        case scene::item::Item::Kind::Curve:
             return { .icon = "icon:item-curve", .colour = CURVE };
     }
     return {};
@@ -68,17 +68,17 @@ v3d::ui::Image Outliner::image(const Mark& mark) const {
 
 /**
  **/
-std::string Outliner::kind(scene::Item::Kind kind) {
+std::string Outliner::kind(scene::item::Item::Kind kind) {
     switch (kind) {
-        case scene::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Mesh:
             return "Mesh";
-        case scene::Item::Kind::Camera:
+        case scene::item::Item::Kind::Camera:
             return "Camera";
-        case scene::Item::Kind::Light:
+        case scene::item::Item::Kind::Light:
             return "Light";
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Group:
             return "Group";
-        case scene::Item::Kind::Curve:
+        case scene::item::Item::Kind::Curve:
             return "Curve";
     }
     return std::string();
@@ -90,7 +90,7 @@ std::vector<Outliner::Row> Outliner::rows(const scene::Scene& scene, const std::
     const std::vector<std::string> wanted = words(filter);
     const Walk walk{ .scene = scene, .words = wanted, .folded = folded };
     std::vector<Row> made;
-    for (const boost::shared_ptr<scene::Item>& item : scene.children(0)) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.children(0)) {
         gather(walk, item, 0, &made);
     }
     return made;
@@ -145,11 +145,11 @@ void Outliner::keep(const std::vector<std::size_t>& editors) {
 
 /**
  **/
-bool Outliner::gather(const Walk& walk, const boost::shared_ptr<scene::Item>& item, unsigned int depth, std::vector<Row>* into) {
+bool Outliner::gather(const Walk& walk, const boost::shared_ptr<scene::item::Item>& item, unsigned int depth, std::vector<Row>* into) {
     const scene::Items children = walk.scene.children(item->id());
     std::vector<Row> below;
     bool any = false;
-    for (const boost::shared_ptr<scene::Item>& child : children) {
+    for (const boost::shared_ptr<scene::item::Item>& child : children) {
         any = gather(walk, child, depth + 1, &below) || any;
     }
     const std::string named = lower(label(*item));

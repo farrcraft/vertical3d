@@ -1,0 +1,64 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#pragma once
+
+#include <api/render/offline/film/Sampling.h>
+
+#include <vector>
+
+#include <glm/vec2.hpp>
+
+namespace v3d::type {
+class Random;
+};  // namespace v3d::type
+
+namespace v3d::render::offline::film {
+
+/**
+ * Where and when a pixel is sampled.
+ *
+ * A pixel's samples are drawn from a generator seeded by its column and row, so they are the
+ * same on every run and in whatever order pixels or buckets are rendered.
+ **/
+class Sampler final {
+ public:
+    /**
+     * One sample of a pixel.
+     **/
+    struct Sample {
+        /** The position in raster space, in pixels from the image's upper left. **/
+        glm::vec2 raster { 0.0F, 0.0F };
+        /** When, between the shutter opening and closing. **/
+        float time { 0.0F };
+        /** A point on the unit disc, which the lens scales by its radius. **/
+        glm::vec2 lens { 0.0F, 0.0F };
+    };
+
+    explicit Sampler(const Sampling & sampling);
+
+    /**
+     * The samples of one pixel, stratified over a grid the size PixelSamples requested and
+     * jittered within each cell.
+     *
+     * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
+     * sample a pixel is exactly the pixel centre.
+     *
+     * @param pass which set of samples. A pixel sampled more than once is given a different
+     *        set for each pass, and the same set for the same pass
+     **/
+    std::vector<Sample> pixel(unsigned int column, unsigned int row, unsigned int pass = 0) const;
+
+ private:
+    /**
+     * Where in a stratum a sample falls: its centre when the axis has one stratum, and anywhere
+     * in it otherwise.
+     **/
+    static float jitter(unsigned int strata, v3d::type::Random * random);
+
+    Sampling sampling_;
+};
+
+};  // namespace v3d::render::offline::film

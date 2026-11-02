@@ -5,9 +5,9 @@
 
 #include "LineEdit.h"
 
-#include <api/font/Bidi.h>
-#include <api/font/Paragraph.h>
-#include <api/font/Segmenter.h>
+#include <api/font/text/Bidi.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/Segmenter.h>
 #include <api/log/Logger.h>
 #include <api/ui/paint/Type.h>
 
@@ -30,7 +30,7 @@ namespace {
  *         which every line shares
  **/
 std::vector<std::size_t> clusters(std::string_view text) {
-    static const v3d::font::Segmenter segmenter("", boost::make_shared<v3d::log::Logger>());
+    static const v3d::font::text::Segmenter segmenter("", boost::make_shared<v3d::log::Logger>());
     return segmenter.graphemes(text);
 }
 
@@ -74,14 +74,14 @@ LineEdit::LineEdit() noexcept :
     caret_(0),
     anchor_(0),
     limit_(0),
-    affinity_(font::Affinity::Downstream) {
+    affinity_(font::text::Affinity::Downstream) {
 }
 
 void LineEdit::text(const std::string& value) {
     text_ = value;
     caret_ = text_.size();
     anchor_ = caret_;
-    affinity_ = font::Affinity::Upstream;
+    affinity_ = font::text::Affinity::Upstream;
     composing_.clear();
 }
 
@@ -184,7 +184,7 @@ bool LineEdit::insert(std::string_view value) {
     text_.insert(caret_, value);
     caret_ += value.size();
     anchor_ = caret_;
-    affinity_ = font::Affinity::Upstream;
+    affinity_ = font::text::Affinity::Upstream;
     composing_.clear();
     return true;
 }
@@ -226,7 +226,7 @@ bool LineEdit::left(bool extend) {
         return false;
     }
     caret_ = backward(caret_);
-    affinity_ = font::Affinity::Downstream;
+    affinity_ = font::text::Affinity::Downstream;
     composing_.clear();
     if (!extend) {
         anchor_ = caret_;
@@ -244,7 +244,7 @@ bool LineEdit::right(bool extend) {
         return false;
     }
     caret_ = forward(caret_);
-    affinity_ = font::Affinity::Upstream;
+    affinity_ = font::text::Affinity::Upstream;
     composing_.clear();
     if (!extend) {
         anchor_ = caret_;
@@ -255,7 +255,7 @@ bool LineEdit::right(bool extend) {
 bool LineEdit::home(bool extend) {
     const bool moved = caret_ != 0 || (!extend && selected());
     caret_ = 0;
-    affinity_ = font::Affinity::Downstream;
+    affinity_ = font::text::Affinity::Downstream;
     composing_.clear();
     if (!extend) {
         anchor_ = caret_;
@@ -266,7 +266,7 @@ bool LineEdit::home(bool extend) {
 bool LineEdit::end(bool extend) {
     const bool moved = caret_ != text_.size() || (!extend && selected());
     caret_ = text_.size();
-    affinity_ = font::Affinity::Upstream;
+    affinity_ = font::text::Affinity::Upstream;
     composing_.clear();
     if (!extend) {
         anchor_ = caret_;
@@ -275,17 +275,17 @@ bool LineEdit::end(bool extend) {
 }
 
 void LineEdit::at(float into, const paint::Type& type, bool extend) {
-    const std::optional<font::Paragraph> laid = type.paragraph(text_);
+    const std::optional<font::text::Paragraph> laid = type.paragraph(text_);
     if (!laid.has_value() || text_.empty()) {
         caret(0, extend);
         return;
     }
-    const font::Hit hit = laid->hitTest(glm::vec2(into, 0.0F));
+    const font::text::Hit hit = laid->hitTest(glm::vec2(into, 0.0F));
     caret(hit.index, extend);
     affinity_ = hit.affinity;
 }
 
-font::Affinity LineEdit::affinity() const noexcept {
+font::text::Affinity LineEdit::affinity() const noexcept {
     return affinity_;
 }
 
@@ -305,13 +305,13 @@ std::string LineEdit::shown() const {
 
 LineEdit::Layout LineEdit::layout(const paint::Type& type) const {
     Layout laid{ .text = shown() };
-    const std::optional<font::Paragraph> paragraph = type.paragraph(laid.text);
+    const std::optional<font::text::Paragraph> paragraph = type.paragraph(laid.text);
     if (!paragraph.has_value()) {
         return laid;
     }
     const auto runs = [&paragraph](std::size_t from, std::size_t to) {
         std::vector<glm::vec2> found;
-        for (const font::SelectionRect& rect : paragraph->selection(from, to)) {
+        for (const font::text::SelectionRect& rect : paragraph->selection(from, to)) {
             found.emplace_back(rect.position.x, rect.position.x + rect.size.x);
         }
         return found;
@@ -324,7 +324,7 @@ LineEdit::Layout LineEdit::layout(const paint::Type& type) const {
         }
     } else {
         const std::size_t after = caret_ + composing_.size();
-        laid.caret = paragraph->caret(after, font::Affinity::Upstream).x;
+        laid.caret = paragraph->caret(after, font::text::Affinity::Upstream).x;
         laid.composed = runs(caret_, after);
     }
     return laid;

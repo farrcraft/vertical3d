@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/lighting/Shadow.h>
 
 #include "Poses.h"
@@ -42,8 +42,8 @@ namespace v3d::render::realtime::entity {
  *        Zero submits no outlines
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
-    float outline, Pass* pass, const Poses& poses = Poses());
+void meshes(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes, renderer::Lit* lit,
+    float outline, frame::Pass* pass, const Poses& poses = Poses());
 
 /**
  * Which cascade a shadow pass draws, and what it covers.
@@ -74,7 +74,7 @@ struct Casting final {
  * A static caster is culled against the cascade by a sphere around its model, scaled by its
  * transform. A skinned one is never culled, since its pose can reach past its bind pose.
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
-    Pass* pass, const Poses& poses = Poses(), const Casting& casting = Casting());
+void casters(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes, renderer::Lit* lit,
+    frame::Pass* pass, const Poses& poses = Poses(), const Casting& casting = Casting());
 
 };  // namespace v3d::render::realtime::entity

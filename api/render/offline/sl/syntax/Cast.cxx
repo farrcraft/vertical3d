@@ -5,8 +5,8 @@
 
 #include "Cast.h"
 
-#include <api/render/offline/Position.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
@@ -15,7 +15,7 @@
 namespace v3d::render::offline::sl::syntax {
 
 Cast::Cast(Type type, const std::string & space, const ExpressionPtr & operand,
-    const v3d::render::offline::Position & at) :
+    const v3d::render::offline::source::Position & at) :
     Expression(Kind::CAST, at),
     type(type),
     space(space),

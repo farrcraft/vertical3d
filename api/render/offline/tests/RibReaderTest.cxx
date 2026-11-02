@@ -4,12 +4,13 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Reader.h>
 #include <api/render/offline/rib/Requests.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <cmath>
@@ -84,7 +85,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
         samples_ = samples;
         counts_["PixelSamples"]++;
     }
-    void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override {
+    void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override {
         filter_ = filter;
         filterWidth_ = glm::vec2(xwidth, ywidth);
         counts_["PixelFilter"]++;
@@ -202,7 +203,7 @@ class CountingHandler final : public v3d::render::offline::rib::Handler {
     glm::vec2 shutter_ = glm::vec2(0.0F);
     glm::vec2 filterWidth_ = glm::vec2(0.0F);
     glm::uvec2 samples_ = glm::uvec2(0);
-    v3d::render::offline::Filter filter_ = v3d::render::offline::Filter::Box;
+    v3d::render::offline::film::Filter filter_ = v3d::render::offline::film::Filter::Box;
     float variance_ = 0.0F;
     std::string projection_;
     std::string display_;
@@ -437,7 +438,7 @@ BOOST_AUTO_TEST_CASE(ribreader_sampling_requests_test) {
     BOOST_CHECK(reader.unrecognised().empty());
     BOOST_CHECK_EQUAL(handler.samples_.x, 4U);
     BOOST_CHECK_EQUAL(handler.samples_.y, 3U);
-    BOOST_CHECK(handler.filter_ == v3d::render::offline::Filter::CatmullRom);
+    BOOST_CHECK(handler.filter_ == v3d::render::offline::film::Filter::CatmullRom);
     BOOST_CHECK_EQUAL(handler.filterWidth_.x, 3.0F);
     BOOST_CHECK_EQUAL(handler.filterWidth_.y, 4.0F);
     BOOST_CHECK_CLOSE(handler.variance_, 0.05F, 1.0e-4F);
@@ -484,10 +485,10 @@ BOOST_AUTO_TEST_CASE(ribreader_pinhole_and_rate_test) {
 
     // a rate too large for a pixel's grid of samples, or for the conversion, is capped
     BOOST_REQUIRE(read("PixelSamples 65536 1e39\n", &handler, &reader));
-    BOOST_CHECK_EQUAL(handler.samples_.x, v3d::render::offline::maximumSamples);
-    BOOST_CHECK_EQUAL(handler.samples_.y, v3d::render::offline::maximumSamples);
+    BOOST_CHECK_EQUAL(handler.samples_.x, v3d::render::offline::film::maximumSamples);
+    BOOST_CHECK_EQUAL(handler.samples_.y, v3d::render::offline::film::maximumSamples);
 
-    v3d::render::offline::Sampling sampling;
+    v3d::render::offline::film::Sampling sampling;
     sampling.fstop = handler.lens_.x;
     sampling.focalLength = 0.1F;
     sampling.focalDistance = 3.0F;

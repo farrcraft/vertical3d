@@ -9,8 +9,8 @@
 #include <api/brep/Index.h>
 #include <api/curve/Curves.h>
 #include <api/log/Logger.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -128,23 +128,23 @@ class Select final : public Tool {
     /**
      * Whether the mesh holds the component a hit names.
      **/
-    static bool holds(const v3d::brep::BRep& mesh, scene::Component kind, v3d::brep::Index index);
+    static bool holds(const v3d::brep::BRep& mesh, scene::item::Component kind, v3d::brep::Index index);
     /**
      * Whether the curves hold the component a hit names.
      **/
-    static bool holds(const v3d::curve::Curves& curves, scene::Component kind, v3d::brep::Index index);
+    static bool holds(const v3d::curve::Curves& curves, scene::item::Component kind, v3d::brep::Index index);
     /**
      * Whether the item holds the component a hit names. Only a mesh and a curve have components.
      **/
-    static bool holds(const boost::shared_ptr<scene::Item>& item, scene::Component kind, v3d::brep::Index index);
+    static bool holds(const boost::shared_ptr<scene::item::Item>& item, scene::item::Component kind, v3d::brep::Index index);
     /**
      * Whether the component a hit names is selected. A component that is not there is not.
      **/
-    static bool componentSelected(const scene::Components& components, const boost::shared_ptr<scene::Item>& item, const Picker::Hit& hit);
+    static bool componentSelected(const scene::item::Components& components, const boost::shared_ptr<scene::item::Item>& item, const Picker::Hit& hit);
     /**
      * Select or deselect the component a hit names, if it is there.
      **/
-    static void markComponent(scene::Components* components, const boost::shared_ptr<scene::Item>& item, const Picker::Hit& hit, bool wanted);
+    static void markComponent(scene::item::Components* components, const boost::shared_ptr<scene::item::Item>& item, const Picker::Hit& hit, bool wanted);
 
     /**
      * Write a pick into the scene's selection flags.

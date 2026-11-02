@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/font/Bidi.h>
+#include <api/font/text/Bidi.h>
 #include <api/ui/paint/Text.h>
 
 #include <cstddef>
@@ -183,7 +183,7 @@ class LineEdit final {
      *      apart: the one before it after typing or moving forwards, and the one after it after
      *      moving backwards
      **/
-    font::Affinity affinity() const noexcept;
+    font::text::Affinity affinity() const noexcept;
 
     /**
      * Characters an input method is composing at the caret, shown in the line but not yet in
@@ -232,7 +232,7 @@ class LineEdit final {
     std::size_t caret_;
     std::size_t anchor_;
     std::size_t limit_;
-    font::Affinity affinity_;
+    font::text::Affinity affinity_;
     std::string composing_;
 };
 

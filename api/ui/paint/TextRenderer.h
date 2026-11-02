@@ -6,11 +6,11 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/font/FallbackChain.h>
-#include <api/font/GlyphStore.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapingCache.h>
-#include <api/font/TextStyle.h>
+#include <api/font/face/FallbackChain.h>
+#include <api/font/glyph/Store.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
+#include <api/font/text/Style.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/internal/EffectQuad.h>
@@ -37,11 +37,12 @@ namespace v3d::ui::paint {
  * One typeface in two weights, and the text drawn with it.
  *
  * The regular and the semibold face are one family, and the fallback and the emoji face are
- * the next in a font::FallbackChain, so a string mixing the faces lays out as one font. Text is
- * shaped and laid out as a font::Paragraph, through a cache that keeps what it shaped.
+ * the next in a font::face::FallbackChain, so a string mixing the faces lays out as one font.
+ * Text is shaped and laid out as a font::text::Paragraph, through a cache that keeps what it
+ * shaped.
  *
  * Every glyph is rasterized the first time it is drawn, at the size it is drawn at, into a
- * font::GlyphStore whose pages reach the device through GlyphPages. Its pen is kept to a
+ * font::glyph::Store whose pages reach the device through GlyphPages. Its pen is kept to a
  * quarter of a pixel, and each line's baseline is on a whole pixel, so text on the pixel grid is
  * drawn at its exact size and sharp. A glyph is a batched quad sampling its page, so a line of
  * text joins whatever canvas the app is already filling, and costs the frame no pass of its own.
@@ -176,7 +177,7 @@ class TextRenderer {
      *
      * @param styled the style it is set in, from style(), with any features it asks for
      **/
-    float width(std::string_view text, const font::TextStyle& styled) const;
+    float width(std::string_view text, const font::text::Style& styled) const;
 
     /**
      * Break a string into the rows it takes at a width, as a paragraph lays it out: at Unicode's
@@ -188,7 +189,7 @@ class TextRenderer {
      * @param styled the style it is set in, from style()
      * @return the rows, and none for a string with no text
      **/
-    std::vector<std::string> rows(std::string_view text, float width, const font::TextStyle& styled) const;
+    std::vector<std::string> rows(std::string_view text, float width, const font::text::Style& styled) const;
 
     /**
      * Lay a string out at the pen and append its glyphs to a canvas.
@@ -209,7 +210,7 @@ class TextRenderer {
      *
      * @param styled the style it is set in, from style(), with its colour and any features
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::TextStyle& styled);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::Style& styled);
 
     /**
      * Append a paragraph's glyphs to a canvas, each in the colour of its style, with its
@@ -217,18 +218,18 @@ class TextRenderer {
      *
      * @param pen where the baseline of the first line starts
      **/
-    void draw(v3d::render::realtime::canvas::Canvas* canvas, const font::Paragraph& paragraph, const glm::vec2& pen);
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const font::text::Paragraph& paragraph, const glm::vec2& pen);
 
     /**
      * @return the style text of a size and a weight is set in, defaulting to size(), for a
      *         paragraph drawn through this
      **/
-    font::TextStyle style(float size = 0.0F, Weight weight = Weight::Regular) const;
+    font::text::Style style(float size = 0.0F, Weight weight = Weight::Regular) const;
 
     /**
      * @return the cache this shapes text through, which a paragraph drawn through this can share
      **/
-    const boost::shared_ptr<font::ShapingCache>& shaping() const noexcept;
+    const boost::shared_ptr<font::text::ShapingCache>& shaping() const noexcept;
 
     /**
      * Tell a trace of every line drawn from now on, or of none when it is empty.
@@ -240,7 +241,7 @@ class TextRenderer {
      * A glyph placed for a draw, before its page is on the device.
      **/
     struct Placed {
-        font::StoredGlyph glyph;
+        font::glyph::StoredGlyph glyph;
         glm::vec2 position{ 0.0F };
         glm::vec4 colour{ 1.0F };
         float contrast = 0.0F;
@@ -259,7 +260,7 @@ class TextRenderer {
     /**
      * @return how a face draws a glyph, read once and kept
      **/
-    Drawn drawn(const font::Face& face, unsigned int index, float size);
+    Drawn drawn(const font::face::Face& face, unsigned int index, float size);
 
     /**
      * Place a glyph and its style's effects for a draw, the glyph rasterized at its pen's step of
@@ -267,7 +268,7 @@ class TextRenderer {
      *
      * @param pen the glyph's pen, its baseline already on a whole pixel
      **/
-    void place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen);
+    void place(const font::text::LineRun& run, unsigned int index, const font::text::Style& styled, const glm::vec2& pen);
 
     /**
      * Append the glyphs placed for a draw to a canvas, each a quad sampling its page.
@@ -277,15 +278,15 @@ class TextRenderer {
     /**
      * Tell the trace of a line drawn with its baseline starting at a pen.
      **/
-    void report(const font::Paragraph& paragraph, const font::Line& line, const glm::vec2& pen) const;
+    void report(const font::text::Paragraph& paragraph, const font::text::Line& line, const glm::vec2& pen) const;
 
-    boost::shared_ptr<font::FallbackChain> chain_;
-    boost::shared_ptr<font::ShapingCache> shaping_;
-    font::GlyphStore store_;
-    font::GlyphStore colourStore_;
+    boost::shared_ptr<font::face::FallbackChain> chain_;
+    boost::shared_ptr<font::text::ShapingCache> shaping_;
+    font::glyph::Store store_;
+    font::glyph::Store colourStore_;
     GlyphPages pages_;
     GlyphPages colourPages_;
-    std::map<std::pair<const font::Face*, unsigned int>, Drawn> drawn_;
+    std::map<std::pair<const font::face::Face*, unsigned int>, Drawn> drawn_;
     float size_;
     Trace trace_;
     // what draw() places, kept between draws so a frame of labels does not allocate

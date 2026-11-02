@@ -18,7 +18,7 @@
 #include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/Translate.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -380,7 +380,7 @@ void Transform::button(unsigned int button, bool pressed, const glm::vec2& posit
             outlines_.push_back(command::Vertex::Outline::of(part));
         }
     } else {
-        for (const boost::shared_ptr<scene::Item>& item : target.items()) {
+        for (const boost::shared_ptr<scene::item::Item>& item : target.items()) {
             before_.push_back(item->placement());
         }
     }

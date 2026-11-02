@@ -14,7 +14,7 @@
 #include <api/ui/component/Label.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/tests/Typeset.h>
-#include <vertical3d/src/control/TopBar.h>
+#include <vertical3d/src/control/chrome/TopBar.h>
 
 #include <string>
 #include <string_view>
@@ -32,7 +32,7 @@
 
 namespace {
 
-using v3d::editor::control::TopBar;
+using v3d::editor::control::chrome::TopBar;
 
 /**
  * A ui holding the editor's own container and a dialog's after it, with text 10 pixels a

@@ -4,10 +4,10 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/sl/Compiler.h>
-#include <api/render/offline/sl/Emitter.h>
-#include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/compiler/Compiler.h>
+#include <api/render/offline/sl/compiler/Emitter.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/runtime/Instruction.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Program.h>
@@ -176,18 +176,18 @@ light overhead() {
 
 bool build(const std::string & source, Program* program, std::string* error) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (shaders.size() != 1) {
         *error = parser.error();
         return false;
     }
-    v3d::render::offline::sl::Compiler compiler(shaders[0]);
+    v3d::render::offline::sl::compiler::Compiler compiler(shaders[0]);
     if (!compiler.compile()) {
         *error = compiler.error();
         return false;
     }
-    v3d::render::offline::sl::Emitter emitter(shaders[0], compiler.symbols());
+    v3d::render::offline::sl::compiler::Emitter emitter(shaders[0], compiler.symbols());
     if (!emitter.emit(program)) {
         *error = emitter.error();
         return false;

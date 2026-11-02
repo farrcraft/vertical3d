@@ -51,7 +51,7 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
   one value per point.
 - **Sample**: a point inside a pixel where visibility is decided. It also carries a time within
   the shutter and a point on the lens.
-- **Film**: `offline::Film`. It weights samples into pixels with a pixel filter.
+- **Film**: `offline::film::Film`. It weights samples into pixels with a pixel filter.
 - **Pixel filter**: the weighting function: box, triangle, catmull-rom, gaussian or sinc.
 - **Imager**: a shader run over the finished picture, one row of pixels at a time.
 - **Raster space**: pixel coordinates, with the origin at the image's upper left.
@@ -63,7 +63,7 @@ scene.rib -> rib::Reader -> ri::RIBHandler -> state::RenderContext (graphics sta
                                                       |  WorldEnd
                                reyes::Hider ("hidden") or raytrace::Hider ("raytrace")
                                                       |  samples
-                                   offline::Film -> planes -> imager -> image file
+                                   offline::film::Film -> planes -> imager -> image file
 ```
 
 1. The reader parses each request and calls the matching `RIBHandler` method, with its

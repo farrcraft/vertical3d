@@ -6,10 +6,10 @@
 #include "Lit.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/RenderTarget.h>
-#include <api/render/realtime/Resources.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/RenderTarget.h>
+#include <api/render/realtime/resource/Resources.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/lighting/SceneUniforms.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
@@ -165,8 +165,8 @@ Lit::Lit(const DeviceContext& context, const Spec& spec) :
     slots_.resize(ring_->framesInFlight() > 0 ? ring_->framesInFlight() : 1);
 
     // read as an array of layers, as every shadow map is, so the binding has one kind of view
-    unshadowed_ = boost::make_shared<RenderTarget>(context,
-        RenderTarget::Spec{.width = 1, .height = 1, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
+    unshadowed_ = boost::make_shared<frame::RenderTarget>(context,
+        frame::RenderTarget::Spec{.width = 1, .height = 1, .colour = VK_FORMAT_UNDEFINED, .depth = true, .sampledDepth = true});
     unshadowed_->clear();
     unshadowedTexture_ = unshadowed_->depthTexture();
 
@@ -232,43 +232,43 @@ void Lit::createPipelines(const Shaders& shaders, VkFormat colour, VkFormat dept
 
 /**
  **/
-uint32_t Lit::slot(const TextureHandle& texture) const {
+uint32_t Lit::slot(const resource::TextureHandle& texture) const {
     return textures_->slot(texture);
 }
 
 /**
  **/
-PipelineHandle Lit::cel() const noexcept {
+resource::PipelineHandle Lit::cel() const noexcept {
     return cel_;
 }
 
 /**
  **/
-PipelineHandle Lit::outline() const noexcept {
+resource::PipelineHandle Lit::outline() const noexcept {
     return outline_;
 }
 
 /**
  **/
-PipelineHandle Lit::shadow() const noexcept {
+resource::PipelineHandle Lit::shadow() const noexcept {
     return shadow_;
 }
 
 /**
  **/
-PipelineHandle Lit::skinnedCel() const noexcept {
+resource::PipelineHandle Lit::skinnedCel() const noexcept {
     return skinnedCel_;
 }
 
 /**
  **/
-PipelineHandle Lit::skinnedOutline() const noexcept {
+resource::PipelineHandle Lit::skinnedOutline() const noexcept {
     return skinnedOutline_;
 }
 
 /**
  **/
-PipelineHandle Lit::skinnedShadow() const noexcept {
+resource::PipelineHandle Lit::skinnedShadow() const noexcept {
     return skinnedShadow_;
 }
 
@@ -352,7 +352,7 @@ void Lit::reserve(Slot* slot, boost::shared_ptr<vulkan::memory::Buffer>* buffer,
 
 /**
  **/
-VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
+VkDescriptorSet Lit::scene(const lighting::SceneUniforms& uniforms, const resource::TextureHandle& shadowMap, const std::vector<glm::mat4>& palette) {
     // the device may still read this slot from framesInFlight frames ago
     ring_->waitFrame();
     Slot& written = slot();

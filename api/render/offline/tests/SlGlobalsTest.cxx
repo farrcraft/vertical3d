@@ -6,11 +6,11 @@
 #include <api/log/Logger.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Value.h>
 
@@ -24,7 +24,7 @@ namespace {
 
 typedef v3d::render::offline::rib::Declaration Declaration;
 typedef v3d::render::offline::rib::ParameterList ParameterList;
-typedef v3d::render::offline::sl::Globals Globals;
+typedef v3d::render::offline::sl::runtime::Globals Globals;
 typedef v3d::render::offline::sl::InstancePtr InstancePtr;
 typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
 typedef v3d::render::offline::sl::ShaderType ShaderType;
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(slglobals_surface_test) {
     machine.prepare(shader->program(), 2);
     const Globals globals(shader->program());
 
-    v3d::render::offline::sl::Point point;
+    v3d::render::offline::sl::runtime::Point point;
     point.colour = glm::vec3(0.5F, 0.5F, 1.0F);
     point.opacity = glm::vec3(0.5F);
     globals.surface(&machine, 0, point);

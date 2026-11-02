@@ -25,12 +25,12 @@
 #include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
 #include <vertical3d/src/render/Shot.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/Import.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -73,7 +73,7 @@ bool Document::dirty() const noexcept {
     return history_->dirty();
 }
 
-Outcome Document::create(const boost::shared_ptr<scene::Item>& item, const std::string& name) {
+Outcome Document::create(const boost::shared_ptr<scene::item::Item>& item, const std::string& name) {
     if (item->name().empty()) {
         item->name(titled(name));
     }
@@ -87,39 +87,39 @@ Outcome Document::create(const boost::shared_ptr<scene::Item>& item, const std::
 Outcome Document::createPrimitive(Primitive primitive) {
     switch (primitive) {
         case Primitive::Cube:
-            return create(boost::make_shared<scene::Mesh>(v3d::brep::cube()), "cube");
+            return create(boost::make_shared<scene::item::Mesh>(v3d::brep::cube()), "cube");
         case Primitive::Plane:
-            return create(boost::make_shared<scene::Mesh>(v3d::brep::plane()), "plane");
+            return create(boost::make_shared<scene::item::Mesh>(v3d::brep::plane()), "plane");
         case Primitive::Cylinder:
-            return create(boost::make_shared<scene::Mesh>(v3d::brep::cylinder()), "cylinder");
+            return create(boost::make_shared<scene::item::Mesh>(v3d::brep::cylinder()), "cylinder");
         case Primitive::Cone:
-            return create(boost::make_shared<scene::Mesh>(v3d::brep::cone()), "cone");
+            return create(boost::make_shared<scene::item::Mesh>(v3d::brep::cone()), "cone");
     }
     return {};
 }
 
-Outcome Document::createCamera(const v3d::type::camera::Profile& at, scene::Camera::Projection projection) {
-    const char* name = projection == scene::Camera::Projection::Orthographic ? "orthographic camera" : "perspective camera";
+Outcome Document::createCamera(const v3d::type::camera::Profile& at, scene::item::Camera::Projection projection) {
+    const char* name = projection == scene::item::Camera::Projection::Orthographic ? "orthographic camera" : "perspective camera";
     return create(create_camera(at, projection), name);
 }
 
-Outcome Document::createLight(const v3d::type::camera::Profile& at, scene::Light::Type type) {
+Outcome Document::createLight(const v3d::type::camera::Profile& at, scene::item::Light::Type type) {
     const char* name = "point light";
-    if (type == scene::Light::Type::Distant) {
+    if (type == scene::item::Light::Type::Distant) {
         name = "distant light";
-    } else if (type == scene::Light::Type::Spot) {
+    } else if (type == scene::item::Light::Type::Spot) {
         name = "spot light";
     }
     return create(create_light(at, type), name);
 }
 
-Outcome Document::createCurve(scene::CurveType type) {
+Outcome Document::createCurve(scene::item::CurveType type) {
     const char* name = "poly curve";
-    if (type == scene::CurveType::Bezier) {
+    if (type == scene::item::CurveType::Bezier) {
         name = "Bezier curve";
-    } else if (type == scene::CurveType::CatmullRom) {
+    } else if (type == scene::item::CurveType::CatmullRom) {
         name = "Catmull-Rom curve";
-    } else if (type == scene::CurveType::Nurbs) {
+    } else if (type == scene::item::CurveType::Nurbs) {
         name = "NURBS curve";
     }
     return create(create_curve(type), name);

@@ -7,7 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -119,7 +119,7 @@ class Scene final {
      * its parent's document id, which is 0 for none.
      **/
     struct Saved {
-        boost::weak_ptr<scene::Item> item;
+        boost::weak_ptr<scene::item::Item> item;
         std::uint64_t revision = 0;
         std::int64_t position = 0;
         std::int64_t parent = 0;

@@ -5,7 +5,7 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
 
 ## Framebuffers and raster space
 
-- **`offline::FrameBuffer` is a stack of float planes**, each the size of the image.
+- **`offline::film::FrameBuffer` is a stack of float planes**, each the size of the image.
   `image(channels)` takes the leading planes as the picture and ignores the rest. The plane
   count is not the channel count.
 - **moya's planes are red, green, blue, depth and coverage**, named by
@@ -28,10 +28,10 @@ that sampling makes possible: depth of field, motion blur and adaptive sampling.
 
 A pixel's colour is a filtered set of samples. Three classes divide the work:
 
-- `offline::Sampling` holds what `PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and
+- `offline::film::Sampling` holds what `PixelSamples`, `PixelFilter`, `PixelVariance`, `Shutter` and
   `DepthOfField` set. Every field starts at the RI default.
-- `offline::Sampler` gives a pixel's samples: a raster position, a time and a lens point.
-- `offline::Film` filters samples into pixels and writes them into a renderer's planes.
+- `offline::film::Sampler` gives a pixel's samples: a raster position, a time and a lens point.
+- `offline::film::Film` filters samples into pixels and writes them into a renderer's planes.
 
 Both hiders render through them.
 
@@ -77,7 +77,7 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   casts no ray outside the window, and the reyes hider renders every bucket. A window with no
   area is logged and refused.
 - **A picture side is from 1 to 65536 pixels**, `largestResolution` in
-  [Sampling.h](../../api/render/offline/Sampling.h), wherever it enters the renderer: `Format`,
+  [Sampling.h](../../api/render/offline/film/Sampling.h), wherever it enters the renderer: `Format`,
   `RiFormat` or the command line. A larger side is refused, and so is one that is not a number,
   is infinite in either direction, or is between 0 and 1. The size already set is kept. A
   fraction is dropped.
@@ -162,7 +162,7 @@ Background: [ADR-0076](../adr/0076-offline-seeded-samples-resolved-by-one-shared
   are cast at shutter open.
 - **A pixel's seed is its position**, so two frames of an animation share their sample
   patterns. A moving scene shows this as fixed-pattern noise. The fix is to fold the frame
-  number into the seed, in `offline::Sampler` alone.
+  number into the seed, in `offline::film::Sampler` alone.
 
 ## Adaptive sampling
 

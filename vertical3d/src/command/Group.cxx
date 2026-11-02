@@ -7,8 +7,8 @@
 
 #include <api/type/Transform.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -30,13 +30,13 @@ namespace v3d::editor::command {
  **/
 Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& items) :
     scene_(scene),
-    group_(boost::make_shared<scene::Group>()) {
+    group_(boost::make_shared<scene::item::Group>()) {
     group_->name("Group");
     if (!scene_) {
         return;
     }
     scene::Items gathered;
-    for (const boost::shared_ptr<scene::Item>& item : scene_->uppermost(items)) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene_->uppermost(items)) {
         if (scene_->item(item->id()) == item) {
             gathered.push_back(item);
         }
@@ -45,9 +45,9 @@ Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& i
         return;
     }
 
-    const boost::shared_ptr<scene::Item> first = scene_->parent(gathered.front()->id());
+    const boost::shared_ptr<scene::item::Item> first = scene_->parent(gathered.front()->id());
     const bool shared = std::all_of(gathered.begin(), gathered.end(),
-        [&](const boost::shared_ptr<scene::Item>& item) { return scene_->parent(item->id()) == first; });
+        [&](const boost::shared_ptr<scene::item::Item>& item) { return scene_->parent(item->id()) == first; });
     if (shared) {
         parent_ = first;
     }
@@ -59,7 +59,7 @@ Group::Group(const boost::shared_ptr<scene::Scene>& scene, const scene::Items& i
     const scene::Evaluation evaluation = scene_->evaluate();
     glm::vec3 centre(0.0F);
     std::vector<v3d::type::Transform> shown;
-    for (const boost::shared_ptr<scene::Item>& item : gathered) {
+    for (const boost::shared_ptr<scene::item::Item>& item : gathered) {
         const Member member{ .item = item, .parent = scene_->parent(item->id()), .before = item->placement() };
         shown.push_back(evaluation.pose(*item).placement);
         centre += member.parent == parent_ ? shown.back().position : glm::vec3(evaluation.placed(item->id()).world[3]);
@@ -126,7 +126,7 @@ std::string Group::name() const {
 
 /**
  **/
-const boost::shared_ptr<scene::Group>& Group::group() const noexcept {
+const boost::shared_ptr<scene::item::Group>& Group::group() const noexcept {
     return group_;
 }
 

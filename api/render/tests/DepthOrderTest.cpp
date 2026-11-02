@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/canvas/World.h>
 
@@ -18,7 +18,7 @@
 #include <glm/vec4.hpp>
 
 using v3d::render::realtime::canvas::DepthOrder;
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 
 namespace canvas = v3d::render::realtime::canvas;
 
@@ -161,8 +161,8 @@ BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
 BOOST_AUTO_TEST_CASE(a_glyph_is_sorted_with_the_quads) {
     DepthOrder order;
     order.quad(1.0F, tile(0.0F, 0.0F), white);
-    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::TextureHandle(1),
-        .bandTexture = v3d::render::realtime::TextureHandle(2) };
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::resource::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::resource::TextureHandle(2) };
     order.glyph(2.0F, tile(1.0F, 0.0F), glyph, white);
 
     canvas::World canvas;
@@ -180,13 +180,13 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_sorted_with_the_quads) {
  **/
 BOOST_AUTO_TEST_CASE(fields_lie_beneath_glyphs_by_layer) {
     DepthOrder order;
-    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::TextureHandle(1),
-        .bandTexture = v3d::render::realtime::TextureHandle(2) };
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::resource::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::resource::TextureHandle(2) };
     const glm::vec2 none(0.0F);
     order.glyph(1.0F, tile(0.0F, 0.0F), glyph, white);
-    order.field(1.0F, 1, tile(1.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(9), 11);
-    order.field(1.0F, 0, tile(2.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(8), 10);
-    order.field(2.0F, 1, tile(3.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(9), 12);
+    order.field(1.0F, 1, tile(1.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(9), 11);
+    order.field(1.0F, 0, tile(2.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(8), 10);
+    order.field(2.0F, 1, tile(3.0F, 0.0F), none, none, white, v3d::render::realtime::resource::TextureHandle(9), 12);
 
     canvas::World canvas;
     order.into(&canvas);
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(fields_lie_beneath_glyphs_by_layer) {
  **/
 BOOST_AUTO_TEST_CASE(a_field_keeps_its_contrast) {
     DepthOrder order;
-    order.field(1.0F, 0, tile(0.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, v3d::render::realtime::TextureHandle(8), 10, 0.5F);
+    order.field(1.0F, 0, tile(0.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, v3d::render::realtime::resource::TextureHandle(8), 10, 0.5F);
     canvas::World canvas;
     order.into(&canvas);
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);

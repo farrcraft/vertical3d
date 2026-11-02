@@ -6,13 +6,13 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 
 #include <cstddef>
@@ -27,11 +27,11 @@
 #include "Reference.h"
 
 using v3d::render::realtime::canvas::Canvas;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::Pass;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::frame::Pass;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 
 namespace {
 
@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(a_textured_quad_is_the_texture_that_was_uploaded) {
             texels[at + 3] = 255;
         }
     }
-    const v3d::render::realtime::TextureHandle uploaded =
+    const v3d::render::realtime::resource::TextureHandle uploaded =
         headless.context->textures()->texture(texels.data(), textureWidth, textureHeight, 4);
     BOOST_REQUIRE(uploaded.valid());
 

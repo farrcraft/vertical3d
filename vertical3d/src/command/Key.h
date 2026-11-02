@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <set>
@@ -36,7 +36,7 @@ class Key final : public Command {
      * An item and the properties of it to key. A path its kind does not declare is skipped.
      **/
     struct Target {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         std::set<std::string> paths;
     };
 
@@ -62,7 +62,7 @@ class Key final : public Command {
  private:
     /** One curve the key changes, before and after. An empty curve is no curve. **/
     struct Change {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         std::string path;
         v3d::animation::Curve before;
         v3d::animation::Curve after;

@@ -5,10 +5,10 @@
 
 #include "Meshes.h"
 
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/component/Mesh.h>
 #include <api/render/realtime/lighting/Shadow.h>
 #include <api/render/realtime/renderer/Lit.h>
@@ -39,7 +39,7 @@ namespace {
  * Where an entity's palette starts: zero for a static entry, which reads none, and nothing for
  * a skinned one the poses do not name.
  **/
-std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entity entity, const Poses& poses) {
+std::optional<uint32_t> firstJoint(const resource::MeshRegistry::Entry& entry, entt::entity entity, const Poses& poses) {
     if (!entry.skin) {
         return 0;
     }
@@ -54,17 +54,17 @@ std::optional<uint32_t> firstJoint(const MeshRegistry::Entry& entry, entt::entit
  *
  * @param castersOnly true to leave out an entity whose mesh casts no shadow
  **/
-std::vector<std::vector<internal::Placed>> gather(const entt::registry& registry, float alpha, const MeshRegistry& meshes,
+std::vector<std::vector<internal::Placed>> gather(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes,
     const Poses& poses, bool castersOnly) {
     std::vector<std::vector<internal::Placed>> groups;
-    std::unordered_map<const MeshRegistry::Entry*, std::size_t> found;
+    std::unordered_map<const resource::MeshRegistry::Entry*, std::size_t> found;
     auto view = registry.view<const ecs::component::Transform, const component::Mesh>();
     for (const entt::entity entity : view) {
         const component::Mesh& mesh = view.get<const component::Mesh>(entity);
         if (castersOnly && !mesh.castsShadow) {
             continue;
         }
-        const MeshRegistry::Entry* entry = meshes.resolve(mesh.mesh);
+        const resource::MeshRegistry::Entry* entry = meshes.resolve(mesh.mesh);
         if (entry == nullptr) {
             continue;
         }
@@ -102,11 +102,11 @@ bool reaches(const internal::Placed& placed, const Casting& casting) {
  *
  * @param cascade what a shadow draw pushes, or null for a draw that pushes nothing
  **/
-void submit(const std::vector<internal::Placed>& group, PipelineHandle pipeline, float outline, renderer::Lit* lit,
-    Pass* pass, const renderer::Lit::Cascade* cascade = nullptr) {
-    const MeshRegistry::Entry& entry = *group.front().entry;
-    for (const MeshRegistry::Part& part : entry.parts) {
-        DrawItem item;
+void submit(const std::vector<internal::Placed>& group, resource::PipelineHandle pipeline, float outline, renderer::Lit* lit,
+    frame::Pass* pass, const renderer::Lit::Cascade* cascade = nullptr) {
+    const resource::MeshRegistry::Entry& entry = *group.front().entry;
+    for (const resource::MeshRegistry::Part& part : entry.parts) {
+        frame::DrawItem item;
         item.pipeline = pipeline;
         item.material = part.material;
         entry.mesh->describe(&item);
@@ -137,8 +137,8 @@ void submit(const std::vector<internal::Placed>& group, PipelineHandle pipeline,
 
 /**
  **/
-void meshes(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
-    float outline, Pass* pass, const Poses& poses) {
+void meshes(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes, renderer::Lit* lit,
+    float outline, frame::Pass* pass, const Poses& poses) {
     const std::vector<std::vector<internal::Placed>> groups = gather(registry, alpha, meshes, poses, false);
     const bool outlined = outline > 0.0F;
 
@@ -147,8 +147,8 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
         const bool surfaces = walk == 1;
         for (const std::vector<internal::Placed>& group : groups) {
             const bool skinned = static_cast<bool>(group.front().entry->skin);
-            const PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
-            const PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
+            const resource::PipelineHandle surface = skinned ? lit->skinnedCel() : lit->cel();
+            const resource::PipelineHandle hull = skinned ? lit->skinnedOutline() : lit->outline();
             submit(group, surfaces ? surface : hull, surfaces ? 0.0F : outline, lit, pass);
         }
     }
@@ -156,8 +156,8 @@ void meshes(const entt::registry& registry, float alpha, const MeshRegistry& mes
 
 /**
  **/
-void casters(const entt::registry& registry, float alpha, const MeshRegistry& meshes, renderer::Lit* lit,
-    Pass* pass, const Poses& poses, const Casting& casting) {
+void casters(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes, renderer::Lit* lit,
+    frame::Pass* pass, const Poses& poses, const Casting& casting) {
     const renderer::Lit::Cascade cascade{.index = casting.cascade};
     std::vector<internal::Placed> reaching;
     for (const std::vector<internal::Placed>& group : gather(registry, alpha, meshes, poses, true)) {
@@ -166,7 +166,7 @@ void casters(const entt::registry& registry, float alpha, const MeshRegistry& me
         if (reaching.empty()) {
             continue;
         }
-        const PipelineHandle pipeline = reaching.front().entry->skin ? lit->skinnedShadow() : lit->shadow();
+        const resource::PipelineHandle pipeline = reaching.front().entry->skin ? lit->skinnedShadow() : lit->shadow();
         submit(reaching, pipeline, 0.0F, lit, pass, &cascade);
     }
 }

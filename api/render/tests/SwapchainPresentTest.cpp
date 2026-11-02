@@ -3,16 +3,16 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Present.h>
+#include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/vulkan/frame/Swapchain.h>
 
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
-using v3d::render::realtime::granted;
-using v3d::render::realtime::Present;
-using v3d::render::realtime::presentModes;
+using v3d::render::realtime::frame::granted;
+using v3d::render::realtime::frame::Present;
+using v3d::render::realtime::frame::presentModes;
 using v3d::render::realtime::vulkan::frame::Swapchain;
 
 namespace {

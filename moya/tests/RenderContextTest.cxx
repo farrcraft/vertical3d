@@ -4,7 +4,7 @@
  **/
 
 #include <api/render/offline/Area.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/Polygon.h>
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(rendercontext_imager_test) {
     rc.addPolygon(polygon);
     rc.render();
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = rc.picture();
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8], so this is inside
     // it and keeps the colour the hider wrote
     BOOST_CHECK_CLOSE(planes->value(v3d::moya::state::Planes::RED, 24, 16), 1.0F, 0.01F);

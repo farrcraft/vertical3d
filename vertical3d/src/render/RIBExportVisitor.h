@@ -8,12 +8,12 @@
 #include <api/render/offline/rib/Handler.h>
 #include <api/render/offline/rib/Recorder.h>
 #include <api/type/camera/Camera.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Visitor.h>
 
@@ -94,22 +94,22 @@ class RIBExportVisitor final : public scene::Visitor {
      * One mesh: its block with its local matrix, then a Polygon per face. It is held until
      * end(), so that it comes after every light.
      **/
-    void visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) override;
 
     /**
      * A camera is not written. A light is written at once, as a LightSource with "from"
      * where it is and, for a distant or spot light, "to" one unit along its +z axis. A group
      * has only its block.
      **/
-    void visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) override;
-    void visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) override;
-    void visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) override;
-    void visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) override;
+    void visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) override;
+    void visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) override;
+    void visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) override;
 
     /**
      * Close the item's block, if a mesh inside it opened it.
      **/
-    void leave(const boost::shared_ptr<scene::Item>& item) override;
+    void leave(const boost::shared_ptr<scene::item::Item>& item) override;
 
  private:
     /** The version of RIB the export is written in. **/

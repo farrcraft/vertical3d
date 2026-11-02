@@ -6,7 +6,7 @@
 #include "Reader.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/type/Checked.h>
 
 #include "Bases.h"
@@ -304,8 +304,8 @@ Reader::Result Reader::optionRequest(const std::string & name, Lexer * lexer, Ha
         // a side that formatSide() refuses skips the request. A side of zero or less arrives
         // as 0, which asks for the renderer's default. An aspect that is not a positive finite
         // number becomes 1, square pixels.
-        const std::optional<uint32_t> width = formatSide(arg1);
-        const std::optional<uint32_t> height = formatSide(arg2);
+        const std::optional<uint32_t> width = film::formatSide(arg1);
+        const std::optional<uint32_t> height = film::formatSide(arg2);
         if (!width || !height) {
             logger_->get()->warn("RIB Format {} {} {} is not a picture size and was skipped", arg1, arg2, arg3);
             return Result::Handled;
@@ -437,15 +437,15 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
         if (!number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
-        handler->pixelSamples(glm::uvec2(sampleCount(arg1), sampleCount(arg2)));
+        handler->pixelSamples(glm::uvec2(film::sampleCount(arg1), film::sampleCount(arg2)));
         return Result::Handled;
     }
     if (name == "PixelFilter") {
         if (!text(lexer, &first) || !number(lexer, &arg1) || !number(lexer, &arg2)) {
             return Result::Failed;
         }
-        Filter filter = Filter::Gaussian;
-        if (!filterNamed(first, &filter)) {
+        film::Filter filter = film::Filter::Gaussian;
+        if (!film::filterNamed(first, &filter)) {
             // an unknown filter skips the request without failing the parse, and the
             // renderer keeps its current filter
             if (reported_.insert("filter " + first).second) {
@@ -453,7 +453,7 @@ Reader::Result Reader::sampleRequest(const std::string & name, Lexer * lexer, Ha
             }
             return Result::Handled;
         }
-        if (!filterWidth(glm::vec2(arg1, arg2))) {
+        if (!film::filterWidth(glm::vec2(arg1, arg2))) {
             logger_->get()->warn("RIB PixelFilter width {} {} is not a width and was skipped", arg1, arg2);
             return Result::Handled;
         }

@@ -15,8 +15,8 @@
 #include <vertical3d/src/command/Topology.h>
 #include <vertical3d/src/command/Vertex.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 
@@ -35,7 +35,7 @@
 namespace {
 
 using v3d::editor::manipulator::Target;
-using v3d::editor::scene::Mesh;
+using v3d::editor::scene::item::Mesh;
 using v3d::editor::selection::SelectMask;
 
 /**
@@ -72,8 +72,8 @@ bool same(const v3d::brep::BRep::Snapshot& left, const v3d::brep::BRep::Snapshot
  **/
 std::size_t selectedComponents(const v3d::editor::scene::Scene& scene, const Mesh& item) {
     std::size_t count = 0;
-    for (const v3d::editor::scene::Component kind : { v3d::editor::scene::Component::Vertex, v3d::editor::scene::Component::Edge,
-        v3d::editor::scene::Component::Face }) {
+    for (const v3d::editor::scene::item::Component kind : { v3d::editor::scene::item::Component::Vertex, v3d::editor::scene::item::Component::Edge,
+        v3d::editor::scene::item::Component::Face }) {
         count += scene.components().of(item.id(), kind).size();
     }
     return count;
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(modelling_split_edges_test) {
     // nothing selected is nothing to split
     BOOST_CHECK(!v3d::editor::command::splitEdges(scene));
 
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Edge, 0, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Edge, 0, true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
     const boost::shared_ptr<v3d::editor::command::Topology> command = v3d::editor::command::splitEdges(scene);
     BOOST_REQUIRE(command);
@@ -149,8 +149,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_edges_test) {
 
     // the two parts of the split edge are selected, so the split can be repeated
     BOOST_CHECK_EQUAL(selectedComponents(*scene, *cube), 2U);
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Edge, 0));
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Edge, cube->geometry()->edge(0)->next()));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Edge, 0));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Edge, cube->geometry()->edge(0)->next()));
 
     undoRedo(command.get(), *scene, cube, before);
 }
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_boundary_edges_test) {
     cube->selected(true);
     scene->add(plane);
     scene->add(cube);
-    scene->components().select(plane->id(), v3d::editor::scene::Component::Edge, 1, true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Edge, 3, true);
+    scene->components().select(plane->id(), v3d::editor::scene::item::Component::Edge, 1, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Edge, 3, true);
     const v3d::brep::BRep::Snapshot planeBefore = plane->geometry()->snapshot();
     const v3d::brep::BRep::Snapshot cubeBefore = cube->geometry()->snapshot();
 
@@ -189,8 +189,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_face_test) {
     // two opposite corners of the front face
     const v3d::brep::Index first = at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F));
     const v3d::brep::Index second = at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F));
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, first, true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, second, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, first, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, second, true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
 
     std::string problem;
@@ -199,8 +199,8 @@ BOOST_AUTO_TEST_CASE(modelling_split_face_test) {
     BOOST_CHECK_EQUAL(command->name(), "split face");
     sound(*cube->geometry());
     BOOST_CHECK_EQUAL(cube->geometry()->faceCount(), 7U);
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Vertex, first));
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Vertex, second));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Vertex, first));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Vertex, second));
 
     undoRedo(command.get(), *scene, cube, before);
 }
@@ -218,9 +218,9 @@ BOOST_AUTO_TEST_CASE(modelling_shared_mesh_test) {
     second->selected(true);
     scene->add(first);
     scene->add(second);
-    scene->components().select(first->id(), v3d::editor::scene::Component::Edge, 0, true);
-    scene->components().select(second->id(), v3d::editor::scene::Component::Edge, 0, true);
-    scene->components().select(second->id(), v3d::editor::scene::Component::Vertex, 3, true);
+    scene->components().select(first->id(), v3d::editor::scene::item::Component::Edge, 0, true);
+    scene->components().select(second->id(), v3d::editor::scene::item::Component::Edge, 0, true);
+    scene->components().select(second->id(), v3d::editor::scene::item::Component::Vertex, 3, true);
 
     const boost::shared_ptr<v3d::editor::command::Topology> command = v3d::editor::command::splitEdges(scene);
     BOOST_REQUIRE(command);
@@ -247,26 +247,26 @@ BOOST_AUTO_TEST_CASE(modelling_split_face_refused_test) {
     std::string problem;
 
     // one vertex is not two
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
     BOOST_CHECK(!v3d::editor::command::splitFace(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "it needs exactly two vertices selected, and 1 are");
 
     // corners next to each other are already joined on every face they share
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F)), true);
     BOOST_CHECK(!v3d::editor::command::splitFace(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "the two vertices are next to each other on every face they share");
 
     // opposite corners of the cube share no face
     scene->components().clear(cube->id());
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, 0.5F)), true);
     BOOST_CHECK(!v3d::editor::command::splitFace(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "the two vertices are not corners of one face");
 
     // and a vertex in each of two meshes is not a pair in one
     scene->components().clear(cube->id());
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, 0, true);
-    scene->components().select(other->id(), v3d::editor::scene::Component::Vertex, 2, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, 0, true);
+    scene->components().select(other->id(), v3d::editor::scene::item::Component::Vertex, 2, true);
     BOOST_CHECK(!v3d::editor::command::splitFace(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "the two vertices are in different meshes");
 
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
     const v3d::brep::BRep::Snapshot original = cube->geometry()->snapshot();
     v3d::editor::command::Stack history;
 
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F)), true);
     Target target = Target::components({cube}, SelectMask::Vertex, scene->components(), scene->evaluate());
     const v3d::editor::command::Vertex::Shape shape = v3d::editor::command::Vertex::Shape::of(target.parts()[0]);
     v3d::editor::manipulator::Motion motion;
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE(modelling_history_keeps_indices_test) {
         std::vector<v3d::editor::command::Vertex::CurveChange>{}, "translate"));
 
     scene->components().clear(cube->id());
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Edge, 0, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Edge, 0, true);
     history.push(v3d::editor::command::splitEdges(scene));
 
     history.undo();
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
 
     const v3d::brep::Index top = facing(*cube->geometry(), glm::vec3(0.0F, 1.0F, 0.0F));
     BOOST_REQUIRE(top != v3d::brep::INVALID_ID);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, top, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, top, true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
     const boost::shared_ptr<v3d::editor::command::Topology> command = v3d::editor::command::extrudeFaces(scene);
     BOOST_REQUIRE(command);
@@ -322,12 +322,12 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_faces_test) {
     BOOST_CHECK_EQUAL(cube->geometry()->faceCount(), 10U);
 
     // the face stays selected, and the ring is not
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Face, top));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Face, top));
     BOOST_CHECK_EQUAL(selectedComponents(*scene, *cube), 1U);
     undoRedo(command.get(), *scene, cube, before);
 
     // pulled out by a manipulator, the ring's walls get normals that face out of the cube
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, top, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, top, true);
     Target target = Target::components({cube}, SelectMask::Face, scene->components(), scene->evaluate());
     v3d::editor::manipulator::Motion motion;
     motion.offset = glm::vec3(0.0F, 0.5F, 0.0F);
@@ -348,8 +348,8 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_region_test) {
     const v3d::brep::Index top = facing(*cube->geometry(), glm::vec3(0.0F, 1.0F, 0.0F));
     const v3d::brep::Index right = facing(*cube->geometry(), glm::vec3(1.0F, 0.0F, 0.0F));
     BOOST_REQUIRE(top != v3d::brep::INVALID_ID && right != v3d::brep::INVALID_ID);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, top, true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, right, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, top, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, right, true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
 
     const boost::shared_ptr<v3d::editor::command::Topology> command = v3d::editor::command::extrudeFaces(scene);
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(modelling_extrude_open_boundary_test) {
     const boost::shared_ptr<Mesh> cylinder = boost::make_shared<Mesh>(v3d::brep::cylinder());
     cylinder->selected(true);
     scene->add(cylinder);
-    scene->components().select(cylinder->id(), v3d::editor::scene::Component::Face, 0, true);
+    scene->components().select(cylinder->id(), v3d::editor::scene::item::Component::Face, 0, true);
     const std::size_t faces = cylinder->geometry()->faceCount();
     const v3d::brep::BRep::Snapshot before = cylinder->geometry()->snapshot();
 
@@ -389,8 +389,8 @@ BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
     const v3d::brep::Index top = facing(*cube->geometry(), glm::vec3(0.0F, 1.0F, 0.0F));
     const v3d::brep::Index right = facing(*cube->geometry(), glm::vec3(1.0F, 0.0F, 0.0F));
     BOOST_REQUIRE(top != v3d::brep::INVALID_ID && right != v3d::brep::INVALID_ID);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, top, true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Face, right, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, top, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Face, right, true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
 
     const boost::shared_ptr<v3d::editor::command::Topology> command = v3d::editor::command::insetFaces(scene);
@@ -399,8 +399,8 @@ BOOST_AUTO_TEST_CASE(modelling_inset_faces_test) {
     sound(*cube->geometry());
     BOOST_CHECK_EQUAL(cube->geometry()->faceCount(), 14U);
     BOOST_CHECK_EQUAL(cube->geometry()->vertexCount(), 16U);
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Face, top));
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Face, right));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Face, top));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Face, right));
     BOOST_CHECK_EQUAL(selectedComponents(*scene, *cube), 2U);
 
     // the top's corners are a quarter of the way in from the cube's, whose top corners are half
@@ -419,8 +419,8 @@ BOOST_AUTO_TEST_CASE(modelling_merge_vertices_test) {
     const boost::shared_ptr<Mesh> cube = boost::make_shared<Mesh>(v3d::brep::cube());
     cube->selected(true);
     scene->add(cube);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, -0.5F, -0.5F)), true);
     const v3d::brep::BRep::Snapshot before = cube->geometry()->snapshot();
 
     std::string problem;
@@ -434,7 +434,7 @@ BOOST_AUTO_TEST_CASE(modelling_merge_vertices_test) {
     // the merged vertex stays selected, so it is the only component that is
     const v3d::brep::Index merged = at(*cube->geometry(), glm::vec3(0.0F, -0.5F, -0.5F));
     BOOST_REQUIRE(merged != v3d::brep::INVALID_ID);
-    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::Component::Vertex, merged));
+    BOOST_CHECK(scene->components().selected(cube->id(), v3d::editor::scene::item::Component::Vertex, merged));
     BOOST_CHECK_EQUAL(selectedComponents(*scene, *cube), 1U);
 
     undoRedo(command.get(), *scene, cube, before);
@@ -452,20 +452,20 @@ BOOST_AUTO_TEST_CASE(modelling_merge_vertices_refused_test) {
     std::string problem;
 
     // one vertex is not enough
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(-0.5F, -0.5F, -0.5F)), true);
     BOOST_CHECK(!v3d::editor::command::mergeVertices(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "it needs at least two vertices selected, and 1 are");
 
     // opposite corners of one face would fold the face onto itself
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F)), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, at(*cube->geometry(), glm::vec3(0.5F, 0.5F, -0.5F)), true);
     BOOST_CHECK(!v3d::editor::command::mergeVertices(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "it would leave an edge shared by more than two faces, or a face that meets itself");
     BOOST_CHECK(same(cube->geometry()->snapshot(), before));
 
     // and a vertex in each of two meshes cannot be merged
     scene->components().clear(cube->id());
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, 0, true);
-    scene->components().select(other->id(), v3d::editor::scene::Component::Vertex, 1, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, 0, true);
+    scene->components().select(other->id(), v3d::editor::scene::item::Component::Vertex, 1, true);
     BOOST_CHECK(!v3d::editor::command::mergeVertices(scene, &problem));
     BOOST_CHECK_EQUAL(problem, "the vertices are in different meshes");
 }
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
     const v3d::brep::BRep::Snapshot original = cube->geometry()->snapshot();
     v3d::editor::command::Stack history;
 
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, static_cast<v3d::brep::Index>(cube->geometry()->vertexCount() - 1), true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, static_cast<v3d::brep::Index>(cube->geometry()->vertexCount() - 1), true);
     Target target = Target::components({cube}, SelectMask::Vertex, scene->components(), scene->evaluate());
     const v3d::editor::command::Vertex::Shape shape = v3d::editor::command::Vertex::Shape::of(target.parts()[0]);
     v3d::editor::manipulator::Motion motion;
@@ -494,8 +494,8 @@ BOOST_AUTO_TEST_CASE(modelling_merge_history_keeps_indices_test) {
     scene->components().clear(cube->id());
     const v3d::brep::Index first = cube->geometry()->edge(cube->geometry()->face(0)->edge())->vertex();
     const v3d::brep::Index second = cube->geometry()->edge(cube->geometry()->edge(cube->geometry()->face(0)->edge())->next())->vertex();
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, first, true);
-    scene->components().select(cube->id(), v3d::editor::scene::Component::Vertex, second, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, first, true);
+    scene->components().select(cube->id(), v3d::editor::scene::item::Component::Vertex, second, true);
     std::string problem;
     const boost::shared_ptr<v3d::editor::command::Topology> merge = v3d::editor::command::mergeVertices(scene, &problem);
     BOOST_REQUIRE_MESSAGE(merge, problem);

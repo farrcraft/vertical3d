@@ -5,7 +5,7 @@
 
 #include "CurveBuilder.h"
 
-#include <api/font/Curves.h>
+#include <api/font/glyph/Curves.h>
 
 #include <utility>
 #include <vector>
@@ -69,9 +69,9 @@ void CurveBuilder::close() {
     }
 }
 
-std::vector<QuadraticCurve> CurveBuilder::take() {
+std::vector<glyph::QuadraticCurve> CurveBuilder::take() {
     close();
-    return std::exchange(curves_, std::vector<QuadraticCurve>());
+    return std::exchange(curves_, std::vector<glyph::QuadraticCurve>());
 }
 
 glm::vec2 CurveBuilder::map(const glm::vec2& point) const {
@@ -80,7 +80,7 @@ glm::vec2 CurveBuilder::map(const glm::vec2& point) const {
 
 void CurveBuilder::add(const glm::vec2& control, const glm::vec2& to) {
     if (to != pen_ || control != pen_) {
-        curves_.push_back(QuadraticCurve{ .p1 = pen_, .p2 = control, .p3 = to });
+        curves_.push_back(glyph::QuadraticCurve{ .p1 = pen_, .p2 = control, .p3 = to });
     }
     pen_ = to;
 }

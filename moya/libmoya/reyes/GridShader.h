@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/sl/Globals.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Machine.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/texture/Texture.h>
 #include <api/render/offline/trace/Tracer.h>
 #include <moya/libmoya/state/Shading.h>
 
@@ -71,7 +71,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
         v3d::render::offline::sl::runtime::Value* direction,
         v3d::render::offline::sl::runtime::Value* colour,
         std::vector<char>* reached, bool* ambient) override;
-    const v3d::render::offline::Texture* texture(const std::string & name) override;
+    const v3d::render::offline::texture::Texture* texture(const std::string & name) override;
     /**
      * A light reads the surface being shaded, a surface reads the displacement shader that
      * ran on the grid, and a surface's illuminance loop reads the light it is running for.
@@ -105,7 +105,7 @@ class GridShader final : public v3d::render::offline::sl::runtime::Renderer {
      public:
         v3d::render::offline::sl::runtime::Machine machine;
         const v3d::render::offline::sl::runtime::Program* program = nullptr;
-        v3d::render::offline::sl::Globals globals;
+        v3d::render::offline::sl::runtime::Globals globals;
         unsigned int batch = 0;
     };
 

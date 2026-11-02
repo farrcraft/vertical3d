@@ -14,14 +14,14 @@
 #include <api/curve/Curves.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/type/geometry/AABBox.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/CurveParts.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -53,7 +53,7 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas) 
 /**
  **/
 WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, const Shown& shown,
-    const scene::Components* components) :
+    const scene::item::Components* components) :
     canvas_(canvas),
     shown_(shown),
     components_(components),
@@ -65,7 +65,7 @@ WireframeVisitor::WireframeVisitor(v3d::render::realtime::canvas::Line* canvas, 
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const scene::Placed& placed) {
+void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Mesh>& item, const scene::Placed& placed) {
     if (canvas_ == nullptr || !item || !shown_.meshes) {
         return;
     }
@@ -83,7 +83,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const s
     const unsigned int id = item->id();
     const auto faceSelected = [this, &mesh, id](v3d::brep::Index edge) {
         const v3d::brep::HalfEdge* half = mesh->edge(edge);
-        return half != nullptr && components_ != nullptr && components_->selected(id, scene::Component::Face, half->face());
+        return half != nullptr && components_ != nullptr && components_->selected(id, scene::item::Component::Face, half->face());
     };
 
     for (v3d::brep::Index number = 0; number < faces; number++) {
@@ -119,7 +119,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Mesh>& item, const s
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<scene::Camera>& camera, const scene::Placed& placed, const scene::Camera::Lens& lens) {
+void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) {
     if (canvas_ == nullptr || !camera || !shown_.cameras) {
         return;
     }
@@ -131,7 +131,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Camera>& camera, con
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<scene::Light>& light, const scene::Placed& placed, const scene::Light::Emission& emission) {
+void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Light>& light, const scene::Placed& placed, const scene::item::Light::Emission& emission) {
     if (canvas_ == nullptr || !light || !shown_.lights) {
         return;
     }
@@ -143,7 +143,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Light>& light, const
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<scene::Group>& group, const scene::Placed& placed) {
+void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Group>& group, const scene::Placed& placed) {
     if (canvas_ == nullptr || !group) {
         return;
     }
@@ -155,7 +155,7 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Group>& group, const
 
 /**
  **/
-void WireframeVisitor::visit(const boost::shared_ptr<scene::Curve>& curve, const scene::Placed& placed) {
+void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Curve>& curve, const scene::Placed& placed) {
     if (canvas_ == nullptr || !curve) {
         return;
     }
@@ -170,14 +170,14 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::Curve>& curve, const
 
 /**
  **/
-void WireframeVisitor::controls(const scene::Curve& item) {
+void WireframeVisitor::controls(const scene::item::Curve& item) {
     const v3d::curve::Curves& curves = *item.geometry();
-    const std::vector<std::pair<v3d::brep::Index, glm::vec3>> points = scene::controlPoints(curves);
+    const std::vector<std::pair<v3d::brep::Index, glm::vec3>> points = scene::item::controlPoints(curves);
     if (points.empty()) {
         return;
     }
     const std::vector<std::pair<v3d::brep::Index, glm::vec3>> handles =
-        shown_.handles ? scene::handlePoints(curves) : std::vector<std::pair<v3d::brep::Index, glm::vec3>>{};
+        shown_.handles ? scene::item::handlePoints(curves) : std::vector<std::pair<v3d::brep::Index, glm::vec3>>{};
 
     glm::vec3 low = points.front().second;
     glm::vec3 high = low;
@@ -188,12 +188,12 @@ void WireframeVisitor::controls(const scene::Curve& item) {
     const float size = markerSize(high - low, controlScale);
     const glm::vec3 corner(size, size, size);
     const unsigned int id = item.id();
-    const auto selected = [this, id](scene::Component kind, v3d::brep::Index part) {
+    const auto selected = [this, id](scene::item::Component kind, v3d::brep::Index part) {
         return components_ != nullptr && components_->selected(id, kind, part);
     };
 
     for (const auto& [part, point] : points) {
-        canvas_->box(point - corner, point + corner, selected(scene::Component::Vertex, part) ? component_ : wire_);
+        canvas_->box(point - corner, point + corner, selected(scene::item::Component::Vertex, part) ? component_ : wire_);
     }
 
     // a NURBS curve does not pass through its points, so the hull between them shows how they
@@ -215,12 +215,12 @@ void WireframeVisitor::controls(const scene::Curve& item) {
     // handlePoints() gives the left and right handle of each point in turn, so a handle's point
     // is the control point its part number names
     for (const auto& [part, handle] : handles) {
-        const std::optional<scene::CurveHandle> at = scene::handleAt(curves, part);
+        const std::optional<scene::item::CurveHandle> at = scene::item::handleAt(curves, part);
         if (!at) {
             continue;
         }
-        const glm::vec3 point = scene::controlPoint(curves.curve(at->at.curve), at->at.point);
-        const glm::vec4& colour = selected(scene::Component::Handle, part) ? component_ : glyph_;
+        const glm::vec3 point = scene::item::controlPoint(curves.curve(at->at.curve), at->at.point);
+        const glm::vec4& colour = selected(scene::item::Component::Handle, part) ? component_ : glyph_;
         canvas_->line(point, handle, colour);
         canvas_->box(handle - corner, handle + corner, colour);
     }
@@ -239,7 +239,7 @@ void WireframeVisitor::markers(unsigned int item, const boost::shared_ptr<v3d::b
     const float size = markerSize(bound.max() - bound.min(), markerScale);
 
     const glm::vec3 corner(size, size, size);
-    for (const v3d::brep::Index index : components_->of(item, scene::Component::Vertex)) {
+    for (const v3d::brep::Index index : components_->of(item, scene::item::Component::Vertex)) {
         const v3d::brep::Vertex* vertex = mesh->vertex(index);
         if (vertex == nullptr) {
             continue;

@@ -5,7 +5,7 @@
 
 #include "RIBHandler.h"
 
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Declarations.h>
 #include <api/render/offline/rib/Requests.h>
 #include <api/type/Checked.h>
@@ -30,7 +30,7 @@ std::optional<uint32_t> RIBHandler::count(float value) {
 }
 
 int RIBHandler::side(unsigned int value) {
-    return static_cast<int>(std::min(value, v3d::render::offline::largestResolution + 1));
+    return static_cast<int>(std::min(value, v3d::render::offline::film::largestResolution + 1));
 }
 
 void RIBHandler::notice() {
@@ -206,7 +206,7 @@ void RIBHandler::pixelSamples(const glm::uvec2 & samples) {
     context().sampling().samples = samples;
 }
 
-void RIBHandler::pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) {
+void RIBHandler::pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) {
     context().sampling().filter = filter;
     context().sampling().width = glm::vec2(xwidth, ywidth);
 }

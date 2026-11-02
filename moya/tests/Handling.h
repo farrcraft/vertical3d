@@ -6,10 +6,11 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -83,7 +84,7 @@ inline bool read(const std::string & source, v3d::moya::ri::RIBHandler * handler
 /**
  * The number of pixels whose red is more than half.
  **/
-inline unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
+inline unsigned int coverage(const v3d::render::offline::film::FrameBuffer & planes) {
     unsigned int covered = 0;
     for (unsigned int row = 0; row < planes.height(); row++) {
         for (unsigned int column = 0; column < planes.width(); column++) {
@@ -104,7 +105,7 @@ inline unsigned int coverage(const v3d::render::offline::FrameBuffer & planes) {
  * clockwise as the camera sees it, from its lower left corner, so its geometric normal faces
  * the camera.
  **/
-inline boost::shared_ptr<v3d::render::offline::FrameBuffer> quad(unsigned int grid, const std::string & shading,
+inline boost::shared_ptr<v3d::render::offline::film::FrameBuffer> quad(unsigned int grid, const std::string & shading,
     const std::string & varying) {
     v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(

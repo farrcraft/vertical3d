@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 namespace v3d::render::realtime::component {
 
@@ -17,7 +17,7 @@ namespace v3d::render::realtime::component {
  * model draw it the same way.
  **/
 struct Mesh final {
-    MeshHandle mesh;
+    resource::MeshHandle mesh;
     bool castsShadow = true;
 };
 

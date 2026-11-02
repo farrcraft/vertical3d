@@ -5,10 +5,10 @@
 
 #include "Samples.h"
 
-#include <api/render/offline/Film.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampler.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Film.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampler.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <algorithm>
 #include <cassert>
@@ -17,16 +17,16 @@
 
 namespace v3d::moya::reyes {
 
-Samples::Samples(const glm::uvec2 & size, const v3d::render::offline::Sampling & sampling) :
+Samples::Samples(const glm::uvec2 & size, const v3d::render::offline::film::Sampling & sampling) :
     width_(size.x), height_(size.y), perPixel_(0), sampling_(sampling) {
     const unsigned int width = size.x;
     const unsigned int height = size.y;
-    const v3d::render::offline::Sampler sampler(sampling);
+    const v3d::render::offline::film::Sampler sampler(sampling);
     for (unsigned int row = 0; row < height; row++) {
         for (unsigned int column = 0; column < width; column++) {
-            const std::vector<v3d::render::offline::Sampler::Sample> placed = sampler.pixel(column, row);
+            const std::vector<v3d::render::offline::film::Sampler::Sample> placed = sampler.pixel(column, row);
             perPixel_ = static_cast<unsigned int>(placed.size());
-            for (const v3d::render::offline::Sampler::Sample & at : placed) {
+            for (const v3d::render::offline::film::Sampler::Sample & at : placed) {
                 Sample sample;
                 sample.raster = at.raster;
                 sample.time = at.time;
@@ -97,12 +97,12 @@ Samples::Sample & Samples::at(unsigned int column, unsigned int row, unsigned in
     return samples_[(((static_cast<std::size_t>(row) * width_) + column) * perPixel_) + index];
 }
 
-void Samples::resolve(v3d::render::offline::FrameBuffer * planes, unsigned int red, unsigned int coverage,
+void Samples::resolve(v3d::render::offline::film::FrameBuffer * planes, unsigned int red, unsigned int coverage,
     unsigned int depth) const {
-    v3d::render::offline::Film film(width_, height_, sampling_);
+    v3d::render::offline::film::Film film(width_, height_, sampling_);
     std::vector<Layer> sorted;
     for (const Sample & hidden : samples_) {
-        v3d::render::offline::Film::Sample sample;
+        v3d::render::offline::film::Film::Sample sample;
         sample.raster = hidden.raster;
         sample.hit = hidden.layers.hit();
         if (sample.hit) {

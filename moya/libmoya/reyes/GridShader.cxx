@@ -5,11 +5,11 @@
 
 #include "GridShader.h"
 
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/sl/Globals.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
+#include <api/render/offline/sl/runtime/Globals.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
+#include <api/render/offline/texture/Texture.h>
 #include <api/render/offline/trace/Scene.h>
 #include <api/type/geometry/Line.h>
 #include <moya/libmoya/Vertex.h>
@@ -42,7 +42,7 @@ GridShader::Run & GridShader::run(const v3d::render::offline::sl::InstancePtr & 
     held.batch = batch;
     held.machine.renderer(this);
     held.machine.prepare(shader->program(), batch);
-    held.globals = v3d::render::offline::sl::Globals(shader->program());
+    held.globals = v3d::render::offline::sl::runtime::Globals(shader->program());
     return held;
 }
 
@@ -86,7 +86,7 @@ v3d::render::offline::sl::runtime::Renderer::Shape GridShader::shape() const {
     return grid;
 }
 
-const v3d::render::offline::Texture* GridShader::texture(const std::string & name) {
+const v3d::render::offline::texture::Texture* GridShader::texture(const std::string & name) {
     return context_->textures().find(name);
 }
 
@@ -202,7 +202,7 @@ void GridShader::displace(const state::Shading & shading, MicroPolygonGrid* grid
     for (unsigned int i = 0; i < size; i++) {
         for (unsigned int j = 0; j < size; j++) {
             const Vertex vert = grid->vertex(i, j);
-            v3d::render::offline::sl::Point point;
+            v3d::render::offline::sl::runtime::Point point;
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();
@@ -267,7 +267,7 @@ void GridShader::shade(const state::Shading & shading, MicroPolygonGrid* grid) {
         for (unsigned int j = 0; j < size; j++) {
             const unsigned int lane = (i * size) + j;
             const Vertex vert = grid->vertex(i, j);
-            v3d::render::offline::sl::Point point;
+            v3d::render::offline::sl::runtime::Point point;
             point.position = vert.point();
             point.normal = vert.normal();
             point.geometric = vert.geometricNormal();

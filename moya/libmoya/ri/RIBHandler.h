@@ -60,7 +60,7 @@ class RIBHandler final : public v3d::render::offline::rib::Handler {
     void depthOfField(const v3d::render::offline::rib::DepthOfField & request) override;
     void shutter(const v3d::render::offline::rib::Shutter & request) override;
     void pixelSamples(const glm::uvec2 & samples) override;
-    void pixelFilter(v3d::render::offline::Filter filter, float xwidth, float ywidth) override;
+    void pixelFilter(v3d::render::offline::film::Filter filter, float xwidth, float ywidth) override;
     void pixelVariance(float variation) override;
     void display(const v3d::render::offline::rib::Display & request,
         const v3d::render::offline::rib::ParameterList & parameters) override;

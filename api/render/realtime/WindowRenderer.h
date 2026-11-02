@@ -5,19 +5,19 @@
 
 #pragma once
 
-#include <api/render/realtime/Present.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Present.h>
+#include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 #include <api/window/Window.h>
+
+#include "WindowContext.h"
 
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "Frame.h"
-#include "WindowContext.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -89,13 +89,13 @@ class WindowRenderer final {
      * default is Present::Uncapped. A driver need not offer every mode, so presenting() says
      * which was granted.
      **/
-    void present(Present present);
+    void present(frame::Present present);
 
     /**
      * @return the present mode the swapchain was granted, or the one requested before
      *         initialize(). A request not yet taken by renderFrame() is not reported until it is
      **/
-    Present presenting() const noexcept;
+    frame::Present presenting() const noexcept;
 
     /**
      * Whether there is a frame worth building, and how big it is.
@@ -116,7 +116,7 @@ class WindowRenderer final {
      * The frame being built for the next present. Passes and draw items are added to
      * this during a tick, and recorded in one step by renderFrame().
      **/
-    boost::shared_ptr<Frame> frame() const;
+    boost::shared_ptr<frame::Frame> frame() const;
 
     /**
      * How long the device spent on each pass of a frame, by the pass's name. The numbers are
@@ -138,7 +138,7 @@ class WindowRenderer final {
     /**
      * @return where a texture is uploaded and made a material, or null before initialize()
      **/
-    boost::shared_ptr<Textures> textures() const;
+    boost::shared_ptr<resource::Textures> textures() const;
 
     /**
      * The world space line primitive. An app fills a canvas::Line during its tick and hands
@@ -177,16 +177,16 @@ class WindowRenderer final {
     /**< declared before the context, so the context and the surface it holds go first **/
     boost::shared_ptr<v3d::window::Window> window_;
     boost::shared_ptr<WindowContext> context_;
-    boost::shared_ptr<Frame> frame_;
+    boost::shared_ptr<frame::Frame> frame_;
     glm::vec4 clearColour_;
     /**< the format initialize() requests for the swapchain. The surface decides which it gets **/
     VkFormat preferred_;
     /**< what initialize() builds the device's allocator as **/
     vulkan::memory::Allocator::Kind allocations_;
     /**< the present mode initialize() asks for **/
-    Present present_;
+    frame::Present present_;
     /**< a present mode asked for since initialize(), which the next renderFrame() takes **/
-    std::optional<Present> pendingPresent_;
+    std::optional<frame::Present> pendingPresent_;
     /**< made by the first capture() and kept, so its readback buffer is reused **/
     boost::shared_ptr<vulkan::frame::Capture> capture_;
     /**< where the next presented frame is written, or empty when none is asked for **/

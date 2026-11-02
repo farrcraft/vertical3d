@@ -5,7 +5,7 @@
 
 #include <api/ecs/Previous.h>
 #include <api/ecs/component/Transform.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/DepthOrder.h>
 #include <api/render/realtime/entity/Sprites.h>
 #include <api/render/realtime/canvas/World.h>
@@ -23,7 +23,7 @@
 
 using v3d::ecs::component::Transform;
 using v3d::render::realtime::canvas::DepthOrder;
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 using v3d::render::realtime::component::Sprite;
 
 namespace canvas = v3d::render::realtime::canvas;

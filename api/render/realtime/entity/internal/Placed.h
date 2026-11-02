@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 
 #include <cstdint>
 
@@ -17,7 +17,7 @@ namespace v3d::render::realtime::entity::internal {
  * An entity about to be drawn: its entry, where it stands, and where its palette starts.
  **/
 struct Placed final {
-    const MeshRegistry::Entry* entry;
+    const resource::MeshRegistry::Entry* entry;
     glm::mat4 model;
     uint32_t firstJoint;
 };

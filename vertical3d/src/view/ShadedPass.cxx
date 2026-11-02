@@ -8,18 +8,18 @@
 #include <api/brep/BRep.h>
 #include <api/brep/Triangulation.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/Mesh.h>
+#include <api/render/realtime/resource/Mesh.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -106,7 +106,7 @@ ShadedPass::~ShadedPass() {
 
 /**
  **/
-void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::Pass* pass) {
+void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& display, v3d::render::realtime::frame::Pass* pass) {
     if (pass == nullptr) {
         return;
     }
@@ -118,8 +118,8 @@ void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& disp
     pass->depthBias(BIAS_CONSTANT, BIAS_SLOPE);
 
     const scene::Evaluation evaluation = scene.evaluate();
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
-        const boost::shared_ptr<scene::Mesh> mesh = as<scene::Mesh>(item);
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
+        const boost::shared_ptr<scene::item::Mesh> mesh = as<scene::item::Mesh>(item);
         if (!mesh) {
             continue;
         }
@@ -128,7 +128,7 @@ void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& disp
             continue;
         }
 
-        v3d::render::realtime::DrawItem draw;
+        v3d::render::realtime::frame::DrawItem draw;
         uploaded->mesh->describe(&draw);
         draw.instances = 1;
         const Object object{ .model = evaluation.placed(mesh->id()).world, .colour = surface };
@@ -170,7 +170,7 @@ const ShadedPass::Upload* ShadedPass::upload(const boost::shared_ptr<v3d::brep::
         vertices.push_back({ .position = triangles.positions[index], .normal = triangles.normals[index] });
     }
     built_++;
-    upload.mesh = boost::make_shared<v3d::render::realtime::Mesh>(context_->device(), context_->uploader(),
+    upload.mesh = boost::make_shared<v3d::render::realtime::resource::Mesh>(context_->device(), context_->uploader(),
         std::as_bytes(std::span<const Vertex>(vertices)), static_cast<std::uint32_t>(vertices.size()),
         std::span<const std::uint32_t>(triangles.indices));
     return &upload;
@@ -215,7 +215,7 @@ void ShadedPass::retire(Upload* upload) {
         return;
     }
     // a frame still in flight may read the buffers, so they go when the ring says it is safe
-    boost::shared_ptr<v3d::render::realtime::Mesh> mesh = std::move(upload->mesh);
+    boost::shared_ptr<v3d::render::realtime::resource::Mesh> mesh = std::move(upload->mesh);
     context_->ring()->retire([mesh]() mutable { mesh.reset(); });
 }
 

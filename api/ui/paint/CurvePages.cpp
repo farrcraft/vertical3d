@@ -5,8 +5,8 @@
 
 #include "CurvePages.h"
 
-#include <api/font/CurveStore.h>
-#include <api/render/realtime/Handle.h>
+#include <api/font/glyph/CurveStore.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -26,14 +26,14 @@ CurvePages::CurvePages(Create create, Update update, Release release) :
 
 /**
  **/
-void CurvePages::sync(font::CurveStore* store) {
+void CurvePages::sync(font::glyph::CurveStore* store) {
     sync(&curves_, store->curves().data(), store->curveRows(), store->changedCurves());
     sync(&bands_, store->bands().data(), store->bandRows(), store->changedBands());
 }
 
 /**
  **/
-void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const font::CurveStore::Changed& changed) {
+void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const font::glyph::CurveStore::Changed& changed) {
     if (rows == 0) {
         return;
     }
@@ -42,25 +42,25 @@ void CurvePages::sync(Page* page, const float* floats, std::uint32_t rows, const
         if (page->texture.valid()) {
             release_(page->texture);
         }
-        page->texture = create_(floats, font::CurveStore::ROW, rows);
+        page->texture = create_(floats, font::glyph::CurveStore::ROW, rows);
         page->rows = rows;
         return;
     }
     if (changed.rows > 0) {
-        const std::size_t from = static_cast<std::size_t>(changed.first) * font::CurveStore::ROW * 4;
-        update_(page->texture, glm::uvec2(0, changed.first), floats + from, glm::uvec2(font::CurveStore::ROW, changed.rows));
+        const std::size_t from = static_cast<std::size_t>(changed.first) * font::glyph::CurveStore::ROW * 4;
+        update_(page->texture, glm::uvec2(0, changed.first), floats + from, glm::uvec2(font::glyph::CurveStore::ROW, changed.rows));
     }
 }
 
 /**
  **/
-render::realtime::TextureHandle CurvePages::curves() const noexcept {
+render::realtime::resource::TextureHandle CurvePages::curves() const noexcept {
     return curves_.texture;
 }
 
 /**
  **/
-render::realtime::TextureHandle CurvePages::bands() const noexcept {
+render::realtime::resource::TextureHandle CurvePages::bands() const noexcept {
     return bands_.texture;
 }
 

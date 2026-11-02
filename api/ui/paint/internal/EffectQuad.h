@@ -16,11 +16,14 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-namespace v3d::font {
-class GlyphStore;
+namespace v3d::font::glyph {
+class Store;
+};  // namespace v3d::font::glyph
+
+namespace v3d::font::text {
 struct LineRun;
-struct TextEffect;
-};  // namespace v3d::font
+struct Effect;
+};  // namespace v3d::font::text
 
 namespace v3d::ui::paint {
 class GlyphPages;
@@ -58,15 +61,15 @@ struct PlacedEffect final {
  *
  * @return the quad, or nothing for a glyph with no outline or a field the store cannot hold
  **/
-std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::LineRun& run, unsigned int index, const font::TextEffect& effect);
+std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::LineRun& run, unsigned int index, const font::text::Effect& effect);
 
 /**
  * Lay out each of a glyph's effects at its pen, appending them in the order given.
  *
  * @param pen the glyph's pen in the paragraph's space, in pixels with y downwards
  **/
-void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::LineRun& run, unsigned int index,
-    const std::vector<font::TextEffect>& effects, const glm::vec2& pen);
+void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::LineRun& run, unsigned int index,
+    const std::vector<font::text::Effect>& effects, const glm::vec2& pen);
 
 /**
  * Put laid out effects in the order they are drawn: every glyph's first effect, then every

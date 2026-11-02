@@ -79,13 +79,13 @@ const glm::vec4& World::tint() const noexcept {
  **/
 void World::quad(const Corners& corners, const glm::vec4& colour) {
     // the whole of the white texture, so the sample is opaque white wherever it lands
-    quad(corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, TextureHandle());
+    quad(corners, glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), colour, resource::TextureHandle());
 }
 
 /**
  **/
 void World::quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-    const glm::vec4& colour, const TextureHandle& texture) {
+    const glm::vec4& colour, const resource::TextureHandle& texture) {
     open(texture);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
@@ -111,8 +111,8 @@ void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& c
 /**
  **/
 void World::field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
-    const TextureHandle& texture, uint32_t ramp, float contrast) {
-    open(texture, TextureHandle(), true);
+    const resource::TextureHandle& texture, uint32_t ramp, float contrast) {
+    open(texture, resource::TextureHandle(), true);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     vertex({.position = corners[0], .uv = glm::vec2(uv0.x, uv0.y), .colour = colour, .glyph = ramp, .contrast = contrast});
@@ -148,7 +148,7 @@ bool World::empty() const noexcept {
 
 /**
  **/
-void World::open(const TextureHandle& texture, const TextureHandle& bands, bool field) {
+void World::open(const resource::TextureHandle& texture, const resource::TextureHandle& bands, bool field) {
     if (!batches_.empty() && batches_.back().texture == texture && batches_.back().bands == bands && batches_.back().field == field) {
         return;
     }

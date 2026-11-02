@@ -5,7 +5,7 @@
 
 #include "OutlineReader.h"
 
-#include <api/font/Curves.h>
+#include <api/font/glyph/Curves.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -40,11 +40,11 @@ OutlineReader::OutlineReader(const glm::mat3& transform) :
     builder_(transform) {
 }
 
-std::vector<QuadraticCurve> OutlineReader::read(FT_Outline* outline) {
+std::vector<glyph::QuadraticCurve> OutlineReader::read(FT_Outline* outline) {
     const FT_Outline_Funcs funcs{ .move_to = moveTo, .line_to = lineTo, .conic_to = conicTo, .cubic_to = cubicTo, .shift = 0, .delta = 0 };
     if (FT_Outline_Decompose(outline, &funcs, this) != 0) {
         builder_.take();
-        return std::vector<QuadraticCurve>();
+        return std::vector<glyph::QuadraticCurve>();
     }
     return builder_.take();
 }

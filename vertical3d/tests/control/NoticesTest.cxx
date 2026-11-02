@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/chrome/Notices.h>
 
 #include <optional>
 #include <string>
@@ -12,7 +12,7 @@
 
 namespace {
 
-using v3d::editor::control::Notices;
+using v3d::editor::control::chrome::Notices;
 
 constexpr float CLOSE = 1e-3F;
 

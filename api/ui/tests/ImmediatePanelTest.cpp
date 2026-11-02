@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(a_tree_row_leads_with_its_icon) {
     canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
     const glm::vec4 tint(0.9F, 0.6F, 0.2F, 1.0F);
-    const v3d::ui::Image icon(v3d::render::realtime::TextureHandle(5));
+    const v3d::ui::Image icon(v3d::render::realtime::resource::TextureHandle(5));
 
     ui.begin(&canvas, hover(nowhere));
     ui.treeRow("Cube", {.depth = 0, .open = nullptr, .selected = false, .icon = icon, .iconTint = tint});
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(text_in_a_colour_and_an_image_at_the_pen) {
     const glm::vec4 tint(0.2F, 0.7F, 0.3F, 1.0F);
 
     ui.begin(&canvas, hover(nowhere));
-    ui.image(v3d::ui::Image(v3d::render::realtime::TextureHandle(5)), glm::vec2(10.0F, 10.0F), tint);
+    ui.image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(5)), glm::vec2(10.0F, 10.0F), tint);
     ui.text("X", red);
     ui.end();
 

@@ -10,7 +10,7 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/paint/Dressing.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/view/ViewOverlay.h>
@@ -438,7 +438,7 @@ void GraphEditor::curves(v3d::ui::Immediate* ui, const State& state) const {
     const v3d::ui::paint::Dressing& dress = ui->dressing();
     const View& view = state.view;
     const scene::Scene& scene = *document_->scene();
-    for (const boost::shared_ptr<scene::Item>& item : scene.selection()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.selection()) {
         for (const auto& [path, kept] : scene.curves(item->id())) {
             const bool holds = chosen_ && chosen_->item == item->id() && chosen_->path == path;
             const v3d::animation::Curve& curve = holds && state.draft ? *state.draft : kept;
@@ -528,7 +528,7 @@ void GraphEditor::choose(const glm::vec2& cursor, float reach, State* state) {
     v3d::animation::Curve held;
     float best = reach;
     const scene::Scene& scene = *document_->scene();
-    for (const boost::shared_ptr<scene::Item>& item : scene.selection()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.selection()) {
         for (const auto& [path, curve] : scene.curves(item->id())) {
             for (const v3d::animation::Curve::Key& key : curve.keys()) {
                 const float distance = glm::distance(state->view.at(glm::vec2(key.frame, key.value)), cursor);
@@ -631,7 +631,7 @@ void GraphEditor::fit(View* view) const {
     float last = std::numeric_limits<float>::lowest();
     float lowest = std::numeric_limits<float>::max();
     float highest = std::numeric_limits<float>::lowest();
-    for (const boost::shared_ptr<scene::Item>& item : scene.selection()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.selection()) {
         for (const auto& [path, curve] : scene.curves(item->id())) {
             const std::vector<v3d::animation::Curve::Key>& keys = curve.keys();
             for (std::size_t index = 0; index < keys.size(); index++) {
@@ -688,7 +688,7 @@ void GraphEditor::prune() {
     if (!chosen_) {
         return;
     }
-    const boost::shared_ptr<scene::Item> item = document_->scene()->item(chosen_->item);
+    const boost::shared_ptr<scene::item::Item> item = document_->scene()->item(chosen_->item);
     const std::optional<v3d::animation::Curve> curve = chosenCurve();
     if (!item || !item->selected() || !curve || !indexOf(*curve, chosen_->frame)) {
         chosen_.reset();

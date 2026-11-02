@@ -5,7 +5,7 @@
 
 #include "Keyed.h"
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -34,7 +34,7 @@ boost::shared_ptr<Command> Keyed::record(const boost::shared_ptr<scene::Scene>& 
         if (!change.item) {
             continue;
         }
-        const scene::Item::Kind kind = change.item->kind();
+        const scene::item::Item::Kind kind = change.item->kind();
         const Key::Target target{ .item = change.item,
             .paths = scene::changed(scene::values(kind, change.before, glm::vec3(0.0F)), scene::values(kind, change.after, glm::vec3(0.0F))) };
         if (!target.paths.empty()) {

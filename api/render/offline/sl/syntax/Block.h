@@ -15,7 +15,7 @@ namespace v3d::render::offline::sl::syntax {
 
 class Block final : public Statement {
  public:
-    Block(const v3d::render::offline::Position & at);
+    Block(const v3d::render::offline::source::Position & at);
 
     std::vector<StatementPtr> statements;
 };

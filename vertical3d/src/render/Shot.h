@@ -7,7 +7,7 @@
 
 #include <api/render/offline/rib/Handler.h>
 #include <api/type/camera/Profile.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -31,7 +31,7 @@ v3d::type::camera::Profile shotFrom(const scene::Scene& scene, const v3d::type::
  * The camera a scene camera is, with the placement and the lens an evaluation of its scene
  * found.
  **/
-v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::Camera>& camera,
+v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const boost::shared_ptr<scene::item::Camera>& camera,
     const v3d::type::camera::Profile& view);
 
 /**

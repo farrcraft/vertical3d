@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/type/geometry/AABBox.h>
 #include <moya/libmoya/Curve.h>
 #include <moya/libmoya/Hider.h>
@@ -65,7 +65,7 @@ class Hider final : public moya::Hider {
      * Render the buckets: every bucket's grids are hidden into a new set of samples, made from
      * the context's sampling as it stands, and the samples are then resolved into the planes.
      **/
-    void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) override;
+    void render(state::RenderContext* context, v3d::render::offline::film::FrameBuffer* planes) override;
 
     /** The frame's samples, which a grid is hidden into. They exist only while rendering. **/
     Samples & samples();

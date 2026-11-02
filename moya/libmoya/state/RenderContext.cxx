@@ -9,16 +9,16 @@
 #include <api/render/offline/Area.h>
 #include <api/render/offline/Camera.h>
 #include <api/render/offline/CameraOptions.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
-#include <api/render/offline/Textures.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Bases.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/rib/Requests.h>
-#include <api/render/offline/sl/Imager.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/Placed.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Imager.h>
+#include <api/render/offline/texture/Textures.h>
 #include <api/render/offline/trace/Primitive.h>
 #include <api/render/offline/trace/Scene.h>
 #include <moya/libmoya/Curve.h>
@@ -76,7 +76,7 @@ void RenderContext::initialize() {
     shaders_ = boost::make_shared<Shaders>(logger_);
 }
 
-boost::shared_ptr<v3d::render::offline::FrameBuffer> RenderContext::picture() const {
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> RenderContext::picture() const {
     return planes_;
 }
 
@@ -100,11 +100,11 @@ float RenderContext::shadingRate() const {
     return attributes_.shadingRate;
 }
 
-v3d::render::offline::Sampling & RenderContext::sampling() {
+v3d::render::offline::film::Sampling & RenderContext::sampling() {
     return sampling_;
 }
 
-const v3d::render::offline::Sampling & RenderContext::sampling() const {
+const v3d::render::offline::film::Sampling & RenderContext::sampling() const {
     return sampling_;
 }
 
@@ -449,7 +449,7 @@ void RenderContext::searchpath(const std::string & path) {
     shaders_->searchpath(path);
 }
 
-v3d::render::offline::Textures & RenderContext::textures() {
+v3d::render::offline::texture::Textures & RenderContext::textures() {
     return shaders_->textures();
 }
 
@@ -653,7 +653,7 @@ void RenderContext::render() {
     if (!hider_->traces() && !shaders_->traces()) {
         traced_.scene().clear();
     }
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> & planes = planes_;
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> & planes = planes_;
     // the hider's time is logged, so that a render can be timed again after a change
     const std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
     hider_->render(this, planes.get());
@@ -667,7 +667,7 @@ void RenderContext::render() {
         // the imager runs once the hider has finished, because it reads the whole picture.
         // The shader's machine logs a failed run. The failed row and the rows below it stay
         // as the hider wrote them, and the frame is still written
-        v3d::render::offline::sl::Imager imager(shaders_->imager(), &shader());
+        v3d::render::offline::sl::runtime::Imager imager(shaders_->imager(), &shader());
         imager.run(planes_.get(), Planes::COVERAGE);
     }
 

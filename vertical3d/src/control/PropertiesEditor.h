@@ -8,7 +8,7 @@
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Stack.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Units.h>
@@ -105,14 +105,14 @@ class PropertiesEditor final {
      * @return whether values can be written into an item: a camera's lens, a light's emission and a
      *         curve item's style are each valid, and the other kinds' are not written
      **/
-    static bool valid(const scene::Item& item, const command::Edit::Values& values);
+    static bool valid(const scene::item::Item& item, const command::Edit::Values& values);
 
     /**
      * An edit that has begun and not ended: the item, and its values when it began.
      **/
     struct Pending final {
         boost::shared_ptr<scene::Scene> scene;  /**< the scene the item is in, where auto key sets its key **/
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         command::Edit::Values before;
         std::string what;   /**< the name of the change, such as "rename" **/
     };
@@ -120,14 +120,14 @@ class PropertiesEditor final {
     /**
      * Draw the numbers a curve can drive, and write what is dragged or typed.
      **/
-    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown, scene::Length length);
+    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length);
 
     /**
      * Draw one number, and write it into the item when it is dragged or typed.
      *
      * @param now every number as shown, with the rotation's angles as they were last shown
      **/
-    void number(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown,
+    void number(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown,
         const std::map<std::string, float>& now, const std::string& path, const v3d::ui::Immediate::NumberLook& look);
 
     /**
@@ -138,24 +138,24 @@ class PropertiesEditor final {
     /**
      * Draw a mesh's counts of vertices and faces.
      **/
-    static void meshCounts(v3d::ui::Immediate* ui, const scene::Item& item);
+    static void meshCounts(v3d::ui::Immediate* ui, const scene::item::Item& item);
 
     /**
      * Draw each curve an item has: the property it drives and how many keys it holds.
      **/
-    static void keys(v3d::ui::Immediate* ui, const scene::Scene& scene, const scene::Item& item);
+    static void keys(v3d::ui::Immediate* ui, const scene::Scene& scene, const scene::item::Item& item);
 
     /**
      * Draw what a kind adds that is not a number: a camera's projection, a light's type, and a
      * curve item's style.
      **/
-    void settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item);
+    void settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item);
 
     /**
      * Remember an item's values before the first change of an edit, and what the change is
      * called. An edit of another item that has not ended is recorded first.
      **/
-    void begin(const boost::shared_ptr<scene::Item>& item, const std::string& what);
+    void begin(const boost::shared_ptr<scene::item::Item>& item, const std::string& what);
 
     /**
      * Record the edit that has ended, if it changed anything.
@@ -167,7 +167,7 @@ class PropertiesEditor final {
     boost::shared_ptr<scene::Scene> scene_;
     std::optional<Pending> pending_;
     // the item the angles were last shown for, and the angles
-    boost::shared_ptr<scene::Item> turned_;
+    boost::shared_ptr<scene::item::Item> turned_;
     glm::vec3 angles_{ 0.0F };
 };
 

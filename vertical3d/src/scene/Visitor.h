@@ -5,13 +5,14 @@
 
 #pragma once
 
-#include "Camera.h"
-#include "Curve.h"
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
+
 #include "Evaluation.h"
-#include "Group.h"
-#include "Item.h"
-#include "Light.h"
-#include "Mesh.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -33,17 +34,17 @@ class Visitor {
  public:
     virtual ~Visitor() { }
 
-    virtual void visit(const boost::shared_ptr<Mesh>& mesh, const Placed& placed) = 0;
-    virtual void visit(const boost::shared_ptr<Camera>& camera, const Placed& placed, const Camera::Lens& lens) = 0;
-    virtual void visit(const boost::shared_ptr<Light>& light, const Placed& placed, const Light::Emission& emission) = 0;
-    virtual void visit(const boost::shared_ptr<Group>& group, const Placed& placed) = 0;
-    virtual void visit(const boost::shared_ptr<Curve>& curve, const Placed& placed) = 0;
+    virtual void visit(const boost::shared_ptr<item::Mesh>& mesh, const Placed& placed) = 0;
+    virtual void visit(const boost::shared_ptr<item::Camera>& camera, const Placed& placed, const item::Camera::Lens& lens) = 0;
+    virtual void visit(const boost::shared_ptr<item::Light>& light, const Placed& placed, const item::Light::Emission& emission) = 0;
+    virtual void visit(const boost::shared_ptr<item::Group>& group, const Placed& placed) = 0;
+    virtual void visit(const boost::shared_ptr<item::Curve>& curve, const Placed& placed) = 0;
 
     /**
      * Called once everything beneath an item has been visited. A visitor that does not care
      * about the hierarchy leaves this alone.
      **/
-    virtual void leave(const boost::shared_ptr<Item>& item) {
+    virtual void leave(const boost::shared_ptr<item::Item>& item) {
         static_cast<void>(item);
     }
 };

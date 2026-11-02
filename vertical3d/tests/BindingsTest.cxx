@@ -7,7 +7,7 @@
 #include <api/log/Logger.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/Controller.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(every_fixed_view_names_a_shipped_profile) {
 
     const v3d::editor::Controller engine("");
     std::set<std::string> offered{"view::camera::orthographic"};
-    for (const v3d::editor::control::AreaChrome::FixedView& view : v3d::editor::control::AreaChrome::fixedViews()) {
+    for (const v3d::editor::control::chrome::Area::FixedView& view : v3d::editor::control::chrome::Area::fixedViews()) {
         BOOST_TEST(profiles.has(view.profile), "no camera profile is called " << view.profile);
         offered.insert(view.command);
     }
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(every_header_command_is_handled) {
     BOOST_REQUIRE(views.sync());
 
     std::vector<std::string> commands;
-    sent(v3d::editor::control::AreaChrome::document(views, v3d::editor::selection::SelectMask::Object).at("containers"), &commands);
+    sent(v3d::editor::control::chrome::Area::document(views, v3d::editor::selection::SelectMask::Object).at("containers"), &commands);
     BOOST_TEST(commands.size() >= 30U);
     const v3d::editor::Controller engine("");
     for (const std::string& command : commands) {

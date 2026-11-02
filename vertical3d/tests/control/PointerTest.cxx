@@ -10,7 +10,7 @@
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/input/Cursor.h>
-#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/tool/Tool.h>
 #include <vertical3d/src/view/AreaLayout.h>
@@ -81,7 +81,7 @@ struct Panes final {
         BOOST_REQUIRE(areas->sync());
         views = { areas->of(0), areas->of(1) };
         tools->add(tool);
-        pointer = boost::make_shared<v3d::editor::control::Pointer>(nullptr, areas, tools,
+        pointer = boost::make_shared<v3d::editor::control::chrome::Pointer>(nullptr, areas, tools,
             [this](const boost::shared_ptr<v3d::editor::view::ViewPort>& view) { moved.push_back(view); });
         pointer->resize(glm::vec4(0.0F, 0.0F, 200.0F, 100.0F));
     }
@@ -91,7 +91,7 @@ struct Panes final {
     std::vector<boost::shared_ptr<v3d::editor::view::ViewPort>> views;
     boost::shared_ptr<Holding> tool;
     boost::shared_ptr<v3d::editor::tool::Router> tools;
-    boost::shared_ptr<v3d::editor::control::Pointer> pointer;
+    boost::shared_ptr<v3d::editor::control::chrome::Pointer> pointer;
     std::vector<boost::shared_ptr<v3d::editor::view::ViewPort>> moved;
 };
 
@@ -123,8 +123,8 @@ struct Tabbed {
         });
         BOOST_REQUIRE(areas->sync());
         tools->add(tool);
-        pointer = boost::make_shared<v3d::editor::control::Pointer>(boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher), areas, tools,
-            v3d::editor::control::Pointer::Moved());
+        pointer = boost::make_shared<v3d::editor::control::chrome::Pointer>(boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher), areas, tools,
+            v3d::editor::control::chrome::Pointer::Moved());
         pointer->resize(glm::vec4(0.0F, 0.0F, 200.0F, 100.0F));
         moving = layout->areas()[0].editors[1].id;
         pointer->tabs([this](const glm::vec2& point) -> std::optional<std::size_t> {
@@ -150,7 +150,7 @@ struct Tabbed {
     boost::shared_ptr<v3d::editor::view::AreaViews> areas;
     boost::shared_ptr<Holding> tool;
     boost::shared_ptr<v3d::editor::tool::Router> tools;
-    boost::shared_ptr<v3d::editor::control::Pointer> pointer;
+    boost::shared_ptr<v3d::editor::control::chrome::Pointer> pointer;
     std::size_t moving = 0;
 };
 
@@ -388,9 +388,9 @@ BOOST_AUTO_TEST_CASE(a_hidden_view_stops_being_the_active_one) {
  **/
 BOOST_FIXTURE_TEST_CASE(a_tab_dropped_on_an_edge_makes_an_area, Tabbed) {
     drag(glm::vec2(190.0F, 50.0F));
-    const std::optional<v3d::editor::control::Pointer::Drop> landing = pointer->drop();
+    const std::optional<v3d::editor::control::chrome::Pointer::Drop> landing = pointer->drop();
     BOOST_REQUIRE(landing.has_value());
-    const v3d::editor::control::Pointer::Drop drop = landing.value_or(v3d::editor::control::Pointer::Drop());
+    const v3d::editor::control::chrome::Pointer::Drop drop = landing.value_or(v3d::editor::control::chrome::Pointer::Drop());
     BOOST_CHECK_EQUAL(drop.area, 1U);
     BOOST_CHECK(drop.edge == v3d::editor::view::AreaLayout::Edge::Right);
     BOOST_CHECK(drop.region == glm::vec4(149.0F, 3.0F, 48.0F, 94.0F));
@@ -409,9 +409,9 @@ BOOST_FIXTURE_TEST_CASE(a_tab_dropped_on_an_edge_makes_an_area, Tabbed) {
  **/
 BOOST_FIXTURE_TEST_CASE(a_tab_dropped_in_an_area_joins_its_tabs, Tabbed) {
     drag(glm::vec2(149.0F, 50.0F));
-    const std::optional<v3d::editor::control::Pointer::Drop> landing = pointer->drop();
+    const std::optional<v3d::editor::control::chrome::Pointer::Drop> landing = pointer->drop();
     BOOST_REQUIRE(landing.has_value());
-    BOOST_CHECK(!landing.value_or(v3d::editor::control::Pointer::Drop()).edge.has_value());
+    BOOST_CHECK(!landing.value_or(v3d::editor::control::chrome::Pointer::Drop()).edge.has_value());
 
     pointer->button(false);
     BOOST_REQUIRE_EQUAL(layout->areas().size(), 2U);

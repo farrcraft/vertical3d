@@ -53,7 +53,7 @@ down the right. The status bar, the notices and the command search are all prese
   the three side by side with their letters in the axis colours and their units after the
   value, under tabs for Item, Mesh, Shading and Keys. The scene has no unit of length.
 * **The status bar is words.** It names each mouse button ("Left Select") and counts the
-  selection ("1 item") (`vertical3d/src/control/StatusBar.h:31-43`). The design draws a mouse
+  selection ("1 item") (`vertical3d/src/control/chrome/StatusBar.h:31-43`). The design draws a mouse
   with the button lit, a chip for a held modifier, the selected item's name, its vertices and
   faces, and a frame rate coloured by how healthy it is.
 * **A notice is text alone.** The design gives it a mark for done or refused and the shortcut
@@ -66,7 +66,7 @@ down the right. The status bar, the notices and the command search are all prese
 **What is missing:**
 
 * **Three of the design's editors and two of its panels.** An area can hold a viewport, an
-  outliner or a properties editor (`vertical3d/src/control/AreaChrome.cxx:232-238`). The design
+  outliner or a properties editor (`vertical3d/src/control/chrome/Area.cxx:232-238`). The design
   adds a timeline, a graph editor, a console, a render view and render settings. The render
   view and the render settings exist as floating containers
   (`vertical3d/data/vgui.json:353`, `:389`), outside the areas.
@@ -188,7 +188,7 @@ ADR.
   `icon` in place of its label and a `drop` mark after it. `emphasis` sets a title in the chosen
   item's weight on a pill of the widget colour. A title's icon and mark take the label's colour.
 - A header is drawn at 80% over the view. Its editor menu shows the kind's icon, every menu has
-  a drop mark, and the active view's camera name is set apart. `AreaChrome::sync()` takes the
+  a drop mark, and the active view's camera name is set apart. `chrome::Area::sync()` takes the
   active area, so the emphasis moves without a rebuild.
 - An Overlays menu, shown as its icon, toggles the grid, the meshes, the cameras, the lights and
   the handles, each marked while on.

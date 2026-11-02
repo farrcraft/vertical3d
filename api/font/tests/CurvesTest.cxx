@@ -3,9 +3,9 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Curves.h>
-#include <api/font/Face.h>
-#include <api/font/Library.h>
+#include <api/font/glyph/Curves.h>
+#include <api/font/face/Face.h>
+#include <api/font/face/Library.h>
 #include <api/log/Logger.h>
 
 #include <algorithm>
@@ -28,30 +28,30 @@ namespace {
 struct Outlines {
     Outlines() :
         logger(boost::make_shared<v3d::log::Logger>()),
-        library(boost::make_shared<v3d::font::Library>()),
-        inter(v3d::font::Face::open(library, "data/fonts/Inter-Regular.ttf", logger)) {
+        library(boost::make_shared<v3d::font::face::Library>()),
+        inter(v3d::font::face::Face::open(library, "data/fonts/Inter-Regular.ttf", logger)) {
         BOOST_REQUIRE(inter);
     }
 
     /**
      * @return the outline of a character's glyph
      **/
-    v3d::font::CurveGlyph of(char32_t charcode) const {
-        return v3d::font::outline(*inter, inter->glyphIndex(charcode));
+    v3d::font::glyph::CurveGlyph of(char32_t charcode) const {
+        return v3d::font::glyph::outline(*inter, inter->glyphIndex(charcode));
     }
 
     boost::shared_ptr<v3d::log::Logger> logger;
-    boost::shared_ptr<v3d::font::Library> library;
-    boost::shared_ptr<v3d::font::Face> inter;
+    boost::shared_ptr<v3d::font::face::Library> library;
+    boost::shared_ptr<v3d::font::face::Face> inter;
 };
 
 /**
  * @return the winding number of an outline about a point: the curves a ray cast to the right
  *         crosses, each counted by the way it crosses
  **/
-int winding(const v3d::font::CurveGlyph& glyph, const glm::vec2& point) {
+int winding(const v3d::font::glyph::CurveGlyph& glyph, const glm::vec2& point) {
     int count = 0;
-    for (const v3d::font::QuadraticCurve& curve : glyph.curves) {
+    for (const v3d::font::glyph::QuadraticCurve& curve : glyph.curves) {
         // y(t) - point.y = a t^2 + b t + c
         const float square = curve.p1.y - (2.0F * curve.p2.y) + curve.p3.y;
         const float linear = 2.0F * (curve.p2.y - curve.p1.y);
@@ -88,7 +88,7 @@ BOOST_FIXTURE_TEST_SUITE(curves_test, Outlines)
  * and a point beyond the glyph are outside.
  **/
 BOOST_AUTO_TEST_CASE(an_outline_encloses_its_strokes) {
-    const v3d::font::CurveGlyph ring = of(U'o');
+    const v3d::font::glyph::CurveGlyph ring = of(U'o');
     BOOST_REQUIRE(!ring.curves.empty());
     const glm::vec2 centre = (ring.min + ring.max) / 2.0F;
     BOOST_CHECK_EQUAL(winding(ring, centre), 0);
@@ -102,11 +102,11 @@ BOOST_AUTO_TEST_CASE(an_outline_encloses_its_strokes) {
  * Every curve ends where another starts, so each contour is closed.
  **/
 BOOST_AUTO_TEST_CASE(contours_are_closed) {
-    const v3d::font::CurveGlyph letter = of(U'a');
+    const v3d::font::glyph::CurveGlyph letter = of(U'a');
     BOOST_REQUIRE(!letter.curves.empty());
-    for (const v3d::font::QuadraticCurve& curve : letter.curves) {
+    for (const v3d::font::glyph::QuadraticCurve& curve : letter.curves) {
         bool joined = false;
-        for (const v3d::font::QuadraticCurve& next : letter.curves) {
+        for (const v3d::font::glyph::QuadraticCurve& next : letter.curves) {
             joined = joined || next.p1 == curve.p3;
         }
         BOOST_CHECK(joined);
@@ -119,23 +119,23 @@ BOOST_AUTO_TEST_CASE(contours_are_closed) {
  * that is not a line along both axes is in some band of each.
  **/
 BOOST_AUTO_TEST_CASE(bands_hold_their_curves_in_order) {
-    const v3d::font::CurveGlyph aitch = of(U'H');
+    const v3d::font::glyph::CurveGlyph aitch = of(U'H');
     BOOST_REQUIRE(!aitch.horizontal.empty());
     BOOST_REQUIRE_EQUAL(aitch.horizontal.size(), aitch.vertical.size());
     const auto most = [&aitch](std::uint32_t index, int axis) {
-        const v3d::font::QuadraticCurve& curve = aitch.curves[index];
+        const v3d::font::glyph::QuadraticCurve& curve = aitch.curves[index];
         return std::max({ curve.p1[axis], curve.p2[axis], curve.p3[axis] });
     };
     for (const std::vector<std::uint32_t>& held : aitch.horizontal) {
         for (std::size_t at = 0; at < held.size(); at++) {
-            const v3d::font::QuadraticCurve& curve = aitch.curves[held[at]];
+            const v3d::font::glyph::QuadraticCurve& curve = aitch.curves[held[at]];
             BOOST_CHECK(curve.p1.y != curve.p2.y || curve.p2.y != curve.p3.y);
             BOOST_CHECK(at == 0 || most(held[at - 1], 0) >= most(held[at], 0));
         }
     }
     for (const std::vector<std::uint32_t>& held : aitch.vertical) {
         for (std::size_t at = 0; at < held.size(); at++) {
-            const v3d::font::QuadraticCurve& curve = aitch.curves[held[at]];
+            const v3d::font::glyph::QuadraticCurve& curve = aitch.curves[held[at]];
             BOOST_CHECK(curve.p1.x != curve.p2.x || curve.p2.x != curve.p3.x);
             BOOST_CHECK(at == 0 || most(held[at - 1], 1) >= most(held[at], 1));
         }
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(bands_hold_their_curves_in_order) {
  * number of bands.
  **/
 BOOST_AUTO_TEST_CASE(the_band_transform_spans_the_outline) {
-    const v3d::font::CurveGlyph aitch = of(U'H');
+    const v3d::font::glyph::CurveGlyph aitch = of(U'H');
     BOOST_REQUIRE(!aitch.horizontal.empty());
     const auto count = static_cast<float>(aitch.horizontal.size());
     const glm::vec4 transform = aitch.bandTransform();
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(the_band_transform_spans_the_outline) {
  * A space has no outline, and so no curves and no bands.
  **/
 BOOST_AUTO_TEST_CASE(a_space_has_no_curves) {
-    const v3d::font::CurveGlyph space = of(U' ');
+    const v3d::font::glyph::CurveGlyph space = of(U' ');
     BOOST_CHECK(space.curves.empty());
     BOOST_CHECK(space.horizontal.empty());
 }

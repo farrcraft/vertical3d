@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/image/Image.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
@@ -34,7 +34,7 @@ class RenderWindow final {
     /**
      * Turn a picture into a texture the ui can draw.
      **/
-    typedef std::function<v3d::render::realtime::TextureHandle(const boost::shared_ptr<v3d::image::Image>&)> Upload;
+    typedef std::function<v3d::render::realtime::resource::TextureHandle(const boost::shared_ptr<v3d::image::Image>&)> Upload;
 
     /**
      * @param delegate what renders the window

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 
@@ -69,7 +69,7 @@ class Keys final : public Command {
  private:
     /** One curve the change touches, before and after. An empty curve is no curve. **/
     struct Change {
-        boost::shared_ptr<scene::Item> item;
+        boost::shared_ptr<scene::item::Item> item;
         std::string path;
         v3d::animation::Curve before;
         v3d::animation::Curve after;

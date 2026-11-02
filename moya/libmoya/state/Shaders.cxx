@@ -6,11 +6,11 @@
 #include "Shaders.h"
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Textures.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/texture/Textures.h>
 
 #include <string>
 
@@ -21,7 +21,7 @@ namespace v3d::moya::state {
 
 Shaders::Shaders(const boost::shared_ptr<v3d::log::Logger> & logger) :
     library_(boost::make_shared<v3d::render::offline::sl::ShaderLibrary>(logger)),
-    textures_(boost::make_shared<v3d::render::offline::Textures>(logger)) {
+    textures_(boost::make_shared<v3d::render::offline::texture::Textures>(logger)) {
 }
 
 v3d::render::offline::sl::InstancePtr Shaders::instance(const std::string & name,
@@ -54,7 +54,7 @@ void Shaders::searchpath(const std::string & path) {
     library_->searchpath(path);
 }
 
-v3d::render::offline::Textures & Shaders::textures() {
+v3d::render::offline::texture::Textures & Shaders::textures() {
     return *textures_;
 }
 

@@ -8,11 +8,11 @@
 #include "Quad.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Resources.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Resources.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -92,7 +92,7 @@ void World::createPipelines(const vulkan::pipeline::Formats & formats) {
 
 /**
  **/
-PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
+resource::PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
     const bool encoded = Quad::linearises(colour);
@@ -136,7 +136,7 @@ PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipe
 
 /**
  **/
-void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blend blend, const glm::vec4& tint) {
+void World::submit(const canvas::World& canvas, frame::Pass* pass, uint16_t layer, Blend blend, const glm::vec4& tint) {
     if (pass == nullptr || canvas.empty() || !textures_) {
         return;
     }
@@ -149,7 +149,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    resource::PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
     if (blend == Blend::Additive) {
         handle = pass->depth() ? additiveDepthPipeline_ : additivePipeline_;
     }
@@ -167,7 +167,7 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
         const Push constants{.tint = tint, .texture = textures_->slot(batch.texture), .bands = batch.bands.valid() ? textures_->slot(batch.bands) : 0U,
             .mode = mode};
 
-        DrawItem item;
+        frame::DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
         item.material = textures_->material();

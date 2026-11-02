@@ -4,10 +4,10 @@
  **/
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/vulkan/pipeline/Texture.h>
 #include <api/render/realtime/vulkan/pipeline/TextureArray.h>
 
@@ -22,8 +22,8 @@
 
 #include "Headless.h"
 
-using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::Textures;
+using v3d::render::realtime::resource::TextureHandle;
+using v3d::render::realtime::resource::Textures;
 using v3d::render::realtime::vulkan::frame::Ring;
 using v3d::render::realtime::vulkan::pipeline::TextureArray;
 

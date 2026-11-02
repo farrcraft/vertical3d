@@ -12,7 +12,7 @@
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <vertical3d/src/manipulator/Target.h>
-#include <vertical3d/src/scene/CurveParts.h>
+#include <vertical3d/src/scene/item/CurveParts.h>
 
 #include <cstddef>
 #include <string>
@@ -156,12 +156,12 @@ bool Vertex::sameCurve(const v3d::curve::Curve& one, const v3d::curve::Curve& ot
     if (one.shape.index() != other.shape.index() || one.closed != other.closed) {
         return false;
     }
-    const std::size_t count = scene::controlCount(one);
-    if (count != scene::controlCount(other)) {
+    const std::size_t count = scene::item::controlCount(one);
+    if (count != scene::item::controlCount(other)) {
         return false;
     }
     for (std::size_t point = 0; point < count; point++) {
-        if (glm::distance(scene::controlPoint(one, point), scene::controlPoint(other, point)) > tolerance) {
+        if (glm::distance(scene::item::controlPoint(one, point), scene::item::controlPoint(other, point)) > tolerance) {
             return false;
         }
     }

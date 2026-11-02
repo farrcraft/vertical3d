@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/Noise.h>
+#include <api/render/offline/texture/Noise.h>
 
 #include <cmath>
 #include <limits>
@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(noise_range_test) {
     for (int i = 0; i < 4000; i++) {
         const float x = static_cast<float>(i) * 0.137F;
         const glm::vec3 at(x, std::sin(x) * 7.3F, std::cos(x * 0.71F) * 5.1F);
-        const float value = v3d::render::offline::noise(at);
+        const float value = v3d::render::offline::texture::noise(at);
         lowest = value < lowest ? value : lowest;
         highest = value > highest ? value : highest;
     }
@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(noise_range_test) {
     BOOST_CHECK_LT(lowest, 0.3F);
     BOOST_CHECK_GT(highest, 0.7F);
 
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(3.0F, -2.0F, 7.0F)), 0.5F);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(glm::vec3(3.0F, -2.0F, 7.0F)), 0.5F);
 }
 
 /**
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(noise_range_test) {
 BOOST_AUTO_TEST_CASE(noise_continuous_test) {
     for (int i = 0; i < 500; i++) {
         const glm::vec3 at(static_cast<float>(i) * 0.0731F, static_cast<float>(i) * 0.0419F, 1.3F);
-        const float here = v3d::render::offline::noise(at);
-        const float there = v3d::render::offline::noise(at + glm::vec3(0.001F, 0.0F, 0.0F));
+        const float here = v3d::render::offline::texture::noise(at);
+        const float there = v3d::render::offline::texture::noise(at + glm::vec3(0.001F, 0.0F, 0.0F));
         BOOST_CHECK_SMALL(here - there, 0.005F);
     }
 }
@@ -55,11 +55,11 @@ BOOST_AUTO_TEST_CASE(noise_continuous_test) {
  **/
 BOOST_AUTO_TEST_CASE(noise_deterministic_test) {
     const glm::vec3 at(1.25F, 2.5F, -3.75F);
-    const float first = v3d::render::offline::noise(at);
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(at), first);
+    const float first = v3d::render::offline::texture::noise(at);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(at), first);
     BOOST_CHECK_NE(first, 0.5F);
     // the lattice repeats every 256 cells, as Perlin's does
-    BOOST_CHECK_CLOSE(v3d::render::offline::noise(at + glm::vec3(256.0F, 0.0F, 0.0F)), first, 0.01F);
+    BOOST_CHECK_CLOSE(v3d::render::offline::texture::noise(at + glm::vec3(256.0F, 0.0F, 0.0F)), first, 0.01F);
 }
 
 /**
@@ -72,18 +72,18 @@ BOOST_AUTO_TEST_CASE(noise_deterministic_test) {
 BOOST_AUTO_TEST_CASE(noise_far_and_not_finite_test) {
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float infinity = std::numeric_limits<float>::infinity();
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(nan, 1.5F, 2.5F)), 0.5F);
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(1.5F, infinity, 2.5F)), 0.5F);
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(1.5F, 2.5F, -infinity)), 0.5F);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(glm::vec3(nan, 1.5F, 2.5F)), 0.5F);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(glm::vec3(1.5F, infinity, 2.5F)), 0.5F);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(glm::vec3(1.5F, 2.5F, -infinity)), 0.5F);
 
     // every float this large is a whole number of periods, so the point is a lattice point
     const float distant = 1099511627776.0F;
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(glm::vec3(distant, -distant, 3.0e38F)), 0.5F);
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(glm::vec3(distant, -distant, 3.0e38F)), 0.5F);
 
     // 2^31 + 768 is three periods past 2^31, and reads as 768 does
     const glm::vec3 period(768.0F, 1.25F, 2.75F);
     const glm::vec3 beyond(2147484416.0F, 1.25F, 2.75F);
-    BOOST_CHECK_EQUAL(v3d::render::offline::noise(beyond), v3d::render::offline::noise(period));
+    BOOST_CHECK_EQUAL(v3d::render::offline::texture::noise(beyond), v3d::render::offline::texture::noise(period));
 }
 
 };  // namespace

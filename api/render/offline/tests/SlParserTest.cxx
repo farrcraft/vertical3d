@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/sl/Parser.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/compiler/Parser.h>
 #include <api/render/offline/sl/syntax/Assignment.h>
 #include <api/render/offline/sl/syntax/Binary.h>
 #include <api/render/offline/sl/syntax/Cast.h>
@@ -109,7 +109,7 @@ const char* const SPOTLIGHT =
 std::vector<v3d::render::offline::sl::syntax::ShaderPtr> parse(const std::string & source,
     std::string * error = nullptr) {
     std::istringstream stream(source);
-    v3d::render::offline::sl::Parser parser(stream);
+    v3d::render::offline::sl::compiler::Parser parser(stream);
     std::vector<v3d::render::offline::sl::syntax::ShaderPtr> shaders = parser.parse();
     if (error != nullptr) {
         *error = parser.error();

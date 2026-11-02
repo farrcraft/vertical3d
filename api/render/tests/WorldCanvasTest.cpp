@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/World.h>
 
 #include <cstddef>
@@ -32,8 +32,8 @@ v3d::render::realtime::canvas::World::Corners tile(float x, float z) {
     };
 }
 
-v3d::render::realtime::TextureHandle handle(uint32_t id) {
-    return v3d::render::realtime::TextureHandle(id);
+v3d::render::realtime::resource::TextureHandle handle(uint32_t id) {
+    return v3d::render::realtime::resource::TextureHandle(id);
 }
 
 BOOST_AUTO_TEST_SUITE(worldcanvas_test)

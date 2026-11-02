@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include <cstdint>
 
@@ -32,7 +32,7 @@ class Statement {
         LIGHTING
     };
 
-    Statement(Kind kind, const v3d::render::offline::Position & at);
+    Statement(Kind kind, const v3d::render::offline::source::Position & at);
     virtual ~Statement();
 
     Kind kind;

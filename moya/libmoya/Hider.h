@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 
 #include <cstddef>
 
@@ -65,7 +65,7 @@ class Hider {
      * Draw the frame the context has gathered into its planes: colour from RED, then
      * COVERAGE and DEPTH.
      **/
-    virtual void render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) = 0;
+    virtual void render(state::RenderContext* context, v3d::render::offline::film::FrameBuffer* planes) = 0;
 
     /**
      * How many samples a pixel took in the last render, or zero for a hider that takes what

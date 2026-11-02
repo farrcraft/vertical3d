@@ -71,6 +71,10 @@ jobs:
     - name: File length
       if: ${{ !cancelled() }}
       run: node scripts/filelength.ts
+    # no directory of C++ code holds more than 15 headers unless the script lists it as one family
+    - name: Directory size
+      if: ${{ !cancelled() }}
+      run: node scripts/dirsize.ts
     # each C++ file under api/, moya/ and vertical3d/src/ is in its directory's namespace
     - name: Namespaces
       if: ${{ !cancelled() }}

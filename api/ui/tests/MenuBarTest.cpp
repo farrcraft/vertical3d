@@ -5,7 +5,7 @@
 
 #include <api/event/Context.h>
 #include <api/event/Event.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Arranger.h>
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
     build(&fixture);
     fixture.renderer.dressing().iconSize = 16.0F;
     fixture.bar->menu(0)->icon("icon:viewport");
-    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::TextureHandle(3)));
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
     fixture.draw();
 
     BOOST_REQUIRE_EQUAL(fixture.written.size(), 1U);
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
 BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
     Fixture fixture;
     build(&fixture);
-    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::TextureHandle(3)));
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
     const glm::vec4 accent = fixture.renderer.dressing().fill;
     const auto tinted = [&fixture, &accent]() {
         return std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&accent](const auto& vertex) { return vertex.colour == accent; });

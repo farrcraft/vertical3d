@@ -12,7 +12,7 @@
 #include <api/database/Transaction.h>
 #include <api/log/Logger.h>
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -177,7 +177,7 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
  * The item one row of the items table describes, without its id or its placement. The blobs
  * it read are added to read.
  **/
-boost::shared_ptr<scene::Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
+boost::shared_ptr<scene::item::Item> readKind(std::int64_t id, const std::string& kind, std::int64_t version,
     const boost::json::object& payload, v3d::database::Statement* buffers, std::size_t* read, std::string* problem) {
     const Codec* codec = codecNamed(kind);
     if (codec == nullptr) {
@@ -208,7 +208,7 @@ boost::shared_ptr<scene::Item> readKind(std::int64_t id, const std::string& kind
 /**
  * The item a row of the items table describes, whole.
  **/
-boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
+boost::shared_ptr<scene::item::Item> readItem(const v3d::database::Statement& rows, v3d::database::Statement* buffers,
     std::int64_t* parent, std::size_t* read, std::string* problem) {
     Columns row(rows);
     const std::int64_t id = row.integer();
@@ -232,7 +232,7 @@ boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3
         *problem = "its payload is not an object";
         return nullptr;
     }
-    boost::shared_ptr<scene::Item> item = readKind(id, kind, version, parsed.as_object(), buffers, read, problem);
+    boost::shared_ptr<scene::item::Item> item = readKind(id, kind, version, parsed.as_object(), buffers, read, problem);
     if (!item) {
         return nullptr;
     }
@@ -249,7 +249,7 @@ boost::shared_ptr<scene::Item> readItem(const v3d::database::Statement& rows, v3
  **/
 bool trees(const internal::Loaded& loaded) {
     std::map<std::int64_t, bool> held;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         held[item->documentId()] = true;
     }
     for (const auto& [child, parent] : loaded.parents) {
@@ -288,7 +288,7 @@ bool load(v3d::database::Database* database, std::int32_t version, internal::Loa
     for (; step == v3d::database::Statement::Step::Row; step = rows.step()) {
         std::string fault;
         std::int64_t above = 0;
-        const boost::shared_ptr<scene::Item> item = readItem(rows, &buffers, &above, &blobs, &fault);
+        const boost::shared_ptr<scene::item::Item> item = readItem(rows, &buffers, &above, &blobs, &fault);
         if (!item) {
             *problem = "item " + std::to_string(rows.integer(0)) + ": " + fault;
             return false;
@@ -382,8 +382,8 @@ std::vector<std::byte> encodeKeys(const v3d::animation::Curve& curve) {
  * Every curve a document holds, once its items are read.
  **/
 bool loadAnimation(v3d::database::Database* database, std::int32_t version, internal::Loaded* loaded, std::string* problem) {
-    std::map<std::int64_t, scene::Item::Kind> kinds;
-    for (const boost::shared_ptr<scene::Item>& item : loaded->items) {
+    std::map<std::int64_t, scene::item::Item::Kind> kinds;
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded->items) {
         kinds[item->documentId()] = item->kind();
     }
     // a document from before curves has none to read
@@ -405,7 +405,7 @@ bool loadAnimation(v3d::database::Database* database, std::int32_t version, inte
             const std::span<const std::byte> keys = row.blob();
             std::string fault;
             const auto owner = kinds.find(animated.owner);
-            if (owner == kinds.end() || !declares(owner->second, animated.path)) {
+            if (owner == kinds.end() || !scene::declares(owner->second, animated.path)) {
                 fault = "it drives a property its owner does not have";
             } else if (current("curve", curveVersion, Scene::CURVE_VERSION, &fault) &&
                 decodeKeys(keys, count, &animated.curve, &fault) && animated.curve.empty()) {
@@ -502,7 +502,7 @@ bool loadSettings(v3d::database::Database* database, internal::Loaded* loaded, s
 /**
  * Write one item's row, and its blobs.
  **/
-bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::Item>& item, std::int64_t position, std::int64_t parent) {
+bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::item::Item>& item, std::int64_t position, std::int64_t parent) {
     const Codec& codec = codecOf(item->kind());
     const std::string payload = boost::json::serialize(codec.payload(*item));
     const glm::vec3 translation = item->translation();
@@ -536,9 +536,9 @@ bool store(v3d::database::Database* database, const scene::Scene& scene, const s
     }
 
     std::int64_t position = 0;
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
         const std::int64_t id = item->documentId();
-        const boost::shared_ptr<scene::Item> above = scene.parent(item->id());
+        const boost::shared_ptr<scene::item::Item> above = scene.parent(item->id());
         const std::int64_t parent = above ? above->documentId() : 0;
         const auto found = saved.find(id);
         const bool known = found != saved.end();
@@ -598,7 +598,7 @@ bool storeAnimation(v3d::database::Database* database, const scene::Scene& scene
         return false;
     };
 
-    for (const boost::shared_ptr<scene::Item>& item : scene.items()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
         for (const auto& [path, curve] : scene.curves(item->id())) {
             const auto key = std::make_pair(item->documentId(), path);
             const auto found = saved.find(key);
@@ -668,7 +668,7 @@ bool Scene::read(const std::string& path, scene::Scene* scene) {
     // the scene is replaced only once the whole document is understood
     scene->clear();
     std::map<std::int64_t, unsigned int> ids;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         ids[item->documentId()] = scene->add(item);
     }
     for (const auto& [child, parent] : loaded.parents) {
@@ -689,7 +689,7 @@ bool Scene::read(const std::string& path, scene::Scene* scene) {
     path_ = path;
     saved_.clear();
     std::int64_t position = 0;
-    for (const boost::shared_ptr<scene::Item>& item : loaded.items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : loaded.items) {
         const auto above = loaded.parents.find(item->documentId());
         saved_[item->documentId()] = Saved{ .item = item, .revision = item->revision(), .position = position++,
             .parent = above == loaded.parents.end() ? 0 : above->second };

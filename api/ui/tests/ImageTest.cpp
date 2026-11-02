@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/Container.h>
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_source_leaves_the_handle_unset) {
     BOOST_REQUIRE(loaded);
 
     const std::size_t resolved = ui->resolveImages(
-        [](const std::string&) { return v3d::render::realtime::TextureHandle(); });
+        [](const std::string&) { return v3d::render::realtime::resource::TextureHandle(); });
 
     BOOST_CHECK_EQUAL(resolved, 0U);
     const boost::shared_ptr<v3d::ui::component::Icon> icon =
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(an_icon_with_no_source_waits_for_an_image) {
     std::size_t asked = 0;
     const std::size_t resolved = ui->resolveImages([&asked](const std::string&) {
         asked++;
-        return v3d::render::realtime::TextureHandle(4);
+        return v3d::render::realtime::resource::TextureHandle(4);
     });
 
     BOOST_CHECK_EQUAL(resolved, 0U);
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     bool loaded = false;
     const boost::shared_ptr<v3d::ui::Interface> ui = load(themedDocument, &loaded);
     BOOST_REQUIRE(loaded);
-    ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
+    ui->resolveImages([](const std::string&) { return v3d::render::realtime::resource::TextureHandle(3); });
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
         "containers": [ { "name": "hud", "visible": true, "components": [] } ]
     })", &loaded);
     BOOST_REQUIRE(loaded);
-    ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(3); });
+    ui->resolveImages([](const std::string&) { return v3d::render::realtime::resource::TextureHandle(3); });
 
     v3d::ui::paint::ComponentRenderer drawing = renderer();
     drawing.theme(ui->theme("dark"));
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     drawing.draw(&canvas, icon);
     BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
-    icon->image(v3d::render::realtime::TextureHandle(5));
+    icon->image(v3d::render::realtime::resource::TextureHandle(5));
     drawing.draw(&canvas, icon);
 
     BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
@@ -535,7 +535,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
         ] } ]
     })", &loaded);
     BOOST_REQUIRE(loaded);
-    ui->resolveImages([](const std::string&) { return v3d::render::realtime::TextureHandle(2); });
+    ui->resolveImages([](const std::string&) { return v3d::render::realtime::resource::TextureHandle(2); });
 
     const v3d::ui::paint::ComponentRenderer drawing = renderer();
     v3d::render::realtime::canvas::Canvas canvas;

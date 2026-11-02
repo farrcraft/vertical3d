@@ -11,8 +11,8 @@
 #include <vertical3d/src/manipulator/Screen.h>
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/manipulator/Translate.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -40,15 +40,15 @@ v3d::editor::manipulator::Screen frontView();
  **/
 struct TwoCubes {
     TwoCubes() :
-        left(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        right(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
+        left(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        right(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
         view(frontView()) {
         left->translation(glm::vec3(-0.5F, 0.0F, 0.0F));
         right->translation(glm::vec3(0.5F, 0.0F, 0.0F));
     }
 
-    boost::shared_ptr<v3d::editor::scene::Mesh> left;
-    boost::shared_ptr<v3d::editor::scene::Mesh> right;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> left;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> right;
     v3d::editor::manipulator::Screen view;
 };
 
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(manipulator_default_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     const v3d::editor::manipulator::Translate manipulator;
 
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(manipulator_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     v3d::editor::manipulator::Translate manipulator;
     manipulator.axis(v3d::editor::manipulator::Manipulator::Axis::X);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_axis_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     v3d::editor::manipulator::Translate manipulator;
     manipulator.axis(v3d::editor::manipulator::Manipulator::Axis::None);
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(manipulator_translate_free_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     const v3d::editor::manipulator::Rotate manipulator;
 
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_grab_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     v3d::editor::manipulator::Rotate manipulator;
     manipulator.axis(v3d::editor::manipulator::Manipulator::Axis::Z);
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(manipulator_rotate_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> cube = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     const v3d::editor::manipulator::Screen view = frontView();
     v3d::editor::manipulator::Scale manipulator;
 
@@ -245,8 +245,8 @@ BOOST_AUTO_TEST_CASE(manipulator_scale_test) {
 }
 
 BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
-    const boost::shared_ptr<v3d::editor::scene::Mesh> first = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
-    const boost::shared_ptr<v3d::editor::scene::Mesh> second = boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> first = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> second = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
     const v3d::editor::manipulator::Screen view = frontView();
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(manipulator_pivot_test) {
 
     // an empty entry is not an origin, and an empty set has no handles
     const v3d::editor::manipulator::Manipulator::Placement skipped =
-        manipulator.placement(objects({first, boost::shared_ptr<v3d::editor::scene::Item>()}), view);
+        manipulator.placement(objects({first, boost::shared_ptr<v3d::editor::scene::item::Item>()}), view);
     BOOST_CHECK_CLOSE(skipped.origin.x, 1.0F, 0.01F);
     BOOST_CHECK_EQUAL(manipulator.placement(objects({}), view).valid, false);
 

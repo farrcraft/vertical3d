@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/font/ColourGlyph.h>
+#include <api/font/glyph/ColourGlyph.h>
 
 #include <glm/vec4.hpp>
 
@@ -19,6 +19,6 @@ namespace v3d::font::internal {
  * @param source the colour put down
  * @param destination the colour beneath it
  **/
-glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, ColourComposite mode);
+glm::vec4 composite(const glm::vec4& source, const glm::vec4& destination, glyph::ColourComposite mode);
 
 };  // namespace v3d::font::internal

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/font/ColourGlyph.h>
-#include <api/font/Curves.h>
+#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/Curves.h>
 #include <thorvg.h>
 
 #include <ft2build.h>
@@ -74,7 +74,7 @@ class SvgReader final {
      * @param library the FreeType library whose stroker outlines strokes
      * @return whether the glyph was found, its layers added to the glyph's
      **/
-    static bool read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph);
+    static bool read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, glyph::ColourGlyph* glyph);
 
  private:
     /**
@@ -143,7 +143,7 @@ class SvgReader final {
      **/
     struct Reading final {
         FT_Library library = nullptr;
-        ColourGlyph* glyph = nullptr;
+        glyph::ColourGlyph* glyph = nullptr;
     };
 
     /**
@@ -185,7 +185,7 @@ class SvgReader final {
     /**
      * @return a shape's outline, every contour closed, in em units
      **/
-    static std::vector<QuadraticCurve> outlineOf(const tvg::Shape& shape, const glm::mat3& toEm);
+    static std::vector<glyph::QuadraticCurve> outlineOf(const tvg::Shape& shape, const glm::mat3& toEm);
 
     /**
      * @return a point in the stroker's fixed point
@@ -196,7 +196,7 @@ class SvgReader final {
      * @return the outline FreeType's stroker draws around a shape's path, in em units, or none
      *         for a shape with no stroke
      **/
-    static std::vector<QuadraticCurve> strokeOf(const tvg::Shape& shape, const glm::mat3& toEm, FT_Library library);
+    static std::vector<glyph::QuadraticCurve> strokeOf(const tvg::Shape& shape, const glm::mat3& toEm, FT_Library library);
 
     /**
      * @return FreeType's cap for ThorVG's
@@ -217,23 +217,23 @@ class SvgReader final {
      * @return a solid fill of a colour's red, green, blue and alpha bytes, its alpha times an
      *         opacity
      **/
-    static ColourFill solidFill(const glm::u8vec4& bytes, float opacity);
+    static glyph::ColourFill solidFill(const glm::u8vec4& bytes, float opacity);
 
     /**
      * @return a gradient fill, its stops' alpha times an opacity, or nothing for a fill that is
      *         not a gradient ThorVG reads
      **/
-    static std::optional<ColourFill> gradientFill(const tvg::Fill& gradient, const glm::mat3& toEm, float opacity);
+    static std::optional<glyph::ColourFill> gradientFill(const tvg::Fill& gradient, const glm::mat3& toEm, float opacity);
 
     /**
      * Add a layer filled one way or another inside an outline and the clips above it.
      **/
-    static void addLayer(const std::vector<ColourClip>& clips, ColourClip&& outline, std::optional<ColourFill>&& fill, Reading* reading);
+    static void addLayer(const std::vector<glyph::ColourClip>& clips, glyph::ColourClip&& outline, std::optional<glyph::ColourFill>&& fill, Reading* reading);
 
     /**
      * Add a shape's fill, then its stroke.
      **/
-    static void addShape(const tvg::Shape& shape, const glm::mat3& toEm, float opacity, const std::vector<ColourClip>& clips,
+    static void addShape(const tvg::Shape& shape, const glm::mat3& toEm, float opacity, const std::vector<glyph::ColourClip>& clips,
         Reading* reading);
 
     /**
@@ -241,7 +241,7 @@ class SvgReader final {
      *
      * @param above the transform from the paint's parent's units into em units
      **/
-    static void addPaint(const tvg::Paint* paint, const glm::mat3& above, float opacity, std::vector<ColourClip> clips, Reading* reading);
+    static void addPaint(const tvg::Paint* paint, const glm::mat3& above, float opacity, std::vector<glyph::ColourClip> clips, Reading* reading);
 
     /**
      * @return a document as text, inflated when gzip compressed it, or nothing when it will not

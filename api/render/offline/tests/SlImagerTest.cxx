@@ -4,13 +4,13 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
-#include <api/render/offline/sl/Imager.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/runtime/Imager.h>
 
 #include <cstdio>
 #include <fstream>
@@ -22,7 +22,7 @@
 
 namespace {
 
-typedef v3d::render::offline::FrameBuffer FrameBuffer;
+typedef v3d::render::offline::film::FrameBuffer FrameBuffer;
 typedef v3d::render::offline::rib::Declaration Declaration;
 typedef v3d::render::offline::rib::ParameterList ParameterList;
 typedef v3d::render::offline::sl::ShaderLibrary ShaderLibrary;
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(slimager_background_test) {
     BOOST_REQUIRE(shader);
 
     FrameBuffer frame = drawn();
-    v3d::render::offline::sl::Imager imager(shader, nullptr);
+    v3d::render::offline::sl::runtime::Imager imager(shader, nullptr);
     BOOST_REQUIRE(imager.run(&frame, COVERAGE));
 
     // the pixel nothing was drawn into takes the colour whole
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(slimager_a_row_is_a_batch_test) {
     BOOST_REQUIRE(shader);
 
     FrameBuffer frame(4, 2, COVERAGE + 1);
-    v3d::render::offline::sl::Imager imager(shader, nullptr);
+    v3d::render::offline::sl::runtime::Imager imager(shader, nullptr);
     BOOST_REQUIRE(imager.run(&frame, COVERAGE));
 
     // P is the pixel's centre in raster space, so column c reads c and a half
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(slimager_only_an_imager_test) {
     BOOST_REQUIRE(surface);
 
     FrameBuffer frame = drawn();
-    v3d::render::offline::sl::Imager imager(surface, nullptr);
+    v3d::render::offline::sl::runtime::Imager imager(surface, nullptr);
     BOOST_CHECK(!imager.run(&frame, COVERAGE));
     // the frame is unchanged
     BOOST_CHECK_SMALL(frame.value(0, 0, 0), 0.0001F);

@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/trace/Scene.h>
@@ -11,6 +11,7 @@
 #include <moya/libmoya/ri/RIBHandler.h>
 #include <moya/libmoya/state/Planes.h>
 #include <moya/libmoya/state/Shading.h>
+
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <algorithm>
@@ -47,7 +48,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_color_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F);
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::GREEN, 32, 24), 0.0F);
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::BLUE, 32, 24), 0.0F);
@@ -112,7 +113,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_attribute_block_test) {
         "AttributeEnd\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     // the screen window is [-4/3, 4/3] by [-1, 1] on a 64 by 48 frame, so -0.5 in x lands at
     // column 20 and +0.5 at column 44
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 20, 24), 1.0F);
@@ -140,7 +141,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_transform_block_test) {
         "Polygon \"P\" [-0.2 -0.2 5  0.2 -0.2 5  0.2 0.2 5  -0.2 0.2 5]\n"
         "WorldEnd\n", &handler));
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = handler.context().picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = handler.context().picture();
     BOOST_CHECK_EQUAL(planes->value(v3d::moya::state::Planes::RED, 32, 24), 1.0F);
 }
 
@@ -258,7 +259,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_a_displacement_reaches_the_context_test) {
  * A quad at z = 4 in its own space, moved to z = 5 by a translation after the surface, drawn
  * with a shader that shows the shading point in object space.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> inObjectSpace(const std::string & hider) {
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> inObjectSpace(const std::string & hider) {
     v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(
         "Option \"searchpath\" \"shader\" [\"data:&\"]\n"
@@ -287,7 +288,7 @@ BOOST_AUTO_TEST_CASE(moya_ribhandler_object_space_under_both_hiders_test) {
 /**
  * A quad lit by one light, under the hider given, with the surface and light named.
  **/
-boost::shared_ptr<v3d::render::offline::FrameBuffer> messaged(const std::string & hider, const std::string & light,
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> messaged(const std::string & hider, const std::string & light,
     const std::string & surface) {
     v3d::moya::ri::RIBHandler handler;
     BOOST_REQUIRE(read(

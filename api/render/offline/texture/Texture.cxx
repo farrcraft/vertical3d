@@ -1,0 +1,74 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "Texture.h"
+
+#include <api/image/Image.h>
+#include <api/render/offline/Units.h>
+
+#include <cmath>
+#include <cstddef>
+#include <vector>
+
+namespace v3d::render::offline::texture {
+
+int Texture::wrap(const Axis & axis) {
+    const int span = static_cast<int>(axis.size);
+    const int wrapped = axis.index % span;
+    return wrapped < 0 ? wrapped + span : wrapped;
+}
+
+Texture::Texture(const v3d::image::Image & image) :
+    width_(image.width()), height_(image.height()) {
+    const unsigned int channels = image.bpp() / 8U;
+    texels_.reserve(static_cast<std::size_t>(width_) * height_);
+    for (unsigned int i = 0; i < width_ * height_; i++) {
+        const unsigned int at = i * channels;
+        glm::vec3 colour(static_cast<float>(image[at]) / BYTE_SCALE);
+        if (channels >= 3) {
+            colour.g = static_cast<float>(image[at + 1]) / BYTE_SCALE;
+            colour.b = static_cast<float>(image[at + 2]) / BYTE_SCALE;
+        }
+        texels_.push_back(colour);
+    }
+}
+
+unsigned int Texture::width() const {
+    return width_;
+}
+
+unsigned int Texture::height() const {
+    return height_;
+}
+
+const glm::vec3 & Texture::texel(int column, int row) const {
+    return texels_[(static_cast<std::size_t>(wrap({.index = row, .size = height_})) * width_) +
+        static_cast<std::size_t>(wrap({.index = column, .size = width_}))];
+}
+
+glm::vec3 Texture::sample(float s, float t) const {
+    // a coordinate that is not finite names no texel
+    if (texels_.empty() || !std::isfinite(s) || !std::isfinite(t)) {
+        return glm::vec3(0.0F);
+    }
+    // the texture repeats, so a coordinate is first reduced into [0, 1). A large coordinate
+    // would otherwise overflow the integer texel index
+    s -= std::floor(s);
+    t -= std::floor(t);
+    // texel centres are half a texel in, so a position is measured from the first centre
+    const float x = (s * static_cast<float>(width_)) - 0.5F;
+    const float y = (t * static_cast<float>(height_)) - 0.5F;
+    const float left = std::floor(x);
+    const float top = std::floor(y);
+    const float across = x - left;
+    const float down = y - top;
+    const int column = static_cast<int>(left);
+    const int row = static_cast<int>(top);
+    const glm::vec3 upper = texel(column, row) * (1.0F - across) + texel(column + 1, row) * across;
+    const glm::vec3 lower = texel(column, row + 1) * (1.0F - across) + texel(column + 1, row + 1) * across;
+    return upper * (1.0F - down) + lower * down;
+}
+
+};  // namespace v3d::render::offline::texture

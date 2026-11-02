@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <api/font/GlyphStore.h>
-#include <api/render/realtime/Handle.h>
+#include <api/font/glyph/Store.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -36,31 +36,31 @@ class GlyphPages final {
     /**
      * Make a texture from a page: side pixels square, each of a number of channels.
      **/
-    using Create = std::function<render::realtime::TextureHandle(const unsigned char* pixels, std::uint32_t side, std::uint32_t channels)>;
+    using Create = std::function<render::realtime::resource::TextureHandle(const unsigned char* pixels, std::uint32_t side, std::uint32_t channels)>;
 
     /**
      * Copy rows of pixels of a number of channels into a region of a texture, its top left
      * texel at a place.
      **/
-    using Update = std::function<void(const render::realtime::TextureHandle& texture, const glm::uvec2& at, const unsigned char* pixels,
+    using Update = std::function<void(const render::realtime::resource::TextureHandle& texture, const glm::uvec2& at, const unsigned char* pixels,
         const glm::uvec2& size, std::uint32_t channels)>;
 
     /**
      * Release a page's texture.
      **/
-    using Release = std::function<void(const render::realtime::TextureHandle& texture)>;
+    using Release = std::function<void(const render::realtime::resource::TextureHandle& texture)>;
 
     GlyphPages(Create create, Update update, Release release);
 
     /**
      * Bring the textures in step with the store.
      **/
-    void sync(font::GlyphStore* store);
+    void sync(font::glyph::Store* store);
 
     /**
      * @return a page's texture, or an unset handle for a page not yet synced
      **/
-    render::realtime::TextureHandle texture(std::size_t page) const;
+    render::realtime::resource::TextureHandle texture(std::size_t page) const;
 
     /**
      * @return how many pages have a texture
@@ -71,7 +71,7 @@ class GlyphPages final {
     Create create_;
     Update update_;
     Release release_;
-    std::vector<render::realtime::TextureHandle> textures_;
+    std::vector<render::realtime::resource::TextureHandle> textures_;
     std::vector<unsigned char> rows_;  // a plot's pixels, gathered from its page for a copy
 };
 

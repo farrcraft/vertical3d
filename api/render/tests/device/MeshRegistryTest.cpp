@@ -14,16 +14,16 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/DecodedModel.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/MeshRegistry.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/resource/DecodedModel.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
 #include <api/model/Model.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
@@ -48,15 +48,15 @@
 #include "Headless.h"
 
 using v3d::asset::Worker;
-using v3d::render::realtime::DrawItem;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::MeshHandle;
-using v3d::render::realtime::MeshRegistry;
-using v3d::render::realtime::Pass;
-using v3d::render::realtime::PipelineHandle;
+using v3d::render::realtime::frame::DrawItem;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::resource::MeshHandle;
+using v3d::render::realtime::resource::MeshRegistry;
+using v3d::render::realtime::frame::Pass;
+using v3d::render::realtime::resource::PipelineHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 using v3d::render::realtime::vulkan::pipeline::Builder;
 
 namespace {
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(an_embedded_albedo_is_uploaded) {
     const MeshRegistry::Entry* entry = meshes->resolve(meshes->load("embedded_texture.glb"));
     BOOST_REQUIRE(entry != nullptr);
     BOOST_REQUIRE_EQUAL(entry->parts.size(), 1U);
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = headless.context->textures();
     BOOST_CHECK(entry->parts[0].texture != textures->white());
     BOOST_CHECK(textures->slot(entry->parts[0].texture) != textures->slot(textures->white()));
     BOOST_CHECK(entry->parts[0].material == textures->material());
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_texture) {
     const MeshRegistry::Part barrelEntry = meshes->resolve(barrel)->parts.at(0);
     BOOST_CHECK(crateEntry.texture != headless.context->textures()->white());
     BOOST_CHECK(crateEntry.texture == barrelEntry.texture);
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = headless.context->textures();
     const uint32_t slot = textures->slot(barrelEntry.texture);
     BOOST_CHECK(slot != textures->slot(textures->white()));
 
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(two_models_naming_one_image_share_its_texture) {
 BOOST_AUTO_TEST_CASE(a_context_that_draws_nothing_still_loads_textures) {
     v3d::test::Headless headless(VK_FORMAT_UNDEFINED, width, height);
     const unsigned char pixel[4] = {0x10, 0x20, 0x30, 0xFF};
-    const v3d::render::realtime::TextureHandle texture = headless.context->textures()->texture(pixel, 1, 1, 4);
+    const v3d::render::realtime::resource::TextureHandle texture = headless.context->textures()->texture(pixel, 1, 1, 4);
     BOOST_CHECK(headless.context->resources()->texture(texture) != nullptr);
     BOOST_CHECK(headless.context->textures()->slot(texture) != headless.context->textures()->slot(headless.context->textures()->white()));
 
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(a_decoded_model_is_uploaded_once) {
     v3d::asset::media::registerLoaders(*assets, headless.logger);
     MeshRegistry meshes(headless.logger, headless.context, assets);
 
-    const v3d::render::realtime::DecodedModel decoded = v3d::render::realtime::decodeModel(*assets, "embedded_texture.glb");
+    const v3d::render::realtime::resource::DecodedModel decoded = v3d::render::realtime::resource::decodeModel(*assets, "embedded_texture.glb");
     const MeshHandle first = meshes.add(decoded);
     const MeshHandle second = meshes.add(decoded);
 
@@ -387,13 +387,13 @@ BOOST_AUTO_TEST_CASE(a_decoded_model_without_its_albedos_is_refused) {
     v3d::test::Headless headless(colourFormat, width, height);
     const boost::shared_ptr<MeshRegistry> meshes = registry(&headless);
 
-    v3d::render::realtime::DecodedModel missing;
+    v3d::render::realtime::resource::DecodedModel missing;
     missing.path = "short";
     missing.model = boost::make_shared<const v3d::model::Model>(twoParts("", ""));
     missing.albedos.resize(1);
     BOOST_CHECK_THROW(meshes->add(missing), std::runtime_error);
 
-    v3d::render::realtime::DecodedModel empty;
+    v3d::render::realtime::resource::DecodedModel empty;
     empty.path = "empty";
     BOOST_CHECK_THROW(meshes->add(empty), std::runtime_error);
 

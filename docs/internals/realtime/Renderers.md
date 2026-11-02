@@ -5,13 +5,14 @@ items.
 
 ## The renderers
 
-Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `Grade` and
-`RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
+Each renderer in `renderer/` is built from a `DeviceContext` and a `Spec`, as `renderer::Grade` and
+`frame::RenderTarget` are. It copies what it uses out of the context: the device, pipeline cache,
 resources, ring, frame uniforms and textures. It holds no pointer to the context, because the
 context owns the `Quad`, `Line` and `World` it builds. `Quad`, `Line` and `World` take the
 colour and depth formats they draw into, and each of them compiles a variant per depth state.
 
-- `Quad`, `World` and `Lit` bind the textures they sample through the context's `Textures`.
+- `Quad`, `World` and `Lit` bind the textures they sample through the context's
+  `resource::Textures`.
 - `Lit` also takes the shadow map's format, its shaders and the front face.
 - `FullScreen` takes its fragment shader, how many images it samples, and the formats
   of the pass it draws in.
@@ -64,20 +65,21 @@ one layer and one texel that `Lit` owns, cleared to the far plane at constructio
 therefore always has a view of the kind the shader reads. Each cascade is drawn by a pass into its
 own layer, and the shadow pipelines read the cascade's matrix by the index a draw pushes.
 
-**Skinned vertex.** `MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes) followed by
-`model::Model::Influence`: four joints as unsigned shorts and four float weights, 56 bytes in all.
+**Skinned vertex.** `resource::MeshRegistry::SkinnedVertex` is `model::Model::Vertex` (32 bytes)
+followed by `model::Model::Influence`: four joints as unsigned shorts and four float weights, 56
+bytes in all.
 
-**`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source.
-A depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the
-`FullScreen` goes, since the set belongs to its pool. `Grade` holds two `FullScreen`s, one for a
-scene that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built
-for the grade's target, so they decode the result before an `_SRGB` target stores it. A source
-belongs to the one that matches its scene's format. `Grade` keeps a map from the handle a caller
+**`FullScreen` sources** are allocated from its own `DescriptorPool`, one binding per source. A
+depth image is bound in `DEPTH_READ_ONLY_OPTIMAL`. A source must be released before the `FullScreen`
+goes, since the set belongs to its pool. `renderer::Grade` holds two `FullScreen`s, one for a scene
+that holds display values and one for an `_SRGB` scene, which is read decoded. Both are built for
+the grade's target, so they decode the result before an `_SRGB` target stores it. A source belongs
+to the one that matches its scene's format. `renderer::Grade` keeps a map from the handle a caller
 holds to the current material; `replace()` creates a new table, rebinds every source to new
 materials, and retires the old table and materials through the ring. `replace()` uploads through
-`Uploader::submit`, which does not wait for the upload. `Grade`'s
-destructor releases its table and every source still in the map, before its `FullScreen` goes.
-`source()` releases the scene's registration if binding the material throws.
+`Uploader::submit`, which does not wait for the upload. `renderer::Grade`'s destructor releases its
+table and every source still in the map, before its `FullScreen` goes. `source()` releases the
+scene's registration if binding the material throws.
 
 Background: [ADR-0005](../../adr/0005-2d-one-batched-quad-pipeline.md),
 [ADR-0011](../../adr/0011-rendering-lines-as-a-world-space-primitive.md),

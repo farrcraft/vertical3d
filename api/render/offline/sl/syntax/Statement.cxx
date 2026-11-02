@@ -5,11 +5,11 @@
 
 #include "Statement.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 namespace v3d::render::offline::sl::syntax {
 
-Statement::Statement(Kind kind, const v3d::render::offline::Position & at) :
+Statement::Statement(Kind kind, const v3d::render::offline::source::Position & at) :
     kind(kind),
     line(at.line),
     column(at.column) {

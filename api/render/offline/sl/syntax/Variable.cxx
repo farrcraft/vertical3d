@@ -5,7 +5,7 @@
 
 #include "Variable.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
@@ -13,7 +13,7 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Variable::Variable(const std::string & name, const v3d::render::offline::Position & at) :
+Variable::Variable(const std::string & name, const v3d::render::offline::source::Position & at) :
     Expression(Kind::VARIABLE, at),
     name(name) {
 }

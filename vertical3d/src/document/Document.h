@@ -10,10 +10,10 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Topology.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/RenderSettings.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
@@ -73,19 +73,19 @@ class Document final {
      * Put a new item into the scene.
      * @param name what the history calls the change
      **/
-    Outcome create(const boost::shared_ptr<scene::Item>& item, const std::string& name);
+    Outcome create(const boost::shared_ptr<scene::item::Item>& item, const std::string& name);
     Outcome createPrimitive(Primitive primitive);
 
     /**
      * Make a camera or a light where a view is, facing the way it looks.
      **/
-    Outcome createCamera(const v3d::type::camera::Profile& at, scene::Camera::Projection projection);
-    Outcome createLight(const v3d::type::camera::Profile& at, scene::Light::Type type);
+    Outcome createCamera(const v3d::type::camera::Profile& at, scene::item::Camera::Projection projection);
+    Outcome createLight(const v3d::type::camera::Profile& at, scene::item::Light::Type type);
 
     /**
      * Make one curve of a type at the origin.
      **/
-    Outcome createCurve(scene::CurveType type);
+    Outcome createCurve(scene::item::CurveType type);
 
     /**
      * Gather items beneath a new group.

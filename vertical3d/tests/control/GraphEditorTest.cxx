@@ -11,7 +11,7 @@
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 
@@ -45,7 +45,7 @@ struct Panel {
     Panel() :
         document(boost::make_shared<v3d::editor::document::Document>(boost::make_shared<v3d::log::Logger>(),
             boost::filesystem::temp_directory_path() / "v3d_graph_editor")),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>())),
         layer(v3d::ui::typeset::mono(&written)),
         editor(document, [this](const v3d::editor::document::Outcome& outcome) { reported.push_back(outcome); }) {
         cube->name("Cube");
@@ -142,7 +142,7 @@ struct Panel {
     static constexpr glm::vec2 away{ 690.0F, 490.0F };
 
     boost::shared_ptr<v3d::editor::document::Document> document;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     std::vector<v3d::editor::document::Outcome> reported;

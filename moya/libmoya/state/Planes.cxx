@@ -5,7 +5,7 @@
 
 #include "Planes.h"
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 
 #include <limits>
 
@@ -14,8 +14,8 @@
 
 namespace v3d::moya::state {
 
-boost::shared_ptr<v3d::render::offline::FrameBuffer> Planes::make(unsigned int width, unsigned int height) {
-    auto planes = boost::make_shared<v3d::render::offline::FrameBuffer>(width, height, COVERAGE + 1);
+boost::shared_ptr<v3d::render::offline::film::FrameBuffer> Planes::make(unsigned int width, unsigned int height) {
+    auto planes = boost::make_shared<v3d::render::offline::film::FrameBuffer>(width, height, COVERAGE + 1);
     // a pixel nothing hit keeps this depth, and reads as further away than anything drawn
     planes->clear({.plane = DEPTH, .value = std::numeric_limits<float>::max()});
     return planes;

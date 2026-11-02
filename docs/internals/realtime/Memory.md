@@ -52,7 +52,7 @@ is sampled, a canvas included. The swapchain's depth buffer is never sampled.
 A pass that samples a target's depth and draws into it in the same frame breaks the read-only
 promise. The recorder cannot detect it; the validation layer reports it.
 
-**Render targets** own a depth buffer per image slot, sized with the target. `RenderTarget`
+**Render targets** own a depth buffer per image slot, sized with the target. `frame::RenderTarget`
 throws when it has no colour and no sampled depth, and when it has more than one layer and a
 colour image or no sampled depth. Its images, on resize or destruction, are
 retired through the ring rather than destroyed at once. A target of more than one image clears
@@ -98,7 +98,8 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md),
   themselves, and `vk_mem_alloc.h` is compiled in exactly one translation unit,
   [`VmaImpl.cxx`](../../../api/render/realtime/vulkan/memory/VmaImpl.cxx), with warnings and
   analysis off.
-- The allocator is destroyed before the device. See [ownership](README.md#object-chain-and-ownership).
+- The allocator is destroyed before the device. See
+  [ownership](README.md#object-chain-and-ownership).
 
 Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 
@@ -108,7 +109,7 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
 |---|---|---|
 | `memory::Buffer` | Host visible, coherent, mapped for its whole life | Geometry rewritten every frame; readback |
 | `memory::DeviceBuffer` | Device local, filled by staging copy | Geometry built once and drawn many times |
-| `Mesh` | Two `memory::DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
+| `resource::Mesh` | Two `memory::DeviceBuffer`s: vertices, and indices when indexed | Static geometry an app owns |
 
 - **A `Buffer` never changes size.** Whatever outgrows one makes a new one and retires the old
   one through the ring, as `StreamRing` and `Capture` do. `Buffer::read()` is slow (coherent,
@@ -131,13 +132,12 @@ Background: [ADR-0053](../../adr/0053-memory-optional-vma-suballocation.md)
   host never does.
 - Nothing an upload holds is freed until frames are begun, so code that uploads and never draws,
   such as a test, holds every staging buffer until the context is destroyed.
-- Command buffers are reused once their frame has finished, from a pool the retirements share,
-  so an `Uploader` may be destroyed while its uploads are in flight. `RenderTarget` makes one of
-  its own for its layout transitions this way. Uploads are made from the thread that begins
-  frames.
-- `Mesh` is filled once. Changing geometry means building a new mesh, because a refill would have
-  to wait for every frame still drawing the old one. `Mesh::describe(&item)` fills an item's
-  buffers, index type and counts.
+- Command buffers are reused once their frame has finished, from a pool the retirements share, so an
+  `Uploader` may be destroyed while its uploads are in flight. `frame::RenderTarget` makes one of
+  its own for its layout transitions this way. Uploads are made from the thread that begins frames.
+- `resource::Mesh` is filled once. Changing geometry means building a new mesh, because a refill
+  would have to wait for every frame still drawing the old one. `resource::Mesh::describe(&item)`
+  fills an item's buffers, index type and counts.
 
 Background: [ADR-0108](../../adr/0108-memory-an-upload-is-its-own-submission-freed-by-the-ring.md)
 
@@ -168,15 +168,16 @@ Background: [ADR-0010](../../adr/0010-meshes-owned-by-the-app-that-built-them.md
 
 ## Resources and deferred destruction
 
-`Resources` owns everything a draw item names by handle: pipelines (with their
-layouts), materials and textures. It is built on `Registry<Tag, T>`
-([`Registry.h`](../../../api/render/realtime/Registry.h)).
+`resource::Resources` owns everything a draw item names by handle: pipelines (with their
+layouts), materials and textures. It is built on `resource::Registry<Tag, T>`
+([`Registry.h`](../../../api/render/realtime/resource/Registry.h)).
 
-**Handles.** `Handle<Tag>` ([`Handle.h`](../../../api/render/realtime/Handle.h)) holds a 32-bit slot
-and a 32-bit generation. The tag keeps `PipelineHandle`, `MaterialHandle`, `TextureHandle` and
-`MeshHandle` distinct types. A released slot is reused by a later `add()` with its generation
-incremented, and `resolve()` refuses a handle whose generation is stale. A handle can therefore
-never come to name whatever fills its slot next. Only the slot is a sort order.
+**Handles.** `resource::Handle<Tag>` ([`Handle.h`](../../../api/render/realtime/resource/Handle.h))
+holds a 32-bit slot and a 32-bit generation. The tag keeps `resource::PipelineHandle`,
+`resource::MaterialHandle`, `resource::TextureHandle` and `resource::MeshHandle` distinct types. A
+released slot is reused by a later `add()` with its generation incremented, and `resolve()` refuses
+a handle whose generation is stale. A handle can therefore never come to name whatever fills its
+slot next. Only the slot is a sort order.
 
 **Deferred destruction.** Releasing a handle hands the objects behind it to the ring as a
 callback (`Ring::retire()`). `vulkan::frame::Retirement` stores each callback with the last frame
@@ -210,41 +211,43 @@ once:
 - Releasing a handle already waiting in the ring returns false.
 
 As a result, a mesh, a texture or a post source released after its items are queued and before
-`renderFrame()` is drawn by that frame. The callbacks share `Resources`' registries through a
-shared pointer, because the ring outlives `Resources` and may run them after it is destroyed.
+`renderFrame()` is drawn by that frame. The callbacks share `resource::Resources`' registries
+through a shared pointer, because the ring outlives `resource::Resources` and may run them after it
+is destroyed.
 
 - **Anything driving frames must call `Ring::begin()`,** or nothing retired is ever collected. A
   device test counting live allocations has to run the ring that far first.
 - A released material returns its descriptor set to its `DescriptorPool` the same way. Its owner
-  hands the set back only when `Resources::release()` returned true, so a set is never handed
-  back twice.
+  hands the set back only when `resource::Resources::release()` returned true, so a set is never
+  handed back twice.
 - A `DescriptorPool`'s destructor retires its Vulkan pools and layout the same way, so a set from
   a destroyed `FullScreen` lives until the frames binding it have finished.
-- `Resources::release(TextureHandle)` does not release a material naming the texture; whoever
-  made the material does that. `Textures::release()` releases both.
+- `resource::Resources::release(TextureHandle)` does not release a material naming the texture;
+  whoever made the material does that. `resource::Textures::release()` releases both.
 - Pipelines are built at load time and never released.
-- `Resources`' destructor destroys only the pipelines. Textures and materials still registered
-  are destroyed with the registries `Resources` shares with pending releases, once the ring has
-  run those releases. A material's descriptor set is freed with the pool it came from.
+- `resource::Resources`' destructor destroys only the pipelines. Textures and materials still
+  registered are destroyed with the registries `resource::Resources` shares with pending releases,
+  once the ring has run those releases. A material's descriptor set is freed with the pool it came
+  from.
 
 **What is registered for a render target shares its images.** A `pipeline::Texture` holds its
 image through a shared pointer, so whichever of the target and the registration lets go last
-frees them. After `RenderTarget::recreate()` the old registration still names the old
+frees them. After `frame::RenderTarget::recreate()` the old registration still names the old
 images, so it must be released and the target registered again.
 
-**Meshes are outside `Resources`.** An app's `Mesh` belongs to whatever built it.
-`MeshRegistry` is a separate registry with the same slot-and-generation handles: an entry holds
-a `Mesh`, its parts and an optional skin. Releasing an entry retires its mesh through the
-ring and drops each albedo's user count, releasing the albedo with its last user. The registry's
-destructor destroys remaining meshes at once, so it must run after the device is idle.
+**Meshes are outside `resource::Resources`.** An app's `resource::Mesh` belongs to whatever built
+it. `resource::MeshRegistry` is a separate registry with the same slot-and-generation handles: an
+entry holds a `resource::Mesh`, its parts and an optional skin. Releasing an entry retires its mesh
+through the ring and drops each albedo's user count, releasing the albedo with its last user. The
+registry's destructor destroys remaining meshes at once, so it must run after the device is idle.
 
 Background: [ADR-0061](../../adr/0061-resources-explicit-release-generational-handles.md),
 [ADR-0065](../../adr/0065-meshes-shared-registry-keyed-by-path.md)
 
 ## Textures
 
-`Textures` lives on `DeviceContext` and is built with it, so a context that draws no quads (a
-headless one, or one only loading meshes) can still register textures. It owns:
+`resource::Textures` lives on `DeviceContext` and is built with it, so a context that draws no quads
+(a headless one, or one only loading meshes) can still register textures. It owns:
 
 - the `memory::TextureFactory`, which copies through the context's one `Uploader`;
 - the `pipeline::TextureArray`, set 1's one set and its layout, which every textured pipeline
@@ -261,37 +264,37 @@ named last, which no draw reads.
 **A requested texture fills behind its handle.** `request(path)` registers a handle that names
 the white texture's image and has no slot of its own, so `slot()` gives the white texture's.
 The image is decoded on the worker. `poll()` uploads it, takes a slot for it, and puts it
-behind the handle with `Resources::replace()`, which retires the white entry it replaced
+behind the handle with `resource::Resources::replace()`, which retires the white entry it replaced
 through the ring. Items queued before the poll were given the white slot and draw white, and
 every one submitted after reads the texture's. A texture made and then refused a slot is
 retired through the ring rather than destroyed, because its upload may still be running.
 
-**Both stores stream through one `UploadQueue`.** `Textures` and `MeshRegistry` each post a
-request's decoding to the worker through it, and their `poll()` is its `poll()`. It holds what
-has arrived, in the order it was posted. It skips a handle the store no longer waits for, uploads
-at least one value, and stops once the bytes reach the budget. A completion holds it weakly, so a
-result that arrives after its store is gone is dropped. A failure is a job that threw or an
-upload that threw, and it reaches the store once. The store logs it, keeps the handle's stand-in
-until it is released, and frees the path so that a later request reads the file again. The
-stand-in is the white texture for a texture, and nothing for a mesh.
+**Both stores stream through one `resource::UploadQueue`.** `resource::Textures` and
+`resource::MeshRegistry` each post a request's decoding to the worker through it, and their `poll()`
+is its `poll()`. It holds what has arrived, in the order it was posted. It skips a handle the store
+no longer waits for, uploads at least one value, and stops once the bytes reach the budget. A
+completion holds it weakly, so a result that arrives after its store is gone is dropped. A failure
+is a job that threw or an upload that threw, and it reaches the store once. The store logs it, keeps
+the handle's stand-in until it is released, and frees the path so that a later request reads the
+file again. The stand-in is the white texture for a texture, and nothing for a mesh.
 
-`Quad`, `World`, `Lit`, `Grade` and `MeshRegistry` all take `Textures`, so one uploaded atlas
-serves every primitive from one pool.
+`Quad`, `World`, `Lit`, `renderer::Grade` and `resource::MeshRegistry` all take
+`resource::Textures`, so one uploaded atlas serves every primitive from one pool.
 
 `TextureFactory`:
 
 - uploads `UNORM` by default (`Encoding::Display`), or `_SRGB` with `Encoding::Srgb`;
 - gives a single-channel image (`R8_UNORM`) a view swizzled to `(1, 1, 1, R)`, so a coverage
   mask or a glyph atlas samples as white with alpha and the shader needs no branch for it;
-- can create a 3D texture from raw texels, which `Grade` uses for its table;
+- can create a 3D texture from raw texels, which `renderer::Grade` uses for its table;
 - makes one `pipeline::Sampler` per distinct `Sampler::Spec` it is asked for, and hands each
   texture the shared one. The default spec's sampler is made when the factory is, and a volume
   texture is always read through it. The specs are kept in a list and searched, since a scene
   names only a few.
 
-`Textures::depthTexture(target)` and `texture(target)` return the white texture for a target with
-nothing of that kind to sample. A descriptor written against an image without sampled usage is
-undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never releases
-the white texture, so such a handle can be released like any other.
+`resource::Textures::depthTexture(target)` and `texture(target)` return the white texture for a
+target with nothing of that kind to sample. A descriptor written against an image without sampled
+usage is undefined. `Lit::scene()` takes the white texture as no shadow map. `release()` never
+releases the white texture, so such a handle can be released like any other.
 
 Background: [ADR-0082](../../adr/0082-textures-owned-by-the-device-context.md)

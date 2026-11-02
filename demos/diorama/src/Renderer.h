@@ -6,11 +6,11 @@
 #pragma once
 
 #include <api/asset/Manager.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapingCache.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapingCache.h>
 #include <api/log/Logger.h>
-#include <api/render/realtime/LitScene.h>
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/lighting/LitScene.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/lighting/Settings.h>
 #include <api/render/realtime/lighting/Shadow.h>
@@ -142,13 +142,13 @@ class Renderer final {
     /**
      * Stand the sign over the well in the lit pass, turned to face the camera.
      **/
-    void drawSign(v3d::render::realtime::Pass* lit);
+    void drawSign(v3d::render::realtime::frame::Pass* lit);
 
     boost::shared_ptr<v3d::log::Logger> logger_;
     v3d::shell::Shell* shell_;
     v3d::render::realtime::WindowRenderer engine_;
-    boost::shared_ptr<v3d::render::realtime::MeshRegistry> meshes_;
-    boost::shared_ptr<v3d::render::realtime::LitScene> scene_;
+    boost::shared_ptr<v3d::render::realtime::resource::MeshRegistry> meshes_;
+    boost::shared_ptr<v3d::render::realtime::lighting::LitScene> scene_;
     v3d::render::realtime::lighting::Settings settings_;
     std::optional<v3d::render::realtime::lighting::ShadowBounds> bounds_;
     v3d::type::camera::Camera camera_;
@@ -156,8 +156,8 @@ class Renderer final {
     v3d::ui::shell::Screen* screen_ = nullptr;
     // the sign over the well: its words laid out once, drawn from their curves, and the world
     // quads they become, built for the lit scene's target
-    boost::shared_ptr<v3d::font::ShapingCache> shaping_;
-    std::optional<v3d::font::Paragraph> sign_;
+    boost::shared_ptr<v3d::font::text::ShapingCache> shaping_;
+    std::optional<v3d::font::text::Paragraph> sign_;
     boost::shared_ptr<v3d::ui::paint::CurveText> signText_;
     boost::shared_ptr<v3d::render::realtime::renderer::World> signs_;
 };

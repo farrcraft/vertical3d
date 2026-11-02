@@ -8,9 +8,9 @@
 #include "Clip.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/canvas/Line.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/StreamRing.h>
@@ -89,7 +89,7 @@ void Line::createPipelines(const vulkan::pipeline::Formats & formats) {
 
 /**
  **/
-void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
+void Line::submit(const canvas::Line& canvas, frame::Pass* pass, uint16_t layer) {
     if (pass == nullptr || canvas.empty()) {
         return;
     }
@@ -100,14 +100,14 @@ void Line::submit(const canvas::Line& canvas, Pass* pass, uint16_t layer) {
 
     // dynamic rendering matches a pipeline to the pass's attachments, so which of the two
     // is drawn with follows from whether the pass has a depth buffer
-    const PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
+    const resource::PipelineHandle handle = pass->depth() ? depthPipeline_ : pipeline_;
 
     for (const canvas::Line::Batch& batch : canvas.batches()) {
         if (batch.vertices == 0) {
             continue;
         }
 
-        DrawItem item;
+        frame::DrawItem item;
         item.key.layer = layer;
         item.pipeline = handle;
         item.vertexBuffer = vertices->handle();

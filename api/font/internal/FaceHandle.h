@@ -64,7 +64,6 @@ class FaceHandle final {
     std::vector<std::int32_t> varied;         /**< the coordinates FreeType holds, set only by vary() **/
 
  private:
-
     // the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel
     static constexpr FT_UInt RESOLUTION_DPI = 72;
 };

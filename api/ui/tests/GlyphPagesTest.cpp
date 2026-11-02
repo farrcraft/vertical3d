@@ -3,8 +3,8 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/GlyphStore.h>
-#include <api/render/realtime/Handle.h>
+#include <api/font/glyph/Store.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/ui/paint/GlyphPages.h>
 
 #include <cstddef>
@@ -16,12 +16,12 @@
 
 namespace {
 
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 
 /**
  * Pages of 64 pixels cut into four plots of 32, with one page kept.
  **/
-const v3d::font::GlyphStore::Spec kSmall{ .pageSize = 64, .plotSize = 32, .pages = 1, .padding = 1 };
+const v3d::font::glyph::Store::Spec kSmall{ .pageSize = 64, .plotSize = 32, .pages = 1, .padding = 1 };
 
 /**
  * What the device was asked to do.
@@ -55,14 +55,14 @@ struct Recording {
      * Ask the store for a glyph filling a plot but for its padding, its shade its index.
      **/
     void glyph(unsigned int index) {
-        store.glyph(v3d::font::GlyphKey{ .index = index, .size = 16.0F }, [](const v3d::font::GlyphKey& key) {
-            return v3d::font::GlyphBitmap{ .size = glm::uvec2(30), .pixels = std::vector<unsigned char>(std::size_t{30} * 30, static_cast<unsigned char>(key.index)) };
+        store.glyph(v3d::font::glyph::Key{ .index = index, .size = 16.0F }, [](const v3d::font::glyph::Key& key) {
+            return v3d::font::glyph::Bitmap{ .size = glm::uvec2(30), .pixels = std::vector<unsigned char>(std::size_t{30} * 30, static_cast<unsigned char>(key.index)) };
         });
     }
 
     Device device;
     v3d::ui::paint::GlyphPages pages;
-    v3d::font::GlyphStore store;
+    v3d::font::glyph::Store store;
 };
 
 BOOST_FIXTURE_TEST_SUITE(glyph_pages_test, Recording)

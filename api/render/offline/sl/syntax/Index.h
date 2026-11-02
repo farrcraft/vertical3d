@@ -17,7 +17,7 @@ class Index final : public Expression {
         ExpressionPtr index;
     };
 
-    Index(const Parts & parts, const v3d::render::offline::Position & at);
+    Index(const Parts & parts, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr array;
     ExpressionPtr index;

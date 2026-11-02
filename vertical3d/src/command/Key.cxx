@@ -7,7 +7,7 @@
 
 #include <api/animation/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -87,7 +87,7 @@ bool Key::empty() const noexcept {
  **/
 std::vector<Key::Target> Key::every(const scene::Items& items) {
     std::vector<Target> targets;
-    for (const boost::shared_ptr<scene::Item>& item : items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
         if (item) {
             const std::vector<std::string>& declared = scene::properties(item->kind());
             targets.push_back({ .item = item, .paths = std::set<std::string>(declared.begin(), declared.end()) });

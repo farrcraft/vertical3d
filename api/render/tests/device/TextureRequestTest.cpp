@@ -10,15 +10,15 @@
 #include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <spdlog/sinks/ringbuffer_sink.h>
 
 #include <chrono>
@@ -39,14 +39,14 @@
 #include "Headless.h"
 
 using v3d::asset::Worker;
-using v3d::render::realtime::Frame;
-using v3d::render::realtime::Pass;
-using v3d::render::realtime::TextureHandle;
-using v3d::render::realtime::Textures;
+using v3d::render::realtime::frame::Frame;
+using v3d::render::realtime::frame::Pass;
+using v3d::render::realtime::resource::TextureHandle;
+using v3d::render::realtime::resource::Textures;
 using v3d::render::realtime::canvas::Canvas;
 using v3d::render::realtime::vulkan::frame::Capture;
-using v3d::render::realtime::Recorder;
-using v3d::render::realtime::RenderTarget;
+using v3d::render::realtime::frame::Recorder;
+using v3d::render::realtime::frame::RenderTarget;
 
 namespace {
 

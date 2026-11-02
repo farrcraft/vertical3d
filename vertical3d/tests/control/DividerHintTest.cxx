@@ -3,13 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <vertical3d/src/control/DividerHint.h>
+#include <vertical3d/src/control/chrome/DividerHint.h>
 
 #include <boost/test/unit_test.hpp>
 
 namespace {
 
-using v3d::editor::control::DividerHint;
+using v3d::editor::control::chrome::DividerHint;
 
 BOOST_AUTO_TEST_SUITE(divider_hint_test)
 

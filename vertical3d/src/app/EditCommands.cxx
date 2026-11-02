@@ -9,9 +9,9 @@
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/CreateItem.h>
-#include <vertical3d/src/scene/Light.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/CreateItem.h>
+#include <vertical3d/src/scene/item/Light.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/selection/SelectMask.h>
@@ -60,27 +60,27 @@ void EditCommands::registerCreate(CommandTable* table) const {
             context.report(context.document->createPrimitive(primitive));
         });
     }
-    for (const auto& [name, projection] : std::vector<std::pair<const char*, scene::Camera::Projection>>{
-        { "create::perspective::camera", scene::Camera::Projection::Perspective },
-        { "create::ortho::camera", scene::Camera::Projection::Orthographic } }) {
+    for (const auto& [name, projection] : std::vector<std::pair<const char*, scene::item::Camera::Projection>>{
+        { "create::perspective::camera", scene::item::Camera::Projection::Perspective },
+        { "create::ortho::camera", scene::item::Camera::Projection::Orthographic } }) {
         table->press(name, [&context, projection]() {
             context.atView("a camera is made", [&context, projection](const v3d::type::camera::Profile& at) {
                 context.report(context.document->createCamera(at, projection));
             });
         });
     }
-    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::Light::Type>>{
-        { "create::light::point", scene::Light::Type::Point }, { "create::light::distant", scene::Light::Type::Distant },
-        { "create::light::spot", scene::Light::Type::Spot } }) {
+    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::item::Light::Type>>{
+        { "create::light::point", scene::item::Light::Type::Point }, { "create::light::distant", scene::item::Light::Type::Distant },
+        { "create::light::spot", scene::item::Light::Type::Spot } }) {
         table->press(name, [&context, type]() {
             context.atView("a light is made", [&context, type](const v3d::type::camera::Profile& at) {
                 context.report(context.document->createLight(at, type));
             });
         });
     }
-    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::CurveType>>{
-        { "create::curve::poly", scene::CurveType::Poly }, { "create::curve::bezier", scene::CurveType::Bezier },
-        { "create::curve::catmull_rom", scene::CurveType::CatmullRom }, { "create::curve::nurbs", scene::CurveType::Nurbs } }) {
+    for (const auto& [name, type] : std::vector<std::pair<const char*, scene::item::CurveType>>{
+        { "create::curve::poly", scene::item::CurveType::Poly }, { "create::curve::bezier", scene::item::CurveType::Bezier },
+        { "create::curve::catmull_rom", scene::item::CurveType::CatmullRom }, { "create::curve::nurbs", scene::item::CurveType::Nurbs } }) {
         table->press(name, [&context, type]() { context.report(context.document->createCurve(type)); });
     }
     table->press("create::group", [&context]() { context.report(context.document->group(context.document->scene()->selection())); });

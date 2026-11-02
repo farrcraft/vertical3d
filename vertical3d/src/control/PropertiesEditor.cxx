@@ -13,12 +13,12 @@
 #include <vertical3d/src/command/Units.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Text.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Curve.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Curve.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Units.h>
@@ -81,7 +81,7 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
     } else if (selected.size() > 1) {
         ui->textDisabled(std::to_string(selected.size()) + " items are selected");
     } else {
-        const boost::shared_ptr<scene::Item>& item = selected.front();
+        const boost::shared_ptr<scene::item::Item>& item = selected.front();
         ui->tabBar("tabs");
         if (ui->tab("Item")) {
             ui->text(Outliner::kind(item->kind()));
@@ -96,7 +96,7 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
             numbers(ui, item, scene->evaluate().pose(*item), scene->length());
             settings(ui, item);
         }
-        if (item->kind() == scene::Item::Kind::Mesh && ui->tab("Mesh")) {
+        if (item->kind() == scene::item::Item::Kind::Mesh && ui->tab("Mesh")) {
             meshCounts(ui, *item);
         }
         if (ui->tab("Keys")) {
@@ -110,8 +110,8 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
 
 /**
  **/
-void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown, scene::Length length) {
-    const scene::Item::Kind kind = item->kind();
+void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length) {
+    const scene::item::Item::Kind kind = item->kind();
     // the angles shown are kept closest to the last ones, so a drag through a half turn does
     // not jump to the other set of angles that give the same rotation
     if (turned_ != item) {
@@ -121,7 +121,7 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
     const std::map<std::string, float> now = values(kind, shown, angles_);
     angles_ = glm::vec3(now.at("rotation.x"), now.at("rotation.y"), now.at("rotation.z"));
 
-    const std::vector<std::string> paths = properties(kind);
+    const std::vector<std::string> paths = scene::properties(kind);
     for (std::size_t at = 0; at < paths.size();) {
         const std::string group = field(paths[at]).group;
         std::size_t end = at;
@@ -151,7 +151,7 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
 
 /**
  **/
-void PropertiesEditor::number(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item, const scene::Pose& shown,
+void PropertiesEditor::number(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown,
     const std::map<std::string, float>& now, const std::string& path, const v3d::ui::Immediate::NumberLook& look) {
     const Field named = field(path);
     ui->pushId(path);
@@ -196,8 +196,8 @@ void PropertiesEditor::sceneSettings(v3d::ui::Immediate* ui, const boost::shared
 
 /**
  **/
-void PropertiesEditor::meshCounts(v3d::ui::Immediate* ui, const scene::Item& item) {
-    const auto* mesh = dynamic_cast<const scene::Mesh*>(&item);
+void PropertiesEditor::meshCounts(v3d::ui::Immediate* ui, const scene::item::Item& item) {
+    const auto* mesh = dynamic_cast<const scene::item::Mesh*>(&item);
     if (mesh == nullptr || !mesh->geometry()) {
         return;
     }
@@ -207,7 +207,7 @@ void PropertiesEditor::meshCounts(v3d::ui::Immediate* ui, const scene::Item& ite
 
 /**
  **/
-void PropertiesEditor::keys(v3d::ui::Immediate* ui, const scene::Scene& scene, const scene::Item& item) {
+void PropertiesEditor::keys(v3d::ui::Immediate* ui, const scene::Scene& scene, const scene::item::Item& item) {
     const scene::Curves curves = scene.curves(item.id());
     if (curves.empty()) {
         ui->textDisabled("No keys");
@@ -237,32 +237,32 @@ std::string PropertiesEditor::unit(const std::string& path, scene::Length length
 
 /**
  **/
-void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Item>& item) {
+void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item) {
     command::Edit::Values wanted = command::Edit::of(*item);
     bool changed = false;
     std::string what;
     switch (item->kind()) {
-        case scene::Item::Kind::Camera: {
-            int chosen = wanted.pose.lens.projection == scene::Camera::Projection::Orthographic ? 1 : 0;
+        case scene::item::Item::Kind::Camera: {
+            int chosen = wanted.pose.lens.projection == scene::item::Camera::Projection::Orthographic ? 1 : 0;
             ui->separator();
             if (ui->combo("Projection", &chosen, { "Perspective", "Orthographic" })) {
-                wanted.pose.lens.projection = chosen == 1 ? scene::Camera::Projection::Orthographic : scene::Camera::Projection::Perspective;
+                wanted.pose.lens.projection = chosen == 1 ? scene::item::Camera::Projection::Orthographic : scene::item::Camera::Projection::Perspective;
                 changed = true;
                 what = "edit projection";
             }
             break;
         }
-        case scene::Item::Kind::Light: {
+        case scene::item::Item::Kind::Light: {
             int chosen = static_cast<int>(wanted.pose.emission.type);
             ui->separator();
             if (ui->combo("Type", &chosen, { "Point", "Distant", "Spot" })) {
-                wanted.pose.emission.type = static_cast<scene::Light::Type>(chosen);
+                wanted.pose.emission.type = static_cast<scene::item::Light::Type>(chosen);
                 changed = true;
                 what = "edit light type";
             }
             break;
         }
-        case scene::Item::Kind::Curve: {
+        case scene::item::Item::Kind::Curve: {
             ui->separator();
             ui->text("Render");
             changed = ui->checkbox("Renders", &wanted.style.renders);
@@ -276,8 +276,8 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
             }
             break;
         }
-        case scene::Item::Kind::Mesh:
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Group:
             break;
     }
     // a choice is a whole edit, which ends as it is made
@@ -290,7 +290,7 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
 
 /**
  **/
-void PropertiesEditor::begin(const boost::shared_ptr<scene::Item>& item, const std::string& what) {
+void PropertiesEditor::begin(const boost::shared_ptr<scene::item::Item>& item, const std::string& what) {
     if (pending_ && pending_->item != item) {
         finish();
     }
@@ -341,16 +341,16 @@ const std::map<std::string, PropertiesEditor::Field>& PropertiesEditor::fields()
 
 /**
  **/
-bool PropertiesEditor::valid(const scene::Item& item, const command::Edit::Values& values) {
+bool PropertiesEditor::valid(const scene::item::Item& item, const command::Edit::Values& values) {
     switch (item.kind()) {
-        case scene::Item::Kind::Camera:
+        case scene::item::Item::Kind::Camera:
             return values.pose.lens.valid();
-        case scene::Item::Kind::Light:
+        case scene::item::Item::Kind::Light:
             return values.pose.emission.valid();
-        case scene::Item::Kind::Curve:
+        case scene::item::Item::Kind::Curve:
             return values.style.valid();
-        case scene::Item::Kind::Mesh:
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Group:
             break;
     }
     return true;

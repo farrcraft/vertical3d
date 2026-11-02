@@ -8,10 +8,10 @@
 #include <vertical3d/src/command/Group.h>
 #include <vertical3d/src/command/Placement.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <cstddef>
@@ -31,8 +31,8 @@
 
 namespace {
 
-boost::shared_ptr<v3d::editor::scene::Mesh> emptyMesh() {
-    return boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::item::Mesh> emptyMesh() {
+    return boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
 }
 
 /**
@@ -50,13 +50,13 @@ bool samePlace(const glm::mat4& first, const glm::mat4& second) {
 /**
  * Where an item's origin is in the world.
  **/
-glm::vec3 origin(const v3d::editor::scene::Scene& scene, const v3d::editor::scene::Item& item) {
+glm::vec3 origin(const v3d::editor::scene::Scene& scene, const v3d::editor::scene::item::Item& item) {
     return glm::vec3(scene.evaluate().placed(item.id()).world[3]);
 }
 
 BOOST_AUTO_TEST_CASE(group_nothing_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> outside = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> outside = emptyMesh();
 
     // there is nothing to group in an empty set, or in items the scene does not hold
     const v3d::editor::command::Group none(scene, {});
@@ -70,9 +70,9 @@ BOOST_AUTO_TEST_CASE(group_nothing_test) {
 
 BOOST_AUTO_TEST_CASE(group_stays_put_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Light> second = boost::make_shared<v3d::editor::scene::Light>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> other = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Light> second = boost::make_shared<v3d::editor::scene::item::Light>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> other = emptyMesh();
     first->translation(glm::vec3(1.0F, 0.0F, 0.0F));
     first->rotation(glm::angleAxis(glm::radians(45.0F), glm::vec3(0.0F, 1.0F, 0.0F)));
     second->translation(glm::vec3(3.0F, 2.0F, 0.0F));
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(group_stays_put_test) {
 
     v3d::editor::command::Group command(scene, scene->selection());
     command.redo();
-    const boost::shared_ptr<v3d::editor::scene::Group> group = command.group();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = command.group();
     BOOST_CHECK_EQUAL(group->name(), "Group");
 
     // the group is placed at the mean of the origins, and holds the items, which have not
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE(group_stays_put_test) {
 
 BOOST_AUTO_TEST_CASE(group_undo_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> second = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> second = emptyMesh();
     first->translation(glm::vec3(-1.0F, 0.0F, 0.0F));
     second->translation(glm::vec3(4.0F, 0.0F, 0.0F));
     scene->add(first);
@@ -149,9 +149,9 @@ BOOST_AUTO_TEST_CASE(group_undo_test) {
 
 BOOST_AUTO_TEST_CASE(group_shared_parent_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Group> holder = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> first = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> second = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> first = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> second = emptyMesh();
     holder->translation(glm::vec3(0.0F, 10.0F, 0.0F));
     holder->rotation(glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
     holder->scale(glm::vec3(2.0F, 1.0F, 1.0F));
@@ -181,9 +181,9 @@ BOOST_AUTO_TEST_CASE(group_shared_parent_test) {
 
 BOOST_AUTO_TEST_CASE(group_mixed_parents_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Group> holder = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> held = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> loose = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> held = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> loose = emptyMesh();
     holder->translation(glm::vec3(0.0F, 4.0F, 0.0F));
     holder->rotation(glm::angleAxis(glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F)));
     holder->scale(glm::vec3(2.0F));
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_CASE(group_mixed_parents_test) {
 
 BOOST_AUTO_TEST_CASE(group_nested_selection_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Group> holder = boost::make_shared<v3d::editor::scene::Group>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> held = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> held = emptyMesh();
     scene->add(holder);
     scene->add(held);
     scene->parent(held->id(), holder->id());

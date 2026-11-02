@@ -21,7 +21,7 @@ namespace v3d::render::offline::sl::syntax {
 class Cast final : public Expression {
  public:
     Cast(Type type, const std::string & space, const ExpressionPtr & operand,
-        const v3d::render::offline::Position & at);
+        const v3d::render::offline::source::Position & at);
 
     Type type = Type::FLOAT;
     std::string space;

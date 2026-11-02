@@ -3,10 +3,10 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/Film.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampler.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Film.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampler.h>
+#include <api/render/offline/film/Sampling.h>
 
 #include <cmath>
 #include <cstddef>
@@ -19,7 +19,7 @@
 
 namespace {
 
-typedef v3d::render::offline::Filter Filter;
+typedef v3d::render::offline::film::Filter Filter;
 
 /** How many samples a box filter takes along each axis, and how wide it is. **/
 struct Box {
@@ -28,11 +28,11 @@ struct Box {
 };
 
 float weight(Filter kind, float x, float y, float width) {
-    return v3d::render::offline::filter(kind, glm::vec2(x, y), glm::vec2(width));
+    return v3d::render::offline::film::filter(kind, glm::vec2(x, y), glm::vec2(width));
 }
 
-v3d::render::offline::Sampling box(const Box & filter) {
-    v3d::render::offline::Sampling sampling;
+v3d::render::offline::film::Sampling box(const Box & filter) {
+    v3d::render::offline::film::Sampling sampling;
     sampling.samples = glm::uvec2(filter.samples);
     sampling.filter = Filter::Box;
     sampling.width = glm::vec2(filter.width);
@@ -77,16 +77,16 @@ BOOST_AUTO_TEST_CASE(film_filter_weights_test) {
  * coverage, including at the image's edges where part of the filter falls outside it.
  **/
 BOOST_AUTO_TEST_CASE(film_uniform_test) {
-    v3d::render::offline::Sampling sampling;
+    v3d::render::offline::film::Sampling sampling;
     sampling.samples = glm::uvec2(3, 3);
-    const v3d::render::offline::Sampler sampler(sampling);
-    v3d::render::offline::Film film(4, 3, sampling);
+    const v3d::render::offline::film::Sampler sampler(sampling);
+    v3d::render::offline::film::Film film(4, 3, sampling);
 
     const glm::vec3 colour(0.25F, 0.5F, 0.75F);
     for (unsigned int row = 0; row < 3; row++) {
         for (unsigned int column = 0; column < 4; column++) {
-            for (const v3d::render::offline::Sampler::Sample & s : sampler.pixel(column, row)) {
-                v3d::render::offline::Film::Sample sample;
+            for (const v3d::render::offline::film::Sampler::Sample & s : sampler.pixel(column, row)) {
+                v3d::render::offline::film::Film::Sample sample;
                 sample.raster = s.raster;
                 sample.colour = colour;
                 sample.opacity = glm::vec3(1.0F);
@@ -113,14 +113,14 @@ BOOST_AUTO_TEST_CASE(film_uniform_test) {
  * plane holds that fraction. A miss adds black to the colour, so the colour is premultiplied.
  **/
 BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
-    const v3d::render::offline::Sampling sampling = box({.samples = 2, .width = 1.0F});
-    const v3d::render::offline::Sampler sampler(sampling);
-    v3d::render::offline::Film film(1, 1, sampling);
+    const v3d::render::offline::film::Sampling sampling = box({.samples = 2, .width = 1.0F});
+    const v3d::render::offline::film::Sampler sampler(sampling);
+    v3d::render::offline::film::Film film(1, 1, sampling);
 
-    const std::vector<v3d::render::offline::Sampler::Sample> samples = sampler.pixel(0, 0);
+    const std::vector<v3d::render::offline::film::Sampler::Sample> samples = sampler.pixel(0, 0);
     BOOST_REQUIRE_EQUAL(samples.size(), 4U);
-    for (const v3d::render::offline::Sampler::Sample & s : samples) {
-        v3d::render::offline::Film::Sample sample;
+    for (const v3d::render::offline::film::Sampler::Sample & s : samples) {
+        v3d::render::offline::film::Film::Sample sample;
         sample.raster = s.raster;
         sample.hit = s.raster.x < 0.5F;
         sample.colour = glm::vec3(sample.hit ? 1.0F : 0.0F);
@@ -136,18 +136,18 @@ BOOST_AUTO_TEST_CASE(film_half_coverage_test) {
  * sample is at the pixel's centre.
  **/
 BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
-    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = 1.0F});
-    const v3d::render::offline::Sampler sampler(sampling);
-    v3d::render::offline::Film film(3, 2, sampling);
+    const v3d::render::offline::film::Sampling sampling = box({.samples = 1, .width = 1.0F});
+    const v3d::render::offline::film::Sampler sampler(sampling);
+    v3d::render::offline::film::Film film(3, 2, sampling);
 
     for (unsigned int row = 0; row < 2; row++) {
         for (unsigned int column = 0; column < 3; column++) {
-            const std::vector<v3d::render::offline::Sampler::Sample> samples = sampler.pixel(column, row);
+            const std::vector<v3d::render::offline::film::Sampler::Sample> samples = sampler.pixel(column, row);
             BOOST_REQUIRE_EQUAL(samples.size(), 1U);
             BOOST_CHECK_EQUAL(samples[0].raster.x, static_cast<float>(column) + 0.5F);
             BOOST_CHECK_EQUAL(samples[0].raster.y, static_cast<float>(row) + 0.5F);
 
-            v3d::render::offline::Film::Sample sample;
+            v3d::render::offline::film::Film::Sample sample;
             sample.raster = samples[0].raster;
             // the middle pixel of the top row is a miss
             sample.hit = column != 1 || row != 0;
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
         }
     }
 
-    v3d::render::offline::FrameBuffer frame(3, 2, 5);
+    v3d::render::offline::film::FrameBuffer frame(3, 2, 5);
     frame.clear({.plane = 3, .value = 99.0F});
     film.resolve(&frame, 0, 4, 3);
 
@@ -179,8 +179,8 @@ BOOST_AUTO_TEST_CASE(film_one_sample_is_exact_test) {
  * reaches no pixel: it adds no colour, no coverage and no depth.
  **/
 BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
-    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = 2.0F});
-    v3d::render::offline::Film film(3, 2, sampling);
+    const v3d::render::offline::film::Sampling sampling = box({.samples = 1, .width = 2.0F});
+    v3d::render::offline::film::Film film(3, 2, sampling);
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float infinity = std::numeric_limits<float>::infinity();
     const std::vector<glm::vec2> positions = {
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
         glm::vec2(1.0e12F, 0.5F), glm::vec2(-1.0e12F, 0.5F), glm::vec2(0.5F, 1.0e12F), glm::vec2(0.5F, -1.0e12F),
     };
     for (const glm::vec2& position : positions) {
-        v3d::render::offline::Film::Sample sample;
+        v3d::render::offline::film::Film::Sample sample;
         sample.raster = position;
         sample.colour = glm::vec3(1.0F);
         sample.hit = true;
@@ -210,9 +210,9 @@ BOOST_AUTO_TEST_CASE(film_sample_off_the_film_reaches_no_pixel_test) {
  * its depth in the pixel it lies in.
  **/
 BOOST_AUTO_TEST_CASE(film_nan_filter_width_reaches_no_pixel_test) {
-    const v3d::render::offline::Sampling sampling = box({.samples = 1, .width = std::numeric_limits<float>::quiet_NaN()});
-    v3d::render::offline::Film film(3, 2, sampling);
-    v3d::render::offline::Film::Sample sample;
+    const v3d::render::offline::film::Sampling sampling = box({.samples = 1, .width = std::numeric_limits<float>::quiet_NaN()});
+    v3d::render::offline::film::Film film(3, 2, sampling);
+    v3d::render::offline::film::Film::Sample sample;
     sample.raster = glm::vec2(1.5F, 0.5F);
     sample.colour = glm::vec3(1.0F);
     sample.hit = true;
@@ -234,17 +234,17 @@ BOOST_AUTO_TEST_CASE(film_nan_filter_width_reaches_no_pixel_test) {
  * sampler, fall inside the pixel, and differ from one pass to the next.
  **/
 BOOST_AUTO_TEST_CASE(film_sampler_is_deterministic_test) {
-    v3d::render::offline::Sampling sampling;
+    v3d::render::offline::film::Sampling sampling;
     sampling.samples = glm::uvec2(4, 4);
     sampling.shutter = glm::vec2(0.0F, 0.5F);
 
-    const v3d::render::offline::Sampler first(sampling);
-    const std::vector<v3d::render::offline::Sampler::Sample> before = first.pixel(3, 5);
+    const v3d::render::offline::film::Sampler first(sampling);
+    const std::vector<v3d::render::offline::film::Sampler::Sample> before = first.pixel(3, 5);
     first.pixel(0, 0);
     first.pixel(7, 2);
-    const std::vector<v3d::render::offline::Sampler::Sample> after = first.pixel(3, 5);
-    const v3d::render::offline::Sampler second(sampling);
-    const std::vector<v3d::render::offline::Sampler::Sample> again = second.pixel(3, 5);
+    const std::vector<v3d::render::offline::film::Sampler::Sample> after = first.pixel(3, 5);
+    const v3d::render::offline::film::Sampler second(sampling);
+    const std::vector<v3d::render::offline::film::Sampler::Sample> again = second.pixel(3, 5);
 
     BOOST_REQUIRE_EQUAL(before.size(), 16U);
     for (std::size_t i = 0; i < before.size(); i++) {
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_deterministic_test) {
         BOOST_CHECK(glm::dot(before[i].lens, before[i].lens) <= 1.0001F);
     }
 
-    const std::vector<v3d::render::offline::Sampler::Sample> next = first.pixel(3, 5, 1);
+    const std::vector<v3d::render::offline::film::Sampler::Sample> next = first.pixel(3, 5, 1);
     BOOST_CHECK(next[0].raster.x != before[0].raster.x || next[0].raster.y != before[0].raster.y);
 }
 
@@ -267,12 +267,12 @@ BOOST_AUTO_TEST_CASE(film_sampler_is_deterministic_test) {
  * Samples are stratified: one falls in each cell of the grid PixelSamples requests.
  **/
 BOOST_AUTO_TEST_CASE(film_sampler_is_stratified_test) {
-    v3d::render::offline::Sampling sampling;
+    v3d::render::offline::film::Sampling sampling;
     sampling.samples = glm::uvec2(3, 2);
-    const v3d::render::offline::Sampler sampler(sampling);
+    const v3d::render::offline::film::Sampler sampler(sampling);
 
     std::vector<unsigned int> cells(6, 0);
-    for (const v3d::render::offline::Sampler::Sample & s : sampler.pixel(10, 20)) {
+    for (const v3d::render::offline::film::Sampler::Sample & s : sampler.pixel(10, 20)) {
         const unsigned int column = static_cast<unsigned int>((s.raster.x - 10.0F) * 3.0F);
         const unsigned int row = static_cast<unsigned int>((s.raster.y - 20.0F) * 2.0F);
         BOOST_REQUIRE(column < 3 && row < 2);

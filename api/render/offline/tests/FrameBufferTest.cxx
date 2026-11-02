@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 
 #include <cmath>
 
@@ -12,7 +12,7 @@
 namespace {
 
 BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
-    v3d::render::offline::FrameBuffer buffer(4, 3, 4);
+    v3d::render::offline::film::FrameBuffer buffer(4, 3, 4);
 
     BOOST_CHECK_EQUAL(buffer.width(), 4U);
     BOOST_CHECK_EQUAL(buffer.height(), 3U);
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_plane_test) {
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_image_test) {
-    v3d::render::offline::FrameBuffer buffer(2, 2, 4);
+    v3d::render::offline::film::FrameBuffer buffer(2, 2, 4);
 
     buffer.value(0, 0, 0, 1.0F);
     buffer.value(1, 1, 0, 1.0F);
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_image_test) {
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
-    v3d::render::offline::FrameBuffer buffer(2, 2, 3);
+    v3d::render::offline::film::FrameBuffer buffer(2, 2, 3);
 
     // row 0 of the buffer is row 0 of the image, which is the top of the picture
     buffer.value(0, 0, 0, 1.0F);
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_row_order_test) {
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_saturation_test) {
-    v3d::render::offline::FrameBuffer buffer(2, 1, 3);
+    v3d::render::offline::film::FrameBuffer buffer(2, 1, 3);
 
     // a value above one saturates to 255, and a value below zero to 0
     buffer.value(0, 0, 0, 4.0F);
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(framebuffer_saturation_test) {
 }
 
 BOOST_AUTO_TEST_CASE(framebuffer_extra_plane_test) {
-    v3d::render::offline::FrameBuffer buffer(1, 1, 4);
+    v3d::render::offline::film::FrameBuffer buffer(1, 1, 4);
 
     buffer.value(0, 0, 0, 1.0F);
     buffer.value(1, 0, 0, 1.0F);

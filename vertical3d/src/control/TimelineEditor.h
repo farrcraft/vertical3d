@@ -7,7 +7,7 @@
 
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Timeline.h>
 
 #include <cstddef>
@@ -167,7 +167,7 @@ class TimelineEditor final {
      * Draw one item's row of keys, and act on a press on it.
      * @return the row's surface
      **/
-    v3d::ui::Immediate::Surface row(v3d::ui::Immediate* ui, State* state, const boost::shared_ptr<scene::Item>& item);
+    v3d::ui::Immediate::Surface row(v3d::ui::Immediate* ui, State* state, const boost::shared_ptr<scene::item::Item>& item);
 
     /**
      * Take a press on an item's row: choose the key it landed on and start moving the chosen

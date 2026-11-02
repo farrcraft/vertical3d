@@ -5,7 +5,7 @@
 
 #include "Codec.h"
 
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <algorithm>
 #include <string_view>
@@ -27,28 +27,28 @@ bool Codec::buffered() const noexcept {
 
 /**
  **/
-std::vector<Buffer> Codec::buffers(const scene::Item& /*item*/) const {
+std::vector<Buffer> Codec::buffers(const scene::item::Item& /*item*/) const {
     return {};
 }
 
 /**
  **/
-const Codec& codecOf(scene::Item::Kind kind) {
+const Codec& codecOf(scene::item::Item::Kind kind) {
     static const MeshCodec mesh;
     static const CameraCodec camera;
     static const LightCodec light;
     static const GroupCodec group;
     static const CurveCodec curve;
     switch (kind) {
-        case scene::Item::Kind::Mesh:
+        case scene::item::Item::Kind::Mesh:
             return mesh;
-        case scene::Item::Kind::Camera:
+        case scene::item::Item::Kind::Camera:
             return camera;
-        case scene::Item::Kind::Light:
+        case scene::item::Item::Kind::Light:
             return light;
-        case scene::Item::Kind::Curve:
+        case scene::item::Item::Kind::Curve:
             return curve;
-        case scene::Item::Kind::Group:
+        case scene::item::Item::Kind::Group:
             break;
     }
     return group;
@@ -57,8 +57,8 @@ const Codec& codecOf(scene::Item::Kind kind) {
 /**
  **/
 const std::vector<const Codec*>& codecs() {
-    static const std::vector<const Codec*> all{ &codecOf(scene::Item::Kind::Mesh), &codecOf(scene::Item::Kind::Camera),
-        &codecOf(scene::Item::Kind::Light), &codecOf(scene::Item::Kind::Group), &codecOf(scene::Item::Kind::Curve) };
+    static const std::vector<const Codec*> all{ &codecOf(scene::item::Item::Kind::Mesh), &codecOf(scene::item::Item::Kind::Camera),
+        &codecOf(scene::item::Item::Kind::Light), &codecOf(scene::item::Item::Kind::Group), &codecOf(scene::item::Item::Kind::Curve) };
     return all;
 }
 

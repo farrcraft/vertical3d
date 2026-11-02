@@ -6,8 +6,8 @@
 #include "Hider.h"
 
 #include <api/render/offline/Camera.h>
-#include <api/render/offline/FrameBuffer.h>
 #include <api/render/offline/MovingTransform.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/sl/Types.h>
 #include <api/type/geometry/AABBox.h>
 #include <api/type/geometry/Frustum.h>
@@ -280,7 +280,7 @@ std::size_t Hider::bucketed() const {
     return buckets_ ? buckets_->primitiveCount() : 0;
 }
 
-void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
+void Hider::render(state::RenderContext* context, v3d::render::offline::film::FrameBuffer* planes) {
     if (!buckets_) {
         begin(context);
     }

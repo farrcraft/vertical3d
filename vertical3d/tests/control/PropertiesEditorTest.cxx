@@ -11,8 +11,8 @@
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
-#include <vertical3d/src/scene/Camera.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Units.h>
 
@@ -46,8 +46,8 @@ struct Panel {
     Panel() :
         history(boost::make_shared<v3d::editor::command::Stack>()),
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        camera(boost::make_shared<v3d::editor::scene::Camera>()),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        camera(boost::make_shared<v3d::editor::scene::item::Camera>()),
         layer(v3d::ui::typeset::mono(&written)),
         editor(history) {
         cube->name("Cube");
@@ -105,8 +105,8 @@ struct Panel {
 
     boost::shared_ptr<v3d::editor::command::Stack> history;
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
-    boost::shared_ptr<v3d::editor::scene::Camera> camera;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Camera> camera;
     v3d::render::realtime::canvas::Canvas canvas;
     std::vector<Written> written;
     v3d::ui::Immediate layer;
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(a_path_is_shown_under_its_heading) {
  * only in the last bits of a placement are the same.
  **/
 BOOST_AUTO_TEST_CASE(an_edit_command_puts_either_end_back) {
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
     const Edit::Values before = Edit::of(*camera);
     Edit::Values after = before;
     after.name = "Shot";

@@ -5,8 +5,8 @@
 
 #include "SvgReader.h"
 
-#include <api/font/ColourGlyph.h>
-#include <api/font/Curves.h>
+#include <api/font/glyph/ColourGlyph.h>
+#include <api/font/glyph/Curves.h>
 #include <api/font/internal/CurveBuilder.h>
 #include <api/font/internal/OutlineHandle.h>
 #include <api/font/internal/OutlineReader.h>
@@ -55,7 +55,7 @@ glm::mat3 SvgReader::transformOf(const tvg::Paint* paint) {
     return matrixOf(const_cast<tvg::Paint*>(paint)->transform());
 }
 
-std::vector<QuadraticCurve> SvgReader::outlineOf(const tvg::Shape& shape, const glm::mat3& toEm) {
+std::vector<glyph::QuadraticCurve> SvgReader::outlineOf(const tvg::Shape& shape, const glm::mat3& toEm) {
     const Path path(shape);
     CurveBuilder builder(toEm);
     std::uint32_t point = 0;
@@ -88,11 +88,11 @@ FT_Vector SvgReader::fixed(const glm::vec2& point) {
     return FT_Vector{ .x = static_cast<FT_Pos>(std::lround(point.x * FIXED_POINT)), .y = static_cast<FT_Pos>(std::lround(point.y * FIXED_POINT)) };
 }
 
-std::vector<QuadraticCurve> SvgReader::strokeOf(const tvg::Shape& shape, const glm::mat3& toEm, FT_Library library) {
+std::vector<glyph::QuadraticCurve> SvgReader::strokeOf(const tvg::Shape& shape, const glm::mat3& toEm, FT_Library library) {
     const float width = shape.strokeWidth();
     FT_Stroker raw = nullptr;
     if (!(width > 0.0F) || !std::isfinite(width) || FT_Stroker_New(library, &raw) != 0) {
-        return std::vector<QuadraticCurve>();
+        return std::vector<glyph::QuadraticCurve>();
     }
     const StrokerHandle stroker(raw);
     FT_Stroker_Set(stroker.get(), static_cast<FT_Fixed>(std::lround(width * FIXED_POINT / 2.0F)), capOf(shape.strokeCap()), joinOf(shape.strokeJoin()),
@@ -103,7 +103,7 @@ std::vector<QuadraticCurve> SvgReader::strokeOf(const tvg::Shape& shape, const g
     FT_UInt contours = 0;
     OutlineHandle outline(library);
     if (FT_Stroker_GetCounts(stroker.get(), &points, &contours) != 0 || points == 0 || !outline.make(points, static_cast<FT_Int>(contours))) {
-        return std::vector<QuadraticCurve>();
+        return std::vector<glyph::QuadraticCurve>();
     }
     outline.get()->n_points = 0;
     outline.get()->n_contours = 0;
@@ -170,20 +170,20 @@ void SvgReader::trace(const Path& path, FT_Stroker stroker) {
     }
 }
 
-ColourFill SvgReader::solidFill(const glm::u8vec4& bytes, float opacity) {
-    ColourFill fill;
+glyph::ColourFill SvgReader::solidFill(const glm::u8vec4& bytes, float opacity) {
+    glyph::ColourFill fill;
     const glm::vec4 colour = glm::vec4(bytes) / CHANNEL;
-    fill.stops.push_back(ColourStop{ .colour = glm::vec4(glm::vec3(colour), colour.a * opacity) });
+    fill.stops.push_back(glyph::ColourStop{ .colour = glm::vec4(glm::vec3(colour), colour.a * opacity) });
     return fill;
 }
 
-std::optional<ColourFill> SvgReader::gradientFill(const tvg::Fill& gradient, const glm::mat3& toEm, float opacity) {
-    ColourFill fill{ .transform = toEm * matrixOf(gradient.transform()) };
+std::optional<glyph::ColourFill> SvgReader::gradientFill(const tvg::Fill& gradient, const glm::mat3& toEm, float opacity) {
+    glyph::ColourFill fill{ .transform = toEm * matrixOf(gradient.transform()) };
     if (gradient.type() == tvg::Type::LinearGradient) {
         glm::vec2 from(0.0F);
         glm::vec2 to(0.0F);
         static_cast<const tvg::LinearGradient&>(gradient).linear(&from.x, &from.y, &to.x, &to.y);
-        fill.kind = ColourFill::Kind::Linear;
+        fill.kind = glyph::ColourFill::Kind::Linear;
         fill.from = from;
         fill.to = to;
     } else if (gradient.type() == tvg::Type::RadialGradient) {
@@ -193,7 +193,7 @@ std::optional<ColourFill> SvgReader::gradientFill(const tvg::Fill& gradient, con
         float focusRadius = 0.0F;
         static_cast<const tvg::RadialGradient&>(gradient).radial(&centre.x, &centre.y, &radius, &focus.x, &focus.y, &focusRadius);
         // SVG's gradient runs out from its focal circle to its outer one
-        fill.kind = ColourFill::Kind::Radial;
+        fill.kind = glyph::ColourFill::Kind::Radial;
         fill.from = focus;
         fill.fromRadius = focusRadius;
         fill.to = centre;
@@ -206,65 +206,65 @@ std::optional<ColourFill> SvgReader::gradientFill(const tvg::Fill& gradient, con
     for (std::uint32_t stop = 0; stop < count; stop++) {
         const glm::vec4 colour = glm::vec4(static_cast<float>(stops[stop].r), static_cast<float>(stops[stop].g), static_cast<float>(stops[stop].b),
                                      static_cast<float>(stops[stop].a)) / CHANNEL;
-        fill.stops.push_back(ColourStop{ .offset = stops[stop].offset, .colour = glm::vec4(glm::vec3(colour), colour.a * opacity) });
+        fill.stops.push_back(glyph::ColourStop{ .offset = stops[stop].offset, .colour = glm::vec4(glm::vec3(colour), colour.a * opacity) });
     }
     if (fill.stops.empty()) {
         return std::nullopt;
     }
     switch (gradient.spread()) {
     case tvg::FillSpread::Reflect:
-        fill.extend = ColourExtend::Reflect;
+        fill.extend = glyph::ColourExtend::Reflect;
         break;
     case tvg::FillSpread::Repeat:
-        fill.extend = ColourExtend::Repeat;
+        fill.extend = glyph::ColourExtend::Repeat;
         break;
     default:
-        fill.extend = ColourExtend::Pad;
+        fill.extend = glyph::ColourExtend::Pad;
         break;
     }
     return fill;
 }
 
-void SvgReader::addLayer(const std::vector<ColourClip>& clips, ColourClip&& outline, std::optional<ColourFill>&& fill, Reading* reading) {
+void SvgReader::addLayer(const std::vector<glyph::ColourClip>& clips, glyph::ColourClip&& outline, std::optional<glyph::ColourFill>&& fill, Reading* reading) {
     if (!fill || outline.curves.empty()) {
         return;
     }
-    ColourLayer layer{ .kind = ColourLayer::Kind::Fill, .clips = clips };
+    glyph::ColourLayer layer{ .kind = glyph::ColourLayer::Kind::Fill, .clips = clips };
     layer.clips.push_back(std::move(outline));
     layer.fill = std::move(*fill);
     reading->glyph->layers.push_back(std::move(layer));
 }
 
-void SvgReader::addShape(const tvg::Shape& shape, const glm::mat3& toEm, float opacity, const std::vector<ColourClip>& clips, Reading* reading) {
+void SvgReader::addShape(const tvg::Shape& shape, const glm::mat3& toEm, float opacity, const std::vector<glyph::ColourClip>& clips, Reading* reading) {
     std::uint8_t red = 0;
     std::uint8_t green = 0;
     std::uint8_t blue = 0;
     std::uint8_t alpha = 0;
     const tvg::Fill* gradient = shape.fill();
-    std::optional<ColourFill> fill;
+    std::optional<glyph::ColourFill> fill;
     if (gradient != nullptr) {
         fill = gradientFill(*gradient, toEm, opacity);
     } else if (shape.fill(&red, &green, &blue, &alpha) == tvg::Result::Success && alpha > 0) {
         fill = solidFill(glm::u8vec4(red, green, blue, alpha), opacity);
     }
     if (fill) {
-        addLayer(clips, ColourClip{ .curves = outlineOf(shape, toEm), .evenOdd = shape.fillRule() == tvg::FillRule::EvenOdd }, std::move(fill), reading);
+        addLayer(clips, glyph::ColourClip{ .curves = outlineOf(shape, toEm), .evenOdd = shape.fillRule() == tvg::FillRule::EvenOdd }, std::move(fill), reading);
     }
 
     const tvg::Fill* strokeGradient = shape.strokeFill();
-    std::optional<ColourFill> stroke;
+    std::optional<glyph::ColourFill> stroke;
     if (strokeGradient != nullptr) {
         stroke = gradientFill(*strokeGradient, toEm, opacity);
     } else if (shape.strokeFill(&red, &green, &blue, &alpha) == tvg::Result::Success && alpha > 0) {
         stroke = solidFill(glm::u8vec4(red, green, blue, alpha), opacity);
     }
     if (stroke) {
-        addLayer(clips, ColourClip{ .curves = strokeOf(shape, toEm, reading->library) }, std::move(stroke), reading);
+        addLayer(clips, glyph::ColourClip{ .curves = strokeOf(shape, toEm, reading->library) }, std::move(stroke), reading);
     }
 }
 
 // NOLINTNEXTLINE(misc-no-recursion) - a scene holds paints, which may be scenes
-void SvgReader::addPaint(const tvg::Paint* paint, const glm::mat3& above, float opacity, std::vector<ColourClip> clips, Reading* reading) {
+void SvgReader::addPaint(const tvg::Paint* paint, const glm::mat3& above, float opacity, std::vector<glyph::ColourClip> clips, Reading* reading) {
     if (paint == nullptr || !paint->visible()) {
         return;
     }
@@ -274,13 +274,13 @@ void SvgReader::addPaint(const tvg::Paint* paint, const glm::mat3& above, float 
         return;
     }
     if (const tvg::Shape* clip = paint->clip(); clip != nullptr) {
-        clips.push_back(ColourClip{ .curves = outlineOf(*clip, toEm * transformOf(clip)), .evenOdd = clip->fillRule() == tvg::FillRule::EvenOdd });
+        clips.push_back(glyph::ColourClip{ .curves = outlineOf(*clip, toEm * transformOf(clip)), .evenOdd = clip->fillRule() == tvg::FillRule::EvenOdd });
     }
     const tvg::Paint* mask = nullptr;
     const tvg::MaskMethod method = paint->mask(&mask);
     const bool masked = mask != nullptr && method != tvg::MaskMethod::None;
     if (masked) {
-        reading->glyph->layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::BeginGroup });
+        reading->glyph->layers.push_back(glyph::ColourLayer{ .kind = glyph::ColourLayer::Kind::BeginGroup });
     }
 
     if (paint->type() == tvg::Type::Shape) {
@@ -294,11 +294,11 @@ void SvgReader::addPaint(const tvg::Paint* paint, const glm::mat3& above, float 
     if (masked) {
         // the mask's own alpha keeps what is beneath it, or with an inverse mask removes it
         const bool inverse = method == tvg::MaskMethod::InvAlpha || method == tvg::MaskMethod::InvLuma;
-        reading->glyph->layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::BeginGroup });
-        addPaint(mask, toEm, 1.0F, std::vector<ColourClip>(), reading);
-        reading->glyph->layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::EndGroup,
-            .composite = inverse ? ColourComposite::DestinationOut : ColourComposite::DestinationIn });
-        reading->glyph->layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::EndGroup });
+        reading->glyph->layers.push_back(glyph::ColourLayer{ .kind = glyph::ColourLayer::Kind::BeginGroup });
+        addPaint(mask, toEm, 1.0F, std::vector<glyph::ColourClip>(), reading);
+        reading->glyph->layers.push_back(glyph::ColourLayer{ .kind = glyph::ColourLayer::Kind::EndGroup,
+            .composite = inverse ? glyph::ColourComposite::DestinationOut : glyph::ColourComposite::DestinationIn });
+        reading->glyph->layers.push_back(glyph::ColourLayer{ .kind = glyph::ColourLayer::Kind::EndGroup });
     }
 }
 
@@ -383,7 +383,7 @@ std::unique_ptr<tvg::Picture, SvgReader::Release> SvgReader::load(const SvgDocum
     return picture;
 }
 
-bool SvgReader::read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph) {
+bool SvgReader::read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, glyph::ColourGlyph* glyph) {
     if (picture == nullptr || library == nullptr) {
         return false;
     }
@@ -416,7 +416,7 @@ bool SvgReader::read(tvg::Picture* picture, unsigned int index, const glm::mat3&
     }
     Reading reading{ .library = library, .glyph = glyph };
     const std::size_t before = glyph->layers.size();
-    addPaint(found, toEm * around, 1.0F, std::vector<ColourClip>(), &reading);
+    addPaint(found, toEm * around, 1.0F, std::vector<glyph::ColourClip>(), &reading);
     return glyph->layers.size() > before;
 }
 

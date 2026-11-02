@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include <api/render/offline/Texture.h>
-#include <api/render/offline/sl/Builtins.h>
+#include <api/render/offline/sl/compiler/Builtins.h>
 #include <api/render/offline/sl/runtime/Renderer.h>
 #include <api/render/offline/sl/runtime/Value.h>
+#include <api/render/offline/texture/Texture.h>
 
 #include <cstddef>
 #include <vector>
@@ -23,7 +23,7 @@ namespace v3d::render::offline::sl::runtime::internal {
  **/
 class Site final {
  public:
-    Signature::Body body = Signature::Body::STUB;
+    compiler::Signature::Body body = compiler::Signature::Body::STUB;
     /** Where the result goes. **/
     Value* target = nullptr;
     /**
@@ -39,7 +39,7 @@ class Site final {
     /** Whether a point through the matrix is divided by w: a space it names is projected. **/
     bool projected = false;
     /** The image texture() reads, and where: its own arguments, or the shader's s and t. **/
-    const Texture* texture = nullptr;
+    const texture::Texture* texture = nullptr;
     const Value* s = nullptr;
     const Value* t = nullptr;
     /** How the batch lies on the surface, for the derivatives. **/

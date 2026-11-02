@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include <vertical3d/src/scene/item/Item.h>
+
 #include <unordered_map>
 
-#include "Item.h"
 #include "Properties.h"
 
 #include <glm/ext/quaternion_float.hpp>
@@ -52,7 +53,7 @@ class Evaluation final {
      * @return the item's placement, lens and emission as the evaluation found them, or as the
      *         item holds them when the evaluation did not see it
      **/
-    Pose pose(const Item& item) const;
+    Pose pose(const item::Item& item) const;
 
     /**
      * Record an item's pose. The scene's evaluation calls this once for each item.

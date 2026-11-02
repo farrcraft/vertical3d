@@ -118,7 +118,7 @@ class TetrisRenderer final {
 
     v3d::render::realtime::WindowRenderer engine_;
 
-    v3d::render::realtime::TextureHandle pieces_;
+    v3d::render::realtime::resource::TextureHandle pieces_;
     std::map<std::string, Sprite> sprites_;
 
     // the shell's screen, built over engine_

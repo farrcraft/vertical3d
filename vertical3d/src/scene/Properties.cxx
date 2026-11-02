@@ -6,6 +6,9 @@
 #include "Properties.h"
 
 #include <api/type/Transform.h>
+#include <vertical3d/src/scene/item/Camera.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
 
 #include <algorithm>
 #include <cmath>
@@ -13,10 +16,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
-#include "Camera.h"
-#include "Item.h"
-#include "Light.h"
 
 #include <glm/common.hpp>
 #include <glm/ext/quaternion_float.hpp>
@@ -79,20 +78,20 @@ bool any(const std::map<std::string, float>& values, const std::string& group) {
 
 /**
  **/
-const std::vector<std::string>& properties(Item::Kind kind) {
+const std::vector<std::string>& properties(item::Item::Kind kind) {
     static const std::vector<std::string> plain = placement();
     static const std::vector<std::string> camera = with(placement(),
         { "lens.fov", "lens.extent", "lens.near", "lens.far" });
     static const std::vector<std::string> light = with(placement(),
         { "emission.intensity", "emission.red", "emission.green", "emission.blue", "emission.cone", "emission.delta" });
     switch (kind) {
-        case Item::Kind::Camera:
+        case item::Item::Kind::Camera:
             return camera;
-        case Item::Kind::Light:
+        case item::Item::Kind::Light:
             return light;
-        case Item::Kind::Mesh:
-        case Item::Kind::Group:
-        case Item::Kind::Curve:
+        case item::Item::Kind::Mesh:
+        case item::Item::Kind::Group:
+        case item::Item::Kind::Curve:
             break;
     }
     return plain;
@@ -100,26 +99,26 @@ const std::vector<std::string>& properties(Item::Kind kind) {
 
 /**
  **/
-bool declares(Item::Kind kind, const std::string& path) {
+bool declares(item::Item::Kind kind, const std::string& path) {
     const std::vector<std::string>& paths = properties(kind);
     return std::find(paths.begin(), paths.end(), path) != paths.end();
 }
 
 /**
  **/
-Pose pose(const Item& item) {
+Pose pose(const item::Item& item) {
     Pose found{ .placement = item.placement() };
-    if (item.kind() == Item::Kind::Camera) {
-        found.lens = static_cast<const Camera&>(item).lens();
-    } else if (item.kind() == Item::Kind::Light) {
-        found.emission = static_cast<const Light&>(item).emission();
+    if (item.kind() == item::Item::Kind::Camera) {
+        found.lens = static_cast<const item::Camera&>(item).lens();
+    } else if (item.kind() == item::Item::Kind::Light) {
+        found.emission = static_cast<const item::Light&>(item).emission();
     }
     return found;
 }
 
 /**
  **/
-std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm::vec3& near) {
+std::map<std::string, float> values(item::Item::Kind kind, const Pose& pose, const glm::vec3& near) {
     std::map<std::string, float> found;
     const glm::vec3 rotation = eulerNear(pose.placement.rotation, near);
     for (int axis = 0; axis < 3; axis++) {
@@ -127,12 +126,12 @@ std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm
         found[std::string("rotation.") + AXES[axis]] = rotation[axis];
         found[std::string("scale.") + AXES[axis]] = pose.placement.scale[axis];
     }
-    if (kind == Item::Kind::Camera) {
+    if (kind == item::Item::Kind::Camera) {
         found["lens.fov"] = pose.lens.fov;
         found["lens.extent"] = pose.lens.extent;
         found["lens.near"] = pose.lens.clipping.x;
         found["lens.far"] = pose.lens.clipping.y;
-    } else if (kind == Item::Kind::Light) {
+    } else if (kind == item::Item::Kind::Light) {
         found["emission.intensity"] = pose.emission.intensity;
         found["emission.red"] = pose.emission.colour.r;
         found["emission.green"] = pose.emission.colour.g;
@@ -145,7 +144,7 @@ std::map<std::string, float> values(Item::Kind kind, const Pose& pose, const glm
 
 /**
  **/
-std::map<std::string, float> values(const Item& item, const glm::vec3& near) {
+std::map<std::string, float> values(const item::Item& item, const glm::vec3& near) {
     return values(item.kind(), pose(item), near);
 }
 
@@ -169,7 +168,7 @@ std::set<std::string> changed(const std::map<std::string, float>& first, const s
 
 /**
  **/
-Pose posed(Item::Kind kind, Pose pose, const std::map<std::string, float>& values) {
+Pose posed(item::Item::Kind kind, Pose pose, const std::map<std::string, float>& values) {
     // each part is set only when a value names it, so a part no value names is not touched
     v3d::type::Transform& placement = pose.placement;
     for (int axis = 0; axis < 3; axis++) {
@@ -183,14 +182,14 @@ Pose posed(Item::Kind kind, Pose pose, const std::map<std::string, float>& value
         }
         placement.rotation = fromEuler(rotation);
     }
-    if (kind == Item::Kind::Camera) {
-        Camera::Lens& lens = pose.lens;
+    if (kind == item::Item::Kind::Camera) {
+        item::Camera::Lens& lens = pose.lens;
         lens.fov = either(values, "lens.fov", lens.fov);
         lens.extent = either(values, "lens.extent", lens.extent);
         lens.clipping.x = either(values, "lens.near", lens.clipping.x);
         lens.clipping.y = either(values, "lens.far", lens.clipping.y);
-    } else if (kind == Item::Kind::Light) {
-        Light::Emission& emission = pose.emission;
+    } else if (kind == item::Item::Kind::Light) {
+        item::Light::Emission& emission = pose.emission;
         emission.intensity = either(values, "emission.intensity", emission.intensity);
         emission.colour.r = either(values, "emission.red", emission.colour.r);
         emission.colour.g = either(values, "emission.green", emission.colour.g);

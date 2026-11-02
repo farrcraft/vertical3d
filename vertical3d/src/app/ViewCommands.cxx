@@ -10,7 +10,7 @@
 #include <api/type/camera/Camera.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -50,7 +50,7 @@ void ViewCommands::registerCommands(CommandTable* table) const {
         { "light", view::ViewPort::SHOW_LIGHT }, { "handle", view::ViewPort::SHOW_HANDLE } }) {
         display(table, std::string("view::show::") + name, [filter](std::size_t, view::ViewPort* view) { view->show(filter, !view->shows(filter)); });
     }
-    for (const control::AreaChrome::FixedView& fixed : control::AreaChrome::fixedViews()) {
+    for (const control::chrome::Area::FixedView& fixed : control::chrome::Area::fixedViews()) {
         const std::string profile = fixed.profile;
         display(table, fixed.command, [this, profile](std::size_t area, view::ViewPort* view) { look(area, view, profile); });
     }

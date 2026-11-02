@@ -6,11 +6,11 @@
 #pragma once
 
 #include <api/log/Logger.h>
-#include <api/render/offline/Textures.h>
 #include <api/render/offline/rib/Parameters.h>
 #include <api/render/offline/sl/Instance.h>
 #include <api/render/offline/sl/ShaderLibrary.h>
 #include <api/render/offline/sl/Types.h>
+#include <api/render/offline/texture/Textures.h>
 
 #include <string>
 
@@ -46,11 +46,11 @@ class Shaders final {
      * The images the shaders read, each loaded once, and where a relative name is looked for,
      * from Option "searchpath" "texture".
      **/
-    v3d::render::offline::Textures & textures();
+    v3d::render::offline::texture::Textures & textures();
 
  private:
     boost::shared_ptr<v3d::render::offline::sl::ShaderLibrary> library_;
-    boost::shared_ptr<v3d::render::offline::Textures> textures_;
+    boost::shared_ptr<v3d::render::offline::texture::Textures> textures_;
     v3d::render::offline::sl::InstancePtr imager_;
     bool traces_ = false;
 };

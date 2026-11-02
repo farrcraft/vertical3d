@@ -202,8 +202,8 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
    with the same context and name. A command on a menu can be searched for.
 4. If it describes on/off state, mark it in `syncUi()`.
 
-Playback, the Render menu and the mouse each have a controller in `src/control/`: `Playback`,
-`RenderWindow` and `Pointer`. A command for one of them calls it.
+Playback, the Render menu and the mouse each have a controller: `Playback` and `RenderWindow` in
+`src/control/`, and `Pointer` in `src/control/chrome/`. A command for one of them calls it.
 
 ### The command search
 

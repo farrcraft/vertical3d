@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 
 #include <cstddef>
 #include <optional>
@@ -49,7 +49,7 @@ class DepthOrder final {
      * @param key how far away the quad is, in whatever measure the caller sorts by
      **/
     void quad(float key, const World::Corners& corners, const glm::vec2& uv0,
-        const glm::vec2& uv1, const glm::vec4& colour, const TextureHandle& texture);
+        const glm::vec2& uv1, const glm::vec4& colour, const resource::TextureHandle& texture);
 
     /**
      * A glyph drawn from its curves, with World::glyph's meaning for the rest.
@@ -64,7 +64,7 @@ class DepthOrder final {
      *        drawn first, and every field before anything else
      **/
     void field(float key, uint32_t layer, const World::Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
+        const glm::vec4& colour, const resource::TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
 
     /**
      * Add everything collected to a canvas, furthest first. The canvas's current transform
@@ -84,7 +84,7 @@ class DepthOrder final {
         glm::vec2 uv0;
         glm::vec2 uv1;
         glm::vec4 colour;
-        TextureHandle texture;  /**< unset for an untextured quad **/
+        resource::TextureHandle texture;  /**< unset for an untextured quad **/
         std::optional<World::Glyph> glyph;  /**< set for a glyph drawn from its curves **/
         std::optional<uint32_t> ramp;       /**< set for an effect drawn from a distance field **/
         uint32_t layer = 0;                 /**< an effect's place among its glyph's effects **/

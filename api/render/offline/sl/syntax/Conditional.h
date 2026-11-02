@@ -18,7 +18,7 @@ class Conditional final : public Statement {
         StatementPtr whenFalse;
     };
 
-    Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::Position & at);
+    Conditional(const ExpressionPtr & condition, const Branches & branches, const v3d::render::offline::source::Position & at);
 
     ExpressionPtr condition;
     StatementPtr whenTrue;

@@ -5,7 +5,8 @@
 
 #include "Evaluation.h"
 
-#include "Item.h"
+#include <vertical3d/src/scene/item/Item.h>
+
 #include "Properties.h"
 
 #include <glm/ext/matrix_transform.hpp>
@@ -33,7 +34,7 @@ void Evaluation::place(unsigned int id, const Placed& placed) {
 
 /**
  **/
-Pose Evaluation::pose(const Item& item) const {
+Pose Evaluation::pose(const item::Item& item) const {
     const auto found = poses_.find(item.id());
     return found == poses_.end() ? scene::pose(item) : found->second;
 }

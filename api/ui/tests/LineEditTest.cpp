@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <api/font/Bidi.h>
+#include <api/font/text/Bidi.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
@@ -82,13 +82,13 @@ BOOST_AUTO_TEST_CASE(the_caret_moves_by_grapheme_cluster) {
  **/
 BOOST_AUTO_TEST_CASE(the_caret_goes_with_the_way_it_moved) {
     v3d::ui::input::LineEdit edit = line("abc");
-    BOOST_CHECK(edit.affinity() == v3d::font::Affinity::Downstream);
+    BOOST_CHECK(edit.affinity() == v3d::font::text::Affinity::Downstream);
     edit.right();
-    BOOST_CHECK(edit.affinity() == v3d::font::Affinity::Upstream);
+    BOOST_CHECK(edit.affinity() == v3d::font::text::Affinity::Upstream);
     edit.left();
-    BOOST_CHECK(edit.affinity() == v3d::font::Affinity::Downstream);
+    BOOST_CHECK(edit.affinity() == v3d::font::text::Affinity::Downstream);
     edit.insert("x");
-    BOOST_CHECK(edit.affinity() == v3d::font::Affinity::Upstream);
+    BOOST_CHECK(edit.affinity() == v3d::font::text::Affinity::Upstream);
 }
 
 /**

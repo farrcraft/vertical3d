@@ -6,7 +6,7 @@
 #include "Keys.h"
 
 #include <api/animation/Curve.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 
@@ -74,7 +74,7 @@ boost::shared_ptr<Keys> Keys::replace(const boost::shared_ptr<scene::Scene>& sce
     const v3d::animation::Curve& curve) {
     boost::shared_ptr<Keys> made(new Keys(scene, {}, &moved, 0.0F));
     made->what_ = "edit curve";
-    const boost::shared_ptr<scene::Item> found = scene ? scene->item(item) : boost::shared_ptr<scene::Item>();
+    const boost::shared_ptr<scene::item::Item> found = scene ? scene->item(item) : boost::shared_ptr<scene::item::Item>();
     if (!found) {
         return made;
     }
@@ -104,7 +104,7 @@ Keys::Keys(const boost::shared_ptr<scene::Scene>& scene, const std::vector<scene
         frames[key.item].push_back(key.frame);
     }
     for (const unsigned int id : order) {
-        const boost::shared_ptr<scene::Item> item = scene_->item(id);
+        const boost::shared_ptr<scene::item::Item> item = scene_->item(id);
         if (!item) {
             continue;
         }

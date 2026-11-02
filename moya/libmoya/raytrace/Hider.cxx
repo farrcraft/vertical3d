@@ -6,10 +6,10 @@
 #include "Hider.h"
 
 #include <api/render/offline/Camera.h>
-#include <api/render/offline/Film.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampler.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/Film.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampler.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/trace/Tracer.h>
 #include <api/type/geometry/Ray.h>
 #include <moya/libmoya/state/Planes.h>
@@ -38,21 +38,21 @@ namespace {
  * @param depth the raster depth of a world space point, for the depth plane
  * @return false when every pixel had settled, so that nothing was cast
  **/
-bool cast(const Hider & hider, v3d::render::offline::trace::Tracer* tracer, const v3d::render::offline::Sampler & sampler,
-    const v3d::render::offline::Sampling & sampling, const Pass & at, const std::function<float(const glm::vec3 &)> & depth,
+bool cast(const Hider & hider, v3d::render::offline::trace::Tracer* tracer, const v3d::render::offline::film::Sampler & sampler,
+    const v3d::render::offline::film::Sampling & sampling, const Pass & at, const std::function<float(const glm::vec3 &)> & depth,
     std::vector<Pixel>* pixels) {
     std::vector<v3d::render::offline::trace::Tracer::Look> looks;
-    std::vector<v3d::render::offline::Sampler::Sample> cast;
+    std::vector<v3d::render::offline::film::Sampler::Sample> cast;
     std::vector<std::size_t> owners;
     std::vector<unsigned int> sets(pixels->size(), 0);
     for (std::size_t index = 0; index < pixels->size(); index++) {
         if ((*pixels)[index].settled) {
             continue;
         }
-        const std::vector<v3d::render::offline::Sampler::Sample> set =
+        const std::vector<v3d::render::offline::film::Sampler::Sample> set =
             sampler.pixel(at.left + static_cast<unsigned int>(index), at.row, at.pass);
         sets[index] = static_cast<unsigned int>(set.size());
-        for (const v3d::render::offline::Sampler::Sample & sample : set) {
+        for (const v3d::render::offline::film::Sampler::Sample & sample : set) {
             v3d::render::offline::trace::Tracer::Look look;
             look.ray = hider.ray(sample, sampling);
             look.time = sample.time;
@@ -67,7 +67,7 @@ bool cast(const Hider & hider, v3d::render::offline::trace::Tracer* tracer, cons
 
     const std::vector<v3d::render::offline::trace::Tracer::Seen> seen = tracer->see(looks);
     for (std::size_t i = 0; i < looks.size(); i++) {
-        v3d::render::offline::Film::Sample sample;
+        v3d::render::offline::film::Film::Sample sample;
         sample.raster = cast[i].raster;
         sample.colour = seen[i].colour;
         sample.opacity = seen[i].opacity;
@@ -122,8 +122,8 @@ glm::vec3 Hider::unproject(const glm::vec2 & raster, float z) const {
     return glm::vec3(((b0 * a11) - (a01 * b1)) / determinant, ((a00 * b1) - (b0 * a10)) / determinant, z);
 }
 
-v3d::type::geometry::Ray Hider::ray(const v3d::render::offline::Sampler::Sample & at,
-    const v3d::render::offline::Sampling & sampling) const {
+v3d::type::geometry::Ray Hider::ray(const v3d::render::offline::film::Sampler::Sample & at,
+    const v3d::render::offline::film::Sampling & sampling) const {
     const glm::vec2 & raster = at.raster;
     const glm::vec2 & lens = at.lens;
     glm::vec3 origin;
@@ -150,13 +150,13 @@ v3d::type::geometry::Ray Hider::ray(const v3d::render::offline::Sampler::Sample 
     return v3d::type::geometry::Ray({.origin = glm::vec3(toWorld_ * glm::vec4(origin, 1.0F)), .direction = glm::vec3(toWorld_ * glm::vec4(direction, 0.0F))});
 }
 
-void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuffer* planes) {
+void Hider::render(state::RenderContext* context, v3d::render::offline::film::FrameBuffer* planes) {
     v3d::render::offline::Camera camera = context->camera();
     camera.width = planes->width();
     camera.height = planes->height();
     this->camera(camera);
 
-    const v3d::render::offline::Sampling & sampling = context->sampling();
+    const v3d::render::offline::film::Sampling & sampling = context->sampling();
     const unsigned int colour = state::Planes::RED;
     const unsigned int coverage = state::Planes::COVERAGE;
     const unsigned int depth = state::Planes::DEPTH;
@@ -167,8 +167,8 @@ void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuf
     // one tracer for the whole render, not one per pixel. It holds the register files, so
     // they are sized once and not for every pixel
     v3d::render::offline::trace::Tracer tracer(&context->traced(), &context->textures());
-    const v3d::render::offline::Sampler sampler(sampling);
-    v3d::render::offline::Film film(width, height, sampling);
+    const v3d::render::offline::film::Sampler sampler(sampling);
+    v3d::render::offline::film::Film film(width, height, sampling);
     // no ray is cast outside the crop window. The context clears those pixels afterwards
     const glm::uvec4 window = context->cropped();
     const unsigned int left = window.x;
@@ -192,7 +192,7 @@ void Hider::render(state::RenderContext* context, v3d::render::offline::FrameBuf
             pass++;
         }
         for (std::size_t index = 0; index < pixels.size(); index++) {
-            for (const v3d::render::offline::Film::Sample & sample : pixels[index].samples) {
+            for (const v3d::render::offline::film::Film::Sample & sample : pixels[index].samples) {
                 film.add(sample);
             }
             taken_[(static_cast<std::size_t>(row) * width) + left + index] = pixels[index].taken;

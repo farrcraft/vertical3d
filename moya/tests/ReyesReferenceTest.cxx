@@ -7,8 +7,8 @@
 #include <api/image/Factory.h>
 #include <api/image/Image.h>
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
-#include <api/render/offline/Sampling.h>
+#include <api/render/offline/film/FrameBuffer.h>
+#include <api/render/offline/film/Sampling.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/Polygon.h>
 #include <moya/libmoya/ri/RIBHandler.h>
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(moya_renders_a_polygon_test) {
     scene(rc);
     rc.render();
 
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = rc.picture();
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = rc.picture();
 
     // the quad covers raster x over [15.2, 39.2] and y over [4.8, 28.8]
     BOOST_TEST(planes->value(v3d::moya::state::Planes::RED, 24, 16) == 1.0F);
@@ -305,13 +305,13 @@ BOOST_AUTO_TEST_CASE(moya_out_of_focus_spreads_test) {
             v3d::moya::state::RenderContext pinhole;
             pinhole.hider(hider);
             focusScene(pinhole, false);
-            pinhole.sampling().filter = v3d::render::offline::Filter::Box;
+            pinhole.sampling().filter = v3d::render::offline::film::Filter::Box;
             pinhole.sampling().width = glm::vec2(1.0F);
             pinhole.render();
             v3d::moya::state::RenderContext lens;
             lens.hider(hider);
             focusScene(lens, true);
-            lens.sampling().filter = v3d::render::offline::Filter::Box;
+            lens.sampling().filter = v3d::render::offline::film::Filter::Box;
             lens.sampling().width = glm::vec2(1.0F);
             lens.render();
 
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE(moya_motion_spreads_linearly_test) {
 BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
     for (const char* hider : HIDERS) {
         BOOST_TEST_CONTEXT("hider " << hider) {
-            const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
+            const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = read({.file = "data/textured.rib", .hider = hider});
 
             // red counts the block across and green the block down, and blue is the same in each
             for (unsigned int across = 0; across < 4; across++) {
@@ -403,7 +403,7 @@ BOOST_AUTO_TEST_CASE(moya_textured_quad_test) {
  * traced through the same scene the ray hider uses, so it falls where the ray hider's does.
  **/
 BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> planes = read({.file = SHADOW_SCENE});
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> planes = read({.file = SHADOW_SCENE});
     check(planes->image(v3d::moya::state::Planes::CHANNELS), SHADOW, SHADOW_RIB_RENDERED);
 
     /*
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE(moya_shadow_reference_from_rib_test) {
         light's shadow alone, a region lit by both, and the imager's background. An edge moves
         by up to a micropolygon, so only the insides are checked.
     */
-    const boost::shared_ptr<v3d::render::offline::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
+    const boost::shared_ptr<v3d::render::offline::film::FrameBuffer> traced = read({.file = SHADOW_SCENE, .hider = "raytrace"});
     const unsigned int pixels[][2] = { { 40, 30 }, { 24, 40 }, { 56, 26 }, { 8, 8 }, { 2, 2 } };
     for (const auto & pixel : pixels) {
         BOOST_TEST_CONTEXT("pixel " << pixel[0] << ", " << pixel[1]) {
@@ -438,8 +438,8 @@ BOOST_AUTO_TEST_CASE(reference_motion_without_a_cache_test) {
     motionScene(uncached);
     uncached.render();
 
-    const v3d::render::offline::FrameBuffer & cachedImage = *cached.picture();
-    const v3d::render::offline::FrameBuffer & uncachedImage = *uncached.picture();
+    const v3d::render::offline::film::FrameBuffer & cachedImage = *cached.picture();
+    const v3d::render::offline::film::FrameBuffer & uncachedImage = *uncached.picture();
     BOOST_CHECK_EQUAL(largest(cachedImage, uncachedImage, {.from = 0, .to = cachedImage.width() - 1}), 0.0F);
 }
 

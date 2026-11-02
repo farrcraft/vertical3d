@@ -5,14 +5,14 @@
 
 #include "Jump.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 #include "Statement.h"
 
 namespace v3d::render::offline::sl::syntax {
 
-Jump::Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::Position & at) :
+Jump::Jump(Where where, const ExpressionPtr & value, const v3d::render::offline::source::Position & at) :
     Statement(Kind::JUMP, at),
     where(where),
     value(value) {

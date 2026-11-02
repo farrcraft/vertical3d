@@ -14,12 +14,12 @@
 #include <api/curve/Curve.h>
 #include <api/curve/Curves.h>
 #include <api/type/Transform.h>
-#include <vertical3d/src/scene/Components.h>
-#include <vertical3d/src/scene/Curve.h>
-#include <vertical3d/src/scene/CurveParts.h>
+#include <vertical3d/src/scene/item/Components.h>
+#include <vertical3d/src/scene/item/Curve.h>
+#include <vertical3d/src/scene/item/CurveParts.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 
@@ -56,17 +56,17 @@ bool Target::startOf(const v3d::brep::BRep& mesh, v3d::brep::Index edge, v3d::br
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedVertices(const scene::Mesh& item, selection::SelectMask kind, const scene::Components& components) {
+std::vector<v3d::brep::Index> Target::selectedVertices(const scene::item::Mesh& item, selection::SelectMask kind, const scene::item::Components& components) {
     const v3d::brep::BRep& mesh = *item.geometry();
     std::vector<v3d::brep::Index> vertices;
     if (kind == selection::SelectMask::Vertex) {
-        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Vertex)) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::item::Component::Vertex)) {
             if (id < mesh.vertexCount()) {
                 vertices.push_back(id);
             }
         }
     } else if (kind == selection::SelectMask::Edge) {
-        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Edge)) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::item::Component::Edge)) {
             if (id >= mesh.edgeCount()) {
                 continue;
             }
@@ -77,7 +77,7 @@ std::vector<v3d::brep::Index> Target::selectedVertices(const scene::Mesh& item, 
             }
         }
     } else if (kind == selection::SelectMask::Face) {
-        for (const v3d::brep::Index id : components.of(item.id(), scene::Component::Face)) {
+        for (const v3d::brep::Index id : components.of(item.id(), scene::item::Component::Face)) {
             if (id >= mesh.faceCount()) {
                 continue;
             }
@@ -106,10 +106,10 @@ std::vector<v3d::brep::Index> Target::facesAround(const v3d::brep::BRep& mesh, c
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedPoints(const scene::Curve& item, const scene::Components& components) {
+std::vector<v3d::brep::Index> Target::selectedPoints(const scene::item::Curve& item, const scene::item::Components& components) {
     std::vector<v3d::brep::Index> points;
-    for (const v3d::brep::Index point : components.of(item.id(), scene::Component::Vertex)) {
-        if (scene::pointAt(*item.geometry(), point)) {
+    for (const v3d::brep::Index point : components.of(item.id(), scene::item::Component::Vertex)) {
+        if (scene::item::pointAt(*item.geometry(), point)) {
             points.push_back(point);
         }
     }
@@ -118,10 +118,10 @@ std::vector<v3d::brep::Index> Target::selectedPoints(const scene::Curve& item, c
 
 /**
  **/
-std::vector<v3d::brep::Index> Target::selectedHandles(const scene::Curve& item, const scene::Components& components) {
+std::vector<v3d::brep::Index> Target::selectedHandles(const scene::item::Curve& item, const scene::item::Components& components) {
     std::vector<v3d::brep::Index> handles;
-    for (const v3d::brep::Index handle : components.of(item.id(), scene::Component::Handle)) {
-        if (scene::handleAt(*item.geometry(), handle)) {
+    for (const v3d::brep::Index handle : components.of(item.id(), scene::item::Component::Handle)) {
+        if (scene::item::handleAt(*item.geometry(), handle)) {
             handles.push_back(handle);
         }
     }
@@ -138,7 +138,7 @@ Target::Target() :
  **/
 Target Target::objects(const scene::Items& items, const scene::Evaluation& evaluation) {
     Target target;
-    for (const boost::shared_ptr<scene::Item>& item : items) {
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
         if (item) {
             target.items_.push_back(item);
             target.parents_.push_back(evaluation.placed(item->id()).parent);
@@ -150,15 +150,15 @@ Target Target::objects(const scene::Items& items, const scene::Evaluation& evalu
 
 /**
  **/
-Target Target::components(const scene::Items& items, selection::SelectMask kind, const scene::Components& components,
+Target Target::components(const scene::Items& items, selection::SelectMask kind, const scene::item::Components& components,
     const scene::Evaluation& evaluation) {
     Target target;
     target.components_ = true;
     scene::Items curves;
-    for (const boost::shared_ptr<scene::Item>& item : items) {
-        const boost::shared_ptr<scene::Mesh> mesh = as<scene::Mesh>(item);
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
+        const boost::shared_ptr<scene::item::Mesh> mesh = as<scene::item::Mesh>(item);
         if (!mesh) {
-            if (as<scene::Curve>(item)) {
+            if (as<scene::item::Curve>(item)) {
                 curves.push_back(item);
             }
             continue;
@@ -177,8 +177,8 @@ Target Target::components(const scene::Items& items, selection::SelectMask kind,
     if (kind != selection::SelectMask::Vertex && kind != selection::SelectMask::Handle) {
         return target;
     }
-    for (const boost::shared_ptr<scene::Item>& item : curves) {
-        const boost::shared_ptr<scene::Curve> curve = as<scene::Curve>(item);
+    for (const boost::shared_ptr<scene::item::Item>& item : curves) {
+        const boost::shared_ptr<scene::item::Curve> curve = as<scene::item::Curve>(item);
         CurvePart part{ .curve = curve, .points = {}, .handles = {}, .world = evaluation.placed(curve->id()).world };
         if (kind == selection::SelectMask::Vertex) {
             part.points = selectedPoints(*curve, components);
@@ -201,7 +201,7 @@ Target Target::selected(const scene::Scene& scene, selection::SelectMask mask) {
     if (selectsItems(mask)) {
         // a mask that takes one kind moves only that kind, though others may be selected
         scene::Items taken;
-        for (const boost::shared_ptr<scene::Item>& item : scene.selection()) {
+        for (const boost::shared_ptr<scene::item::Item>& item : scene.selection()) {
             if (takes(mask, item->kind())) {
                 taken.push_back(item);
             }
@@ -262,12 +262,12 @@ glm::vec3 Target::pivot() const {
         for (const CurvePart& part : curves_) {
             const v3d::curve::Curves& geometry = *part.curve->geometry();
             for (const v3d::brep::Index point : part.points) {
-                const scene::CurvePoint at = *scene::pointAt(geometry, point);
-                sum += glm::vec3(part.world * glm::vec4(scene::controlPoint(geometry.curve(at.curve), at.point), 1.0F));
+                const scene::item::CurvePoint at = *scene::item::pointAt(geometry, point);
+                sum += glm::vec3(part.world * glm::vec4(scene::item::controlPoint(geometry.curve(at.curve), at.point), 1.0F));
                 count++;
             }
             for (const v3d::brep::Index handle : part.handles) {
-                sum += glm::vec3(part.world * glm::vec4(scene::handlePosition(geometry, *scene::handleAt(geometry, handle)), 1.0F));
+                sum += glm::vec3(part.world * glm::vec4(scene::item::handlePosition(geometry, *scene::item::handleAt(geometry, handle)), 1.0F));
                 count++;
             }
         }
@@ -352,12 +352,12 @@ void Target::move(const Motion& motion, const glm::vec3& pivot, const glm::quat&
         // automatic handles again
         std::map<std::size_t, v3d::curve::Curve> changed;
         for (const v3d::brep::Index point : part.points) {
-            const scene::CurvePoint at = *scene::pointAt(geometry, point);
+            const scene::item::CurvePoint at = *scene::item::pointAt(geometry, point);
             v3d::curve::Curve& curve = changed.try_emplace(at.curve, geometry.curve(at.curve)).first->second;
-            scene::moveControl(&curve, at.point, local);
+            scene::item::moveControl(&curve, at.point, local);
         }
         for (const v3d::brep::Index handle : part.handles) {
-            const scene::CurveHandle at = *scene::handleAt(geometry, handle);
+            const scene::item::CurveHandle at = *scene::item::handleAt(geometry, handle);
             v3d::curve::Curve& curve = changed.try_emplace(at.at.curve, geometry.curve(at.at.curve)).first->second;
             auto& bezier = std::get<v3d::curve::Bezier>(curve.shape);
             const v3d::curve::BezierPoint& held = bezier.points[at.at.point];

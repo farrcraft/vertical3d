@@ -6,13 +6,13 @@
 #pragma once
 
 #include <api/interchange/Scene.h>
+#include <vertical3d/src/scene/item/Item.h>
 
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "Item.h"
 #include "Scene.h"
 #include "Timeline.h"
 

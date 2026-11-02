@@ -4,7 +4,7 @@
  **/
 
 #include <api/log/Logger.h>
-#include <api/render/offline/FrameBuffer.h>
+#include <api/render/offline/film/FrameBuffer.h>
 #include <api/render/offline/rib/Declaration.h>
 #include <api/render/offline/rib/Reader.h>
 #include <moya/libmoya/Polygon.h>

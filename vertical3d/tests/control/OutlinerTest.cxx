@@ -4,16 +4,16 @@
  **/
 
 #include <api/brep/Primitives.h>
-#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/resource/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/Outliner.h>
-#include <vertical3d/src/scene/Group.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Light.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Group.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Light.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
@@ -41,13 +41,13 @@ using v3d::editor::control::Outliner;
  **/
 struct Rig {
     Rig() :
-        rig(named<v3d::editor::scene::Group>("Rig")),
-        arm(named<v3d::editor::scene::Group>("Arm")),
-        hand(named<v3d::editor::scene::Group>("Hand")),
-        cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
-        lamp(named<v3d::editor::scene::Light>("Lamp")) {
+        rig(named<v3d::editor::scene::item::Group>("Rig")),
+        arm(named<v3d::editor::scene::item::Group>("Arm")),
+        hand(named<v3d::editor::scene::item::Group>("Hand")),
+        cube(boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube())),
+        lamp(named<v3d::editor::scene::item::Light>("Lamp")) {
         cube->name("Cube");
-        for (const boost::shared_ptr<v3d::editor::scene::Item>& item : v3d::editor::scene::Items{ rig, cube, arm, hand, lamp }) {
+        for (const boost::shared_ptr<v3d::editor::scene::item::Item>& item : v3d::editor::scene::Items{ rig, cube, arm, hand, lamp }) {
             scene.add(item);
         }
         BOOST_REQUIRE(scene.parent(arm->id(), rig->id()));
@@ -55,7 +55,7 @@ struct Rig {
     }
 
     template <typename T>
-    static boost::shared_ptr<v3d::editor::scene::Item> named(const std::string& name) {
+    static boost::shared_ptr<v3d::editor::scene::item::Item> named(const std::string& name) {
         const boost::shared_ptr<T> made = boost::make_shared<T>();
         made->name(name);
         return made;
@@ -73,11 +73,11 @@ struct Rig {
     }
 
     v3d::editor::scene::Scene scene;
-    boost::shared_ptr<v3d::editor::scene::Item> rig;
-    boost::shared_ptr<v3d::editor::scene::Item> arm;
-    boost::shared_ptr<v3d::editor::scene::Item> hand;
-    boost::shared_ptr<v3d::editor::scene::Mesh> cube;
-    boost::shared_ptr<v3d::editor::scene::Item> lamp;
+    boost::shared_ptr<v3d::editor::scene::item::Item> rig;
+    boost::shared_ptr<v3d::editor::scene::item::Item> arm;
+    boost::shared_ptr<v3d::editor::scene::item::Item> hand;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> cube;
+    boost::shared_ptr<v3d::editor::scene::item::Item> lamp;
 };
 
 /**
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_SUITE(outliner_test)
  * An item is listed by its name, or by its kind when it has none.
  **/
 BOOST_AUTO_TEST_CASE(a_row_names_its_item) {
-    v3d::editor::scene::Group group;
+    v3d::editor::scene::item::Group group;
     BOOST_CHECK_EQUAL(Outliner::label(group), "Group");
     group.name("Rig");
     BOOST_CHECK_EQUAL(Outliner::label(group), "Rig");
@@ -258,8 +258,8 @@ BOOST_FIXTURE_TEST_CASE(the_scene_row_holds_every_item, Drawn) {
 BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
     std::set<std::string> icons;
     std::set<std::tuple<float, float, float>> colours;
-    for (const v3d::editor::scene::Item::Kind kind : { v3d::editor::scene::Item::Kind::Mesh, v3d::editor::scene::Item::Kind::Camera,
-             v3d::editor::scene::Item::Kind::Light, v3d::editor::scene::Item::Kind::Group, v3d::editor::scene::Item::Kind::Curve }) {
+    for (const v3d::editor::scene::item::Item::Kind kind : { v3d::editor::scene::item::Item::Kind::Mesh, v3d::editor::scene::item::Item::Kind::Camera,
+             v3d::editor::scene::item::Item::Kind::Light, v3d::editor::scene::item::Item::Kind::Group, v3d::editor::scene::item::Item::Kind::Curve }) {
         const Outliner::Mark marked = Outliner::mark(kind);
         icons.insert(marked.icon);
         colours.insert({ marked.colour.r, marked.colour.g, marked.colour.b });
@@ -270,12 +270,12 @@ BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
     std::vector<std::string> asked;
     outliner.icons([&asked](const std::string& source) {
         asked.push_back(source);
-        return v3d::ui::Image(v3d::render::realtime::TextureHandle(9));
+        return v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(9));
     });
     frame({});
     BOOST_CHECK(std::ranges::find(asked, "icon:item-scene") != asked.end());
-    BOOST_CHECK(std::ranges::find(asked, Outliner::mark(v3d::editor::scene::Item::Kind::Mesh).icon) != asked.end());
-    const glm::vec4 mesh = Outliner::mark(v3d::editor::scene::Item::Kind::Mesh).colour;
+    BOOST_CHECK(std::ranges::find(asked, Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).icon) != asked.end());
+    const glm::vec4 mesh = Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).colour;
     BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&mesh](const auto& vertex) { return vertex.colour == mesh; }));
 }
 

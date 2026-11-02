@@ -7,6 +7,18 @@ covers `api/font`. Terms are defined in the [glossary](README.md#glossary).
 its glyphs. Most apps do not use it directly: `ui::paint::TextRenderer` owns the faces, their
 glyphs and the drawing of text. See [ui/](ui/README.md).
 
+The library has four parts, each a directory with a namespace of its own:
+
+| Directory | Namespace | Holds | Sections |
+|---|---|---|---|
+| `face/` | `font::face` | The FreeType library, faces, families, the fallback chain and variable-font coordinates | [Faces](#faces-and-the-fallback-chain), [Variable fonts](#variable-fonts) |
+| `text/` | `font::text` | UTF-8, segmentation, bidi, shaping and paragraph layout | [Shaping](#shaping) to [Paragraphs](#paragraphs) |
+| `glyph/` | `font::glyph` | The glyph store, and the coverage, curve, colour and field glyphs it is filled with | [The glyph store](#the-glyph-store) to [Effect fields](#effect-fields) |
+| `texture/` | `font::texture` | A face drawn at one size into a texture atlas, and text laid out as quads from it | [Texture fonts](#texture-fonts) |
+
+`text` and `glyph` each build on `face`, and `texture` builds on `face` and `text`. A type is named
+below without its namespace where the section makes the namespace plain.
+
 ## Faces and the fallback chain
 
 - **`Library`** is the FreeType library an app's faces are opened through. A face holds its
@@ -19,13 +31,13 @@ glyphs and the drawing of text. See [ui/](ui/README.md).
     is 700 when it says it is bold, and 400 otherwise. `italic()` is the file's italic flag.
   - `glyphIndex(charcode)` is the index of a code point's glyph. Index 0 is the face's missing
     glyph, and `has(charcode)` is whether the index is not 0. A glyph is named by its face and
-    its index, a `FaceGlyph`.
-  - `metrics(size, coordinates)` gives the face's `FaceMetrics` at a size in pixels, unhinted:
+    its index, a `face::Glyph`.
+  - `metrics(size, coordinates)` gives the face's `face::Metrics` at a size in pixels, unhinted:
     its ascender, descender and line gap, and the position and thickness of an underline and a
     strikethrough, each as a distance from the baseline. They are measured at a variable font's
     [coordinates](#variable-fonts), none unless given. A face whose OS/2 table asks for its
     typographic metrics is measured by them, and any other by its hhea table.
-- **`FaceStyle`** is the weight and style a face is chosen by: `{ .weight = 600, .italic =
+- **`face::Style`** is the weight and style a face is chosen by: `{ .weight = 600, .italic =
   false }`. The weight defaults to 400 and italic to false.
 - **`Family(name)`** holds the faces of one typeface. `add(face)` leaves out a null face.
   `face(style)` chooses as CSS does:
@@ -47,7 +59,7 @@ glyphs and the drawing of text. See [ui/](ui/README.md).
 A variable font holds a range of designs along its axes, such as its weight or its width. Text
 is drawn at one point on each axis.
 
-- **`Face::axes()`** gives a variable font's `FaceAxis`es, each with its `tag`, such as `"wght"`,
+- **`Face::axes()`** gives a variable font's `face::Axis`es, each with its `tag`, such as `"wght"`,
   and its `min`, `initial` and `max` values, in the units the font's named instances use. A face
   with no axes has none. **`weights()`** is the lightest and the heaviest weight a face draws:
   its weight axis's range, or its own weight for both.
@@ -56,17 +68,17 @@ is drawn at one point on each axis.
   1 at its greatest, after the font's avar table has mapped it. No coordinates at all draw every
   axis at its default.
 - **`Face::coordinates(style, size, variations)`** finds the coordinates text is drawn at, as
-  CSS sets them. The weight axis takes the `FaceStyle`'s weight, and the optical size axis the
+  CSS sets them. The weight axis takes the `face::Style`'s weight, and the optical size axis the
   size in pixels. Each `Variation` is then set over them, in order. A value outside its axis's
   range is taken as the nearest end, a variation for an axis the face lacks does nothing, and
   one whose tag is not four letters is left out. Every axis at its default gives no coordinates,
   so a face with no axes always gives none.
 - **`Variation`** is an axis's tag and a value in its units: `{ "wght", 650 }` for a weight
-  between regular and bold, `{ "wdth", 75 }` for a condensed width. A `TextStyle` lists its
+  between regular and bold, `{ "wdth", 75 }` for a condensed width. A `text::Style` lists its
   `variations`.
 - **Where they go.** The shaper shapes each run at the coordinates its face finds, so its
   advances and kerning are the instance's, and keeps them in the run's `coordinates`. A
-  paragraph's `LineRun`s copy them. A renderer puts them in each `GlyphKey`, and gives them to
+  paragraph's `LineRun`s copy them. A renderer puts them in each `glyph::Key`, and gives them to
   the curve store, so each point on the axes is a glyph of its own. A paragraph measures each
   line's faces at their runs' coordinates.
 
@@ -76,7 +88,7 @@ Text is shaped by HarfBuzz, over the faces a `FallbackChain` holds. Shaping appl
 kerning, mark positioning, ligatures and contextual forms, and any OpenType feature asked for.
 
 - **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features, variations,
-  language)`** shapes a UTF-8 string at a `FaceStyle` and a size in pixels, with a variable
+  language)`** shapes a UTF-8 string at a `face::Style` and a size in pixels, with a variable
   face's axes set as [Variable fonts](#variable-fonts) describes, and returns its runs in the
   string's order.
   An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain with no
@@ -187,7 +199,7 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 
 **Styles.**
 
-- **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
+- **`text::Style`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
   `size` in pixels, the OpenType `features`, the `variations` of a variable face's axes, the
   `language` as a BCP 47 tag, and the `colour`. An empty language is the shaping cache's
   locale. It also says whether it has an `underline` or a `strikethrough`, and lists the
@@ -277,10 +289,10 @@ Background: [ADR-0143](../adr/0143-text-styled-paragraphs-over-a-shared-shaping-
 
 ## The glyph store
 
-A `GlyphStore` holds the glyphs text is drawn from. A glyph is made the first time it is drawn
+A `glyph::Store` holds the glyphs text is drawn from. A glyph is made the first time it is drawn
 and packed into pages, which a renderer copies to the device. It needs no GPU.
 
-- **`GlyphKey`** tells one glyph from another: its `face`, its `index` there, its `size` in
+- **`glyph::Key`** tells one glyph from another: its `face`, its `index` there, its `size` in
   pixels, the `subpixel` step its pen was at, and its `mode` (`Coverage`, `Distance` or
   `Colour`). It also holds a distance field's `spread` in pixels, a colour glyph's `palette` and
   `foreground`, and a variable font's normalized `coordinates`. A key names its face by address,
@@ -304,7 +316,7 @@ and packed into pages, which a renderer copies to the device. It needs no GPU.
   that use, a page is added past the limit. A page past the limit is let go at the start of the
   frame after one that used nothing in it.
 - **Reaching the device.** `pixels(page)` gives a page's pixels. `regions()` gives the plots
-  changed since it was last called, each as a `GlyphRegion`, and a page added is changed whole.
+  changed since it was last called, each as a `glyph::Region`, and a page added is changed whole.
   A renderer copies them with `Textures::update()`. It compares `pages()` with the textures it
   holds to find a page added or let go.
 
@@ -312,7 +324,7 @@ Background: [ADR-0144](../adr/0144-text-glyph-pages-of-plots-reused-least-recent
 
 ## Coverage glyphs
 
-**`rasterize(key)`** makes a glyph's coverage for the glyph store, as a `GlyphStore::Rasterizer`.
+**`rasterize(key)`** makes a glyph's coverage for the glyph store, as a `glyph::Store::Rasterizer`.
 
 - It rasterizes at the key's size in pixels, the glyph's pen moved right by the key's
   `subpixel` step, in steps of a quarter of a pixel (`SUBPIXEL_STEPS`).
@@ -440,7 +452,7 @@ units with y upwards, and the `min` and `max` of what it draws.
   it. Layers outside a group, and within one, are drawn over each other in order.
 
 **Painting.** **`paint(key)`** makes a colour glyph's pixels for the glyph store, as a
-`GlyphStore::Rasterizer`, from the key's face, index, palette and size.
+`glyph::Store::Rasterizer`, from the key's face, index, palette and size.
 
 - It paints at the key's size, its pen moved right by the key's `subpixel` step, as a
   coverage glyph is.
@@ -464,13 +476,13 @@ Background: [ADR-0149](../adr/0149-text-colour-glyphs-from-every-opentype-colour
 ## Effect fields
 
 A style's `effects` are drawn beneath its text from each glyph's signed distance field. A
-`TextEffect` grows each glyph by a `width`, fades it to nothing over a `softness` beyond that,
+`text::Effect` grows each glyph by a `width`, fades it to nothing over a `softness` beyond that,
 and moves it by an `offset`, all in pixels at the text's size, in its `colour`. An outline has a
 width, a shadow an offset, and a glow a softness. A width below 0 lies inside the glyph. The
 effects are drawn in the order the style lists them, the first furthest back, and every glyph's
 effects are drawn before any glyph.
 
-- **`field(key)`** makes a glyph's field for the glyph store, as a `GlyphStore::Rasterizer`. It
+- **`field(key)`** makes a glyph's field for the glyph store, as a `glyph::Store::Rasterizer`. It
   reads the unhinted outline at the key's size, `spread` and `coordinates`. Each pixel is its
   distance from the edge, from the spread outside at 0 to the spread inside at 255, with the
   edge at the middle. The field reaches the spread past the outline on every side. A key of
@@ -495,8 +507,8 @@ Background: [ADR-0146](../adr/0146-text-effects-drawn-from-a-distance-field.md)
 
 ## Texture fonts
 
-- **`TextureFont(face, size, logger, spread)`** draws one face at one size.
-  `TextureFont(filename, size, logger, spread)` opens the file through a library of its own.
+- **`texture::Font(face, size, logger, spread)`** draws one face at one size.
+  `texture::Font(filename, size, logger, spread)` opens the file through a library of its own.
   - With `spread` 0 the glyphs are plain coverage.
   - With a `spread` above 0 the glyphs are a signed distance field. `size` is then the base size,
     and text at any other size is drawn as a ratio of it. `spread` is how many pixels either side
@@ -511,7 +523,7 @@ Background: [ADR-0146](../adr/0146-text-effects-drawn-from-a-distance-field.md)
   and measures short, so layout around it is wrong as well.
 - `glyph(charcode)` returns a code point's glyph: its size, offset, advance and uvs, or null if
   it cannot be loaded. A code point it has not seen is rasterized and packed then.
-  `glyph(TextureFont::SOLID)` is an opaque white square, used to draw lines and backgrounds.
+  `glyph(texture::Font::SOLID)` is an opaque white square, used to draw lines and backgrounds.
 - `packed(charcode)` returns a glyph only if it is already packed, and never adds one. Use it
   once the atlas has been uploaded, since a glyph packed afterwards is not on the device.
 - **`fallback(font)`** gives a font another font for the code points it lacks, and that font
@@ -525,9 +537,9 @@ Background: [ADR-0146](../adr/0146-text-effects-drawn-from-a-distance-field.md)
   `underlineThickness()` are the face's metrics.
 - **`width(utf8, size)`** measures a UTF-8 string at a size from the packed glyphs alone. A
   code point with no packed glyph adds nothing.
-- **`TextureFontCache(width, height, depth, logger)`** shares one atlas among several fonts.
+- **`texture::FontCache(width, height, depth, logger)`** shares one atlas among several fonts.
   Depth is 1 for coverage or a distance field, and 3 for subpixel coverage.
-- **`TextureTextBuffer::addText(&pen, markup, utf8)`** lays out a UTF-8 string as quads, moving
+- **`texture::TextBuffer::addText(&pen, markup, utf8)`** lays out a UTF-8 string as quads, moving
   the pen. **It draws only glyphs already packed**, so it never adds to an atlas that is on the
   device. A code point with no packed glyph draws nothing and moves the pen by nothing, and the
   lines and background need `SOLID` packed too. A `Markup` sets the size, colours, gamma,

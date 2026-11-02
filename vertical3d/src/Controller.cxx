@@ -30,19 +30,19 @@
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
 #include <api/window/Window.h>
-#include <vertical3d/src/control/AreaChrome.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
 #include <vertical3d/src/control/IconSheet.h>
-#include <vertical3d/src/control/Notices.h>
+#include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Playback.h>
-#include <vertical3d/src/control/Pointer.h>
+#include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/RenderWindow.h>
-#include <vertical3d/src/control/StatusBar.h>
-#include <vertical3d/src/control/TopBar.h>
+#include <vertical3d/src/control/chrome/StatusBar.h>
+#include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
@@ -224,7 +224,7 @@ void Controller::buildRenderer() {
     renderer_->scene(context_.document->scene());
     renderer_->transformTool(context_.transformTool);
     renderer_->selectTool(context_.selectTool);
-    context_.notices = boost::make_shared<control::Notices>();
+    context_.notices = boost::make_shared<control::chrome::Notices>();
     renderer_->notices(context_.notices);
 }
 
@@ -242,7 +242,7 @@ bool Controller::buildUi() {
     const boost::shared_ptr<v3d::ui::Interface>& vgui = shell_.ui();
     buildPointer(vgui);
     // the areas' headers go under the editor's own container, so its menus drop over them
-    chrome_ = boost::make_shared<control::AreaChrome>(vgui, uiContainer,
+    chrome_ = boost::make_shared<control::chrome::Area>(vgui, uiContainer,
         [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     uiKeys_ = boost::make_shared<v3d::ui::shell::Keyboard>(vgui, dispatcher(), window());
     uiKeys_->immediate(renderer_->immediate());
@@ -254,7 +254,7 @@ bool Controller::buildUi() {
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<control::CommandSearch>(vgui);
-    topBar_ = boost::make_shared<control::TopBar>(vgui, firstDialog, renderer_->type());
+    topBar_ = boost::make_shared<control::chrome::TopBar>(vgui, firstDialog, renderer_->type());
     // moya.exe is built beside the editor
     context_.renderWindow = boost::make_shared<control::RenderWindow>(boost::make_shared<render::Panels>(vgui),
         boost::make_shared<render::MoyaDelegate>(logger()), boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
@@ -270,7 +270,7 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
     // on the character drawn under the pointer
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
         boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->type());
-    context_.pointer = boost::make_shared<control::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
+    context_.pointer = boost::make_shared<control::chrome::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
         // the show flags a check item draws are the active view's
         syncUi();
     });
@@ -352,12 +352,12 @@ void Controller::syncUi() {
 
     // the View menu marks the active view's state, as each header marks its own view's
     if (const boost::shared_ptr<view::ViewPort> activeView = context_.activeView()) {
-        for (const auto& [command, on] : control::AreaChrome::marks(*activeView)) {
+        for (const auto& [command, on] : control::chrome::Area::marks(*activeView)) {
             mark(command, on);
         }
     }
 
-    for (const auto& [command, on] : control::AreaChrome::marks(context_.selectTool->mask())) {
+    for (const auto& [command, on] : control::chrome::Area::marks(context_.selectTool->mask())) {
         mark(command, on);
     }
     const tool::CameraControl::CameraMode latched = context_.cameraTool->latched();
@@ -427,7 +427,7 @@ void Controller::areasChanged() {
 /**
  **/
 void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) {
-    const boost::shared_ptr<control::Pointer>& pointer = context_.pointer;
+    const boost::shared_ptr<control::chrome::Pointer>& pointer = context_.pointer;
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
     if (held != nullptr && pointer && pointer->panels()) {
@@ -483,8 +483,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
 
 /**
  **/
-control::TopBar::State Controller::topState() const {
-    control::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
+control::chrome::TopBar::State Controller::topState() const {
+    control::chrome::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
         .project = context_.document->project()->directory().filename().string(), .dirty = context_.document->dirty() };
     for (const boost::json::object& workspace : context_.workspaces->all()) {
         state.workspaces.emplace_back(v3d::asset::readString(workspace, "name").value_or(std::string()));
@@ -499,7 +499,7 @@ void Controller::openSearch() {
     // an area's commands are on its header, and run from the search they act on the active area
     const std::size_t active = context_.areaOf(v3d::event::Event());
     if (active < context_.layout->areas().size()) {
-        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::AreaChrome::name(context_.layout->areas()[active].id));
+        const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::chrome::Area::name(context_.layout->areas()[active].id));
         if (area) {
             bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
         }
@@ -523,15 +523,15 @@ void Controller::runSearch() {
 
 /**
  **/
-control::Status Controller::status() const {
-    control::Status made;
+control::chrome::Status Controller::status() const {
+    control::chrome::Status made;
     const boost::shared_ptr<view::ViewPort> view = context_.activeView();
     const bool perspective = view && view->camera() && !view->camera()->orthographic();
-    made.buttons = control::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
-    made.selection = control::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
-    made.frame = control::StatusBar::frame(context_.document->scene()->timeline());
-    made.rate = control::StatusBar::rate(statistics().mean());
-    made.health = control::StatusBar::health({ .mean = statistics().mean(), .refresh = window()->refreshRate() });
+    made.buttons = control::chrome::StatusBar::buttons(*context_.cameraTool, *context_.transformTool, *context_.selectTool, perspective);
+    made.selection = control::chrome::StatusBar::selection(*context_.document->scene(), context_.selectTool->mask());
+    made.frame = control::chrome::StatusBar::frame(context_.document->scene()->timeline());
+    made.rate = control::chrome::StatusBar::rate(statistics().mean());
+    made.health = control::chrome::StatusBar::health({ .mean = statistics().mean(), .refresh = window()->refreshRate() });
     return made;
 }
 

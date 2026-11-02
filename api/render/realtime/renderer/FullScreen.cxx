@@ -6,11 +6,11 @@
 #include "FullScreen.h"
 
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/DrawItem.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Material.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Resources.h>
+#include <api/render/realtime/frame/DrawItem.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/resource/Material.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/resource/Resources.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/pipeline/Builder.h>
@@ -76,7 +76,7 @@ FullScreen::FullScreen(const DeviceContext& context, const Spec& spec) :
 
 /**
  **/
-MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
+resource::MaterialHandle FullScreen::source(const std::vector<resource::TextureHandle>& textures) {
     if (textures.size() != count_) {
         std::stringstream msg;
         msg << "A full screen source was given " << textures.size() << " images for " << count_ << " bindings";
@@ -104,7 +104,7 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
     }
     vkUpdateDescriptorSets(device_->handle(), count_, writes.data(), 0, nullptr);
 
-    Material material;
+    resource::Material material;
     material.set = set;
     material.texture = textures.front();
     return resources_->add(material);
@@ -112,8 +112,8 @@ MaterialHandle FullScreen::source(const std::vector<TextureHandle>& textures) {
 
 /**
  **/
-bool FullScreen::release(const MaterialHandle& source) {
-    const Material* material = resources_->material(source);
+bool FullScreen::release(const resource::MaterialHandle& source) {
+    const resource::Material* material = resources_->material(source);
     if (material == nullptr) {
         return false;
     }
@@ -129,8 +129,8 @@ bool FullScreen::release(const MaterialHandle& source) {
 
 /**
  **/
-DrawItem FullScreen::item(const MaterialHandle& source) const {
-    DrawItem item;
+frame::DrawItem FullScreen::item(const resource::MaterialHandle& source) const {
+    frame::DrawItem item;
     item.pipeline = pipeline_;
     item.material = source;
     // no vertex buffer: the vertex stage makes the triangle from its index
@@ -140,13 +140,13 @@ DrawItem FullScreen::item(const MaterialHandle& source) const {
 
 /**
  **/
-void FullScreen::submit(const MaterialHandle& source, Pass* pass) const {
+void FullScreen::submit(const resource::MaterialHandle& source, frame::Pass* pass) const {
     pass->submit(item(source));
 }
 
 /**
  **/
-PipelineHandle FullScreen::pipeline() const noexcept {
+resource::PipelineHandle FullScreen::pipeline() const noexcept {
     return pipeline_;
 }
 

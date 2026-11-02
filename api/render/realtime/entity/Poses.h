@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/render/realtime/MeshRegistry.h>
+#include <api/render/realtime/resource/MeshRegistry.h>
 
 #include <cstdint>
 #include <optional>
@@ -64,6 +64,6 @@ class Poses final {
  *
  * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
  **/
-Poses poses(const entt::registry& registry, float alpha, const MeshRegistry& meshes);
+Poses poses(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes);
 
 };  // namespace v3d::render::realtime::entity

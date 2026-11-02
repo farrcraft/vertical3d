@@ -9,7 +9,7 @@
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Keyed.h>
 #include <vertical3d/src/command/Transform.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -29,7 +29,7 @@ namespace {
 struct Keying final {
     explicit Keying(bool on) :
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
-        mesh(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())) {
+        mesh(boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>())) {
         scene->add(mesh);
         scene->timeline({ .frame = 5, .autoKey = on });
     }
@@ -47,7 +47,7 @@ struct Keying final {
     }
 
     boost::shared_ptr<v3d::editor::scene::Scene> scene;
-    boost::shared_ptr<v3d::editor::scene::Mesh> mesh;
+    boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh;
     // the edit place() last made, before auto key saw it
     boost::shared_ptr<v3d::editor::command::Command> edit;
 };

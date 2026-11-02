@@ -4,15 +4,15 @@
  **/
 
 #include <api/asset/Manager.h>
-#include <api/font/Paragraph.h>
-#include <api/font/ShapedGlyph.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/ShapedGlyph.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/RenderTarget.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/frame/RenderTarget.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/tests/device/Headless.h>
 #include <api/ui/paint/GlyphPages.h>
@@ -81,14 +81,14 @@ BOOST_AUTO_TEST_SUITE(script_text_test)
  **/
 BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, kWidth, kHeight);
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = headless.context->textures();
     v3d::ui::paint::GlyphPages pages(
         [textures](const unsigned char* pixels, std::uint32_t side, std::uint32_t channels) { return textures->texture(pixels, side, side, channels); },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+        [textures](const v3d::render::realtime::resource::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
             std::uint32_t channels) {
             textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
         },
-        [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); });
+        [textures](const v3d::render::realtime::resource::TextureHandle& page) { textures->release(page); });
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", headless.logger);
     v3d::ui::paint::TextRenderer text(assets, headless.logger, std::move(pages));
     BOOST_REQUIRE(text.loaded());
@@ -98,11 +98,11 @@ BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     canvas.clear();
     std::vector<std::size_t> starts;
     for (std::size_t line = 0; line < kLines.size(); line++) {
-        const v3d::font::Paragraph paragraph(text.shaping(), std::string(kLines[line]), text.style(kSize));
+        const v3d::font::text::Paragraph paragraph(text.shaping(), std::string(kLines[line]), text.style(kSize));
         BOOST_TEST_CONTEXT("line " << line) {
-            for (const v3d::font::Line& shown : paragraph.lines()) {
-                for (const v3d::font::LineRun& run : shown.runs) {
-                    for (const v3d::font::ShapedGlyph& glyph : run.glyphs) {
+            for (const v3d::font::text::Line& shown : paragraph.lines()) {
+                for (const v3d::font::text::LineRun& run : shown.runs) {
+                    for (const v3d::font::text::ShapedGlyph& glyph : run.glyphs) {
                         BOOST_CHECK_NE(glyph.index, 0U);
                     }
                 }
@@ -113,10 +113,10 @@ BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     }
     starts.push_back(canvas.vertices().size());
 
-    const auto target = boost::make_shared<v3d::render::realtime::RenderTarget>(*headless.context,
-        v3d::render::realtime::RenderTarget::Spec{ .width = kWidth, .height = kHeight, .colour = VK_FORMAT_R8G8B8A8_UNORM });
-    v3d::render::realtime::Frame frame;
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("text");
+    const auto target = boost::make_shared<v3d::render::realtime::frame::RenderTarget>(*headless.context,
+        v3d::render::realtime::frame::RenderTarget::Spec{ .width = kWidth, .height = kHeight, .colour = VK_FORMAT_R8G8B8A8_UNORM });
+    v3d::render::realtime::frame::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame.pass("text");
     pass->target(target);
     pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless.context->quads()->submit(canvas, pass.get());

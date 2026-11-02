@@ -9,9 +9,9 @@
 #include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
 #include <api/render/realtime/vulkan/device/Device.h>
 #include <api/render/realtime/vulkan/device/Instance.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
@@ -84,10 +84,10 @@ void Headless::submitAndWait(VkCommandBuffer commands) {
 
 /**
  **/
-void Headless::draw(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+void Headless::draw(const render::realtime::frame::Frame& frame, const render::realtime::frame::RenderTarget& target,
     render::realtime::vulkan::frame::Capture* capture, Read read) {
     VkCommandBuffer commands = context->ring()->begin();
-    render::realtime::Recorder::record(commands, frame, render::realtime::Recorder::Target(), *context->resources(),
+    render::realtime::frame::Recorder::record(commands, frame, render::realtime::frame::Recorder::Target(), *context->resources(),
         context->frameUniforms().get());
 
     render::realtime::vulkan::frame::Capture::Source source;
@@ -108,7 +108,7 @@ void Headless::draw(const render::realtime::Frame& frame, const render::realtime
 
 /**
  **/
-boost::shared_ptr<image::Image> Headless::picture(const render::realtime::Frame& frame, const render::realtime::RenderTarget& target,
+boost::shared_ptr<image::Image> Headless::picture(const render::realtime::frame::Frame& frame, const render::realtime::frame::RenderTarget& target,
     const std::string& path) {
     render::realtime::vulkan::frame::Capture capture(device, context->ring(), logger);
     draw(frame, target, &capture);

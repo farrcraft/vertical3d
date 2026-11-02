@@ -5,10 +5,10 @@
 
 #include "EffectQuad.h"
 
-#include <api/font/Field.h>
-#include <api/font/GlyphStore.h>
-#include <api/font/Paragraph.h>
-#include <api/font/TextStyle.h>
+#include <api/font/glyph/Field.h>
+#include <api/font/glyph/Store.h>
+#include <api/font/text/Paragraph.h>
+#include <api/font/text/Style.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/FieldRamp.h>
 #include <api/ui/paint/GlyphPages.h>
@@ -26,20 +26,20 @@
 
 namespace v3d::ui::paint::internal {
 
-std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::LineRun& run, unsigned int index, const font::TextEffect& effect) {
+std::optional<EffectQuad> effectQuad(font::glyph::Store* store, const font::text::LineRun& run, unsigned int index, const font::text::Effect& effect) {
     const float size = run.size;
     if (store == nullptr || !run.face || !(size > 0.0F)) {
         return std::nullopt;
     }
-    const font::GlyphKey key = font::fieldKey(run.face.get(), index, font::effectReach(effect, size), run.coordinates);
-    const std::optional<font::StoredGlyph> stored = store->glyph(key, font::field);
+    const font::glyph::Key key = font::glyph::fieldKey(run.face.get(), index, font::glyph::effectReach(effect, size), run.coordinates);
+    const std::optional<font::glyph::StoredGlyph> stored = store->glyph(key, font::glyph::field);
     if (!stored.has_value() || stored->size.x == 0 || stored->size.y == 0) {
         return std::nullopt;
     }
-    const float scale = size / font::FIELD_SIZE;
+    const float scale = size / font::glyph::FIELD_SIZE;
     const auto side = static_cast<float>(store->spec().pageSize);
     const glm::vec2 min = (glm::vec2(stored->bearing) * scale) + effect.offset;
-    const glm::vec2 ramp = font::effectRamp(effect, size, key.spread);
+    const glm::vec2 ramp = font::glyph::effectRamp(effect, size, key.spread);
     return EffectQuad{ .min = min,
         .max = min + (glm::vec2(stored->size) * scale),
         .uv0 = glm::vec2(stored->position) / side,
@@ -48,8 +48,8 @@ std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::LineRu
         .ramp = render::realtime::canvas::fieldRamp(ramp.x, ramp.y) };
 }
 
-void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::LineRun& run, unsigned int index,
-    const std::vector<font::TextEffect>& effects, const glm::vec2& pen) {
+void placeEffects(std::vector<PlacedEffect>* placed, font::glyph::Store* store, const font::text::LineRun& run, unsigned int index,
+    const std::vector<font::text::Effect>& effects, const glm::vec2& pen) {
     for (std::size_t layer = 0; layer < effects.size(); layer++) {
         std::optional<EffectQuad> quad = effectQuad(store, run, index, effects[layer]);
         if (quad.has_value()) {

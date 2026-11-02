@@ -5,7 +5,7 @@
 
 #include "Unary.h"
 
-#include <api/render/offline/Position.h>
+#include <api/render/offline/source/Position.h>
 
 #include "Expression.h"
 
@@ -13,7 +13,7 @@
 
 namespace v3d::render::offline::sl::syntax {
 
-Unary::Unary(const std::string & op, const ExpressionPtr & operand, const v3d::render::offline::Position & at) :
+Unary::Unary(const std::string & op, const ExpressionPtr & operand, const v3d::render::offline::source::Position & at) :
     Expression(Kind::UNARY, at),
     op(op),
     operand(operand) {

@@ -1,0 +1,340 @@
+/**
+ * Vertical3D
+ * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
+ **/
+
+#include "Builtins.h"
+
+#include <api/render/offline/sl/Types.h>
+#include <api/render/offline/sl/syntax/Function.h>
+#include <api/render/offline/sl/syntax/Shader.h>
+
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "Parser.h"
+
+namespace v3d::render::offline::sl::compiler {
+
+namespace {
+
+typedef Signature::Argument Argument;
+typedef Signature::Body Body;
+
+/*
+    The light model, in the shading language. L points from the point being shaded toward
+    the light, both in a light shader's illuminate and in a surface shader's illuminance
+    body. A cosine falloff is therefore L . N, and no term here negates L.
+
+    A cone of PI/2 covers the front of the surface, so a light behind it is left out of
+    the sum.
+*/
+const char* const SOURCE = R"(
+surface library() {
+    color diffuse(normal Nn) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * (normalize(L) . Nn);
+        }
+        return C;
+    }
+    color specularbrdf(vector Ln; normal Nn; vector V; float roughness) {
+        vector H = normalize(Ln + V);
+        return color (pow(max(0, Nn . H), 1 / roughness));
+    }
+    color specular(normal Nn; vector V; float roughness) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            C += Cl * specularbrdf(normalize(L), Nn, V, roughness);
+        }
+        return C;
+    }
+    color phong(normal Nn; vector V; float size) {
+        color C = 0;
+        illuminance(P, Nn, 1.5707963) {
+            vector R = reflect(-normalize(L), Nn);
+            C += Cl * pow(max(0, R . V), size);
+        }
+        return C;
+    }
+}
+)";
+
+Signature declare(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
+    Signature signature;
+    signature.name = name;
+    signature.body = body;
+    signature.result = result;
+    signature.arguments = arguments;
+    return signature;
+}
+
+/**
+ * A function whose result is the type of one of its arguments: normalize() of a normal is a
+ * normal, and mix() of two colours is a colour.
+ **/
+Signature same(const char* name, Body body, int argument, const std::vector<Argument> & arguments) {
+    Signature signature;
+    signature.name = name;
+    signature.body = body;
+    signature.resultFrom = argument;
+    signature.arguments = arguments;
+    return signature;
+}
+
+/**
+ * A function whose result is the type its arguments promote to, as an arithmetic operator's
+ * is: max(0, Ci) is a colour, and abs() of a point is a point.
+ **/
+Signature promoting(const char* name, Body body, const std::vector<Argument> & arguments) {
+    Signature signature;
+    signature.name = name;
+    signature.body = body;
+    signature.promotes = true;
+    signature.arguments = arguments;
+    return signature;
+}
+
+/**
+ * A function that returns its results through the arguments from `first` on rather than
+ * through a return value.
+ **/
+Signature writing(const char* name, Body body, int first, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, Type::VOID, arguments);
+    signature.outputs = first;
+    return signature;
+}
+
+/**
+ * A function that changes its first argument in place and returns nothing.
+ **/
+Signature updating(const char* name, Body body, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, Type::VOID, arguments);
+    signature.updates = 0;
+    return signature;
+}
+
+/**
+ * A message passing call: it reads the output parameter its first argument names, of the shader
+ * the call's name names, into its second argument, and returns 1 when it could and 0 when not.
+ **/
+Signature messaging(const char* name) {
+    Signature signature = declare(name, Body::MESSAGE, Type::FLOAT, { Argument::STRING, Argument::ANY });
+    signature.outputs = 1;
+    signature.varying = true;
+    return signature;
+}
+
+Signature shading(const char* name, Body body, Type result, const std::vector<Argument> & arguments) {
+    Signature signature = declare(name, body, result, arguments);
+    signature.varying = true;
+    return signature;
+}
+
+void maths(std::vector<Signature>* table) {
+    // maths. These take a float or a triple, and apply the same function to each component
+    // of a triple
+    const struct { const char* name; Body body; } numeric[] = {
+        { "abs", Body::ABS }, { "sign", Body::SIGN }, { "floor", Body::FLOOR },
+        { "ceil", Body::CEIL }, { "round", Body::ROUND }, { "sqrt", Body::SQRT },
+        { "exp", Body::EXP }, { "log", Body::LOG }
+    };
+    for (const auto & entry : numeric) {
+        table->push_back(promoting(entry.name, entry.body, { Argument::NUMBER }));
+    }
+    // angles, which are floats only
+    const struct { const char* name; Body body; } angular[] = {
+        { "radians", Body::RADIANS }, { "degrees", Body::DEGREES }, { "sin", Body::SIN },
+        { "cos", Body::COS }, { "tan", Body::TAN }, { "asin", Body::ASIN },
+        { "acos", Body::ACOS }, { "atan", Body::ATAN }
+    };
+    for (const auto & entry : angular) {
+        table->push_back(declare(entry.name, entry.body, Type::FLOAT, { Argument::FLOAT }));
+    }
+    table->push_back(declare("atan", Body::ATAN, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table->push_back(declare("log", Body::LOG, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table->push_back(promoting("mod", Body::MOD, { Argument::NUMBER, Argument::NUMBER }));
+    table->push_back(promoting("pow", Body::POW, { Argument::NUMBER, Argument::NUMBER }));
+    table->push_back(promoting("min", Body::MIN, { Argument::NUMBER, Argument::NUMBER }));
+    table->push_back(promoting("max", Body::MAX, { Argument::NUMBER, Argument::NUMBER }));
+    table->push_back(promoting("clamp", Body::CLAMP, { Argument::NUMBER, Argument::NUMBER, Argument::NUMBER }));
+    table->push_back(promoting("mix", Body::MIX, { Argument::NUMBER, Argument::NUMBER, Argument::FLOAT }));
+    table->push_back(declare("step", Body::STEP, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table->push_back(declare("smoothstep", Body::SMOOTHSTEP, Type::FLOAT,
+        { Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));
+}
+
+void geometry(std::vector<Signature>* table) {
+    // geometry
+    table->push_back(declare("length", Body::LENGTH, Type::FLOAT, { Argument::POINTLIKE }));
+    table->push_back(declare("distance", Body::DISTANCE, Type::FLOAT, { Argument::POINT, Argument::POINT }));
+    table->push_back(same("normalize", Body::NORMALIZE, 0, { Argument::POINTLIKE }));
+    table->push_back(same("faceforward", Body::FACEFORWARD, 0,
+        { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE }));
+    table->push_back(declare("reflect", Body::REFLECT, Type::VECTOR, { Argument::POINTLIKE, Argument::POINTLIKE }));
+    table->push_back(declare("refract", Body::REFRACT, Type::VECTOR,
+        { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
+    // how much of a ray a dielectric reflects and how much it lets through, with refract's
+    // conventions: eta is the ratio of the indices on the incident side and the far side
+    table->push_back(writing("fresnel", Body::FRESNEL, 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+        Argument::FLOAT, Argument::FLOAT, Argument::FLOAT }));
+    table->push_back(writing("fresnel", Body::FRESNEL, 3, { Argument::POINTLIKE, Argument::POINTLIKE,
+        Argument::FLOAT, Argument::FLOAT, Argument::FLOAT, Argument::POINTLIKE, Argument::POINTLIKE }));
+    table->push_back(declare("depth", Body::DEPTH, Type::FLOAT, { Argument::POINT }));
+}
+
+void derivatives(std::vector<Signature>* table) {
+    // the derivatives. Each is varying, because a uniform value's derivative is zero at every
+    // point but a varying one's is not. A derivative of a position is a direction
+    for (const auto & entry : { std::make_pair("Du", Body::DU), std::make_pair("Dv", Body::DV) }) {
+        table->push_back(shading(entry.first, entry.second, Type::FLOAT, { Argument::FLOAT }));
+        table->push_back(shading(entry.first, entry.second, Type::COLOR, { Argument::COLOR }));
+        table->push_back(shading(entry.first, entry.second, Type::VECTOR, { Argument::POINTLIKE }));
+    }
+    table->push_back(shading("Deriv", Body::DERIV, Type::FLOAT, { Argument::FLOAT, Argument::FLOAT }));
+    table->push_back(shading("Deriv", Body::DERIV, Type::COLOR, { Argument::COLOR, Argument::FLOAT }));
+    table->push_back(shading("Deriv", Body::DERIV, Type::VECTOR, { Argument::POINTLIKE, Argument::FLOAT }));
+    table->push_back(shading("area", Body::AREA, Type::FLOAT, { Argument::POINT }));
+    table->push_back(shading("calculatenormal", Body::CALCULATENORMAL, Type::NORMAL, { Argument::POINT }));
+}
+
+void components(std::vector<Signature>* table) {
+    // the component accessors and their setters
+    const struct { const char* name; Body body; } readers[] = {
+        { "xcomp", Body::XCOMP }, { "ycomp", Body::YCOMP }, { "zcomp", Body::ZCOMP }
+    };
+    for (const auto & entry : readers) {
+        table->push_back(declare(entry.name, entry.body, Type::FLOAT, { Argument::POINTLIKE }));
+    }
+    const struct { const char* name; Body body; } writers[] = {
+        { "setxcomp", Body::SETXCOMP }, { "setycomp", Body::SETYCOMP },
+        { "setzcomp", Body::SETZCOMP }
+    };
+    for (const auto & entry : writers) {
+        table->push_back(updating(entry.name, entry.body, { Argument::POINTLIKE, Argument::FLOAT }));
+    }
+    table->push_back(declare("comp", Body::COMP, Type::FLOAT, { Argument::NUMBER, Argument::FLOAT }));
+    table->push_back(updating("setcomp", Body::SETCOMP, { Argument::NUMBER, Argument::FLOAT, Argument::FLOAT }));
+}
+
+void transforms(std::vector<Signature>* table) {
+    // the transforms, which treat the three point-like types differently
+    table->push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT, { Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("ptransform", Body::PTRANSFORM, Type::POINT,
+        { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("vtransform", Body::VTRANSFORM, Type::VECTOR, { Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("vtransform", Body::VTRANSFORM, Type::VECTOR,
+        { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("ntransform", Body::NTRANSFORM, Type::NORMAL, { Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("ntransform", Body::NTRANSFORM, Type::NORMAL,
+        { Argument::STRING, Argument::STRING, Argument::POINTLIKE }));
+    table->push_back(declare("ctransform", Body::CTRANSFORM, Type::COLOR, { Argument::STRING, Argument::COLOR }));
+    table->push_back(declare("ctransform", Body::CTRANSFORM, Type::COLOR,
+        { Argument::STRING, Argument::STRING, Argument::COLOR }));
+    table->push_back(declare("mtransform", Body::MTRANSFORM, Type::MATRIX, { Argument::STRING, Argument::MATRIX }));
+}
+
+void matrices(std::vector<Signature>* table) {
+    // matrix
+    table->push_back(declare("determinant", Body::DETERMINANT, Type::FLOAT, { Argument::MATRIX }));
+    table->push_back(declare("translate", Body::TRANSLATE, Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
+    table->push_back(declare("rotate", Body::ROTATE, Type::MATRIX,
+        { Argument::MATRIX, Argument::FLOAT, Argument::POINTLIKE }));
+    table->push_back(declare("scale", Body::SCALE, Type::MATRIX, { Argument::MATRIX, Argument::POINTLIKE }));
+}
+
+void lighting(std::vector<Signature>* table) {
+    // the light model. ambient() runs in the machine, and the others are written in the
+    // shading language over illuminance
+    table->push_back(shading("ambient", Body::AMBIENT, Type::COLOR, {}));
+    table->push_back(shading("diffuse", Body::SOURCE, Type::COLOR, { Argument::POINTLIKE }));
+    table->push_back(shading("specular", Body::SOURCE, Type::COLOR,
+        { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
+    table->push_back(shading("phong", Body::SOURCE, Type::COLOR,
+        { Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
+    table->push_back(declare("specularbrdf", Body::SOURCE, Type::COLOR,
+        { Argument::POINTLIKE, Argument::POINTLIKE, Argument::POINTLIKE, Argument::FLOAT }));
+
+    // computed by the renderer: a shadow, and a traced ray
+    table->push_back(shading("transmission", Body::TRANSMISSION, Type::COLOR, { Argument::POINT, Argument::POINT }));
+    table->push_back(shading("trace", Body::TRACE, Type::COLOR, { Argument::POINT, Argument::POINTLIKE }));
+
+    // RI's message passing between the shaders that run on one point
+    table->push_back(messaging("surface"));
+    table->push_back(messaging("displacement"));
+    table->push_back(messaging("lightsource"));
+}
+
+void lookups(std::vector<Signature>* table) {
+    // an image, read at s and t when no coordinates are given. A colour unless a cast requests
+    // a float, which is the first channel
+    for (const Type result : { Type::COLOR, Type::FLOAT }) {
+        table->push_back(shading("texture", Body::TEXTURE, result, { Argument::STRING }));
+        table->push_back(shading("texture", Body::TEXTURE, result,
+            { Argument::STRING, Argument::FLOAT, Argument::FLOAT }));
+    }
+    // a float unless a cast requests three of them, each its own pattern
+    for (const Type result : { Type::FLOAT, Type::COLOR, Type::POINT, Type::VECTOR }) {
+        table->push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT }));
+        table->push_back(declare("noise", Body::NOISE, result, { Argument::FLOAT, Argument::FLOAT }));
+        table->push_back(declare("noise", Body::NOISE, result, { Argument::POINT }));
+    }
+
+    // declared, stubbed and reported once
+    table->push_back(shading("shadow", Body::STUB, Type::FLOAT, { Argument::STRING, Argument::POINT }));
+}
+
+void printing(std::vector<Signature>* table) {
+    // printf, for debugging
+    Signature print = declare("printf", Body::PRINTF, Type::VOID, { Argument::STRING });
+    print.variadic = true;
+    table->push_back(print);
+}
+
+std::vector<Signature> build() {
+    std::vector<Signature> table;
+    maths(&table);
+    geometry(&table);
+    derivatives(&table);
+    components(&table);
+    transforms(&table);
+    matrices(&table);
+    lighting(&table);
+    lookups(&table);
+    printing(&table);
+    return table;
+}
+
+std::vector<syntax::Function> read() {
+    std::istringstream stream(SOURCE);
+    Parser parser(stream);
+    const std::vector<syntax::ShaderPtr> shaders = parser.parse();
+    // the parser reads functions only inside a shader, so the source wraps them in one. Only
+    // its function list is kept
+    return shaders.size() == 1 ? shaders[0]->functions : std::vector<syntax::Function>();
+}
+
+};  // namespace
+
+std::vector<syntax::Function> sources() {
+    return read();
+}
+
+const std::vector<Signature> & builtins() {
+    static const std::vector<Signature> table = build();
+    return table;
+}
+
+std::vector<Signature> builtin(const std::string & name) {
+    std::vector<Signature> found;
+    for (const Signature & signature : builtins()) {
+        if (signature.name == name) {
+            found.push_back(signature);
+        }
+    }
+    return found;
+}
+
+};  // namespace v3d::render::offline::sl::compiler

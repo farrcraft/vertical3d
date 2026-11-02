@@ -6,10 +6,10 @@
 #include <api/brep/BRep.h>
 #include <api/animation/Curve.h>
 #include <vertical3d/src/command/Key.h>
-#include <vertical3d/src/scene/Camera.h>
+#include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/Evaluation.h>
-#include <vertical3d/src/scene/Item.h>
-#include <vertical3d/src/scene/Mesh.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Properties.h>
 #include <vertical3d/src/scene/Scene.h>
 
@@ -22,8 +22,8 @@
 
 namespace {
 
-boost::shared_ptr<v3d::editor::scene::Mesh> emptyMesh() {
-    return boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>());
+boost::shared_ptr<v3d::editor::scene::item::Mesh> emptyMesh() {
+    return boost::make_shared<v3d::editor::scene::item::Mesh>(boost::make_shared<v3d::brep::BRep>());
 }
 
 /**
@@ -36,7 +36,7 @@ void goTo(v3d::editor::scene::Scene* scene, int frame) {
 /**
  * Where an item is shown at the scene's current frame.
  **/
-glm::vec3 shown(const v3d::editor::scene::Scene& scene, const v3d::editor::scene::Item& item) {
+glm::vec3 shown(const v3d::editor::scene::Scene& scene, const v3d::editor::scene::item::Item& item) {
     return scene.evaluate().pose(item).placement.position;
 }
 
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(key_nothing_test) {
 
 BOOST_AUTO_TEST_CASE(key_sets_and_undoes_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
     mesh->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     scene->add(mesh);
 
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(key_sets_and_undoes_test) {
     BOOST_CHECK(!command.empty());
     command.redo();
     const v3d::editor::scene::Curves curves = scene->curves(mesh->id());
-    BOOST_REQUIRE_EQUAL(curves.size(), v3d::editor::scene::properties(v3d::editor::scene::Item::Kind::Mesh).size());
+    BOOST_REQUIRE_EQUAL(curves.size(), v3d::editor::scene::properties(v3d::editor::scene::item::Item::Kind::Mesh).size());
     BOOST_REQUIRE_EQUAL(curves.at("translation.y").keys().size(), 1U);
     BOOST_CHECK_EQUAL(curves.at("translation.y").keys()[0].frame, 10.0F);
     BOOST_CHECK_EQUAL(curves.at("translation.y").keys()[0].value, 2.0F);
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(key_sets_and_undoes_test) {
 
 BOOST_AUTO_TEST_CASE(key_named_paths_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
     mesh->translation(glm::vec3(1.0F, 2.0F, 3.0F));
     scene->add(mesh);
 
@@ -101,8 +101,8 @@ BOOST_AUTO_TEST_CASE(key_named_paths_test) {
 
 BOOST_AUTO_TEST_CASE(key_plays_back_between_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> still = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> still = emptyMesh();
     scene->add(mesh);
     scene->add(still);
     still->translation(glm::vec3(5.0F, 0.0F, 0.0F));
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(key_plays_back_between_test) {
 
 BOOST_AUTO_TEST_CASE(key_rotation_keeps_turning_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Mesh> mesh = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
     scene->add(mesh);
     mesh->rotation(v3d::editor::scene::fromEuler(glm::vec3(0.0F, 0.0F, 170.0F)));
     goTo(scene.get(), 1);
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(key_rotation_keeps_turning_test) {
 
 BOOST_AUTO_TEST_CASE(key_lens_test) {
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
-    const boost::shared_ptr<v3d::editor::scene::Camera> camera = boost::make_shared<v3d::editor::scene::Camera>();
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
     scene->add(camera);
     camera->lens({ .fov = 30.0F });
     goTo(scene.get(), 1);

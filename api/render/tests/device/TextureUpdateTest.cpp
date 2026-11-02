@@ -6,12 +6,12 @@
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/render/realtime/DeviceContext.h>
-#include <api/render/realtime/Frame.h>
-#include <api/render/realtime/Handle.h>
-#include <api/render/realtime/Pass.h>
-#include <api/render/realtime/Recorder.h>
-#include <api/render/realtime/RenderTarget.h>
-#include <api/render/realtime/Textures.h>
+#include <api/render/realtime/frame/Frame.h>
+#include <api/render/realtime/resource/Handle.h>
+#include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/frame/Recorder.h>
+#include <api/render/realtime/frame/RenderTarget.h>
+#include <api/render/realtime/resource/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/frame/Ring.h>
@@ -34,7 +34,7 @@
 
 namespace {
 
-using v3d::render::realtime::TextureHandle;
+using v3d::render::realtime::resource::TextureHandle;
 using v3d::render::realtime::vulkan::frame::Capture;
 using v3d::render::realtime::vulkan::memory::TextureFactory;
 
@@ -58,24 +58,24 @@ std::vector<unsigned char> flat(uint32_t texels, const glm::uvec2& colour) {
  * Record a frame that covers the target with a texture texel for texel, copy the target out,
  * and submit it without waiting.
  **/
-void draw(v3d::test::Headless* headless, const v3d::render::realtime::RenderTarget& target, const TextureHandle& texture, Capture* capture) {
+void draw(v3d::test::Headless* headless, const v3d::render::realtime::frame::RenderTarget& target, const TextureHandle& texture, Capture* capture) {
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(kSize, kSize));
     canvas.clear();
     canvas.rect(glm::vec2(0.0F), glm::vec2(static_cast<float>(kSize)), glm::vec2(0.0F), glm::vec2(1.0F), glm::vec4(1.0F), texture);
 
-    v3d::render::realtime::Frame frame;
-    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("colour");
+    v3d::render::realtime::frame::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame.pass("colour");
     pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     headless->context->quads()->submit(canvas, pass.get());
 
     VkCommandBuffer commands = headless->context->ring()->begin();
-    v3d::render::realtime::Recorder::Target described;
+    v3d::render::realtime::frame::Recorder::Target described;
     described.image = target.image();
     described.view = target.view();
     described.extent = target.extent();
     described.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    v3d::render::realtime::Recorder::record(commands, frame, described, *headless->context->resources(), headless->context->frameUniforms().get());
+    v3d::render::realtime::frame::Recorder::record(commands, frame, described, *headless->context->resources(), headless->context->frameUniforms().get());
 
     Capture::Source source;
     source.image = target.image();
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_SUITE(texture_update_test)
  **/
 BOOST_AUTO_TEST_CASE(a_region_updated_while_the_texture_is_drawn) {
     v3d::test::Headless headless(kColourFormat, kSize, kSize);
-    const v3d::render::realtime::RenderTarget target(*headless.context, { .width = kSize, .height = kSize, .colour = kColourFormat });
+    const v3d::render::realtime::frame::RenderTarget target(*headless.context, { .width = kSize, .height = kSize, .colour = kColourFormat });
     const std::vector<unsigned char> red = flat(kSize * kSize, glm::uvec2(0xFF, 0x00));
     const TextureHandle texture = headless.context->textures()->texture(red.data(), kSize, kSize, 4);
     const uint32_t slot = headless.context->textures()->slot(texture);
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(a_region_updated_while_the_texture_is_drawn) {
  **/
 BOOST_AUTO_TEST_CASE(an_update_that_does_not_fit_is_refused) {
     v3d::test::Headless headless(kColourFormat, kSize, kSize);
-    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const boost::shared_ptr<v3d::render::realtime::resource::Textures> textures = headless.context->textures();
     const std::vector<unsigned char> colour = flat(4 * 4, glm::uvec2(0xFF, 0xFF));
     const std::vector<unsigned char> mask(16, 0x80);
     const TextureFactory::Pixels four{ .data = colour.data(), .width = 4, .height = 4, .channels = 4 };
@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(an_update_that_does_not_fit_is_refused) {
     BOOST_CHECK(textures->update(coverage, glm::uvec2(0, 0), one));
     BOOST_CHECK(!textures->update(coverage, glm::uvec2(0, 0), four));
 
-    const v3d::render::realtime::RenderTarget target(*headless.context, { .width = 4, .height = 4, .colour = kColourFormat });
+    const v3d::render::realtime::frame::RenderTarget target(*headless.context, { .width = 4, .height = 4, .colour = kColourFormat });
     BOOST_CHECK(!textures->update(textures->texture(target), glm::uvec2(0, 0), four));
 
     BOOST_REQUIRE(textures->release(texture));

@@ -11,7 +11,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/document/Document.h>
-#include <vertical3d/src/scene/Item.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 
@@ -127,7 +127,7 @@ void TimelineEditor::draw(v3d::ui::Immediate* ui, std::size_t editor, const glm:
 
     const v3d::ui::Immediate::Surface rule = ruler(ui, &state);
     float bottom = rule.max.y;
-    for (const boost::shared_ptr<scene::Item>& item : document_->scene()->selection()) {
+    for (const boost::shared_ptr<scene::item::Item>& item : document_->scene()->selection()) {
         bottom = row(ui, &state, item).max.y;
     }
     // the playhead runs down the ruler and every row, at the current frame
@@ -273,7 +273,7 @@ v3d::ui::Immediate::Surface TimelineEditor::ruler(v3d::ui::Immediate* ui, State*
 
 /**
  **/
-v3d::ui::Immediate::Surface TimelineEditor::row(v3d::ui::Immediate* ui, State* state, const boost::shared_ptr<scene::Item>& item) {
+v3d::ui::Immediate::Surface TimelineEditor::row(v3d::ui::Immediate* ui, State* state, const boost::shared_ptr<scene::item::Item>& item) {
     const v3d::ui::paint::Dressing& dress = ui->dressing();
     const v3d::ui::Immediate::Surface track = ui->surface("row " + std::to_string(item->id()), dress.lineHeight);
     const Span across = span(track, dress.lineHeight);
@@ -378,7 +378,7 @@ bool TimelineEditor::isChosen(const scene::FrameKey& key) const {
 void TimelineEditor::prune() {
     const scene::Scene& scene = *document_->scene();
     std::erase_if(chosen_, [&scene](const scene::FrameKey& key) {
-        const boost::shared_ptr<scene::Item> item = scene.item(key.item);
+        const boost::shared_ptr<scene::item::Item> item = scene.item(key.item);
         if (!item || !item->selected()) {
             return true;
         }
