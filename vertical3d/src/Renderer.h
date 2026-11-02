@@ -151,6 +151,32 @@ class Renderer final {
     void panels(const Panels& draw);
 
     /**
+     * Draws the panel a window opened beside the editor's own shows, into that window's
+     * canvas, through an immediate layer of its own.
+     *
+     * @param window the window's id, as Window::id() gives it
+     **/
+    typedef std::function<void(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window)> Opened;
+
+    /**
+     * What draws each opened window's panel each frame, or empty for none.
+     **/
+    void opened(const Opened& draw);
+
+    /**
+     * Draw to another window too, from the next frame. It is cleared to the theme's panel colour
+     * and drawn with the ui's text and dressing, at the ui's scale.
+     *
+     * @return whether the device can draw to the window
+     **/
+    bool open(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
+     * Stop drawing to a window open() opened, before it is destroyed.
+     **/
+    void close(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
      * @return the immediate layer the panels draw through, which the keyboard offers keys to
      **/
     v3d::ui::Immediate* immediate() const noexcept;
@@ -418,8 +444,27 @@ class Renderer final {
     // the names of the views the frame holds passes for
     std::vector<std::string> viewPasses_;
 
+    /**
+     * A window drawn beside the editor's own: what is drawn to it, and the canvas and immediate
+     * layer its panel draws into.
+     **/
+    struct Other final {
+        boost::shared_ptr<v3d::window::Window> window;
+        boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output;
+        v3d::render::realtime::canvas::Canvas canvas;
+        boost::shared_ptr<v3d::ui::Immediate> layer;
+    };
+
+    /**
+     * Draw each other window's panel into its canvas, and the canvas into its frame.
+     **/
+    void drawOthers();
+
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;
+    Opened opened_;
+    // declared after engine_, so each is let go of before the context it was opened on
+    std::vector<boost::shared_ptr<Other>> others_;
     control::IconSheet icons_;
     // the icon sheet's texture, and the side of a cell it was drawn at
     v3d::render::realtime::resource::TextureHandle iconTexture_;

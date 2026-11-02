@@ -12,6 +12,7 @@
 #include <api/event/State.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/image/Image.h>
 #include <api/input/MouseState.h>
@@ -66,6 +67,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -149,6 +151,7 @@ bool Controller::start() {
     motion_ = dispatcher()->sink<v3d::event::kind::MouseMotion>().connect<&Controller::handleMotion>(*this);
     button_ = dispatcher()->sink<v3d::event::kind::MouseButton>().connect<&Controller::handleButton>(*this);
     resize_ = dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Controller::handleResize>(*this);
+    close_ = dispatcher()->sink<v3d::event::kind::WindowClose>().connect<&Controller::handleClose>(*this);
     buildRenderer();
     if (!buildUi()) {
         return false;
@@ -255,6 +258,10 @@ bool Controller::buildUi() {
     renderSettings_ = boost::make_shared<control::RenderSettingsEditor>(context_.document,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
+    renderer_->opened([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window) {
+        drawOpened(layer, canvas, window);
+    });
+    context_.window = [this](std::string_view kind) { return openWindow(kind); };
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<control::CommandSearch>(vgui);
@@ -434,7 +441,7 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
     const boost::shared_ptr<control::chrome::Pointer>& pointer = context_.pointer;
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
-    if (held != nullptr && pointer && pointer->panels()) {
+    if (held != nullptr && pointer && pointer->panels() && ownWindow(held->window())) {
         input.cursor = pointer->cursor();
         input.down = held->held("left");
         input.pressed = held->pressed("left");
@@ -671,7 +678,74 @@ bool Controller::tick(unsigned int delta) {
 /**
  **/
 bool Controller::shows(std::string_view kind) const {
-    return std::ranges::any_of(context_.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; });
+    return std::ranges::any_of(context_.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; }) ||
+        std::ranges::any_of(opened_, [kind](const Opened& each) { return each.kind == kind; });
+}
+
+/**
+ **/
+bool Controller::openWindow(std::string_view kind) {
+    const bool shown = std::ranges::any_of(opened_, [kind](const Opened& each) { return each.kind == kind; });
+    if (shown) {
+        return true;
+    }
+    const boost::shared_ptr<v3d::window::Window> made = addWindow(glm::ivec2(OPENED_WIDTH, OPENED_HEIGHT));
+    if (!made) {
+        return false;
+    }
+    if (!renderer_->open(made)) {
+        removeWindow(made);
+        return false;
+    }
+    const auto named = std::ranges::find(control::chrome::Area::kinds(), kind, &control::chrome::Area::Kind::kind);
+    made->caption("Vertical|3D - " + (named != control::chrome::Area::kinds().end() ? named->label : std::string(kind)));
+    opened_.push_back({ .window = made, .kind = std::string(kind), .editor = nextOpened_++ });
+    return true;
+}
+
+/**
+ **/
+void Controller::drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window) {
+    const auto found = std::ranges::find_if(opened_, [window](const Opened& each) { return each.window->id() == window; });
+    if (found == opened_.end()) {
+        return;
+    }
+    v3d::ui::Immediate::Input input;
+    const v3d::input::MouseState* held = mouse();
+    if (held != nullptr && held->window() == window) {
+        input.cursor = held->position();
+        input.down = held->held("left");
+        input.pressed = held->pressed("left");
+        input.released = held->released("left");
+        input.wheel = held->wheel();
+    }
+    layer->begin(canvas, input);
+    const glm::vec4 region(0.0F, 0.0F, static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
+    if (found->kind == control::RenderView::KIND && context_.renderView) {
+        asked_ = std::max(asked_, context_.renderView->draw(layer, found->editor, region));
+    } else if (found->kind == control::RenderSettingsEditor::KIND && renderSettings_) {
+        renderSettings_->draw(layer, found->editor, region);
+    }
+    layer->end();
+}
+
+/**
+ **/
+bool Controller::ownWindow(std::uint32_t window) const {
+    return window == 0 || !this->window() || window == this->window()->id();
+}
+
+/**
+ **/
+void Controller::handleClose(const v3d::event::kind::WindowClose& event) {
+    const auto found = std::ranges::find_if(opened_, [&event](const Opened& each) { return each.window->id() == event.window(); });
+    if (found == opened_.end()) {
+        return;
+    }
+    const boost::shared_ptr<v3d::window::Window> window = found->window;
+    opened_.erase(found);
+    renderer_->close(window);
+    removeWindow(window);
 }
 
 /**
@@ -690,13 +764,17 @@ bool Controller::simulate(float step) {
 /**
  **/
 void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
+    // an opened window reads its size each frame it is drawn
+    if (!ownWindow(event.window())) {
+        return;
+    }
     layoutViews(event.width(), event.height());
 }
 
 /**
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
-    if (context_.pointer) {
+    if (context_.pointer && ownWindow(event.window())) {
         context_.pointer->motion(event.position(), event.modifiers().ctrl);
         syncPointerShape();
     }
@@ -705,6 +783,9 @@ void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
 /**
  **/
 void Controller::handleButton(const v3d::event::kind::MouseButton& event) {
+    if (!ownWindow(event.window())) {
+        return;
+    }
     if (event.button() == "left") {
         clicks_ = event.clicks();
     } else if (event.button() == "right" && event.pressed() && context_.pointer && context_.pointer->cancel()) {

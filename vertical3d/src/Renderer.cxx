@@ -102,6 +102,70 @@ Renderer::~Renderer() {
 
 /**
  **/
+void Renderer::opened(const Opened& draw) {
+    opened_ = draw;
+}
+
+/**
+ **/
+bool Renderer::open(const boost::shared_ptr<v3d::window::Window>& window) {
+    const boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output = engine_.open(window);
+    if (!output) {
+        return false;
+    }
+    const boost::shared_ptr<Other> other = boost::make_shared<Other>();
+    other->window = window;
+    other->output = output;
+    other->layer = boost::make_shared<v3d::ui::Immediate>(screen_->text(), screen_->size());
+    others_.push_back(other);
+    return true;
+}
+
+/**
+ **/
+void Renderer::close(const boost::shared_ptr<v3d::window::Window>& window) {
+    const auto found = std::ranges::find(others_, window, &Other::window);
+    if (found == others_.end()) {
+        return;
+    }
+    engine_.close((*found)->output);
+    others_.erase(found);
+}
+
+/**
+ **/
+void Renderer::drawOthers() {
+    v3d::ui::Immediate* main = screen_->immediate();
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
+    for (const boost::shared_ptr<Other>& other : others_) {
+        const glm::uvec2 size(static_cast<unsigned int>(std::max(0, other->window->width())),
+            static_cast<unsigned int>(std::max(0, other->window->height())));
+        if (size.x == 0 || size.y == 0) {
+            continue;
+        }
+        if (other->canvas.width() != size.x || other->canvas.height() != size.y) {
+            other->canvas.resize(size);
+        }
+        other->canvas.clear();
+        // the layer follows the main one's scale, theme and clock, so both windows look alike
+        other->layer->scale(screen_->factor());
+        other->layer->dressing() = main->dressing();
+        other->layer->clock(screen_->clock());
+        if (opened_) {
+            opened_(other->layer.get(), &other->canvas, other->window->id());
+        }
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
+            other->output->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
+        pass->clearColour(dress.panel);
+        pass->depth(false);
+        if (!other->canvas.empty()) {
+            engine_.quads()->submit(other->canvas, pass.get());
+        }
+    }
+}
+
+/**
+ **/
 void Renderer::views(const boost::shared_ptr<view::AreaViews>& views) {
     views_ = views;
 }
@@ -344,6 +408,7 @@ void Renderer::draw() {
     }
 
     drawUi(frame);
+    drawOthers();
 
     engine_.renderFrame();
     if (shaded_) {
@@ -635,6 +700,11 @@ v3d::render::realtime::resource::TextureHandle Renderer::picture(const boost::sh
 /**
  **/
 void Renderer::shutdown() {
+    // each other window's surface has to go before the window does, which the engine destroys
+    // after the app's release()
+    while (!others_.empty()) {
+        close(others_.back()->window);
+    }
     // the surfaces' buffers go back to the ring, which destroys them once the device is idle
     shaded_.reset();
     engine_.shutdown();

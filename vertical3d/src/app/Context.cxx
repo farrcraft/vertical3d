@@ -64,7 +64,7 @@ std::size_t Context::areaOf(const v3d::event::Event& event) const {
 
 /**
  **/
-void Context::show(std::string_view kind) const {
+void Context::show(std::string_view kind, bool windowed) const {
     const std::vector<view::AreaLayout::Area>& areas = layout->areas();
     for (std::size_t area = 0; area < areas.size(); area++) {
         const std::vector<view::AreaLayout::Editor>& editors = areas[area].editors;
@@ -74,6 +74,9 @@ void Context::show(std::string_view kind) const {
             areasChanged();
             return;
         }
+    }
+    if (windowed && window && window(kind)) {
+        return;
     }
     const std::size_t active = pointer ? pointer->activeArea() : 0;
     if (layout->add(active, boost::json::object{ { "kind", kind } })) {

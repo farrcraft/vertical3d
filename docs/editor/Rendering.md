@@ -2,7 +2,7 @@
 
 The editor renders its scene with moya, the offline renderer, in two ways:
 
-- Render, into a render view in an area, while the user works.
+- Render, into a render view in an area or in a window of its own, while the user works.
 - Batch Render, as files, for every frame of the timeline.
 
 This page covers both, the render settings, and what the editor hands moya.
@@ -72,7 +72,15 @@ samples takes a great deal of it. The ray-trace hider keeps nothing per sample.
 | Settings | `render::settings` | Show the render settings |
 
 To show an editor, Render and Settings choose the first area's tab that holds one. When no area
-holds one, they add one as a tab of the active area.
+holds one, Render opens a window of its own showing a render view, and Settings adds one as a tab
+of the active area. Render adds a tab too when no window can be opened.
+
+**The render's window** is a second window of the platform's, 800 by 600 at first, titled
+Vertical|3D - Render View. The render view fills it, drawn in the editor's theme and at its
+scale. It has no header, so it cannot be split or hold tabs. Render brings the render up to date
+in it while it is open, as in an area. Its close button closes it and leaves the render running.
+`Controller::openWindow()` opens it through `Engine::addWindow()` and `Renderer::open()`, and it is
+drawn by the editor's device in the same frames as the editor's own window.
 
 ## The render view
 

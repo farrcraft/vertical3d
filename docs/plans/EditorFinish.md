@@ -391,9 +391,16 @@ the floating panel. The editors are in. The window is not.
   their kind an area holds, and otherwise add one as a tab of the active area. The Render menu
   gains Stop. The render view and render settings suites cover the fitted picture, the state, a
   render again only while shown, the buttons, a dragged side, a refused number and the hider.
-- Render opens a window of its own holding an area with the render view when no area holds one.
-  A second window needs one device to present to two surfaces, events that name their window,
-  and a screen, a pointer and an area tree for each window.
+- Done: one device draws every window a renderer opens, presenting them in one frame
+  (ADR-0155). An app adds windows through the engine, whose close is a `WindowClose` and whose
+  resizes and mouse events carry their window's id. Render opens a window of its own showing
+  the render view when no area holds one, and its close button closes it. The output, engine,
+  mouse and context suites cover the second window, the events and when a window is opened.
+  The editor was photographed rendering into the window.
+- The window's area is not yet an area: it has no header, so it cannot be split or hold tabs as
+  ADR-0154 says it can. Each window needs an area tree and headers of its own.
+- A workspace does not record the windows it has open, so the window does not come back with
+  the workspace.
 
 ### Step 15 — The workspaces
 

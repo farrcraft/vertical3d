@@ -63,10 +63,11 @@ struct Context final {
     std::size_t areaOf(const v3d::event::Event& event) const;
 
     /**
-     * Show an editor of a kind: the first one an area holds, or a new one added as a tab of the
-     * active area when no area holds one.
+     * Show an editor of a kind: the first one an area holds. When no area holds one, it is shown
+     * in a window of its own when windowed asks for one and a window can be opened, and as a new
+     * tab of the active area otherwise.
      **/
-    void show(std::string_view kind) const;
+    void show(std::string_view kind, bool windowed = false) const;
 
     /**
      * Run something that needs a view's camera, with the active view's. Without an active
@@ -116,6 +117,9 @@ struct Context final {
     boost::shared_ptr<v3d::ui::shell::Prompt> prompt;
     // run after the areas change, so the views take their regions again
     std::function<void()> areasChanged;
+    // shows an editor of a kind in a window of its own, the one already open or a new one, and
+    // says whether it could
+    std::function<bool(std::string_view kind)> window;
 };
 
 };  // namespace v3d::editor::app

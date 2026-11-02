@@ -26,7 +26,7 @@ void RenderCommands::registerCommands(CommandTable* table) const {
     table->press("render::view", [&context]() {
         context.atView("a render is seen", [&context](const v3d::type::camera::Profile&) {
             context.renderView->render(*context.document->scene(), context.shot());
-            context.show(control::RenderView::KIND);
+            context.show(control::RenderView::KIND, true);
         });
     });
     table->press("render::stop", [&context]() { context.renderView->stop(); });

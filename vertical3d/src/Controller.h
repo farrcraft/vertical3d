@@ -8,6 +8,7 @@
 #include <api/engine/Engine.h>
 #include <api/event/kind/MouseButton.h>
 #include <api/event/kind/MouseMotion.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/shell/Shell.h>
 #include <api/ui/component/Toolbar.h>
@@ -101,6 +102,11 @@ class Controller final : public v3d::engine::Engine {
      * The window changed size, so the layout divides a different area between the views.
      **/
     void handleResize(const v3d::event::kind::WindowResize& event);
+
+    /**
+     * Close a window the editor opened, when the user asks to.
+     **/
+    void handleClose(const v3d::event::kind::WindowClose& event);
 
  protected:
     /**
@@ -239,9 +245,27 @@ class Controller final : public v3d::engine::Engine {
     void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
-     * @return whether any area shows an editor of a kind
+     * @return whether any area or opened window shows an editor of a kind
      **/
     bool shows(std::string_view kind) const;
+
+    /**
+     * Show an editor of a kind in a window of its own: the window already open with one, or a
+     * new one.
+     * @return whether it is shown
+     **/
+    bool openWindow(std::string_view kind);
+
+    /**
+     * Draw the editor an opened window shows, filling the window, through its layer. The layer
+     * has the mouse while the cursor is in that window.
+     **/
+    void drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window);
+
+    /**
+     * @return whether a mouse event in a window belongs to the editor's own window
+     **/
+    bool ownWindow(std::uint32_t window) const;
 
     /**
      * @return what the top bar shows: the workspaces, the one shown, and the project's name and
@@ -299,6 +323,29 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
     // what a render view's buttons asked for in the last frame drawn
     control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
+
+    /**
+     * A window the editor opened beside its own, and the editor it shows.
+     **/
+    struct Opened final {
+        boost::shared_ptr<v3d::window::Window> window;
+        std::string kind;
+        std::size_t editor;  /**< the id the editor's widgets are kept apart by, past every area's **/
+    };
+    std::vector<Opened> opened_;
+    // the id the next opened window's editor takes
+    std::size_t nextOpened_ = OPENED_EDITORS;
+
+    /**
+     * Where the ids of opened windows' editors start, far past any an area's editor takes.
+     **/
+    static constexpr std::size_t OPENED_EDITORS = 1000000;
+
+    /**
+     * The size an opened window starts at.
+     **/
+    static constexpr int OPENED_WIDTH = 800;
+    static constexpr int OPENED_HEIGHT = 600;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<control::chrome::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;
@@ -308,6 +355,7 @@ class Controller final : public v3d::engine::Engine {
     entt::scoped_connection motion_;
     entt::scoped_connection button_;
     entt::scoped_connection resize_;
+    entt::scoped_connection close_;
     // how many clicks in succession the last left press was, which view::drag hands the pointer
     unsigned int clicks_ = 1;
     // the ui scale the layout's metrics were last set for
