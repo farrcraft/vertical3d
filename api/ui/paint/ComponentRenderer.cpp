@@ -216,9 +216,11 @@ const Dressing& ComponentRenderer::hud(std::string_view style) const {
 v3d::type::geometry::Bound2D ComponentRenderer::hud(v3d::render::realtime::canvas::Canvas* canvas,
     const std::vector<std::string>& lines, const Place& place) const {
     const Dressing& dress = hud(place.style);
+    // a score or a count changes as it is read, so its figures are all one width
+    const Type figures = type_.tabular();
     float widest = 0.0F;
     for (const std::string& line : lines) {
-        widest = std::max(widest, type_.width(line));
+        widest = std::max(widest, figures.width(line));
     }
     const glm::vec2 size(widest + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(lines.size())) + dress.padding);
     const glm::vec2 corner = place.at - (size * place.anchor);
@@ -236,7 +238,7 @@ v3d::type::geometry::Bound2D ComponentRenderer::hud(v3d::render::realtime::canva
     // already spaces
     float top = corner.y + (dress.padding * 0.5F);
     for (const std::string& line : lines) {
-        type_.draw(canvas, line, glm::vec2(corner.x + dress.padding, top + (dress.lineHeight * LINE_BASELINE)), dress.text);
+        figures.draw(canvas, line, glm::vec2(corner.x + dress.padding, top + (dress.lineHeight * LINE_BASELINE)), dress.text);
         top += dress.lineHeight;
     }
     return box;

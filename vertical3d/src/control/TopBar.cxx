@@ -12,7 +12,7 @@
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -29,10 +29,10 @@ namespace v3d::editor::control {
 
 /**
  **/
-TopBar::TopBar(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const v3d::ui::paint::Measure& measure) :
+TopBar::TopBar(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const v3d::ui::paint::Type& type) :
     ui_(ui),
     before_(before),
-    measure_(measure) {
+    type_(type) {
 }
 
 /**
@@ -76,7 +76,7 @@ void TopBar::sync(const State& state, const glm::vec4& band) {
     if (!container) {
         return;
     }
-    const auto width = [this](const std::string& text) { return measure_ ? measure_(text) : 0.0F; };
+    const auto width = [this](const std::string& text) { return type_.width(text); };
     // a gap of half the bar's height either side of each piece of text
     const float pad = band.w / 2.0F;
 

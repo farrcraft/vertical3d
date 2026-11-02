@@ -66,9 +66,9 @@ BOOST_AUTO_TEST_CASE(a_screen_draws_any_character) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> fonts = boost::make_shared<v3d::asset::Manager>("data", logger);
     const v3d::ui::shell::Screen plain(nullptr, fonts, logger, sized(20.0F));
-    BOOST_CHECK_GT(plain.text()->measure(20.0F)("A"), 0.0F);
+    BOOST_CHECK_GT(plain.text()->width("A", 20.0F), 0.0F);
     // a degree sign, outside ascii, as UTF-8
-    BOOST_CHECK_GT(plain.text()->measure(20.0F)("\xC2\xB0"), 0.0F);
+    BOOST_CHECK_GT(plain.text()->width("\xC2\xB0", 20.0F), 0.0F);
 }
 
 /**

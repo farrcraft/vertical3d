@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/font/Paragraph.h>
+#include <api/font/TextStyle.h>
 
 #include <optional>
 #include <string>
@@ -77,6 +78,18 @@ class Type final {
      **/
     Type scaled(float factor) const;
 
+    /**
+     * @return the same type with tabular figures, the OpenType feature tnum, so that every
+     *         digit is one width and a number that changes keeps its width. Counters and rates
+     *         are set in it
+     **/
+    Type tabular() const;
+
+    /**
+     * @return the style it sets text in, from its renderer, with its features
+     **/
+    font::TextStyle style() const;
+
     const boost::shared_ptr<TextRenderer>& renderer() const noexcept;
 
     /**
@@ -90,6 +103,7 @@ class Type final {
     boost::shared_ptr<TextRenderer> text_;
     float size_ = 0.0F;
     Weight weight_ = Weight::Regular;
+    bool tabular_ = false;
 };
 
 /**

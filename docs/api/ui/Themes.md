@@ -215,6 +215,8 @@ its usual colour. An opaque highlight hides the selected text.
 
 `ComponentRenderer::hud(canvas, lines, place)` draws lines of text over the scene, such as a
 score or a label, on one plate. A game draws its HUD this way rather than in colours of its own.
+The lines are set in tabular figures, so a score that changes keeps its width. The statistics
+overlay is too.
 
 - **The `hud` class dresses it.** The plate is the panel's colour, or the style's `background`,
   with its alpha multiplied by `plate-opacity`. The lines are in `text`, inside `padding`, a

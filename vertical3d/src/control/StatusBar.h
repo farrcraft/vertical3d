@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 #include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Item.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -110,11 +110,12 @@ class StatusBar final {
     static std::string rate(std::uint64_t nanoseconds);
 
     /**
-     * @return how wide the frame rate's slot is: as wide as a rate of three of the widest digit,
-     *         or as the rate itself when that is wider. The rate is drawn at the slot's right, so
-     *         the text before the slot stays where it is as the rate changes
+     * @param type what the rate is drawn in, with tabular figures, so that every digit is one width
+     * @return how wide the frame rate's slot is: as wide as a rate of three digits, or as the
+     *         rate itself when that is wider. The rate is drawn at the slot's right, so the text
+     *         before the slot stays where it is as the rate changes
      **/
-    static float rateRoom(const v3d::ui::paint::Measure& measure, const std::string& rate);
+    static float rateRoom(const v3d::ui::paint::Type& type, const std::string& rate);
 
  private:
     /**

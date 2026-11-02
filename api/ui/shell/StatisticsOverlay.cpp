@@ -9,6 +9,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <array>
@@ -125,10 +126,12 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
 
     const std::vector<std::string> content = this->content(sample);
+    // its numbers change every frame, so their figures are all one width
+    const paint::Type figures = paint::Type(text_, size_).tabular();
 
     float widest = 0.0F;
     for (const std::string& line : content) {
-        widest = std::max(widest, text_->width(line, size_));
+        widest = std::max(widest, figures.width(line));
     }
 
     const float lineHeight = size_ * lineSpacing;
@@ -144,7 +147,7 @@ void StatisticsOverlay::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     // the pen is the baseline of the line, which sits one font size below the top of it
     float pen = margin + padding + size_;
     for (const std::string& line : content) {
-        text_->draw(canvas, line, glm::vec2(margin + padding, pen), dress.text, size_);
+        figures.draw(canvas, line, glm::vec2(margin + padding, pen), dress.text);
         pen += lineHeight;
     }
 }

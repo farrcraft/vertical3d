@@ -206,7 +206,7 @@ class ComponentRenderer {
      * Draw lines of text over the scene, such as a score or a label, on one plate. The "hud"
      * class dresses it: the text, the plate's colour and how opaque it is, the padding around
      * the lines and the corners. The plate is as wide as the widest line and a line high for
-     * each.
+     * each. The lines are set in tabular figures, so a score that changes keeps its width.
      *
      * @return the plate's box, so that the next block can be placed against it
      **/

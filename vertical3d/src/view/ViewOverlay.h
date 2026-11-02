@@ -7,7 +7,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/camera/Camera.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <array>
 #include <cstddef>
@@ -138,7 +138,7 @@ void lookAlong(v3d::type::camera::Camera* camera, const AxisEnd& end);
  * @param cursor where the cursor is, or nothing when it is not over the view
  **/
 void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& view, const OverlayMetrics& metrics,
-    const OverlayLook& look, const v3d::ui::paint::Measure& measure, const v3d::ui::paint::Write& write,
+    const OverlayLook& look, const v3d::ui::paint::Type& type,
     const std::optional<glm::vec2>& cursor);
 
 };  // namespace v3d::editor::view

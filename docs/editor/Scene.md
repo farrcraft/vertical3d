@@ -606,8 +606,9 @@ with a `hairline` along its top. `StatusBar` in `src/control/` says what it show
 - The frame rate is from the engine's mean frame time. It is green at nine tenths of the
   monitor's refresh rate or more, amber below that, and red below half. A monitor whose rate is
   not known is taken to show 60 a second.
-- The frame rate sits at the right of a slot as wide as three of its widest digit, so the text
-  before it stays put as the rate changes. `StatusBar::rateRoom()` measures the slot.
+- The selection, the frame and the frame rate are set in tabular figures, so every digit is one
+  width. The frame rate sits at the right of a slot as wide as a rate of three digits, so the
+  text before it stays put as the rate changes. `StatusBar::rateRoom()` measures the slot.
 
 **Notices.** What an operation says, done or refused, shows as a notice at the foot of the active
 area, 16 pixels above its edge and centred. The message starts with a capital, on a plate in the

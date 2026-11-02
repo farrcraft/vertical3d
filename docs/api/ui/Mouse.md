@@ -10,7 +10,7 @@ each call returns whether the ui used the point. The app acts on a point only wh
 did not.
 
 ```cpp
-uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), text->measure());
+uiCursor_ = boost::make_shared<v3d::ui::input::Cursor>(vgui_, dispatcher(), v3d::ui::paint::Type(text, size));
 
 bool taken = uiCursor_->press(cursor);   // also motion(point) and release(point)
 if (!taken) {

@@ -254,7 +254,7 @@ bool Controller::buildUi() {
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<control::CommandSearch>(vgui);
-    topBar_ = boost::make_shared<control::TopBar>(vgui, firstDialog, renderer_->measure());
+    topBar_ = boost::make_shared<control::TopBar>(vgui, firstDialog, renderer_->type());
     // moya.exe is built beside the editor
     context_.renderWindow = boost::make_shared<control::RenderWindow>(boost::make_shared<render::Panels>(vgui),
         boost::make_shared<render::MoyaDelegate>(logger()), boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),

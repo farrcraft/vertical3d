@@ -43,7 +43,7 @@ struct Bar {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         ui(boost::make_shared<v3d::ui::Interface>(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>())),
-        bar(ui, "chooser", [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; }),
+        bar(ui, "chooser", v3d::ui::typeset::body()),
         renderer(v3d::ui::typeset::body()) {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [
             { "name": "editor", "visible": true, "components": [] },

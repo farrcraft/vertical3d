@@ -5,7 +5,9 @@
 
 #include "Type.h"
 
+#include <api/font/Feature.h>
 #include <api/font/Paragraph.h>
+#include <api/font/TextStyle.h>
 
 #include <optional>
 #include <string>
@@ -38,13 +40,13 @@ bool Type::set() const noexcept {
 /**
  **/
 float Type::width(std::string_view text) const {
-    return text_ ? text_->width(text, size_, weight_) : 0.0F;
+    return text_ ? text_->width(text, style()) : 0.0F;
 }
 
 /**
  **/
 std::vector<std::string> Type::rows(std::string_view text, float width) const {
-    return text_ ? text_->rows(text, width, text_->style(size_, weight_)) : std::vector<std::string>();
+    return text_ ? text_->rows(text, width, style()) : std::vector<std::string>();
 }
 
 /**
@@ -53,21 +55,25 @@ std::optional<font::Paragraph> Type::paragraph(const std::string& text) const {
     if (!text_ || !text_->loaded()) {
         return std::nullopt;
     }
-    return font::Paragraph(text_->shaping(), text, text_->style(size_, weight_));
+    return font::Paragraph(text_->shaping(), text, style());
 }
 
 /**
  **/
 void Type::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const glm::vec4& colour) const {
     if (text_) {
-        text_->draw(canvas, text, pen, colour, size_, weight_);
+        font::TextStyle styled = style();
+        styled.colour = colour;
+        text_->draw(canvas, text, pen, styled);
     }
 }
 
 /**
  **/
 Type Type::in(Weight weight) const {
-    return Type(text_, size_, weight);
+    Type changed = *this;
+    changed.weight_ = weight;
+    return changed;
 }
 
 /**
@@ -77,7 +83,30 @@ Type Type::scaled(float factor) const {
     if (size <= 0.0F && text_) {
         size = text_->size();
     }
-    return Type(text_, size * factor, weight_);
+    Type changed = *this;
+    changed.size_ = size * factor;
+    return changed;
+}
+
+/**
+ **/
+Type Type::tabular() const {
+    Type changed = *this;
+    changed.tabular_ = true;
+    return changed;
+}
+
+/**
+ **/
+font::TextStyle Type::style() const {
+    if (!text_) {
+        return font::TextStyle();
+    }
+    font::TextStyle styled = text_->style(size_, weight_);
+    if (tabular_) {
+        styled.features.push_back(font::Feature{ .tag = "tnum" });
+    }
+    return styled;
 }
 
 /**

@@ -156,13 +156,8 @@ class Renderer final {
     v3d::ui::Immediate* immediate() const noexcept;
 
     /**
-     * How wide a run of text is at the size the ui is drawn in, for the top bar's boxes.
-     **/
-    v3d::ui::paint::Measure measure() const;
-
-    /**
-     * @return the type the ui's text is drawn in, so that a press in a text box lands where a
-     *         character is drawn
+     * @return the type the ui's text is drawn in, which sizes the top bar's boxes and places a
+     *         press in a text box where a character is drawn
      **/
     v3d::ui::paint::Type type() const;
 

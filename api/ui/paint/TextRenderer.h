@@ -47,9 +47,8 @@ namespace v3d::ui::paint {
  * A style's effects are drawn beneath its text from each glyph's distance field, kept in the
  * same store, and every glyph's effects before any glyph.
  *
- * measure() and write() return the callback pair that ComponentRenderer and Immediate take.
- * Those classes name no font type, so they draw a ui without a device. This class supplies the
- * font.
+ * ComponentRenderer and Immediate measure, wrap and draw through one, which the screen owns. It
+ * needs no device, so a ui is drawn and tested without one.
  **/
 class TextRenderer {
  public:
@@ -152,6 +151,13 @@ class TextRenderer {
     float width(std::string_view text, float size = 0.0F, Weight weight = Weight::Regular) const;
 
     /**
+     * How wide a string is in a style, in pixels, including any space at its end.
+     *
+     * @param styled the style it is set in, from style(), with any features it asks for
+     **/
+    float width(std::string_view text, const font::TextStyle& styled) const;
+
+    /**
      * Break a string into the rows it takes at a width, as a paragraph lays it out: at Unicode's
      * line break opportunities, and inside a word wider than the width. Each row is without the
      * space at its end.
@@ -177,6 +183,14 @@ class TextRenderer {
         float size = 0.0F, Weight weight = Weight::Regular);
 
     /**
+     * Lay a string out in a style at the pen and append its glyphs to a canvas, as the draw
+     * above does.
+     *
+     * @param styled the style it is set in, from style(), with its colour and any features
+     **/
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::TextStyle& styled);
+
+    /**
      * Append a paragraph's glyphs to a canvas, each in the colour of its style, with its
      * style's effects beneath it. Glyphs are placed as the string draw places them.
      *
@@ -199,25 +213,6 @@ class TextRenderer {
      * Tell a trace of every line drawn from now on, or of none when it is empty.
      **/
     void trace(Trace trace);
-
-    /**
-     * @return width() at a size and a weight, as the callback ComponentRenderer and Immediate
-     *         take
-     **/
-    Measure measure(float size = 0.0F, Weight weight = Weight::Regular) const;
-
-    /**
-     * @return draw() at a size into one canvas, as the callback ComponentRenderer and
-     *         Immediate take
-     *
-     * The returned callback holds the canvas pointer, so the canvas must outlive the
-     * callback.
-     *
-     * The callback pair names no font type, so the size is captured here instead of being
-     * passed with each string. A ui at one size and a heading at another are two callback
-     * pairs from one TextRenderer, and one glyph store serves both.
-     **/
-    Write write(v3d::render::realtime::canvas::Canvas* canvas, float size = 0.0F, Weight weight = Weight::Regular);
 
  private:
     /**

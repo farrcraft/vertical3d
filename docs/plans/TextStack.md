@@ -374,16 +374,29 @@ from a stroked glyph.
 
 ### Step 13 — The ui on text objects
 
-**Open.**
+**Closed.** ADR-0148 decided how the ui reaches text, after weighing an abstract text interface
+and callbacks that return paragraphs.
 
-- `api/ui` measures, wraps and draws through text objects. The `Measure` and `Write` callbacks
-  are removed.
-- A text field places its caret, moves it by grapheme cluster, and draws its selection through
-  its text object. An input method's composition is shaped and drawn in place.
-- `wrap()` is replaced by layout.
-- The editor and every demo move to the new path. Counters and frame rates use `tnum`.
-- The ui suites cover the text field through kerned and right-to-left text. The editor and each
-  demo are photographed.
+- `paint::Type` is a text renderer at one size and weight. The retained components, the
+  arranger, the menus and the editor measure, wrap and draw through one, and the immediate layer
+  through the screen's `TextRenderer`. The `Measure` and `Write` callbacks are gone.
+- `wrap()` is gone. A label's rows, and the immediate layer's wrapped text, break as a paragraph
+  lays them out, through `TextRenderer::rows()`, so a word wider than its row breaks at the edge.
+- `LineEdit` steps, erases and stands its caret at grapheme cluster edges, and keeps which
+  character the caret goes with from the way it moved. Its `layout()` lays the line out as a
+  paragraph and gives the caret, the selection's runs and the composition. The text box and the
+  immediate field draw and hit test through it, exactly through kerned and right to left text.
+- An input method's composition reaches the focused field from SDL's text editing events, and
+  is drawn at the caret, underlined, until it is typed in.
+- `Type::tabular()` sets the OpenType feature `tnum`. The editor's frame and frame rate, the
+  statistics overlay and a hud's lines are set in it.
+- `TextRenderer::trace()` tells a test each line drawn. The ui and editor suites draw through a
+  monospaced fixture face at ten pixels a character in `api/ui/tests/fonts/`, beside a Hebrew
+  face.
+- The line edit suite covers clusters, the caret's affinity, a composition, kerning and text
+  read right to left. The text box and field suites cover a composition drawn in place. The
+  editor and every demo were photographed, and pong's pause menu with its emphasis. The
+  validation layer was silent in each.
 
 ### Step 14 — Colour glyphs
 

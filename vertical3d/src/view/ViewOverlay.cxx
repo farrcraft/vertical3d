@@ -8,7 +8,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -61,13 +61,10 @@ constexpr std::string_view LETTERS[] = { "X", "Y", "Z" };
 /**
  * Draw an axis's letter centred on a point.
  **/
-void letter(std::size_t axis, const glm::vec2& at, const glm::vec4& colour, const OverlayLook& look,
-    const v3d::ui::paint::Measure& measure, const v3d::ui::paint::Write& write) {
+void letter(v3d::render::realtime::canvas::Canvas* canvas, std::size_t axis, const glm::vec2& at, const glm::vec4& colour, const OverlayLook& look,
+    const v3d::ui::paint::Type& type) {
     const std::string_view text = LETTERS[axis];
-    const float width = measure ? measure(text) : 0.0F;
-    if (write) {
-        write(text, glm::vec2(at.x - (width / 2.0F), at.y + (look.text * BASELINE)), colour);
-    }
+    type.draw(canvas, text, glm::vec2(at.x - (type.width(text) / 2.0F), at.y + (look.text * BASELINE)), colour);
 }
 
 };  // namespace
@@ -165,7 +162,7 @@ void lookAlong(v3d::type::camera::Camera* camera, const AxisEnd& end) {
 /**
  **/
 void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& view, const OverlayMetrics& metrics,
-    const OverlayLook& look, const v3d::ui::paint::Measure& measure, const v3d::ui::paint::Write& write,
+    const OverlayLook& look, const v3d::ui::paint::Type& type,
     const std::optional<glm::vec2>& cursor) {
     const glm::vec4& region = view.region();
     if (!view.camera() || region.z <= 0.0F || region.w <= 0.0F) {
@@ -180,7 +177,7 @@ void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& 
         const glm::vec2 out = end.point - marker;
         const float reach = glm::length(out);
         if (reach >= metrics.marker * END_ON) {
-            letter(end.axis, end.point + (out * (look.text * LETTER_GAP / reach)), colour, look, measure, write);
+            letter(canvas, end.axis, end.point + (out * (look.text * LETTER_GAP / reach)), colour, look, type);
         }
     }
 
@@ -199,7 +196,7 @@ void drawOverlay(v3d::render::realtime::canvas::Canvas* canvas, const ViewPort& 
         if (end.positive) {
             canvas->segment({ .from = centre, .to = end.point, .width = look.line }, colour);
             canvas->circle(end.point, metrics.ball, BALL_SIDES, colour);
-            letter(end.axis, end.point, look.label, look, measure, write);
+            letter(canvas, end.axis, end.point, look.label, look, type);
         } else {
             canvas->circle(end.point, metrics.ball, BALL_SIDES, glm::vec4(colour.r, colour.g, colour.b, colour.a * NEGATIVE_FILL));
             canvas->ring({ .centre = end.point, .outer = metrics.ball, .inner = metrics.ball - look.line, .sides = BALL_SIDES,

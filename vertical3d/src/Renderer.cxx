@@ -23,7 +23,6 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
-#include <api/ui/paint/TextRenderer.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
@@ -161,11 +160,6 @@ v3d::ui::paint::Type Renderer::type() const {
     return v3d::ui::paint::Type(screen_->text(), screen_->size());
 }
 
-/**
- **/
-v3d::ui::paint::Measure Renderer::measure() const {
-    return screen_->text()->measure(screen_->size());
-}
 
 /**
  **/
@@ -368,13 +362,12 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::Frame>& fra
         look.text *= factor;
         look.line = std::max(1.0F, std::round(look.line * factor));
         const view::OverlayMetrics metrics = overlay();
-        const v3d::ui::paint::Measure measure = screen_->text()->measure(look.text, v3d::ui::paint::Weight::SemiBold);
-        const v3d::ui::paint::Write write = screen_->text()->write(&canvas, look.text, v3d::ui::paint::Weight::SemiBold);
+        const v3d::ui::paint::Type type(screen_->text(), look.text, v3d::ui::paint::Weight::SemiBold);
         const glm::vec2& cursor = pointer_->cursor();
         for (const boost::shared_ptr<view::ViewPort>& view : views_->shown()) {
             const glm::vec4& region = view->region();
             const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
-            drawOverlay(&canvas, *view, metrics, look, measure, write, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
+            drawOverlay(&canvas, *view, metrics, look, type, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
         }
     }
     // the panels fill their areas, and the frame's corners and lines go over them
@@ -476,8 +469,9 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
 
     // the bar's text is a step smaller than the ui's, as secondary text is
     const float size = screen_->size() * STATUS_TEXT;
-    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
-    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+    const v3d::ui::paint::Type type(screen_->text(), size);
+    // the frame and the rate change as they are read, so their figures are all one width
+    const v3d::ui::paint::Type figures = type.tabular();
     const float middle = top + (dress.barHeight / 2.0F);
     const float baseline = middle + (size * BASELINE);
     // for each button: the key held with it on a chip, the mouse with the button lit, and what
@@ -485,10 +479,10 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     float x = left + dress.padding;
     for (const control::Status::Button& button : status_.buttons) {
         if (!button.modifier.empty()) {
-            const float chip = measure(button.modifier) + (dress.padding * STATUS_CHIP_INSET * 2.0F);
+            const float chip = type.width(button.modifier) + (dress.padding * STATUS_CHIP_INSET * 2.0F);
             v3d::ui::paint::fillBox(canvas, glm::vec2(x, middle - (size * STATUS_CHIP)), glm::vec2(x + chip, middle + (size * STATUS_CHIP)), dress.radius,
                 dress.widget);
-            write(button.modifier, glm::vec2(x + (dress.padding * STATUS_CHIP_INSET), baseline), dress.text);
+            type.draw(canvas, button.modifier, glm::vec2(x + (dress.padding * STATUS_CHIP_INSET), baseline), dress.text);
             x += chip + (size * STATUS_AFTER_CHIP);
         }
         const v3d::ui::Image mouse = icon(button.icon);
@@ -498,11 +492,11 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
                 mouse.texture);
             x += side + (size * STATUS_AFTER_ICON);
         } else {
-            write(button.name, glm::vec2(x, baseline), dress.secondaryText);
-            x += measure(button.name) + (size / 2.0F);
+            type.draw(canvas, button.name, glm::vec2(x, baseline), dress.secondaryText);
+            x += type.width(button.name) + (size / 2.0F);
         }
-        write(button.action, glm::vec2(x, baseline), dress.text);
-        x += measure(button.action) + dress.padding;
+        type.draw(canvas, button.action, glm::vec2(x, baseline), dress.text);
+        x += type.width(button.action) + dress.padding;
     }
 
     // the selection and the frame, then the frame rate in the colour of how it stands
@@ -515,10 +509,10 @@ void Renderer::drawStatus(v3d::render::realtime::canvas::Canvas* canvas) const {
     // the rate keeps a slot wider than it needs, so the text before it does not move as it changes
     float end = width - dress.padding;
     if (!status_.rate.empty()) {
-        write(status_.rate, glm::vec2(end - measure(status_.rate), baseline), healthColour(status_.health));
-        end -= control::StatusBar::rateRoom(measure, status_.rate) + measure(STATUS_GAP);
+        figures.draw(canvas, status_.rate, glm::vec2(end - figures.width(status_.rate), baseline), healthColour(status_.health));
+        end -= control::StatusBar::rateRoom(figures, status_.rate) + figures.width(STATUS_GAP);
     }
-    write(right, glm::vec2(end - measure(right), baseline), dress.secondaryText);
+    figures.draw(canvas, right, glm::vec2(end - figures.width(right), baseline), dress.secondaryText);
 }
 
 /**
@@ -529,11 +523,10 @@ void Renderer::drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas) {
     }
     const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
     const float size = screen_->size();
-    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
-    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+    const v3d::ui::paint::Type type(screen_->text(), size);
     float wide = 0.0F;
     for (const std::string_view line : control::DividerHint::LINES) {
-        wide = std::max(wide, measure(line));
+        wide = std::max(wide, type.width(line));
     }
     const glm::vec2 plate(wide + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(control::DividerHint::LINES.size())) + dress.padding);
     // beside the cursor, and kept on the canvas
@@ -546,7 +539,7 @@ void Renderer::drawDividerHint(v3d::render::realtime::canvas::Canvas* canvas) {
     v3d::ui::paint::plateBox(canvas, min, max, dress.radius, dress.borderWidth, { .inside = dress.panel, .outline = dress.border });
     float top = min.y + (dress.padding / 2.0F);
     for (std::size_t index = 0; index < control::DividerHint::LINES.size(); index++) {
-        write(control::DividerHint::LINES[index], glm::vec2(min.x + dress.padding, top + (dress.lineHeight / 2.0F) + (size * BASELINE)),
+        type.draw(canvas, control::DividerHint::LINES[index], glm::vec2(min.x + dress.padding, top + (dress.lineHeight / 2.0F) + (size * BASELINE)),
             index == 0 ? dress.text : dress.secondaryText);
         top += dress.lineHeight;
     }
@@ -586,8 +579,7 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     }
     const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
     const float size = screen_->size();
-    const v3d::ui::paint::Measure measure = screen_->text()->measure(size);
-    const v3d::ui::paint::Write write = screen_->text()->write(canvas, size);
+    const v3d::ui::paint::Type type(screen_->text(), size);
 
     // a mark for done or refused, the message, and how to undo a change that can be undone
     const v3d::ui::Image mark = icon(shown->done ? std::string(NOTICE_DONE) : std::string(NOTICE_REFUSED));
@@ -595,9 +587,9 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
     const float gap = size * NOTICE_GAP;
     const std::string keys = shown->undoable ? screen_->shortcut(v3d::event::Event(std::string(UNDO_COMMAND))) : std::string();
     const std::string hint = keys.empty() ? std::string() : keys + " to undo";
-    const float hintWidth = hint.empty() ? 0.0F : gap + measure(hint);
+    const float hintWidth = hint.empty() ? 0.0F : gap + type.width(hint);
     const float markWidth = side > 0.0F ? side + gap : 0.0F;
-    const glm::vec2 plate(markWidth + measure(shown->text) + hintWidth + (dress.padding * 2.0F), dress.barHeight);
+    const glm::vec2 plate(markWidth + type.width(shown->text) + hintWidth + (dress.padding * 2.0F), dress.barHeight);
     // centred on the area, and moved in from the edge of the areas when the area is narrower
     // than the plate
     const float margin = NOTICE_MARGIN * screen_->factor();
@@ -618,9 +610,9 @@ void Renderer::drawNotice(v3d::render::realtime::canvas::Canvas* canvas) {
             shown->done ? HEALTH_GOOD : HEALTH_POOR, mark.texture);
         pen += markWidth;
     }
-    write(shown->text, glm::vec2(pen, baseline), dress.text);
+    type.draw(canvas, shown->text, glm::vec2(pen, baseline), dress.text);
     if (!hint.empty()) {
-        write(hint, glm::vec2(pen + measure(shown->text) + gap, baseline), dress.secondaryText);
+        type.draw(canvas, hint, glm::vec2(pen + type.width(shown->text) + gap, baseline), dress.secondaryText);
     }
     canvas->unfade();
 }

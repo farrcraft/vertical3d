@@ -6,6 +6,8 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -198,21 +200,28 @@ BOOST_AUTO_TEST_CASE(a_camera_facing_away_turns_about_a_near_point) {
 BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     const OverlayMetrics metrics;
     const v3d::editor::view::OverlayLook look;
-    std::vector<std::string> letters;
-    const auto measure = [](std::string_view text) { return static_cast<float>(text.size()) * 6.0F; };
-    const auto write = [&letters](std::string_view text, const glm::vec2&, const glm::vec4&) { letters.emplace_back(text); };
+    std::vector<v3d::ui::typeset::Written> written;
+    const v3d::ui::paint::Type type = v3d::ui::typeset::body(&written);
+    const auto letters = [&written]() {
+        std::vector<std::string> found;
+        found.reserve(written.size());
+        for (const v3d::ui::typeset::Written& line : written) {
+            found.push_back(line.text);
+        }
+        return found;
+    };
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(420, 320));
     const ViewPort front = view(glm::vec3(0.0F, 0.0F, -10.0F), true);
-    v3d::editor::view::drawOverlay(&canvas, front, metrics, look, measure, write, std::nullopt);
-    BOOST_CHECK((letters == std::vector<std::string>{ "X", "Y" }) || (letters == std::vector<std::string>{ "Y", "X" }));
+    v3d::editor::view::drawOverlay(&canvas, front, metrics, look, type, std::nullopt);
+    BOOST_CHECK((letters() == std::vector<std::string>{ "X", "Y" }) || (letters() == std::vector<std::string>{ "Y", "X" }));
 
-    letters.clear();
+    written.clear();
     canvas.clear();
     const ViewPort perspective = view(glm::vec3(4.0F, 5.0F, -20.0F), false);
-    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, std::nullopt);
-    BOOST_CHECK_EQUAL(letters.size(), 6U);
+    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, type, std::nullopt);
+    BOOST_CHECK_EQUAL(letters().size(), 6U);
     const auto drawn = [&canvas](const glm::vec4& colour) {
         return std::ranges::any_of(canvas.vertices(), [&colour](const auto& vertex) { return vertex.colour == colour; });
     };
@@ -220,7 +229,7 @@ BOOST_AUTO_TEST_CASE(the_overlay_draws_the_marker_and_the_gizmo) {
     BOOST_CHECK(!drawn(look.hover));
 
     canvas.clear();
-    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, measure, write, v3d::editor::view::gizmoCentre(perspective.region(), metrics));
+    v3d::editor::view::drawOverlay(&canvas, perspective, metrics, look, type, v3d::editor::view::gizmoCentre(perspective.region(), metrics));
     BOOST_CHECK(drawn(look.hover));
     BOOST_CHECK(!drawn(look.rest));
 }

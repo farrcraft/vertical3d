@@ -7,6 +7,8 @@
 #include <api/brep/Index.h>
 #include <api/brep/Primitives.h>
 #include <api/log/Logger.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/StatusBar.h>
 #include <vertical3d/src/scene/Components.h>
 #include <vertical3d/src/scene/Light.h>
@@ -198,24 +200,18 @@ BOOST_AUTO_TEST_CASE(counts_and_rates_read_plainly) {
 }
 
 /**
- * The frame rate's slot is as wide as three of the widest digit, whatever the rate is now, and
- * grows only for a rate wider than that.
+ * The frame rate's slot is as wide as three digits, whatever the rate is now, and grows only for
+ * a rate wider than that.
  **/
 BOOST_AUTO_TEST_CASE(the_rates_slot_does_not_follow_the_rate) {
-    // an 8 is twice as wide as any other character
-    const auto measure = [](std::string_view text) {
-        float wide = 0.0F;
-        for (const char each : text) {
-            wide += each == '8' ? 20.0F : 10.0F;
-        }
-        return wide;
-    };
-    const float slot = StatusBar::rateRoom(measure, "9 fps");
-    BOOST_CHECK_EQUAL(slot, measure("888 fps"));
-    BOOST_CHECK_EQUAL(StatusBar::rateRoom(measure, "60 fps"), slot);
-    BOOST_CHECK_EQUAL(StatusBar::rateRoom(measure, "1111 fps"), slot);
-    BOOST_CHECK_EQUAL(StatusBar::rateRoom(measure, "8888 fps"), measure("8888 fps"));
-    BOOST_CHECK_EQUAL(StatusBar::rateRoom({}, "60 fps"), 0.0F);
+    const v3d::ui::paint::Type figures = v3d::ui::typeset::body().tabular();
+    const float slot = StatusBar::rateRoom(figures, "9 fps");
+    BOOST_CHECK_EQUAL(slot, figures.width("000 fps"));
+    BOOST_CHECK_EQUAL(StatusBar::rateRoom(figures, "60 fps"), slot);
+    BOOST_CHECK_EQUAL(StatusBar::rateRoom(figures, "111 fps"), slot);
+    BOOST_CHECK_EQUAL(StatusBar::rateRoom(figures, "888 fps"), slot);
+    BOOST_CHECK_GT(StatusBar::rateRoom(figures, "8888 fps"), slot);
+    BOOST_CHECK_EQUAL(StatusBar::rateRoom(v3d::ui::paint::Type(), "60 fps"), 0.0F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

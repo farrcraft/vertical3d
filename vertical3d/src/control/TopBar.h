@@ -7,7 +7,7 @@
 
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <string>
 #include <string_view>
@@ -50,9 +50,9 @@ class TopBar final {
 
     /**
      * @param before the container this one goes before
-     * @param measure how wide a string is at the size the ui is drawn
+     * @param type what the ui's text is drawn in, which sizes the bar's boxes
      **/
-    TopBar(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const v3d::ui::paint::Measure& measure);
+    TopBar(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const v3d::ui::paint::Type& type);
 
     /**
      * Build the container again if the workspaces changed, put it in a band of the window, and
@@ -98,7 +98,7 @@ class TopBar final {
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;
-    v3d::ui::paint::Measure measure_;
+    v3d::ui::paint::Type type_;
     // the workspaces the container was last built for
     std::vector<std::string> built_;
     bool added_ = false;

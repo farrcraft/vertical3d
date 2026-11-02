@@ -12,6 +12,7 @@
 #include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/tests/Typeset.h>
 
 #include <cmath>
@@ -150,7 +151,6 @@ BOOST_AUTO_TEST_CASE(semibold_text_is_set_in_its_own_face) {
     const float regular = text->width("Settings");
     const float semiBold = text->width("Settings", 0.0F, v3d::ui::paint::Weight::SemiBold);
     BOOST_CHECK_GT(semiBold, regular);
-    BOOST_CHECK_CLOSE(text->measure(0.0F, v3d::ui::paint::Weight::SemiBold)("Settings"), semiBold, 0.01F);
 }
 
 /**
@@ -279,6 +279,18 @@ BOOST_AUTO_TEST_CASE(a_trace_is_told_each_line_drawn) {
     BOOST_CHECK_EQUAL(written[0].pen.y, 100.0F);
     BOOST_CHECK_GT(written[1].pen.y, written[0].pen.y);
     BOOST_CHECK(written[1].colour == red);
+}
+
+/**
+ * In tabular figures every digit is one width, so a number that changes keeps its width, and
+ * the letters around it are set as they are.
+ **/
+BOOST_AUTO_TEST_CASE(tabular_figures_are_one_width) {
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer();
+    const v3d::ui::paint::Type figures = v3d::ui::paint::Type(text, 0.0F).tabular();
+    BOOST_CHECK_CLOSE(figures.width("111"), figures.width("888"), 0.01F);
+    BOOST_CHECK_CLOSE(figures.width("1"), figures.width("0"), 0.01F);
+    BOOST_CHECK_CLOSE(figures.width("fps"), text->width("fps"), 0.01F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

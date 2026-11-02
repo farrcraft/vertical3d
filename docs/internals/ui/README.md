@@ -36,7 +36,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::Dressing` | [paint/Dressing.h](../../../api/ui/paint/Dressing.h) | the plain struct of colours and metrics both ui models draw with, and the one set of defaults |
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
-| `paint::Measure`, `paint::Write`, `paint::Weight` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks the editor and the cursor still take, and a face's weight |
+| `paint::Weight` | [paint/Text.h](../../../api/ui/paint/Text.h) | a face's weight, and where a line's baseline sits |
 | `paint::Type`, `paint::Setting`, `paint::Emphasis` | [paint/Type.h](../../../api/ui/paint/Type.h) | a text renderer at one size and weight, which the retained ui measures and draws through, and the settings a centred menu sets apart |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, the glyph store, and the callbacks over them |
 | `paint::CurveText`, `paint::CurvePages` | [paint/CurveText.h](../../../api/ui/paint/CurveText.h) | text drawn from its curves, and the device's copy of the curve store |

@@ -140,11 +140,17 @@ void TextRenderer::trace(Trace trace) {
 /**
  **/
 float TextRenderer::width(std::string_view text, float size, Weight weight) const {
+    return width(text, style(size, weight));
+}
+
+/**
+ **/
+float TextRenderer::width(std::string_view text, const font::TextStyle& styled) const {
     if (!loaded() || text.empty()) {
         return 0.0F;
     }
     // the runs reach past the space at a line's end, which a caret placed after it needs
-    const font::Paragraph paragraph(shaping_, std::string(text), style(size, weight));
+    const font::Paragraph paragraph(shaping_, std::string(text), styled);
     float widest = 0.0F;
     for (const font::Line& line : paragraph.lines()) {
         float reach = 0.0F;
@@ -187,7 +193,16 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
     }
     font::TextStyle drawn = style(size, weight);
     drawn.colour = colour;
-    draw(canvas, font::Paragraph(shaping_, std::string(text), drawn), pen);
+    draw(canvas, text, pen, drawn);
+}
+
+/**
+ **/
+void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::TextStyle& styled) {
+    if (text.empty() || canvas == nullptr || !loaded()) {
+        return;
+    }
+    draw(canvas, font::Paragraph(shaping_, std::string(text), styled), pen);
 }
 
 /**
@@ -277,22 +292,6 @@ void TextRenderer::report(const font::Paragraph& paragraph, const font::Line& li
     const font::TextStyle& styled = paragraph.styleAt(line.start);
     trace_(Traced{ .text = std::string(shown), .pen = pen, .colour = styled.colour, .weight = weight(static_cast<float>(styled.face.weight)),
         .size = styled.size });
-}
-
-/**
- **/
-Measure TextRenderer::measure(float size, Weight weight) const {
-    return [this, size, weight](std::string_view text) -> float {
-        return width(text, size, weight);
-    };
-}
-
-/**
- **/
-Write TextRenderer::write(v3d::render::realtime::canvas::Canvas* canvas, float size, Weight weight) {
-    return [this, canvas, size, weight](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-        draw(canvas, text, pen, colour, size, weight);
-    };
 }
 
 };  // namespace v3d::ui::paint
