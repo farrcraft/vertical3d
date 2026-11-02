@@ -81,9 +81,16 @@ class TextRenderer {
     static const char* const emojiFont;
 
     /**
+     * The faces in the shared data directory that scripts the fallback lacks are drawn from, in
+     * the order they are tried. They cover Arabic, Hebrew, Devanagari, Thai, and Chinese,
+     * Japanese and Korean, and are used when the caller names no others.
+     **/
+    static const std::vector<std::string>& scriptFonts();
+
+    /**
      * The files a renderer loads its faces from, each resolved against the asset manager's
-     * path. An empty semibold draws semibold text in the regular face, and an empty fallback
-     * or emoji face leaves the code points it would draw to the faces before it.
+     * path. An empty semibold draws semibold text in the regular face, and an empty fallback,
+     * script or emoji face leaves the code points it would draw to the faces before it.
      **/
     struct Faces final {
         /**
@@ -94,6 +101,7 @@ class TextRenderer {
         std::string regular;
         std::string semiBold;
         std::string fallback;
+        std::vector<std::string> scripts;  /**< tried after the fallback and before the emoji face, in order **/
         std::string emoji;
     };
 

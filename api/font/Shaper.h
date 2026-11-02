@@ -43,6 +43,10 @@ class FallbackChain;
  * Each run is shaped at the coordinates Face::coordinates() finds in its face for the style,
  * the size and the variations, and holds them for its glyphs to be drawn at.
  *
+ * A language, as a BCP 47 tag, picks the forms a face draws for it through OpenType's language
+ * systems: Japanese and Chinese text in one CJK face take their own forms of a shared character.
+ * With none, each face's default forms are drawn.
+ *
  * Each run's embedding level is resolved as UAX #9 resolves it, and its direction is its level's,
  * so a number in an Arabic sentence is shaped left to right. Runs are in the string's order, and
  * a line puts them in visual order by their levels.
@@ -62,12 +66,14 @@ class Shaper final {
      * @param features turned on or off across the whole string. A tag that is not four letters
      *        is left out
      * @param variations set on each variable face's axes across the whole string
+     * @param language the BCP 47 tag of the string's language, or empty for none
      * @param base the direction each paragraph of the string is read in
      * @return its runs, or none for an empty string, a size that is not from 0 to LARGEST, or
      *         a chain with no faces
      **/
     std::vector<ShapedRun> shape(std::string_view utf8, const FaceStyle& style, float size,
-        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}, BaseDirection base = BaseDirection::Auto) const;
+        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}, std::string_view language = {},
+        BaseDirection base = BaseDirection::Auto) const;
 
     /**
      * Shape the bytes from one offset to another of a UTF-8 string, with the levels of the whole
@@ -79,7 +85,7 @@ class Shaper final {
      *         that is not from 0 to LARGEST, or a chain with no faces
      **/
     std::vector<ShapedRun> shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
-        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}) const;
+        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}, std::string_view language = {}) const;
 
  private:
     boost::shared_ptr<FallbackChain> chain_;

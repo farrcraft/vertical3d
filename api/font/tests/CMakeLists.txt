@@ -8,6 +8,7 @@ v3d_add_test(font
 	"FieldTest.cxx"
 	"GlyphStoreTest.cxx"
 	"ParagraphTest.cxx"
+	"ScriptTest.cxx"
 	"SegmenterTest.cxx"
 	"ShaperTest.cxx"
 	"TextureFontCacheTest.cxx"

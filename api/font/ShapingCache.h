@@ -57,7 +57,8 @@ class ShapingCache final {
     static constexpr std::size_t CAPACITY = 256;
 
     /**
-     * @param locale the BCP 47 language tag whose rules divide words and lines
+     * @param locale the BCP 47 language tag whose rules divide words and lines, and the language
+     *        text is shaped in when its style names none
      **/
     ShapingCache(const std::string& locale, const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t capacity = CAPACITY);
 
@@ -86,6 +87,7 @@ class ShapingCache final {
     };
 
     Segmenter segmenter_;
+    std::string locale_;
     std::size_t capacity_;
     std::size_t shaped_ = 0;
     std::list<std::string> order_;  // keys, most recently used first

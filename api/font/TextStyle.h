@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "Bidi.h"
@@ -39,7 +40,8 @@ struct TextEffect final {
 /**
  * How a stretch of text is shaped and drawn.
  *
- * The fonts, the face style, the size, the features and the variations decide its glyphs. A
+ * The fonts, the face style, the size, the features, the variations and the language decide its
+ * glyphs. A
  * variable face's weight axis follows the face style's weight and its optical size axis the
  * size, unless a variation sets them. The colour, the decorations, the effects and the contrast
  * only decide how they are drawn, so text that changes only those is not shaped again.
@@ -55,6 +57,7 @@ struct TextStyle final {
     float size = DEFAULT_SIZE;          /**< in pixels **/
     std::vector<Feature> features;
     std::vector<Variation> variations;  /**< set on each variable face's axes, in this order **/
+    std::string language;               /**< a BCP 47 tag, such as "ja", that picks a face's forms for the language. Empty is the shaping cache's locale **/
     glm::vec4 colour{ 1.0F };
     bool underline = false;
     bool strikethrough = false;

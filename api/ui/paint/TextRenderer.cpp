@@ -66,6 +66,14 @@ const char* const TextRenderer::semiBoldFont = "fonts/Inter-SemiBold.ttf";
 const char* const TextRenderer::fallbackFont = "fonts/NotoSans-Regular.ttf";
 const char* const TextRenderer::emojiFont = "fonts/NotoColorEmoji.ttf";
 
+/**
+ **/
+const std::vector<std::string>& TextRenderer::scriptFonts() {
+    static const std::vector<std::string> fonts{ "fonts/NotoSansArabic.ttf", "fonts/NotoSansHebrew.ttf", "fonts/NotoSansDevanagari.ttf",
+        "fonts/NotoSansThai.ttf", "fonts/NotoSansCJKsc-Regular.otf" };
+    return fonts;
+}
+
 const float TextRenderer::baseSize = 48.0F;
 
 /**
@@ -74,6 +82,7 @@ TextRenderer::Faces::Faces() :
 regular(defaultFont),
 semiBold(semiBoldFont),
 fallback(fallbackFont),
+scripts(scriptFonts()),
 emoji(emojiFont) {
 }
 
@@ -94,8 +103,8 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     const auto open = [&](const std::string& file) {
         return file.empty() ? boost::shared_ptr<font::Face>() : font::Face::open(library, assetManager->path(file), logger);
     };
-    // the regular and semibold faces are one family, and the fallback and the emoji the next in
-    // the chain
+    // the regular and semibold faces are one family, and the fallback, each script face and the
+    // emoji the next in the chain
     const boost::shared_ptr<font::Family> primary = boost::make_shared<font::Family>("primary");
     primary->add(open(faces.regular));
     primary->add(open(faces.semiBold));
@@ -103,6 +112,15 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     fallback->add(open(faces.fallback));
     if (!faces.fallback.empty() && fallback->empty()) {
         logger->get()->warn("{} could not be loaded, so a character the faces lack draws as their missing glyph", faces.fallback);
+    }
+    std::vector<boost::shared_ptr<font::Family>> scripts;
+    for (const std::string& file : faces.scripts) {
+        const boost::shared_ptr<font::Family> script = boost::make_shared<font::Family>(file);
+        script->add(open(file));
+        if (!file.empty() && script->empty()) {
+            logger->get()->warn("{} could not be loaded, so a character only it has draws as the faces' missing glyph", file);
+        }
+        scripts.push_back(script);
     }
     const boost::shared_ptr<font::Family> emoji = boost::make_shared<font::Family>("emoji");
     emoji->add(open(faces.emoji));
@@ -116,6 +134,9 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     chain_ = boost::make_shared<font::FallbackChain>();
     chain_->add(primary);
     chain_->add(fallback);
+    for (const boost::shared_ptr<font::Family>& script : scripts) {
+        chain_->add(script);
+    }
     chain_->add(emoji);
 }
 

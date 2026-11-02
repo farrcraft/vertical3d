@@ -88,13 +88,25 @@ The faces are in the shared data directory:
 | Regular | `fonts/Inter-Regular.ttf` | all text, unless a role asks for semibold |
 | SemiBold | `fonts/Inter-SemiBold.ttf` | a role whose weight is semibold, such as a window's title |
 | Fallback | `fonts/NotoSans-Regular.ttf` | a character the two Inter faces lack, in either weight |
+| Arabic | `fonts/NotoSansArabic.ttf` | Arabic script, which Noto Sans lacks |
+| Hebrew | `fonts/NotoSansHebrew.ttf` | Hebrew |
+| Devanagari | `fonts/NotoSansDevanagari.ttf` | Devanagari |
+| Thai | `fonts/NotoSansThai.ttf` | Thai |
+| CJK | `fonts/NotoSansCJKsc-Regular.otf` | Chinese, Japanese kana and Korean Hangul, in every region's forms |
 | Emoji | `fonts/NotoColorEmoji.ttf` | an emoji, in colour, from Noto Color Emoji's COLR version 1 build |
 
-`TextRenderer::Faces` names other files. A semibold face that cannot be loaded sets semibold text
-in the regular face, and a fallback or an emoji face that cannot be loaded leaves the missing
-glyph in place. Each is logged. Each face's licence is beside it in `fonts/`.
+The faces are tried in the table's order. The four script faces are variable, so their weight
+follows the text's. `TextRenderer::Faces` names other files, its `scripts` in the order they are
+tried, and `scriptFonts()` gives the default list. A semibold face that cannot be loaded sets
+semibold text in the regular face, and a fallback, script or emoji face that cannot be loaded
+leaves the missing glyph in place. Each is logged. Each face's licence is beside it in `fonts/`.
 
-Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md)
+A Han character is drawn in the forms of the text's language: the style's `language`, or the
+renderer's shaping cache's locale when the style names none. With neither, it takes the CJK
+face's Simplified Chinese forms.
+
+Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md),
+[ADR-0151](../../adr/0151-ui-noto-faces-for-each-script-in-the-tree.md)
 
 Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::Paragraph`. Any character
 the faces have is drawn, with no set of glyphs named up front: a glyph is rasterized the first

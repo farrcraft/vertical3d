@@ -73,6 +73,7 @@ std::string keyOf(std::string_view text, const std::vector<StyledRange>& ranges,
         for (const Variation& variation : style.variations) {
             key += ',' + variation.tag + ':' + std::to_string(std::bit_cast<std::uint32_t>(variation.value));
         }
+        key += ',' + style.language;
     }
     return key;
 }
@@ -81,6 +82,7 @@ std::string keyOf(std::string_view text, const std::vector<StyledRange>& ranges,
 
 ShapingCache::ShapingCache(const std::string& locale, const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t capacity) :
     segmenter_(locale, logger),
+    locale_(locale),
     capacity_(capacity > 0 ? capacity : 1) {
 }
 
@@ -98,7 +100,7 @@ boost::shared_ptr<const ShapedText> ShapingCache::shape(std::string_view text, c
         const StyledRange& styled = joined[range];
         const Shaper shaper(styled.style.fonts);
         for (ShapedRun& run : shaper.shape(made->text, styled.start, styled.end, made->bidi, styled.style.face, styled.style.size, styled.style.features,
-            styled.style.variations)) {
+            styled.style.variations, styled.style.language.empty() ? std::string_view(locale_) : std::string_view(styled.style.language))) {
             made->runs.push_back(std::move(run));
             made->runRanges.push_back(range);
         }

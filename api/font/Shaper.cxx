@@ -187,15 +187,25 @@ const std::vector<std::int32_t>& coordinatesOf(const Face& face, const FaceStyle
 }
 
 /**
+ * @return a BCP 47 tag as HarfBuzz takes it, or none for an empty tag
+ **/
+hb_language_t languageOf(std::string_view tag) {
+    return tag.empty() ? HB_LANGUAGE_INVALID : hb_language_from_string(tag.data(), static_cast<int>(tag.size()));
+}
+
+/**
  * Shape one run in place, filling its glyphs and its advance.
  **/
-void shapeRun(std::string_view utf8, hb_script_t script, float size, const std::vector<hb_feature_t>& features, ShapedRun* run) {
+void shapeRun(std::string_view utf8, hb_script_t script, hb_language_t language, float size, const std::vector<hb_feature_t>& features, ShapedRun* run) {
     const hb_direction_t direction = run->direction == ShapedRun::Direction::RightToLeft ? HB_DIRECTION_RTL : HB_DIRECTION_LTR;
     const std::unique_ptr<hb_buffer_t, decltype(&hb_buffer_destroy)> buffer(hb_buffer_create(), &hb_buffer_destroy);
     // the whole string is the context, so a run is shaped knowing what is either side of it
     hb_buffer_add_utf8(buffer.get(), utf8.data(), static_cast<int>(utf8.size()), static_cast<unsigned int>(run->start),
         static_cast<int>(run->end - run->start));
     hb_buffer_set_script(buffer.get(), script);
+    if (language != HB_LANGUAGE_INVALID) {
+        hb_buffer_set_language(buffer.get(), language);
+    }
     hb_buffer_set_direction(buffer.get(), direction);
     hb_buffer_set_cluster_level(buffer.get(), HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
     run->script = named(script);
@@ -231,15 +241,15 @@ Shaper::Shaper(const boost::shared_ptr<FallbackChain>& chain) :
 }
 
 std::vector<ShapedRun> Shaper::shape(std::string_view utf8, const FaceStyle& style, float size, const std::vector<Feature>& features,
-    const std::vector<Variation>& variations, BaseDirection base) const {
+    const std::vector<Variation>& variations, std::string_view language, BaseDirection base) const {
     if (utf8.size() > static_cast<std::size_t>(INT_MAX)) {
         return {};
     }
-    return shape(utf8, 0, utf8.size(), Bidi(utf8, base), style, size, features, variations);
+    return shape(utf8, 0, utf8.size(), Bidi(utf8, base), style, size, features, variations, language);
 }
 
 std::vector<ShapedRun> Shaper::shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
-    const std::vector<Feature>& features, const std::vector<Variation>& variations) const {
+    const std::vector<Feature>& features, const std::vector<Variation>& variations, std::string_view language) const {
     std::vector<ShapedRun> runs;
     if (!chain_ || from >= to || to > utf8.size() || utf8.size() > static_cast<std::size_t>(INT_MAX) || !std::isfinite(size) || size <= 0.0F ||
         size > LARGEST) {
@@ -282,11 +292,12 @@ std::vector<ShapedRun> Shaper::shape(std::string_view utf8, std::size_t from, st
     }
 
     const std::vector<hb_feature_t> settings = settingsOf(features);
+    const hb_language_t tagged = languageOf(language);
     std::map<const Face*, std::vector<std::int32_t>> coordinates;
     for (std::size_t run = 0; run < runs.size(); run++) {
         runs[run].coordinates = coordinatesOf(*runs[run].face, style, size, variations, &coordinates);
         // text with no script at all, such as digits and spaces alone, is shaped as Latin
-        shapeRun(utf8, neutral(scripts[run]) ? HB_SCRIPT_LATIN : scripts[run], size, settings, &runs[run]);
+        shapeRun(utf8, neutral(scripts[run]) ? HB_SCRIPT_LATIN : scripts[run], tagged, size, settings, &runs[run]);
     }
     return runs;
 }

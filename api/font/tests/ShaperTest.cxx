@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(a_number_in_arabic_is_shaped_left_to_right) {
     BOOST_CHECK_EQUAL(static_cast<int>(shaped[1].level), 2);
     BOOST_CHECK(shaped[2].direction == v3d::font::ShapedRun::Direction::RightToLeft);
     // in a paragraph read right to left, Latin is at level 2
-    const std::vector<v3d::font::ShapedRun> forced = shaper.shape("abc", {}, kSize, {}, {}, v3d::font::BaseDirection::RightToLeft);
+    const std::vector<v3d::font::ShapedRun> forced = shaper.shape("abc", {}, kSize, {}, {}, {}, v3d::font::BaseDirection::RightToLeft);
     BOOST_REQUIRE_EQUAL(forced.size(), 1U);
     BOOST_CHECK_EQUAL(static_cast<int>(forced.front().level), 2);
 }

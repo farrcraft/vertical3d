@@ -75,15 +75,16 @@ is drawn at one point on each axis.
 Text is shaped by HarfBuzz, over the faces a `FallbackChain` holds. Shaping applies a font's
 kerning, mark positioning, ligatures and contextual forms, and any OpenType feature asked for.
 
-- **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features, variations)`**
-  shapes a UTF-8 string at a `FaceStyle` and a size in pixels, with a variable face's axes set
-  as [Variable fonts](#variable-fonts) describes, and returns its runs in the string's order.
+- **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features, variations,
+  language)`** shapes a UTF-8 string at a `FaceStyle` and a size in pixels, with a variable
+  face's axes set as [Variable fonts](#variable-fonts) describes, and returns its runs in the
+  string's order.
   An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain with no
   faces gives no runs.
-- **`shape(utf8, from, to, bidi, style, size, features, variations)`** shapes only the bytes
-  from one offset to another, with a `Bidi` resolved over the whole string. The rest of the
-  string is the context, so the characters either side shape the range's edges as they would
-  inside one run. A paragraph shapes each of its style ranges this way.
+- **`shape(utf8, from, to, bidi, style, size, features, variations, language)`** shapes only
+  the bytes from one offset to another, with a `Bidi` resolved over the whole string. The rest
+  of the string is the context, so the characters either side shape the range's edges as they
+  would inside one run. A paragraph shapes each of its style ranges this way.
 - **Clusters.** A string is split a cluster at a time. A cluster is a character with the marks,
   joiners, variation selectors and emoji modifiers after it, a character a zero width joiner
   joins to it, or a pair of regional indicators, which is a flag. A cluster asks for emoji when
@@ -112,6 +113,10 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   from. Every measure is in pixels at the size shaped, with y growing downwards. A combining
   mark takes no advance, and keeps its own character's cluster.
 - Advances come from the face's metrics, unhinted, so they match a distance field glyph's.
+- **Language.** The language is a BCP 47 tag, such as `"ja"`, or empty for none. It picks the
+  forms a face draws for that language through OpenType's language systems, so Japanese and
+  Chinese text set in one CJK face each take their own form of a shared character. With none,
+  each face draws its default forms.
 - **`Feature`** turns an OpenType feature on or off across the whole string: `{ "tnum" }` for
   tabular figures, `{ "kern", 0 }` for no kerning. A feature that chooses among alternates takes
   the alternate's number as its value. A tag that is not four letters is left out.
@@ -183,11 +188,12 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 **Styles.**
 
 - **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
-  `size` in pixels, the OpenType `features`, the `variations` of a variable face's axes, and the
-  `colour`. It also says whether it has an
-  `underline` or a `strikethrough`, and lists the `effects` drawn beneath it, as
+  `size` in pixels, the OpenType `features`, the `variations` of a variable face's axes, the
+  `language` as a BCP 47 tag, and the `colour`. An empty language is the shaping cache's
+  locale. It also says whether it has an `underline` or a `strikethrough`, and lists the
+  `effects` drawn beneath it, as
   [effect fields](#effect-fields) describes. Its `contrast`, from 0 to 1, strengthens the
-  glyphs' coverage, as light text on a dark ground needs. The first five decide the glyphs;
+  glyphs' coverage, as light text on a dark ground needs. The first six decide the glyphs;
   `shapesLike()` compares those alone. The colour, the decorations, the effects and the contrast
   only decide how the glyphs are drawn.
 - **`ParagraphStyle`** names the `direction` each paragraph is read in, the `alignment`, and
@@ -215,7 +221,8 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 | A style that shapes differently, the text, or the direction | Through the cache | Yes |
 
 **The shaping cache.** Every paragraph of an app shares one `ShapingCache`, made with the
-locale whose rules divide words and lines. It keeps the `ShapedText` of the texts most recently
+locale whose rules divide words and lines, which is also the language of text whose style names
+none. It keeps the `ShapedText` of the texts most recently
 used: the string, its levels, its shaped runs, its clusters and its line breaks. A text is found
 by its string, its direction and its ranges as they shape, with adjacent ranges that shape alike
 taken as one. Text built again each frame, as immediate mode builds it, is found rather than

@@ -42,7 +42,6 @@ away. The callback needs the run's active hits, so it casts rays for those alone
 [] **Two things need a window or a sound card to test:** `Feature::Window`, and whether
 `audio::Player` is audible. SDL's dummy audio driver tests what the mixer is told, not what is
 heard. A software Vulkan driver does not help with either.
-`ui::TextRenderer`'s atlas upload needs a device, which the `render_device` suite could give it.
 
 [] **Some rendering cannot be checked against a reference picture.** A reference image may hold
 only what the Vulkan specification determines exactly. Blending, filtered sampling, multisampling

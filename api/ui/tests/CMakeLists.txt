@@ -76,3 +76,22 @@ add_custom_command(TARGET v3dtest_ui POST_BUILD
 		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
 	COMMENT "Copying ui test fonts"
 	VERBATIM)
+
+# The cases that draw text on a device, through the render device suite's headless device. Where
+# there is no device the binary exits with 77, which ctest reports as a skip.
+v3d_add_test(ui_device
+	"device/TestMain.cpp"
+	"device/ScriptTextTest.cpp"
+
+	"../../render/tests/device/Headless.cpp")
+
+target_link_libraries(v3dtest_ui_device PRIVATE
+	v3dlib_ui
+	v3dlib_render
+	v3dlib_image
+	v3dlib_asset
+	v3dlib_log)
+set_tests_properties(ui_device PROPERTIES SKIP_RETURN_CODE 77)
+
+# The text is drawn from the faces in the shared data directory.
+v3d_add_shared_data(v3dtest_ui_device)

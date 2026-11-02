@@ -7,13 +7,13 @@ pixel grid is rasterized at its exact size with hinting. Text that is scaled, tu
 in the world is drawn from the glyphs' curves. The editor and the games hold one kind of text
 object, which measures, draws, places a caret and hit tests.
 
-The text library is described in [Fonts.md](../api/Fonts.md), the ui's use of it in
-[api/ui/](../api/ui/README.md), and the quad shader in
-[Canvas.md](../api/rendering/Canvas.md#text).
+The text library is described in [Fonts.md](../../api/Fonts.md), the ui's use of it in
+[api/ui/](../../api/ui/README.md), and the quad shader in
+[Canvas.md](../../api/rendering/Canvas.md#text).
 
 A step with a testable CPU half brings test cases with it. A step that changes how text looks
 is checked by running the editor and a game and reading a magnified screenshot, as
-[Testing.md](../contributing/Testing.md) describes.
+[Testing.md](../../contributing/Testing.md) describes.
 
 ## What the survey found
 
@@ -115,6 +115,7 @@ features, the variable font axes, the decorations, and the effects.
 | Text: how coverage is blended. Decided by ADR-0147: corrected to blend as in display space, with a contrast curve. | 12 |
 | Text: which colour glyph formats are read. Decided by ADR-0149, amending ADR-0145: all five, COLR and SVG drawn both ways. | 14 |
 | Text: how SVG glyphs are read. Decided by ADR-0150: ThorVG. | 14 |
+| UI: which faces cover the other scripts. Decided by ADR-0151, amending ADR-0129: Noto faces for each script, and Noto Sans CJK with every region's forms, shipped in the tree. | 16 |
 
 Each decision is researched against how established tools answer it before it is drafted as an
 ADR.
@@ -454,9 +455,47 @@ COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
 
 ### Step 16 — Scripts covered by the shipped fonts
 
-**Open.**
+**Closed.** ADR-0151 decided the faces, amending ADR-0129, after weighing the system's fonts,
+faces each app supplies, and one region's CJK subset.
 
-- The fallback chain ships faces for Arabic, Hebrew, Devanagari, Thai and CJK, under licences
-  the tree can carry.
-- The shaping suite covers an Arabic word joined and a Devanagari syllable reordered.
-- The device suite compares a line of each script against a reference image.
+- The shared data carries Noto Sans Arabic, Hebrew, Devanagari and Thai, each variable, and
+  Noto Sans CJK in the build with every region's forms, each with its OFL licence.
+  `TextRenderer::Faces` lists them as `scripts`, tried after Noto Sans and before the emoji face.
+- A `TextStyle` names a `language` as a BCP 47 tag, and the shaping cache's locale stands in
+  when it names none. The shaper sets it on HarfBuzz's buffer, so a Han character takes the
+  language's form from the one CJK face.
+- A reference image was planned for each script, but ADR-0054 allows none for antialiased text.
+  The ui's new device suite, `ui_device`, draws a line of each script through the text renderer
+  and its glyph pages, with the validation layer silent, and checks that every glyph's quad
+  holds ink. CI runs it and fails it on a skip.
+- The script suite covers an Arabic word joined, a Devanagari syllable reordered, Hebrew and
+  Thai each in its face with a Thai mark taking no advance, and kana, Hangul and Han in the CJK
+  face. It also covers a language picking a Han character's form, through the shaper and through
+  a paragraph's style and the cache's locale.
+- The device suite's picture was magnified and read, and pong's menu was photographed with its
+  labels in every script, Arabic and Hebrew reordered as one right to left line. The validation
+  layer was silent.
+
+## Outcome
+
+Closed 2026-11-02.
+
+**Delivered.** Text is shaped by HarfBuzz over a fallback chain of faces held open, segmented and
+reordered through ICU, and laid out as a `font::Paragraph` that answers its size, carets, hits and
+selections. On the pixel grid it is rasterized at its exact size with vertical hinting into glyph
+pages updated in place. Scaled, turned or in the world it is drawn from its curves. Effects come
+from distance fields, coverage is blended as in display space, and colour glyphs are read from
+all five formats. Variable fonts follow a style's weight, size and axes. The ui, the editor and
+the games hold paragraphs from one text renderer, whose faces cover Arabic, Hebrew, Devanagari,
+Thai and CJK as well as Latin.
+
+**What differed from the plan.** Each step records its own differences. The largest were these:
+
+- Step 11 draws effects from a distance field, decided in ADR-0146, amending ADR-0145's two
+  ways of drawing a glyph.
+- Step 15 also set the optical size axis from the text's size, as CSS does.
+- Step 16 checks each script with chosen pixels rather than a reference image, as ADR-0054
+  requires, and added a text language to pick CJK forms.
+
+**Left open.** Nothing in the code. Scripts beyond those shipped, such as Bengali, Tamil or
+Ethiopic, draw as missing glyphs until a face is added.

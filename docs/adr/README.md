@@ -105,11 +105,12 @@ content went. Numbers are never reused.
 | [0059](0059-ui-enabled-is-an-inherited-flag.md) | UI: enabled is an inherited flag | accepted |
 | 0074 | *Not a decision. Now in docs/api/ui/Setup.md and api/ui/shell/Screen.h* | removed |
 | [0128](0128-ui-theme-colours-derive-from-base-accent-and-contrast.md) | UI: theme colours derive from base, accent and contrast | accepted |
-| [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | accepted |
+| [0129](0129-ui-inter-in-two-weights-noto-sans-as-fallback.md) | UI: Inter in two weights, Noto Sans as fallback | amended by 0151 |
 | [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
 | [0131](0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted |
 | [0132](0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted |
 | [0148](0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted |
+| [0151](0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree | accepted |
 
 ## Engine, input and assets
 

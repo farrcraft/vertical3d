@@ -1,7 +1,8 @@
 # ADR-0129: UI: Inter in two weights, Noto Sans as fallback
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-30
+**Amended by**: [ADR-0151](0151-ui-noto-faces-for-each-script-in-the-tree.md)
 **Documented in**: [api/ui/README.md](../api/ui/README.md#text-is-supplied-by-the-app)
 
 ## Context

@@ -22,7 +22,6 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 | Plan | Area | What it delivers |
 |---|---|---|
-| [TextStack](TextStack.md) | Text, UI, realtime rendering, editor, demos | Text shaped by OpenType's rules, laid out in lines in any direction, rasterized at its exact size on the pixel grid or drawn from its curves elsewhere, with effects, colour glyphs and variable fonts, held by the ui and games as one text object |
 | [EditorFinish](EditorFinish.md) | Editor, UI | The editor's views, headers, outliner, properties, status bar and notices as designed; a timeline, graph editor, console, render view and render settings as area editors; and the Animation, Shading and Rendering workspaces |
 
 ## Completed plans
@@ -31,6 +30,7 @@ Newest first.
 
 | Plan | Area | Closed | What it delivered |
 |---|---|---|---|
+| [TextStack](completed/TextStack.md) | Text, UI, realtime rendering, editor, demos | 2026-11-02 | Text shaped by OpenType's rules, laid out in lines in any direction, rasterized at its exact size on the pixel grid or drawn from its curves elsewhere, with effects, colour glyphs and variable fonts, held by the ui and games as one text object |
 | [UiPolish](completed/UiPolish.md) | UI, shell, editor, demos | 2026-10-31 | A theme derived from a few colours, Inter at two weights, display scaling, shadows, transitions and tooltips; an editor of tiled areas holding editors as tabs, with a status bar and command search; and a titled game menu with settings and HUD text in each game's accent |
 | [EditorScene](completed/EditorScene.md) | Editor, brep, curve, interchange, moya | 2026-10-27 | Cameras, lights, groups and curves in the scene, a SQLite project store with autosave, shaded views, glTF and USD import, rendering with moya, keyed playback, and curve points and handles edited through the manipulators |
 | [Reshaping](completed/Reshaping.md) | All of the tree, documents | 2026-10-27 | `RenderContext` as a facade, an engine without Vulkan, an editor document layer, library boundaries redrawn, the demos in `demos/` with a lit one, and each reference fact in one place |
