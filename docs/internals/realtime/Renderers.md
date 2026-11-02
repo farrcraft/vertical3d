@@ -18,7 +18,7 @@ colour and depth formats they draw into, and each of them compiles a variant per
 
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|
-| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour); untextured quads sample white; `text` push flag selects the distance-field branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
+| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
 | `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
@@ -28,9 +28,16 @@ colour and depth formats they draw into, and each of them compiles a variant per
 `depthFormat()`. `Quad` is lazy too, because `WindowContext` has no format until the
 swapchain exists.
 
-**Quad text.** A batch carries a text flag, and `Canvas` never merges across it. The fragment
-shader thresholds a text batch's sampled distance at 0.5 with `smoothstep`, using `fwidth` for a
-one-pixel edge at any scale. Other batches return `colour * texel`.
+**Quad text.** A batch carries a text flag and a bands texture, and `Canvas` never merges across
+either. The push constant's `text` value says how the fragment stage draws the batch:
+
+- `PICTURE` returns `colour * texel`.
+- `DISTANCE` thresholds the sampled distance at 0.5, with `fwidth` for a one-pixel edge at any
+  scale.
+- `CURVES` finds the coverage from the glyph's curves. The batch's `texture` is the slot of its
+  curves and `bands` the slot of its bands. A vertex's uv is the sample's place in em units, and
+  its `glyph` is where the glyph's bands start, passed to the fragment stage flat. Both textures
+  are float textures, read with `texelFetch`.
 
 **Lit front faces are clockwise by default.** A model is wound counter-clockwise seen from
 outside, and the cameras in `api/type` flip y into Vulkan clip space. A camera on

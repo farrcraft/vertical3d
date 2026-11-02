@@ -103,6 +103,7 @@ void Quad::createPipelines(const vulkan::pipeline::Formats & formats) {
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, position)})
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, uv)})
         .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, colour)})
+        .vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R32_UINT, .offset = offsetof(canvas::Canvas::Vertex, glyph)})
         // nothing 2D has a back face worth culling, and not culling means a caller cannot
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)
@@ -163,7 +164,13 @@ void Quad::submit(const canvas::Canvas& canvas, Pass* pass, uint16_t layer) {
         if (pipeline != nullptr && pipeline->pushStages != 0) {
             Push constants;
             constants.projection = projection;
-            constants.text = batch.text ? 1U : 0U;
+            // a run with bands draws curves, and the shader takes the curves from its texture
+            if (batch.bands.valid()) {
+                constants.text = CURVES;
+                constants.bands = textures_->slot(batch.bands);
+            } else {
+                constants.text = batch.text ? DISTANCE : PICTURE;
+            }
             // an unset texture is the untextured case, drawn against white
             constants.texture = textures_->slot(batch.texture);
             std::memcpy(item.push.data(), &constants, sizeof(constants));

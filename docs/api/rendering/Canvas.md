@@ -111,6 +111,14 @@ single-channel glyph page. The page's view swizzles its channel into alpha, so t
 ordinary textured path multiplies the coverage into the colour. `render` does not depend on
 `font`.
 
+`Canvas::curves(vertices, indices, curves, bands)` copies glyphs drawn from their quadratic curves,
+as vertices and the triangles over them. Each vertex's `uv` is its place in em units, y upwards,
+and its `glyph` is where its glyph's data starts among the bands. `curves` and `bands` are float
+textures holding the curves and each glyph's bands, laid out as `api/render/shaders/curves.glsl`
+describes. The quad shader finds each pixel's coverage from the curves that cross it, so the
+glyphs stay sharp at any size and under any transform. A curve run never merges with one drawn
+another way.
+
 `Canvas::text(vertices, indices, atlas)` copies text that has already been laid out against an
 atlas of signed distances, as vertices and the triangles over them. The quad shader turns the
 distance into a smooth edge about one pixel wide at any scale. Text and other quads that sample

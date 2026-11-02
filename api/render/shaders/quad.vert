@@ -12,9 +12,12 @@
 layout(location = 0) in vec2 position;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 colour;
+layout(location = 3) in uint glyph;
 
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
+// where a curve glyph's bands start, the same at every corner of its quad
+layout(location = 2) flat out uint fragmentGlyph;
 
 // per object data. text is used by the fragment stage, and is declared here because one push
 // range covers both stages
@@ -27,4 +30,5 @@ void main() {
     gl_Position = push.projection * vec4(position, 0.0, 1.0);
     fragmentUv = uv;
     fragmentColour = colour;
+    fragmentGlyph = glyph;
 }

@@ -60,6 +60,12 @@ filled or replaced later moves to another slot. A shader declares the array as
 draw, such as one read per instance, is wrapped in `nonuniformEXT()`. An unset or released
 handle's slot is the white texture's.
 
+- **A float texture holds data rather than a picture.** `texture(texels)` takes four 32 bit floats
+  a texel, as `TextureFactory::Texels`, and makes a texture a shader reads as stored with
+  `texelFetch`, through a sampler that filters nothing. `update(handle, at, texels)` copies floats
+  into a region of one, as an update of pixels does, and refuses a texture not made from floats.
+  The curves text is drawn from are kept this way.
+
 ## Meshes and the mesh registry
 
 `MeshRegistry` turns a model into GPU buffers once and hands back a `MeshHandle`. A hundred props

@@ -25,6 +25,15 @@
 
 namespace v3d::render::realtime::vulkan::memory {
 
+namespace {
+
+/**
+ * The bytes of a texel of four 32 bit floats.
+ **/
+constexpr VkDeviceSize FLOAT_TEXEL_BYTES = 4 * sizeof(float);
+
+};  // namespace
+
 /**
  **/
 TextureFactory::TextureFactory(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader) :
@@ -144,11 +153,66 @@ bool TextureFactory::fits(const Image& image, const Pixels& source, uint32_t x, 
     const Image::Spec& spec = image.spec();
     const bool texture = spec.depth <= 1 && spec.aspect == VK_IMAGE_ASPECT_COLOR_BIT && (spec.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) != 0;
     const bool coverage = spec.format == VK_FORMAT_R8_UNORM;
-    const bool channels = coverage ? source.channels == 1 : (source.channels == 3 || source.channels == 4);
+    const bool colour = spec.format == VK_FORMAT_R8G8B8A8_UNORM || spec.format == VK_FORMAT_R8G8B8A8_SRGB;
+    const bool channels = coverage ? source.channels == 1 : (colour && (source.channels == 3 || source.channels == 4));
+    return texture && channels && inside(image, x, y, source.width, source.height) && source.data != nullptr;
+}
+
+/**
+ **/
+bool TextureFactory::inside(const Image& image, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    const Image::Spec& spec = image.spec();
     // compared as differences, so a place far outside the image cannot wrap around into it
-    const bool inside = source.width > 0 && source.height > 0 && x < spec.width && y < spec.height && source.width <= spec.width - x &&
-        source.height <= spec.height - y;
-    return texture && channels && inside && source.data != nullptr;
+    return width > 0 && height > 0 && x < spec.width && y < spec.height && width <= spec.width - x && height <= spec.height - y;
+}
+
+/**
+ **/
+pipeline::Texture TextureFactory::create(const Texels& source) const {
+    if (source.data == nullptr || source.width == 0 || source.height == 0) {
+        throw std::runtime_error("A vulkan float texture needs texels and a non-zero size");
+    }
+    const VkDeviceSize bytes = static_cast<VkDeviceSize>(source.width) * source.height * FLOAT_TEXEL_BYTES;
+    const boost::shared_ptr<Buffer> staging = boost::make_shared<Buffer>(device_,
+        BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
+    staging->write(source.data, bytes);
+
+    Image::Spec spec;
+    spec.width = source.width;
+    spec.height = source.height;
+    spec.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    spec.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    // a float format need not filter, and the texels are fetched rather than sampled anyway
+    pipeline::Sampler::Spec nearest;
+    nearest.filter = VK_FILTER_NEAREST;
+    nearest.mipmap = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    pipeline::Texture texture;
+    texture.image = boost::make_shared<Image>(device_, spec);
+    texture.sampler = sampler(nearest);
+    upload(staging, *texture.image, VkExtent3D{source.width, source.height, 1});
+    return texture;
+}
+
+/**
+ **/
+bool TextureFactory::fits(const Image& image, const Texels& source, uint32_t x, uint32_t y) {
+    const Image::Spec& spec = image.spec();
+    const bool floats = spec.format == VK_FORMAT_R32G32B32A32_SFLOAT && spec.depth <= 1 && (spec.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) != 0;
+    return floats && inside(image, x, y, source.width, source.height) && source.data != nullptr;
+}
+
+/**
+ **/
+void TextureFactory::update(const Image& image, const Texels& source, uint32_t x, uint32_t y) const {
+    if (!fits(image, source, x, y)) {
+        throw std::runtime_error("The texels do not fit the texture they were to be copied into");
+    }
+    const VkDeviceSize bytes = static_cast<VkDeviceSize>(source.width) * source.height * FLOAT_TEXEL_BYTES;
+    const boost::shared_ptr<Buffer> staging = boost::make_shared<Buffer>(device_,
+        BufferSpec{.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, .bytes = bytes});
+    staging->write(source.data, bytes);
+    copyRegion(staging, image, VkOffset3D{static_cast<int32_t>(x), static_cast<int32_t>(y), 0}, VkExtent3D{source.width, source.height, 1});
 }
 
 /**
@@ -157,11 +221,14 @@ void TextureFactory::update(const Image& image, const Pixels& source, uint32_t x
     if (!fits(image, source, x, y)) {
         throw std::runtime_error("The pixels do not fit the texture they were to be copied into");
     }
-    const boost::shared_ptr<Buffer> staging = stage(source);
+    copyRegion(stage(source), image, VkOffset3D{static_cast<int32_t>(x), static_cast<int32_t>(y), 0}, VkExtent3D{source.width, source.height, 1});
+}
+
+/**
+ **/
+void TextureFactory::copyRegion(const boost::shared_ptr<Buffer>& staging, const Image& image, const VkOffset3D& offset, const VkExtent3D& extent) const {
     VkBuffer from = staging->handle();
     VkImage target = image.handle();
-    const VkOffset3D offset{static_cast<int32_t>(x), static_cast<int32_t>(y), 0};
-    const VkExtent3D extent{source.width, source.height, 1};
     // the uploader holds the staging buffer until the copy has run
     uploader_->submit([from, target, offset, extent](VkCommandBuffer commands) {
         record(commands, {forRegionUpload(target)});

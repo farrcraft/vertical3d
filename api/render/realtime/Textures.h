@@ -108,6 +108,21 @@ class Textures final {
     bool update(const TextureHandle& handle, const glm::uvec2& at, const vulkan::memory::TextureFactory::Pixels& pixels);
 
     /**
+     * Upload floats and register them, so a draw can fetch them: four 32 bit floats a texel,
+     * read as they are stored. The curves text is drawn from are kept this way.
+     **/
+    TextureHandle texture(const vulkan::memory::TextureFactory::Texels& texels);
+
+    /**
+     * Copy floats into a region of a texture made from floats, which frames may be reading, as
+     * update() copies pixels.
+     *
+     * @return whether the texels were copied. Nothing is copied into a texture not made from
+     *         floats, a handle unset or released, or a region not inside the texture
+     **/
+    bool update(const TextureHandle& handle, const glm::uvec2& at, const vulkan::memory::TextureFactory::Texels& texels);
+
+    /**
      * Where request() reads an image from and decodes it: the asset manager a path is relative
      * to, and the worker it is decoded on. Until this is called, request() throws.
      *

@@ -56,6 +56,7 @@ class Canvas final {
         glm::vec2 position;
         glm::vec2 uv;
         glm::vec4 colour;
+        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands. Every other quad leaves it 0 **/
     };
 
     /**
@@ -67,6 +68,7 @@ class Canvas final {
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         bool text;              /**< whether the run samples a distance field **/
+        TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
         bool clipped;           /**< whether the run is cut to clip **/
         glm::vec4 clip;         /**< the rectangle it is cut to: min x, min y, max x, max y **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
@@ -325,6 +327,21 @@ class Canvas final {
     void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
 
     /**
+     * Append glyphs drawn from their curves, as vertices and the triangles over them.
+     *
+     * Each vertex's uv is its place in em units, y upwards, in the glyph whose data starts at
+     * its glyph field among the bands. The fragment shader finds each pixel's coverage from the
+     * curves that cross it, at any size and under any transform. The run never merges with one
+     * that draws another way.
+     *
+     * @param vertices positions, em coordinates, colours and glyphs, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
+     * @param curves the texture of float texels holding the glyphs' curves
+     * @param bands the texture of float texels holding each glyph's bands
+     **/
+    void curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& curves, const TextureHandle& bands);
+
+    /**
      * @return the vertex stream, in the layout the quad pipeline declares
      **/
     const std::vector<Vertex>& vertices() const noexcept;
@@ -354,12 +371,22 @@ class Canvas final {
     /**
      * Start a batch, or extend the open one when it already draws the same way.
      *
-     * The texture, the text flag and the clip rectangle all have to match. The fragment
+     * The texture, the text flag, the bands and the clip rectangle all have to match. The fragment
      * shader treats a text batch's texels as distances, so merging one with a run of
      * sprites would threshold the sprites. A scissor belongs to a whole draw, so two runs
      * cut differently cannot be one.
      **/
-    void open(const TextureHandle& texture, bool text = false);
+    void open(const TextureHandle& texture, bool text = false, const TextureHandle& bands = TextureHandle());
+
+    /**
+     * @return whether a run laid out by the caller has triangles, and names only its own vertices
+     **/
+    static bool fits(std::span<const Vertex> vertices, std::span<const uint32_t> indices);
+
+    /**
+     * Add a run laid out by the caller to the open batch, its indices moved past what is there.
+     **/
+    void append(std::span<const Vertex> vertices, std::span<const uint32_t> indices);
 
     /**
      * Add a vertex with the current transform applied.

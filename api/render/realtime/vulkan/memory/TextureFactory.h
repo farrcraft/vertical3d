@@ -82,6 +82,16 @@ class TextureFactory final {
     };
 
     /**
+     * Texels of four 32 bit floats each, in tightly packed rows of width * 4 floats. A shader
+     * reads them as they are stored, with texelFetch, so they are data rather than a picture.
+     **/
+    struct Texels {
+        const float* data = nullptr;
+        uint32_t width = 0;
+        uint32_t height = 0;
+    };
+
+    /**
      * @param source what to upload
      * @param encoding how a shader reads the colour back. A coverage mask is not a colour
      *        and ignores it
@@ -99,6 +109,28 @@ class TextureFactory final {
      **/
     pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display,
         const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
+
+    /**
+     * @param source floats to upload, into an image of four floats a texel read through a sampler
+     *        that filters nothing
+     * @return the created image and its sampler, for the caller to register
+     * @throw std::runtime_error if any part of the creation or upload fails
+     **/
+    pipeline::Texture create(const Texels& source) const;
+
+    /**
+     * @return whether texels can be copied into an image at a place: the image holds four floats
+     *         a texel, was made by this factory, and the texels lie inside it
+     **/
+    static bool fits(const Image& image, const Texels& source, uint32_t x, uint32_t y);
+
+    /**
+     * Copy floats into a region of a texture this factory made from floats, which frames may be
+     * reading, as update() copies pixels.
+     *
+     * @throw std::runtime_error if the texels do not fit the image, or the upload fails
+     **/
+    void update(const Image& image, const Texels& source, uint32_t x, uint32_t y) const;
 
     /**
      * @return whether pixels can be copied into an image at a place: the image is a 2D colour
@@ -140,6 +172,16 @@ class TextureFactory final {
      *         widened to four
      **/
     boost::shared_ptr<Buffer> stage(const Pixels& source) const;
+
+    /**
+     * Copy what is staged into a region of an image frames may be reading, keeping the rest.
+     **/
+    void copyRegion(const boost::shared_ptr<Buffer>& staging, const Image& image, const VkOffset3D& offset, const VkExtent3D& extent) const;
+
+    /**
+     * @return whether a region lies inside an image
+     **/
+    static bool inside(const Image& image, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
     /**
      * @return the sampler made for a spec, made now if no texture has named that spec before

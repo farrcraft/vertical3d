@@ -209,17 +209,18 @@ float Canvas::opacity() const noexcept {
 
 /**
  **/
-void Canvas::open(const TextureHandle& texture, bool text) {
+void Canvas::open(const TextureHandle& texture, bool text, const TextureHandle& bands) {
     const bool clipped = clips_.clipped();
     const glm::vec4 clip = clips_.top();
 
-    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text &&
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().text == text && batches_.back().bands == bands &&
         batches_.back().clipped == clipped && batches_.back().clip == clip) {
         return;
     }
     Batch batch;
     batch.texture = texture;
     batch.text = text;
+    batch.bands = bands;
     batch.clipped = clipped;
     batch.clip = clip;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
@@ -239,6 +240,7 @@ void Canvas::vertex(const Vertex& untransformed) {
     added.uv = untransformed.uv;
     added.colour = untransformed.colour;
     added.colour.a *= opacity();
+    added.glyph = untransformed.glyph;
     vertices_.push_back(added);
 }
 
@@ -394,20 +396,27 @@ void Canvas::fan(const Arc& shape, const Blend& colours) {
 /**
  **/
 void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas) {
-    if (vertices.empty() || indices.empty()) {
+    if (!fits(vertices, indices)) {
         return;
     }
+    open(atlas, true);
+    append(vertices, indices);
+}
+
+/**
+ **/
+bool Canvas::fits(std::span<const Vertex> vertices, std::span<const uint32_t> indices) {
     // an index past the run would name a vertex this run did not add, so a run with one
     // draws nothing
     const auto outside = [&vertices](uint32_t index) {
         return index >= vertices.size();
     };
-    if (std::ranges::any_of(indices, outside)) {
-        return;
-    }
+    return !vertices.empty() && !indices.empty() && !std::ranges::any_of(indices, outside);
+}
 
-    open(atlas, true);
-
+/**
+ **/
+void Canvas::append(std::span<const Vertex> vertices, std::span<const uint32_t> indices) {
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (const Vertex& laid : vertices) {
         vertex(laid);
@@ -416,6 +425,16 @@ void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> in
         indices_.push_back(first + index);
     }
     batches_.back().indices += static_cast<uint32_t>(indices.size());
+}
+
+/**
+ **/
+void Canvas::curves(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& curves, const TextureHandle& bands) {
+    if (!fits(vertices, indices)) {
+        return;
+    }
+    open(curves, false, bands);
+    append(vertices, indices);
 }
 
 /**

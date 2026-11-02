@@ -89,6 +89,23 @@ bool Textures::update(const TextureHandle& handle, const glm::uvec2& at, const v
 
 /**
  **/
+TextureHandle Textures::texture(const vulkan::memory::TextureFactory::Texels& texels) {
+    return add(factory_->create(texels));
+}
+
+/**
+ **/
+bool Textures::update(const TextureHandle& handle, const glm::uvec2& at, const vulkan::memory::TextureFactory::Texels& texels) {
+    const vulkan::pipeline::Texture* texture = resources_->texture(handle);
+    if (handle == white_ || texture == nullptr || !vulkan::memory::TextureFactory::fits(*texture->image, texels, at.x, at.y)) {
+        return false;
+    }
+    factory_->update(*texture->image, texels, at.x, at.y);
+    return true;
+}
+
+/**
+ **/
 void Textures::requestFrom(const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker,
     const boost::shared_ptr<log::Logger>& logger) {
     assets_ = assets;

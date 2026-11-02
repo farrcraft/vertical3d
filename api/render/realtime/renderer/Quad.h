@@ -131,9 +131,18 @@ class Quad final {
      **/
     struct Push final {
         glm::mat4 projection;
-        uint32_t text;
+        uint32_t text;       /**< how the batch is drawn: PICTURE, DISTANCE or CURVES **/
         uint32_t texture;
+        uint32_t bands = 0;  /**< a curve batch's bands **/
     };
+
+    /**
+     * How a batch is drawn, as the fragment stage reads it: a picture multiplied into the colour,
+     * a distance field thresholded, or glyphs found from their curves.
+     **/
+    static constexpr uint32_t PICTURE = 0;
+    static constexpr uint32_t DISTANCE = 1;
+    static constexpr uint32_t CURVES = 2;
 
     /**
      * Compile the quad pipeline twice: once for a pass with a depth attachment and once for a

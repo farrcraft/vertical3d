@@ -120,7 +120,7 @@ Current blocks:
 
 | Pipeline | Block | Size |
 |---|---|---|
-| Quad | `mat4 projection; uint text; uint texture` | 72 bytes |
+| Quad | `mat4 projection; uint text; uint texture; uint bands` | 76 bytes |
 | World | `vec4 tint; uint texture` | 20 bytes |
 | Line, FullScreen, Lit | none | |
 
@@ -192,6 +192,9 @@ that wants to replace them.
 | `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
 | `lit/mesh.vert`, `lit/cel.frag`, `lit/outline.vert`, `lit/outline.frag`, `lit/shadow.vert` | `Lit` |
 | `skinned_mesh.vert`, `skinned_outline.vert`, `skinned_shadow.vert` | `Lit`, the three lit vertex stages compiled with `SKINNED` |
+
+`curves.glsl` finds a curve glyph's coverage from its curves and bands, as the Slug algorithm
+does. `quad.frag` includes it.
 
 `srgb.glsl` holds the sRGB decode and encode. `quad.frag` and `grade.frag` include it, so the
 two agree to the bit.
