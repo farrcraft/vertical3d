@@ -8,6 +8,7 @@
 #include <api/ui/component/Scrollbar.h>
 #include <api/ui/component/SelectList.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <cstddef>
 #include <string>
@@ -185,9 +186,7 @@ BOOST_AUTO_TEST_CASE(a_bar_that_was_never_drawn_scrolls_nowhere) {
  * nowhere to go.
  **/
 BOOST_AUTO_TEST_CASE(a_bar_with_nothing_to_scroll_draws_its_track_alone) {
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
@@ -278,9 +277,7 @@ BOOST_AUTO_TEST_CASE(a_bound_bar_with_nothing_to_scroll_draws_no_thumb) {
     BOOST_CHECK(!component->scrollable());
     BOOST_CHECK_CLOSE(component->thumb(), 50.0F, 0.001F);
 
-    const v3d::ui::paint::ComponentRenderer renderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    const v3d::ui::paint::ComponentRenderer renderer(v3d::ui::typeset::body());
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
     renderer.draw(&canvas, component);

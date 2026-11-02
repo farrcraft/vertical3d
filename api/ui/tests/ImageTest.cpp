@@ -18,6 +18,7 @@
 #include <api/ui/style/Style.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/style/property/Image.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <cstddef>
 #include <string>
@@ -189,13 +190,13 @@ BOOST_AUTO_TEST_CASE(a_button_is_drawn_from_the_images_its_style_names) {
     drawing.draw(&canvas, button);
 
     // the centre and the top left corner, and nothing else the style did not name
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 2U * 4U);
-    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
-    BOOST_CHECK(canvas.batches().front().texture.valid());
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 2U * 4U);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 1U);
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).front().texture.valid());
 
     // the corner is drawn at the size the style's own number gives
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 10.0F, 0.001F);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x, 14.0F, 0.001F);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[0].position.x, 10.0F, 0.001F);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[2].position.x, 14.0F, 0.001F);
 }
 
 /**
@@ -229,13 +230,13 @@ BOOST_AUTO_TEST_CASE(a_disabled_button_is_drawn_from_the_inactive_style) {
 
     // an enabled button takes the normal style, which this theme does not carry
     drawing.draw(&canvas, button);
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
     button->enabled(false);
     drawing.draw(&canvas, button);
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
-    BOOST_CHECK(canvas.batches().front().texture.valid());
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 1U);
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).front().texture.valid());
 }
 
 /**
@@ -253,11 +254,11 @@ BOOST_AUTO_TEST_CASE(a_button_with_no_skin_is_drawn_flat) {
     button->size(glm::vec2(100.0F, 30.0F));
 
     drawing.draw(&canvas, button);
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
     button->state(v3d::ui::component::Button::STATE_HOVER);
     drawing.draw(&canvas, button);
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
 }
 
 /**
@@ -275,16 +276,16 @@ BOOST_AUTO_TEST_CASE(an_icon_draws_the_texture_it_was_resolved_to) {
     icon->size(glm::vec2(32.0F, 16.0F));
 
     drawing.draw(&canvas, icon);
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
     icon->image(v3d::render::realtime::TextureHandle(5));
     drawing.draw(&canvas, icon);
 
-    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
-    BOOST_CHECK_CLOSE(canvas.vertices()[0].position.x, 4.0F, 0.001F);
-    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y, 24.0F, 0.001F);
-    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
-    BOOST_CHECK_EQUAL(canvas.batches().front().texture.id(), 5U);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[0].position.x, 4.0F, 0.001F);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[2].position.y, 24.0F, 0.001F);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 1U);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapes(canvas).front().texture.id(), 5U);
 }
 
 /**
@@ -434,11 +435,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
     BOOST_CHECK_EQUAL(uploader.asked[0], "icons/select.png");
 
     std::vector<Written> written;
-    v3d::ui::paint::ComponentRenderer drawing(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back(Written{ std::string(text), pen, colour });
-        });
+    v3d::ui::paint::ComponentRenderer drawing(v3d::ui::typeset::body(&written));
     drawing.dressing().iconSize = 20.0F;
 
     v3d::render::realtime::canvas::Canvas canvas;
@@ -447,7 +444,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 
     // the panel, the rule, and one icon per button - and not one label
     BOOST_CHECK(written.empty());
-    BOOST_CHECK_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapes(canvas).size(), 2U);
 
     const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
         boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(ui->container("editor")->get("tools"));
@@ -460,7 +457,7 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_draws_the_icon_it_names) {
 
     // and the icon is centred in the button's own box
     const v3d::type::geometry::Bound2D box = bar->button(0)->bound();
-    BOOST_CHECK_CLOSE(canvas.vertices()[8].position.x,
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(canvas)[8].position.x,
         box.position().x + ((box.size().x - dressing.iconSize) * 0.5F), 0.001F);
 }
 
@@ -482,14 +479,12 @@ BOOST_AUTO_TEST_CASE(a_button_icon_takes_its_label_colour) {
     Uploader uploader;
     ui->resolveImages([&uploader](const std::string& source) { return uploader(source); });
 
-    v3d::ui::paint::ComponentRenderer drawing(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::paint::ComponentRenderer drawing(v3d::ui::typeset::body());
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
     const auto icon = [&canvas]() {
         // the icon is the last quad drawn
-        return canvas.vertices()[canvas.vertices().size() - 1].colour;
+        return v3d::ui::typeset::shapeVertices(canvas)[v3d::ui::typeset::shapeVertices(canvas).size() - 1].colour;
     };
 
     drawing.draw(&canvas, *ui);
@@ -510,11 +505,7 @@ BOOST_AUTO_TEST_CASE(a_button_icon_takes_its_label_colour) {
  **/
 BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
     std::vector<Written> written;
-    const v3d::ui::paint::ComponentRenderer drawing(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [&written](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-            written.push_back(Written{ std::string(text), pen, colour });
-        });
+    const v3d::ui::paint::ComponentRenderer drawing(v3d::ui::typeset::body(&written));
 
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(800, 600));
@@ -528,7 +519,7 @@ BOOST_AUTO_TEST_CASE(an_unresolved_icon_leaves_the_label_drawn) {
 
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
     BOOST_CHECK_EQUAL(written.front().text, "Select");
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 }
 
 /**
@@ -552,7 +543,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
     drawing.draw(&canvas, *ui);
 
     // the label is text, which is the app's to draw, and the hidden icon is nothing
-    BOOST_CHECK(canvas.empty());
+    BOOST_CHECK(v3d::ui::typeset::shapes(canvas).empty());
 
     const boost::shared_ptr<v3d::ui::component::Label> label =
         boost::dynamic_pointer_cast<v3d::ui::component::Label>(ui->container("hud")->get("score"));
@@ -562,7 +553,7 @@ BOOST_AUTO_TEST_CASE(a_container_draws_its_labels_and_icons) {
 
     ui->container("hud")->get("logo")->visible(true);
     drawing.draw(&canvas, *ui);
-    BOOST_CHECK_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(canvas).size(), 4U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

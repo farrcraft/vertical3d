@@ -20,6 +20,8 @@
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -42,13 +44,9 @@ namespace {
 const float characterWidth = 10.0F;
 
 /**
- * Where the labels went, so a test can check the layout without a font or a device.
+ * A line the ui drew.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-    glm::vec4 colour;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * The dispatcher, the events sent to it, and the bar they came from, all of which have to
@@ -59,15 +57,7 @@ struct Fixture final {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
         bar(boost::make_shared<v3d::ui::component::menu::Bar>()),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-                Written line;
-                line.text = text;
-                line.pen = pen;
-                line.colour = colour;
-                written.push_back(line);
-            }) {
+        renderer(v3d::ui::typeset::body(&written)) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
     }
@@ -168,7 +158,7 @@ BOOST_AUTO_TEST_CASE(a_closed_bar_draws_only_its_labels) {
     BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
     BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
     // the strip and the rule under it, and no panel
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), 2 * 4);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), 2 * 4);
 }
 
 /**
@@ -179,7 +169,7 @@ BOOST_AUTO_TEST_CASE(a_bar_strip_is_drawn_at_its_opacity) {
     build(&fixture);
     fixture.bar->opacity(0.8F);
     fixture.draw();
-    BOOST_CHECK_CLOSE(fixture.canvas.vertices()[0].colour.a, fixture.renderer.dressing().panel.a * 0.8F, 0.001F);
+    BOOST_CHECK_CLOSE(v3d::ui::typeset::shapeVertices(fixture.canvas)[0].colour.a, fixture.renderer.dressing().panel.a * 0.8F, 0.001F);
 
     fixture.bar->opacity(2.0F);
     BOOST_CHECK_EQUAL(fixture.bar->opacity(), 1.0F);
@@ -196,12 +186,12 @@ BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
     build(&fixture);
     fixture.draw();
     const float plain = fixture.bar->bound(0).size().x;
-    const std::size_t drawn = fixture.canvas.vertices().size();
+    const std::size_t drawn = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
 
     fixture.bar->menu(0)->drop(true);
     fixture.draw();
     BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), drawn + std::size_t{8});
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), drawn + std::size_t{8});
 }
 
 /**
@@ -220,7 +210,7 @@ BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
     BOOST_CHECK_EQUAL(fixture.written[0].text, "View");
     const v3d::ui::paint::Dressing& dressing = fixture.renderer.dressing();
     BOOST_CHECK_CLOSE(fixture.bar->bound(0).size().x, std::min(dressing.iconSize, dressing.barHeight) + dressing.padding, 0.001F);
-    BOOST_CHECK(std::ranges::any_of(fixture.canvas.batches(), [](const auto& batch) { return batch.texture.id() == 3U; }));
+    BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapes(fixture.canvas), [](const auto& batch) { return batch.texture.id() == 3U; }));
 }
 
 /**
@@ -232,7 +222,7 @@ BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
     fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::TextureHandle(3)));
     const glm::vec4 accent = fixture.renderer.dressing().fill;
     const auto tinted = [&fixture, &accent]() {
-        return std::ranges::any_of(fixture.canvas.vertices(), [&accent](const auto& vertex) { return vertex.colour == accent; });
+        return std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&accent](const auto& vertex) { return vertex.colour == accent; });
     };
     fixture.draw();
     BOOST_CHECK(!tinted());
@@ -243,24 +233,25 @@ BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
 }
 
 /**
- * A title set apart is written by the chosen item's writer, on a pill of the widget colour.
+ * A title set apart is written in the chosen item's setting, semibold, on a pill of the widget
+ * colour.
  **/
 BOOST_AUTO_TEST_CASE(a_title_set_apart_is_semibold_on_a_pill) {
     Fixture fixture;
     build(&fixture);
-    std::vector<std::string> emphasised;
     v3d::ui::paint::Emphasis sets;
-    sets.chosen.write = [&emphasised](std::string_view text, const glm::vec2&, const glm::vec4&) { emphasised.emplace_back(text); };
+    sets.chosen.type = v3d::ui::typeset::body(&fixture.written).in(v3d::ui::paint::Weight::SemiBold);
     fixture.renderer.emphasis(sets);
     fixture.bar->menu(1)->emphasis(true);
     fixture.draw();
 
-    BOOST_REQUIRE_EQUAL(fixture.written.size(), 1U);
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), 2U);
     BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
-    BOOST_REQUIRE_EQUAL(emphasised.size(), 1U);
-    BOOST_CHECK_EQUAL(emphasised[0], "View");
+    BOOST_CHECK(fixture.written[0].weight == v3d::ui::paint::Weight::Regular);
+    BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
+    BOOST_CHECK(fixture.written[1].weight == v3d::ui::paint::Weight::SemiBold);
     const glm::vec4 widget = fixture.renderer.dressing().widget;
-    BOOST_CHECK(std::ranges::any_of(fixture.canvas.vertices(), [&widget](const auto& vertex) { return vertex.colour == widget; }));
+    BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&widget](const auto& vertex) { return vertex.colour == widget; }));
 }
 
 /**
@@ -606,7 +597,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     fixture.bar->press(fixture.label(0));
 
     fixture.draw();
-    const std::size_t unchecked = fixture.canvas.vertices().size();
+    const std::size_t unchecked = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
 
     const boost::shared_ptr<v3d::ui::component::menu::Item> grid = fixture.bar->find("test::grid");
     BOOST_REQUIRE(grid);
@@ -614,7 +605,7 @@ BOOST_AUTO_TEST_CASE(a_check_item_draws_a_mark_only_when_it_is_checked) {
     grid->checked(true);
 
     fixture.draw();
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unchecked + 4);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), unchecked + 4);
 
     // activating it sends the command and leaves the mark where it was
     const boost::shared_ptr<v3d::ui::component::menu::Menu> panel = fixture.bar->panels().front();
@@ -634,7 +625,7 @@ BOOST_AUTO_TEST_CASE(an_action_item_draws_no_mark) {
     fixture.bar->press(fixture.label(0));
 
     fixture.draw();
-    const std::size_t unmarked = fixture.canvas.vertices().size();
+    const std::size_t unmarked = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
 
     const boost::shared_ptr<v3d::ui::component::menu::Item> open = fixture.bar->find("test::open");
     BOOST_REQUIRE(open);
@@ -642,7 +633,7 @@ BOOST_AUTO_TEST_CASE(an_action_item_draws_no_mark) {
     BOOST_CHECK(!open->checked());
 
     fixture.draw();
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), unmarked);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), unmarked);
 }
 
 /**

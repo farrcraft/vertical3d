@@ -15,6 +15,7 @@
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/AreaChrome.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
@@ -62,8 +63,7 @@ struct Chrome {
             return boost::make_shared<ViewPort>(camera + " " + std::to_string(editor.id), v3d::type::camera::Profile(camera));
         })),
         chrome(ui, "editor", {}),
-        renderer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         BOOST_REQUIRE(ui->load(boost::json::parse(
             R"({ "themes": [], "containers": [ { "name": "editor", "visible": true, "components": [] } ] })").as_object()));
         BOOST_REQUIRE(layout.load(boost::json::parse(R"({"root": {"split": "horizontal", "children": [)"

@@ -14,6 +14,7 @@
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/VerticalBox.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <string>
 #include <string_view>
@@ -41,9 +42,7 @@ struct Labelled {
  * enough to lay a tree out without a font, an atlas or a device.
  **/
 v3d::ui::paint::ComponentRenderer build() {
-    return v3d::ui::paint::ComponentRenderer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    return v3d::ui::paint::ComponentRenderer(v3d::ui::typeset::body());
 }
 
 boost::shared_ptr<v3d::ui::component::Panel> panel(const std::string& name) {

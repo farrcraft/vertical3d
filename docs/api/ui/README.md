@@ -57,25 +57,30 @@ app's Canvas  <--  ComponentRenderer::draw(canvas, engine)   the retained tree
 
 ### Text is supplied by the app
 
-Both models take text through two callbacks declared in [`paint/Text.h`](../../../api/ui/paint/Text.h):
+Both models measure, wrap and draw their text through a `paint::TextRenderer`, which the app's
+screen owns and passes to them. Each piece of text is laid out as a `font::Paragraph`.
 
-| Callback | Signature | Does |
-|---|---|---|
-| `paint::Measure` | `float(std::string_view)` | returns how wide a string is when drawn, in pixels |
-| `paint::Write` | `void(std::string_view, const glm::vec2& pen, const glm::vec4& colour)` | draws a string with its pen on the baseline |
+- **`paint::Type`** ([`paint/Type.h`](../../../api/ui/paint/Type.h)) is a renderer at one size
+  and in one weight. `width(text)` measures a string, `rows(text, width)` breaks it as a
+  paragraph lays it out, and `draw(canvas, text, pen, colour)` draws it with its pen on the
+  baseline. `in(weight)` and `scaled(factor)` give the same renderer in another weight or at
+  another size. A type with no renderer measures nothing and draws nothing.
+- **`ComponentRenderer(body)`** takes the `Type` the retained ui's text is set in.
+  `emphasis(sets)` takes a `paint::Emphasis`: the `Setting` a centred menu's title is set in,
+  with how large its band is against the body text, and the `Setting` of its chosen item. A
+  setting with no type is set as the body text is.
+- **`Immediate(text, size)`** takes the renderer and the size it draws at, and `text(text,
+  size)` rescales it. `textWrapped()` breaks its rows through `TextRenderer::rows()`.
 
-`ComponentRenderer` names no font type. The immediate layer instead takes the
-`paint::TextRenderer` it measures, wraps and draws through, and the size it draws at:
-`Immediate(text, size)`, and `text(text, size)` to rescale. `textWrapped()` breaks its rows as a
-`font::Paragraph` lays them out, through `TextRenderer::rows()`. This keeps `api/ui` testable
-without a window or a GPU, since a text renderer needs no device.
-The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
-must stay valid for the length of the call.
+A text renderer needs no device, so `api/ui` stays testable without a window or a GPU. A test
+reads back what was drawn through `TextRenderer::trace()`, which is told each line drawn with its
+text, pen, colour, weight and size.
 
-`v3d::ui::paint::TextRenderer` supplies the pair. It holds one typeface in two weights.
-`measure(size, weight)` and `write(canvas, size, weight)` return callbacks for one drawn size and
-one `paint::Weight`, regular or semibold. Every size and weight from one `TextRenderer` shares
-one glyph store.
+`input::Cursor` still takes a `paint::Measure`, a callback giving a string's width, to place a
+text box's caret where it is clicked.
+
+`v3d::ui::paint::TextRenderer` holds one typeface in two weights. Every size and weight from one
+`TextRenderer` shares one glyph store.
 
 The faces are in the shared data directory:
 

@@ -19,6 +19,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
@@ -35,10 +36,9 @@
 
 namespace v3d::ui::paint::internal {
 
-MenuRenderer::MenuRenderer(const Measure& measure, const Write& write, const style::Resolver& styles,
+MenuRenderer::MenuRenderer(const Type& body, const style::Resolver& styles,
     const Arranger& arranger, const Easing& easing) :
-    measure_(measure),
-    write_(write),
+    type_(body),
     styles_(styles),
     arranger_(arranger),
     easing_(easing) {
@@ -97,7 +97,7 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
         const boost::shared_ptr<component::menu::Item>& item = (*level)[index];
         if (item) {
             values[index] = setting(*item, *menu);
-            widths[index] = measure_(values[index]);
+            widths[index] = type_.width(values[index]);
             widest = std::max(widest, settingRoom(*item, widths[index]));
         }
     }
@@ -115,8 +115,8 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
 
     if (!level->title().empty()) {
         const float line = arranger_.heading(*level) - (base().padding * 0.5F);
-        const Write& titled = emphasis_.title.write ? emphasis_.title.write : write_;
-        titled(level->title(), glm::vec2(origin.x + base().padding, origin.y + base().padding + (line * LINE_BASELINE)),
+        const Type& titled = emphasis_.title.type.set() ? emphasis_.title.type : type_;
+        titled.draw(canvas, level->title(), glm::vec2(origin.x + base().padding, origin.y + base().padding + (line * LINE_BASELINE)),
             base().text);
     }
 
@@ -158,14 +158,14 @@ void MenuRenderer::settingRow(v3d::render::realtime::canvas::Canvas* canvas, con
     // the pen sits on the baseline, most of the way down the line box. Descenders go in
     // the space below it
     const glm::vec2 pen(span.x + base().padding, top + (base().lineHeight * LINE_BASELINE));
-    const Write& inked = selected && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
+    const Type& inked = selected && emphasis_.chosen.type.set() ? emphasis_.chosen.type : type_;
     const glm::vec4 ink = easing_.toward(&item->motion().ink, itemInk(item, base(), selected));
-    inked(item->label(), pen, ink);
+    inked.draw(canvas, item->label(), pen, ink);
     if (!value.empty()) {
         // a value says less than its label, unless its row is the chosen one, where
         // secondary text would not read against the highlight
         const glm::vec4 quiet = selected || !usable(*item) ? ink : base().secondaryText;
-        write_(value, glm::vec2(span.y - base().padding - valueWidth, pen.y), quiet);
+        type_.draw(canvas, value, glm::vec2(span.y - base().padding - valueWidth, pen.y), quiet);
     }
 }
 
@@ -193,11 +193,11 @@ std::string MenuRenderer::setting(const component::menu::Item& item, const compo
 float MenuRenderer::settingRoom(const component::menu::Item& item, float shown) const {
     float room = shown;
     if (item.binds().context()) {
-        room = std::max(room, measure_(CAPTURE));
+        room = std::max(room, type_.width(CAPTURE));
     }
     if (item.itemType() == component::menu::ItemType::Slider) {
         const component::menu::Item::Range& span = item.range();
-        room = std::max({ room, measure_("< " + std::to_string(span.minimum) + " >"), measure_("< " + std::to_string(span.maximum) + " >") });
+        room = std::max({ room, type_.width("< " + std::to_string(span.minimum) + " >"), type_.width("< " + std::to_string(span.maximum) + " >") });
     }
     return room;
 }
@@ -276,7 +276,7 @@ void MenuRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const bo
         const boost::shared_ptr<component::menu::Item>& item = (*menu)[index];
         if (item && item->itemType() != component::menu::ItemType::Submenu && !item->separator()) {
             keys[index] = shortcut(item->event());
-            widest = std::max(widest, measure_(keys[index]));
+            widest = std::max(widest, type_.width(keys[index]));
         }
     }
 
@@ -315,8 +315,8 @@ MenuRenderer::Title MenuRenderer::titled(const component::menu::Menu& menu, cons
     if (menu.image().valid()) {
         title.content = std::min(base().iconSize, height);
     } else {
-        const Measure& measured = menu.emphasis() && emphasis_.chosen.measure ? emphasis_.chosen.measure : measure_;
-        title.content = measured(label);
+        const Type& measured = menu.emphasis() && emphasis_.chosen.type.set() ? emphasis_.chosen.type : type_;
+        title.content = measured.width(label);
     }
     title.extent = title.content + base().padding;
     if (menu.drop()) {
@@ -359,8 +359,8 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
         canvas->rect(corner, corner + glm::vec2(room.content, room.content), picture.uv0, picture.uv1, menu->accent() ? base().fill : ink,
             picture.texture);
     } else {
-        const Write& inked = menu->emphasis() && emphasis_.chosen.write ? emphasis_.chosen.write : write_;
-        inked(label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
+        const Type& inked = menu->emphasis() && emphasis_.chosen.type.set() ? emphasis_.chosen.type : type_;
+        inked.draw(canvas, label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
     }
     if (menu->drop()) {
         const float middle = left + room.content + (base().padding * dropGapScale) + (room.mark * 0.5F);
@@ -417,16 +417,16 @@ void MenuRenderer::entry(v3d::render::realtime::canvas::Canvas* canvas, const bo
     }
 
     const float baseline = top + (base().lineHeight * LINE_BASELINE);
-    write_(item->text(), glm::vec2(corner.x + column, baseline), easing_.toward(&item->motion().ink, itemInk(item, base(), selected)));
+    type_.draw(canvas, item->text(), glm::vec2(corner.x + column, baseline), easing_.toward(&item->motion().ink, itemInk(item, base(), selected)));
     if (!keys.empty()) {
         // right-aligned against the arrow column, and quieter than the label except on the
         // chosen row, where only active text reads against the highlight
-        const glm::vec2 pen(corner.x + size.x - column - measure_(keys), baseline);
+        const glm::vec2 pen(corner.x + size.x - column - type_.width(keys), baseline);
         glm::vec4 colour = usable(*item) ? base().secondaryText : base().disabledText;
         if (selected && usable(*item)) {
             colour = base().activeText;
         }
-        write_(keys, pen, easing_.toward(&item->motion().shortcut, colour));
+        type_.draw(canvas, keys, pen, easing_.toward(&item->motion().shortcut, colour));
     }
 }
 

@@ -28,6 +28,7 @@
 #include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <string>
 #include <string_view>
@@ -54,9 +55,7 @@ struct Fixture final {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * characterWidth; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
 

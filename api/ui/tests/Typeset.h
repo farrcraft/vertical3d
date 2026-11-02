@@ -8,9 +8,12 @@
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
+#include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -50,6 +53,12 @@ const char* const monoFace = "fonts/NotoSansMono-Regular.ttf";
 const char* const hebrewFace = "fonts/NotoSansHebrew-Regular.ttf";
 
 /**
+ * The texture every glyph page is given, which no other quad in a case samples, so what a
+ * component drew can be told from its text.
+ **/
+const std::uint32_t pageTexture = 0xF0F0;
+
+/**
  * A line the ui drew.
  **/
 struct Written final {
@@ -67,7 +76,7 @@ inline boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const v3d::ui::p
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(".", logger);
     v3d::ui::paint::GlyphPages pages(
-        [](const unsigned char*, std::uint32_t) { return v3d::render::realtime::TextureHandle(1); },
+        [](const unsigned char*, std::uint32_t) { return v3d::render::realtime::TextureHandle(pageTexture); },
         [](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&) {},
         [](const v3d::render::realtime::TextureHandle&) {});
     return boost::make_shared<v3d::ui::paint::TextRenderer>(assets, logger, std::move(pages), size, faces);
@@ -96,6 +105,53 @@ inline boost::shared_ptr<v3d::ui::paint::TextRenderer> mono(std::vector<Written>
         });
     }
     return text;
+}
+
+/**
+ * @return the monospaced face at ten pixels a character as a type, recording each line drawn
+ *         through it when given somewhere to
+ **/
+inline v3d::ui::paint::Type body(std::vector<Written>* written = nullptr) {
+    return v3d::ui::paint::Type(mono(written), 0.0F);
+}
+
+/**
+ * @return whether a batch draws glyphs from a page
+ **/
+inline bool text(const v3d::render::realtime::canvas::Canvas::Batch& batch) {
+    return batch.texture == v3d::render::realtime::TextureHandle(pageTexture);
+}
+
+/**
+ * @return the batches of a canvas that are not text
+ **/
+inline std::vector<v3d::render::realtime::canvas::Canvas::Batch> shapes(const v3d::render::realtime::canvas::Canvas& canvas) {
+    std::vector<v3d::render::realtime::canvas::Canvas::Batch> found;
+    for (const v3d::render::realtime::canvas::Canvas::Batch& batch : canvas.batches()) {
+        if (!text(batch)) {
+            found.push_back(batch);
+        }
+    }
+    return found;
+}
+
+/**
+ * @return the vertices of a canvas that are not text, in the order they were added
+ **/
+inline std::vector<v3d::render::realtime::canvas::Canvas::Vertex> shapeVertices(const v3d::render::realtime::canvas::Canvas& canvas) {
+    std::vector<bool> used(canvas.vertices().size(), false);
+    for (const v3d::render::realtime::canvas::Canvas::Batch& batch : shapes(canvas)) {
+        for (std::uint32_t index = batch.firstIndex; index < batch.firstIndex + batch.indices; index++) {
+            used[canvas.indices()[index]] = true;
+        }
+    }
+    std::vector<v3d::render::realtime::canvas::Canvas::Vertex> found;
+    for (std::size_t vertex = 0; vertex < used.size(); vertex++) {
+        if (used[vertex]) {
+            found.push_back(canvas.vertices()[vertex]);
+        }
+    }
+    return found;
 }
 
 };  // namespace v3d::ui::typeset

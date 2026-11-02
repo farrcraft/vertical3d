@@ -13,6 +13,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/TopBar.h>
 
 #include <string>
@@ -43,8 +44,7 @@ struct Bar {
         ui(boost::make_shared<v3d::ui::Interface>(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>())),
         bar(ui, "chooser", [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; }),
-        renderer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [
             { "name": "editor", "visible": true, "components": [] },
             { "name": "chooser", "visible": false, "components": [] } ] })").as_object()));

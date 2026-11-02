@@ -20,7 +20,7 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
 
 #include <algorithm>
@@ -42,8 +42,8 @@ namespace v3d::ui {
 
 const float Arranger::ruleWidth = 1.0F;
 
-Arranger::Arranger(const paint::Measure& measure, const style::Resolver& styles) :
-    measure_(measure),
+Arranger::Arranger(const paint::Type& body, const style::Resolver& styles) :
+    type_(body),
     styles_(styles),
     serial_(nextSerial()) {
 }
@@ -170,14 +170,14 @@ glm::vec2 Arranger::natural(Component& component, const v3d::type::geometry::Bou
 /**
  **/
 glm::vec2 Arranger::labelSize(const component::Label& label, const v3d::type::geometry::Bound2D& room) const {
-    const float line = measure_(label.text());
+    const float line = type_.width(label.text());
     // a label given a width wraps to it. Its natural height is then the height of the
     // rows it wraps into, which an Auto height resolves to
     if (label.layout().width.unit() == Length::Unit::Auto) {
         return glm::vec2(line, styles_.base().lineHeight);
     }
     const float width = label.layout().width.resolve({.extent = room.size().x, .own = line});
-    const std::size_t rows = paint::wrap(label.text(), width, measure_).size();
+    const std::size_t rows = type_.rows(label.text(), width).size();
     return glm::vec2(line,
         styles_.base().lineHeight * static_cast<float>(std::max<std::size_t>(rows, 1)));
 }
@@ -192,7 +192,7 @@ glm::vec2 Arranger::markSize(const component::CheckBox& box) const {
             ? style::Resolver::Class::Radio : style::Resolver::Class::CheckBox,
         box.style());
     const float text = box.label().empty() ? 0.0F
-        : (dress.padding * 0.5F) + measure_(box.label());
+        : (dress.padding * 0.5F) + type_.width(box.label());
     return glm::vec2(dress.markSize + text, std::max(dress.markSize, dress.lineHeight));
 }
 
@@ -206,7 +206,7 @@ glm::vec2 Arranger::listSize(component::SelectList* list, const v3d::type::geome
     if (widest < 0.0F) {
         widest = 0.0F;
         for (const std::string& item : list->items()) {
-            widest = std::max(widest, measure_(item));
+            widest = std::max(widest, type_.width(item));
         }
         list->widest({.width = widest, .measure = serial_});
     }
@@ -392,7 +392,7 @@ float Arranger::extent(const component::Button& button) const {
     if (!button.icon().empty()) {
         return styles_.base().iconSize;
     }
-    return measure_(button.label());
+    return type_.width(button.label());
 }
 
 /**
@@ -473,7 +473,7 @@ void Arranger::panel(component::menu::Menu& menu, const glm::vec2& origin, const
     float rows = 0.0F;
     for (std::size_t index = 0; index < count; index++) {
         const boost::shared_ptr<component::menu::Item>& item = menu[index];
-        widest = std::max(widest, item ? measure_(item->text()) : 0.0F);
+        widest = std::max(widest, item ? type_.width(item->text()) : 0.0F);
         rows += row(item.get());
     }
     const paint::Dressing& base = styles_.base();
@@ -522,7 +522,7 @@ float Arranger::heading(const component::menu::Menu& level) const {
         return 0.0F;
     }
     const paint::Dressing& base = styles_.base();
-    const float scale = emphasis_.title.measure ? emphasis_.title.scale : 1.0F;
+    const float scale = emphasis_.title.type.set() ? emphasis_.title.scale : 1.0F;
     return (base.lineHeight * scale) + (base.padding * 0.5F);
 }
 
@@ -533,8 +533,8 @@ float Arranger::choice(const component::menu::Item* item) const {
         return 0.0F;
     }
     const std::string_view text = item->label();
-    const float body = measure_(text);
-    return emphasis_.chosen.measure ? std::max(body, emphasis_.chosen.measure(text)) : body;
+    const float body = type_.width(text);
+    return emphasis_.chosen.type.set() ? std::max(body, emphasis_.chosen.type.width(text)) : body;
 }
 
 /**
@@ -557,8 +557,8 @@ void Arranger::centred(component::menu::Menu& level, const glm::vec2& room, floa
         widest += (base.padding * 2.0F) + values;
     }
     if (!level.title().empty()) {
-        const paint::Measure& titled = emphasis_.title.measure ? emphasis_.title.measure : measure_;
-        widest = std::max(widest, titled(level.title()));
+        const paint::Type& titled = emphasis_.title.type.set() ? emphasis_.title.type : type_;
+        widest = std::max(widest, titled.width(level.title()));
     }
     const float band = heading(level);
     const glm::vec2 size(widest + (base.padding * 2.0F), band + rows + (base.padding * 2.0F));

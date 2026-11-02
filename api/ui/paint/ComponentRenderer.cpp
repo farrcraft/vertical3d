@@ -51,6 +51,7 @@
 #include "Dressing.h"
 #include "Painter.h"
 #include "Text.h"
+#include "Type.h"
 
 namespace v3d::ui::paint {
 
@@ -97,13 +98,12 @@ std::optional<style::Resolver::Class> ringed(component::Type type) noexcept {
 
 /**
  **/
-ComponentRenderer::ComponentRenderer(const Measure& measure, const Write& write) :
-    measure_(measure),
-    write_(write),
-    arranger_(measure, styles_),
+ComponentRenderer::ComponentRenderer(const Type& body) :
+    type_(body),
+    arranger_(body, styles_),
     easing_(std::make_unique<internal::Easing>(styles_)),
     skin_(std::make_unique<internal::Skin>(styles_)),
-    menus_(std::make_unique<internal::MenuRenderer>(measure, write, styles_, arranger_, *easing_)) {
+    menus_(std::make_unique<internal::MenuRenderer>(body, styles_, arranger_, *easing_)) {
 }
 
 // out of line, so that the header need not complete the types the members hold
@@ -179,7 +179,7 @@ void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, c
     const float line = base().lineHeight;
     const float inset = line * tooltipInset;
     const float gap = keys.empty() || text.empty() ? 0.0F : inset;
-    const glm::vec2 size(measure_(text) + gap + measure_(keys) + (inset * 2.0F), line);
+    const glm::vec2 size(type_.width(text) + gap + type_.width(keys) + (inset * 2.0F), line);
     const glm::vec2 room(static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
 
     // just under the box, and back onto the canvas where it would leave it. Below the bottom
@@ -198,9 +198,9 @@ void ComponentRenderer::tooltip(v3d::render::realtime::canvas::Canvas* canvas, c
     menus_->cast(canvas, corner, corner + size);
     plateBox(canvas, corner, corner + size, base().radius, base().borderWidth, {.inside = base().panel, .outline = base().border});
     const float baseline = corner.y + (line * LINE_BASELINE);
-    write_(text, glm::vec2(corner.x + inset, baseline), base().text);
+    type_.draw(canvas, text, glm::vec2(corner.x + inset, baseline), base().text);
     if (!keys.empty()) {
-        write_(keys, glm::vec2(corner.x + size.x - inset - measure_(keys), baseline), base().secondaryText);
+        type_.draw(canvas, keys, glm::vec2(corner.x + size.x - inset - type_.width(keys), baseline), base().secondaryText);
     }
 }
 
@@ -217,7 +217,7 @@ v3d::type::geometry::Bound2D ComponentRenderer::hud(v3d::render::realtime::canva
     const Dressing& dress = hud(place.style);
     float widest = 0.0F;
     for (const std::string& line : lines) {
-        widest = std::max(widest, measure_(line));
+        widest = std::max(widest, type_.width(line));
     }
     const glm::vec2 size(widest + (dress.padding * 2.0F), (dress.lineHeight * static_cast<float>(lines.size())) + dress.padding);
     const glm::vec2 corner = place.at - (size * place.anchor);
@@ -235,7 +235,7 @@ v3d::type::geometry::Bound2D ComponentRenderer::hud(v3d::render::realtime::canva
     // already spaces
     float top = corner.y + (dress.padding * 0.5F);
     for (const std::string& line : lines) {
-        write_(line, glm::vec2(corner.x + dress.padding, top + (dress.lineHeight * LINE_BASELINE)), dress.text);
+        type_.draw(canvas, line, glm::vec2(corner.x + dress.padding, top + (dress.lineHeight * LINE_BASELINE)), dress.text);
         top += dress.lineHeight;
     }
     return box;
@@ -394,13 +394,13 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     glm::vec2 pen(label->position().x, label->position().y + (base().lineHeight * LINE_BASELINE));
     if (label->layout().width.unit() == Length::Unit::Auto) {
-        write_(text, pen, ink(*label, base(), base().text));
+        type_.draw(canvas, text, pen, ink(*label, base(), base().text));
         return;
     }
     // a label with a width to wrap to draws the rows the arranger sized it for, so the two
     // agree about how tall it is
-    for (const std::string& row : wrap(text, size.x, measure_)) {
-        write_(row, pen, ink(*label, base(), base().text));
+    for (const std::string& row : type_.rows(text, size.x)) {
+        type_.draw(canvas, row, pen, ink(*label, base(), base().text));
         pen.y += base().lineHeight;
     }
 }
@@ -459,8 +459,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         return;
     }
 
-    const glm::vec2 baseline(min.x + ((size.x - measure_(label)) * 0.5F), min.y + (size.y * WIDGET_BASELINE));
-    write_(label, baseline, shade);
+    const glm::vec2 baseline(min.x + ((size.x - type_.width(label)) * 0.5F), min.y + (size.y * WIDGET_BASELINE));
+    type_.draw(canvas, label, baseline, shade);
 }
 
 /**
@@ -596,7 +596,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     if (text.empty()) {
         return;
     }
-    write_(text, glm::vec2(min.x + side + (dress.padding * 0.5F), min.y + (size.y * WIDGET_BASELINE)),
+    type_.draw(canvas, text, glm::vec2(min.x + side + (dress.padding * 0.5F), min.y + (size.y * WIDGET_BASELINE)),
         ink(*box, dress, dress.text));
 }
 
@@ -639,7 +639,7 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         if (picked) {
             fillBox(canvas, glm::vec2(low.x, top), glm::vec2(high.x, top + row), 0.0F, dress.highlight);
         }
-        write_(list->items()[index], glm::vec2(low.x + (dress.padding * 0.5F), top + (row * WIDGET_BASELINE)),
+        type_.draw(canvas, list->items()[index], glm::vec2(low.x + (dress.padding * 0.5F), top + (row * WIDGET_BASELINE)),
             ink(*list, dress, picked ? dress.activeText : dress.text));
     }
 
@@ -672,14 +672,14 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // the placeholder says what the box is for. It is shown only while the box is empty
         // and does not have the focus
         box->pen(low.x);
-        write_(box->placeholder(), glm::vec2(low.x, min.y + (size.y * WIDGET_BASELINE)), dress.placeholder);
+        type_.draw(canvas, box->placeholder(), glm::vec2(low.x, min.y + (size.y * WIDGET_BASELINE)), dress.placeholder);
         canvas->unclip();
         return;
     }
 
     // where the caret falls in the line, which is also how far the line has to slide left
     // for the caret to stay inside the box
-    const float caret = measure_(std::string_view(text).substr(0, box->caret()));
+    const float caret = type_.width(std::string_view(text).substr(0, box->caret()));
     const float room = high.x - low.x;
     const float slid = caret > room ? caret - room : 0.0F;
 
@@ -693,12 +693,12 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
         // colour. Three separate runs could measure differently from the one prefix that
         // places the caret
         const std::string_view line(text);
-        const float from = measure_(line.substr(0, std::min(box->anchor(), box->caret())));
-        const float to = measure_(line.substr(0, std::max(box->anchor(), box->caret())));
+        const float from = type_.width(line.substr(0, std::min(box->anchor(), box->caret())));
+        const float to = type_.width(line.substr(0, std::max(box->anchor(), box->caret())));
         fillBox(canvas, glm::vec2(pen.x + from, low.y), glm::vec2(pen.x + to, high.y),
             0.0F, dress.highlight);
     }
-    write_(text, pen, ink(*box, dress, dress.text));
+    type_.draw(canvas, text, pen, ink(*box, dress, dress.text));
 
     if (box->focused() && usable(*box)) {
         const float stem = std::max(width, 1.0F);
@@ -728,14 +728,14 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     float pen = min.x;
     for (std::size_t index = 0; index < pages.size(); index++) {
         const std::string label(pages[index]->label());
-        const float width = measure_(label) + dress.padding;
+        const float width = type_.width(label) + dress.padding;
         const glm::vec2 corner(pen, min.y);
         const glm::vec2 extent(width, height);
         boxes.push_back(v3d::type::geometry::Bound2D({.position = corner, .size = extent}));
 
         const bool picked = static_cast<int>(index) == bar->selected();
         fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
-        write_(label, glm::vec2(corner.x + (dress.padding * 0.5F), corner.y + (height * WIDGET_BASELINE)),
+        type_.draw(canvas, label, glm::vec2(corner.x + (dress.padding * 0.5F), corner.y + (height * WIDGET_BASELINE)),
             ink(*bar, dress, picked ? dress.activeText : dress.text));
         pen += width + dress.borderWidth;
     }

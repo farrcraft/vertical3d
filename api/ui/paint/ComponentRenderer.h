@@ -21,6 +21,7 @@
 
 #include "Dressing.h"
 #include "Text.h"
+#include "Type.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -103,10 +104,9 @@ class Skin;
 class ComponentRenderer {
  public:
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param body what the ui's text is measured, wrapped and drawn through
      **/
-    ComponentRenderer(const Measure& measure, const Write& write);
+    explicit ComponentRenderer(const Type& body);
     ~ComponentRenderer();
 
     /**
@@ -384,8 +384,7 @@ class ComponentRenderer {
      **/
     const Dressing& base() const noexcept;
 
-    Measure measure_;
-    Write write_;
+    Type type_;
     style::Resolver styles_;
     // the layout pass: it resolves the boxes and calls back here to fill them
     Arranger arranger_;

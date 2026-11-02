@@ -18,6 +18,8 @@
 #include <api/ui/input/Keys.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/style/Resolver.h>
+#include <api/ui/paint/Type.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -40,9 +42,7 @@ struct Fixture final {
     explicit Fixture(const char* document = R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })") :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        renderer(
-            [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
         ui = boost::make_shared<v3d::ui::Interface>(
@@ -233,7 +233,8 @@ BOOST_AUTO_TEST_CASE(a_slider_key_that_is_not_a_number_takes_its_default) {
  **/
 BOOST_AUTO_TEST_CASE(a_slider_is_as_tall_as_its_mark) {
     v3d::ui::style::Resolver styles;
-    const v3d::ui::Arranger arranger([](std::string_view text) { return static_cast<float>(text.size()); }, styles);
+    // a tenth of the size, so a character is one pixel wide
+    const v3d::ui::Arranger arranger(v3d::ui::paint::Type(v3d::ui::typeset::mono(), v3d::ui::typeset::monoSize * 0.1F), styles);
     v3d::ui::component::Slider slider;
     const glm::vec2 natural = arranger.natural(slider,
         v3d::type::geometry::Bound2D({.position = glm::vec2(0.0F, 0.0F), .size = glm::vec2(320.0F, 200.0F)}));

@@ -8,6 +8,7 @@
 #include <api/event/Event.h>
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <functional>
 #include <string>
@@ -57,15 +58,14 @@ class MenuRenderer final {
     typedef std::function<std::string(const v3d::event::Event& command)> Shortcut;
 
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param body what the menus' text is measured and drawn through
      * @param styles where the base dressing comes from
      * @param arranger what places a menu's panels and items
      * @param easing the clock a highlight eases and a panel opens on
      *
      * The last three are held by reference, because the renderer owns them.
      **/
-    MenuRenderer(const Measure& measure, const Write& write, const style::Resolver& styles,
+    MenuRenderer(const Type& body, const style::Resolver& styles,
         const Arranger& arranger, const Easing& easing);
 
     /**
@@ -238,8 +238,7 @@ class MenuRenderer final {
      **/
     const Dressing& base() const noexcept;
 
-    Measure measure_;
-    Write write_;
+    Type type_;
     const style::Resolver& styles_;
     const Arranger& arranger_;
     const Easing& easing_;

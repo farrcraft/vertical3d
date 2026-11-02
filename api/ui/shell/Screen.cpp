@@ -21,6 +21,7 @@
 #include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
 
 #include "StatisticsOverlay.h"
@@ -83,7 +84,7 @@ void Screen::build() {
     const boost::shared_ptr<style::Theme> drawing = components_ ? components_->theme() : boost::shared_ptr<style::Theme>();
     built_ = factor();
     const float drawn = size();
-    components_ = boost::make_shared<paint::ComponentRenderer>(text_->measure(drawn), text_->write(&canvas_, drawn));
+    components_ = boost::make_shared<paint::ComponentRenderer>(paint::Type(text_, drawn));
     // the built-in sizes at this scale, which the app's dress then fills in from the text size,
     // and a theme's sizes at the same scale
     components_->dressing() = paint::Dressing().scaled(built_);
@@ -92,10 +93,8 @@ void Screen::build() {
     // a menu's title and its chosen item are set semibold, and the title larger
     const float titled = drawn * titleScale;
     components_->emphasis({
-        .title = {.measure = text_->measure(titled, paint::Weight::SemiBold),
-            .write = text_->write(&canvas_, titled, paint::Weight::SemiBold), .scale = titleScale},
-        .chosen = {.measure = text_->measure(drawn, paint::Weight::SemiBold),
-            .write = text_->write(&canvas_, drawn, paint::Weight::SemiBold)}});
+        .title = {.type = paint::Type(text_, titled, paint::Weight::SemiBold), .scale = titleScale},
+        .chosen = {.type = paint::Type(text_, drawn, paint::Weight::SemiBold)}});
     options_.dress(&components_->dressing(), drawn);
 
     if (options_.immediate) {

@@ -16,7 +16,9 @@
 #include <api/ui/input/Cursor.h>
 #include <api/ui/input/Keys.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -49,7 +51,7 @@ struct Fixture final {
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
-        renderer(&measured, [](std::string_view, const glm::vec2&, const glm::vec4&) {}) {
+        renderer(v3d::ui::typeset::body()) {
         dispatcher->sink<v3d::event::Event>().connect<&Fixture::receive>(*this);
         canvas.resize(glm::uvec2(800, 600));
 
@@ -612,8 +614,7 @@ BOOST_AUTO_TEST_CASE(shift_and_a_caret_key_selects) {
 
 /**
  * The selected run is drawn behind the line, so it can be seen. It adds one quad to the same
- * box with nothing selected, and no batch of its own. The box's own clip splits the batches,
- * and the highlight is drawn inside the batch the text is in.
+ * box with nothing selected, cut to the box, in the batch drawn just before the text's.
  **/
 BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
     Fixture fixture;
@@ -621,13 +622,18 @@ BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
     field->focused(true);
     fixture.place(field, glm::vec2(0.0F, 0.0F), glm::vec2(200.0F, 24.0F));
     fixture.draw();
-    const std::size_t plain = fixture.canvas.vertices().size();
-    const std::size_t batches = fixture.canvas.batches().size();
+    const std::size_t plain = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
+    const std::size_t batches = v3d::ui::typeset::shapes(fixture.canvas).size();
 
     field->select(1, 4);
     fixture.draw();
-    BOOST_CHECK_EQUAL(fixture.canvas.vertices().size(), plain + 4U);
-    BOOST_CHECK_EQUAL(fixture.canvas.batches().size(), batches);
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), plain + 4U);
+    BOOST_REQUIRE_EQUAL(v3d::ui::typeset::shapes(fixture.canvas).size(), batches + 1U);
+    const auto text = std::ranges::find_if(fixture.canvas.batches(), &v3d::ui::typeset::text);
+    BOOST_REQUIRE(text != fixture.canvas.batches().begin() && text != fixture.canvas.batches().end());
+    const v3d::render::realtime::canvas::Canvas::Batch& highlight = *(text - 1);
+    BOOST_CHECK(highlight.clipped);
+    BOOST_CHECK_EQUAL(highlight.indices, 6U);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -7,6 +7,7 @@
 
 #include <api/type/geometry/Bound2D.h>
 #include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <cstdint>
 #include <functional>
@@ -74,12 +75,12 @@ class Arranger final {
     static const float ruleWidth;
 
     /**
-     * @param measure how wide a string is when the app draws it, which sizes a
+     * @param body what the ui's text is measured and wrapped through, which sizes a
      *      label, a button and a tab
      * @param styles where a component's colours and metrics come from. Held by reference,
      *      because the renderer owns it, and a theme change must reach the arranger
      **/
-    Arranger(const paint::Measure& measure, const style::Resolver& styles);
+    Arranger(const paint::Type& body, const style::Resolver& styles);
 
     /**
      * Lay a component out inside a box that has already been resolved, and draw it and
@@ -299,7 +300,7 @@ class Arranger final {
      **/
     float choice(const component::menu::Item* item) const;
 
-    paint::Measure measure_;
+    paint::Type type_;
     paint::Emphasis emphasis_;
     const style::Resolver& styles_;
     /**
