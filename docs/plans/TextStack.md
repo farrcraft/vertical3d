@@ -309,8 +309,9 @@ beside a multi-channel distance field, all three, and distance fields for all te
 
 **Open.** ADR-0145 decided it with step 9. `font::outline()` reads a glyph's quadratic curves and
 bands them. Float textures hold curves and bands on the device, `Canvas::curves()` draws them,
-and the quad shader's curve branch finds coverage from them. The curve store and the text drawn
-through it follow.
+and the quad shader's curve branch finds coverage from them. `font::CurveStore` keeps the curves,
+`ui::paint::CurvePages` keeps them on the device, and `ui::paint::CurveText` draws a paragraph
+through any 2D transform. Text in world space and in depth order, and the reference images, follow.
 
 - A glyph's quadratic curves are stored on the device, banded so a pixel reads only the curves
   that cross it.

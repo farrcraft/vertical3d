@@ -2,6 +2,7 @@ v3d_add_test(font
 	"TestMain.cxx"
 	"BidiTest.cxx"
 	"CurvesTest.cxx"
+	"CurveStoreTest.cxx"
 	"FallbackChainTest.cxx"
 	"GlyphStoreTest.cxx"
 	"ParagraphTest.cxx"

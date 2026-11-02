@@ -5,6 +5,7 @@ v3d_add_test(ui
 	"ArrangerTest.cpp"
 	"CheckBoxTest.cpp"
 	"ComponentRendererTest.cpp"
+	"CurveTextTest.cpp"
 	"CursorTest.cpp"
 	"DocumentTest.cpp"
 	"FileChooserTest.cpp"

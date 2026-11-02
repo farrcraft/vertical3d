@@ -291,6 +291,27 @@ Slug algorithm draws it. **`outline(face, index)`** reads a glyph's `CurveGlyph`
 - A glyph with no outline, such as a space, or one that cannot be loaded has no curves and no
   bands.
 
+**The curve store.** A `CurveStore` keeps the curves text is drawn from, read the first time each
+glyph is drawn. A glyph's curves are the same at every size, so it is found by its face and its
+index, and kept as long as the store is.
+
+- **`glyph(face, index)`** gives the `StoredCurves`: the value its `bands` start at, the `min`
+  and `max` of its outline in em units, and whether it is `empty`, as a space is.
+- **`curves()`** and **`bands()`** are the two arrays a renderer copies to the device, four floats
+  a texel, in rows of `ROW` texels. Curve c is texels 2c and 2c + 1: p1 and p2, then p3.
+- **Bands.** Band value k is float k of `bands()`. A glyph's bands start at its value g:
+  - values g to g + 3 are its band transform, x and y scale, then x and y offset;
+  - values g + 4 and g + 5 are how many vertical and horizontal bands it has;
+  - from g + 8, each horizontal band has its curve count and the value its list starts at, and
+    then each vertical band does;
+  - each list holds curve indices, in the band's order.
+- **Rows.** Each array grows by doubling its rows. `curveRows()` and `bandRows()` say how many
+  it holds, and `changedCurves()` and `changedBands()` give the rows written since they were
+  last asked for, once.
+- A float holds an index exactly up to 2 to the 24th, so the store holds that many curves and
+  values. A key names its face by address, so a face the store holds glyphs from stays open.
+  `read()` counts the glyphs read rather than found.
+
 ## Texture fonts
 
 - **`TextureFont(face, size, logger, spread)`** draws one face at one size.

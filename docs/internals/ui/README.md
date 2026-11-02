@@ -38,6 +38,7 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
 | `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, the glyph store, and the callbacks over them |
+| `paint::CurveText`, `paint::CurvePages` | [paint/CurveText.h](../../../api/ui/paint/CurveText.h) | text drawn from its curves, and the device's copy of the curve store |
 | `paint::GlyphPages` | [paint/GlyphPages.h](../../../api/ui/paint/GlyphPages.h) | the device's copy of the glyph store's pages |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
 | `style::Resolver` | [style/Resolver.h](../../../api/ui/style/Resolver.h) | turns a theme into a cached `Dressing` per class and style name |

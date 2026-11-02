@@ -103,6 +103,28 @@ callbacks, as below. An app that draws the canvas through its own renderer suppl
 
 Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
+### Curve text
+
+`paint::CurveText` draws a `font::Paragraph` from its glyphs' curves, sharp at any size and under
+any transform: scaled, turned or animated. **`draw(canvas, paragraph, transform)`** places the
+paragraph, in pixels with y downwards, through an affine `glm::mat3` into the canvas.
+
+- Each glyph is a quad over its outline, a pixel of the canvas wider on every side so its edge
+  is not cut. Its corners carry their place in the em square, and the quad shader finds each
+  pixel's coverage from the curves that cross it.
+- Each glyph is drawn in its style's colour, and the ellipsis of a cut line in the style before
+  the cut.
+- The curves come from a `font::CurveStore`, read the first time a glyph is drawn at any size.
+  `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three
+  callbacks as `GlyphPages` does. With a context's `Textures`, create is
+  `textures->texture({ .data, .width, .height })`, update is `textures->update()` of texels, and
+  release is `textures->release()`.
+- `CurvePages::sync()` makes an array's texture again, whole, when the array has outgrown it, and
+  otherwise copies the rows the store changed. `draw()` syncs before it hands the quads to the
+  canvas.
+
+Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
+
 ### Glyph pages
 
 `paint::GlyphPages` keeps the device's copy of a `font::GlyphStore`'s pages, one texture for

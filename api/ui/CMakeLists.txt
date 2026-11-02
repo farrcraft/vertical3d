@@ -49,6 +49,8 @@ v3d_add_api_library(ui
 	"paint/Painter.h" "paint/Painter.cpp"
 	"paint/Palette.h" "paint/Palette.cpp"
 	"paint/Text.h" "paint/Text.cpp"
+	"paint/CurvePages.h" "paint/CurvePages.cpp"
+	"paint/CurveText.h" "paint/CurveText.cpp"
 	"paint/GlyphPages.h" "paint/GlyphPages.cpp"
 	"paint/TextRenderer.h" "paint/TextRenderer.cpp"
 	"paint/internal/Easing.h" "paint/internal/Easing.cpp"
