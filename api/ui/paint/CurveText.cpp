@@ -72,7 +72,7 @@ void CurveText::draw(render::realtime::canvas::Canvas* canvas, const font::Parag
         const auto first = static_cast<std::uint32_t>(vertices_.size());
         for (std::size_t corner = 0; corner < at.size(); corner++) {
             const glm::vec3 moved = transform * glm::vec3(at[corner], 1.0F);
-            vertices_.push_back({ .position = glm::vec2(moved), .uv = em[corner], .colour = placed.colour, .glyph = placed.stored.bands });
+            vertices_.push_back({ .position = glm::vec2(moved), .uv = em[corner], .colour = placed.colour, .glyph = placed.stored.bands, .contrast = placed.contrast });
         }
         for (const std::uint32_t index : TRIANGLES) {
             indices_.push_back(first + index);
@@ -139,7 +139,7 @@ bool CurveText::place(const font::Paragraph& paragraph) {
                 if (!stored.empty && run.size > 0.0F) {
                     const font::TextStyle& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
                     const glm::vec2 origin = pen + glyph.offset;
-                    placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour });
+                    placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = styled.contrast });
                     internal::placeEffects(&effects_, &fields_, *run.face, glyph.index, run.size, styled.effects, origin);
                 }
                 pen.x += glyph.advance;
@@ -188,7 +188,7 @@ render::realtime::canvas::World::Corners CurveText::inWorld(const internal::Plac
  **/
 render::realtime::canvas::World::Glyph CurveText::worldGlyph(const Placed& placed) const {
     return render::realtime::canvas::World::Glyph{ .em = emCorners(placed.stored, WORLD_MARGIN), .bands = placed.stored.bands,
-        .curveTexture = pages_.curves(), .bandTexture = pages_.bands() };
+        .curveTexture = pages_.curves(), .bandTexture = pages_.bands(), .contrast = placed.contrast };
 }
 
 /**

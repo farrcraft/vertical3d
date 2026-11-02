@@ -106,10 +106,10 @@ canvas.unfade();
 ### Text
 
 Text on the pixel grid is drawn as textured rectangles. `ui::paint::TextRenderer` lays it out
-with `v3d::font` and places each glyph on whole pixels, as a `rect` sampling its coverage from a
-single-channel glyph page. The page's view swizzles its channel into alpha, so the quad shader's
-ordinary textured path multiplies the coverage into the colour. `render` does not depend on
-`font`.
+with `v3d::font` and places each glyph on whole pixels. `Canvas::glyphs(vertices, indices, page)`
+copies the glyphs as quads sampling their coverage from a single-channel glyph page. The page's
+view swizzles its channel into alpha, and the run joins pictures of the same page. `render` does
+not depend on `font`.
 
 `Canvas::curves(vertices, indices, curves, bands)` copies glyphs drawn from their quadratic curves,
 as vertices and the triangles over them. Each vertex's `uv` is its place in em units, y upwards,
@@ -127,6 +127,24 @@ as an outline, a shadow or a glow. The ramp holds the field value at which the e
 whole pixel and the value at which it covers none of it. Coverage fades between the two, or rises
 across one pixel when they are closer than that. Text and other quads that sample the same
 atlas are drawn as separate batches.
+
+### Text weight
+
+A vertex's `contrast` marks it as text when it is 0 or more. It is -1 unless set, so nothing
+else is touched. Text's coverage is changed in the shader in two steps:
+
+- **Contrast.** Coverage `a` becomes `a + contrast * a * (1 - a)`, in every target. At 0 nothing
+  changes, and at 1 half coverage becomes three quarters. Light text on a dark ground looks
+  lighter than dark text on a light ground, and a style raises its contrast to make up for it.
+- **The target.** A UNORM target blends in display space and keeps the coverage as it is. An
+  _SRGB target blends in linear light, which would make dark text on a light ground thin and light
+  text on a dark ground bold. There the coverage is changed so that the linear blend gives the
+  colour a display space blend would, over a ground of the opposite luminance. Text then looks
+  one weight in either target. Over a mid-tone or busy ground the match is close, not exact.
+
+Coverage, curve and distance field glyphs are corrected alike, on the screen and in the world.
+
+Background: [ADR-0147](../../adr/0147-text-coverage-corrected-to-blend-as-in-display-space.md)
 
 ### User interface
 

@@ -188,6 +188,7 @@ that wants to replace them.
 | `linear_quad.frag` | `Quad` drawing into an `_SRGB` format: `quad.frag` compiled with `LINEARISE` |
 | `line.vert`, `line.frag` | `Line` |
 | `world.vert`, `world.frag` | `World` |
+| `encoded_world.frag` | `World` drawing into an `_SRGB` format: `world.frag` compiled with `ENCODED_TARGET` |
 | `fullscreen.vert`, `grade.frag` | `FullScreen`, `Grade` |
 | `grade_linear_scene.frag`, `grade_linear_target.frag`, `grade_linear.frag` | `Grade`: `grade.frag` compiled with `LINEAR_SCENE` for an `_SRGB` scene, `LINEAR_TARGET` for an `_SRGB` target, or both |
 | `lit/mesh.vert`, `lit/cel.frag`, `lit/outline.vert`, `lit/outline.frag`, `lit/shadow.vert` | `Lit` |
@@ -195,7 +196,8 @@ that wants to replace them.
 
 `curves.glsl` finds a curve glyph's coverage from its curves and bands, as the Slug algorithm
 does. `field.glsl` finds a distance field's coverage at a glyph's edge or through an effect's
-ramp. `quad.frag` and `world.frag` include both.
+ramp. `text.glsl` applies text's contrast, and in an `_SRGB` target corrects its coverage to
+its display space weight. `quad.frag` and `world.frag` include all three.
 
 `srgb.glsl` holds the sRGB decode and encode. `quad.frag` and `grade.frag` include it, so the
 two agree to the bit.

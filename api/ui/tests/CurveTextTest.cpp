@@ -272,6 +272,21 @@ BOOST_AUTO_TEST_CASE(effects_stand_in_the_world_beneath_the_glyphs) {
     BOOST_CHECK(sorted.batches().back().bands.valid());
 }
 
+/**
+ * A glyph drawn from its curves carries its style's contrast, on the screen and in the world.
+ **/
+BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
+    style.contrast = 0.6F;
+    draw("H");
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.6F);
+
+    v3d::render::realtime::canvas::World world;
+    text.draw(&world, v3d::font::Paragraph(cache, "H", style), glm::mat4(1.0F));
+    BOOST_REQUIRE_EQUAL(world.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(world.vertices()[0].contrast, 0.6F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

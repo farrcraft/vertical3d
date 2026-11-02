@@ -263,6 +263,22 @@ BOOST_AUTO_TEST_CASE(a_field_is_a_quad_with_its_ramp) {
     BOOST_CHECK(canvas.vertices()[6].uv == glm::vec2(0.5F, 0.5F));
 }
 
+/**
+ * A glyph's contrast reaches its vertices, and a field's too, while a quad is not text.
+ **/
+BOOST_AUTO_TEST_CASE(text_keeps_its_contrast) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), white);
+    const v3d::render::realtime::canvas::World::Glyph glyph{ .bands = 7, .curveTexture = handle(1), .bandTexture = handle(2), .contrast = 0.25F };
+    canvas.glyph(tile(1.0F, 0.0F), glyph, red);
+    canvas.field(tile(2.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), red, handle(3), 9, 0.75F);
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_CHECK_LT(canvas.vertices()[0].contrast, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.25F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].contrast, 0.75F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

@@ -96,6 +96,8 @@ v3d_add_shader(v3dlib_render "shaders/line.frag")
 # The world space quad primitive.
 v3d_add_shader(v3dlib_render "shaders/world.vert")
 v3d_add_shader(v3dlib_render "shaders/world.frag")
+# The same stage for an _SRGB target, where text's coverage is corrected to its display weight
+v3d_add_shader(v3dlib_render "shaders/world.frag" OUTPUT "encoded_world.frag" DEFINES ENCODED_TARGET)
 
 # The lit renderer. The blocks its shaders share are in shaders/lit/lit.glsl.
 v3d_add_shader(v3dlib_render "shaders/lit/mesh.vert")

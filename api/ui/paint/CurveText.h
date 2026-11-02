@@ -107,6 +107,7 @@ class CurveText final {
         glm::vec2 origin{ 0.0F };
         float size = 0.0F;
         glm::vec4 colour{ 1.0F };
+        float contrast = 0.0F;
     };
 
     /**

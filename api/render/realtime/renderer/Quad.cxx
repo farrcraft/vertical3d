@@ -104,6 +104,7 @@ void Quad::createPipelines(const vulkan::pipeline::Formats & formats) {
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, uv)})
         .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, colour)})
         .vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R32_UINT, .offset = offsetof(canvas::Canvas::Vertex, glyph)})
+        .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32_SFLOAT, .offset = offsetof(canvas::Canvas::Vertex, contrast)})
         // nothing 2D has a back face worth culling, and not culling means a caller cannot
         // get a quad's winding wrong and have it silently disappear
         .cull(VK_CULL_MODE_NONE)

@@ -64,7 +64,7 @@ class DepthOrder final {
      *        drawn first, and every field before anything else
      **/
     void field(float key, uint32_t layer, const World::Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-        const glm::vec4& colour, const TextureHandle& texture, uint32_t ramp);
+        const glm::vec4& colour, const TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
 
     /**
      * Add everything collected to a canvas, furthest first. The canvas's current transform
@@ -88,6 +88,7 @@ class DepthOrder final {
         std::optional<World::Glyph> glyph;  /**< set for a glyph drawn from its curves **/
         std::optional<uint32_t> ramp;       /**< set for an effect drawn from a distance field **/
         uint32_t layer = 0;                 /**< an effect's place among its glyph's effects **/
+        float contrast = 0.0F;              /**< an effect's contrast **/
     };
 
     std::vector<Entry> entries_;

@@ -199,6 +199,18 @@ BOOST_AUTO_TEST_CASE(fields_lie_beneath_glyphs_by_layer) {
     BOOST_CHECK(canvas.batches().back().bands.valid());
 }
 
+/**
+ * A field's contrast comes through the sort to the canvas.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_keeps_its_contrast) {
+    DepthOrder order;
+    order.field(1.0F, 0, tile(0.0F, 0.0F), glm::vec2(0.0F), glm::vec2(1.0F), white, v3d::render::realtime::TextureHandle(8), 10, 0.5F);
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.5F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

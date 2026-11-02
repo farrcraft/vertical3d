@@ -11,11 +11,14 @@ layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 colour;
 layout(location = 3) in uint glyph;
+layout(location = 4) in float contrast;
 
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
 // where a curve glyph's bands start, or a distance field's ramp, the same at every corner
 layout(location = 2) flat out uint fragmentGlyph;
+// how much text's coverage is strengthened, or below 0 for what is not text
+layout(location = 3) flat out float fragmentContrast;
 
 // set 0 holds per frame data: the camera the whole pass draws through
 layout(set = 0, binding = 0) uniform Camera {
@@ -35,4 +38,5 @@ void main() {
     fragmentUv = uv;
     fragmentColour = colour * push.tint;
     fragmentGlyph = glyph;
+    fragmentContrast = contrast;
 }

@@ -50,6 +50,7 @@ class World final {
         glm::vec2 uv;
         glm::vec4 colour;
         uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
+        float contrast = -1.0F;  /**< for text, how much its coverage is strengthened, from 0 to 1. Below 0 for what is not text **/
     };
 
     /**
@@ -61,6 +62,7 @@ class World final {
         uint32_t bands = 0;
         TextureHandle curveTexture;  /**< the float texture of the glyph's curves **/
         TextureHandle bandTexture;   /**< and of its bands **/
+        float contrast = 0.0F;       /**< how much its coverage is strengthened, from 0 to 1 **/
     };
 
     /**
@@ -166,9 +168,10 @@ class World final {
      * never merges with quads drawn another way.
      *
      * @param ramp where the effect is whole and where it is gone, from fieldRamp()
+     * @param contrast how much its coverage is strengthened, as text's is
      **/
     void field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
-        const TextureHandle& texture, uint32_t ramp);
+        const TextureHandle& texture, uint32_t ramp, float contrast = 0.0F);
 
     /**
      * @return the vertex stream, in the layout the world quad pipeline declares
@@ -201,9 +204,9 @@ class World final {
     void open(const TextureHandle& texture, const TextureHandle& bands = TextureHandle(), bool field = false);
 
     /**
-     * Add a vertex with the current transform applied.
+     * Add a vertex with the current transform and tint applied.
      **/
-    void vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour, uint32_t glyph = 0);
+    void vertex(const Vertex& untransformed);
 
     /**
      * Index the four vertices starting at first as two triangles, fanned from the first

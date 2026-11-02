@@ -195,11 +195,27 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const fon
     internal::layerEffects(&effects_);
     internal::drawEffects(canvas, effects_, pages_, glm::mat3(1.0F), &vertices_, &indices_);
 
+    // each glyph a quad of text sampling its page, one call for each run on one page
     const auto side = static_cast<float>(store_.spec().pageSize);
-    for (const Placed& placed : placed_) {
-        const glm::vec2 extent(placed.glyph.size);
+    for (std::size_t index = 0; index < placed_.size(); index++) {
+        const Placed& placed = placed_[index];
+        const glm::vec2 low = placed.position;
+        const glm::vec2 high = low + glm::vec2(placed.glyph.size);
         const glm::vec2 from = glm::vec2(placed.glyph.position) / side;
-        canvas->rect(placed.position, placed.position + extent, from, from + (extent / side), placed.colour, pages_.texture(placed.glyph.page));
+        const glm::vec2 to = from + (glm::vec2(placed.glyph.size) / side);
+        const auto first = static_cast<std::uint32_t>(vertices_.size());
+        vertices_.push_back({ .position = low, .uv = from, .colour = placed.colour, .contrast = placed.contrast });
+        vertices_.push_back({ .position = glm::vec2(low.x, high.y), .uv = glm::vec2(from.x, to.y), .colour = placed.colour, .contrast = placed.contrast });
+        vertices_.push_back({ .position = high, .uv = to, .colour = placed.colour, .contrast = placed.contrast });
+        vertices_.push_back({ .position = glm::vec2(high.x, low.y), .uv = glm::vec2(to.x, from.y), .colour = placed.colour, .contrast = placed.contrast });
+        for (const std::uint32_t corner : { 0U, 1U, 2U, 2U, 3U, 0U }) {
+            indices_.push_back(first + corner);
+        }
+        if (index + 1 == placed_.size() || placed_[index + 1].glyph.page != placed.glyph.page) {
+            canvas->glyphs(vertices_, indices_, pages_.texture(placed.glyph.page));
+            vertices_.clear();
+            indices_.clear();
+        }
     }
 }
 
@@ -215,7 +231,7 @@ void TextRenderer::place(const font::LineRun& run, unsigned int index, const fon
     const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
     if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
         const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
-        placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour });
+        placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour, .contrast = styled.contrast });
     }
 }
 

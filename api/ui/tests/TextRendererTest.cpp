@@ -229,6 +229,27 @@ BOOST_AUTO_TEST_CASE(effects_are_drawn_beneath_a_paragraph) {
     BOOST_CHECK_GT(canvas.vertices()[10].position.y, canvas.vertices()[18].position.y);
 }
 
+/**
+ * A glyph carries its style's contrast, which marks it as text, and an effect carries none.
+ **/
+BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer();
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(640, 480));
+    v3d::font::TextStyle style = text->style(24.0F);
+    style.contrast = 0.4F;
+    style.effects = { v3d::font::TextEffect{ .width = 1.0F } };
+    text->draw(&canvas, v3d::font::Paragraph(text->shaping(), "l", style), glm::vec2(10.0F, 100.0F));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.4F);
+
+    canvas.clear();
+    text->draw(&canvas, "l", glm::vec2(10.0F, 100.0F), glm::vec4(1.0F));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.0F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

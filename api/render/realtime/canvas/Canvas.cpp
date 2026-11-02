@@ -241,6 +241,7 @@ void Canvas::vertex(const Vertex& untransformed) {
     added.colour = untransformed.colour;
     added.colour.a *= opacity();
     added.glyph = untransformed.glyph;
+    added.contrast = untransformed.contrast;
     vertices_.push_back(added);
 }
 
@@ -400,6 +401,16 @@ void Canvas::text(std::span<const Vertex> vertices, std::span<const uint32_t> in
         return;
     }
     open(atlas, true);
+    append(vertices, indices);
+}
+
+/**
+ **/
+void Canvas::glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& page) {
+    if (!fits(vertices, indices)) {
+        return;
+    }
+    open(page);
     append(vertices, indices);
 }
 

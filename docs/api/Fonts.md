@@ -142,9 +142,10 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 - **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
   `size` in pixels, the OpenType `features` and the `colour`. It also says whether it has an
   `underline` or a `strikethrough`, and lists the `effects` drawn beneath it, as
-  [effect fields](#effect-fields) describes. The first four decide the glyphs; `shapesLike()`
-  compares those alone. The colour, the decorations and the effects only decide how the glyphs
-  are drawn.
+  [effect fields](#effect-fields) describes. Its `contrast`, from 0 to 1, strengthens the
+  glyphs' coverage, as light text on a dark ground needs. The first four decide the glyphs;
+  `shapesLike()` compares those alone. The colour, the decorations, the effects and the contrast
+  only decide how the glyphs are drawn.
 - **`ParagraphStyle`** names the `direction` each paragraph is read in, the `alignment`, and
   the `width` lines wrap at. At a width of 0 or less they never wrap. It also names
   `maxLines`, 0 for no limit, and whether a cut line ends in an `ellipsis`. Its
@@ -166,7 +167,7 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 | Change | Shapes again | Lays out again |
 |---|---|---|
 | The width, the alignment, the line limit, the ellipsis or the line spacing | No | Yes |
-| A style whose colour, decorations or effects alone differ | No | No |
+| A style whose colour, decorations, effects or contrast alone differ | No | No |
 | A style that shapes differently, the text, or the direction | Through the cache | Yes |
 
 **The shaping cache.** Every paragraph of an app shares one `ShapingCache`, made with the

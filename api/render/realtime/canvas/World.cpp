@@ -89,10 +89,10 @@ void World::quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& 
     open(texture);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex(corners[0], glm::vec2(uv0.x, uv0.y), colour);
-    vertex(corners[1], glm::vec2(uv1.x, uv0.y), colour);
-    vertex(corners[2], glm::vec2(uv1.x, uv1.y), colour);
-    vertex(corners[3], glm::vec2(uv0.x, uv1.y), colour);
+    vertex({.position = corners[0], .uv = glm::vec2(uv0.x, uv0.y), .colour = colour});
+    vertex({.position = corners[1], .uv = glm::vec2(uv1.x, uv0.y), .colour = colour});
+    vertex({.position = corners[2], .uv = glm::vec2(uv1.x, uv1.y), .colour = colour});
+    vertex({.position = corners[3], .uv = glm::vec2(uv0.x, uv1.y), .colour = colour});
     fan(first);
 }
 
@@ -103,7 +103,7 @@ void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& c
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
     for (std::size_t corner = 0; corner < corners.size(); corner++) {
-        vertex(corners[corner], glyph.em[corner], colour, glyph.bands);
+        vertex({.position = corners[corner], .uv = glyph.em[corner], .colour = colour, .glyph = glyph.bands, .contrast = glyph.contrast});
     }
     fan(first);
 }
@@ -111,14 +111,14 @@ void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& c
 /**
  **/
 void World::field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
-    const TextureHandle& texture, uint32_t ramp) {
+    const TextureHandle& texture, uint32_t ramp, float contrast) {
     open(texture, TextureHandle(), true);
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex(corners[0], glm::vec2(uv0.x, uv0.y), colour, ramp);
-    vertex(corners[1], glm::vec2(uv1.x, uv0.y), colour, ramp);
-    vertex(corners[2], glm::vec2(uv1.x, uv1.y), colour, ramp);
-    vertex(corners[3], glm::vec2(uv0.x, uv1.y), colour, ramp);
+    vertex({.position = corners[0], .uv = glm::vec2(uv0.x, uv0.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[1], .uv = glm::vec2(uv1.x, uv0.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[2], .uv = glm::vec2(uv1.x, uv1.y), .colour = colour, .glyph = ramp, .contrast = contrast});
+    vertex({.position = corners[3], .uv = glm::vec2(uv0.x, uv1.y), .colour = colour, .glyph = ramp, .contrast = contrast});
     fan(first);
 }
 
@@ -163,12 +163,10 @@ void World::open(const TextureHandle& texture, const TextureHandle& bands, bool 
 
 /**
  **/
-void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour, uint32_t glyph) {
-    Vertex added;
-    added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0F));
-    added.uv = uv;
-    added.colour = colour * tint_;
-    added.glyph = glyph;
+void World::vertex(const Vertex& untransformed) {
+    Vertex added = untransformed;
+    added.position = glm::vec3(transforms_.top() * glm::vec4(untransformed.position, 1.0F));
+    added.colour = untransformed.colour * tint_;
     vertices_.push_back(added);
 }
 

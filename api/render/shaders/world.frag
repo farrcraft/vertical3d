@@ -11,11 +11,15 @@
  * curves that cross it, so text in the world is sharp at any distance and angle. A batch of
  * distance fields draws the effects beneath it, each where the quad's ramp says. The branch is
  * uniform across a draw.
+ *
+ * Text's coverage is corrected by text.glsl, as quad.frag's is. Built with ENCODED_TARGET, for
+ * an _SRGB target, a quad's colour is in linear light.
  **/
 
 layout(location = 0) in vec2 fragmentUv;
 layout(location = 1) in vec4 fragmentColour;
 layout(location = 2) flat in uint fragmentGlyph;
+layout(location = 3) flat in float fragmentContrast;
 
 layout(location = 0) out vec4 outColour;
 
@@ -37,16 +41,33 @@ const uint DISTANCE = 2u;
 #include "curves.glsl"
 #include "field.glsl"
 
+#ifdef ENCODED_TARGET
+// in an _SRGB target a colour is in linear light, and its displayed value is its encoding
+#include "srgb.glsl"
+#endif
+
+#include "text.glsl"
+
+// the colour as it is displayed, for text's correction
+vec3 shown(vec3 colour) {
+#ifdef ENCODED_TARGET
+    return display(colour);
+#else
+    return colour;
+#endif
+}
+
 void main() {
     if (push.mode == CURVES) {
         // uv is the sample's place in the glyph, in em units
-        float coverage = curveCoverage(push.texture, push.bands, fragmentUv, fragmentGlyph);
+        float coverage = textCoverage(curveCoverage(push.texture, push.bands, fragmentUv, fragmentGlyph), shown(fragmentColour.rgb), fragmentContrast);
         outColour = vec4(fragmentColour.rgb, fragmentColour.a * coverage);
         return;
     }
     vec4 texel = texture(textures[push.texture], fragmentUv);
     if (push.mode == DISTANCE) {
-        outColour = vec4(fragmentColour.rgb, fragmentColour.a * fieldCoverage(texel.a, fragmentGlyph));
+        float coverage = textCoverage(fieldCoverage(texel.a, fragmentGlyph), shown(fragmentColour.rgb), fragmentContrast);
+        outColour = vec4(fragmentColour.rgb, fragmentColour.a * coverage);
         return;
     }
     outColour = fragmentColour * texel;

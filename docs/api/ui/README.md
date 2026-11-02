@@ -102,7 +102,8 @@ the frame before may make room for another.
 as a string is. Build the paragraph with `shaping()`, the renderer's cache, and a style from
 `style(size, weight)`, which names the renderer's faces. A style's effects are drawn beneath the
 text from each glyph's distance field, kept in the same glyph store, as
-[Fonts.md](../Fonts.md#effect-fields) describes.
+[Fonts.md](../Fonts.md#effect-fields) describes. Each glyph carries its style's contrast, so it
+looks one weight in any target, as [Canvas.md](../rendering/Canvas.md#text-weight) describes.
 
 No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
 callbacks, as below. An app that draws the canvas through its own renderer supplies its own.

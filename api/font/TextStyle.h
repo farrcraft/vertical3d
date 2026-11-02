@@ -39,8 +39,8 @@ struct TextEffect final {
  * How a stretch of text is shaped and drawn.
  *
  * The fonts, the face style, the size and the features decide its glyphs. The colour, the
- * decorations and the effects only decide how they are drawn, so text that changes only those
- * is not shaped again.
+ * decorations, the effects and the contrast only decide how they are drawn, so text that
+ * changes only those is not shaped again.
  **/
 struct TextStyle final {
     /**
@@ -56,6 +56,7 @@ struct TextStyle final {
     bool underline = false;
     bool strikethrough = false;
     std::vector<TextEffect> effects;    /**< drawn beneath the text in this order, the first furthest back **/
+    float contrast = 0.0F;              /**< how much the glyphs' coverage is strengthened, from 0 to 1, as light text on a dark ground needs **/
 
     bool operator==(const TextStyle& other) const = default;
 

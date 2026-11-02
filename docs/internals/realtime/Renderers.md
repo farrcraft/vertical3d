@@ -18,9 +18,9 @@ colour and depth formats they draw into, and each of them compiles a variant per
 
 | Renderer | Pipelines | Depth variant | Notes |
 |---|---|---|---|
-| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
+| `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph, contrast); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
-| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph, and the `mode` push value selects a picture, the curve branch or the distance-field branch, as `Quad`'s `text` does |
+| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph and a contrast, and the `mode` push value selects a picture, the curve branch or the distance-field branch, as `Quad`'s `text` does; into an `_SRGB` format, `world.frag` is compiled with `ENCODED_TARGET` |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
@@ -31,7 +31,8 @@ swapchain exists.
 **Quad text.** A batch carries a text flag and a bands texture, and `Canvas` never merges across
 either. The push constant's `text` value says how the fragment stage draws the batch:
 
-- `PICTURE` returns `colour * texel`.
+- `PICTURE` returns `colour * texel`, or for a coverage glyph, whose contrast is 0 or more, the
+  colour with its alpha times the corrected coverage in the texel's alpha.
 - `DISTANCE` thresholds the sampled distance. A vertex whose `glyph` is 0 is thresholded at
   0.5, with the distance's screen gradient for a one-pixel edge at any scale. Any other `glyph`
   is an effect's ramp. Its low 16 bits are the value at which the effect is whole, its high 16

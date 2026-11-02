@@ -5,6 +5,8 @@
 
 #include "World.h"
 
+#include "Quad.h"
+
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/DrawItem.h>
 #include <api/render/realtime/Handle.h>
@@ -42,6 +44,11 @@ const uint32_t vertexShader[] =
 
 const uint32_t fragmentShader[] =
 #include "shaders/world.frag.inc"
+;  // NOLINT(whitespace/semicolon)
+
+// the fragment stage for an _SRGB target, which corrects text's coverage to its display weight
+const uint32_t encodedFragmentShader[] =
+#include "shaders/encoded_world.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
 /**
@@ -88,15 +95,18 @@ void World::createPipelines(const vulkan::pipeline::Formats & formats) {
 PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipeline::Formats & formats, Blend blend) {
     const VkFormat colour = formats.colour;
     const VkFormat depth = formats.depth;
+    const bool encoded = Quad::linearises(colour);
     vulkan::pipeline::Builder builder(device_);
     builder.name(name)
         .shader(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, sizeof(vertexShader))
-        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, sizeof(fragmentShader))
+        .shader(VK_SHADER_STAGE_FRAGMENT_BIT, encoded ? encodedFragmentShader : fragmentShader,
+            encoded ? sizeof(encodedFragmentShader) : sizeof(fragmentShader))
         .vertexBinding({.binding = 0, .stride = sizeof(canvas::World::Vertex)})
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::World::Vertex, position)})
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::World::Vertex, uv)})
         .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::World::Vertex, colour)})
         .vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R32_UINT, .offset = offsetof(canvas::World::Vertex, glyph)})
+        .vertexAttribute({.location = 4, .binding = 0, .format = VK_FORMAT_R32_SFLOAT, .offset = offsetof(canvas::World::Vertex, contrast)})
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)

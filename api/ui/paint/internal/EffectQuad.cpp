@@ -79,7 +79,7 @@ void drawEffects(render::realtime::canvas::Canvas* canvas, const std::vector<Pla
         const auto first = static_cast<std::uint32_t>(vertices->size());
         for (std::size_t corner = 0; corner < corners.size(); corner++) {
             const glm::vec3 moved = transform * glm::vec3(corners[corner], 1.0F);
-            vertices->push_back({ .position = glm::vec2(moved), .uv = uv[corner], .colour = effect.colour, .glyph = quad.ramp });
+            vertices->push_back({ .position = glm::vec2(moved), .uv = uv[corner], .colour = effect.colour, .glyph = quad.ramp, .contrast = 0.0F });
         }
         for (const std::uint32_t corner : triangles) {
             indices->push_back(first + corner);

@@ -112,7 +112,7 @@ features, the variable font axes, the decorations, and the effects.
 | Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
 | Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
 | Text: the text object the ui and the games hold, and how it is cached. Decided by ADR-0143: a paragraph with style ranges over a shared shaping cache. | 6 |
-| Text: how coverage is blended. Open: as it lands in a display space target, with a contrast curve, or in linear space with stem darkening. | 12 |
+| Text: how coverage is blended. Decided by ADR-0147: corrected to blend as in display space, with a contrast curve. | 12 |
 | Text: which colour glyph formats are read. Open: COLR v0 and v1, CBDT, sbix and SVG. | 14 |
 
 Each decision is researched against how established tools answer it before it is drafted as an
@@ -356,11 +356,21 @@ from a stroked glyph.
 
 ### Step 12 — Blending
 
-**Open.** Decide how coverage is blended.
+**Closed.** ADR-0147 decided it, after weighing linear blending with stem darkening.
 
-- Text looks the same weight in a display space target and in an sRGB target.
-- A style may adjust contrast for light text on a dark ground.
-- Light and dark text are photographed in both targets.
+- A text vertex carries a contrast, -1 for anything that is not text. `text.glsl` strengthens
+  text's coverage by it, and in an _SRGB target changes the coverage so the linear blend gives
+  the display space colour over a ground of the opposite luminance. The quad and world shaders
+  apply it to coverage, curve and distance field glyphs. `world.frag` has an _SRGB variant, as
+  `quad.frag` has.
+- `Canvas::glyphs()` draws coverage glyphs with their contrasts. `font::TextStyle` names a
+  contrast, which `TextRenderer` and `CurveText` give each glyph. Effects are corrected with
+  none.
+- The device suite stores half covered text in a UNORM and an _SRGB target and finds one value,
+  on the screen and in the world. It finds a picture uncorrected, and contrast lifting half
+  coverage to three quarters. The render and ui suites cover the contrast reaching each vertex.
+- Diorama's light sign and a dark one were photographed in its _SRGB scene, and the editor's
+  light text in its UNORM swapchain. The validation layer was silent.
 
 ### Step 13 — The ui on text objects
 

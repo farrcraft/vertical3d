@@ -71,15 +71,16 @@ renderer_->worldQuads()->submit(world, pass.get(), 0, renderer::World::Blend::Al
 `canvas::World::glyph(corners, glyph, colour)` stands a glyph drawn from its curves over a quad,
 sharp at any distance and angle, as `Canvas::curves()` draws one on the screen. A
 `canvas::World::Glyph` names the place in the em square each corner carries, with y upwards,
-where the glyph's data starts among its bands, and the float textures of its curves and its
-bands. A run of glyphs never merges with quads drawn another way. `ui::paint::CurveText` builds
-glyphs from a laid-out paragraph and a transform into the world, so an app seldom builds one
-itself.
+and where the glyph's data starts among its bands. It also names the float textures of its
+curves and its bands, and its `contrast`, as [Canvas.md](Canvas.md#text-weight) describes. A run
+of glyphs never merges with quads drawn another way. `ui::paint::CurveText` builds glyphs from a
+laid-out paragraph and a transform into the world, so an app seldom builds one itself.
 
-`canvas::World::field(corners, uv0, uv1, colour, texture, ramp)` stands an effect drawn from a
-glyph's distance field over a quad, with `quad()`'s meaning for the corners and the uv rectangle.
-Its `ramp`, from `canvas::fieldRamp()`, says where the effect is whole and where it is gone, as
-`Canvas::text()` reads one. A run of fields never merges with quads drawn another way.
+`canvas::World::field(corners, uv0, uv1, colour, texture, ramp, contrast)` stands an effect
+drawn from a glyph's distance field over a quad, with `quad()`'s meaning for the corners and the
+uv rectangle. Its `ramp`, from `canvas::fieldRamp()`, says where the effect is whole and where
+it is gone, as `Canvas::text()` reads one. Its `contrast`, 0 unless given, is corrected as
+text's is. A run of fields never merges with quads drawn another way.
 
 ### Depth order
 

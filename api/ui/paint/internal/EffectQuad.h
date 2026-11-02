@@ -77,7 +77,7 @@ void layerEffects(std::vector<PlacedEffect>* placed);
 
 /**
  * Append laid out effects to a canvas as distance field text, through an affine transform, one
- * call for each run of quads on one page.
+ * call for each run of quads on one page. Each is corrected as text is, with no contrast.
  *
  * @param vertices and indices are scratch space, kept by the caller so a frame does not
  *        allocate, and left empty

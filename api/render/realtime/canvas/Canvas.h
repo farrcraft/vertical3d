@@ -57,6 +57,7 @@ class Canvas final {
         glm::vec2 uv;
         glm::vec4 colour;
         uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
+        float contrast = -1.0F;  /**< for text, how much its coverage is strengthened, from 0 to 1. Below 0 for what is not text **/
     };
 
     /**
@@ -327,6 +328,17 @@ class Canvas final {
      * @param atlas the texture the glyphs were packed into
      **/
     void text(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& atlas);
+
+    /**
+     * Append coverage glyphs that have already been laid out, as vertices and the triangles over
+     * them, sampling a page whose alpha is each glyph's coverage. A vertex whose contrast is 0 or
+     * more is text, and its coverage is corrected to look the same weight in any target. The
+     * run joins pictures of the same page.
+     *
+     * @param vertices positions, page coordinates, colours and contrasts, copied rather than kept
+     * @param indices three per triangle, each naming one of these vertices
+     **/
+    void glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const TextureHandle& page);
 
     /**
      * Append glyphs drawn from their curves, as vertices and the triangles over them.

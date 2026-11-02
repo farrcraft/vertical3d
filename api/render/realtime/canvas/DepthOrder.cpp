@@ -46,8 +46,8 @@ void DepthOrder::glyph(float key, const World::Corners& corners, const World::Gl
 /**
  **/
 void DepthOrder::field(float key, uint32_t layer, const World::Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
-    const glm::vec4& colour, const TextureHandle& texture, uint32_t ramp) {
-    entries_.push_back(Entry{key, corners, uv0, uv1, colour, texture, std::nullopt, ramp, layer});
+    const glm::vec4& colour, const TextureHandle& texture, uint32_t ramp, float contrast) {
+    entries_.push_back(Entry{key, corners, uv0, uv1, colour, texture, std::nullopt, ramp, layer, contrast});
 }
 
 /**
@@ -90,7 +90,7 @@ void DepthOrder::into(World* canvas) const {
         if (entry.glyph) {
             canvas->glyph(entry.corners, *entry.glyph, entry.colour);
         } else if (entry.ramp) {
-            canvas->field(entry.corners, entry.uv0, entry.uv1, entry.colour, entry.texture, *entry.ramp);
+            canvas->field(entry.corners, entry.uv0, entry.uv1, entry.colour, entry.texture, *entry.ramp, entry.contrast);
         } else {
             canvas->quad(entry.corners, entry.uv0, entry.uv1, entry.colour, entry.texture);
         }

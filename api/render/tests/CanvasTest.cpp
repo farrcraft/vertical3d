@@ -788,6 +788,28 @@ BOOST_AUTO_TEST_CASE(a_segment_with_no_length_or_width_draws_nothing) {
     BOOST_CHECK(canvas.batches().empty());
 }
 
+/**
+ * Coverage glyphs are a run of pictures that joins a picture of the same page, and each keeps
+ * its contrast, which marks it as text. A rectangle is not text.
+ **/
+BOOST_AUTO_TEST_CASE(coverage_glyphs_keep_their_contrast) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    const v3d::render::realtime::TextureHandle page(4);
+    canvas.rect(glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, page);
+    const std::vector<v3d::render::realtime::canvas::Canvas::Vertex> glyph{
+        { .position = glm::vec2(2.0F, 0.0F), .colour = white, .contrast = 0.5F },
+        { .position = glm::vec2(2.0F, 1.0F), .colour = white, .contrast = 0.5F },
+        { .position = glm::vec2(3.0F, 1.0F), .colour = white, .contrast = 0.5F } };
+    canvas.glyphs(glyph, std::vector<uint32_t>{ 0, 1, 2 }, page);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1);
+    BOOST_CHECK(!canvas.batches()[0].text);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].indices, 9);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 7);
+    BOOST_CHECK_LT(canvas.vertices()[0].contrast, 0.0F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].contrast, 0.5F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace
