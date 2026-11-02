@@ -87,6 +87,18 @@ bool Keys::press(std::string_view key, bool shifted, bool controlled, bool repea
     return act(focused, key, shifted, controlled);
 }
 
+bool Keys::composing(std::string_view utf8) {
+    if (!ui_) {
+        return false;
+    }
+    const boost::shared_ptr<component::TextBox> box = boost::dynamic_pointer_cast<component::TextBox>(ui_->focused());
+    if (!box || !usable(*box) || !ui_->reachable(box)) {
+        return false;
+    }
+    box->compose(utf8);
+    return true;
+}
+
 bool Keys::text(std::string_view utf8) {
     if (!ui_ || utf8.empty()) {
         return false;

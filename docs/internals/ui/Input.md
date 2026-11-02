@@ -6,7 +6,7 @@ and the frame, and this document assumes it.
 
 ## Cursor
 
-`input::Cursor` holds the `Interface`, the dispatcher, an optional `Measure`, and two weak
+`input::Cursor` holds the `Interface`, the dispatcher, an optional `paint::Type`, and two weak
 pointers: the component a press is held on, and the component hovered. They are weak so that
 a container unloaded mid-press is not kept alive.
 
@@ -26,8 +26,8 @@ a container unloaded mid-press is not kept alive.
 - `TabBar`: selects the tab under the point; sends nothing.
 - `Scrollbar`: jumps the thumb to the point; sends nothing.
 - `Slider`: jumps the thumb to the point; dispatches if the value changed.
-- `TextBox`: places the caret and anchor at the point through `TextBox::at()` and the
-  `Measure`; sends nothing.
+- `TextBox`: places the caret and anchor at the point through `TextBox::place()`, and sends
+  nothing. The box hit tests its line laid out in the type.
 - every other type: dispatches.
 
 `dispatch()` asks `input::command()` for the event and sends it through `input::send()`.

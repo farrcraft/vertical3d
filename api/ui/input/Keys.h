@@ -102,6 +102,14 @@ class Keys final {
      **/
     bool text(std::string_view utf8);
 
+    /**
+     * Characters an input method is composing, shown at the focused text box's caret until
+     * they are typed in. An empty string ends the composition.
+     *
+     * @return whether the ui took them
+     **/
+    bool composing(std::string_view utf8);
+
  private:
     /** The key that steps towards the end, and the one that steps towards the start. **/
     struct Arrows {

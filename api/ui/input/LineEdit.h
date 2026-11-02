@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/font/Bidi.h>
 #include <api/ui/paint/Text.h>
 
 #include <cstddef>
@@ -12,6 +13,13 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
+
+#include <glm/vec2.hpp>
+
+namespace v3d::ui::paint {
+class Type;
+};  // namespace v3d::ui::paint
 
 namespace v3d::ui::input {
 
@@ -31,8 +39,11 @@ struct Clipboard final {
 /**
  * One line of utf-8 text being edited, with a caret and a selection in it.
  *
- * The caret is a byte offset into the text, and every operation moves it to a character
- * boundary, so a multi-byte character is inserted, stepped over and erased whole.
+ * The caret is a byte offset into the text. Every operation moves it to the edge of a grapheme
+ * cluster, as Unicode defines one: what a reader sees as one character, such as a letter with
+ * its accents or an emoji sequence. A cluster is stepped over and erased whole.
+ * Left and right move backwards and forwards through the text, which is leftwards and
+ * rightwards in text read left to right.
  *
  * A selection is an anchor plus the caret, two byte offsets. Nothing is selected exactly when
  * the two are equal. Every operation that moves the caret says whether the anchor moves with
@@ -42,6 +53,16 @@ struct Clipboard final {
  **/
 class LineEdit final {
  public:
+    /**
+     * Where the line's parts fall as it is drawn, each from the start of the line.
+     **/
+    struct Layout final {
+        std::string text;                  /**< the line as it is drawn, with any composition **/
+        float caret = 0.0F;
+        std::vector<glm::vec2> selected;   /**< the left and right of each run the selection covers **/
+        std::vector<glm::vec2> composed;   /**< and of each run the composition covers **/
+    };
+
     LineEdit() noexcept;
 
     /**
@@ -135,7 +156,7 @@ class LineEdit final {
     bool erase();
 
     /**
-     * Move the caret one character, or to an end of the text.
+     * Move the caret one grapheme cluster, or to an end of the text.
      *
      * With a selection and extend false, left() moves the caret to the start of the
      * selection and right() to its end, not a character past it, as in other text editors.
@@ -149,41 +170,57 @@ class LineEdit final {
     bool end(bool extend = false);
 
     /**
-     * Which character boundary a distance into the drawn line falls on, so that a press can
-     * put the caret where it landed.
-     *
-     * Makes one measure call per character boundary. Per-character widths do not add up to
-     * what a run measures, so each boundary is measured as a run.
+     * Put the caret where a distance into the drawn line falls, at the nearest edge of a
+     * grapheme cluster, going with the character on that side of it.
      *
      * @param into how far past the start of the line the point is, in pixels
-     * @param measure how wide a run of the text is when it is drawn
-     * @return the byte offset of the boundary nearest the point
+     * @param type what the line is drawn in
      **/
-    std::size_t at(float into, const paint::Measure& measure) const;
+    void at(float into, const paint::Type& type, bool extend = false);
+
+    /**
+     * @return which character the caret goes with where the two either side of it are drawn
+     *      apart: the one before it after typing or moving forwards, and the one after it after
+     *      moving backwards
+     **/
+    font::Affinity affinity() const noexcept;
+
+    /**
+     * Characters an input method is composing at the caret, shown in the line but not yet in
+     * it. Typing them in, or moving the caret, ends the composition.
+     **/
+    void compose(std::string_view composing);
+    std::string_view composition() const noexcept;
+
+    /**
+     * @return the line as it is drawn: the text with any composition at the caret
+     **/
+    std::string shown() const;
+
+    /**
+     * Lay the line out as it is drawn in a type: the caret against the character it goes with,
+     * after any composition, and the selection and the composition as runs. A selection in text
+     * read both ways covers more than one run. With a composition, the selection is not shown.
+     **/
+    Layout layout(const paint::Type& type) const;
 
  private:
     /**
-     * The top two bits of a utf-8 byte, which say whether it is a continuation, and the value
-     * they hold in one.
+     * The grapheme cluster boundary at or before an offset, so a caret never lands inside a
+     * character or between a letter and its accents however it was asked to move.
      **/
-    static constexpr unsigned int CONTINUATION_MASK = 0xC0U;
-    static constexpr unsigned int CONTINUATION_TAG = 0x80U;
-    /**
-     * Whether a byte is a utf-8 continuation - the ones a character boundary is never on.
-     **/
-    static bool continuation(char byte) noexcept;
+    std::size_t boundary(std::size_t offset) const;
 
     /**
-     * The character boundary at or before an offset, so a caret never lands inside a
-     * multi-byte character however it was asked to move.
+     * The grapheme cluster boundary after an offset, which is the end of the cluster that
+     * starts there.
      **/
-    std::size_t boundary(std::size_t offset) const noexcept;
+    std::size_t forward(std::size_t offset) const;
 
     /**
-     * The character boundary after an offset, which is the end of the character that starts
-     * there.
+     * The grapheme cluster boundary before an offset.
      **/
-    std::size_t forward(std::size_t offset) const noexcept;
+    std::size_t backward(std::size_t offset) const;
 
     /**
      * @return where the selected run starts and where it ends: the lower of the anchor and
@@ -195,6 +232,8 @@ class LineEdit final {
     std::size_t caret_;
     std::size_t anchor_;
     std::size_t limit_;
+    font::Affinity affinity_;
+    std::string composing_;
 };
 
 /**

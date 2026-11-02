@@ -22,6 +22,7 @@ v3d_add_test(ui
 	"ImmediateWindowTest.cpp"
 	"KeyboardDriveTest.cpp"
 	"LayoutTest.cpp"
+	"LineEditTest.cpp"
 	"MenuBarTest.cpp"
 	"PainterTest.cpp"
 	"PaletteTest.cpp"

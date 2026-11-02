@@ -31,6 +31,7 @@
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/ui/input/LineEdit.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Theme.h>
 #include <api/ui/paint/internal/Easing.h>
@@ -679,7 +680,8 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     // where the caret falls in the line, which is also how far the line has to slide left
     // for the caret to stay inside the box
-    const float caret = type_.width(std::string_view(text).substr(0, box->caret()));
+    const input::LineEdit::Layout laid = box->line()->layout(type_);
+    const float caret = laid.caret;
     const float room = high.x - low.x;
     const float slid = caret > room ? caret - room : 0.0F;
 
@@ -688,20 +690,19 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     // left holding the height of a row
     box->pen(pen.x);
 
-    if (box->selected()) {
-        // the highlight goes behind the line, and the line is still drawn whole in one
-        // colour. Three separate runs could measure differently from the one prefix that
-        // places the caret
-        const std::string_view line(text);
-        const float from = type_.width(line.substr(0, std::min(box->anchor(), box->caret())));
-        const float to = type_.width(line.substr(0, std::max(box->anchor(), box->caret())));
-        fillBox(canvas, glm::vec2(pen.x + from, low.y), glm::vec2(pen.x + to, high.y),
-            0.0F, dress.highlight);
+    // the highlight goes behind the line, which is drawn whole in one colour
+    for (const glm::vec2& run : laid.selected) {
+        fillBox(canvas, glm::vec2(pen.x + run.x, low.y), glm::vec2(pen.x + run.y, high.y), 0.0F, dress.highlight);
     }
-    type_.draw(canvas, text, pen, ink(*box, dress, dress.text));
+    const glm::vec4 inked = ink(*box, dress, dress.text);
+    type_.draw(canvas, laid.text, pen, inked);
 
+    const float stem = std::max(width, 1.0F);
+    // a composition is underlined where it stands in the line
+    for (const glm::vec2& run : laid.composed) {
+        canvas->rect(glm::vec2(pen.x + run.x, pen.y + stem), glm::vec2(pen.x + run.y, pen.y + (stem * 2.0F)), inked);
+    }
     if (box->focused() && usable(*box)) {
-        const float stem = std::max(width, 1.0F);
         canvas->rect(glm::vec2(pen.x + caret, low.y), glm::vec2(pen.x + caret + stem, high.y), dress.caret);
     }
 

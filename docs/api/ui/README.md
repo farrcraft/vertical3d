@@ -76,8 +76,7 @@ A text renderer needs no device, so `api/ui` stays testable without a window or 
 reads back what was drawn through `TextRenderer::trace()`, which is told each line drawn with its
 text, pen, colour, weight and size.
 
-`input::Cursor` still takes a `paint::Measure`, a callback giving a string's width, to place a
-text box's caret where it is clicked.
+`input::Cursor` takes the same `Type`, to place a text box's caret where it is clicked.
 
 `v3d::ui::paint::TextRenderer` holds one typeface in two weights. Every size and weight from one
 `TextRenderer` shares one glyph store.

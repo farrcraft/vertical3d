@@ -24,6 +24,7 @@
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/manipulator/Manipulator.h>
@@ -152,6 +153,12 @@ void Renderer::transformTool(const boost::shared_ptr<tool::Transform>& transform
  **/
 void Renderer::selectTool(const boost::shared_ptr<tool::Select>& select) {
     select_ = select;
+}
+
+/**
+ **/
+v3d::ui::paint::Type Renderer::type() const {
+    return v3d::ui::paint::Type(screen_->text(), screen_->size());
 }
 
 /**

@@ -24,10 +24,10 @@ if (!taken) {
   `motion()`, so a slider whose value changes there sends its command. Nothing else sends a
   command on a release.
 
-The `Measure` argument is optional. It places the caret when a `TextBox` is clicked. Pass the
-same `Measure` the renderer drawing the ui was given, so the two agree on where each
-character is. A cursor given none still routes every press, but a click in a text box leaves
-the caret where it was.
+The `paint::Type` argument is optional. It places the caret when a `TextBox` is clicked. Pass
+the type the renderer drawing the ui was given, so the two agree on where each character is. A
+cursor given none still routes every press, but a click in a text box leaves the caret where it
+was.
 
 `Cursor` is not wrapped by the shell, because an app often interleaves the ui's press with
 its own use of the mouse. The editor offers the ui a press first and drives its camera with

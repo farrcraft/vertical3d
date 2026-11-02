@@ -17,6 +17,7 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/Interface.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/paint/Type.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/scene/Scene.h>
@@ -155,13 +156,15 @@ class Renderer final {
     v3d::ui::Immediate* immediate() const noexcept;
 
     /**
-     * How wide a run of text is at the size the ui is drawn in.
-     *
-     * The cursor routing a press must measure text with the same function this draws
-     * with, or a click inside a text box would place the caret somewhere other than under
-     * the pointer. Taking it from the renderer guarantees the two are the same function.
+     * How wide a run of text is at the size the ui is drawn in, for the top bar's boxes.
      **/
     v3d::ui::paint::Measure measure() const;
+
+    /**
+     * @return the type the ui's text is drawn in, so that a press in a text box lands where a
+     *         character is drawn
+     **/
+    v3d::ui::paint::Type type() const;
 
     /**
      * How much of the window's edges the menu bar and the toolbars cover. The views are

@@ -39,15 +39,6 @@ const float characterWidth = 10.0F;
  * routers - the cursor that gives the focus and the keys that follow it.
  **/
 struct Fixture final {
-    /**
-     * A fixed width per byte, so where a character falls is arithmetic rather than a font. The
-     * cursor and the renderer are given the same one, so a click lands where the caret is
-     * drawn.
-     **/
-    static float measured(std::string_view text) {
-        return static_cast<float>(text.size()) * characterWidth;
-    }
-
     Fixture() :
         dispatcher(boost::make_shared<entt::dispatcher>()),
         context(boost::make_shared<v3d::event::Context>("test")),
@@ -61,7 +52,8 @@ struct Fixture final {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "hud", "visible": true, "components": [] } ] })").as_object()));
         container = ui->container("hud");
         BOOST_REQUIRE(container);
-        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher, &measured);
+        // the cursor and the renderer lay text out alike, so a click lands where the caret is
+        cursor = boost::make_shared<v3d::ui::input::Cursor>(ui, dispatcher, v3d::ui::typeset::body());
 
         v3d::ui::input::Keys::Clipboard board;
         board.read = [this]() { return clipboard; };
@@ -454,8 +446,8 @@ BOOST_AUTO_TEST_CASE(a_selection_lands_on_character_boundaries) {
 }
 
 /**
- * A press puts the caret where it landed, through the Measure input::Cursor is given. It is
- * measured against the pen the last draw left on the box, so a ui routed before it is drawn
+ * A press puts the caret where it landed, through the type input::Cursor is given. It is
+ * laid out against the pen the last draw left on the box, so a ui routed before it is drawn
  * places nothing.
  **/
 BOOST_AUTO_TEST_CASE(a_press_puts_the_caret_where_it_landed) {
@@ -503,10 +495,10 @@ BOOST_AUTO_TEST_CASE(a_drag_selects_the_run_it_crosses) {
 }
 
 /**
- * A cursor given no Measure cannot find a character, so a press focuses the box and leaves
- * the caret where it was.
+ * A cursor given no type cannot find a character, so a press focuses the box and leaves the
+ * caret where it was.
  **/
-BOOST_AUTO_TEST_CASE(a_cursor_with_no_measure_leaves_the_caret_alone) {
+BOOST_AUTO_TEST_CASE(a_cursor_with_no_type_leaves_the_caret_alone) {
     Fixture fixture;
     const boost::shared_ptr<v3d::ui::input::Cursor> blind =
         boost::make_shared<v3d::ui::input::Cursor>(fixture.ui, fixture.dispatcher);
@@ -634,6 +626,33 @@ BOOST_AUTO_TEST_CASE(the_selected_run_is_drawn_behind_the_text) {
     const v3d::render::realtime::canvas::Canvas::Batch& highlight = *(text - 1);
     BOOST_CHECK(highlight.clipped);
     BOOST_CHECK_EQUAL(highlight.indices, 6U);
+}
+
+/**
+ * An input method's composition reaches the focused box and nothing else. It is drawn at the
+ * caret, underlined, and is not in the box's text until it is typed in.
+ **/
+BOOST_AUTO_TEST_CASE(a_composition_is_drawn_in_the_focused_box) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::TextBox> field = box("ab");
+    fixture.place(field, glm::vec2(100.0F, 50.0F), glm::vec2(200.0F, 30.0F));
+    fixture.draw();
+    BOOST_CHECK(!fixture.keys->composing("x"));
+
+    fixture.cursor->press(glm::vec2(150.0F, 60.0F));
+    fixture.draw();
+    const std::size_t plain = v3d::ui::typeset::shapeVertices(fixture.canvas).size();
+
+    BOOST_CHECK(fixture.keys->composing("xy"));
+    fixture.draw();
+    BOOST_CHECK_EQUAL(field->text(), "ab");
+    BOOST_CHECK_EQUAL(field->line()->shown().size(), 4U);
+    // the underline beneath it
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), plain + 4U);
+
+    BOOST_CHECK(fixture.keys->text("xy"));
+    BOOST_CHECK_EQUAL(field->text().size(), 4U);
+    BOOST_CHECK(field->line()->composition().empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

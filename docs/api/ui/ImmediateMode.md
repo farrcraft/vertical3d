@@ -178,6 +178,7 @@ Keys reach the field between frames, as the app's event loop sees them:
 |---|---|---|
 | `press(key, shifted, controlled)` | edits the line of the field that has the keyboard | whether the field took the key |
 | `typed(utf8)` | inserts composed characters at the caret | whether the field took them |
+| `composing(utf8)` | shows an input method's composition at the caret, until it is typed in | whether the field took it |
 | `typing()` | | whether a field has the keyboard |
 | `onTyping(callback)` | calls back with `typing()` each time it changes | |
 | `clipboard(board)` | sets the clipboard cut, copy and paste use | |

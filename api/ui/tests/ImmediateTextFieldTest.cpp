@@ -6,6 +6,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -192,6 +193,32 @@ BOOST_AUTO_TEST_CASE(a_change_by_the_caller_replaces_the_edit) {
     frame(&ui, &canvas, hover(firstRow), panel);
 
     BOOST_CHECK_EQUAL(name, "new!");
+}
+
+/**
+ * An input method's composition reaches the field that holds the keyboard and is drawn in its
+ * line at the caret, but reaches the caller's string only once it is typed in.
+ **/
+BOOST_AUTO_TEST_CASE(a_composition_is_drawn_in_the_field) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    std::string name = "slot";
+    const auto panel = [&]() { ui.textField("Name", &name); };
+    BOOST_CHECK(!ui.composing("x"));
+
+    click(&ui, &canvas, firstRow, panel);
+    BOOST_REQUIRE(ui.typing());
+    BOOST_CHECK(ui.composing("xy"));
+    written.clear();
+    frame(&ui, &canvas, hover(firstRow), panel);
+    BOOST_CHECK_EQUAL(name, "slot");
+    BOOST_CHECK(std::ranges::any_of(written, [](const Written& line) { return line.text == "slotxy"; }));
+
+    BOOST_CHECK(ui.typed("xy"));
+    frame(&ui, &canvas, hover(firstRow), panel);
+    BOOST_CHECK_EQUAL(name, "slotxy");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

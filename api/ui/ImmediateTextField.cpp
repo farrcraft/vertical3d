@@ -8,6 +8,7 @@
 #include <api/ui/immediate/Context.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Painter.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <charconv>
@@ -65,6 +66,14 @@ bool Immediate::typed(std::string_view utf8) {
     return true;
 }
 
+bool Immediate::composing(std::string_view utf8) {
+    if (!typing()) {
+        return false;
+    }
+    context_->edit.compose(utf8);
+    return true;
+}
+
 bool Immediate::typing() const noexcept {
     return context_->typing != 0 && !context_->letGo;
 }
@@ -105,9 +114,9 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         }
         // the press is measured against the line as it was drawn, slid as far as the caret
         // had pushed it
-        const float caret = context_->measure(context_->edit.text().substr(0, context_->edit.caret()));
-        const float slid = std::max(caret - room, 0.0F);
-        context_->edit.caret(context_->edit.at(context_->input.cursor.x - (low.x - slid), [this](std::string_view prefix) { return context_->measure(prefix); }));
+        const paint::Type type(context_->text, context_->textSize);
+        const float slid = std::max(context_->edit.layout(type).caret - room, 0.0F);
+        context_->edit.at(context_->input.cursor.x - (low.x - slid), type);
     }
 
     bool changed = false;
@@ -254,20 +263,21 @@ void immediate::Context::drawEdit(const glm::vec2& low, const glm::vec2& high) {
     // the line slides left when the caret would be past the far edge, so a full field can
     // still be typed into
     const float room = std::max(high.x - low.x, 0.0F);
-    const std::string_view line = edit.text();
-    const float caret = measure(line.substr(0, edit.caret()));
-    const float pen = low.x - std::max(caret - room, 0.0F);
-    if (edit.selected()) {
-        // the highlight goes behind the line, which is drawn whole in one colour, so the
-        // runs either side of it cannot measure differently from the prefix that places the
-        // caret
-        const float from = measure(line.substr(0, std::min(edit.anchor(), edit.caret())));
-        const float to = measure(line.substr(0, std::max(edit.anchor(), edit.caret())));
-        paint::fillBox(canvas, glm::vec2(pen + from, low.y), glm::vec2(pen + to, high.y), 0.0F, dressing.highlight);
+    const input::LineEdit::Layout laid = edit.layout(paint::Type(text, textSize));
+    const float pen = low.x - std::max(laid.caret - room, 0.0F);
+    // the highlight goes behind the line, which is drawn whole in one colour
+    for (const glm::vec2& run : laid.selected) {
+        paint::fillBox(canvas, glm::vec2(pen + run.x, low.y), glm::vec2(pen + run.y, high.y), 0.0F, dressing.highlight);
     }
-    label(std::string(line), glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), ink(dressing.text));
+    const glm::vec4 inked = ink(dressing.text);
+    label(laid.text, glm::vec2(pen, low.y), glm::vec2(room, high.y - low.y), inked);
     const float stem = std::max(dressing.borderWidth, 1.0F);
-    canvas->rect(glm::vec2(pen + caret, low.y), glm::vec2(pen + caret + stem, high.y), dressing.caret);
+    // a composition is underlined where it stands in the line, below its baseline
+    const float baseline = low.y + (((high.y - low.y) + (dressing.lineHeight * 0.5F)) * 0.5F);
+    for (const glm::vec2& run : laid.composed) {
+        canvas->rect(glm::vec2(pen + run.x, baseline + stem), glm::vec2(pen + run.y, baseline + (stem * 2.0F)), inked);
+    }
+    canvas->rect(glm::vec2(pen + laid.caret, low.y), glm::vec2(pen + laid.caret + stem, high.y), dressing.caret);
 }
 
 std::optional<float> immediate::Context::number(std::string_view text) {

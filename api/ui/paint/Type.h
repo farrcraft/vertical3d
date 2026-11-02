@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <api/font/Paragraph.h>
+
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -52,6 +55,12 @@ class Type final {
      * @return the rows a string breaks into at a width, as TextRenderer::rows() breaks them
      **/
     std::vector<std::string> rows(std::string_view text, float width) const;
+
+    /**
+     * @return a string laid out on one line, for a caret, a hit or a selection in it. A type with
+     *         no renderer gives nothing
+     **/
+    std::optional<font::Paragraph> paragraph(const std::string& text) const;
 
     /**
      * Draw a string with its pen on the baseline.

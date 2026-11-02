@@ -17,7 +17,7 @@
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/Type.h>
 #include <api/ui/component/menu/Bar.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/Type.h>
 
 #include <algorithm>
 #include <vector>
@@ -27,10 +27,10 @@
 namespace v3d::ui::input {
 
 Cursor::Cursor(const boost::shared_ptr<Interface>& ui, const boost::shared_ptr<entt::dispatcher>& dispatcher,
-    const paint::Measure& measure) :
+    const paint::Type& type) :
     ui_(ui),
     dispatcher_(dispatcher),
-    measure_(measure) {
+    type_(type) {
 }
 
 boost::shared_ptr<Component> Cursor::held() const {
@@ -309,11 +309,11 @@ void Cursor::act(const boost::shared_ptr<Component>& component, const glm::vec2&
 
 void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::vec2& point,
     bool extend) const {
-    if (!box || !measure_) {
-        // a cursor with no Measure cannot find a character, so the caret stays where it was
+    if (!box || !type_.set()) {
+        // a cursor with no type cannot find a character, so the caret stays where it was
         return;
     }
-    box->caret(box->at(point, measure_), extend);
+    box->place(point, type_, extend);
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {

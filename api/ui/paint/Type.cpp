@@ -5,6 +5,9 @@
 
 #include "Type.h"
 
+#include <api/font/Paragraph.h>
+
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -42,6 +45,15 @@ float Type::width(std::string_view text) const {
  **/
 std::vector<std::string> Type::rows(std::string_view text, float width) const {
     return text_ ? text_->rows(text, width, text_->style(size_, weight_)) : std::vector<std::string>();
+}
+
+/**
+ **/
+std::optional<font::Paragraph> Type::paragraph(const std::string& text) const {
+    if (!text_ || !text_->loaded()) {
+        return std::nullopt;
+    }
+    return font::Paragraph(text_->shaping(), text, text_->style(size_, weight_));
 }
 
 /**

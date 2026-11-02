@@ -337,8 +337,6 @@ Background: [ADR-0047](../../adr/0047-code-exhaustive-enum-switches.md)
 - **Drawing calls `usable()` per component per frame**, walking the parent chain.
 - **A per-state button style carries images only.** A theme cannot name a disabled plate
   colour.
-- **`TextBox::at()` calls `Measure` once per character boundary**, which is quadratic in the
-  line length. It runs per click, not per frame.
 - **Selected text keeps its colour.** The selection is a highlight behind a line drawn whole.
 - **Radio menu items use the same square mark as check items.**
 - **A tooltip hangs under its component**, so on a vertical toolbar it covers the next button.

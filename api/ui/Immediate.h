@@ -517,6 +517,14 @@ class Immediate {
     bool typed(std::string_view utf8);
 
     /**
+     * Characters an input method is composing, shown at the caret of the field that holds the
+     * keyboard until they are typed in. An empty string ends the composition.
+     *
+     * @return whether a field took them
+     **/
+    bool composing(std::string_view utf8);
+
+    /**
      * Whether a text field holds the keyboard. While it does, the platform's text input
      * should be on, and keys go to press() and typed() before they reach any binding.
      **/

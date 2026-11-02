@@ -269,7 +269,7 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
     // The text measure is the renderer's, so a press inside a text box places the caret
     // on the character drawn under the pointer
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor =
-        boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->measure());
+        boost::make_shared<v3d::ui::input::Cursor>(vgui, dispatcher(), renderer_->type());
     context_.pointer = boost::make_shared<control::Pointer>(cursor, context_.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) {
         // the show flags a check item draws are the active view's
         syncUi();
