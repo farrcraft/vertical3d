@@ -155,11 +155,12 @@ struct ColourGlyph final {
 };
 
 /**
- * Read a colour glyph from a face's colour tables, in a palette. An image is taken from the
- * strike nearest a size in pixels to the em. A palette the face does not have is its first.
+ * Read a colour glyph from a face's colour tables, in a palette, at a variable font's normalized
+ * coordinates. An image is taken from the strike nearest a size in pixels to the em. A palette
+ * the face does not have is its first.
  *
  * @return the glyph, or an empty one when the face has no colour glyph at that index
  **/
-ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, float size);
+ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, float size, const std::vector<std::int32_t>& coordinates = {});
 
 };  // namespace v3d::font

@@ -17,8 +17,8 @@
 #include <glm/vec4.hpp>
 
 namespace v3d::font {
-class Face;
 class GlyphStore;
+struct LineRun;
 struct TextEffect;
 };  // namespace v3d::font
 
@@ -52,21 +52,20 @@ struct PlacedEffect final {
 
 /**
  * Find a glyph's field in a store, made the first time it is asked for with a spread wide
- * enough for the effect, and the quad the effect is drawn over. The quad is the field scaled to
- * the text's size and moved by the effect's offset.
+ * enough for the effect, and the quad the effect is drawn over. The field is made from the
+ * glyph in its run's face, at the run's coordinates. The quad is the field scaled to the run's
+ * size and moved by the effect's offset.
  *
- * @param size the size the text is drawn at, in pixels
  * @return the quad, or nothing for a glyph with no outline or a field the store cannot hold
  **/
-std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::Face& face, unsigned int index, float size,
-    const font::TextEffect& effect);
+std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::LineRun& run, unsigned int index, const font::TextEffect& effect);
 
 /**
  * Lay out each of a glyph's effects at its pen, appending them in the order given.
  *
  * @param pen the glyph's pen in the paragraph's space, in pixels with y downwards
  **/
-void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::Face& face, unsigned int index, float size,
+void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::LineRun& run, unsigned int index,
     const std::vector<font::TextEffect>& effects, const glm::vec2& pen);
 
 /**

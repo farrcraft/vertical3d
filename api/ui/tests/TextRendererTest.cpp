@@ -346,6 +346,33 @@ BOOST_AUTO_TEST_CASE(tabular_figures_are_one_width) {
     BOOST_CHECK_CLOSE(figures.width("fps"), text->width("fps"), 0.01F);
 }
 
+/**
+ * A variable face's glyphs and their effects' fields are made at the coordinates the style's
+ * variations set: the fixture's bar is as wide in units as its weight.
+ **/
+BOOST_AUTO_TEST_CASE(a_variable_face_is_drawn_at_its_style_coordinates) {
+    v3d::ui::paint::TextRenderer::Faces faces;
+    faces.regular = "../fonts/variable.ttf";
+    faces.semiBold.clear();
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer(faces);
+    BOOST_REQUIRE(text->loaded());
+    v3d::font::TextStyle style = text->style(100.0F);
+    style.effects = { v3d::font::TextEffect{ .width = 2.0F } };
+    const auto widths = [&text, &style]() {
+        v3d::render::realtime::canvas::Canvas canvas;
+        text->draw(&canvas, "\uE000", glm::vec2(10.0F, 150.0F), style);
+        BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
+        // the effect, then the glyph
+        return glm::vec2(canvas.vertices()[2].position.x - canvas.vertices()[0].position.x,
+            canvas.vertices()[6].position.x - canvas.vertices()[4].position.x);
+    };
+    const glm::vec2 regular = widths();
+    style.variations = { { "wght", 650.0F } };
+    const glm::vec2 varied = widths();
+    BOOST_CHECK_CLOSE(varied.y - regular.y, 25.0F, 5.0F);
+    BOOST_CHECK_CLOSE(varied.x - regular.x, 25.0F, 10.0F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

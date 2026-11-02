@@ -187,11 +187,11 @@ bool CurveText::place(const font::Paragraph& paragraph) {
                 if (!(run.size > 0.0F)) {
                     continue;
                 }
-                internal::placeEffects(&effects_, &fields_, *run.face, glyph.index, run.size, styled.effects, origin);
+                internal::placeEffects(&effects_, &fields_, run, glyph.index, styled.effects, origin);
                 if (run.face->coloured(glyph.index) && placeColour(run, glyph.index, styled, origin)) {
                     continue;
                 }
-                const font::StoredCurves& stored = store_.glyph(*run.face, glyph.index);
+                const font::StoredCurves& stored = store_.glyph(*run.face, glyph.index, run.coordinates);
                 if (!stored.empty) {
                     placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = styled.contrast });
                 }
@@ -210,10 +210,10 @@ bool CurveText::place(const font::Paragraph& paragraph) {
 /**
  **/
 bool CurveText::placeColour(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& origin) {
-    const font::StoredColour& stored = store_.colour(*run.face, index, 0);
+    const font::StoredColour& stored = store_.colour(*run.face, index, 0, run.coordinates);
     if (stored.pictures) {
         const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .mode = font::GlyphMode::Colour,
-            .foreground = font::packColour(glm::vec4(glm::vec3(styled.colour), 1.0F)) };
+            .foreground = font::packColour(glm::vec4(glm::vec3(styled.colour), 1.0F)), .coordinates = run.coordinates };
         const std::optional<font::StoredGlyph> painted = pictures_.glyph(key, [](const font::GlyphKey& asked) { return font::paint(asked); });
         if (!painted || painted->size.x == 0 || painted->size.y == 0) {
             return false;

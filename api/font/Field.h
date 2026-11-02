@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "GlyphStore.h"
 #include "TextStyle.h"
@@ -27,14 +28,14 @@ constexpr float FIELD_SIZE = 64.0F;
 constexpr std::uint8_t MAX_SPREAD = 32;
 
 /**
- * Make a glyph's signed distance field from its unhinted outline, at its key's size and
- * spread. Each pixel is its distance from the glyph's edge, from the spread outside it at 0 to
- * the spread inside it at 255, with the edge at the middle. The field reaches the spread past
- * the outline on every side.
+ * Make a glyph's signed distance field from its unhinted outline, at its key's size, spread and
+ * coordinates. Each pixel is its distance from the glyph's edge, from the spread outside it at
+ * 0 to the spread inside it at 255, with the edge at the middle. The field reaches the spread
+ * past the outline on every side.
  *
  * @return the field, one byte a pixel, with its top left pixel from the pen. A key of another
- *         mode or with no spread, a face that cannot be sized, or a glyph that cannot be loaded
- *         gives an empty bitmap
+ *         mode or with no spread, a face that cannot be sized or set to the coordinates, or a
+ *         glyph that cannot be loaded gives an empty bitmap
  **/
 GlyphBitmap field(const GlyphKey& key);
 
@@ -49,9 +50,9 @@ std::uint8_t fieldSpread(float reach);
 
 /**
  * @return the key of the field a glyph's effects are drawn from, for an effect reaching a
- *         distance past its edge in em units
+ *         distance past its edge in em units, at a variable font's normalized coordinates
  **/
-GlyphKey fieldKey(const Face* face, unsigned int index, float reach);
+GlyphKey fieldKey(const Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates = {});
 
 /**
  * @param size the size the text is drawn at, in pixels

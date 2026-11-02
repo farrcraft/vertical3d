@@ -334,6 +334,8 @@ bool TextureFont::packGlyph(char32_t charcode, bool sdf, unsigned int* missed) {
     FT_Library library = face_->library()->handle().library;
     const FT_Int32 flags = glyphLoadFlags(library, outline_, atlas_->depth(), lcdFiltering_ != 0, lcdWeights_, sdf);
 
+    // drawn at the face's default, whatever coordinates another load left it at
+    face_->handle().vary({});
     FT_Error error = FT_Load_Glyph(loaded, glyphIndex, flags);
     if (error != 0) {
         logger_->get()->error("Error loading glyph!");

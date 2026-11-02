@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,7 @@ struct LineRun final {
     bool ellipsis = false;           /**< whether it is the ellipsis that ends a line cut short **/
     std::size_t start = 0;           /**< the byte offset where its text starts. An ellipsis is at the cut **/
     std::size_t end = 0;
+    std::vector<std::int32_t> coordinates;  /**< its face's normalized coordinates, or none at every axis's default **/
     float x = 0.0F;                  /**< its left edge, from the paragraph's left **/
     float advance = 0.0F;
     std::vector<ShapedGlyph> glyphs; /**< left to right, each drawn at the sum of the advances before it **/

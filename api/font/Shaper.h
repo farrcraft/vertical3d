@@ -12,6 +12,7 @@
 #include "FaceStyle.h"
 #include "Feature.h"
 #include "ShapedRun.h"
+#include "Variation.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -39,6 +40,9 @@ class FallbackChain;
  * no script, such as a space, a digit or a mark, takes the script of the run it is in, or of the
  * first character after it with one.
  *
+ * Each run is shaped at the coordinates Face::coordinates() finds in its face for the style,
+ * the size and the variations, and holds them for its glyphs to be drawn at.
+ *
  * Each run's embedding level is resolved as UAX #9 resolves it, and its direction is its level's,
  * so a number in an Arabic sentence is shaped left to right. Runs are in the string's order, and
  * a line puts them in visual order by their levels.
@@ -57,12 +61,13 @@ class Shaper final {
      *
      * @param features turned on or off across the whole string. A tag that is not four letters
      *        is left out
+     * @param variations set on each variable face's axes across the whole string
      * @param base the direction each paragraph of the string is read in
      * @return its runs, or none for an empty string, a size that is not from 0 to LARGEST, or
      *         a chain with no faces
      **/
     std::vector<ShapedRun> shape(std::string_view utf8, const FaceStyle& style, float size,
-        const std::vector<Feature>& features = {}, BaseDirection base = BaseDirection::Auto) const;
+        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}, BaseDirection base = BaseDirection::Auto) const;
 
     /**
      * Shape the bytes from one offset to another of a UTF-8 string, with the levels of the whole
@@ -74,7 +79,7 @@ class Shaper final {
      *         that is not from 0 to LARGEST, or a chain with no faces
      **/
     std::vector<ShapedRun> shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
-        const std::vector<Feature>& features = {}) const;
+        const std::vector<Feature>& features = {}, const std::vector<Variation>& variations = {}) const;
 
  private:
     boost::shared_ptr<FallbackChain> chain_;

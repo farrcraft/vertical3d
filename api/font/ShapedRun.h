@@ -36,6 +36,7 @@ struct ShapedRun final {
     std::uint8_t level = 0;       /**< its embedding level, by which a line's runs are drawn in order **/
     std::size_t start = 0;        /**< the byte offset in the string where it starts **/
     std::size_t end = 0;          /**< and one past where it ends **/
+    std::vector<std::int32_t> coordinates;  /**< its face's normalized coordinates, or none at every axis's default **/
     std::vector<ShapedGlyph> glyphs;
     float advance = 0.0F;         /**< every glyph's advance added together **/
 };

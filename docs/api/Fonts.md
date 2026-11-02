@@ -20,16 +20,19 @@ glyphs and the drawing of text. See [ui/](ui/README.md).
   - `glyphIndex(charcode)` is the index of a code point's glyph. Index 0 is the face's missing
     glyph, and `has(charcode)` is whether the index is not 0. A glyph is named by its face and
     its index, a `FaceGlyph`.
-  - `metrics(size)` gives the face's `FaceMetrics` at a size in pixels, unhinted: its
-    ascender, descender and line gap, and the position and thickness of an underline and a
-    strikethrough, each as a distance from the baseline. A face whose OS/2 table asks for its
+  - `metrics(size, coordinates)` gives the face's `FaceMetrics` at a size in pixels, unhinted:
+    its ascender, descender and line gap, and the position and thickness of an underline and a
+    strikethrough, each as a distance from the baseline. They are measured at a variable font's
+    [coordinates](#variable-fonts), none unless given. A face whose OS/2 table asks for its
     typographic metrics is measured by them, and any other by its hhea table.
 - **`FaceStyle`** is the weight and style a face is chosen by: `{ .weight = 600, .italic =
   false }`. The weight defaults to 400 and italic to false.
 - **`Family(name)`** holds the faces of one typeface. `add(face)` leaves out a null face.
   `face(style)` chooses as CSS does:
   - Faces of the style asked for are tried first, and all faces when there are none.
-  - The weight asked for is used when a face has it.
+  - The weight asked for is used when a face has it. A variable face has every weight its
+    `weights()` covers, and each rule below measures it from the end of that range nearest the
+    weight asked for.
   - For a weight from 400 to 500, the nearest heavier face up to 500, then the nearest lighter
     face, then the nearest face heavier than 500.
   - For a weight below 400, the nearest lighter face, then the nearest heavier one.
@@ -39,19 +42,48 @@ glyphs and the drawing of text. See [ui/](ui/README.md).
   glyph from the first of those faces that has the code point. A code point no
   face has is the first face's missing glyph. A chain with no families finds a null face.
 
+## Variable fonts
+
+A variable font holds a range of designs along its axes, such as its weight or its width. Text
+is drawn at one point on each axis.
+
+- **`Face::axes()`** gives a variable font's `FaceAxis`es, each with its `tag`, such as `"wght"`,
+  and its `min`, `initial` and `max` values, in the units the font's named instances use. A face
+  with no axes has none. **`weights()`** is the lightest and the heaviest weight a face draws:
+  its weight axis's range, or its own weight for both.
+- **Coordinates.** A point on a face's axes is held as normalized coordinates, one for each
+  axis, in 2.14 fixed point. A coordinate is -1 at the axis's least value, 0 at its default and
+  1 at its greatest, after the font's avar table has mapped it. No coordinates at all draw every
+  axis at its default.
+- **`Face::coordinates(style, size, variations)`** finds the coordinates text is drawn at, as
+  CSS sets them. The weight axis takes the `FaceStyle`'s weight, and the optical size axis the
+  size in pixels. Each `Variation` is then set over them, in order. A value outside its axis's
+  range is taken as the nearest end, a variation for an axis the face lacks does nothing, and
+  one whose tag is not four letters is left out. Every axis at its default gives no coordinates,
+  so a face with no axes always gives none.
+- **`Variation`** is an axis's tag and a value in its units: `{ "wght", 650 }` for a weight
+  between regular and bold, `{ "wdth", 75 }` for a condensed width. A `TextStyle` lists its
+  `variations`.
+- **Where they go.** The shaper shapes each run at the coordinates its face finds, so its
+  advances and kerning are the instance's, and keeps them in the run's `coordinates`. A
+  paragraph's `LineRun`s copy them. A renderer puts them in each `GlyphKey`, and gives them to
+  the curve store, so each point on the axes is a glyph of its own. A paragraph measures each
+  line's faces at their runs' coordinates.
+
 ## Shaping
 
 Text is shaped by HarfBuzz, over the faces a `FallbackChain` holds. Shaping applies a font's
 kerning, mark positioning, ligatures and contextual forms, and any OpenType feature asked for.
 
-- **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features)`** shapes a
-  UTF-8 string at a `FaceStyle` and a size in pixels, and returns its runs in the string's
-  order. An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain
-  with no faces gives no runs.
-- **`shape(utf8, from, to, bidi, style, size, features)`** shapes only the bytes from one
-  offset to another, with a `Bidi` resolved over the whole string. The rest of the string is
-  the context, so the characters either side shape the range's edges as they would inside one
-  run. A paragraph shapes each of its style ranges this way.
+- **`Shaper(chain)`** shapes for one chain. **`shape(utf8, style, size, features, variations)`**
+  shapes a UTF-8 string at a `FaceStyle` and a size in pixels, with a variable face's axes set
+  as [Variable fonts](#variable-fonts) describes, and returns its runs in the string's order.
+  An empty string, a size that is not above 0 and at most `Shaper::LARGEST`, or a chain with no
+  faces gives no runs.
+- **`shape(utf8, from, to, bidi, style, size, features, variations)`** shapes only the bytes
+  from one offset to another, with a `Bidi` resolved over the whole string. The rest of the
+  string is the context, so the characters either side shape the range's edges as they would
+  inside one run. A paragraph shapes each of its style ranges this way.
 - **Clusters.** A string is split a cluster at a time. A cluster is a character with the marks,
   joiners, variation selectors and emoji modifiers after it, a character a zero width joiner
   joins to it, or a pair of regional indicators, which is a flag. A cluster asks for emoji when
@@ -72,8 +104,9 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   so a number inside Arabic text is a run of its own, shaped left to right. The last argument of
   `shape` is the `BaseDirection` each paragraph is read in, `Auto` unless given.
 - **`ShapedRun`** holds its `face`, its `script` as an ISO 15924 code such as `"Latn"`, its
-  `direction`, the byte range `start` to `end` it came from, its `glyphs`, and the sum of their
-  advances. Its glyphs are in visual order, left to right, whatever its direction.
+  `direction`, and the byte range `start` to `end` it came from. It also holds the
+  `coordinates` its face was shaped at, its `glyphs`, and the sum of their advances. Its glyphs
+  are in visual order, left to right, whatever its direction.
 - **`ShapedGlyph`** holds the glyph's `index` in the run's face, its `advance`, the `offset` it
   is drawn at from the pen, and its `cluster`: the byte offset of the first character it came
   from. Every measure is in pixels at the size shaped, with y growing downwards. A combining
@@ -150,10 +183,11 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 **Styles.**
 
 - **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
-  `size` in pixels, the OpenType `features` and the `colour`. It also says whether it has an
+  `size` in pixels, the OpenType `features`, the `variations` of a variable face's axes, and the
+  `colour`. It also says whether it has an
   `underline` or a `strikethrough`, and lists the `effects` drawn beneath it, as
   [effect fields](#effect-fields) describes. Its `contrast`, from 0 to 1, strengthens the
-  glyphs' coverage, as light text on a dark ground needs. The first four decide the glyphs;
+  glyphs' coverage, as light text on a dark ground needs. The first five decide the glyphs;
   `shapesLike()` compares those alone. The colour, the decorations, the effects and the contrast
   only decide how the glyphs are drawn.
 - **`ParagraphStyle`** names the `direction` each paragraph is read in, the `alignment`, and
@@ -209,7 +243,8 @@ shaped rather than found. The cache and its paragraphs are used from one thread.
   tall as the ascender, descender and line gap of the tallest faces on it, times the line
   spacing, with the baseline centred in any extra height.
 - A line's **`LineRun`s** are in the order they are drawn, left to right. Each holds its `face`,
-  `size`, direction, byte range, `x` from the paragraph's left, `advance`, and `glyphs`. A glyph
+  `size`, direction, byte range, the `coordinates` its face is drawn at, `x` from the paragraph's
+  left, `advance`, and `glyphs`. A glyph
   is drawn at its run's `x` plus the advances before it, plus its own offset. A run's colour and
   decorations are those of the style at its glyphs' clusters, as `styleAt()` gives it.
 - Text is not shaped again where a line breaks it, so a ligature or a joining form across the
@@ -277,8 +312,9 @@ Background: [ADR-0144](../adr/0144-text-glyph-pages-of-plots-reused-least-recent
 - It hints the glyph by its face's own instructions vertically, so stems and the x-height sit
   on whole pixels. It does not hint horizontally, so the glyph's shape is the same at every step.
 - It gives one byte a pixel, with the `bearing` of its top left pixel from the pen.
-- A key whose mode is not `Coverage`, a face that cannot be sized, or a glyph that cannot be
-  loaded gives an empty bitmap.
+- It loads the glyph at the key's `coordinates`.
+- A key whose mode is not `Coverage`, a face that cannot be sized or set to the coordinates, or
+  a glyph that cannot be loaded gives an empty bitmap.
 
 A renderer draws a glyph with its pen rounded down to a step: the whole pixel it is in, plus
 the bearing, is where the bitmap's top left goes, and the step picks the rasterization. Each
@@ -289,7 +325,8 @@ Background: [ADR-0145](../adr/0145-text-coverage-on-the-pixel-grid-curves-when-s
 ## Curve glyphs
 
 Text that is scaled, turned or placed in the world is drawn from its glyphs' curves, as the
-Slug algorithm draws it. **`outline(face, index)`** reads a glyph's `CurveGlyph`.
+Slug algorithm draws it. **`outline(face, index, coordinates)`** reads a glyph's `CurveGlyph`, at
+a variable font's coordinates, none unless given.
 
 - **Curves.** The outline is read unscaled and unhinted, in em units with y upwards, as
   `QuadraticCurve`s from `p1` to `p3` pulled towards `p2`. A straight line has `p2` on `p3`. A
@@ -308,11 +345,11 @@ Slug algorithm draws it. **`outline(face, index)`** reads a glyph's `CurveGlyph`
   bands.
 
 **The curve store.** A `CurveStore` keeps the curves text is drawn from, read the first time each
-glyph is drawn. A glyph's curves are the same at every size, so it is found by its face and its
-index, and kept as long as the store is.
+glyph is drawn. A glyph's curves are the same at every size, so it is found by its face, its
+index and its coordinates, and kept as long as the store is.
 
-- **`glyph(face, index)`** gives the `StoredCurves`: the value its `bands` start at, the `min`
-  and `max` of its outline in em units, and whether it is `empty`, as a space is.
+- **`glyph(face, index, coordinates)`** gives the `StoredCurves`: the value its `bands` start
+  at, the `min` and `max` of its outline in em units, and whether it is `empty`, as a space is.
 - **`curves()`** and **`bands()`** are the two arrays a renderer copies to the device, four floats
   a texel, in rows of `ROW` texels. Curve c is texels 2c and 2c + 1: p1 and p2, then p3.
 - **Bands.** Band value k is float k of `bands()`. A glyph's bands start at its value g:
@@ -321,8 +358,8 @@ index, and kept as long as the store is.
   - from g + 8, each horizontal band has its curve count and the value its list starts at, and
     then each vertical band does;
   - each list holds curve indices, in the band's order.
-- **Colour programs.** **`colour(face, index, palette)`** stores a colour glyph as a program
-  among the band values, and gives its `StoredColour`. That holds the value its `program`
+- **Colour programs.** **`colour(face, index, palette, coordinates)`** stores a colour glyph as
+  a program among the band values, and gives its `StoredColour`. That holds the value its `program`
   starts at, the `min` and `max` of what it draws, and whether it is `empty`. It also says
   whether the glyph places `pictures`, which a program does not draw. Each clip of each fill is
   an outline stored as a glyph's is, banded by `banded(curves)`. A program starts at its value
@@ -359,10 +396,10 @@ it.
 - **`Face::colour()`** gives the `ColourTables` a face holds: `layers` (COLR version 0), `paint`
   (COLR version 1), `svg`, `cbdt` and `sbix`. **`Face::coloured(index)`** says whether any of
   them draws a glyph.
-- **`colour(face, index, palette, size)`** reads a `ColourGlyph` through HarfBuzz's paint
-  interface, in a palette. A palette the face does not have is its first. A bitmap is taken
-  from the strike nearest the size in pixels to the em. A glyph no colour table draws reads as
-  empty.
+- **`colour(face, index, palette, size, coordinates)`** reads a `ColourGlyph` through HarfBuzz's
+  paint interface, in a palette, at a variable font's coordinates, none unless given. A palette
+  the face does not have is its first. A bitmap is taken from the strike nearest the size in
+  pixels to the em. A glyph no colour table draws reads as empty.
 - **SVG glyphs** are read through ThorVG, from the document element whose id is `glyph` and the
   glyph's index. A document compressed by gzip is inflated first. A face parses each document
   the first time a glyph of it is read, and keeps it while the face is open, so a font that
@@ -427,10 +464,10 @@ effects are drawn in the order the style lists them, the first furthest back, an
 effects are drawn before any glyph.
 
 - **`field(key)`** makes a glyph's field for the glyph store, as a `GlyphStore::Rasterizer`. It
-  reads the unhinted outline at the key's size and `spread`. Each pixel is its distance from the
-  edge, from the spread outside at 0 to the spread inside at 255, with the edge at the middle.
-  The field reaches the spread past the outline on every side. A key of another mode or with no
-  spread gives an empty bitmap.
+  reads the unhinted outline at the key's size, `spread` and `coordinates`. Each pixel is its
+  distance from the edge, from the spread outside at 0 to the spread inside at 255, with the
+  edge at the middle. The field reaches the spread past the outline on every side. A key of
+  another mode or with no spread gives an empty bitmap.
 - **`FIELD_SIZE`** is 64 pixels to the em, the size every field is made at. One field serves
   every size its glyph is drawn at.
 - **`fieldSpread(reach)`** is the spread an effect reaching a distance past the edge needs, the
@@ -438,7 +475,8 @@ effects are drawn before any glyph.
   rounded up to a multiple of four so that nearby reaches share a field, and at most
   `MAX_SPREAD`, 32. An effect reaches at most half an em, and past that it is cut off.
 - **`effectReach(effect, size)`** is how far an effect on text of a size reaches, in em units,
-  and **`fieldKey(face, index, reach)`** the key of the field it is drawn from.
+  and **`fieldKey(face, index, reach, coordinates)`** the key of the field it is drawn from, at a
+  variable font's coordinates, none unless given.
 - **`effectRamp(effect, size, spread)`** gives the field values at which the effect is whole and
   at which it is gone. A renderer packs them into each quad with `canvas::fieldRamp()`, and the
   shaders fade the effect's coverage between the two.

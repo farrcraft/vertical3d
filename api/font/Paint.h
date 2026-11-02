@@ -33,7 +33,8 @@ class Library;
 GlyphBitmap paint(const ColourGlyph& glyph, const Library& library, float size, std::uint8_t subpixel, const glm::vec4& foreground);
 
 /**
- * Paint the colour glyph a key names, read from its face in the key's palette.
+ * Paint the colour glyph a key names, read from its face in the key's palette and at its
+ * coordinates.
  *
  * @return the glyph's colours, or an empty bitmap of four channels for a key of another mode, a
  *         glyph with no colour, or a face with no library

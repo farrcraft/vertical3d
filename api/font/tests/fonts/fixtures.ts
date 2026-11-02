@@ -1,5 +1,5 @@
 /**
- * Write the colour font fixtures: one font for each OpenType colour table.
+ * Write the font fixtures: one font for each OpenType colour table, and a variable font.
  *
  * Every font is 1000 units to the em, 800 above the baseline and 200 below. Its outlines are
  * rectangles: the em square, its left half and its right half. Each colour glyph is mapped from
@@ -23,7 +23,14 @@
  *
  * Palette 0 is red, blue and green, and palette 1 is blue, red and green.
  *
- * Usage: node api/font/tests/fonts/colourfonts.ts
+ * - variable.ttf: a weight axis from 100 to 900, 400 by default, and an optical size axis from 8
+ *   to 64, 16 by default. It has no avar table, so each axis is normalized in a straight line.
+ *   Its named instances are Thin, Regular and Black, at weights 100, 400 and 900 and size 16.
+ *   U+E000 is a bar from the baseline up, as wide in units as the weight and 100 units narrower
+ *   than its advance. It is 800 units tall at the default size, 600 at the largest and 900 at the
+ *   smallest. Its advance varies through gvar's phantom points, as the font has no HVAR table.
+ *
+ * Usage: node api/font/tests/fonts/fixtures.ts
  */
 
 import { writeFileSync } from 'node:fs';
@@ -126,11 +133,12 @@ const SQUARE: Box = { x0: 0, y0: DESCENDER, x1: UNITS, y1: ASCENDER };
 const LEFT: Box = { x0: 0, y0: DESCENDER, x1: UNITS / 2, y1: ASCENDER };
 const RIGHT: Box = { x0: UNITS / 2, y0: DESCENDER, x1: UNITS, y1: ASCENDER };
 
-/** A glyph: its name, its outline, and the code point mapped to it, if any. */
+/** A glyph: its name, its outline, the code point mapped to it, if any, and its advance. */
 interface Glyph {
     name: string;
     box: Box | null;
     code?: number;
+    advance?: number;
 }
 
 /** The glyphs every font starts with: the missing glyph, then the three outlines. */
@@ -204,7 +212,7 @@ function os2(glyphs: Glyph[]): Uint8Array {
 function hmtx(glyphs: Glyph[]): Uint8Array {
     const w = new Writer();
     for (const glyph of glyphs) {
-        w.u16(UNITS).u16(glyph.box === null ? 0 : glyph.box.x0);
+        w.u16(glyph.advance ?? UNITS).u16(glyph.box === null ? 0 : glyph.box.x0);
     }
     return w.done();
 }
@@ -227,8 +235,9 @@ function cmap(glyphs: Glyph[]): Uint8Array {
     return new Writer().u16(0).u16(1).u16(3).u16(1).u32(12).append(sub.done()).done();
 }
 
-function name(family: string): Uint8Array {
-    const strings = [[1, family], [2, 'Regular'], [4, `${family} Regular`], [6, `${family.replaceAll(' ', '')}-Regular`]] as const;
+/** The name table, with the family's names and any others by their name IDs. */
+function name(family: string, others: [number, string][] = []): Uint8Array {
+    const strings = [[1, family], [2, 'Regular'], [4, `${family} Regular`], [6, `${family.replaceAll(' ', '')}-Regular`], ...others] as const;
     const text = new Writer();
     const w = new Writer().u16(0).u16(strings.length).u16(6 + (strings.length * 12));
     for (const [id, value] of strings) {
@@ -463,6 +472,86 @@ function svg(first: number, last: number, document: string): Uint8Array {
     return new Writer().u16(0).u32(10).u32(0).u16(1).u16(first).u16(last).u32(14).u32(text.length).append(text).done();
 }
 
+/** A variable font's axis: its tag, its range and default, and the name ID of its name. */
+interface Axis {
+    tag: string;
+    min: number;
+    initial: number;
+    max: number;
+    nameId: number;
+}
+
+/** A named instance: the name ID of its subfamily name, and its value on each axis. */
+interface Instance {
+    nameId: number;
+    values: number[];
+}
+
+function fvar(axes: Axis[], instances: Instance[]): Uint8Array {
+    const w = new Writer().u16(1).u16(0).u16(16).u16(2).u16(axes.length).u16(20).u16(instances.length).u16(4 + (axes.length * 4));
+    for (const axis of axes) {
+        w.tag(axis.tag).fixed(axis.min).fixed(axis.initial).fixed(axis.max).u16(0).u16(axis.nameId);
+    }
+    for (const instance of instances) {
+        w.u16(instance.nameId).u16(0);
+        instance.values.forEach((value) => w.fixed(value));
+    }
+    return w.done();
+}
+
+/**
+ * One way a glyph varies: its peak, normalized on each axis, and the x and y delta of each of
+ * its points there. The points are the outline's, then the four phantom points, of which the
+ * second is the advance.
+ */
+interface Tuple {
+    peak: number[];
+    dx: number[];
+    dy: number[];
+}
+
+/** Deltas packed as gvar holds them: one run of words, or one run of zeroes. */
+function packed(w: Writer, deltas: number[]): void {
+    if (deltas.every((d) => d === 0)) {
+        w.u8(0x80 | (deltas.length - 1));
+        return;
+    }
+    w.u8(0x40 | (deltas.length - 1));
+    deltas.forEach((d) => w.u16(d));
+}
+
+/** A gvar table, each glyph's tuples moving all its points, with an embedded peak each. */
+function gvar(axes: number, glyphs: Tuple[][]): Uint8Array {
+    const data = new Writer();
+    const offsets: number[] = [];
+    for (const tuples of glyphs) {
+        offsets.push(data.length);
+        if (tuples.length === 0) {
+            continue;
+        }
+        const serialized = tuples.map((tuple) => {
+            const t = new Writer();
+            packed(t, tuple.dx);
+            packed(t, tuple.dy);
+            return t.done();
+        });
+        // shared point numbers, 0 for every point, are the first byte of the serialized data
+        data.u16(0x8000 | tuples.length).u16(4 + (tuples.length * (4 + (axes * 2))));
+        tuples.forEach((tuple, i) => {
+            data.u16(serialized[i].length).u16(0x8000);
+            tuple.peak.forEach((value) => data.f2dot14(value));
+        });
+        data.u8(0);
+        serialized.forEach((s) => data.append(s));
+        data.pad();
+    }
+    offsets.push(data.length);
+    const header = 20 + (offsets.length * 4);
+    const w = new Writer().u16(1).u16(0).u16(axes).u16(0).u32(header).u16(glyphs.length).u16(1).u32(header);
+    offsets.forEach((offset) => w.u32(offset));
+    return w.append(data.done()).done();
+}
+
 function checksum(table: Uint8Array): number {
     const padded = new Uint8Array(Math.ceil(table.length / 4) * 4);
     padded.set(table);
@@ -473,8 +562,8 @@ function checksum(table: Uint8Array): number {
     return sum;
 }
 
-/** A TrueType font of the given glyphs, with its colour tables. */
-function font(family: string, glyphs: Glyph[], colour: Record<string, Uint8Array>): Uint8Array {
+/** A TrueType font of the given glyphs, with its own tables and the names they refer to. */
+function font(family: string, glyphs: Glyph[], own: Record<string, Uint8Array>, names: [number, string][] = []): Uint8Array {
     const loca = new Writer();
     const outlinesData = new Writer();
     for (const glyph of glyphs) {
@@ -484,7 +573,7 @@ function font(family: string, glyphs: Glyph[], colour: Record<string, Uint8Array
     loca.u32(outlinesData.length);
 
     const tables: Record<string, Uint8Array> = {
-        ...colour,
+        ...own,
         'OS/2': os2(glyphs),
         cmap: cmap(glyphs),
         glyf: outlinesData.done(),
@@ -493,7 +582,7 @@ function font(family: string, glyphs: Glyph[], colour: Record<string, Uint8Array
         hmtx: hmtx(glyphs),
         loca: loca.done(),
         maxp: maxp(glyphs.length),
-        name: name(family),
+        name: name(family, names),
         post: post(),
     };
     const tags = Object.keys(tables).sort();
@@ -584,4 +673,27 @@ function write(file: string, bytes: Uint8Array): void {
     const tables = cbdt(4);
     write('cbdt.ttf', font('V3D Colour CBDT', glyphs, { CBDT: tables.cbdt, CBLC: tables.cblc }));
     write('sbix.ttf', font('V3D Colour SBIX', glyphs, { sbix: sbix(4, glyphs.length) }));
+}
+
+{
+    const WEIGHT = 400;
+    const SIDE = 100;
+    const glyphs = [...outlines(),
+        { name: 'bar', box: { x0: 0, y0: 0, x1: WEIGHT, y1: ASCENDER }, code: FIRST, advance: WEIGHT + SIDE }];
+    // the bar's points run from its lower left clockwise, so its right is points 2 and 3 and its
+    // top points 1 and 2. Point 5 is the advance
+    const wider = (d: number): Tuple['dx'] => [0, 0, d, d, 0, d, 0, 0];
+    const taller = (d: number): Tuple['dy'] => [0, d, d, 0, 0, 0, 0, 0];
+    const still = [0, 0, 0, 0, 0, 0, 0, 0];
+    const bar: Tuple[] = [
+        { peak: [1, 0], dx: wider(900 - WEIGHT), dy: still },
+        { peak: [-1, 0], dx: wider(100 - WEIGHT), dy: still },
+        { peak: [0, 1], dx: still, dy: taller(600 - ASCENDER) },
+        { peak: [0, -1], dx: still, dy: taller(900 - ASCENDER) },
+    ];
+    write('variable.ttf', font('V3D Variable', glyphs, {
+        fvar: fvar([{ tag: 'wght', min: 100, initial: WEIGHT, max: 900, nameId: 256 }, { tag: 'opsz', min: 8, initial: 16, max: 64, nameId: 257 }],
+            [{ nameId: 258, values: [100, 16] }, { nameId: 2, values: [WEIGHT, 16] }, { nameId: 259, values: [900, 16] }]),
+        gvar: gvar(2, glyphs.map((glyph) => (glyph.name === 'bar' ? bar : []))),
+    }, [[256, 'Weight'], [257, 'Optical size'], [258, 'Thin'], [259, 'Black']]));
 }

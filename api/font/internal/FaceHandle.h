@@ -10,7 +10,9 @@
 
 #include <hb.h>
 
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace v3d::font::internal {
 
@@ -43,6 +45,15 @@ class FaceHandle final {
      **/
     bool size(float pixels);
 
+    /**
+     * Set the normalized coordinates glyphs are loaded at, in 2.14 fixed point, or none for
+     * every axis's default. A face has one set at a time, so every load sets those of its own
+     * glyph first. Setting the coordinates already set costs nothing.
+     *
+     * @return whether FreeType took them. A face with no axes takes only none
+     **/
+    bool vary(const std::vector<std::int32_t>& coordinates);
+
     // metrics and advances are 26.6 fixed point, 64 units to the pixel
     static constexpr float FIXED_POINT_SCALE = 64.0F;
     static constexpr FT_UInt HORIZONTAL_OVERSAMPLE = 64;
@@ -50,8 +61,10 @@ class FaceHandle final {
     FT_Face face = nullptr;
     hb_face_t* shaping = nullptr;
     std::unique_ptr<SvgDocuments> documents;  /**< the face's SVG documents, as they are parsed **/
+    std::vector<std::int32_t> varied;         /**< the coordinates FreeType holds, set only by vary() **/
 
  private:
+
     // the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel
     static constexpr FT_UInt RESOLUTION_DPI = 72;
 };

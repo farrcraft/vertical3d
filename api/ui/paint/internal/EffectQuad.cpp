@@ -5,9 +5,9 @@
 
 #include "EffectQuad.h"
 
-#include <api/font/Face.h>
 #include <api/font/Field.h>
 #include <api/font/GlyphStore.h>
+#include <api/font/Paragraph.h>
 #include <api/font/TextStyle.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/render/realtime/canvas/FieldRamp.h>
@@ -26,12 +26,12 @@
 
 namespace v3d::ui::paint::internal {
 
-std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::Face& face, unsigned int index, float size,
-    const font::TextEffect& effect) {
-    if (store == nullptr || !(size > 0.0F)) {
+std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::LineRun& run, unsigned int index, const font::TextEffect& effect) {
+    const float size = run.size;
+    if (store == nullptr || !run.face || !(size > 0.0F)) {
         return std::nullopt;
     }
-    const font::GlyphKey key = font::fieldKey(&face, index, font::effectReach(effect, size));
+    const font::GlyphKey key = font::fieldKey(run.face.get(), index, font::effectReach(effect, size), run.coordinates);
     const std::optional<font::StoredGlyph> stored = store->glyph(key, font::field);
     if (!stored.has_value() || stored->size.x == 0 || stored->size.y == 0) {
         return std::nullopt;
@@ -48,10 +48,10 @@ std::optional<EffectQuad> effectQuad(font::GlyphStore* store, const font::Face& 
         .ramp = render::realtime::canvas::fieldRamp(ramp.x, ramp.y) };
 }
 
-void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::Face& face, unsigned int index, float size,
+void placeEffects(std::vector<PlacedEffect>* placed, font::GlyphStore* store, const font::LineRun& run, unsigned int index,
     const std::vector<font::TextEffect>& effects, const glm::vec2& pen) {
     for (std::size_t layer = 0; layer < effects.size(); layer++) {
-        std::optional<EffectQuad> quad = effectQuad(store, face, index, size, effects[layer]);
+        std::optional<EffectQuad> quad = effectQuad(store, run, index, effects[layer]);
         if (quad.has_value()) {
             quad->min += pen;
             quad->max += pen;

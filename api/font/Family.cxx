@@ -5,6 +5,7 @@
 
 #include "Family.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <functional>
 #include <string>
@@ -28,14 +29,15 @@ constexpr unsigned int MIDDLE_HIGH = 500;
 
 /**
  * @return the face whose weight is nearest the one asked for among those the test accepts, or
- *         null when it accepts none
+ *         null when it accepts none. A face's weight is the one in its range nearest that asked
+ *         for
  **/
 boost::shared_ptr<Face> nearest(const std::vector<boost::shared_ptr<Face>>& faces, unsigned int weight,
     const std::function<bool(unsigned int)>& accepts) {
     boost::shared_ptr<Face> found;
     unsigned int best = 0;
     for (const boost::shared_ptr<Face>& face : faces) {
-        const unsigned int each = face->weight();
+        const unsigned int each = std::clamp(weight, face->weights().first, face->weights().second);
         if (!accepts(each)) {
             continue;
         }

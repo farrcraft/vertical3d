@@ -438,7 +438,7 @@ bool ColourGlyph::foreground() const noexcept {
 
 // a glyph's index, then its palette, as GlyphKey orders them
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, float size) {
+ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, float size, const std::vector<std::int32_t>& coordinates) {
     hb_face_t* shaping = face.handle().shaping;
     if (shaping == nullptr || !face.coloured(index)) {
         return ColourGlyph();
@@ -449,6 +449,9 @@ ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, f
     const float strike = std::isfinite(size) ? std::clamp(size, 1.0F, LARGEST_STRIKE) : 1.0F;
     const auto ppem = static_cast<unsigned int>(strike);  // checked: finite, and clamped to 1 to LARGEST_STRIKE
     hb_font_set_ppem(font.get(), ppem, ppem);
+    if (!coordinates.empty()) {
+        hb_font_set_var_coords_normalized(font.get(), coordinates.data(), static_cast<unsigned int>(coordinates.size()));
+    }
 
     internal::PaintWalk walk{ .library = face.library() ? face.library()->handle().library : nullptr,
         .memory = face.handle().face != nullptr ? face.handle().face->memory : nullptr,

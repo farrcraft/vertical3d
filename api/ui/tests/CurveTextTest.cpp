@@ -332,6 +332,23 @@ BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
     BOOST_CHECK_EQUAL(world.vertices()[0].contrast, 0.6F);
 }
 
+/**
+ * A variable face's curves are read at the coordinates the style's variations set: the
+ * fixture's bar is as wide in units as its weight.
+ **/
+BOOST_AUTO_TEST_CASE(a_variable_face_is_drawn_from_its_coordinates_curves) {
+    only("fonts/variable.ttf");
+    const auto width = [this]() {
+        canvas.clear();
+        draw("\uE000");
+        BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+        return canvas.vertices()[2].position.x - canvas.vertices()[0].position.x;
+    };
+    const float regular = width();
+    style.variations = { { "wght", 650.0F } };
+    BOOST_CHECK_CLOSE(width() - regular, 10.0F, 5.0F);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

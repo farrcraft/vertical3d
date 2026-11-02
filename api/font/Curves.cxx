@@ -75,10 +75,10 @@ glm::vec4 CurveGlyph::bandTransform() const {
     return glm::vec4(scale, -min * scale);
 }
 
-CurveGlyph outline(const Face& face, unsigned int index) {
+CurveGlyph outline(const Face& face, unsigned int index, const std::vector<std::int32_t>& coordinates) {
     CurveGlyph glyph;
     FT_Face loaded = face.handle().face;
-    if (loaded == nullptr || loaded->units_per_EM == 0) {
+    if (loaded == nullptr || loaded->units_per_EM == 0 || !face.handle().vary(coordinates)) {
         return glyph;
     }
     // unscaled, so in design units, and with no transform a size left behind

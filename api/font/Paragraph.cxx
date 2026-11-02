@@ -135,7 +135,7 @@ std::vector<LineRun> placeRuns(const ShapedText& shaped, const internal::Span& v
         for (const std::size_t run : within) {
             const ShapedRun& source = shaped.runs[run];
             LineRun piece{ .face = source.face, .size = shaped.ranges[shaped.runRanges[run]].style.size, .rightToLeft = level.rightToLeft(),
-                .start = std::max(source.start, level.start), .end = std::min(source.end, level.end) };
+                .start = std::max(source.start, level.start), .end = std::min(source.end, level.end), .coordinates = source.coordinates };
             for (const ShapedGlyph& glyph : source.glyphs) {
                 if (glyph.cluster >= piece.start && glyph.cluster < piece.end) {
                     piece.glyphs.push_back(glyph);
@@ -156,7 +156,7 @@ void addEllipsis(const std::vector<ShapedRun>& ellipsis, float size, std::size_t
     marks.reserve(ellipsis.size());
     for (const ShapedRun& run : ellipsis) {
         marks.push_back(LineRun{ .face = run.face, .size = size, .rightToLeft = run.direction == ShapedRun::Direction::RightToLeft, .ellipsis = true,
-            .start = at, .end = at, .advance = run.advance, .glyphs = run.glyphs });
+            .start = at, .end = at, .coordinates = run.coordinates, .advance = run.advance, .glyphs = run.glyphs });
     }
     runs->insert(rightToLeft ? runs->begin() : runs->end(), marks.begin(), marks.end());
 }
@@ -169,10 +169,10 @@ FaceMetrics tallestOf(const std::vector<LineRun>& runs, const TextStyle& empty, 
     FaceMetrics tallest;
     const boost::shared_ptr<Face> face = runs.empty() ? firstFace(empty) : boost::shared_ptr<Face>();
     if (face) {
-        return metrics->of(face, empty.size);
+        return metrics->of(face, empty.size, face->coordinates(empty.face, empty.size, empty.variations));
     }
     for (const LineRun& run : runs) {
-        const FaceMetrics& found = metrics->of(run.face, run.size);
+        const FaceMetrics& found = metrics->of(run.face, run.size, run.coordinates);
         tallest.ascender = std::max(tallest.ascender, found.ascender);
         tallest.descender = std::max(tallest.descender, found.descender);
         tallest.lineGap = std::max(tallest.lineGap, found.lineGap);

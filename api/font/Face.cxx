@@ -15,13 +15,21 @@
 #include "FaceMetrics.h"
 #include "FaceStyle.h"
 #include "Library.h"
+#include "Variation.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 
@@ -33,6 +41,37 @@ namespace {
  * The weight of a bold face, as the OS/2 weight class names it.
  **/
 constexpr unsigned int BOLD = 700;
+
+/**
+ * The heaviest weight OpenType's weight axis reaches.
+ **/
+constexpr float HEAVIEST = 1000.0F;
+
+/**
+ * The letters in an axis's tag.
+ **/
+constexpr std::size_t TAG_LENGTH = 4;
+
+constexpr hb_tag_t WEIGHT_AXIS = HB_TAG('w', 'g', 'h', 't');
+constexpr hb_tag_t OPTICAL_SIZE_AXIS = HB_TAG('o', 'p', 's', 'z');
+
+/**
+ * @return a variable font's axes, read through HarfBuzz
+ **/
+std::vector<FaceAxis> axesOf(hb_face_t* face) {
+    std::vector<hb_ot_var_axis_info_t> infos(hb_ot_var_get_axis_count(face));
+    auto count = static_cast<unsigned int>(infos.size());
+    hb_ot_var_get_axis_infos(face, 0, &count, infos.data());
+    std::vector<FaceAxis> axes;
+    axes.reserve(count);
+    for (unsigned int axis = 0; axis < count; axis++) {
+        std::array<char, TAG_LENGTH> tag{};
+        hb_tag_to_string(infos[axis].tag, tag.data());
+        axes.push_back(FaceAxis{ .tag = std::string(tag.data(), tag.size()), .min = infos[axis].min_value, .initial = infos[axis].default_value,
+            .max = infos[axis].max_value });
+    }
+    return axes;
+}
 
 };  // namespace
 
@@ -60,6 +99,17 @@ boost::shared_ptr<Face> Face::open(const boost::shared_ptr<Library>& library, co
     } else {
         made->weight_ = (face->style_flags & FT_STYLE_FLAG_BOLD) != 0 ? BOLD : FaceStyle::REGULAR;
     }
+    made->weights_ = { made->weight_, made->weight_ };
+    made->axes_ = axesOf(made->handle_->shaping);
+    for (const FaceAxis& axis : made->axes_) {
+        // a weight axis runs from 1 to 1000, and a face whose axis does not is chosen by its own
+        // weight alone
+        if (axis.tag == "wght" && axis.min >= 1.0F && axis.max >= axis.min && axis.max <= HEAVIEST) {
+            const auto lightest = static_cast<unsigned int>(std::lround(axis.min));  // checked: from 1 to HEAVIEST
+            const auto heaviest = static_cast<unsigned int>(std::lround(axis.max));  // checked: from 1 to HEAVIEST
+            made->weights_ = { lightest, heaviest };
+        }
+    }
     return made;
 }
 
@@ -83,6 +133,39 @@ bool Face::italic() const noexcept {
     return italic_;
 }
 
+std::pair<unsigned int, unsigned int> Face::weights() const noexcept {
+    return weights_;
+}
+
+const std::vector<FaceAxis>& Face::axes() const noexcept {
+    return axes_;
+}
+
+std::vector<std::int32_t> Face::coordinates(const FaceStyle& style, float size, const std::vector<Variation>& variations) const {
+    if (axes_.empty()) {
+        return {};
+    }
+    // set in order, so a variation given for the weight or the size is set over the style's
+    std::vector<hb_variation_t> settings{ hb_variation_t{ .tag = WEIGHT_AXIS, .value = static_cast<float>(style.weight) } };
+    if (std::isfinite(size)) {
+        settings.push_back(hb_variation_t{ .tag = OPTICAL_SIZE_AXIS, .value = size });
+    }
+    for (const Variation& variation : variations) {
+        if (variation.tag.size() == TAG_LENGTH && std::isfinite(variation.value)) {
+            settings.push_back(hb_variation_t{ .tag = hb_tag_from_string(variation.tag.data(), static_cast<int>(TAG_LENGTH)), .value = variation.value });
+        }
+    }
+    const std::unique_ptr<hb_font_t, decltype(&hb_font_destroy)> font(hb_font_create(handle_->shaping), &hb_font_destroy);
+    hb_font_set_variations(font.get(), settings.data(), static_cast<unsigned int>(settings.size()));
+    unsigned int count = 0;
+    const int* normalized = hb_font_get_var_coords_normalized(font.get(), &count);
+    const auto atDefault = [](int value) { return value == 0; };
+    if (normalized == nullptr || std::all_of(normalized, normalized + count, atDefault)) {
+        return {};
+    }
+    return std::vector<std::int32_t>(normalized, normalized + count);
+}
+
 unsigned int Face::glyphIndex(char32_t charcode) const {
     return FT_Get_Char_Index(handle_->face, charcode);
 }
@@ -91,8 +174,11 @@ bool Face::has(char32_t charcode) const {
     return glyphIndex(charcode) != 0;
 }
 
-FaceMetrics Face::metrics(float size) const {
+FaceMetrics Face::metrics(float size, const std::vector<std::int32_t>& coordinates) const {
     const std::unique_ptr<hb_font_t, decltype(&hb_font_destroy)> font(hb_font_create(handle_->shaping), &hb_font_destroy);
+    if (!coordinates.empty()) {
+        hb_font_set_var_coords_normalized(font.get(), coordinates.data(), static_cast<unsigned int>(coordinates.size()));
+    }
     // measured in design units and scaled here, so a small size loses no precision to rounding
     const auto units = static_cast<int>(hb_face_get_upem(handle_->shaping));
     hb_font_set_scale(font.get(), units, units);

@@ -21,7 +21,8 @@ class Face;
  * style as CSS chooses them.
  *
  * Faces of the style asked for are tried first, and all faces when there are none. Among them,
- * the weight asked for is used when a face has it. Otherwise:
+ * the weight asked for is used when a face has it. A variable face has every weight its weight
+ * axis covers, and is measured from the end of the axis nearest the weight. Otherwise:
  *
  * - For a weight from 400 to 500, the nearest heavier face up to 500, then the nearest lighter
  *   face, then the nearest face heavier than 500.

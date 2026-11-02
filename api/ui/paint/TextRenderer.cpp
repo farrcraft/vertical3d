@@ -297,13 +297,13 @@ void TextRenderer::drawPlaced(v3d::render::realtime::canvas::Canvas* canvas) {
  **/
 void TextRenderer::place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen) {
     // an effect is drawn from the glyph's exact pen, since its field serves every step
-    internal::placeEffects(&effects_, &store_, *run.face, index, run.size, styled.effects, pen);
+    internal::placeEffects(&effects_, &store_, run, index, styled.effects, pen);
     const float whole = std::floor(pen.x);
     const float steps = std::min<float>(std::floor((pen.x - whole) * font::SUBPIXEL_STEPS), font::SUBPIXEL_STEPS - 1);
     const auto step = static_cast<std::uint8_t>(steps);  // checked: the pen is finite, so the step is from 0 to 3
     const Drawn how = drawn(*run.face, index, run.size);
     if (how == Drawn::Coverage) {
-        const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step };
+        const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .coordinates = run.coordinates };
         const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
         if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
             const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
@@ -314,7 +314,7 @@ void TextRenderer::place(const font::LineRun& run, unsigned int index, const fon
     // a glyph with no layer in the text's colour is the same in every colour, so it is kept once
     const glm::vec4 opaque(glm::vec3(styled.colour), 1.0F);
     const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .mode = font::GlyphMode::Colour,
-        .foreground = how == Drawn::Foreground ? font::packColour(opaque) : 0 };
+        .foreground = how == Drawn::Foreground ? font::packColour(opaque) : 0, .coordinates = run.coordinates };
     const std::optional<font::StoredGlyph> stored = colourStore_.glyph(key, [](const font::GlyphKey& asked) { return font::paint(asked); });
     if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
         const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));

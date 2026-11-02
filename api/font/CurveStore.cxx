@@ -24,15 +24,15 @@
 
 namespace v3d::font {
 
-const StoredCurves& CurveStore::glyph(const Face& face, unsigned int index) {
-    const auto key = std::make_pair(&face, index);
+const StoredCurves& CurveStore::glyph(const Face& face, unsigned int index, const std::vector<std::int32_t>& coordinates) {
+    auto key = std::make_tuple(&face, index, coordinates);
     const auto found = glyphs_.find(key);
     if (found != glyphs_.end()) {
         return found->second;
     }
     read_++;
-    const CurveGlyph outlined = outline(face, index);
-    StoredCurves& stored = glyphs_[key];
+    const CurveGlyph outlined = outline(face, index, coordinates);
+    StoredCurves& stored = glyphs_[std::move(key)];
     if (outlined.curves.empty()) {
         return stored;
     }
@@ -73,15 +73,15 @@ std::uint32_t CurveStore::store(const CurveGlyph& outlined) {
     return base;
 }
 
-const StoredColour& CurveStore::colour(const Face& face, unsigned int index, unsigned int palette) {
-    const auto key = std::make_tuple(&face, index, palette);
+const StoredColour& CurveStore::colour(const Face& face, unsigned int index, unsigned int palette, const std::vector<std::int32_t>& coordinates) {
+    auto key = std::make_tuple(&face, index, palette, coordinates);
     const auto found = colours_.find(key);
     if (found != colours_.end()) {
         return found->second;
     }
     read_++;
-    StoredColour& stored = colours_[key];
-    const ColourGlyph glyph = font::colour(face, index, palette, READ_SIZE);
+    StoredColour& stored = colours_[std::move(key)];
+    const ColourGlyph glyph = font::colour(face, index, palette, READ_SIZE, coordinates);
     // each fill's clips are stored first, so the program's own place is known when it is written
     std::vector<std::vector<float>> steps;
     std::vector<float> stops;

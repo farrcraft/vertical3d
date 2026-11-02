@@ -21,7 +21,7 @@ GlyphBitmap rasterize(const GlyphKey& key) {
         return GlyphBitmap();
     }
     internal::FaceHandle& handle = key.face->handle();
-    if (!handle.size(key.size)) {
+    if (!handle.vary(key.coordinates) || !handle.size(key.size)) {
         return GlyphBitmap();
     }
     // the face is hinted at many times its horizontal resolution and scaled back, so hinting

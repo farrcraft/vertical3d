@@ -20,6 +20,7 @@
 #include "ShapedRun.h"
 #include "Shaper.h"
 #include "TextStyle.h"
+#include "Variation.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -69,6 +70,9 @@ std::string keyOf(std::string_view text, const std::vector<StyledRange>& ranges,
         for (const Feature& feature : style.features) {
             key += ',' + feature.tag + '=' + std::to_string(feature.value);
         }
+        for (const Variation& variation : style.variations) {
+            key += ',' + variation.tag + ':' + std::to_string(std::bit_cast<std::uint32_t>(variation.value));
+        }
     }
     return key;
 }
@@ -93,7 +97,8 @@ boost::shared_ptr<const ShapedText> ShapingCache::shape(std::string_view text, c
     for (std::size_t range = 0; range < joined.size(); range++) {
         const StyledRange& styled = joined[range];
         const Shaper shaper(styled.style.fonts);
-        for (ShapedRun& run : shaper.shape(made->text, styled.start, styled.end, made->bidi, styled.style.face, styled.style.size, styled.style.features)) {
+        for (ShapedRun& run : shaper.shape(made->text, styled.start, styled.end, made->bidi, styled.style.face, styled.style.size, styled.style.features,
+            styled.style.variations)) {
             made->runs.push_back(std::move(run));
             made->runRanges.push_back(range);
         }

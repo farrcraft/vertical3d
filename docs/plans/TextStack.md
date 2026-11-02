@@ -422,7 +422,7 @@ COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
   The shaper chooses a face a grapheme cluster at a time, so an emoji sequence or a keycap is
   one glyph, and a space after an emoji is set in the text's face.
 - The colour suite covers a glyph from each table, over fixtures written by
-  `api/font/tests/fonts/colourfonts.ts`. It covers palettes, the text's colour, each gradient, a
+  `api/font/tests/fonts/fixtures.ts`. It covers palettes, the text's colour, each gradient, a
   transform, a stroke and the even-odd rule. It also covers a strike scaled, a stored program, a
   document parsed once, and emoji sequences shaped to one glyph. The device suite checks chosen
   pixels of a program's gradient and its layer in the text's colour. Noto's emoji test builds in
@@ -431,11 +431,26 @@ COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
 
 ### Step 15 — Variable fonts
 
-**Open.**
+**Closed.**
 
-- A style sets a variable font's axes, such as weight, by name. Shaping and the glyph store
-  follow them.
-- The font suite covers a weight between two named instances.
+- A face reports its axes, and its weight axis's range as the weights it draws. A family
+  chooses a variable face by that range, as CSS does.
+- `Face::coordinates()` finds a style's normalized coordinates as CSS sets them. The weight axis
+  takes the style's weight and the optical size axis the size. A `font::Variation` in the
+  style's `variations` sets any axis by its tag over both.
+- The shaper shapes each run at its face's coordinates, and the run and its line runs hold them.
+  A paragraph measures a line's faces at them.
+- Coverage, distance fields, colour glyphs and curves are made at their coordinates, and the
+  glyph store and the curve store keep each point on the axes apart. A FreeType face holds one
+  set of coordinates, so each load sets its own, and the default is set as a zero on each axis.
+- `api/font/tests/fonts/fixtures.ts` writes the colour fixtures and now a variable one, with a
+  weight axis and an optical size axis and no avar or HVAR table.
+- The variation suite covers a face's axes, the coordinates a style sets, and a weight between
+  the Regular and Black instances shaped between them. It covers a family's choice by range, an
+  outline and the curve store at coordinates, and coverage and a field made at a key's
+  coordinates after the face was loaded at others. It also covers a paragraph shaped again for a
+  variation. The ui suites cover a variable face's coverage, effect field and curves drawn at a
+  style's weight. No shipped face is variable, so no text the editor or a game draws changed.
 
 ### Step 16 — Scripts covered by the shipped fonts
 

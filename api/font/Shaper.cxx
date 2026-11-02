@@ -30,6 +30,7 @@
 #include "ShapedGlyph.h"
 #include "ShapedRun.h"
 #include "Utf8.h"
+#include "Variation.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -174,6 +175,18 @@ std::vector<hb_feature_t> settingsOf(const std::vector<Feature>& features) {
 }
 
 /**
+ * @return the coordinates a face is shaped at, found once for each face of a string
+ **/
+const std::vector<std::int32_t>& coordinatesOf(const Face& face, const FaceStyle& style, float size, const std::vector<Variation>& variations,
+    std::map<const Face*, std::vector<std::int32_t>>* found) {
+    auto at = found->find(&face);
+    if (at == found->end()) {
+        at = found->emplace(&face, face.coordinates(style, size, variations)).first;
+    }
+    return at->second;
+}
+
+/**
  * Shape one run in place, filling its glyphs and its advance.
  **/
 void shapeRun(std::string_view utf8, hb_script_t script, float size, const std::vector<hb_feature_t>& features, ShapedRun* run) {
@@ -191,6 +204,9 @@ void shapeRun(std::string_view utf8, hb_script_t script, float size, const std::
     const std::unique_ptr<hb_font_t, decltype(&hb_font_destroy)> font(hb_font_create(run->face->handle().shaping), &hb_font_destroy);
     const int scale = static_cast<int>(size * FIXED_POINT_SCALE);  // checked: size is from 0 to Shaper::LARGEST
     hb_font_set_scale(font.get(), scale, scale);
+    if (!run->coordinates.empty()) {
+        hb_font_set_var_coords_normalized(font.get(), run->coordinates.data(), static_cast<unsigned int>(run->coordinates.size()));
+    }
     hb_shape(font.get(), buffer.get(), features.data(), static_cast<unsigned int>(features.size()));
 
     unsigned int count = 0;
@@ -215,15 +231,15 @@ Shaper::Shaper(const boost::shared_ptr<FallbackChain>& chain) :
 }
 
 std::vector<ShapedRun> Shaper::shape(std::string_view utf8, const FaceStyle& style, float size, const std::vector<Feature>& features,
-    BaseDirection base) const {
+    const std::vector<Variation>& variations, BaseDirection base) const {
     if (utf8.size() > static_cast<std::size_t>(INT_MAX)) {
         return {};
     }
-    return shape(utf8, 0, utf8.size(), Bidi(utf8, base), style, size, features);
+    return shape(utf8, 0, utf8.size(), Bidi(utf8, base), style, size, features, variations);
 }
 
 std::vector<ShapedRun> Shaper::shape(std::string_view utf8, std::size_t from, std::size_t to, const Bidi& bidi, const FaceStyle& style, float size,
-    const std::vector<Feature>& features) const {
+    const std::vector<Feature>& features, const std::vector<Variation>& variations) const {
     std::vector<ShapedRun> runs;
     if (!chain_ || from >= to || to > utf8.size() || utf8.size() > static_cast<std::size_t>(INT_MAX) || !std::isfinite(size) || size <= 0.0F ||
         size > LARGEST) {
@@ -266,7 +282,9 @@ std::vector<ShapedRun> Shaper::shape(std::string_view utf8, std::size_t from, st
     }
 
     const std::vector<hb_feature_t> settings = settingsOf(features);
+    std::map<const Face*, std::vector<std::int32_t>> coordinates;
     for (std::size_t run = 0; run < runs.size(); run++) {
+        runs[run].coordinates = coordinatesOf(*runs[run].face, style, size, variations, &coordinates);
         // text with no script at all, such as digits and spaces alone, is shaped as Latin
         shapeRun(utf8, neutral(scripts[run]) ? HB_SCRIPT_LATIN : scripts[run], size, settings, &runs[run]);
     }

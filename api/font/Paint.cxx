@@ -454,7 +454,7 @@ GlyphBitmap paint(const GlyphKey& key) {
     if (key.face == nullptr || key.mode != GlyphMode::Colour || !key.face->library()) {
         return GlyphBitmap{ .channels = 4 };
     }
-    const ColourGlyph glyph = colour(*key.face, key.index, key.palette, key.size);
+    const ColourGlyph glyph = colour(*key.face, key.index, key.palette, key.size, key.coordinates);
     return paint(glyph, *key.face->library(), key.size, key.subpixel, unpackColour(key.foreground));
 }
 

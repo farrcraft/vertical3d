@@ -120,6 +120,10 @@ text from each glyph's distance field, kept in the same glyph store, as
 [Fonts.md](../Fonts.md#effect-fields) describes. Each glyph carries its style's contrast, so it
 looks one weight in any target, as [Canvas.md](../rendering/Canvas.md#text-weight) describes.
 
+A variable face's glyphs are rasterized, and their effects' fields made, at the coordinates
+each run was shaped at, as [Fonts.md](../Fonts.md#variable-fonts) describes. A style's weight
+and size set its weight and optical size axes, and its `variations` set any axis over them.
+
 No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
 callbacks, as below. An app that draws the canvas through its own renderer supplies its own.
 
@@ -147,6 +151,8 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   pictures of colour glyphs. Call
   `beginFrame()` once a frame, so the store can make room for new fields.
 - The curves come from a `font::CurveStore`, read the first time a glyph is drawn at any size.
+  A variable face's glyph is read at its run's coordinates, and each point on its axes is kept
+  apart.
   `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three
   callbacks as `GlyphPages` does. With a context's `Textures`, create is
   `textures->texture({ .data, .width, .height })`, update is `textures->update()` of texels, and

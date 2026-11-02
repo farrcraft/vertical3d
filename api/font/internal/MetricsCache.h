@@ -7,8 +7,10 @@
 
 #include <api/font/FaceMetrics.h>
 
+#include <cstdint>
 #include <map>
-#include <utility>
+#include <tuple>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -24,12 +26,12 @@ namespace v3d::font::internal {
 class MetricsCache {
  public:
     /**
-     * @return a face's measures at a size in pixels
+     * @return a face's measures at a size in pixels and at normalized coordinates
      **/
-    const FaceMetrics& of(const boost::shared_ptr<Face>& face, float size);
+    const FaceMetrics& of(const boost::shared_ptr<Face>& face, float size, const std::vector<std::int32_t>& coordinates);
 
  private:
-    std::map<std::pair<const Face*, float>, FaceMetrics> metrics_;
+    std::map<std::tuple<const Face*, float, std::vector<std::int32_t>>, FaceMetrics> metrics_;
 };
 
 };  // namespace v3d::font::internal

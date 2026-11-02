@@ -66,14 +66,15 @@ struct CurveGlyph final {
 CurveGlyph banded(std::vector<QuadraticCurve> curves);
 
 /**
- * Read a glyph's outline as curves, unscaled and unhinted. A cubic curve, as a CFF face holds, is
- * split into four quadratics, each with its control point where the cubic's two would put it.
+ * Read a glyph's outline as curves, unscaled and unhinted, at a variable font's normalized
+ * coordinates. A cubic curve, as a CFF face holds, is split into four quadratics, each with its
+ * control point where the cubic's two would put it.
  *
  * Each axis is divided into about the square root of the number of curves, from 1 to 16 bands.
  *
  * @return the outline, or one with no curves for a glyph with none, such as a space, or one that
- *         cannot be loaded
+ *         cannot be loaded or set to the coordinates
  **/
-CurveGlyph outline(const Face& face, unsigned int index);
+CurveGlyph outline(const Face& face, unsigned int index, const std::vector<std::int32_t>& coordinates = {});
 
 };  // namespace v3d::font

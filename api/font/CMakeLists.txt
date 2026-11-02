@@ -2,7 +2,7 @@ v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "Textur
 	"TextureTextBuffer.h" "TextureTextBuffer.cxx"
 	"Utf8.h" "Utf8.cxx"
 	"Library.h" "Library.cxx" "Face.h" "Face.cxx" "FaceGlyph.h" "FaceMetrics.h" "FaceStyle.h" "Family.h" "Family.cxx" "FallbackChain.h" "FallbackChain.cxx"
-	"Feature.h" "ShapedGlyph.h" "ShapedRun.h" "Shaper.h" "Shaper.cxx"
+	"Feature.h" "Variation.h" "ShapedGlyph.h" "ShapedRun.h" "Shaper.h" "Shaper.cxx"
 	"Segmenter.h" "Segmenter.cxx" "Bidi.h" "Bidi.cxx"
 	"Curves.h" "Curves.cxx" "CurveStore.h" "CurveStore.cxx" "GlyphStore.h" "GlyphStore.cxx" "Rasterize.h" "Rasterize.cxx" "Field.h" "Field.cxx"
 	"ColourGlyph.h" "ColourGlyph.cxx" "Paint.h" "Paint.cxx" "TextStyle.h" "TextStyle.cxx" "ShapingCache.h" "ShapingCache.cxx" "Paragraph.h" "Paragraph.cxx"

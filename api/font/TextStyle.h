@@ -12,6 +12,7 @@
 #include "Bidi.h"
 #include "FaceStyle.h"
 #include "Feature.h"
+#include "Variation.h"
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -38,9 +39,10 @@ struct TextEffect final {
 /**
  * How a stretch of text is shaped and drawn.
  *
- * The fonts, the face style, the size and the features decide its glyphs. The colour, the
- * decorations, the effects and the contrast only decide how they are drawn, so text that
- * changes only those is not shaped again.
+ * The fonts, the face style, the size, the features and the variations decide its glyphs. A
+ * variable face's weight axis follows the face style's weight and its optical size axis the
+ * size, unless a variation sets them. The colour, the decorations, the effects and the contrast
+ * only decide how they are drawn, so text that changes only those is not shaped again.
  **/
 struct TextStyle final {
     /**
@@ -52,6 +54,7 @@ struct TextStyle final {
     FaceStyle face;
     float size = DEFAULT_SIZE;          /**< in pixels **/
     std::vector<Feature> features;
+    std::vector<Variation> variations;  /**< set on each variable face's axes, in this order **/
     glm::vec4 colour{ 1.0F };
     bool underline = false;
     bool strikethrough = false;

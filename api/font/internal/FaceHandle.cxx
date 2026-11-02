@@ -7,12 +7,18 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_MULTIPLE_MASTERS_H
 
 #include <api/font/internal/SvgDocuments.h>
 #include <hb-ft.h>
+#include <hb-ot.h>
 #include <hb.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace v3d::font::internal {
 
@@ -56,6 +62,27 @@ bool FaceHandle::size(float pixels) {
         static_cast<FT_Fixed>(0x10000L)
     };
     FT_Set_Transform(face, &matrix, nullptr);
+    return true;
+}
+
+bool FaceHandle::vary(const std::vector<std::int32_t>& coordinates) {
+    if (coordinates == varied) {
+        return true;
+    }
+    if (face == nullptr || !FT_HAS_MULTIPLE_MASTERS(face)) {
+        return coordinates.empty();
+    }
+    // the default is set as a zero on every axis. Setting no coordinates also draws the default,
+    // but FreeType then ignores the next coordinates set when they equal those set before it
+    std::vector<FT_Fixed> blend(std::max<std::size_t>(coordinates.size(), hb_ot_var_get_axis_count(shaping)), 0);
+    for (std::size_t axis = 0; axis < coordinates.size(); axis++) {
+        // FreeType's coordinates are 16.16 fixed point, four times HarfBuzz's 2.14
+        blend[axis] = static_cast<FT_Fixed>(coordinates[axis]) * 4;
+    }
+    if (blend.empty() || FT_Set_Var_Blend_Coordinates(face, static_cast<FT_UInt>(blend.size()), blend.data()) != 0) {
+        return false;
+    }
+    varied = coordinates;
     return true;
 }
 

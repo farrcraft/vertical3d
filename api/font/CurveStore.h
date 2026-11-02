@@ -76,9 +76,10 @@ struct StoredColour final {
  * A vertex names a program, rather than a glyph, by setting the bit COLOUR in its glyph value.
  *
  * A float holds an index exactly up to 2 to the 24th, so the store holds that many curves and
- * values. A glyph is found by its face and its index, and kept as long as the store is: its
- * curves are the same at every size. A key names its face by its address, so a face the store
- * holds glyphs from stays open while the store is used. A store is used from one thread.
+ * values. A glyph is found by its face, its index and a variable font's normalized coordinates,
+ * and kept as long as the store is: its curves are the same at every size. A key names its face
+ * by its address, so a face the store holds glyphs from stays open while the store is used. A
+ * store is used from one thread.
  **/
 class CurveStore final {
  public:
@@ -114,14 +115,15 @@ class CurveStore final {
 
     /**
      * @return where a glyph's curves are stored, read and stored the first time it is asked for
+     *         at its coordinates
      **/
-    const StoredCurves& glyph(const Face& face, unsigned int index);
+    const StoredCurves& glyph(const Face& face, unsigned int index, const std::vector<std::int32_t>& coordinates = {});
 
     /**
      * @return where a colour glyph's program is stored, read and stored the first time it is
-     *         asked for in a palette. A glyph with no colour stores nothing
+     *         asked for in a palette at its coordinates. A glyph with no colour stores nothing
      **/
-    const StoredColour& colour(const Face& face, unsigned int index, unsigned int palette);
+    const StoredColour& colour(const Face& face, unsigned int index, unsigned int palette, const std::vector<std::int32_t>& coordinates = {});
 
     /**
      * @return the curves, in whole rows
@@ -229,8 +231,8 @@ class CurveStore final {
      **/
     static Changed take(Written* written);
 
-    std::map<std::pair<const Face*, unsigned int>, StoredCurves> glyphs_;
-    std::map<std::tuple<const Face*, unsigned int, unsigned int>, StoredColour> colours_;
+    std::map<std::tuple<const Face*, unsigned int, std::vector<std::int32_t>>, StoredCurves> glyphs_;
+    std::map<std::tuple<const Face*, unsigned int, unsigned int, std::vector<std::int32_t>>, StoredColour> colours_;
     std::vector<float> curves_;
     std::vector<float> bands_;
     std::size_t curveFloats_ = 0;

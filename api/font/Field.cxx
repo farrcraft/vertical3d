@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 #include "Face.h"
 #include "GlyphStore.h"
@@ -41,7 +42,7 @@ GlyphBitmap field(const GlyphKey& key) {
         return GlyphBitmap();
     }
     internal::FaceHandle& handle = key.face->handle();
-    if (!handle.size(key.size)) {
+    if (!handle.vary(key.coordinates) || !handle.size(key.size)) {
         return GlyphBitmap();
     }
     // the spread is the library's, not the face's, so it is set for each field made
@@ -71,8 +72,8 @@ std::uint8_t fieldSpread(float reach) {
     return static_cast<std::uint8_t>(std::min(stepped, static_cast<float>(MAX_SPREAD)));  // checked: from 4 to 32
 }
 
-GlyphKey fieldKey(const Face* face, unsigned int index, float reach) {
-    return GlyphKey{ .face = face, .index = index, .size = FIELD_SIZE, .mode = GlyphMode::Distance, .spread = fieldSpread(reach) };
+GlyphKey fieldKey(const Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates) {
+    return GlyphKey{ .face = face, .index = index, .size = FIELD_SIZE, .mode = GlyphMode::Distance, .spread = fieldSpread(reach), .coordinates = coordinates };
 }
 
 float effectReach(const TextEffect& effect, float size) {
