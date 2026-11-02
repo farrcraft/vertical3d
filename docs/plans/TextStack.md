@@ -415,9 +415,14 @@ The shaper chooses a face a grapheme cluster at a time, so an emoji sequence is 
 space after an emoji is set in the text's face. Pong's menu was photographed with emoji in its
 title, and the validation layer was silent.
 
-The curves remain: a colour glyph scaled or in the world is drawn from its layers. A font that
-keeps many SVG glyphs in one document parses it again for each glyph, so a parsed document is
-kept for its face.
+Curve text draws a colour glyph from its layers: the curve store keeps it as a program of fills,
+clips, gradients and groups, which the quad and world shaders run. A bitmap glyph is a scaled
+picture. The device suite checks chosen pixels of a program's gradient and its layer in the
+text's colour. Diorama's sign was photographed with emoji beside its words, and the validation
+layer was silent.
+
+A font that keeps many SVG glyphs in one document parses it again for each glyph, so a parsed
+document is kept for its face.
 
 - A face reports which colour tables it has. A COLR glyph is walked through HarfBuzz's paint
   interface, and an SVG glyph through FreeType's SVG hooks into a ThorVG scene. Both give one

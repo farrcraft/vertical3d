@@ -57,6 +57,15 @@ struct CurveGlyph final {
 };
 
 /**
+ * Divide closed outlines into bands, each axis into about the square root of the number of
+ * curves, from 1 to 16 bands.
+ *
+ * @param curves closed contours in em units, filled by the nonzero rule
+ * @return the outline banded, or one with no curves and no bands for none
+ **/
+CurveGlyph banded(std::vector<QuadraticCurve> curves);
+
+/**
  * Read a glyph's outline as curves, unscaled and unhinted. A cubic curve, as a CFF face holds, is
  * split into four quadratics, each with its control point where the cubic's two would put it.
  *

@@ -58,8 +58,21 @@ const uint CURVES = 2u;
 #endif
 
 #include "text.glsl"
+#include "colour.glsl"
 
 void main() {
+    // the em square's size in pixels, taken here, where every sample of a quad reaches it
+    vec2 pixelsPerEm = 1.0 / max(fwidth(fragmentUv), vec2(1.0 / 65536.0));
+    if (push.text == CURVES && (fragmentGlyph & COLOUR_PROGRAM) != 0u) {
+        // a colour glyph in its own colours, the text's colour for a layer that takes it, faded
+        // by the text's alpha
+        vec4 painted = colourGlyph(push.texture, push.bands, fragmentUv, fragmentGlyph & ~COLOUR_PROGRAM, vec4(fragmentColour.rgb, 1.0), pixelsPerEm);
+        outColour = painted.a > 0.0 ? vec4(painted.rgb / painted.a, painted.a * fragmentColour.a) : vec4(0.0);
+#ifdef LINEARISE
+        outColour.rgb = linear(outColour.rgb);
+#endif
+        return;
+    }
     if (push.text == CURVES) {
         // uv is the sample's place in the glyph, in em units
         float coverage = textCoverage(curveCoverage(push.texture, push.bands, fragmentUv, fragmentGlyph), fragmentColour.rgb, fragmentContrast);

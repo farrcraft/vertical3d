@@ -119,6 +119,13 @@ describes. The quad shader finds each pixel's coverage from the curves that cros
 glyphs stay sharp at any size and under any transform. A curve run never merges with one drawn
 another way.
 
+A vertex whose `glyph` has its high bit set names a colour glyph's program among the bands, as
+`api/render/shaders/colour.glsl` describes, rather than a glyph. The program draws its layers
+inside their clips, with their gradients and composites, in the colours the font gives. Its
+colours are as they are displayed, as a quad's are. The vertex's colour gives its red, green
+and blue to any layer in the text's colour, and its alpha fades the whole glyph. A world glyph
+names a program the same way, and in an _SRGB target its colours are given in linear light.
+
 `Canvas::text(vertices, indices, atlas)` copies text that has already been laid out against an
 atlas of signed distances, as vertices and the triangles over them. A vertex whose `glyph` is 0
 is a glyph: the quad shader turns the distance into a smooth edge about one pixel wide at any

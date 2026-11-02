@@ -4,6 +4,7 @@
  **/
 
 #include <api/font/ColourGlyph.h>
+#include <api/font/CurveStore.h>
 #include <api/font/Face.h>
 #include <api/font/FallbackChain.h>
 #include <api/font/Family.h>
@@ -372,6 +373,51 @@ BOOST_AUTO_TEST_CASE(a_cluster_asking_for_emoji_is_set_in_the_emoji_face) {
     const std::vector<v3d::font::ShapedRun> text = shaper.shape("1︎", {}, SIZE, {});
     BOOST_REQUIRE_EQUAL(text.size(), 1U);
     BOOST_CHECK(text[0].face == inter);
+}
+
+/**
+ * A colour glyph is stored as a program of steps among the band values, each fill with its clip
+ * stored as a glyph's outline is, its gradient's mapping from em units, and its stops.
+ **/
+BOOST_AUTO_TEST_CASE(a_colour_glyph_is_stored_as_a_program) {
+    v3d::font::CurveStore store;
+    const v3d::font::StoredColour& linear = store.colour(*colr1, colr1->glyphIndex(FIRST), 0);
+    BOOST_REQUIRE(!linear.empty);
+    BOOST_CHECK(!linear.pictures);
+    BOOST_CHECK_CLOSE(linear.max.y, 0.8F, 0.01F);
+    const std::vector<float>& values = store.bands();
+    const auto at = [&values](std::uint32_t value) { return values[value]; };
+    const std::uint32_t step = linear.program + 4;
+    BOOST_CHECK_EQUAL(at(linear.program), 1.0F);
+    BOOST_CHECK_EQUAL(at(step), 0.0F);
+    BOOST_CHECK_EQUAL(at(step + 3), 1.0F);
+    // the clip is the em square, stored as a glyph: two bands each way of its four lines
+    const auto clip = static_cast<std::uint32_t>(at(step + 4));
+    BOOST_CHECK_EQUAL(at(clip + 4), 2.0F);
+    BOOST_CHECK_EQUAL(at(step + 8), 1.0F);
+    BOOST_CHECK_EQUAL(at(step + 10), 2.0F);
+    // the gradient's space is the font's units, a thousand to the em
+    BOOST_CHECK_CLOSE(at(step + 12), 1000.0F, 0.01F);
+    BOOST_CHECK_CLOSE(at(step + 20), 1000.0F, 0.01F);
+    const auto stops = static_cast<std::uint32_t>(at(step + 11));
+    BOOST_CHECK_EQUAL(at(stops + 1), 1.0F);
+    BOOST_CHECK_EQUAL(at(stops + 6), 1.0F);
+    BOOST_CHECK_EQUAL(at(stops + 9), 1.0F);
+
+    // a layer in the text's colour marks its stop, and a glyph is read once for each palette
+    const v3d::font::StoredColour& layers = store.colour(*colr1, colr1->glyphIndex(FIRST + 1), 0);
+    BOOST_CHECK_EQUAL(at(layers.program), 2.0F);
+    const auto second = static_cast<std::uint32_t>(at(layers.program + 4 + v3d::font::CurveStore::STEP + 11));
+    BOOST_CHECK_EQUAL(at(second + 5), 1.0F);
+    const std::size_t read = store.read();
+    store.colour(*colr1, colr1->glyphIndex(FIRST), 0);
+    BOOST_CHECK_EQUAL(store.read(), read);
+    store.colour(*colr1, colr1->glyphIndex(FIRST), 1);
+    BOOST_CHECK_EQUAL(store.read(), read + 1);
+
+    // a bitmap glyph places pictures, which no program draws, and an outline has no colour
+    BOOST_CHECK(store.colour(*cbdt, cbdt->glyphIndex(FIRST), 0).pictures);
+    BOOST_CHECK(store.colour(*colr1, 1, 0).empty);
 }
 
 BOOST_AUTO_TEST_CASE(composites_put_one_colour_on_another) {

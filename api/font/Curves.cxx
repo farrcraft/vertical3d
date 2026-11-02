@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "Face.h"
@@ -86,7 +87,12 @@ CurveGlyph outline(const Face& face, unsigned int index) {
         return glyph;
     }
     internal::OutlineReader reader(static_cast<float>(loaded->units_per_EM));
-    glyph.curves = reader.read(&loaded->glyph->outline);
+    return banded(reader.read(&loaded->glyph->outline));
+}
+
+CurveGlyph banded(std::vector<QuadraticCurve> curves) {
+    CurveGlyph glyph;
+    glyph.curves = std::move(curves);
     if (glyph.curves.empty()) {
         return glyph;
     }

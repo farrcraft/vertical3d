@@ -321,6 +321,28 @@ index, and kept as long as the store is.
   - from g + 8, each horizontal band has its curve count and the value its list starts at, and
     then each vertical band does;
   - each list holds curve indices, in the band's order.
+- **Colour programs.** **`colour(face, index, palette)`** stores a colour glyph as a program
+  among the band values, and gives its `StoredColour`. That holds the value its `program`
+  starts at, the `min` and `max` of what it draws, and whether it is `empty`. It also says
+  whether the glyph places `pictures`, which a program does not draw. Each clip of each fill is
+  an outline stored as a glyph's is, banded by `banded(curves)`. A program starts at its value
+  p:
+  - value p is how many steps it has, and its steps start at p + 4, `STEP` values each;
+  - a step's value 0 is its kind: 0 a fill, 2 a group's beginning, 3 a group's end. An end's
+    values 1 and 2 are its composite, as `ColourComposite` numbers them, and its opacity;
+  - a fill's value 3 is how many clips it has, at most `CLIPS`, and values 4 to 6 are the
+    values their bands start at. Bit c of value 7 says whether clip c is filled by the even-odd
+    rule;
+  - value 8 is the fill's kind: 0 solid, 1 linear, 2 radial, 3 sweep. Value 9 is its extend,
+    value 10 how many stops it has, and value 11 the value they start at, `STOP` values each:
+    offset, red, green, blue, alpha, and 1 for the text's colour;
+  - values 12 to 17 map em units into the gradient's space: x' = a x + c y + e, and
+    y' = b x + d y + f, in the order a to f;
+  - values 18 to 23 are the gradient's start or centre, its end or second centre, and its radii
+    or a sweep's angles in radians.
+
+  A vertex names a program rather than a glyph by setting the bit `CurveStore::COLOUR` in its
+  glyph value. A glyph is read once for each palette.
 - **Rows.** Each array grows by doubling its rows. `curveRows()` and `bandRows()` say how many
   it holds, and `changedCurves()` and `changedBands()` give the rows written since they were
   last asked for, once.

@@ -136,9 +136,15 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   pixel's coverage from the curves that cross it.
 - Each glyph is drawn in its style's colour, and the ellipsis of a cut line in the style before
   the cut.
+- A glyph its face draws in colour is drawn from its layers' curves, through a program the
+  curve store keeps, in the face's first palette. A layer in the text's colour takes the
+  style's colour, and the style's alpha fades the glyph. A glyph whose colour is a picture,
+  from a bitmap table, is painted at its size onto a page of four channels. It is drawn as a
+  picture through the same transform, so it softens when it is scaled up.
 - A style's effects are drawn beneath the text from each glyph's distance field, every glyph's
   effects before any glyph. The fields are kept in a `font::GlyphStore` of the curve text's own,
-  whose pages reach the device through the `GlyphPages` given with the `CurvePages`. Call
+  whose pages reach the device through the `GlyphPages` given with the `CurvePages`, as are the
+  pictures of colour glyphs. Call
   `beginFrame()` once a frame, so the store can make room for new fields.
 - The curves come from a `font::CurveStore`, read the first time a glyph is drawn at any size.
   `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three

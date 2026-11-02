@@ -68,13 +68,42 @@ constexpr std::array<float, 16> kBands{
 };
 
 /**
+ * The square's bands, then a colour program at value 16 that draws two layers inside it. The
+ * first is a gradient from red at 0.2 of an em across to blue at 0.8. The second is the text's
+ * colour at half its alpha, over the first.
+ **/
+constexpr std::array<float, 88> kProgram{
+    0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 2.0F, 12.0F, 2.0F, 14.0F, 1.0F, 3.0F, 2.0F, 0.0F,  // the square
+    2.0F, 0.0F, 0.0F, 0.0F,  // two steps
+    // a fill inside the square: linear, padded, two stops at 68, mapped from em units as they are
+    0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 2.0F, 68.0F,
+    1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.2F, 0.0F, 0.8F, 0.0F, 0.0F, 0.0F,
+    // a fill inside the square: solid, its one stop at 80
+    0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 80.0F,
+    1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F,
+    0.0F, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F,  // red at 0
+    1.0F, 0.0F, 0.0F, 1.0F, 1.0F, 0.0F,  // blue at 1
+    0.0F, 0.0F, 0.0F, 0.0F, 0.5F, 1.0F,  // the text's colour at half its alpha
+    0.0F, 0.0F,
+};
+
+/**
+ * The value the program starts at, and the bit that names it as a program.
+ **/
+constexpr uint32_t kProgramStart = 16;
+constexpr uint32_t kColourProgram = 0x80000000U;
+
+/**
  * Draw the square over the whole target, turned about its centre by an angle, and read the
  * target back.
  **/
-boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, float turn, const std::string& path) {
+boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, float turn, const std::string& path, bool program = false) {
     const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless->context->textures();
     const TextureHandle curves = textures->texture(TextureFactory::Texels{ .data = kCurves.data(), .width = 8, .height = 1 });
-    const TextureHandle bands = textures->texture(TextureFactory::Texels{ .data = kBands.data(), .width = 4, .height = 1 });
+    const TextureHandle bands = program ? textures->texture(TextureFactory::Texels{ .data = kProgram.data(), .width = 22, .height = 1 })
+                                        : textures->texture(TextureFactory::Texels{ .data = kBands.data(), .width = 4, .height = 1 });
+    const uint32_t glyph = program ? kProgramStart | kColourProgram : 0;
+    const glm::vec4 colour = program ? glm::vec4(0.0F, 1.0F, 0.0F, 1.0F) : glm::vec4(1.0F);
 
     Canvas canvas;
     canvas.resize(glm::uvec2(kSize, kSize));
@@ -84,7 +113,7 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, float t
     const auto corner = [&](float x, float y, const glm::vec2& em) {
         const glm::vec2 from = glm::vec2(x, y) * half;
         const glm::vec2 turned((from.x * std::cos(turn)) - (from.y * std::sin(turn)), (from.x * std::sin(turn)) + (from.y * std::cos(turn)));
-        return Canvas::Vertex{ .position = glm::vec2(half) + turned, .uv = em, .colour = glm::vec4(1.0F) };
+        return Canvas::Vertex{ .position = glm::vec2(half) + turned, .uv = em, .colour = colour, .glyph = glyph };
     };
     const std::vector<Canvas::Vertex> corners{ corner(-1.0F, -1.0F, glm::vec2(0.0F, 1.0F)), corner(1.0F, -1.0F, glm::vec2(1.0F, 1.0F)),
         corner(1.0F, 1.0F, glm::vec2(1.0F, 0.0F)), corner(-1.0F, 1.0F, glm::vec2(0.0F, 0.0F)) };
@@ -206,6 +235,32 @@ BOOST_AUTO_TEST_CASE(world_glyphs_are_drawn_in_depth_order) {
     const std::size_t overlap = ((std::size_t{22} * kSize) + 22) * 4;
     BOOST_CHECK_EQUAL(static_cast<int>(picture->data()[overlap]), 0);
     BOOST_CHECK_EQUAL(static_cast<int>(picture->data()[overlap + 1]), 255);
+}
+
+/**
+ * A colour program draws its layers inside their clip in order: the gradient runs across the
+ * square, and the text's colour at half its alpha is over it. Outside the square nothing is
+ * drawn.
+ **/
+BOOST_AUTO_TEST_CASE(a_colour_program_draws_its_layers) {
+    v3d::test::Headless headless(kColourFormat, kSize, kSize);
+    const boost::shared_ptr<v3d::image::Image> picture = draw(&headless, 0.0F, "data_out/curve_colour_program.png", true);
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+    const auto texel = [&picture](uint32_t x, uint32_t y) {
+        const unsigned char* at = picture->data() + (((static_cast<std::size_t>(y) * kSize) + x) * 4);
+        return glm::ivec3(at[0], at[1], at[2]);
+    };
+    // pixel 16's centre is 0.516 of an em across, so 0.526 of the way along the gradient: as
+    // much red and blue as that leaves, each halved under half green
+    const glm::ivec3 middle = texel(16, 16);
+    BOOST_CHECK_LE(std::abs(middle.x - 60), 2);
+    BOOST_CHECK_LE(std::abs(middle.y - 128), 2);
+    BOOST_CHECK_LE(std::abs(middle.z - 67), 2);
+    // nearer the start the gradient is redder, and nearer the end bluer
+    BOOST_CHECK_GT(texel(9, 16).x, texel(9, 16).z);
+    BOOST_CHECK_GT(texel(23, 16).z, texel(23, 16).x);
+    BOOST_CHECK(texel(2, 16) == glm::ivec3(0));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

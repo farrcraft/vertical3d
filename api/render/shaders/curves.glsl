@@ -64,14 +64,21 @@ vec2 crossVertical(vec4 p12, vec2 p3) {
     return vec2((((a.y * t1) - (b.y * 2.0)) * t1) + p12.y, (((a.y * t2) - (b.y * 2.0)) * t2) + p12.y);
 }
 
+// how much a winding number covers: any winding by the nonzero rule, and an odd one by the
+// even-odd rule, each easing between whole windings as an edge crosses the pixel
+float wound(float winding, bool evenOdd) {
+    return evenOdd ? 1.0 - abs(1.0 - mod(abs(winding), 2.0)) : abs(winding);
+}
+
 /**
  * @param em the sample's place in the glyph, in em units with y upwards
  * @param glyph the value the glyph's bands start at
- * @return how much of the pixel the glyph covers, by the nonzero rule
+ * @param pixelsPerEm the em square's size in pixels along each axis, found where every sample of
+ *        a quad reaches it, since a derivative is not defined inside a branch
+ * @param evenOdd whether the glyph is filled by the even-odd rule rather than the nonzero rule
+ * @return how much of the pixel the glyph covers
  **/
-float curveCoverage(uint curves, uint bands, vec2 em, uint glyph) {
-    // the em square's size in pixels, along each axis, from how fast em changes across the screen
-    vec2 pixelsPerEm = 1.0 / max(fwidth(em), vec2(1.0 / 65536.0));
+float curveCoverageAt(uint curves, uint bands, vec2 em, uint glyph, vec2 pixelsPerEm, bool evenOdd) {
     vec4 transform = vec4(bandValue(bands, glyph), bandValue(bands, glyph + 1u), bandValue(bands, glyph + 2u), bandValue(bands, glyph + 3u));
     ivec2 counts = ivec2(int(bandValue(bands, glyph + 4u)), int(bandValue(bands, glyph + 5u)));
     ivec2 band = clamp(ivec2(em * transform.xy + transform.zw), ivec2(0), max(counts - 1, ivec2(0)));
@@ -132,6 +139,16 @@ float curveCoverage(uint curves, uint bands, vec2 em, uint glyph) {
     }
 
     // the two rays weighted by how near each came to an edge, and either winding direction counts
-    float coverage = max(abs((xCoverage * xWeight) + (yCoverage * yWeight)) / max(xWeight + yWeight, 1.0 / 65536.0), min(abs(xCoverage), abs(yCoverage)));
+    float weighted = ((xCoverage * xWeight) + (yCoverage * yWeight)) / max(xWeight + yWeight, 1.0 / 65536.0);
+    float coverage = max(wound(weighted, evenOdd), min(wound(xCoverage, evenOdd), wound(yCoverage, evenOdd)));
     return clamp(coverage, 0.0, 1.0);
+}
+
+/**
+ * @return how much of the pixel a glyph covers, by the nonzero rule, the em square's size in
+ *         pixels found from how fast em changes across the screen
+ **/
+float curveCoverage(uint curves, uint bands, vec2 em, uint glyph) {
+    vec2 pixelsPerEm = 1.0 / max(fwidth(em), vec2(1.0 / 65536.0));
+    return curveCoverageAt(curves, bands, em, glyph, pixelsPerEm, false);
 }

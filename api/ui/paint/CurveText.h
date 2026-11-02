@@ -36,6 +36,12 @@ namespace v3d::ui::paint {
  * from the curves that cross it. The curves come from a font::CurveStore, read the first time a
  * glyph is drawn at any size, and reach the device through CurvePages.
  *
+ * A glyph its face draws in colour is drawn from its layers' curves, through a program the
+ * store keeps, in the face's first palette. A layer that takes the text's colour takes it, and
+ * the text's alpha fades it. A glyph whose colour is a picture, from a bitmap table, is painted
+ * at its size into a store of colour pages. It is drawn as a picture through the same
+ * transform, so it softens when scaled up.
+ *
  * A style's effects are drawn beneath its text from each glyph's distance field, made the
  * first time it is drawn into a font::GlyphStore whose pages reach the device through
  * GlyphPages. Every glyph's effects are drawn before any glyph, and each of a glyph's effects
@@ -52,7 +58,8 @@ class CurveText final {
 
     /**
      * @param pages what puts the curves on the device
-     * @param fields what puts the effects' distance fields on the device
+     * @param fields what puts the effects' distance fields, and the pictures of colour glyphs,
+     *        on the device
      **/
     CurveText(CurvePages pages, GlyphPages fields);
 
@@ -111,6 +118,40 @@ class CurveText final {
     };
 
     /**
+     * A colour glyph's picture laid out in the paragraph's space: where it is stored, its top
+     * left and bottom right, and its colour, white faded by the text's alpha.
+     **/
+    struct PlacedPicture {
+        font::StoredGlyph glyph;
+        glm::vec2 low{ 0.0F };
+        glm::vec2 high{ 0.0F };
+        glm::vec4 colour{ 1.0F };
+    };
+
+    /**
+     * Place a glyph its face draws in colour, as a program or as a picture.
+     *
+     * @return whether it was placed, and false for a glyph whose colour draws nothing
+     **/
+    bool placeColour(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& origin);
+
+    /**
+     * @return a picture's corners in the paragraph's space: top left, top right, bottom right,
+     *         bottom left
+     **/
+    static std::array<glm::vec2, 4> pictureCorners(const PlacedPicture& picture);
+
+    /**
+     * @return a picture's corners standing in the world, in its corners' order
+     **/
+    static render::realtime::canvas::World::Corners inWorld(const PlacedPicture& picture, const glm::mat4& transform);
+
+    /**
+     * @return a picture's uv rectangle in its page: top left, then bottom right
+     **/
+    std::array<glm::vec2, 2> pictureUv(const PlacedPicture& picture) const;
+
+    /**
      * Lay a paragraph's glyphs out into placed_ and their effects into effects_, read the curves
      * and make the fields of any not yet stored, and bring the device's copies in step.
      *
@@ -149,9 +190,12 @@ class CurveText final {
     CurvePages pages_;
     font::GlyphStore fields_;
     GlyphPages fieldPages_;
+    font::GlyphStore pictures_;
+    GlyphPages picturePages_;
     // what a draw lays out and hands the canvas, kept between draws so a frame does not allocate
     std::vector<Placed> placed_;
     std::vector<internal::PlacedEffect> effects_;
+    std::vector<PlacedPicture> placedPictures_;
     std::vector<render::realtime::canvas::Canvas::Vertex> vertices_;
     std::vector<std::uint32_t> indices_;
 };

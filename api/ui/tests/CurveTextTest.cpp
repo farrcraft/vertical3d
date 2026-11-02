@@ -4,6 +4,7 @@
  **/
 
 #include <api/font/Curves.h>
+#include <api/font/CurveStore.h>
 #include <api/font/Face.h>
 #include <api/font/Family.h>
 #include <api/font/FallbackChain.h>
@@ -88,6 +89,17 @@ struct Drawing {
     }
 
     /**
+     * Set text in one face alone.
+     **/
+    void only(const std::string& file) {
+        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(file);
+        family->add(v3d::font::Face::open(library, file, logger));
+        BOOST_REQUIRE(!family->empty());
+        style.fonts = boost::make_shared<v3d::font::FallbackChain>();
+        style.fonts->add(family);
+    }
+
+    /**
      * Draw a string through a transform.
      **/
     void draw(const std::string& string, const glm::mat3& transform = glm::mat3(1.0F)) {
@@ -121,6 +133,39 @@ BOOST_AUTO_TEST_CASE(each_glyph_is_a_quad_over_its_curves) {
     BOOST_CHECK_GT(canvas.vertices()[0].uv.y, canvas.vertices()[3].uv.y);
     BOOST_CHECK_LT(canvas.vertices()[0].position.y, canvas.vertices()[3].position.y);
     BOOST_CHECK_EQUAL(device.created, 2U);
+}
+
+/**
+ * A glyph its face draws in colour is one quad naming its program, in the text's colour, which a
+ * layer may take, and is not corrected as text is.
+ **/
+BOOST_AUTO_TEST_CASE(a_colour_glyph_is_drawn_from_its_program) {
+    only("fonts/colr1.ttf");
+    style.colour = glm::vec4(0.0F, 1.0F, 0.0F, 0.5F);
+    draw("\uE000");
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_NE(canvas.vertices()[0].glyph & v3d::font::CurveStore::COLOUR, 0U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
+    BOOST_CHECK(canvas.vertices()[0].colour == style.colour);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
+    BOOST_CHECK(canvas.batches()[0].bands.valid());
+}
+
+/**
+ * A glyph whose colour is a picture is painted at its size onto a colour page and drawn as a
+ * picture, white faded by the text's alpha. The fixture's picture fills the em square.
+ **/
+BOOST_AUTO_TEST_CASE(a_bitmap_glyph_is_drawn_as_a_picture) {
+    only("fonts/cbdt.ttf");
+    style.colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F);
+    draw("\uE000");
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
+    BOOST_CHECK(canvas.vertices()[0].colour == glm::vec4(1.0F, 1.0F, 1.0F, 0.5F));
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.x - canvas.vertices()[0].position.x, 40.0F, 0.01F);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 1U);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].texture.id(), FIELD_PAGE);
+    BOOST_CHECK(!canvas.batches()[0].bands.valid());
 }
 
 /**

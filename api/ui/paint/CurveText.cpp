@@ -6,7 +6,9 @@
 #include "CurveText.h"
 
 #include <api/font/CurveStore.h>
+#include <api/font/Face.h>
 #include <api/font/GlyphStore.h>
+#include <api/font/Paint.h>
 #include <api/font/Paragraph.h>
 #include <api/font/ShapedGlyph.h>
 #include <api/font/TextStyle.h>
@@ -19,6 +21,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -42,19 +45,32 @@ namespace {
  **/
 constexpr std::array<std::uint32_t, 6> TRIANGLES{ 0, 1, 2, 2, 3, 0 };
 
+/**
+ * @return the pages a colour glyph's picture is kept in: the default pages, of four bytes a
+ *         pixel
+ **/
+font::GlyphStore::Spec picturePages() {
+    font::GlyphStore::Spec spec;
+    spec.channels = 4;
+    return spec;
+}
+
 };  // namespace
 
 /**
  **/
 CurveText::CurveText(CurvePages pages, GlyphPages fields) :
     pages_(std::move(pages)),
-    fieldPages_(std::move(fields)) {
+    fieldPages_(fields),
+    pictures_(picturePages()),
+    picturePages_(std::move(fields)) {
 }
 
 /**
  **/
 void CurveText::beginFrame() {
     fields_.beginFrame();
+    pictures_.beginFrame();
 }
 
 /**
@@ -80,6 +96,27 @@ void CurveText::draw(render::realtime::canvas::Canvas* canvas, const font::Parag
     }
     if (!vertices_.empty()) {
         canvas->curves(vertices_, indices_, pages_.curves(), pages_.bands());
+        vertices_.clear();
+        indices_.clear();
+    }
+    // a picture is a quad of its colour page, through the same transform
+    for (std::size_t index = 0; index < placedPictures_.size(); index++) {
+        const PlacedPicture& picture = placedPictures_[index];
+        const std::array<glm::vec2, 4> at = pictureCorners(picture);
+        const std::array<glm::vec2, 2> uv = pictureUv(picture);
+        const std::array<glm::vec2, 4> uvs{ uv[0], glm::vec2(uv[1].x, uv[0].y), uv[1], glm::vec2(uv[0].x, uv[1].y) };
+        const auto first = static_cast<std::uint32_t>(vertices_.size());
+        for (std::size_t corner = 0; corner < at.size(); corner++) {
+            vertices_.push_back({ .position = glm::vec2(transform * glm::vec3(at[corner], 1.0F)), .uv = uvs[corner], .colour = picture.colour });
+        }
+        for (const std::uint32_t triangle : TRIANGLES) {
+            indices_.push_back(first + triangle);
+        }
+        if (index + 1 == placedPictures_.size() || placedPictures_[index + 1].glyph.page != picture.glyph.page) {
+            canvas->glyphs(vertices_, indices_, picturePages_.texture(picture.glyph.page));
+            vertices_.clear();
+            indices_.clear();
+        }
     }
 }
 
@@ -96,6 +133,10 @@ void CurveText::draw(render::realtime::canvas::World* canvas, const font::Paragr
         const render::realtime::canvas::World::Glyph glyph = worldGlyph(placed);
         canvas->glyph(inWorld(placed, glyph.em, transform), glyph, placed.colour);
     }
+    for (const PlacedPicture& picture : placedPictures_) {
+        const std::array<glm::vec2, 2> uv = pictureUv(picture);
+        canvas->quad(inWorld(picture, transform), uv[0], uv[1], picture.colour, picturePages_.texture(picture.glyph.page));
+    }
 }
 
 /**
@@ -111,6 +152,10 @@ void CurveText::draw(render::realtime::canvas::DepthOrder* order, float key, con
     for (const Placed& placed : placed_) {
         const render::realtime::canvas::World::Glyph glyph = worldGlyph(placed);
         order->glyph(key, inWorld(placed, glyph.em, transform), glyph, placed.colour);
+    }
+    for (const PlacedPicture& picture : placedPictures_) {
+        const std::array<glm::vec2, 2> uv = pictureUv(picture);
+        order->quad(key, inWorld(picture, transform), uv[0], uv[1], picture.colour, picturePages_.texture(picture.glyph.page));
     }
 }
 
@@ -131,26 +176,85 @@ const font::GlyphStore& CurveText::fields() const noexcept {
 bool CurveText::place(const font::Paragraph& paragraph) {
     placed_.clear();
     effects_.clear();
+    placedPictures_.clear();
     for (const font::Line& line : paragraph.lines()) {
         for (const font::LineRun& run : line.runs) {
             glm::vec2 pen(run.x, line.baseline);
             for (const font::ShapedGlyph& glyph : run.glyphs) {
-                const font::StoredCurves& stored = store_.glyph(*run.face, glyph.index);
-                if (!stored.empty && run.size > 0.0F) {
-                    const font::TextStyle& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
-                    const glm::vec2 origin = pen + glyph.offset;
-                    placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = styled.contrast });
-                    internal::placeEffects(&effects_, &fields_, *run.face, glyph.index, run.size, styled.effects, origin);
-                }
+                const font::TextStyle& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
+                const glm::vec2 origin = pen + glyph.offset;
                 pen.x += glyph.advance;
+                if (!(run.size > 0.0F)) {
+                    continue;
+                }
+                internal::placeEffects(&effects_, &fields_, *run.face, glyph.index, run.size, styled.effects, origin);
+                if (run.face->coloured(glyph.index) && placeColour(run, glyph.index, styled, origin)) {
+                    continue;
+                }
+                const font::StoredCurves& stored = store_.glyph(*run.face, glyph.index);
+                if (!stored.empty) {
+                    placed_.push_back(Placed{ .stored = stored, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = styled.contrast });
+                }
             }
         }
     }
     internal::layerEffects(&effects_);
-    // a glyph's new curves and fields have to be on the device before a quad names them
+    // a glyph's new curves, fields and pictures have to be on the device before a quad names them
     pages_.sync(&store_);
     fieldPages_.sync(&fields_);
-    return !placed_.empty() && pages_.curves().valid() && pages_.bands().valid();
+    picturePages_.sync(&pictures_);
+    const bool curves = !placed_.empty() && pages_.curves().valid() && pages_.bands().valid();
+    return curves || !placedPictures_.empty();
+}
+
+/**
+ **/
+bool CurveText::placeColour(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& origin) {
+    const font::StoredColour& stored = store_.colour(*run.face, index, 0);
+    if (stored.pictures) {
+        const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .mode = font::GlyphMode::Colour,
+            .foreground = font::packColour(glm::vec4(glm::vec3(styled.colour), 1.0F)) };
+        const std::optional<font::StoredGlyph> painted = pictures_.glyph(key, [](const font::GlyphKey& asked) { return font::paint(asked); });
+        if (!painted || painted->size.x == 0 || painted->size.y == 0) {
+            return false;
+        }
+        const glm::vec2 low = origin + glm::vec2(painted->bearing);
+        placedPictures_.push_back(PlacedPicture{ .glyph = *painted, .low = low, .high = low + glm::vec2(painted->size),
+            .colour = glm::vec4(1.0F, 1.0F, 1.0F, styled.colour.a) });
+        return true;
+    }
+    if (stored.empty) {
+        return false;
+    }
+    // a program draws in its own colours, so it is not text whose coverage is corrected
+    const font::StoredCurves program{ .bands = stored.program | font::CurveStore::COLOUR, .min = stored.min, .max = stored.max, .empty = false };
+    placed_.push_back(Placed{ .stored = program, .origin = origin, .size = run.size, .colour = styled.colour, .contrast = -1.0F });
+    return true;
+}
+
+/**
+ **/
+std::array<glm::vec2, 4> CurveText::pictureCorners(const PlacedPicture& picture) {
+    return { picture.low, glm::vec2(picture.high.x, picture.low.y), picture.high, glm::vec2(picture.low.x, picture.high.y) };
+}
+
+/**
+ **/
+render::realtime::canvas::World::Corners CurveText::inWorld(const PlacedPicture& picture, const glm::mat4& transform) {
+    const std::array<glm::vec2, 4> at = pictureCorners(picture);
+    render::realtime::canvas::World::Corners world{};
+    for (std::size_t corner = 0; corner < at.size(); corner++) {
+        world[corner] = glm::vec3(transform * glm::vec4(at[corner], 0.0F, 1.0F));
+    }
+    return world;
+}
+
+/**
+ **/
+std::array<glm::vec2, 2> CurveText::pictureUv(const PlacedPicture& picture) const {
+    const auto side = static_cast<float>(pictures_.spec().pageSize);
+    const glm::vec2 from = glm::vec2(picture.glyph.position) / side;
+    return { from, from + (glm::vec2(picture.glyph.size) / side) };
 }
 
 /**

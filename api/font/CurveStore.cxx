@@ -6,14 +6,20 @@
 #include "CurveStore.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "ColourGlyph.h"
 #include "Curves.h"
 #include "Face.h"
 
+#include <glm/mat3x3.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::font {
@@ -30,7 +36,11 @@ const StoredCurves& CurveStore::glyph(const Face& face, unsigned int index) {
     if (outlined.curves.empty()) {
         return stored;
     }
+    stored = StoredCurves{ .bands = store(outlined), .min = outlined.min, .max = outlined.max, .empty = false };
+    return stored;
+}
 
+std::uint32_t CurveStore::store(const CurveGlyph& outlined) {
     // the curves, two texels each, after those already stored
     const auto first = static_cast<std::uint32_t>(curveFloats_ / (std::size_t{2} * TEXEL));
     std::vector<float> curves;
@@ -60,9 +70,97 @@ const StoredCurves& CurveStore::glyph(const Face& face, unsigned int index) {
     }
     values.insert(values.end(), lists.begin(), lists.end());
     append(&bands_, &bandFloats_, values, &bandsWritten_);
+    return base;
+}
 
-    stored = StoredCurves{ .bands = base, .min = outlined.min, .max = outlined.max, .empty = false };
+const StoredColour& CurveStore::colour(const Face& face, unsigned int index, unsigned int palette) {
+    const auto key = std::make_tuple(&face, index, palette);
+    const auto found = colours_.find(key);
+    if (found != colours_.end()) {
+        return found->second;
+    }
+    read_++;
+    StoredColour& stored = colours_[key];
+    const ColourGlyph glyph = font::colour(face, index, palette, READ_SIZE);
+    // each fill's clips are stored first, so the program's own place is known when it is written
+    std::vector<std::vector<float>> steps;
+    std::vector<float> stops;
+    for (const ColourLayer& layer : glyph.layers) {
+        switch (layer.kind) {
+        case ColourLayer::Kind::Fill:
+            if (std::optional<std::vector<float>> step = fillStep(layer, &stops)) {
+                steps.push_back(std::move(*step));
+            }
+            break;
+        case ColourLayer::Kind::Image:
+            stored.pictures = true;
+            break;
+        case ColourLayer::Kind::BeginGroup:
+            steps.push_back(std::vector<float>(STEP, 0.0F));
+            steps.back()[KIND] = BEGIN_GROUP;
+            break;
+        default:
+            steps.push_back(std::vector<float>(STEP, 0.0F));
+            steps.back()[KIND] = END_GROUP;
+            steps.back()[COMPOSITE] = static_cast<float>(layer.composite);
+            steps.back()[OPACITY] = layer.opacity;
+            break;
+        }
+    }
+    if (steps.empty() || glyph.empty()) {
+        return stored;
+    }
+
+    const auto base = static_cast<std::uint32_t>(bandFloats_);
+    const auto first = static_cast<float>(base + HEADER + (static_cast<std::uint32_t>(steps.size()) * STEP));
+    std::vector<float> program{ static_cast<float>(steps.size()), 0.0F, 0.0F, 0.0F };
+    for (std::vector<float>& step : steps) {
+        if (step[KIND] == FILL) {
+            step[FIRST_STOP] += first;
+        }
+        program.insert(program.end(), step.begin(), step.end());
+    }
+    program.insert(program.end(), stops.begin(), stops.end());
+    append(&bands_, &bandFloats_, program, &bandsWritten_);
+    stored.program = base;
+    stored.min = glyph.min;
+    stored.max = glyph.max;
+    stored.empty = false;
     return stored;
+}
+
+std::optional<std::vector<float>> CurveStore::fillStep(const ColourLayer& layer, std::vector<float>* stops) {
+    std::vector<float> step(STEP, 0.0F);
+    const auto clips = static_cast<std::uint32_t>(std::min<std::size_t>(layer.clips.size(), CLIPS));
+    step[CLIP_COUNT] = static_cast<float>(clips);
+    std::uint32_t evenOdd = 0;
+    for (std::uint32_t clip = 0; clip < clips; clip++) {
+        const CurveGlyph outlined = banded(layer.clips[clip].curves);
+        if (outlined.curves.empty()) {
+            return std::nullopt;
+        }
+        step[FIRST_CLIP + clip] = static_cast<float>(store(outlined));
+        evenOdd |= layer.clips[clip].evenOdd ? 1U << clip : 0U;
+    }
+    step[EVEN_ODD] = static_cast<float>(evenOdd);
+
+    const ColourFill& fill = layer.fill;
+    if (glm::determinant(fill.transform) == 0.0F) {
+        return std::nullopt;
+    }
+    const glm::mat3 back = glm::inverse(fill.transform);
+    step[FILL_KIND] = static_cast<float>(fill.kind);
+    step[EXTEND] = static_cast<float>(fill.extend);
+    step[STOP_COUNT] = static_cast<float>(fill.stops.size());
+    step[FIRST_STOP] = static_cast<float>(stops->size());
+    const std::array<float, 12> geometry{ back[0][0], back[0][1], back[1][0], back[1][1], back[2][0], back[2][1], fill.from.x, fill.from.y,
+        fill.to.x, fill.to.y, fill.kind == ColourFill::Kind::Sweep ? fill.startAngle : fill.fromRadius,
+        fill.kind == ColourFill::Kind::Sweep ? fill.endAngle : fill.toRadius };
+    std::copy(geometry.begin(), geometry.end(), step.begin() + GEOMETRY);
+    for (const ColourStop& stop : fill.stops) {
+        stops->insert(stops->end(), { stop.offset, stop.colour.r, stop.colour.g, stop.colour.b, stop.colour.a, stop.foreground ? 1.0F : 0.0F });
+    }
+    return step;
 }
 
 const std::vector<float>& CurveStore::curves() const noexcept {

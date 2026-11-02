@@ -56,7 +56,11 @@ class Canvas final {
         glm::vec2 position;
         glm::vec2 uv;
         glm::vec4 colour;
-        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
+        /**
+         * Where a curve glyph's data starts among its bands, or with the high bit set where a
+         * colour program starts, or a distance field's ramp. Every other quad leaves it 0.
+         **/
+        uint32_t glyph = 0;
         float contrast = -1.0F;  /**< for text, how much its coverage is strengthened, from 0 to 1. Below 0 for what is not text **/
     };
 
