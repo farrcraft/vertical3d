@@ -173,6 +173,32 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_sorted_with_the_quads) {
     BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 3U);
 }
 
+/**
+ * At equal keys, effects drawn from fields come before the glyphs they lie beneath, whatever
+ * order they were added in and whatever their textures, and a lower layer before a higher.
+ * A field further away is still drawn before them all.
+ **/
+BOOST_AUTO_TEST_CASE(fields_lie_beneath_glyphs_by_layer) {
+    DepthOrder order;
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::TextureHandle(2) };
+    const glm::vec2 none(0.0F);
+    order.glyph(1.0F, tile(0.0F, 0.0F), glyph, white);
+    order.field(1.0F, 1, tile(1.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(9), 11);
+    order.field(1.0F, 0, tile(2.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(8), 10);
+    order.field(2.0F, 1, tile(3.0F, 0.0F), none, none, white, v3d::render::realtime::TextureHandle(9), 12);
+
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 12U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 10U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].glyph, 11U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[12].glyph, 3U);
+    BOOST_CHECK(canvas.batches()[0].field);
+    BOOST_CHECK(canvas.batches().back().bands.valid());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

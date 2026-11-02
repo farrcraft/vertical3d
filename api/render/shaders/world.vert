@@ -14,7 +14,7 @@ layout(location = 3) in uint glyph;
 
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
-// where a curve glyph's bands start, the same at every corner of its quad
+// where a curve glyph's bands start, or a distance field's ramp, the same at every corner
 layout(location = 2) flat out uint fragmentGlyph;
 
 // set 0 holds per frame data: the camera the whole pass draws through

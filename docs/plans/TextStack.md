@@ -107,7 +107,7 @@ features, the variable font axes, the decorations, and the effects.
 | Decision | Step |
 |---|---|
 | Text: how glyphs are drawn. Decided by ADR-0145, amending ADR-0036: coverage on the pixel grid, curves when scaled. | 9, 10 |
-| Text: how effects are drawn. Open: from the curves, from a distance field kept for them, or from a coverage pass of a stroked glyph. | 11 |
+| Text: how effects are drawn. Decided by ADR-0146, amending ADR-0145: a distance field kept for them. | 11 |
 | Text: the glyph atlas. Decided by ADR-0144: pages of plots, the plot used longest ago reused first. | 8 |
 | Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
 | Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
@@ -331,11 +331,28 @@ beside a multi-channel distance field, all three, and distance fields for all te
 
 ### Step 11 — Effects
 
-**Open.** Decide how effects are drawn.
+**Closed.** ADR-0146 decided it, amending ADR-0145, after weighing effects from the curves and
+from a stroked glyph.
 
-- A style may give text an outline, a shadow and a glow, each with a colour, a width and an
-  offset.
-- The effects suite covers each effect's geometry. A game is photographed with each.
+- A `font::TextEffect` grows each glyph by a width, fades it over a softness, and moves it by an
+  offset, in a colour. A `TextStyle` lists its effects, drawn beneath its text in order.
+- `font::field()` makes a glyph's signed distance field through FreeType, at 64 pixels to the em
+  with a spread fitted to the effect, for the glyph store. One field serves every size.
+- An effect is a quad over its field whose vertices carry a ramp, the field values at which it
+  is whole and at which it is gone. The quad and world shaders fade between them through
+  `field.glsl`. `canvas::World::field()` and `canvas::DepthOrder::field()` stand effects in the
+  world, and depth order puts them beneath their glyphs.
+- `ui::paint::TextRenderer` draws a paragraph with its effects beneath it, from the store it
+  draws coverage from. `ui::paint::CurveText` keeps a store of fields with `GlyphPages`, and
+  draws effects on the screen, in the world and in depth order.
+- The field suite covers a field reaching its spread past the outline, its values across an edge,
+  the spread an effect needs, and each effect's ramp. The ui suites cover effect quads beneath
+  the glyphs, layered in order and moved by their offset, in the world and in depth order, and a
+  field made once. The render suites cover a field batch and fields beneath glyphs in depth
+  order. The device suite checks chosen pixels of a field drawn with no ramp, a soft ramp and a
+  hard one, on the screen and in the world.
+- Diorama's sign has an outline and a soft shadow, and was photographed with those and again with
+  a glow. The validation layer was silent.
 
 ### Step 12 — Blending
 

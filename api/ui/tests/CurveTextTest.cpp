@@ -18,6 +18,7 @@
 #include <api/render/realtime/canvas/World.h>
 #include <api/ui/paint/CurvePages.h>
 #include <api/ui/paint/CurveText.h>
+#include <api/ui/paint/GlyphPages.h>
 
 #include <cmath>
 #include <cstddef>
@@ -34,6 +35,21 @@
 namespace {
 
 using v3d::render::realtime::TextureHandle;
+
+/**
+ * The texture every page of distance fields is given.
+ **/
+constexpr std::uint32_t FIELD_PAGE = 100;
+
+/**
+ * An outline two pixels wide.
+ **/
+constexpr v3d::font::TextEffect kOutline{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), .width = 2.0F };
+
+/**
+ * A soft shadow three pixels below and to the right.
+ **/
+constexpr v3d::font::TextEffect kShadow{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), .softness = 2.0F, .offset = glm::vec2(3.0F) };
 
 /**
  * What the curve pages asked of the device.
@@ -57,6 +73,10 @@ struct Drawing {
                 return TextureHandle(static_cast<std::uint32_t>(device.created));
             },
             [this](const TextureHandle&, const glm::uvec2&, const float*, const glm::uvec2&) { device.updated++; },
+            [](const TextureHandle&) {}),
+            v3d::ui::paint::GlyphPages(
+            [](const unsigned char*, std::uint32_t) { return TextureHandle(FIELD_PAGE); },
+            [](const TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&) {},
             [](const TextureHandle&) {})) {
         const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>("Inter");
         family->add(v3d::font::Face::open(library, "data/fonts/Inter-Regular.ttf", logger));
@@ -170,6 +190,86 @@ BOOST_AUTO_TEST_CASE(a_paragraph_stands_in_the_world) {
     BOOST_REQUIRE_EQUAL(sorted.vertices().size(), 12U);
     BOOST_CHECK_NE(sorted.vertices()[0].glyph, sorted.vertices()[4].glyph);
     BOOST_CHECK_EQUAL(sorted.vertices()[8].glyph, world.vertices()[0].glyph);
+}
+
+/**
+ * A style's effects are quads over each glyph's distance field, drawn before the glyphs. Each
+ * glyph's quad lies inside its effect's, and every glyph's first effect is drawn before any
+ * glyph's second. A shadow's quad is moved by its offset.
+ **/
+BOOST_AUTO_TEST_CASE(effects_are_drawn_beneath_the_glyphs) {
+    draw("Hi");
+    const std::size_t plain = canvas.vertices().size();
+    const glm::vec2 glyphTopLeft = canvas.vertices()[0].position;
+    const glm::vec2 glyphBottomRight = canvas.vertices()[2].position;
+    canvas.clear();
+
+    style.effects = { kShadow, kOutline };
+    draw("Hi");
+    // two effects for each of two glyphs, then the glyphs
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), plain + 16U);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(canvas.batches()[0].text);
+    BOOST_CHECK(canvas.batches()[0].texture == TextureHandle(FIELD_PAGE));
+    BOOST_CHECK(canvas.batches()[1].bands.valid());
+
+    const glm::vec2 shadowTopLeft = canvas.vertices()[0].position;
+    const glm::vec2 outlineTopLeft = canvas.vertices()[8].position;
+    const glm::vec2 outlineBottomRight = canvas.vertices()[10].position;
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].colour.a, 0.5F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].colour.a, 1.0F);
+    BOOST_CHECK_NE(canvas.vertices()[0].glyph, 0U);
+    BOOST_CHECK_NE(canvas.vertices()[0].glyph, canvas.vertices()[8].glyph);
+    BOOST_CHECK_CLOSE(shadowTopLeft.x - 3.0F, outlineTopLeft.x, 0.01F);
+    BOOST_CHECK_CLOSE(shadowTopLeft.y - 3.0F, outlineTopLeft.y, 0.01F);
+    BOOST_CHECK_LT(outlineTopLeft.x, glyphTopLeft.x);
+    BOOST_CHECK_LT(outlineTopLeft.y, glyphTopLeft.y);
+    BOOST_CHECK_GT(outlineBottomRight.x, glyphBottomRight.x);
+    BOOST_CHECK_GT(outlineBottomRight.y, glyphBottomRight.y);
+}
+
+/**
+ * A field is made once for a glyph and serves it at every size and for every effect of one
+ * reach, and the store lets fields go only across frames.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_is_made_once) {
+    style.effects = { kOutline, kOutline };
+    draw("H");
+    // twice the size and twice the width reach as far into the em
+    style.size = 80.0F;
+    style.effects = { v3d::font::TextEffect{ .width = 4.0F } };
+    text.beginFrame();
+    draw("H");
+    BOOST_CHECK_EQUAL(text.fields().made(), 1U);
+}
+
+/**
+ * In the world, a paragraph's effects are field quads drawn before its glyphs, and in depth
+ * order they come before the glyphs at their key, by their layer.
+ **/
+BOOST_AUTO_TEST_CASE(effects_stand_in_the_world_beneath_the_glyphs) {
+    style.effects = { kShadow, kOutline };
+    const v3d::font::Paragraph paragraph(cache, "Hi", style);
+    v3d::render::realtime::canvas::World world;
+    text.draw(&world, paragraph, glm::mat4(1.0F));
+    BOOST_REQUIRE_EQUAL(world.vertices().size(), 24U);
+    BOOST_REQUIRE_EQUAL(world.batches().size(), 2U);
+    BOOST_CHECK(world.batches()[0].field);
+    BOOST_CHECK(world.batches()[0].texture == TextureHandle(FIELD_PAGE));
+    BOOST_CHECK(world.batches()[1].bands.valid());
+    BOOST_CHECK(!world.batches()[1].field);
+
+    v3d::render::realtime::canvas::DepthOrder order;
+    text.draw(&order, 1.0F, paragraph, glm::mat4(1.0F));
+    v3d::render::realtime::canvas::World sorted;
+    order.into(&sorted);
+    BOOST_REQUIRE_EQUAL(sorted.vertices().size(), 24U);
+    // both shadows, then both outlines, then the glyphs
+    BOOST_CHECK_EQUAL(sorted.vertices()[0].colour.a, 0.5F);
+    BOOST_CHECK_EQUAL(sorted.vertices()[4].colour.a, 0.5F);
+    BOOST_CHECK_EQUAL(sorted.vertices()[8].colour.a, 1.0F);
+    BOOST_CHECK_EQUAL(sorted.vertices()[8].glyph, world.vertices()[8].glyph);
+    BOOST_CHECK(sorted.batches().back().bands.valid());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

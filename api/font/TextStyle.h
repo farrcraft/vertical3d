@@ -14,6 +14,7 @@
 #include "Feature.h"
 
 #include <boost/shared_ptr.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::font {
@@ -21,11 +22,25 @@ namespace v3d::font {
 class FallbackChain;
 
 /**
+ * A shape drawn beneath text from its glyphs' distance fields: each glyph grown by a width,
+ * faded to nothing over a softness beyond that, and moved by an offset. An outline has a width,
+ * a shadow an offset, and a glow a softness.
+ **/
+struct TextEffect final {
+    glm::vec4 colour{ 0.0F, 0.0F, 0.0F, 1.0F };
+    float width = 0.0F;            /**< how far past the glyph's edge it is whole, in pixels at the text's size. Below 0 it is inside **/
+    float softness = 0.0F;         /**< how far past that it fades to nothing, in pixels **/
+    glm::vec2 offset{ 0.0F };      /**< how far it is moved from its glyph, in pixels with y downwards **/
+
+    bool operator==(const TextEffect& other) const = default;
+};
+
+/**
  * How a stretch of text is shaped and drawn.
  *
- * The fonts, the face style, the size and the features decide its glyphs. The colour and the
- * decorations only decide how they are drawn, so text that changes only those is not shaped
- * again.
+ * The fonts, the face style, the size and the features decide its glyphs. The colour, the
+ * decorations and the effects only decide how they are drawn, so text that changes only those
+ * is not shaped again.
  **/
 struct TextStyle final {
     /**
@@ -40,6 +55,7 @@ struct TextStyle final {
     glm::vec4 colour{ 1.0F };
     bool underline = false;
     bool strikethrough = false;
+    std::vector<TextEffect> effects;    /**< drawn beneath the text in this order, the first furthest back **/
 
     bool operator==(const TextStyle& other) const = default;
 

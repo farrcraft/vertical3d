@@ -16,6 +16,7 @@ namespace v3d::render::realtime::canvas {
 /**
  **/
 World::Batch::Batch() noexcept :
+field(false),
 firstIndex(0),
 indices(0) {
 }
@@ -109,6 +110,20 @@ void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& c
 
 /**
  **/
+void World::field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
+    const TextureHandle& texture, uint32_t ramp) {
+    open(texture, TextureHandle(), true);
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    vertex(corners[0], glm::vec2(uv0.x, uv0.y), colour, ramp);
+    vertex(corners[1], glm::vec2(uv1.x, uv0.y), colour, ramp);
+    vertex(corners[2], glm::vec2(uv1.x, uv1.y), colour, ramp);
+    vertex(corners[3], glm::vec2(uv0.x, uv1.y), colour, ramp);
+    fan(first);
+}
+
+/**
+ **/
 const std::vector<World::Vertex>& World::vertices() const noexcept {
     return vertices_;
 }
@@ -133,13 +148,14 @@ bool World::empty() const noexcept {
 
 /**
  **/
-void World::open(const TextureHandle& texture, const TextureHandle& bands) {
-    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().bands == bands) {
+void World::open(const TextureHandle& texture, const TextureHandle& bands, bool field) {
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().bands == bands && batches_.back().field == field) {
         return;
     }
     Batch batch;
     batch.texture = texture;
     batch.bands = bands;
+    batch.field = field;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
     batch.indices = 0;
     batches_.push_back(batch);

@@ -11,7 +11,7 @@ v3d_add_api_library(render
 	"realtime/canvas/Stacks.h" "realtime/canvas/Stacks.cpp"
 	"realtime/canvas/Line.h" "realtime/canvas/Line.cpp"
 	"realtime/canvas/World.h" "realtime/canvas/World.cpp"
-	"realtime/canvas/DepthOrder.h" "realtime/canvas/DepthOrder.cpp"
+	"realtime/canvas/DepthOrder.h" "realtime/canvas/DepthOrder.cpp" "realtime/canvas/FieldRamp.h"
 	"realtime/entity/Billboard.h"
 	"realtime/entity/Sprites.h" "realtime/entity/Sprites.cpp"
 	"realtime/entity/Particles.h" "realtime/entity/Particles.cpp"

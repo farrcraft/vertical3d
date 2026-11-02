@@ -35,6 +35,7 @@ struct GlyphKey final {
     float size = 0.0F;                     /**< in pixels **/
     std::uint8_t subpixel = 0;             /**< the step of a pixel its pen was at, horizontally **/
     GlyphMode mode = GlyphMode::Coverage;
+    std::uint8_t spread = 0;               /**< how far a distance field reaches from the edge, in pixels. Coverage leaves it 0 **/
     std::vector<std::int32_t> coordinates; /**< a variable font's axes, normalized, or none **/
 
     auto operator<=>(const GlyphKey& other) const = default;

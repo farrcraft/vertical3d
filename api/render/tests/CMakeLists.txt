@@ -67,7 +67,8 @@ v3d_add_test(render_device
 	"device/TextureRequestTest.cpp"
 	"device/UploadBudgetTest.cpp"
 	"device/TextureUpdateTest.cpp"
-	"device/CurveTextTest.cpp")
+	"device/CurveTextTest.cpp"
+	"device/FieldEffectTest.cpp")
 
 # A committed reference image is opened relative to the working directory. v3d_add_test sets
 # that to the executable's directory, so the references are copied there.

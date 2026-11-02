@@ -44,6 +44,13 @@ const uint32_t fragmentShader[] =
 #include "shaders/world.frag.inc"
 ;  // NOLINT(whitespace/semicolon)
 
+/**
+ * How world.frag draws a batch, as its push constants name it.
+ **/
+constexpr uint32_t PICTURE = 0;
+constexpr uint32_t CURVES = 1;
+constexpr uint32_t DISTANCE = 2;
+
 };  // namespace
 
 /**
@@ -143,8 +150,12 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
         }
         // an unset texture is the untextured case, drawn against white
         // a run with bands draws curves, and the shader takes the curves from its texture
+        uint32_t mode = batch.bands.valid() ? CURVES : PICTURE;
+        if (batch.field) {
+            mode = DISTANCE;
+        }
         const Push constants{.tint = tint, .texture = textures_->slot(batch.texture), .bands = batch.bands.valid() ? textures_->slot(batch.bands) : 0U,
-            .curves = batch.bands.valid() ? 1U : 0U};
+            .mode = mode};
 
         DrawItem item;
         item.key.layer = layer;

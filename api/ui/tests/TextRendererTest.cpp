@@ -4,6 +4,8 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/font/Paragraph.h>
+#include <api/font/TextStyle.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
@@ -192,6 +194,39 @@ BOOST_AUTO_TEST_CASE(a_weight_number_names_regular_or_semibold) {
     BOOST_CHECK(v3d::ui::paint::weight(499.0F) == v3d::ui::paint::Weight::Regular);
     BOOST_CHECK(v3d::ui::paint::weight(500.0F) == v3d::ui::paint::Weight::SemiBold);
     BOOST_CHECK(v3d::ui::paint::weight(700.0F) == v3d::ui::paint::Weight::SemiBold);
+}
+
+/**
+ * A paragraph is drawn in its style's colour, with its effects beneath it: every glyph's first
+ * effect, then every glyph's second, then the glyphs. An outline's quad holds its glyph's, and
+ * a shadow's is moved by its offset.
+ **/
+BOOST_AUTO_TEST_CASE(effects_are_drawn_beneath_a_paragraph) {
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer();
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(640, 480));
+    v3d::font::TextStyle style = text->style(24.0F);
+    style.colour = glm::vec4(1.0F, 0.5F, 0.0F, 1.0F);
+    style.effects = { v3d::font::TextEffect{ .colour = glm::vec4(0.0F, 0.0F, 0.0F, 0.25F), .width = 1.5F, .offset = glm::vec2(2.0F, 3.0F) },
+        v3d::font::TextEffect{ .width = 1.5F } };
+    text->draw(&canvas, v3d::font::Paragraph(text->shaping(), "lo", style), glm::vec2(10.0F, 100.0F));
+
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 24U);
+    BOOST_REQUIRE_GE(canvas.batches().size(), 2U);
+    BOOST_CHECK(canvas.batches().front().text);
+    BOOST_CHECK(!canvas.batches().back().text);
+    const std::vector<glm::vec2> placed = corners(canvas);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].colour.a, 0.25F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].colour.a, 0.25F);
+    BOOST_CHECK_EQUAL(canvas.vertices()[8].colour.a, 1.0F);
+    BOOST_CHECK(canvas.vertices()[16].colour == style.colour);
+    // the shadow of l, as wide as the outline and so from one field, then its outline, then l
+    BOOST_CHECK_CLOSE(placed[0].x - 2.0F, placed[2].x, 0.01F);
+    BOOST_CHECK_CLOSE(placed[0].y - 3.0F, placed[2].y, 0.01F);
+    BOOST_CHECK_LT(placed[2].x, placed[4].x);
+    BOOST_CHECK_LT(placed[2].y, placed[4].y);
+    BOOST_CHECK_GT(canvas.vertices()[10].position.x, canvas.vertices()[18].position.x);
+    BOOST_CHECK_GT(canvas.vertices()[10].position.y, canvas.vertices()[18].position.y);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

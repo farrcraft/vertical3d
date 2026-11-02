@@ -56,7 +56,7 @@ class Canvas final {
         glm::vec2 position;
         glm::vec2 uv;
         glm::vec4 colour;
-        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands. Every other quad leaves it 0 **/
+        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
     };
 
     /**
@@ -317,10 +317,12 @@ class Canvas final {
      * Append text that has already been laid out, as vertices and the triangles over them.
      *
      * The run is drawn against the atlas the glyphs were packed into, and is marked as text,
-     * so it never merges with a picture that samples the same texture. Laying the text out is
-     * the caller's job.
+     * so it never merges with a picture that samples the same texture. The atlas holds distance
+     * fields. A vertex whose glyph field is 0 draws the glyph's edge, and one whose glyph field
+     * is a ramp from fieldRamp() draws an effect, such as an outline, a shadow or a glow. Laying
+     * the text out is the caller's job.
      *
-     * @param vertices positions, atlas coordinates and colours, copied rather than kept
+     * @param vertices positions, atlas coordinates, colours and ramps, copied rather than kept
      * @param indices three per triangle, each naming one of these vertices
      * @param atlas the texture the glyphs were packed into
      **/

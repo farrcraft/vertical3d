@@ -20,7 +20,7 @@ colour and depth formats they draw into, and each of them compiles a variant per
 |---|---|---|---|
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
-| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph, and the `curves` push value selects the curve branch, as `Quad`'s does |
+| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph, and the `mode` push value selects a picture, the curve branch or the distance-field branch, as `Quad`'s `text` does |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 
@@ -32,8 +32,11 @@ swapchain exists.
 either. The push constant's `text` value says how the fragment stage draws the batch:
 
 - `PICTURE` returns `colour * texel`.
-- `DISTANCE` thresholds the sampled distance at 0.5, with `fwidth` for a one-pixel edge at any
-  scale.
+- `DISTANCE` thresholds the sampled distance. A vertex whose `glyph` is 0 is thresholded at
+  0.5, with the distance's screen gradient for a one-pixel edge at any scale. Any other `glyph`
+  is an effect's ramp. Its low 16 bits are the value at which the effect is whole, its high 16
+  the value at which it is gone, and coverage fades between the two. `World` draws a field batch
+  the same way, through the same `field.glsl`.
 - `CURVES` finds the coverage from the glyph's curves. The batch's `texture` is the slot of its
   curves and `bands` the slot of its bands. A vertex's uv is the sample's place in em units, and
   its `glyph` is where the glyph's bands start, passed to the fragment stage flat. Both textures

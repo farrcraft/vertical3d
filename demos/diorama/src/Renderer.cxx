@@ -33,6 +33,7 @@
 #include <api/type/camera/Isometric.h>
 #include <api/ui/paint/CurvePages.h>
 #include <api/ui/paint/CurveText.h>
+#include <api/ui/paint/GlyphPages.h>
 #include <api/ui/shell/Screen.h>
 #include <api/window/Window.h>
 #include <demos/diorama/src/Layout.h>
@@ -80,15 +81,25 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
     style.fonts->add(family);
     style.size = SIGN_SIZE;
     style.colour = SIGN_COLOUR;
+    // a shadow beneath an outline, so the sign reads against the grass and the sky alike
+    style.effects = {
+        v3d::font::TextEffect{.colour = SIGN_SHADOW_COLOUR, .width = SIGN_OUTLINE_WIDTH, .softness = SIGN_SHADOW_SOFTNESS, .offset = SIGN_SHADOW_OFFSET},
+        v3d::font::TextEffect{.colour = SIGN_OUTLINE_COLOUR, .width = SIGN_OUTLINE_WIDTH}};
     shaping_ = boost::make_shared<v3d::font::ShapingCache>("", logger);
     sign_.emplace(shaping_, SIGN, style);
 
-    // the sign's curves are textures on the device
+    // the sign's curves, and the fields its effects are drawn from, are textures on the device
     const boost::shared_ptr<v3d::render::realtime::Textures> textures = engine_.textures();
     signText_ = boost::make_shared<v3d::ui::paint::CurveText>(v3d::ui::paint::CurvePages(
         [textures](const float* texels, uint32_t width, uint32_t height) { return textures->texture({.data = texels, .width = width, .height = height}); },
         [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const float* texels, const glm::uvec2& size) {
             textures->update(page, at, {.data = texels, .width = size.x, .height = size.y});
+        },
+        [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }),
+        v3d::ui::paint::GlyphPages(
+        [textures](const unsigned char* pixels, uint32_t side) { return textures->texture(pixels, side, side, 1); },
+        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
+            textures->update(page, at, {.data = pixels, .width = size.x, .height = size.y, .channels = 1});
         },
         [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }));
 }
@@ -192,6 +203,7 @@ void Renderer::drawSign(v3d::render::realtime::Pass* lit) {
     standing[3] = glm::vec4(WELL + (up * SIGN_HEIGHT) - (right * (across / 2.0F)), 1.0F);
 
     v3d::render::realtime::canvas::World world;
+    signText_->beginFrame();
     signText_->draw(&world, *sign_, standing);
     signs_->submit(world, lit);
 }

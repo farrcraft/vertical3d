@@ -124,6 +124,15 @@ class Renderer final {
     /** The sign's colour, in linear light. **/
     static constexpr glm::vec4 SIGN_COLOUR{1.0F, 0.95F, 0.8F, 1.0F};
 
+    /** The sign's outline, in its own pixels and in linear light. **/
+    static constexpr float SIGN_OUTLINE_WIDTH = 3.0F;
+    static constexpr glm::vec4 SIGN_OUTLINE_COLOUR{0.08F, 0.05F, 0.03F, 1.0F};
+
+    /** The sign's soft shadow, cast down and to the right. **/
+    static constexpr glm::vec2 SIGN_SHADOW_OFFSET{4.0F, 5.0F};
+    static constexpr float SIGN_SHADOW_SOFTNESS = 6.0F;
+    static constexpr glm::vec4 SIGN_SHADOW_COLOUR{0.0F, 0.0F, 0.0F, 0.6F};
+
     /**
      * Build the lit scene at a size, or replace its target with one of a new size, and give the
      * camera the window's aspect.

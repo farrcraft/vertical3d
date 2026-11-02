@@ -49,7 +49,7 @@ class World final {
         glm::vec3 position;
         glm::vec2 uv;
         glm::vec4 colour;
-        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands. Every other quad leaves it 0 **/
+        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands, or a distance field's ramp. Every other quad leaves it 0 **/
     };
 
     /**
@@ -72,6 +72,7 @@ class World final {
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
         TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
+        bool field;             /**< whether the run samples a distance field **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };
@@ -160,6 +161,16 @@ class World final {
     void glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& colour);
 
     /**
+     * An effect drawn from a glyph's distance field over a quad, such as an outline, a shadow
+     * or a glow, with quad()'s meaning for the corners and the uv rectangle. A run of fields
+     * never merges with quads drawn another way.
+     *
+     * @param ramp where the effect is whole and where it is gone, from fieldRamp()
+     **/
+    void field(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec4& colour,
+        const TextureHandle& texture, uint32_t ramp);
+
+    /**
      * @return the vertex stream, in the layout the world quad pipeline declares
      **/
     const std::vector<Vertex>& vertices() const noexcept;
@@ -184,9 +195,10 @@ class World final {
     static constexpr uint32_t QUAD_INDICES = 6;
 
     /**
-     * Start a batch, or extend the open one when it draws against the same texture and bands.
+     * Start a batch, or extend the open one when it draws against the same texture and bands,
+     * and is a field or not as it is.
      **/
-    void open(const TextureHandle& texture, const TextureHandle& bands = TextureHandle());
+    void open(const TextureHandle& texture, const TextureHandle& bands = TextureHandle(), bool field = false);
 
     /**
      * Add a vertex with the current transform applied.

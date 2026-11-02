@@ -313,8 +313,9 @@ remembered ones that are out of sight.
 A small village seen from above: two houses, a ring of trees and a well on a square of grass,
 under a sun that goes around the sky once every two minutes. A sign reading "Village Well"
 stands over the well, drawn from its glyphs' curves and turned to face the camera. It is sharp
-from every side and at every zoom, and a house in front of it hides it. There is no game.
-Sources are in `demos/diorama/src/`.
+from every side and at every zoom, and a house in front of it hides it. A dark outline and a
+soft shadow, drawn from its glyphs' distance fields, keep it readable against the grass. There
+is no game. Sources are in `demos/diorama/src/`.
 
 **Controls:**
 

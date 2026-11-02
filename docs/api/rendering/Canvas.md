@@ -120,9 +120,13 @@ glyphs stay sharp at any size and under any transform. A curve run never merges 
 another way.
 
 `Canvas::text(vertices, indices, atlas)` copies text that has already been laid out against an
-atlas of signed distances, as vertices and the triangles over them. The quad shader turns the
-distance into a smooth edge about one pixel wide at any scale. Text and other quads that sample
-the same atlas are drawn as separate batches.
+atlas of signed distances, as vertices and the triangles over them. A vertex whose `glyph` is 0
+is a glyph: the quad shader turns the distance into a smooth edge about one pixel wide at any
+scale. A vertex whose `glyph` is a ramp from `canvas::fieldRamp(whole, gone)` is an effect, such
+as an outline, a shadow or a glow. The ramp holds the field value at which the effect covers the
+whole pixel and the value at which it covers none of it. Coverage fades between the two, or rises
+across one pixel when they are closer than that. Text and other quads that sample the same
+atlas are drawn as separate batches.
 
 ### User interface
 

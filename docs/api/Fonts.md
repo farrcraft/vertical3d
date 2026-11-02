@@ -140,9 +140,11 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 **Styles.**
 
 - **`TextStyle`** names the `fonts` (a `FallbackChain`), the `face` (weight and italic), the
-  `size` in pixels, the OpenType `features`, the `colour`, and whether it has an `underline` or a
-  `strikethrough`. The first four decide the glyphs; `shapesLike()` compares those alone. The
-  colour and the decorations only decide how the glyphs are drawn.
+  `size` in pixels, the OpenType `features` and the `colour`. It also says whether it has an
+  `underline` or a `strikethrough`, and lists the `effects` drawn beneath it, as
+  [effect fields](#effect-fields) describes. The first four decide the glyphs; `shapesLike()`
+  compares those alone. The colour, the decorations and the effects only decide how the glyphs
+  are drawn.
 - **`ParagraphStyle`** names the `direction` each paragraph is read in, the `alignment`, and
   the `width` lines wrap at. At a width of 0 or less they never wrap. It also names
   `maxLines`, 0 for no limit, and whether a cut line ends in an `ellipsis`. Its
@@ -164,7 +166,7 @@ goes and what a point is over. It needs no GPU; a renderer draws it by walking i
 | Change | Shapes again | Lays out again |
 |---|---|---|
 | The width, the alignment, the line limit, the ellipsis or the line spacing | No | Yes |
-| A style whose colour or decorations alone differ | No | No |
+| A style whose colour, decorations or effects alone differ | No | No |
 | A style that shapes differently, the text, or the direction | Through the cache | Yes |
 
 **The shaping cache.** Every paragraph of an app shares one `ShapingCache`, made with the
@@ -226,9 +228,10 @@ A `GlyphStore` holds the glyphs text is drawn from. A glyph is made the first ti
 and packed into pages of one byte pixels, which a renderer copies to the device. It needs no GPU.
 
 - **`GlyphKey`** tells one glyph from another: its `face`, its `index` there, its `size` in
-  pixels, the `subpixel` step its pen was at, its `mode` (`Coverage` or `Distance`), and a
-  variable font's normalized `coordinates`. A key names its face by address, so a face the store
-  holds glyphs from stays open while the store is used.
+  pixels, the `subpixel` step its pen was at, and its `mode` (`Coverage` or `Distance`). It also
+  holds a distance field's `spread` in pixels, and a variable font's normalized `coordinates`. A
+  key names its face by address, so a face the store holds glyphs from stays open while the
+  store is used.
 - **`glyph(key, rasterize)`** gives the `StoredGlyph`: its `page`, the `position` of its top
   left texel there, its `size`, and its `bearing`, the top left pixel from the pen with y
   downwards. The first time a key is asked for, `rasterize` makes its `GlyphBitmap` and the
@@ -311,6 +314,37 @@ index, and kept as long as the store is.
 - A float holds an index exactly up to 2 to the 24th, so the store holds that many curves and
   values. A key names its face by address, so a face the store holds glyphs from stays open.
   `read()` counts the glyphs read rather than found.
+
+## Effect fields
+
+A style's `effects` are drawn beneath its text from each glyph's signed distance field. A
+`TextEffect` grows each glyph by a `width`, fades it to nothing over a `softness` beyond that,
+and moves it by an `offset`, all in pixels at the text's size, in its `colour`. An outline has a
+width, a shadow an offset, and a glow a softness. A width below 0 lies inside the glyph. The
+effects are drawn in the order the style lists them, the first furthest back, and every glyph's
+effects are drawn before any glyph.
+
+- **`field(key)`** makes a glyph's field for the glyph store, as a `GlyphStore::Rasterizer`. It
+  reads the unhinted outline at the key's size and `spread`. Each pixel is its distance from the
+  edge, from the spread outside at 0 to the spread inside at 255, with the edge at the middle.
+  The field reaches the spread past the outline on every side. A key of another mode or with no
+  spread gives an empty bitmap.
+- **`FIELD_SIZE`** is 64 pixels to the em, the size every field is made at. One field serves
+  every size its glyph is drawn at.
+- **`fieldSpread(reach)`** is the spread an effect reaching a distance past the edge needs, the
+  reach in em units. It is the reach in the field's pixels with one more for the effect's edge,
+  rounded up to a multiple of four so that nearby reaches share a field, and at most
+  `MAX_SPREAD`, 32. An effect reaches at most half an em, and past that it is cut off.
+- **`effectReach(effect, size)`** is how far an effect on text of a size reaches, in em units,
+  and **`fieldKey(face, index, reach)`** the key of the field it is drawn from.
+- **`effectRamp(effect, size, spread)`** gives the field values at which the effect is whole and
+  at which it is gone. A renderer packs them into each quad with `canvas::fieldRamp()`, and the
+  shaders fade the effect's coverage between the two.
+
+A field drawn much larger than 64 pixels to the em softens the effect's edge. The glyph's own
+edge stays sharp, because it is drawn as coverage or from its curves.
+
+Background: [ADR-0146](../adr/0146-text-effects-drawn-from-a-distance-field.md)
 
 ## Texture fonts
 

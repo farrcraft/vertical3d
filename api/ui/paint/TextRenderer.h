@@ -8,12 +8,15 @@
 #include <api/asset/Manager.h>
 #include <api/font/FallbackChain.h>
 #include <api/font/GlyphStore.h>
+#include <api/font/Paragraph.h>
 #include <api/font/ShapingCache.h>
 #include <api/font/TextStyle.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/internal/EffectQuad.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -39,6 +42,9 @@ namespace v3d::ui::paint {
  * quarter of a pixel, and each line's baseline is on a whole pixel, so text on the pixel grid is
  * drawn at its exact size and sharp. A glyph is a batched quad sampling its page, so a line of
  * text joins whatever canvas the app is already filling, and costs the frame no pass of its own.
+ *
+ * A style's effects are drawn beneath its text from each glyph's distance field, kept in the
+ * same store, and every glyph's effects before any glyph.
  *
  * measure() and write() return the callback pair that ComponentRenderer and Immediate take.
  * Those classes name no font type, so they draw a ui without a device. This class supplies the
@@ -140,6 +146,25 @@ class TextRenderer {
         float size = 0.0F, Weight weight = Weight::Regular);
 
     /**
+     * Append a paragraph's glyphs to a canvas, each in the colour of its style, with its
+     * style's effects beneath it. Glyphs are placed as the string draw places them.
+     *
+     * @param pen where the baseline of the first line starts
+     **/
+    void draw(v3d::render::realtime::canvas::Canvas* canvas, const font::Paragraph& paragraph, const glm::vec2& pen);
+
+    /**
+     * @return the style text of a size and a weight is set in, defaulting to size(), for a
+     *         paragraph drawn through this
+     **/
+    font::TextStyle style(float size = 0.0F, Weight weight = Weight::Regular) const;
+
+    /**
+     * @return the cache this shapes text through, which a paragraph drawn through this can share
+     **/
+    const boost::shared_ptr<font::ShapingCache>& shaping() const noexcept;
+
+    /**
      * @return width() at a size and a weight, as the callback ComponentRenderer and Immediate
      *         take
      **/
@@ -165,12 +190,16 @@ class TextRenderer {
     struct Placed {
         font::StoredGlyph glyph;
         glm::vec2 position{ 0.0F };
+        glm::vec4 colour{ 1.0F };
     };
 
     /**
-     * @return the style text of a size and a weight is set in
+     * Place a glyph and its style's effects for a draw, the glyph rasterized at its pen's step of
+     * a pixel and each effect at its exact pen.
+     *
+     * @param pen the glyph's pen, its baseline already on a whole pixel
      **/
-    font::TextStyle style(float size, Weight weight) const;
+    void place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen);
 
     boost::shared_ptr<font::FallbackChain> chain_;
     boost::shared_ptr<font::ShapingCache> shaping_;
@@ -179,6 +208,9 @@ class TextRenderer {
     float size_;
     // what draw() places, kept between draws so a frame of labels does not allocate
     std::vector<Placed> placed_;
+    std::vector<internal::PlacedEffect> effects_;
+    std::vector<render::realtime::canvas::Canvas::Vertex> vertices_;
+    std::vector<std::uint32_t> indices_;
 };
 
 };  // namespace v3d::ui::paint

@@ -243,6 +243,26 @@ BOOST_AUTO_TEST_CASE(a_glyph_is_a_quad_over_its_curves) {
     BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 0U);
 }
 
+/**
+ * An effect drawn from a distance field is a quad carrying its ramp, in a run of its own that
+ * does not merge with a picture of the same texture.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_is_a_quad_with_its_ramp) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    canvas.field(tile(1.0F, 0.0F), glm::vec2(0.25F, 0.25F), glm::vec2(0.5F, 0.5F), red, handle(1), 9);
+    canvas.field(tile(2.0F, 0.0F), glm::vec2(0.25F, 0.25F), glm::vec2(0.5F, 0.5F), red, handle(1), 9);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(!canvas.batches()[0].field);
+    BOOST_CHECK(canvas.batches()[1].field);
+    BOOST_CHECK(canvas.batches()[1].texture == handle(1));
+    BOOST_CHECK_EQUAL(canvas.batches()[1].indices, 12U);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 12U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 9U);
+    BOOST_CHECK(canvas.vertices()[6].uv == glm::vec2(0.5F, 0.5F));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

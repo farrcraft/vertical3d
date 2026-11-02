@@ -19,6 +19,7 @@
 #include <api/font/TextStyle.h>
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/ui/paint/internal/EffectQuad.h>
 
 #include "GlyphPages.h"
 #include "Text.h"
@@ -34,7 +35,9 @@
 #include <vector>
 
 #include <boost/make_shared.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui::paint {
 
@@ -124,6 +127,12 @@ font::TextStyle TextRenderer::style(float size, Weight weight) const {
 
 /**
  **/
+const boost::shared_ptr<font::ShapingCache>& TextRenderer::shaping() const noexcept {
+    return shaping_;
+}
+
+/**
+ **/
 float TextRenderer::width(std::string_view text, float size, Weight weight) const {
     if (!loaded() || text.empty()) {
         return 0.0F;
@@ -148,9 +157,20 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
     if (text.empty() || canvas == nullptr || !loaded()) {
         return;
     }
-    const font::Paragraph paragraph(shaping_, std::string(text), style(size, weight));
+    font::TextStyle drawn = style(size, weight);
+    drawn.colour = colour;
+    draw(canvas, font::Paragraph(shaping_, std::string(text), drawn), pen);
+}
+
+/**
+ **/
+void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const font::Paragraph& paragraph, const glm::vec2& pen) {
+    if (canvas == nullptr) {
+        return;
+    }
     const std::vector<font::Line>& lines = paragraph.lines();
     placed_.clear();
+    effects_.clear();
     for (const font::Line& line : lines) {
         const float baseline = pen.y + line.baseline - lines.front().baseline;
         for (const font::LineRun& run : line.runs) {
@@ -159,29 +179,43 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, std::stri
                 // the pen is kept to a step of a pixel, and the glyph rasterized at that step
                 const float at = x + glyph.offset.x;
                 x += glyph.advance;
-                if (!std::isfinite(at)) {
+                if (!std::isfinite(at) || !run.face) {
                     continue;
                 }
-                const float whole = std::floor(at);
-                const float steps = std::min<float>(std::floor((at - whole) * font::SUBPIXEL_STEPS), font::SUBPIXEL_STEPS - 1);
-                const auto step = static_cast<std::uint8_t>(steps);  // checked: at is finite, so the step is from 0 to 3
-                const font::GlyphKey key{ .face = run.face.get(), .index = glyph.index, .size = run.size, .subpixel = step };
-                const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
-                if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
-                    const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), std::round(baseline + glyph.offset.y) + static_cast<float>(stored->bearing.y));
-                    placed_.push_back(Placed{ .glyph = *stored, .position = corner });
-                }
+                const font::TextStyle& styled = paragraph.styleAt(run.ellipsis ? run.start : glyph.cluster);
+                place(run, glyph.index, styled, glm::vec2(at, std::round(baseline + glyph.offset.y)));
             }
         }
     }
 
     // a page a glyph was just put on has to be on the device before a quad names it
     pages_.sync(&store_);
+
+    // every glyph's effects beneath every glyph, each layer beneath the next
+    internal::layerEffects(&effects_);
+    internal::drawEffects(canvas, effects_, pages_, glm::mat3(1.0F), &vertices_, &indices_);
+
     const auto side = static_cast<float>(store_.spec().pageSize);
     for (const Placed& placed : placed_) {
         const glm::vec2 extent(placed.glyph.size);
         const glm::vec2 from = glm::vec2(placed.glyph.position) / side;
-        canvas->rect(placed.position, placed.position + extent, from, from + (extent / side), colour, pages_.texture(placed.glyph.page));
+        canvas->rect(placed.position, placed.position + extent, from, from + (extent / side), placed.colour, pages_.texture(placed.glyph.page));
+    }
+}
+
+/**
+ **/
+void TextRenderer::place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen) {
+    // an effect is drawn from the glyph's exact pen, since its field serves every step
+    internal::placeEffects(&effects_, &store_, *run.face, index, run.size, styled.effects, pen);
+    const float whole = std::floor(pen.x);
+    const float steps = std::min<float>(std::floor((pen.x - whole) * font::SUBPIXEL_STEPS), font::SUBPIXEL_STEPS - 1);
+    const auto step = static_cast<std::uint8_t>(steps);  // checked: the pen is finite, so the step is from 0 to 3
+    const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step };
+    const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
+    if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
+        const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
+        placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour });
     }
 }
 

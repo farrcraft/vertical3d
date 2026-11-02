@@ -10,9 +10,10 @@
  * pipeline. A single channel texture, such as a glyph atlas, is given a view that swizzles its
  * one channel into alpha, so the value is in alpha whatever the slot holds.
  *
- * The branches are how a batch is drawn, uniform across a draw. A distance field glyph holds
- * signed distances rather than coverage, and a distance has to be thresholded to become an
- * alpha. A curve glyph is drawn from its quadratic curves, which say how much of each pixel
+ * The branches are how a batch is drawn, uniform across a draw. A distance field holds signed
+ * distances rather than coverage, and a distance has to be thresholded to become an alpha. The
+ * quad's glyph field says where: at the glyph's edge, or where an effect drawn from the field
+ * reaches. A curve glyph is drawn from its quadratic curves, which say how much of each pixel
  * it covers at any size and under any transform. Everything else multiplies its texel into
  * its colour.
  *
@@ -44,6 +45,7 @@ const uint DISTANCE = 1u;
 const uint CURVES = 2u;
 
 #include "curves.glsl"
+#include "field.glsl"
 
 #ifdef LINEARISE
 // the decode, which the target's encode on store undoes
@@ -64,13 +66,8 @@ void main() {
     vec4 texel = texture(textures[push.texture], fragmentUv);
 
     if (push.text == DISTANCE) {
-        // the glyph's edge is where the distance crosses the midpoint the field was built
-        // around. Coverage ramps from 0 to 1 across one pixel centred on it. A pixel's width
-        // in distance is the length of the distance's screen gradient, so the ramp stays one
-        // pixel wide at any scale and on a diagonal edge
-        float distance = texel.a;
-        float width = max(length(vec2(dFdx(distance), dFdy(distance))), 1e-5);
-        float coverage = clamp(((distance - 0.5) / width) + 0.5, 0.0, 1.0);
+        // a glyph's own edge, or an effect drawn from its field, by the quad's ramp
+        float coverage = fieldCoverage(texel.a, fragmentGlyph);
         outColour = vec4(fragmentColour.rgb, fragmentColour.a * coverage);
     } else {
         outColour = fragmentColour * texel;

@@ -16,7 +16,7 @@ layout(location = 3) in uint glyph;
 
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
-// where a curve glyph's bands start, the same at every corner of its quad
+// where a curve glyph's bands start, or a distance field's ramp, the same at every corner
 layout(location = 2) flat out uint fragmentGlyph;
 
 // per object data. text is used by the fragment stage, and is declared here because one push

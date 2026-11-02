@@ -98,6 +98,12 @@ the frame before may make room for another.
 `width()` counts the space at the end of a string, so a caret placed after it lands past it.
 `draw()` starts a new line below at a newline.
 
+`draw(canvas, paragraph, pen)` draws a `font::Paragraph`, each glyph in its style's colour, placed
+as a string is. Build the paragraph with `shaping()`, the renderer's cache, and a style from
+`style(size, weight)`, which names the renderer's faces. A style's effects are drawn beneath the
+text from each glyph's distance field, kept in the same glyph store, as
+[Fonts.md](../Fonts.md#effect-fields) describes.
+
 No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
 callbacks, as below. An app that draws the canvas through its own renderer supplies its own.
 
@@ -114,6 +120,10 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   pixel's coverage from the curves that cross it.
 - Each glyph is drawn in its style's colour, and the ellipsis of a cut line in the style before
   the cut.
+- A style's effects are drawn beneath the text from each glyph's distance field, every glyph's
+  effects before any glyph. The fields are kept in a `font::GlyphStore` of the curve text's own,
+  whose pages reach the device through the `GlyphPages` given with the `CurvePages`. Call
+  `beginFrame()` once a frame, so the store can make room for new fields.
 - The curves come from a `font::CurveStore`, read the first time a glyph is drawn at any size.
   `paint::CurvePages` keeps the store's two arrays on the device as float textures, through three
   callbacks as `GlyphPages` does. With a context's `Textures`, create is
@@ -125,8 +135,10 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
 
 **Text in the world.** `draw(world, paragraph, transform)` stands the paragraph in a
 `canvas::World`, and `draw(order, key, paragraph, transform)` adds it to a `canvas::DepthOrder`
-with every glyph at one key. The transform is a `glm::mat4` from the paragraph's space, in pixels
-with y downwards on the plane z = 0, into the world. A glyph there is wider than its outline by
+with every glyph at one key. Each effect goes in at the same key, in a layer that is its place
+among its glyph's effects, so the order draws it beneath the glyphs. The transform is a
+`glm::mat4` from the paragraph's space, in pixels with y downwards on the plane z = 0, into the
+world. A glyph there is wider than its outline by
 `WORLD_MARGIN`, a sixteenth of an em on every side, because a screen pixel is not known there.
 That is enough for text drawn larger than sixteen pixels to the em. To face the camera, build the
 transform from the camera's right and the world's up.
