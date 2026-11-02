@@ -4,7 +4,7 @@ v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "Textur
 	"Library.h" "Library.cxx" "Face.h" "Face.cxx" "FaceGlyph.h" "FaceMetrics.h" "FaceStyle.h" "Family.h" "Family.cxx" "FallbackChain.h" "FallbackChain.cxx"
 	"Feature.h" "ShapedGlyph.h" "ShapedRun.h" "Shaper.h" "Shaper.cxx"
 	"Segmenter.h" "Segmenter.cxx" "Bidi.h" "Bidi.cxx"
-	"GlyphStore.h" "GlyphStore.cxx" "TextStyle.h" "TextStyle.cxx" "ShapingCache.h" "ShapingCache.cxx" "Paragraph.h" "Paragraph.cxx"
+	"GlyphStore.h" "GlyphStore.cxx" "Rasterize.h" "Rasterize.cxx" "TextStyle.h" "TextStyle.cxx" "ShapingCache.h" "ShapingCache.cxx" "Paragraph.h" "Paragraph.cxx"
 	"internal/LibraryHandle.h" "internal/LibraryHandle.cxx" "internal/FaceHandle.h" "internal/FaceHandle.cxx"
 	"internal/BreakHandle.h" "internal/BreakHandle.cxx" "internal/BidiHandle.h" "internal/BidiHandle.cxx" "internal/Icu.h"
 	"internal/Measure.h" "internal/Measure.cxx" "internal/MetricsCache.h" "internal/MetricsCache.cxx" "internal/Span.h"

@@ -106,7 +106,7 @@ features, the variable font axes, the decorations, and the effects.
 
 | Decision | Step |
 |---|---|
-| Text: how glyphs are drawn. Open: coverage beside curves, coverage beside a multi-channel distance field, or all three. It amends ADR-0036. | 9, 10 |
+| Text: how glyphs are drawn. Decided by ADR-0145, amending ADR-0036: coverage on the pixel grid, curves when scaled. | 9, 10 |
 | Text: how effects are drawn. Open: from the curves, from a distance field kept for them, or from a coverage pass of a stroked glyph. | 11 |
 | Text: the glyph atlas. Decided by ADR-0144: pages of plots, the plot used longest ago reused first. | 8 |
 | Text: the shaping library. Decided by ADR-0141: HarfBuzz. | 3 |
@@ -279,23 +279,31 @@ only grow, and evicting single glyphs.
   limit and let go once a frame uses nothing in it, so no text stops drawing for want of room.
 - `ui::paint::GlyphPages` keeps a texture for each page, and copies each changed plot into it
   through step 7's updates.
-- The charset belongs to the old atlas the ui draws from, and goes with it in step 13.
+- The charset belonged to the old atlas the ui drew from, and went with it in step 9.
 - The glyph store suite covers a glyph made once, a full store emptying the plot used longest
   ago, a glyph drawn this frame kept, changed plots given once, and glyphs that cannot fit. The
   glyph pages suite covers a page made and its plots copied, and a page let go released.
 
 ### Step 9 — Coverage text
 
-**Open.** Decide how glyphs are drawn.
+**Closed.** ADR-0145 decided how glyphs are drawn, amending ADR-0036, after weighing coverage
+beside a multi-channel distance field, all three, and distance fields for all text.
 
-- Text on the pixel grid is rasterized at its device size, the ui's size times its scale, with
-  vertical hinting.
-- A glyph's horizontal position is kept to a quarter pixel, and each quarter is its own
-  rasterization.
-- A change of scale draws the glyphs at the new size.
-- The quad shader's coverage branch draws them.
-- The coverage suite covers the sub-pixel steps and a change of scale. The editor is
-  photographed at 12 pixels and at a scale of 1.5, and magnified.
+- `font::rasterize()` rasterizes a glyph's coverage at its device size, hinted by its face
+  vertically and not horizontally, with its pen moved by a quarter pixel step.
+- `ui::paint::TextRenderer` lays text out as a `font::Paragraph` and draws each glyph from a
+  `font::GlyphStore`, its pen rounded down to a quarter pixel and its line's baseline to a
+  whole pixel. Its pages reach the device through `GlyphPages`. `Screen` begins the store's
+  frame each frame.
+- A change of scale draws the glyphs at the new size, since each size is its own glyph.
+- A coverage glyph is a one channel mask whose view puts it in alpha, so the quad shader's
+  ordinary textured path draws it, and needs no branch of its own.
+- The charset option is gone, with the atlas it filled: any character the faces have is drawn.
+  The ui no longer links the image library.
+- The text renderer suite covers any character drawn, glyphs on whole pixels at each step, and
+  a larger size rasterized at that size. The editor was photographed at 12 pixels and at a scale
+  of 1.5, and magnified: stems are one pixel and words sit on one baseline. The validation layer
+  was silent in the editor and in pong.
 
 ### Step 10 — Curve text
 
@@ -333,7 +341,6 @@ only grow, and evicting single glyphs.
 - A text field places its caret, moves it by grapheme cluster, and draws its selection through
   its text object. An input method's composition is shaped and drawn in place.
 - `wrap()` is replaced by layout.
-- The charset option goes with the old atlas, since every glyph is made when it is drawn.
 - The editor and every demo move to the new path. Counters and frame rates use `tnum`.
 - The ui suites cover the text field through kerned and right-to-left text. The editor and each
   demo are photographed.

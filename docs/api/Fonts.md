@@ -3,9 +3,9 @@
 This page is for someone writing an app against the api, or changing how text is drawn. It
 covers `api/font`. Terms are defined in the [glossary](README.md#glossary).
 
-`api/font` (`v3d::font`) rasterizes typefaces with FreeType into a texture atlas and lays out
-text as quads. Most apps do not use it directly: `ui::paint::TextRenderer` owns the faces, their
-atlas and the drawing of text. See [ui/](ui/README.md).
+`api/font` (`v3d::font`) opens typefaces with FreeType, shapes and lays out text, and rasterizes
+its glyphs. Most apps do not use it directly: `ui::paint::TextRenderer` owns the faces, their
+glyphs and the drawing of text. See [ui/](ui/README.md).
 
 ## Faces and the fallback chain
 
@@ -251,6 +251,24 @@ and packed into pages of one byte pixels, which a renderer copies to the device.
   holds to find a page added or let go.
 
 Background: [ADR-0144](../adr/0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md)
+
+## Coverage glyphs
+
+**`rasterize(key)`** makes a glyph's coverage for the glyph store, as a `GlyphStore::Rasterizer`.
+
+- It rasterizes at the key's size in pixels, the glyph's pen moved right by the key's
+  `subpixel` step, in steps of a quarter of a pixel (`SUBPIXEL_STEPS`).
+- It hints the glyph by its face's own instructions vertically, so stems and the x-height sit
+  on whole pixels. It does not hint horizontally, so the glyph's shape is the same at every step.
+- It gives one byte a pixel, with the `bearing` of its top left pixel from the pen.
+- A key whose mode is not `Coverage`, a face that cannot be sized, or a glyph that cannot be
+  loaded gives an empty bitmap.
+
+A renderer draws a glyph with its pen rounded down to a step: the whole pixel it is in, plus
+the bearing, is where the bitmap's top left goes, and the step picks the rasterization. Each
+line's baseline is rounded to a whole pixel.
+
+Background: [ADR-0145](../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ## Texture fonts
 

@@ -79,7 +79,6 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     v3d::ui::shell::Screen::Options options;
     options.size = fontSize;
     options.immediate = true;
-    options.charset = std::string(v3d::ui::paint::TextRenderer::ascii) + EXTRA_GLYPHS;
     options.dress = [](v3d::ui::paint::Dressing* style, float size) {
         style->lineHeight = size * lineHeightScale;
         style->padding = size * paddingScale;

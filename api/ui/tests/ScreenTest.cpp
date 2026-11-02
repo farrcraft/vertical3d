@@ -60,25 +60,20 @@ boost::shared_ptr<v3d::ui::Interface> themed() {
 BOOST_AUTO_TEST_SUITE(screen_test)
 
 /**
- * With no renderer there is no frame to begin, and nothing is sized or reported as resized.
+ * A screen's text measures any character its faces have, with no set of glyphs named up front.
  **/
-/**
- * The text draws printable ascii unless the screen is asked for more, and then draws what it
- * was asked for as well.
- **/
-BOOST_AUTO_TEST_CASE(a_screen_draws_the_glyphs_its_charset_names) {
+BOOST_AUTO_TEST_CASE(a_screen_draws_any_character) {
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> fonts = boost::make_shared<v3d::asset::Manager>("data", logger);
     const v3d::ui::shell::Screen plain(nullptr, fonts, logger, sized(20.0F));
     BOOST_CHECK_GT(plain.text()->measure(20.0F)("A"), 0.0F);
-    BOOST_CHECK_EQUAL(plain.text()->measure(20.0F)("°"), 0.0F);
-
-    v3d::ui::shell::Screen::Options options = sized(20.0F);
-    options.charset = std::string(v3d::ui::paint::TextRenderer::ascii) + "°";
-    const v3d::ui::shell::Screen wider(nullptr, fonts, logger, options);
-    BOOST_CHECK_GT(wider.text()->measure(20.0F)("°"), 0.0F);
+    // a degree sign, outside ascii, as UTF-8
+    BOOST_CHECK_GT(plain.text()->measure(20.0F)("\xC2\xB0"), 0.0F);
 }
 
+/**
+ * With no renderer there is no frame to begin, and nothing is sized or reported as resized.
+ **/
 BOOST_AUTO_TEST_CASE(a_screen_with_no_renderer_begins_no_frame) {
     v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), sized(20.0F));
 

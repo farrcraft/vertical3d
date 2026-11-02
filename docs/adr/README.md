@@ -32,11 +32,12 @@ content went. Numbers are never reused.
 | [0011](0011-rendering-lines-as-a-world-space-primitive.md) | Rendering: lines as a world-space primitive | accepted |
 | [0012](0012-camera-projection-targets-vulkan-clip-space.md) | Camera: projection targets Vulkan clip space | amended by 0052 |
 | [0031](0031-rendering-passes-draw-into-offscreen-targets.md) | Rendering: passes draw into offscreen targets | amended by 0068 |
-| [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | accepted |
+| [0036](0036-text-sdf-glyphs-through-the-quad-shader.md) | Text: SDF glyphs through the quad shader | amended by 0145 |
 | [0141](0141-text-opentype-shaping-with-harfbuzz.md) | Text: OpenType shaping with HarfBuzz | accepted |
 | [0142](0142-text-bidi-and-segmentation-with-icu.md) | Text: bidi and segmentation with ICU | accepted |
 | [0143](0143-text-styled-paragraphs-over-a-shared-shaping-cache.md) | Text: styled paragraphs over a shared shaping cache | accepted |
 | [0144](0144-text-glyph-pages-of-plots-reused-least-recently-used-first.md) | Text: glyph pages of plots, reused least recently used first | accepted |
+| [0145](0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md) | Text: coverage on the pixel grid, curves when scaled | accepted |
 | [0037](0037-2d-clip-with-a-per-batch-scissor.md) | 2D: clip with a per-batch scissor | accepted |
 | [0042](0042-rendering-world-space-sprites.md) | Rendering: world-space sprites | amended by 0082 |
 | 0044 | *Not a decision. Now in docs/internals/realtime/Memory.md and vulkan/frame/DepthBuffer.h* | removed |

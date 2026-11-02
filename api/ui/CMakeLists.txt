@@ -74,10 +74,9 @@ v3d_add_api_library(ui
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 # v3dlib_render: ComponentRenderer draws onto a realtime::canvas::Canvas. The dependency is one
 # way: nothing in the renderer names a ui component, and Canvas carries no vulkan of its own.
-# TextRenderer.h keeps that true by taking the atlas upload as a callback rather than naming
-# a renderer.
-# v3dlib_font: TextRenderer.h holds a TextureFontCache and a TextureTextBuffer::Markup.
-# v3dlib_image: TextRenderer.h holds the image::Image its atlas is uploaded from.
+# GlyphPages.h keeps that true by taking the glyph pages' uploads as callbacks rather than
+# naming a renderer.
+# v3dlib_font: TextRenderer.h holds a font::GlyphStore and a font::ShapingCache.
 # Boost::json: Interface.h names a boost::json::object for the theme it is handed.
 # Boost::filesystem: shell/FileChooser.h names the paths it lists and hands back.
 target_link_libraries(v3dlib_ui PUBLIC
@@ -86,7 +85,6 @@ target_link_libraries(v3dlib_ui PUBLIC
 	v3dlib_asset
 	v3dlib_event
 	v3dlib_font
-	v3dlib_image
 	v3dlib_type
 	Boost::json
 	Boost::filesystem

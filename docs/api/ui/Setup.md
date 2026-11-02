@@ -11,7 +11,7 @@ An app on the game engine has its `shell::Shell` build the screen, through
 `present(renderer, options)`. [engine/Shell.md](../engine/Shell.md) covers it. A `Screen`
 builds:
 
-- the `TextRenderer`, uploading its atlas through the `WindowRenderer`
+- the `TextRenderer`, whose glyph pages reach the device through the `WindowRenderer`'s textures
 - the `ComponentRenderer` over that text
 - a `StatisticsOverlay`, unless `Options::statistics` is false
 - an `Immediate` layer, if `Options::immediate` is true

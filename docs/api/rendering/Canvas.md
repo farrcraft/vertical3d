@@ -105,12 +105,16 @@ canvas.unfade();
 
 ### Text
 
-`Canvas::text(vertices, indices, atlas)` copies text that has already been laid out, as
-vertices and the triangles over them. `ui::paint::TextRenderer` lays the text out with
-`v3d::font`, and `render` does not depend on `font`. The atlas is a single-channel texture of
-signed distances. The quad shader turns the distance into a smooth edge about one pixel wide at
-any scale. Text and other quads that
-sample the same atlas are drawn as separate batches.
+Text on the pixel grid is drawn as textured rectangles. `ui::paint::TextRenderer` lays it out
+with `v3d::font` and places each glyph on whole pixels, as a `rect` sampling its coverage from a
+single-channel glyph page. The page's view swizzles its channel into alpha, so the quad shader's
+ordinary textured path multiplies the coverage into the colour. `render` does not depend on
+`font`.
+
+`Canvas::text(vertices, indices, atlas)` copies text that has already been laid out against an
+atlas of signed distances, as vertices and the triangles over them. The quad shader turns the
+distance into a smooth edge about one pixel wide at any scale. Text and other quads that sample
+the same atlas are drawn as separate batches.
 
 ### User interface
 

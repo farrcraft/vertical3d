@@ -121,7 +121,7 @@ set(V3D_API_type_REQUIRES)
 set(V3D_API_type_PACKAGES glm)
 
 set(V3D_API_ui_PATH "ui")
-set(V3D_API_ui_REQUIRES log render asset event font image input type window)
+set(V3D_API_ui_REQUIRES log render asset event font input type window)
 set(V3D_API_ui_PACKAGES SDL3 glm EnTT)
 
 # The OS window and its platform calls. It names no graphics API, so a selection that needs a

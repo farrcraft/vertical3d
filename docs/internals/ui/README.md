@@ -37,7 +37,8 @@ How input reaches a component is in [Input.md](Input.md), and the immediate laye
 | `paint::Palette` | [paint/Palette.h](../../../api/ui/paint/Palette.h) | the two scales derived from a base, an accent and a contrast, and the colour each `Dressing` role takes from them |
 | `paint::fillBox`, `strokeBox`, `plateBox`, `shadowBox` | [paint/Painter.h](../../../api/ui/paint/Painter.h) | box drawing shared by both ui models, and the shadow a box casts |
 | `paint::Measure`, `paint::Write`, `paint::wrap` | [paint/Text.h](../../../api/ui/paint/Text.h) | the text callbacks, and greedy word wrapping over them |
-| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, their SDF atlas, and the callbacks over them |
+| `paint::TextRenderer` | [paint/TextRenderer.h](../../../api/ui/paint/TextRenderer.h) | the faces, the glyph store, and the callbacks over them |
+| `paint::GlyphPages` | [paint/GlyphPages.h](../../../api/ui/paint/GlyphPages.h) | the device's copy of the glyph store's pages |
 | `style::Theme`, `Style`, `Property` | [style/](../../../api/ui/style) | the data a theme document holds |
 | `style::Resolver` | [style/Resolver.h](../../../api/ui/style/Resolver.h) | turns a theme into a cached `Dressing` per class and style name |
 | `input::Cursor` | [input/Cursor.h](../../../api/ui/input/Cursor.h) | routes mouse points: hover, press, drag, focus, caret placement |
@@ -60,8 +61,8 @@ Boundaries the split keeps:
   joined by an `Arranger::Paint` callback. The renderer contains no layout arithmetic, and
   the arranger names no renderer.
 - **No `api/ui` header names a Vulkan or SDL type.** `shell::Screen` declares `WindowRenderer`
-  rather than including it. `shell::Keyboard` declares `SDL_Event`. `TextRenderer` takes its
-  atlas upload as a callback. The clipboard and the text measure are callbacks. This keeps
+  rather than including it. `shell::Keyboard` declares `SDL_Event`. `GlyphPages` takes its
+  uploads as callbacks. The clipboard and the text measure are callbacks. This keeps
   the library testable without a window or a device.
 - **`v3dlib_ui` links `v3dlib_render` and `v3dlib_input`.** `shell::Screen` therefore cannot
   live in `api/render`, which would make a cycle. `v3dlib_input` is linked for

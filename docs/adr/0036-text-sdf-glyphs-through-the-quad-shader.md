@@ -1,8 +1,9 @@
 # ADR-0036: Text: SDF glyphs through the quad shader
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-09-06
 **Amends**: [ADR-0005](0005-2d-one-batched-quad-pipeline.md)
+**Amended by**: [ADR-0145](0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 **Documented in**: [api/rendering/Canvas.md](../api/rendering/Canvas.md)
 
 ## Context

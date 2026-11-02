@@ -7,8 +7,9 @@
 
 #include <api/asset/Manager.h>
 #include <api/event/Event.h>
-#include <api/image/Image.h>
 #include <api/log/Logger.h>
+#include <api/render/realtime/Handle.h>
+#include <api/render/realtime/Textures.h>
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
@@ -17,6 +18,7 @@
 #include <api/ui/input/Command.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/paint/Dressing.h>
+#include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/style/Resolver.h>
@@ -47,16 +49,24 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
         options_.dress = lineHeight;
     }
 
-    // the atlas is a texture on the device, and this upload is the only line here that
-    // needs one
-    text_ = boost::make_shared<paint::TextRenderer>(assets, logger,
-        [engine](const boost::shared_ptr<v3d::image::Image>& atlas) {
-            if (engine == nullptr || !engine->textures()) {
-                return v3d::render::realtime::TextureHandle();
-            }
-            return engine->textures()->texture(atlas);
+    // the glyph pages are textures on the device, and these three are the only lines here that
+    // need one
+    const boost::shared_ptr<v3d::render::realtime::Textures> textures = engine != nullptr ? engine->textures() : nullptr;
+    paint::GlyphPages pages(
+        [textures](const unsigned char* pixels, std::uint32_t side) {
+            return textures ? textures->texture(pixels, side, side, 1) : v3d::render::realtime::TextureHandle();
         },
-        paint::TextRenderer::baseSize, paint::TextRenderer::Faces(), options_.charset);
+        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
+            if (textures) {
+                textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = 1 });
+            }
+        },
+        [textures](const v3d::render::realtime::TextureHandle& page) {
+            if (textures) {
+                textures->release(page);
+            }
+        });
+    text_ = boost::make_shared<paint::TextRenderer>(assets, logger, std::move(pages));
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);
         if (engine != nullptr && engine->context()) {
@@ -130,6 +140,7 @@ bool Screen::begin(const Interface* ui) {
         }
     }
     canvas_.clear();
+    text_->beginFrame();
 
     // real time rather than the simulation's, so a menu still eases open over a paused game.
     // The first frame starts the clock at zero

@@ -68,10 +68,10 @@ Neither renderer names a font type. This keeps `api/ui` testable without a windo
 The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
 must stay valid for the length of the call.
 
-`v3d::ui::paint::TextRenderer` supplies the pair. It holds one typeface in two weights, packed
-into one atlas of signed distance field glyphs. `measure(size, weight)` and
-`write(canvas, size, weight)` return callbacks for one drawn size and one `paint::Weight`, regular
-or semibold. Every size and weight from one `TextRenderer` shares the same atlas.
+`v3d::ui::paint::TextRenderer` supplies the pair. It holds one typeface in two weights.
+`measure(size, weight)` and `write(canvas, size, weight)` return callbacks for one drawn size and
+one `paint::Weight`, regular or semibold. Every size and weight from one `TextRenderer` shares
+one glyph store.
 
 The faces are in the shared data directory:
 
@@ -87,17 +87,21 @@ are logged. Each face's licence is beside it in `fonts/`.
 
 Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md)
 
-The glyphs a `TextRenderer` can draw are the characters of the UTF-8 charset given to its
-constructor, which defaults to printable ascii. Each weight packs them all. They are packed and
-uploaded once, and the atlas is not added to afterwards.
-Text is UTF-8, and `v3d::font` decodes it and lays it out. A code point outside the packed set
-measures as zero width and draws nothing. An app that shows other characters passes them in the
-charset, and may need a larger atlas to hold them. A `Screen` builds its text renderer from
-`Screen::Options::charset`, which is printable ascii unless the app names more.
+Text is UTF-8, and `v3d::font` shapes it and lays it out as a `font::Paragraph`. Any character
+the faces have is drawn, with no set of glyphs named up front: a glyph is rasterized the first
+time it is drawn, at the size it is drawn at, into a `font::GlyphStore`. Its pen is kept to a
+quarter of a pixel and each line's baseline is on a whole pixel. It is hinted vertically, so
+text on the pixel grid is drawn at its exact size and sharp. A change of scale draws at the new
+size. A `Screen` calls `beginFrame()` on its text renderer each frame, so a glyph unused since
+the frame before may make room for another.
 
-`TextRenderer` uploads its atlas through an `Upload` callback rather than a Vulkan type. No
-`api/ui` header names a Vulkan type. An app that draws the canvas through its own renderer
-can supply its own `Upload`.
+`width()` counts the space at the end of a string, so a caret placed after it lands past it.
+`draw()` starts a new line below at a newline.
+
+No `api/ui` header names a Vulkan type. The text renderer's glyph pages reach the device through
+callbacks, as below. An app that draws the canvas through its own renderer supplies its own.
+
+Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ### Glyph pages
 
