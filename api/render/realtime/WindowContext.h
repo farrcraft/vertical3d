@@ -15,6 +15,8 @@
 
 #include "DeviceContext.h"
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::render::realtime {
@@ -27,6 +29,30 @@ namespace v3d::render::realtime {
  **/
 class WindowContext : public DeviceContext {
  public:
+    /**
+     * Another window the context presents to beside its own. It has a surface and a swapchain
+     * of its own, in the format of the context's, and is presented in the context's frames.
+     **/
+    class Attached final {
+     public:
+        /**
+         * @return the window presented to
+         **/
+        boost::shared_ptr<v3d::window::Window> window() const noexcept;
+
+        /**
+         * @return its swapchain
+         **/
+        boost::shared_ptr<vulkan::frame::Swapchain> swapchain() const noexcept;
+
+     private:
+        friend class WindowContext;
+
+        boost::shared_ptr<v3d::window::Window> window_;
+        boost::shared_ptr<vulkan::frame::Swapchain> swapchain_;
+        boost::shared_ptr<vulkan::frame::Presenter::Joined> joined_;
+    };
+
     /**
      * @param logger
      * @param window the window the context renders to
@@ -67,6 +93,27 @@ class WindowContext : public DeviceContext {
      **/
     void present(frame::Present present);
 
+    /**
+     * Present to another window too, from the next frame.
+     *
+     * @return the window's hold on the context, or null when the device cannot present to its
+     *         surface or the surface does not offer the context's format
+     * @throw std::runtime_error if the window has not been created, or the device fails
+     **/
+    boost::shared_ptr<Attached> attach(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
+     * Stop presenting to another window. It waits for the device, so the window can be
+     * destroyed once this returns.
+     **/
+    void detach(const boost::shared_ptr<Attached>& attached);
+
+    /**
+     * Recreate another window's swapchain at its current size when it no longer matches its
+     * surface, or when it had no area and the window has one again.
+     **/
+    void refresh(const boost::shared_ptr<Attached>& attached);
+
  private:
     /**
      * The device the base is built on: the process's instance, and a surface made for the
@@ -86,5 +133,7 @@ class WindowContext : public DeviceContext {
     // declared last, so it is destroyed first. Its destructor waits for the device, so
     // nothing else is destroyed while a frame it submitted is in flight
     boost::shared_ptr<vulkan::frame::Presenter> presenter_;
+    // declared after the presenter, so each is let go of before the presenter goes
+    std::vector<boost::shared_ptr<Attached>> attached_;
 };
 };  // namespace v3d::render::realtime

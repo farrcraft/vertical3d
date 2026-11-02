@@ -9,6 +9,8 @@
 #include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
+#include <api/render/realtime/vulkan/frame/FrameUniforms.h>
+#include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
 #include <api/window/Window.h>
 
@@ -27,9 +29,37 @@ namespace v3d::render::realtime {
  * The renderer an app draws into a window with. It owns the window's device context and the
  * frame being built, and records and presents that frame. The same class serves 2D and 3D: a
  * 2D app differs only in what its passes ask for.
+ *
+ * It can draw to other windows too, each opened with open(). Every window is drawn by the one
+ * device, so anything uploaded can be drawn in any of them. Each window has a frame of its own,
+ * recorded and presented in the same renderFrame() as the renderer's own window. A window opened
+ * this way has no depth buffer, so its passes test no depth.
  **/
 class WindowRenderer final {
  public:
+    /**
+     * Another window the renderer draws to, and the frame being built for it.
+     **/
+    class Output final {
+     public:
+        /**
+         * The frame being built for the window's next present, as frame() is for the
+         * renderer's own window. Its first pass is a colour pass named colourPass.
+         **/
+        boost::shared_ptr<frame::Frame> frame() const;
+
+        /**
+         * @return the window drawn to
+         **/
+        boost::shared_ptr<v3d::window::Window> window() const;
+
+     private:
+        friend class WindowRenderer;
+
+        boost::shared_ptr<WindowContext::Attached> attached_;
+        boost::shared_ptr<frame::Frame> frame_;
+    };
+
     /**
      * @param logger
      * @param preferred the colour format to present through. An app whose shaders write
@@ -52,9 +82,25 @@ class WindowRenderer final {
     void initialize(const boost::shared_ptr<v3d::window::Window>& window);
 
     /**
-     * Wait for everything in flight before the device and the window go away.
+     * Wait for everything in flight before the device and the window go away. Every window
+     * open() opened is closed first.
      **/
     void shutdown();
+
+    /**
+     * Draw to another window too, from the next renderFrame().
+     *
+     * @return what is drawn to the window, or null before initialize() and when the device cannot
+     *         present to it in the renderer's format
+     * @throw std::runtime_error if the window has not been created, or the device fails
+     **/
+    boost::shared_ptr<Output> open(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
+     * Stop drawing to a window open() opened. It waits for the device, so the window can be
+     * destroyed once this returns.
+     **/
+    void close(const boost::shared_ptr<Output>& output);
 
     /**
      * Record the frame that has been built up, present it, and empty it ready for the
@@ -169,6 +215,12 @@ class WindowRenderer final {
     static constexpr glm::vec4 DEFAULT_CLEAR_COLOUR{0.06F, 0.07F, 0.10F, 1.0F};
 
     /**
+     * Record each other window's frame into the image it gave the frame, with the frame's
+     * commands.
+     **/
+    void recordOutputs(const vulkan::frame::Presenter::Acquisition& acquisition, vulkan::frame::FrameUniforms* uniforms);
+
+    /**
      * Drop what the frame collected, whether or not the frame was recorded.
      **/
     void endFrame();
@@ -178,6 +230,7 @@ class WindowRenderer final {
     boost::shared_ptr<v3d::window::Window> window_;
     boost::shared_ptr<WindowContext> context_;
     boost::shared_ptr<frame::Frame> frame_;
+    std::vector<boost::shared_ptr<Output>> outputs_;
     glm::vec4 clearColour_;
     /**< the format initialize() requests for the swapchain. The surface decides which it gets **/
     VkFormat preferred_;

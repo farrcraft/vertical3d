@@ -56,7 +56,8 @@ frame::Frame -> frame::Pass -> frame::DrawItem
 ```
 
 There is one window class for 2D and 3D. A 2D app differs only in what its passes ask for: an
-orthographic projection and no depth.
+orthographic projection and no depth. One `WindowRenderer` draws every window a program opens, on
+one device, as [Frames.md](Frames.md#other-windows) describes.
 
 **`DeviceContext` is usable without a window.** It is given a colour format and an extent at
 construction, or later through the protected `describe()`. Every pipeline built through it is

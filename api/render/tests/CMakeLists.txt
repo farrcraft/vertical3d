@@ -114,7 +114,8 @@ v3d_add_test(render_window
 	"window/CaptureTest.cpp"
 	"window/AllocationsTest.cpp"
 	"window/PresentTest.cpp"
-	"window/FullscreenTest.cpp")
+	"window/FullscreenTest.cpp"
+	"window/OutputTest.cpp")
 
 target_link_libraries(v3dtest_render_window PRIVATE v3dlib_render v3dlib_image v3dlib_log v3dlib_window Boost::filesystem ${SDL3_LIBRARIES} ${Vulkan_LIBRARIES})
 set_tests_properties(render_window PROPERTIES SKIP_RETURN_CODE 77)

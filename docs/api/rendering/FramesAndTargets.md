@@ -244,6 +244,31 @@ Testing with captures is covered in [contributing/Testing.md](../../contributing
 - The renderers `WindowRenderer` gives you keep working across a resize. Their pipelines do not need
   rebuilding.
 
+## Other windows
+
+`WindowRenderer::open(window)` draws to another created window as well as the renderer's own. It
+returns an `Output`, whose `frame()` is built for that window as `frame()` is for the renderer's
+own, with a colour pass named `colourPass`.
+
+```cpp
+const boost::shared_ptr<WindowRenderer::Output> output = renderer_->open(second);
+output->frame()->pass(WindowRenderer::colourPass);   // add passes and items as usual
+renderer_->renderFrame();                              // draws and presents both windows
+renderer_->close(output);                              // before the window is destroyed
+```
+
+- **Everything is shared.** Every window is drawn by the one device, so a texture, a pipeline or a
+  glyph page made for one can be drawn in any of them. The other window takes the renderer's
+  colour format.
+- **Every window is presented in the same frame.** The slowest window paces them all.
+- **Another window has no depth buffer.** Its passes test no depth.
+- **`open()` returns null** before `initialize()`, and when the device cannot present to the
+  window or its surface does not offer the renderer's format.
+- **Close a window before it is destroyed.** `close()` waits for the device. `shutdown()` closes
+  every window still open.
+- A window that is minimized, or whose swapchain goes out of date, sits out the frames until it
+  is rebuilt, and the other windows go on.
+
 ## Vsync
 
 `WindowRenderer::present(mode)` sets how the window's images are presented. A settings screen

@@ -132,6 +132,17 @@ VkQueue Device::graphicsQueue() const noexcept {
 
 /**
  **/
+bool Device::presents(const Surface& surface) const {
+    if (!presenting()) {
+        return false;
+    }
+    VkBool32 presentable = VK_FALSE;
+    const VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(physical(), families_.present, surface.handle(), &presentable);
+    return result == VK_SUCCESS && presentable == VK_TRUE;
+}
+
+/**
+ **/
 VkQueue Device::presentQueue() const noexcept {
     return presentQueue_;
 }

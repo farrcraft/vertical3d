@@ -24,6 +24,7 @@
 #include <api/render/realtime/resource/Textures.h>
 #include "WindowContext.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -61,6 +62,9 @@ void WindowRenderer::initialize(const boost::shared_ptr<v3d::window::Window>& wi
 /**
  **/
 void WindowRenderer::shutdown() {
+    while (!outputs_.empty()) {
+        close(outputs_.back());
+    }
     if (context_) {
         // every submitted frame has to finish before the swapchain, the device and the
         // window are destroyed
@@ -75,6 +79,46 @@ void WindowRenderer::shutdown() {
     capturePath_.clear();
     context_.reset();
     window_.reset();
+}
+
+/**
+ **/
+boost::shared_ptr<frame::Frame> WindowRenderer::Output::frame() const {
+    return frame_;
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::window::Window> WindowRenderer::Output::window() const {
+    return attached_->window();
+}
+
+/**
+ **/
+boost::shared_ptr<WindowRenderer::Output> WindowRenderer::open(const boost::shared_ptr<v3d::window::Window>& window) {
+    if (!context_) {
+        return nullptr;
+    }
+    const boost::shared_ptr<WindowContext::Attached> attached = context_->attach(window);
+    if (!attached) {
+        return nullptr;
+    }
+    const boost::shared_ptr<Output> output = boost::make_shared<Output>();
+    output->attached_ = attached;
+    output->frame_ = boost::make_shared<frame::Frame>();
+    output->frame_->pass(colourPass)->clearColour(clearColour_);
+    outputs_.push_back(output);
+    return output;
+}
+
+/**
+ **/
+void WindowRenderer::close(const boost::shared_ptr<Output>& output) {
+    if (!output || !context_) {
+        return;
+    }
+    context_->detach(output->attached_);
+    std::erase(outputs_, output);
 }
 
 /**
@@ -241,6 +285,7 @@ void WindowRenderer::renderFrame() {
 
     frame::Recorder::record(acquisition.commands, *frame_, target, *context_->resources(), uniforms.get(),
         &context_->ring()->timings());
+    recordOutputs(acquisition, uniforms.get());
 
     // a swapchain recreated since the request may have lost TRANSFER_SRC, and Capture throws
     // for that
@@ -275,8 +320,35 @@ void WindowRenderer::renderFrame() {
 
 /**
  **/
+void WindowRenderer::recordOutputs(const vulkan::frame::Presenter::Acquisition& acquisition, vulkan::frame::FrameUniforms* uniforms) {
+    for (const vulkan::frame::Presenter::Taken& taken : acquisition.joined) {
+        const auto opened = std::ranges::find_if(outputs_, [&taken](const boost::shared_ptr<Output>& output) {
+            return output->attached_->swapchain() == taken.joined->swapchain();
+        });
+        if (opened == outputs_.end()) {
+            continue;
+        }
+        const vulkan::frame::Swapchain& chain = *taken.joined->swapchain();
+        frame::Recorder::Target target;
+        target.image = chain.images()[taken.image];
+        target.view = chain.views()[taken.image];
+        target.extent = chain.extent();
+        target.format = chain.format();
+        frame::Recorder::record(acquisition.commands, *(*opened)->frame_, target, *context_->resources(), uniforms,
+            &context_->ring()->timings());
+    }
+}
+
+/**
+ **/
 void WindowRenderer::endFrame() {
     frame_->reset();
+    for (const boost::shared_ptr<Output>& output : outputs_) {
+        output->frame_->reset();
+        // a window whose swapchain went out of date, or that has an area again, is drawn into
+        // a new swapchain from the next frame
+        context_->refresh(output->attached_);
+    }
 }
 
 };  // namespace v3d::render::realtime

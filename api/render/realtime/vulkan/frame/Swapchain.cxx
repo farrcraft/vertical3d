@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
 #include <api/render/realtime/vulkan/device/Result.h>
 
 #include <algorithm>
@@ -38,8 +39,9 @@ const char* Swapchain::describe(VkPresentModeKHR mode) noexcept {
 /**
  **/
 Swapchain::Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
-    VkFormat preferred, const std::vector<VkPresentModeKHR>& present) :
+    VkFormat preferred, const std::vector<VkPresentModeKHR>& present, const boost::shared_ptr<device::Surface>& surface) :
     device_(device),
+    surface_(surface ? surface : device->surface()),
     logger_(logger),
     swapchain_(VK_NULL_HANDLE),
     preferred_(preferred),
@@ -128,7 +130,7 @@ std::size_t Swapchain::length() const noexcept {
 Swapchain::Support Swapchain::querySupport() const {
     Support support{};
     VkPhysicalDevice physical = device_->physical();
-    VkSurfaceKHR surface = device_->surface()->handle();
+    VkSurfaceKHR surface = surface_->handle();
 
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &support.capabilities);
     device::check(result, "Unable to read the vulkan surface capabilities");
@@ -253,7 +255,7 @@ void Swapchain::create(uint32_t width, uint32_t height) {
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = device_->surface()->handle();
+    createInfo.surface = surface_->handle();
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;

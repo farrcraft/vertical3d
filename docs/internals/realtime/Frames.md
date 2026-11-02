@@ -64,6 +64,32 @@ and the chain is rebuilt before the next one. `Presenter` never recreates the ch
 caller (`WindowContext::resize()`) rebuilds it and calls `Presenter::reset()`, since a new chain can
 hold a different number of images.
 
+### Other windows
+
+**Every window is drawn by the one device.** `WindowContext::attach(window)` makes a surface for
+another window, checks that the device's present queue can present to it with
+`Device::presents()`, and builds a swapchain on it in the context's format. A surface that cannot
+be presented to, or that does not offer that format, is refused and `attach()` returns null. The
+device stays the one picked for the first window's surface.
+
+**An attached swapchain is joined to the presenter.** `Presenter::join()` gives it a semaphore for
+each frame in flight and one for each image, as the presenter keeps for its own. In each frame:
+
+- `acquire()` acquires the main image first, then an image of each joined swapchain. One that is
+  stale, has no area or reports out of date gives no image and sits the frame out. The images taken
+  are listed in `Acquisition::joined`.
+- Every image is drawn into with the one command buffer.
+- `present()` submits once, waiting on every image's available semaphore and signalling every
+  image's finished semaphore, and presents every swapchain in one `vkQueuePresentKHR`. Each
+  swapchain's own result is read from `pResults`. A joined swapchain that is out of date or
+  suboptimal is marked `stale()`. The main swapchain's result is what `present()` returns.
+- `WindowContext::refresh()` rebuilds a stale joined swapchain, or one that had no area when its
+  window has one again, after waiting for the device, and calls `Joined::reset()`.
+
+`Presenter::leave()` waits for the device before the joined swapchain's semaphores go.
+
+Background: [ADR-0155](../../adr/0155-rendering-one-device-presents-to-every-window.md)
+
 ### What `WindowRenderer::renderFrame()` does
 
 1. A present mode asked for since the last frame is applied through `WindowContext::present()`, and
@@ -74,7 +100,8 @@ hold a different number of images.
 3. It fills a `frame::Recorder::Target` with the swapchain image, view, extent and format, plus the
    context's depth buffer if any pass on the swapchain tests depth.
 4. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
-5. `frame::Recorder::record()` records every pass.
+5. `frame::Recorder::record()` records every pass. Then each other window that gave the frame an
+   image has its own frame recorded into that image, with no depth buffer.
 6. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
    `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
    instead, since `Capture` throws for it.
@@ -83,7 +110,8 @@ hold a different number of images.
    the file, and the request is cleared whether or not the write succeeded. The submit stands
    when presenting reports the chain out of date, so the file is written in that case too.
 9. If `present()` reported `OutOfDate`, the chain is rebuilt for the next frame.
-10. `frame::Frame::reset()` drops every pass's items.
+10. `frame::Frame::reset()` drops every pass's items, in every window's frame, and each other
+    window's swapchain is rebuilt if it went stale.
 
 A frame dropped at step 1 or 2 never reaches step 6, so a capture request waits for a frame that
 presents.

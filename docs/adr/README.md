@@ -66,6 +66,7 @@ content went. Numbers are never reused.
 | [0109](0109-textures-one-bindless-array-a-draw-names-a-slot.md) | Textures: one bindless array, a draw names a slot | accepted |
 | [0110](0110-memory-suballocate-by-default.md) | Memory: suballocate by default | accepted |
 | [0115](0115-rendering-cascaded-shadows-in-a-layered-map.md) | Rendering: cascaded shadows in a layered map | accepted |
+| [0155](0155-rendering-one-device-presents-to-every-window.md) | Rendering: one device presents to every window | accepted |
 
 ## Offline rendering
 

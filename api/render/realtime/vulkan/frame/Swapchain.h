@@ -7,6 +7,7 @@
 
 #include <api/log/Logger.h>
 #include <api/render/realtime/vulkan/device/Device.h>
+#include <api/render/realtime/vulkan/device/Surface.h>
 
 #include <vulkan/vulkan.h>
 
@@ -44,10 +45,13 @@ class Swapchain final {
      *        default. format() returns the format chosen.
      * @param present the present modes to build with, best first, as choosePresentMode() takes
      *        them
+     * @param surface the surface the images are presented to, or null for the one the device
+     *        was picked for. The device has to present to it, as Device::presents() says
      **/
     Swapchain(const boost::shared_ptr<v3d::log::Logger>& logger, const boost::shared_ptr<device::Device>& device, uint32_t width, uint32_t height,
         VkFormat preferred = VK_FORMAT_UNDEFINED,
-        const std::vector<VkPresentModeKHR>& present = {VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR});
+        const std::vector<VkPresentModeKHR>& present = {VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR},
+        const boost::shared_ptr<device::Surface>& surface = nullptr);
 
     /**
      **/
@@ -185,6 +189,8 @@ class Swapchain final {
     void destroy();
 
     boost::shared_ptr<device::Device> device_;
+    // held, so the surface outlives the swapchain built on it
+    boost::shared_ptr<device::Surface> surface_;
     boost::shared_ptr<v3d::log::Logger> logger_;
     VkSwapchainKHR swapchain_;
     VkFormat preferred_;
