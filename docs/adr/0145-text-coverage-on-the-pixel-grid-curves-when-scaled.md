@@ -3,7 +3,7 @@
 **Status**: amended
 **Date**: 2026-11-01
 **Amends**: [ADR-0036](0036-text-sdf-glyphs-through-the-quad-shader.md)
-**Amended by**: [ADR-0146](0146-text-effects-drawn-from-a-distance-field.md)
+**Amended by**: [ADR-0146](0146-text-effects-drawn-from-a-distance-field.md), [ADR-0149](0149-text-colour-glyphs-from-every-opentype-colour-table.md)
 **Documented in**: [api/Fonts.md](../api/Fonts.md#coverage-glyphs), [api/ui/README.md](../api/ui/README.md#text-is-supplied-by-the-app)
 
 ## Context

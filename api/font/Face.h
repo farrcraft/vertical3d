@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "ColourGlyph.h"
 #include "FaceMetrics.h"
 
 #include <boost/shared_ptr.hpp>
@@ -61,6 +62,16 @@ class Face final {
      *         its typographic metrics is measured by them, and any other by its hhea table
      **/
     FaceMetrics metrics(float size) const;
+
+    /**
+     * @return the colour tables the face holds
+     **/
+    ColourTables colour() const;
+
+    /**
+     * @return whether a glyph is drawn in colour, from any of the face's colour tables
+     **/
+    bool coloured(unsigned int index) const;
 
     /**
      * @return the library the face was opened through

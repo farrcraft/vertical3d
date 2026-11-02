@@ -1,6 +1,7 @@
 v3d_add_test(font
 	"TestMain.cxx"
 	"BidiTest.cxx"
+	"ColourTest.cxx"
 	"CurvesTest.cxx"
 	"CurveStoreTest.cxx"
 	"FallbackChainTest.cxx"
@@ -18,3 +19,11 @@ target_link_libraries(v3dtest_font PRIVATE v3dlib_font v3dlib_image v3dlib_log $
 
 # Every case builds a real face, so the shared font has to sit beside the executable.
 v3d_add_shared_data(v3dtest_font)
+
+# The faces in fonts/ are fixtures: one for each colour table, written by colourfonts.ts there.
+add_custom_command(TARGET v3dtest_font POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+		"$<TARGET_FILE_DIR:v3dtest_font>/fonts"
+	COMMENT "Copying font test fonts"
+	VERBATIM)

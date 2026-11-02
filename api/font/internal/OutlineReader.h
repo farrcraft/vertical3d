@@ -6,6 +6,7 @@
 #pragma once
 
 #include <api/font/Curves.h>
+#include <api/font/internal/CurveBuilder.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -33,40 +34,17 @@ class OutlineReader final {
     std::vector<QuadraticCurve> read(FT_Outline* outline);
 
  private:
-    /**
-     * How many quadratics a cubic is split into.
-     **/
-    static constexpr int CUBIC_PIECES = 4;
-
-    /**
-     * How far past a cubic's control a quadratic's reaches from the same end, as a share of the
-     * way from the end to the control.
-     **/
-    static constexpr float EXTENDED = 1.5F;
-
-    /**
-     * Halfway between two points.
-     **/
-    static constexpr float HALFWAY = 0.5F;
-
     static int moveTo(const FT_Vector* to, void* user);
     static int lineTo(const FT_Vector* to, void* user);
     static int conicTo(const FT_Vector* control, const FT_Vector* to, void* user);
     static int cubicTo(const FT_Vector* first, const FT_Vector* second, const FT_Vector* to, void* user);
 
     /**
-     * @return a point in em units
+     * @return a point in design units
      **/
-    glm::vec2 at(const FT_Vector* point) const;
+    static glm::vec2 at(const FT_Vector* point);
 
-    /**
-     * Add a curve from the pen, and move the pen to its end. A curve that goes nowhere is left out.
-     **/
-    void add(const glm::vec2& control, const glm::vec2& to);
-
-    float scale_;
-    glm::vec2 pen_{ 0.0F };
-    std::vector<QuadraticCurve> curves_;
+    CurveBuilder builder_;
 };
 
 };  // namespace v3d::font::internal

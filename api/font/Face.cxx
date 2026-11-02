@@ -11,6 +11,7 @@
 #include <hb-ot.h>
 #include <hb.h>
 
+#include "ColourGlyph.h"
 #include "FaceMetrics.h"
 #include "FaceStyle.h"
 #include "Library.h"
@@ -109,6 +110,44 @@ FaceMetrics Face::metrics(float size) const {
         .underlineThickness = measure(HB_OT_METRICS_TAG_UNDERLINE_SIZE),
         .strikeoutPosition = measure(HB_OT_METRICS_TAG_STRIKEOUT_OFFSET),
         .strikeoutThickness = measure(HB_OT_METRICS_TAG_STRIKEOUT_SIZE) };
+}
+
+ColourTables Face::colour() const {
+    hb_face_t* face = handle_->shaping;
+    const auto holds = [face](hb_tag_t tag) {
+        hb_blob_t* table = hb_face_reference_table(face, tag);
+        const bool held = hb_blob_get_length(table) > 0;
+        hb_blob_destroy(table);
+        return held;
+    };
+    return ColourTables{ .layers = hb_ot_color_has_layers(face) != 0,
+        .paint = hb_ot_color_has_paint(face) != 0,
+        .svg = hb_ot_color_has_svg(face) != 0,
+        .cbdt = holds(HB_TAG('C', 'B', 'D', 'T')),
+        .sbix = holds(HB_TAG('s', 'b', 'i', 'x')) };
+}
+
+bool Face::coloured(unsigned int index) const {
+    hb_face_t* face = handle_->shaping;
+    if (face == nullptr) {
+        return false;
+    }
+    if (hb_ot_color_glyph_has_paint(face, index) != 0 || hb_ot_color_glyph_get_layers(face, index, 0, nullptr, nullptr) > 0) {
+        return true;
+    }
+    const auto holds = [](hb_blob_t* blob) {
+        const bool held = hb_blob_get_length(blob) > 0;
+        hb_blob_destroy(blob);
+        return held;
+    };
+    if (holds(hb_ot_color_glyph_reference_svg(face, index))) {
+        return true;
+    }
+    if (hb_ot_color_has_png(face) == 0) {
+        return false;
+    }
+    const std::unique_ptr<hb_font_t, decltype(&hb_font_destroy)> font(hb_font_create(face), &hb_font_destroy);
+    return holds(hb_ot_color_glyph_reference_png(font.get(), index));
 }
 
 const boost::shared_ptr<Library>& Face::library() const noexcept {

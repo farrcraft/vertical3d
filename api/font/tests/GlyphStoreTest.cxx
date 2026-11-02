@@ -147,6 +147,33 @@ BOOST_AUTO_TEST_CASE(a_glyph_that_cannot_fit_is_not_stored) {
     BOOST_CHECK(space.value_or(v3d::font::StoredGlyph{ .size = glm::uvec2(1) }).size == glm::uvec2(0));
 }
 
+/**
+ * A store of colour pages keeps four bytes a pixel, each glyph's rows where its pixels went, and
+ * takes no glyph of one byte a pixel.
+ **/
+BOOST_AUTO_TEST_CASE(a_colour_store_keeps_four_bytes_a_pixel) {
+    v3d::font::GlyphStore::Spec spec = kSmall;
+    spec.channels = 4;
+    v3d::font::GlyphStore store(spec);
+    BOOST_CHECK(!store.glyph(keyOf(1), large));
+    const std::optional<v3d::font::StoredGlyph> stored = store.glyph(keyOf(2), [](const v3d::font::GlyphKey&) {
+        std::vector<unsigned char> pixels;
+        for (int pixel = 0; pixel < 4; pixel++) {
+            pixels.insert(pixels.end(), { 10, 20, 30, static_cast<unsigned char>(40 + pixel) });
+        }
+        return v3d::font::GlyphBitmap{ .size = glm::uvec2(2), .pixels = pixels, .channels = 4 };
+    });
+    BOOST_REQUIRE(stored.has_value());
+    const v3d::font::StoredGlyph at = stored.value_or(v3d::font::StoredGlyph());
+    const std::vector<unsigned char>& page = store.pixels(at.page);
+    BOOST_REQUIRE_EQUAL(page.size(), static_cast<std::size_t>(64) * 64 * 4);
+    // the second row's first pixel, the glyph's third
+    const std::size_t second = ((static_cast<std::size_t>(at.position.y + 1) * 64) + at.position.x) * 4;
+    BOOST_CHECK_EQUAL(page[second], 10);
+    BOOST_CHECK_EQUAL(page[second + 2], 30);
+    BOOST_CHECK_EQUAL(page[second + 3], 42);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

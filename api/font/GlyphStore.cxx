@@ -24,6 +24,7 @@ GlyphStore::GlyphStore(const Spec& spec) :
     spec_(spec) {
     spec_.plotSize = std::clamp(spec_.plotSize, std::uint32_t{1}, std::max(spec_.pageSize, std::uint32_t{1}));
     spec_.pageSize = std::max(spec_.pageSize - (spec_.pageSize % spec_.plotSize), spec_.plotSize);
+    spec_.channels = spec_.channels == 4 ? 4 : 1;
 }
 
 void GlyphStore::beginFrame() {
@@ -53,7 +54,7 @@ std::optional<StoredGlyph> GlyphStore::glyph(const GlyphKey& key, const Rasteriz
     }
     const GlyphBitmap bitmap = rasterize(key);
     made_++;
-    if (bitmap.pixels.size() != static_cast<std::size_t>(bitmap.size.x) * bitmap.size.y) {
+    if (bitmap.channels != spec_.channels || bitmap.pixels.size() != static_cast<std::size_t>(bitmap.size.x) * bitmap.size.y * bitmap.channels) {
         return std::nullopt;
     }
     const std::optional<std::pair<std::size_t, glm::uvec2>> spot = room(bitmap.size);
@@ -155,7 +156,7 @@ std::optional<std::pair<std::size_t, glm::uvec2>> GlyphStore::room(const glm::uv
 
 void GlyphStore::addPage() {
     const std::size_t page = pages_.size();
-    pages_.emplace_back(static_cast<std::size_t>(spec_.pageSize) * spec_.pageSize, 0);
+    pages_.emplace_back(static_cast<std::size_t>(spec_.pageSize) * spec_.pageSize * spec_.channels, 0);
     const std::uint32_t across = spec_.pageSize / spec_.plotSize;
     for (std::uint32_t y = 0; y < across; y++) {
         for (std::uint32_t x = 0; x < across; x++) {
@@ -173,8 +174,8 @@ void GlyphStore::empty(std::size_t plot) {
     emptied.shelves.clear();
     std::vector<unsigned char>& pixels = pages_[emptied.page];
     for (std::uint32_t row = 0; row < spec_.plotSize; row++) {
-        const std::size_t start = (static_cast<std::size_t>(emptied.origin.y + row) * spec_.pageSize) + emptied.origin.x;
-        std::fill_n(pixels.begin() + static_cast<std::ptrdiff_t>(start), spec_.plotSize, 0);
+        const std::size_t start = ((static_cast<std::size_t>(emptied.origin.y + row) * spec_.pageSize) + emptied.origin.x) * spec_.channels;
+        std::fill_n(pixels.begin() + static_cast<std::ptrdiff_t>(start), static_cast<std::size_t>(spec_.plotSize) * spec_.channels, 0);
     }
     emptied.dirty = true;
 }
@@ -182,9 +183,10 @@ void GlyphStore::empty(std::size_t plot) {
 void GlyphStore::blit(const GlyphBitmap& bitmap, std::size_t page, const glm::uvec2& position) {
     std::vector<unsigned char>& pixels = pages_[page];
     for (std::uint32_t row = 0; row < bitmap.size.y; row++) {
-        const auto from = bitmap.pixels.begin() + static_cast<std::ptrdiff_t>(static_cast<std::size_t>(row) * bitmap.size.x);
-        const std::size_t to = (static_cast<std::size_t>(position.y + row) * spec_.pageSize) + position.x;
-        std::copy_n(from, bitmap.size.x, pixels.begin() + static_cast<std::ptrdiff_t>(to));
+        const std::size_t width = static_cast<std::size_t>(bitmap.size.x) * spec_.channels;
+        const auto from = bitmap.pixels.begin() + static_cast<std::ptrdiff_t>(row * width);
+        const std::size_t to = ((static_cast<std::size_t>(position.y + row) * spec_.pageSize) + position.x) * spec_.channels;
+        std::copy_n(from, width, pixels.begin() + static_cast<std::ptrdiff_t>(to));
     }
 }
 

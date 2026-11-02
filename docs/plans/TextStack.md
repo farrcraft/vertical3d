@@ -113,7 +113,8 @@ features, the variable font axes, the decorations, and the effects.
 | Text: the bidi and segmentation libraries. Decided by ADR-0142: ICU, with its data filtered. | 4, 5 |
 | Text: the text object the ui and the games hold, and how it is cached. Decided by ADR-0143: a paragraph with style ranges over a shared shaping cache. | 6 |
 | Text: how coverage is blended. Decided by ADR-0147: corrected to blend as in display space, with a contrast curve. | 12 |
-| Text: which colour glyph formats are read. Open: COLR v0 and v1, CBDT, sbix and SVG. | 14 |
+| Text: which colour glyph formats are read. Decided by ADR-0149, amending ADR-0145: all five, COLR and SVG drawn both ways. | 14 |
+| Text: how SVG glyphs are read. Decided by ADR-0150: ThorVG. | 14 |
 
 Each decision is researched against how established tools answer it before it is drafted as an
 ADR.
@@ -400,11 +401,29 @@ and callbacks that return paragraphs.
 
 ### Step 14 — Colour glyphs
 
-**Open.** Decide the colour glyph formats.
+**Open.** ADR-0149 decided the formats and ADR-0150 the SVG reader, after weighing COLR alone,
+COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
 
-- A colour glyph is stored in an RGBA page and drawn in its own colours, with the text's alpha.
-- An emoji font is in the fallback chain.
-- The colour suite covers a COLR glyph and an emoji sequence shaped to one glyph.
+Landed: a face reports its colour tables, and COLR, CBDT and sbix glyphs are read into the
+layered form and painted at a size, in a palette and the text's colour, for a glyph store of
+four channel pages. The colour suite covers each of those formats over fixtures written by
+`api/font/tests/fonts/colourfonts.ts`. SVG, the ui, the curves and the emoji font remain.
+
+- A face reports which colour tables it has. A COLR glyph is walked through HarfBuzz's paint
+  interface, and an SVG glyph through FreeType's SVG hooks into a ThorVG scene. Both give one
+  form: layers of filled paths, each with its clips, in a solid colour, the text's colour, or a
+  linear, radial or sweep gradient.
+- On the pixel grid, that form is painted at the glyph's device size into an RGBA page of the
+  glyph store, and drawn in its own colours with the text's alpha.
+- When scaled or in the world, the layers are drawn from their curves. The curve shader grows
+  clips and gradients.
+- A CBDT or sbix glyph is the PNG of its nearest strike, decoded by FreeType, stored in an RGBA
+  page and scaled in both modes.
+- Noto Color Emoji, in its COLR v1 build, is in the fallback chain.
+- ThorVG joins both manifests.
+- The colour suite covers a glyph from each table, a palette, the text's colour as the
+  foreground, a gradient, and an emoji sequence shaped to one glyph. The device suite checks
+  chosen pixels of a layered glyph painted and drawn from curves.
 
 ### Step 15 — Variable fonts
 

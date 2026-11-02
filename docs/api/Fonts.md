@@ -226,22 +226,24 @@ Background: [ADR-0143](../adr/0143-text-styled-paragraphs-over-a-shared-shaping-
 ## The glyph store
 
 A `GlyphStore` holds the glyphs text is drawn from. A glyph is made the first time it is drawn
-and packed into pages of one byte pixels, which a renderer copies to the device. It needs no GPU.
+and packed into pages, which a renderer copies to the device. It needs no GPU.
 
 - **`GlyphKey`** tells one glyph from another: its `face`, its `index` there, its `size` in
-  pixels, the `subpixel` step its pen was at, and its `mode` (`Coverage` or `Distance`). It also
-  holds a distance field's `spread` in pixels, and a variable font's normalized `coordinates`. A
-  key names its face by address, so a face the store holds glyphs from stays open while the
-  store is used.
+  pixels, the `subpixel` step its pen was at, and its `mode` (`Coverage`, `Distance` or
+  `Colour`). It also holds a distance field's `spread` in pixels, a colour glyph's `palette` and
+  `foreground`, and a variable font's normalized `coordinates`. A key names its face by address,
+  so a face the store holds glyphs from stays open while the store is used.
 - **`glyph(key, rasterize)`** gives the `StoredGlyph`: its `page`, the `position` of its top
   left texel there, its `size`, and its `bearing`, the top left pixel from the pen with y
   downwards. The first time a key is asked for, `rasterize` makes its `GlyphBitmap` and the
   store packs it. A glyph with no pixels, such as a space, is stored with no size. A glyph wider
   or taller than a plot with its padding is not stored, nor is a bitmap whose pixels do not match
-  its size. `made()` counts the glyphs made rather than found.
+  its size, nor one whose `channels` are not the pages'. `made()` counts the glyphs made rather
+  than found.
 - **Pages and plots.** `Spec` gives each page's `pageSize` (1024 unless given), each plot's
-  `plotSize` (256), the `pages` kept (4), and the `padding` around each glyph (1). A page is
-  cut into square plots, and a plot holds glyphs on shelves, each as tall as its first glyph.
+  `plotSize` (256), the `pages` kept (4), and the `padding` around each glyph (1). Its
+  `channels` are the bytes in a pixel: 1, or 4 for a store of colour glyphs. A page is cut into
+  square plots, and a plot holds glyphs on shelves, each as tall as its first glyph.
 - **When it fills.** A glyph goes into a plot with room, then an empty plot, then a new page up
   to the limit. With none of those, the plot used longest ago is emptied and used again, and
   every glyph in it is made again the next time it is drawn.
@@ -315,6 +317,62 @@ index, and kept as long as the store is.
 - A float holds an index exactly up to 2 to the 24th, so the store holds that many curves and
   values. A key names its face by address, so a face the store holds glyphs from stays open.
   `read()` counts the glyphs read rather than found.
+
+## Colour glyphs
+
+Emoji and other colour glyphs come from a face's colour tables. A face may hold several, and a
+glyph is drawn from the first of COLR version 1, COLR version 0, SVG, then CBDT or sbix that has
+it.
+
+- **`Face::colour()`** gives the `ColourTables` a face holds: `layers` (COLR version 0), `paint`
+  (COLR version 1), `svg`, `cbdt` and `sbix`. **`Face::coloured(index)`** says whether any of
+  them draws a glyph.
+- **`colour(face, index, palette, size)`** reads a `ColourGlyph` through HarfBuzz's paint
+  interface, in a palette. A palette the face does not have is its first. A bitmap is taken
+  from the strike nearest the size in pixels to the em. A glyph no colour table draws reads as
+  empty. SVG glyphs are not read yet, and read as empty.
+
+**The form.** A `ColourGlyph` is every format in one shape: a list of `ColourLayer`s, in em
+units with y upwards, and the `min` and `max` of what it draws.
+
+- A **`Fill`** layer is drawn inside every one of its `clips`, each a closed outline of
+  `QuadraticCurve`s filled by the nonzero rule. Its `ColourFill` is one colour or a gradient:
+  linear, from one point to another; radial, from one circle to another; or a sweep, around a
+  centre counter-clockwise from one angle to another. A gradient's points are in its own space,
+  which its `transform` maps into em units, and its `ColourExtend` pads, repeats or reflects past
+  its first and last stops.
+- A **`ColourStop`** holds its offset and its colour, unpremultiplied, as the font gives it. A
+  stop in the text's colour is `foreground`: it takes the text's red, green and blue, and its
+  alpha times the text's. `foreground()` says whether any layer has one.
+- An **`Image`** layer places one of the glyph's `ColourImage`s, a picture from a bitmap table,
+  inside its clips. The picture fills a box in its own space, which its `transform` maps into
+  em units. The box is on the strike's own pixels.
+- **`BeginGroup`** and **`EndGroup`** gather the layers between them apart. The group is then
+  put on what is beneath it by the end's `ColourComposite`: one of Porter and Duff's modes, or a
+  blend mode as CSS defines it. Layers outside a group, and within one, are drawn over each
+  other in order.
+
+**Painting.** **`paint(key)`** makes a colour glyph's pixels for the glyph store, as a
+`GlyphStore::Rasterizer`, from the key's face, index, palette and size.
+
+- It paints at the key's size, its pen moved right by the key's `subpixel` step, as a
+  coverage glyph is.
+- FreeType rasterizes each clip, antialiased. A fill's colours are found at each pixel's
+  centre, and an image is sampled from its four nearest texels, or averaged over the pixel where
+  it is shrunk.
+- Layers are put down in the colours the font gives, blended as they are encoded, as browsers
+  blend them. A gradient mixes its stops premultiplied, as COLR asks.
+- A layer in the text's colour takes the key's `foreground`, packed by `packColour()`.
+- It gives four bytes a pixel, red, green and blue unpremultiplied then alpha, with the
+  `bearing` of its top left pixel from the pen. A glyph's edge within a 256th of a pixel of a
+  whole pixel is taken to be on it.
+- A key of another mode, a glyph with no colour, or a face with no library gives an empty
+  bitmap of four channels.
+
+`paint(glyph, library, size, subpixel, foreground)` paints a `ColourGlyph` already read.
+
+Background: [ADR-0149](../adr/0149-text-colour-glyphs-from-every-opentype-colour-table.md),
+[ADR-0150](../adr/0150-text-svg-glyphs-read-through-thorvg.md)
 
 ## Effect fields
 

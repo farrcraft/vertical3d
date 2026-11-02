@@ -13,81 +13,60 @@
 
 #include <vector>
 
-#include <glm/common.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::font::internal {
 
+namespace {
+
+/**
+ * @return the transform that divides a point in design units by the units to the em
+ **/
+glm::mat3 toEm(float unitsPerEm) {
+    const float scale = unitsPerEm > 0.0F ? 1.0F / unitsPerEm : 0.0F;
+    glm::mat3 scaling(scale);
+    scaling[2][2] = 1.0F;
+    return scaling;
+}
+
+};  // namespace
+
 OutlineReader::OutlineReader(float unitsPerEm) :
-    scale_(unitsPerEm > 0.0F ? 1.0F / unitsPerEm : 0.0F) {
+    builder_(toEm(unitsPerEm)) {
 }
 
 std::vector<QuadraticCurve> OutlineReader::read(FT_Outline* outline) {
-    curves_.clear();
     const FT_Outline_Funcs funcs{ .move_to = moveTo, .line_to = lineTo, .conic_to = conicTo, .cubic_to = cubicTo, .shift = 0, .delta = 0 };
     if (FT_Outline_Decompose(outline, &funcs, this) != 0) {
-        curves_.clear();
+        builder_.take();
+        return std::vector<QuadraticCurve>();
     }
-    return curves_;
+    return builder_.take();
 }
 
 int OutlineReader::moveTo(const FT_Vector* to, void* user) {
-    OutlineReader* reader = static_cast<OutlineReader*>(user);
-    reader->pen_ = reader->at(to);
+    static_cast<OutlineReader*>(user)->builder_.moveTo(at(to));
     return 0;
 }
 
 int OutlineReader::lineTo(const FT_Vector* to, void* user) {
-    OutlineReader* reader = static_cast<OutlineReader*>(user);
-    const glm::vec2 end = reader->at(to);
-    reader->add(end, end);
+    static_cast<OutlineReader*>(user)->builder_.lineTo(at(to));
     return 0;
 }
 
 int OutlineReader::conicTo(const FT_Vector* control, const FT_Vector* to, void* user) {
-    OutlineReader* reader = static_cast<OutlineReader*>(user);
-    reader->add(reader->at(control), reader->at(to));
+    static_cast<OutlineReader*>(user)->builder_.quadraticTo(at(control), at(to));
     return 0;
 }
 
 int OutlineReader::cubicTo(const FT_Vector* first, const FT_Vector* second, const FT_Vector* to, void* user) {
-    OutlineReader* reader = static_cast<OutlineReader*>(user);
-    glm::vec2 start = reader->pen_;
-    glm::vec2 near = reader->at(first);
-    glm::vec2 far = reader->at(second);
-    const glm::vec2 end = reader->at(to);
-    for (int left = CUBIC_PIECES; left > 0; left--) {
-        // split off the next piece where it ends, so each piece is the cubic itself over its
-        // stretch, and the rest carries on from there
-        const float at = 1.0F / static_cast<float>(left);
-        const glm::vec2 firstLeg = glm::mix(start, near, at);
-        const glm::vec2 middleLeg = glm::mix(near, far, at);
-        const glm::vec2 lastLeg = glm::mix(far, end, at);
-        const glm::vec2 pieceFar = glm::mix(firstLeg, middleLeg, at);
-        const glm::vec2 restNear = glm::mix(middleLeg, lastLeg, at);
-        const glm::vec2 split = glm::mix(pieceFar, restNear, at);
-        // the piece runs from start through firstLeg and pieceFar to split. A quadratic's control
-        // is where each of those two controls would put it, extended from its end by half again,
-        // and is taken halfway between the two
-        const glm::vec2 fromStart = glm::mix(start, firstLeg, EXTENDED);
-        const glm::vec2 fromEnd = glm::mix(split, pieceFar, EXTENDED);
-        reader->add(glm::mix(fromStart, fromEnd, HALFWAY), split);
-        start = split;
-        near = restNear;
-        far = lastLeg;
-    }
+    static_cast<OutlineReader*>(user)->builder_.cubicTo(at(first), at(second), at(to));
     return 0;
 }
 
-glm::vec2 OutlineReader::at(const FT_Vector* point) const {
-    return glm::vec2(static_cast<float>(point->x), static_cast<float>(point->y)) * scale_;
-}
-
-void OutlineReader::add(const glm::vec2& control, const glm::vec2& to) {
-    if (to != pen_ || control != pen_) {
-        curves_.push_back(QuadraticCurve{ .p1 = pen_, .p2 = control, .p3 = to });
-    }
-    pen_ = to;
+glm::vec2 OutlineReader::at(const FT_Vector* point) {
+    return glm::vec2(static_cast<float>(point->x), static_cast<float>(point->y));
 }
 
 };  // namespace v3d::font::internal

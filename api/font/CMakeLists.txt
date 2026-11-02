@@ -4,11 +4,13 @@ v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "Textur
 	"Library.h" "Library.cxx" "Face.h" "Face.cxx" "FaceGlyph.h" "FaceMetrics.h" "FaceStyle.h" "Family.h" "Family.cxx" "FallbackChain.h" "FallbackChain.cxx"
 	"Feature.h" "ShapedGlyph.h" "ShapedRun.h" "Shaper.h" "Shaper.cxx"
 	"Segmenter.h" "Segmenter.cxx" "Bidi.h" "Bidi.cxx"
-	"Curves.h" "Curves.cxx" "CurveStore.h" "CurveStore.cxx" "GlyphStore.h" "GlyphStore.cxx" "Rasterize.h" "Rasterize.cxx" "Field.h" "Field.cxx" "TextStyle.h" "TextStyle.cxx" "ShapingCache.h" "ShapingCache.cxx" "Paragraph.h" "Paragraph.cxx"
+	"Curves.h" "Curves.cxx" "CurveStore.h" "CurveStore.cxx" "GlyphStore.h" "GlyphStore.cxx" "Rasterize.h" "Rasterize.cxx" "Field.h" "Field.cxx"
+	"ColourGlyph.h" "ColourGlyph.cxx" "Paint.h" "Paint.cxx" "TextStyle.h" "TextStyle.cxx" "ShapingCache.h" "ShapingCache.cxx" "Paragraph.h" "Paragraph.cxx"
 	"internal/LibraryHandle.h" "internal/LibraryHandle.cxx" "internal/FaceHandle.h" "internal/FaceHandle.cxx"
 	"internal/BreakHandle.h" "internal/BreakHandle.cxx" "internal/BidiHandle.h" "internal/BidiHandle.cxx" "internal/Icu.h"
 	"internal/Measure.h" "internal/Measure.cxx" "internal/MetricsCache.h" "internal/MetricsCache.cxx" "internal/Span.h"
-	"internal/OutlineReader.h" "internal/OutlineReader.cxx" "internal/SlotBitmap.h" "internal/SlotBitmap.cxx"
+	"internal/OutlineReader.h" "internal/OutlineReader.cxx" "internal/CurveBuilder.h" "internal/CurveBuilder.cxx"
+	"internal/Composite.h" "internal/Composite.cxx" "internal/SlotBitmap.h" "internal/SlotBitmap.cxx"
 	"internal/GlyphBitmap.h" "internal/GlyphHandle.h" "internal/StrokerHandle.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.

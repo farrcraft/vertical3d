@@ -23,7 +23,8 @@ class Face;
  **/
 enum class GlyphMode : std::uint8_t {
     Coverage,  /**< how much of each pixel the glyph covers **/
-    Distance   /**< each pixel's distance from the glyph's edge **/
+    Distance,  /**< each pixel's distance from the glyph's edge **/
+    Colour     /**< each pixel's colour, from the face's colour tables **/
 };
 
 /**
@@ -36,18 +37,22 @@ struct GlyphKey final {
     std::uint8_t subpixel = 0;             /**< the step of a pixel its pen was at, horizontally **/
     GlyphMode mode = GlyphMode::Coverage;
     std::uint8_t spread = 0;               /**< how far a distance field reaches from the edge, in pixels. Coverage leaves it 0 **/
+    std::uint16_t palette = 0;             /**< a colour glyph's palette. Other modes leave it 0 **/
+    std::uint32_t foreground = 0;          /**< the text's colour, which a colour glyph's layers may take, packed by packColour(). Other modes leave it 0 **/
     std::vector<std::int32_t> coordinates; /**< a variable font's axes, normalized, or none **/
 
     auto operator<=>(const GlyphKey& other) const = default;
 };
 
 /**
- * A glyph's pixels, one byte each, in rows, before it is stored.
+ * A glyph's pixels, in rows, before it is stored. A pixel is one byte, or for a colour glyph
+ * four: red, green and blue, unpremultiplied, then alpha.
  **/
 struct GlyphBitmap final {
     glm::uvec2 size{ 0 };
     glm::ivec2 bearing{ 0 };            /**< the top left pixel from the pen, y downwards **/
-    std::vector<unsigned char> pixels;  /**< size.x * size.y of them **/
+    std::vector<unsigned char> pixels;  /**< size.x * size.y * channels of them **/
+    std::uint8_t channels = 1;
 };
 
 /**
@@ -72,10 +77,10 @@ struct GlyphRegion final {
 /**
  * The glyphs text is drawn from, made the first time each is drawn and packed into pages.
  *
- * Each page is a square of one byte pixels, cut into square plots, and each plot holds glyphs
- * on shelves. A glyph goes into a plot with room, then an empty plot, then a new page up to the
- * page limit. With none of those, the plot used longest ago is emptied and used again: every
- * glyph in it is forgotten, and made again the next time it is drawn.
+ * Each page is a square of pixels of one byte or four, cut into square plots, and each plot
+ * holds glyphs on shelves. A glyph goes into a plot with room, then an empty plot, then a new
+ * page up to the page limit. With none of those, the plot used longest ago is emptied and used
+ * again: every glyph in it is forgotten, and made again the next time it is drawn.
  *
  * A plot holding a glyph used in the current frame is never emptied, because the frame being
  * built draws from it. When every plot is in that use, a page is added past the limit. A page
@@ -96,6 +101,7 @@ class GlyphStore final {
         std::uint32_t plotSize = 256;    /**< each plot's, which divides the page's **/
         std::size_t pages = 4;           /**< the pages kept when no frame needs more **/
         std::uint32_t padding = 1;       /**< the empty pixels around each glyph **/
+        std::uint8_t channels = 1;       /**< the bytes in a pixel: 1, or 4 for colour. A bitmap of another count is not stored **/
     };
 
     /**
@@ -118,8 +124,9 @@ class GlyphStore final {
     /**
      * @return where a glyph is stored, made and packed the first time it is asked for, and
      *         marked as used in the current frame. A glyph with no pixels is stored with no
-     *         size. A glyph wider or taller than a plot with its padding, or a bitmap whose
-     *         pixels do not match its size, is not stored
+     *         size. A glyph wider or taller than a plot with its padding, a bitmap whose
+     *         pixels do not match its size, or one with other channels than the pages, is not
+     *         stored
      **/
     std::optional<StoredGlyph> glyph(const GlyphKey& key, const Rasterizer& rasterize);
 
@@ -129,7 +136,7 @@ class GlyphStore final {
     std::size_t pages() const noexcept;
 
     /**
-     * @return a page's pixels, in rows of the page's size
+     * @return a page's pixels, in rows of the page's size, each pixel its channels
      **/
     const std::vector<unsigned char>& pixels(std::size_t page) const;
 
