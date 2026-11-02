@@ -27,7 +27,9 @@ Each polled SDL event is offered to three places, in this order:
    This runs whatever `onEvent()` returned.
 
 On a resize the engine updates the window's size and publishes
-`event::kind::WindowResize`. On a focus change it publishes `event::kind::WindowFocus`. A key
+`event::kind::WindowResize`, whose `window()` is the id of the window that changed. An app with
+windows of its own added acts only on its own window's resizes, and an added window's close
+arrives as `event::kind::WindowClose`, as [Window.md](Window.md#who-makes-it) describes. On a focus change it publishes `event::kind::WindowFocus`. A key
 released while the window is unfocused never arrives, so an app that tracks held keys itself
 should drop them when focus is lost. When the monitor's scale changes, or the window moves to a
 monitor with another, it publishes `event::kind::DisplayScale` with `Window::displayScale()`,
@@ -65,6 +67,9 @@ this for mouse motion and resize.
   platform counts them: 1 for a single click, and 2 for the second press of a double click.
 - `MouseMotion::modifiers()` is the Ctrl, Shift and Alt held as the cursor moved, so a drag can
   change while one is held.
+- `MouseButton`, `MouseMotion` and `MouseWheel` each have a `window()`: the id of the window the
+  cursor was in, whose coordinates the position is in. `MouseState::window()` is the window of
+  the last mouse event.
 
 `event::publish()` sends a source event in two stages:
 

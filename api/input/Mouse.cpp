@@ -71,17 +71,20 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         }
         const glm::vec2 position(event.button.x, event.button.y);
         state_(position);
+        state_.window(event.button.windowID);
         dispatcher()->trigger<v3d::event::kind::MouseButton>(
-            v3d::event::kind::MouseButton(buttonName, position, context(), pressed, event.button.clicks));
+            v3d::event::kind::MouseButton(buttonName, {.position = position, .pressed = pressed, .clicks = event.button.clicks,
+                .window = event.button.windowID}, context()));
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         const glm::vec2 position(event.motion.x, event.motion.y);
         state_(position);
+        state_.window(event.motion.windowID);
         // a motion event carries no modifiers of its own, so they are read as they stand now
         dispatcher()->trigger<v3d::event::kind::MouseMotion>(
             v3d::event::kind::MouseMotion({.position = position, .motion = glm::vec2(event.motion.xrel, event.motion.yrel),
-                .modifiers = modifiers(SDL_GetModState())}, context()));
+                .modifiers = modifiers(SDL_GetModState()), .window = event.motion.windowID}, context()));
         return true;  // motion has no discrete name, so it is not a bindable source event
     }
     case SDL_EVENT_MOUSE_WHEEL: {
@@ -89,8 +92,10 @@ bool Mouse::handleEvent(const SDL_Event& event) {
         // the total for the whole flick
         const glm::vec2 notches(event.wheel.x, event.wheel.y);
         state_.wheel(notches.y);
+        state_.window(event.wheel.windowID);
         dispatcher()->trigger<v3d::event::kind::MouseWheel>(
-            v3d::event::kind::MouseWheel({.notches = notches, .position = glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y)}, context()));
+            v3d::event::kind::MouseWheel({.notches = notches, .position = glm::vec2(event.wheel.mouse_x, event.wheel.mouse_y),
+                .window = event.wheel.windowID}, context()));
         return true;  // a turn has no discrete name either, so nothing binds to one
     }
     default:

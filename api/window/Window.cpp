@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -67,6 +68,12 @@ void Window::destroy() {
  **/
 SDL_Window* Window::sdl() noexcept {
     return window_;
+}
+
+/**
+ **/
+std::uint32_t Window::id() const noexcept {
+    return window_ != nullptr ? SDL_GetWindowID(window_) : 0;
 }
 
 /**

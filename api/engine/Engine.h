@@ -164,6 +164,25 @@ class Engine {
     boost::shared_ptr<v3d::window::Window> window() const;
 
     /**
+     * Open another window beside the app's own, for an app that draws to more than one.
+     *
+     * The engine keeps its size as it is resized, and reports the resize as a WindowResize
+     * carrying its id. Closing it is reported as a WindowClose, and quits nothing. Its focus, its
+     * scale and its being minimised are not reported. The app removes it with removeWindow(),
+     * after releasing whatever presents to it. Any still open are destroyed with the engine's
+     * own window.
+     *
+     * @return the window, or null before the engine's own window is open and when it cannot be
+     *         created
+     **/
+    boost::shared_ptr<v3d::window::Window> addWindow(const glm::ivec2& size);
+
+    /**
+     * Destroy a window addWindow() opened. Anything presenting to it has to be released first.
+     **/
+    void removeWindow(const boost::shared_ptr<v3d::window::Window>& window);
+
+    /**
      * What the engine built, for an app to build on. Each is null until initialize() runs.
      * manifest() stays null unless the app asks for Feature::Config.
      **/
@@ -380,6 +399,11 @@ class Engine {
      void handleEvent(const SDL_Event& event);
 
      /**
+      * Handle a window event for a window addWindow() opened: a close request or a resize.
+      **/
+     void handleAdded(v3d::window::Window& window, const SDL_Event& event);
+
+     /**
       * Quit, if the app does not hold the quit. Every request from the user comes here.
       **/
      void requestQuit();
@@ -425,6 +449,8 @@ class Engine {
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::asset::Manifest> manifest_;
      boost::shared_ptr<v3d::window::Window> window_;
+     // the windows addWindow() opened, destroyed before the engine's own
+     std::vector<boost::shared_ptr<v3d::window::Window>> windows_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
      boost::shared_ptr<v3d::event::Router> router_;

@@ -216,6 +216,41 @@ BOOST_AUTO_TEST_CASE(a_motion_carries_the_modifiers_held) {
 }
 
 /**
+ * Each mouse event names the window the cursor was in, and the state keeps the last one, so an
+ * app with two windows can tell whose coordinates a position is in.
+ **/
+BOOST_AUTO_TEST_CASE(each_mouse_event_names_its_window) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::input::Mouse mouse(boost::make_shared<v3d::event::Context>("mouse"), dispatcher);
+    Recorder recorder;
+    dispatcher->sink<v3d::event::kind::MouseMotion>().connect<&Recorder::motion>(recorder);
+    dispatcher->sink<v3d::event::kind::MouseButton>().connect<&Recorder::button>(recorder);
+    dispatcher->sink<v3d::event::kind::MouseWheel>().connect<&Recorder::wheel>(recorder);
+    BOOST_CHECK_EQUAL(mouse.state().window(), 0U);
+
+    SDL_Event moved = motionEvent({.x = 3.0F});
+    moved.motion.windowID = 7;
+    mouse.handleEvent(moved);
+    BOOST_REQUIRE_EQUAL(recorder.motion_.size(), 1U);
+    BOOST_CHECK_EQUAL(recorder.motion_[0].window(), 7U);
+    BOOST_CHECK_EQUAL(mouse.state().window(), 7U);
+
+    SDL_Event pressed = buttonEvent({.type = SDL_EVENT_MOUSE_BUTTON_DOWN, .button = SDL_BUTTON_LEFT});
+    pressed.button.windowID = 9;
+    mouse.handleEvent(pressed);
+    BOOST_REQUIRE_EQUAL(recorder.buttons_.size(), 1U);
+    BOOST_CHECK_EQUAL(recorder.buttons_[0].window(), 9U);
+    BOOST_CHECK_EQUAL(mouse.state().window(), 9U);
+
+    SDL_Event turned = wheelEvent({.notches = 1.0F});
+    turned.wheel.windowID = 7;
+    mouse.handleEvent(turned);
+    BOOST_REQUIRE_EQUAL(recorder.wheel_.size(), 1U);
+    BOOST_CHECK_EQUAL(recorder.wheel_[0].window(), 7U);
+    BOOST_CHECK_EQUAL(mouse.state().window(), 7U);
+}
+
+/**
  * A click and its release inside one frame are both edges of one button, and a flush ends
  * the frame without releasing what is still down or moving the cursor.
  **/

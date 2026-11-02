@@ -7,6 +7,8 @@
 
 #include <api/event/Event.h>
 
+#include <cstdint>
+
 #include <glm/glm.hpp>
 
 namespace v3d::event::kind {
@@ -23,10 +25,14 @@ namespace v3d::event::kind {
  **/
 class MouseWheel final : public Event {
  public:
-    /** How far the wheel turned on each axis, and where the cursor was. **/
+    /**
+     * How far the wheel turned on each axis, where the cursor was, and the id of the window it
+     * was in, as Window::id() gives it.
+     **/
     struct Turned {
         glm::vec2 notches{0.0F};
         glm::vec2 position{0.0F};
+        std::uint32_t window = 0;
     };
 
     // not noexcept: the base takes the event name as a std::string, which allocates
@@ -43,8 +49,14 @@ class MouseWheel final : public Event {
      **/
     glm::vec2 position() const noexcept;
 
+    /**
+     * @return the id of the window the cursor was in
+     **/
+    std::uint32_t window() const noexcept;
+
  private:
     glm::vec2 notches_;
     glm::vec2 position_;
+    std::uint32_t window_;
 };
 };  // namespace v3d::event::kind

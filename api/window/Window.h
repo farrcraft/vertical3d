@@ -68,6 +68,12 @@ class Window final {
     SDL_Window* sdl() noexcept;
 
     /**
+     * @return the number the platform knows the window by, which every window event and mouse
+     *         event carries, or 0 before create() and after destroy()
+     **/
+    std::uint32_t id() const noexcept;
+
+    /**
      * Record a size the window has already been given.
      *
      * The loop calls this when SDL reports a resize that has already happened. It updates

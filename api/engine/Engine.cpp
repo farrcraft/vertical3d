@@ -14,6 +14,7 @@
 #include <api/event/Router.h>
 #include <api/event/Event.h>
 #include <api/event/kind/DisplayScale.h>
+#include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
 #include <api/input/DeviceType.h>
@@ -287,6 +288,9 @@ bool Engine::openWindow() {
  **/
 Engine::~Engine() {
     if (needShutdown_) {
+        for (const boost::shared_ptr<v3d::window::Window>& added : windows_) {
+            added->destroy();
+        }
         window_->destroy();
         SDL_Quit();
     }
@@ -342,6 +346,10 @@ bool Engine::shutdown() {
         return released;
     }
     logger_->get()->info("Shutting down engine...");
+    for (const boost::shared_ptr<v3d::window::Window>& added : windows_) {
+        added->destroy();
+    }
+    windows_.clear();
     window_->destroy();
     SDL_Quit();
     needShutdown_ = false;
@@ -419,6 +427,17 @@ bool Engine::onEvent(const SDL_Event& event) {
 /**
  **/
 void Engine::handleEvent(const SDL_Event& event) {
+    // a window the app added reports its own close and size, and nothing else of its own
+    const bool windowEvent = event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST;
+    if (windowEvent) {
+        const auto added = std::ranges::find_if(windows_, [&event](const boost::shared_ptr<v3d::window::Window>& each) {
+            return each->id() == event.window.windowID;
+        });
+        if (added != windows_.end()) {
+            handleAdded(**added, event);
+            return;
+        }
+    }
     switch (event.type) {
     case SDL_EVENT_QUIT:
     // SDL turns the last window closing into a quit only once that window is destroyed,
@@ -431,7 +450,7 @@ void Engine::handleEvent(const SDL_Event& event) {
         if (window_) {
             window_->resize(glm::ivec2(event.window.data1, event.window.data2));
         }
-        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2)));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2), event.window.windowID));
         break;
     // a key released while the window is unfocused never arrives. WindowFocus lets an app
     // drop held input when focus goes
@@ -459,6 +478,48 @@ void Engine::handleEvent(const SDL_Event& event) {
     default:
         break;
     }
+}
+
+/**
+ **/
+void Engine::handleAdded(v3d::window::Window& window, const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+        dispatcher_->trigger(v3d::event::kind::WindowClose(window.id()));
+        break;
+    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        window.resize(glm::ivec2(event.window.data1, event.window.data2));
+        dispatcher_->trigger(v3d::event::kind::WindowResize(glm::ivec2(event.window.data1, event.window.data2), window.id()));
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ **/
+boost::shared_ptr<v3d::window::Window> Engine::addWindow(const glm::ivec2& size) {
+    if (!window_ || !window_->created()) {
+        return nullptr;
+    }
+    boost::shared_ptr<v3d::window::Window> made = boost::make_shared<v3d::window::Window>(logger_);
+    if (!made->create(size)) {
+        return nullptr;
+    }
+    windows_.push_back(made);
+    return made;
+}
+
+/**
+ **/
+void Engine::removeWindow(const boost::shared_ptr<v3d::window::Window>& window) {
+    const auto found = std::ranges::find(windows_, window);
+    if (found == windows_.end()) {
+        return;
+    }
+    window->destroy();
+    windows_.erase(found);
 }
 
 /**

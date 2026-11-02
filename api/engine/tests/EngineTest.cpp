@@ -16,6 +16,7 @@
 #include <api/engine/WindowSize.h>
 #include <api/event/State.h>
 #include <api/event/Type.h>
+#include <api/event/kind/WindowResize.h>
 #include <api/log/Logger.h>
 
 #include <algorithm>
@@ -470,6 +471,43 @@ BOOST_AUTO_TEST_CASE(engine_a_closed_window_can_be_held_test) {
 
     engine.quit();
     BOOST_CHECK(engine.quitting());
+}
+
+/**
+ * No window can be added before the engine's own is open, and removing one it never added
+ * changes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_adds_no_window_without_its_own_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    BOOST_CHECK(!engine.addWindow(glm::ivec2(160, 120)));
+    engine.removeWindow(nullptr);
+}
+
+/**
+ * A resize names the window that changed size.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_resize_names_its_window_test) {
+    TestEngine engine(appPath("good"), boundFeature);
+    BOOST_REQUIRE(engine.initialize());
+    std::vector<v3d::event::kind::WindowResize> resized;
+    struct Resizes {
+        std::vector<v3d::event::kind::WindowResize>* into;
+        void take(const v3d::event::kind::WindowResize& event) const {
+            into->push_back(event);
+        }
+    } resizes{ &resized };
+    engine.dispatcher()->sink<v3d::event::kind::WindowResize>().connect<&Resizes::take>(resizes);
+
+    SDL_Event resize{};
+    resize.type = SDL_EVENT_WINDOW_RESIZED;
+    resize.window.windowID = 4;
+    resize.window.data1 = 300;
+    resize.window.data2 = 200;
+    engine.offer(resize);
+    BOOST_REQUIRE_EQUAL(resized.size(), 1U);
+    BOOST_CHECK_EQUAL(resized[0].window(), 4U);
+    BOOST_CHECK_EQUAL(resized[0].width(), 300);
 }
 
 /**

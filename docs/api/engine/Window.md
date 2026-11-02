@@ -10,6 +10,18 @@ and no graphics API. `engine`, `render` and `ui` each use it.
 `window` config document, and `window()` returns it from `start()` until `release()` has run.
 An app with no `Feature::Window` has no window, and builds and runs without the Vulkan SDK.
 
+**An app can add more windows.** `Engine::addWindow(size)` opens another window beside the app's
+own, once that one is open, and `removeWindow(window)` destroys it. The app releases whatever
+presents to an added window before removing it. Any still open when the engine shuts down are
+destroyed before its own window.
+
+- Closing an added window publishes `event::kind::WindowClose` with the window's id, and quits
+  nothing. The app decides what it means, and removes the window if it goes.
+- The engine keeps an added window's size as it is resized, and publishes `WindowResize` with its
+  id.
+- An added window's focus, scale and being minimised are not reported. Only the app's own window
+  pauses the loop when it is minimised.
+
 A program that does not run the engine can make a window itself: start SDL's video subsystem,
 construct a `Window` with a logger, and call `create(size)`. `create()` returns false, and logs
 why, when the window cannot be made. The window is made for presenting with Vulkan, and SDL
@@ -29,11 +41,13 @@ loads the Vulkan loader when it creates one, so a machine with no Vulkan driver 
 | `cursor(on)`, `warpCursor(x, y)` | Shows or hides the cursor, and moves it |
 | `pointer(shape)` | Shows the pointer as an arrow, or as a cursor for resizing columns or rows. The shape lasts until another is asked for |
 | `sdl()` | The `SDL_Window`, for a renderer to present to |
+| `id()` | The number the platform knows the window by, which window and mouse events carry. 0 before `create()` |
 
 ## Presenting to it
 
 **A renderer makes the surface it presents to from `sdl()`.** `WindowRenderer::initialize(window)`
-does this. Every surface is made against one Vulkan instance for the process, which
+does this, and `WindowRenderer::open(window)` presents to another window with the same device.
+Every surface is made against one Vulkan instance for the process, which
 `render::realtime::sharedInstance()` returns. It is made on first use and destroyed when the
 last thing holding it lets go, so two windows share it, and a renderer that is released and
 made again gets a new one.
