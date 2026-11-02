@@ -4,6 +4,8 @@
  **/
 
 #include <api/asset/Manager.h>
+#include <api/font/Paragraph.h>
+#include <api/font/ShapedGlyph.h>
 #include <api/image/Image.h>
 #include <api/render/realtime/DeviceContext.h>
 #include <api/render/realtime/Frame.h>
@@ -23,6 +25,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -74,7 +77,7 @@ BOOST_AUTO_TEST_SUITE(script_text_test)
 
 /**
  * A line in each script is drawn from the shared faces through the device, with the validation
- * layer silent, and every glyph's quad holds ink.
+ * layer silent. Every glyph is one the faces have, not the missing glyph, and its quad holds ink.
  **/
 BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     v3d::test::Headless headless(VK_FORMAT_R8G8B8A8_UNORM, kWidth, kHeight);
@@ -95,8 +98,18 @@ BOOST_AUTO_TEST_CASE(each_script_is_drawn_from_the_shared_faces) {
     canvas.clear();
     std::vector<std::size_t> starts;
     for (std::size_t line = 0; line < kLines.size(); line++) {
+        const v3d::font::Paragraph paragraph(text.shaping(), std::string(kLines[line]), text.style(kSize));
+        BOOST_TEST_CONTEXT("line " << line) {
+            for (const v3d::font::Line& shown : paragraph.lines()) {
+                for (const v3d::font::LineRun& run : shown.runs) {
+                    for (const v3d::font::ShapedGlyph& glyph : run.glyphs) {
+                        BOOST_CHECK_NE(glyph.index, 0U);
+                    }
+                }
+            }
+        }
         starts.push_back(canvas.vertices().size());
-        text.draw(&canvas, kLines[line], glm::vec2(16.0F, (kLine * static_cast<float>(line + 1)) - 8.0F), glm::vec4(1.0F), kSize);
+        text.draw(&canvas, paragraph, glm::vec2(16.0F, (kLine * static_cast<float>(line + 1)) - 8.0F));
     }
     starts.push_back(canvas.vertices().size());
 
