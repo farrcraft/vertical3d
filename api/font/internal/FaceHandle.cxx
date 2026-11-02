@@ -8,8 +8,11 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <api/font/internal/SvgDocuments.h>
 #include <hb-ft.h>
 #include <hb.h>
+
+#include <memory>
 
 namespace v3d::font::internal {
 
@@ -25,9 +28,12 @@ FaceHandle::FaceHandle(FT_Library library, const char* filename) {
     }
     // the HarfBuzz face takes a reference of its own on the FreeType face
     shaping = hb_ft_face_create_referenced(face);
+    documents = std::make_unique<SvgDocuments>();
 }
 
 FaceHandle::~FaceHandle() {
+    // a document's picture is let go before the faces its text was read from
+    documents.reset();
     if (shaping != nullptr) {
         hb_face_destroy(shaping);
     }

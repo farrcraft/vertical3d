@@ -364,7 +364,9 @@ it.
   from the strike nearest the size in pixels to the em. A glyph no colour table draws reads as
   empty.
 - **SVG glyphs** are read through ThorVG, from the document element whose id is `glyph` and the
-  glyph's index. A document compressed by gzip is inflated first. The document's first
+  glyph's index. A document compressed by gzip is inflated first. A face parses each document
+  the first time a glyph of it is read, and keeps it while the face is open, so a font that
+  keeps many glyphs in one document parses it once. The document's first
   viewport is the em square, which a `viewBox` on its root maps onto, and nothing is clipped to
   it. Each shape's fill and stroke becomes a fill layer: inside the shape's outline, by its fill
   rule, or inside the outline FreeType's stroker draws around its path. Clip paths clip the

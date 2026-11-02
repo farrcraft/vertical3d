@@ -10,7 +10,11 @@
 
 #include <hb.h>
 
+#include <memory>
+
 namespace v3d::font::internal {
+
+class SvgDocuments;
 
 /**
  * Owns one FreeType face from construction to destruction, and the HarfBuzz face that shapes
@@ -45,6 +49,7 @@ class FaceHandle final {
 
     FT_Face face = nullptr;
     hb_face_t* shaping = nullptr;
+    std::unique_ptr<SvgDocuments> documents;  /**< the face's SVG documents, as they are parsed **/
 
  private:
     // the resolution FT_Set_Char_Size is given, in dots per inch, at which one point is one pixel

@@ -19,6 +19,8 @@
 
 namespace v3d::font::internal {
 
+class SvgDocuments;
+
 /**
  * Everything a walk through a glyph's paint has seen so far.
  *
@@ -39,7 +41,8 @@ struct PaintWalk final {
     };
 
     FT_Library library = nullptr;
-    FT_Memory memory = nullptr;  /**< the face's, which inflates a compressed document **/
+    FT_Memory memory = nullptr;           /**< the face's, which inflates a compressed document **/
+    SvgDocuments* documents = nullptr;    /**< the face's SVG documents, parsed once each **/
     unsigned int index = 0;      /**< the glyph walked **/
     unsigned int units = 0;      /**< the face's design units to the em **/
     float finer = 1.0F;          /**< the font's scale in design units **/

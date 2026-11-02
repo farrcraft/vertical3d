@@ -14,6 +14,8 @@
 #include <api/font/ShapedRun.h>
 #include <api/font/Shaper.h>
 #include <api/font/internal/Composite.h>
+#include <api/font/internal/FaceHandle.h>
+#include <api/font/internal/SvgDocuments.h>
 #include <api/log/Logger.h>
 
 #include <cmath>
@@ -292,6 +294,19 @@ BOOST_AUTO_TEST_CASE(an_svg_glyph_is_read_from_its_element) {
     BOOST_CHECK(painted.bearing == glm::ivec2(0, -16));
     BOOST_CHECK(near(at(painted, 2, 10), red()));
     BOOST_CHECK(near(at(painted, 17, 10), blue()));
+}
+
+/**
+ * The fixture's SVG glyphs share one document, which is parsed the first time one is read and
+ * kept for the rest.
+ **/
+BOOST_AUTO_TEST_CASE(an_svg_document_is_parsed_once) {
+    const v3d::font::internal::SvgDocuments& documents = *svg->handle().documents;
+    const std::size_t before = documents.parsed();
+    for (unsigned int glyph = 0; glyph < 4; glyph++) {
+        BOOST_CHECK(!v3d::font::colour(*svg, svg->glyphIndex(FIRST + glyph), 0, SIZE).empty());
+    }
+    BOOST_CHECK_EQUAL(documents.parsed(), before + 1);
 }
 
 BOOST_AUTO_TEST_CASE(an_svg_gradient_runs_across_its_glyph) {

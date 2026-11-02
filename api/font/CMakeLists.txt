@@ -10,7 +10,7 @@ v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "Textur
 	"internal/BreakHandle.h" "internal/BreakHandle.cxx" "internal/BidiHandle.h" "internal/BidiHandle.cxx" "internal/Icu.h"
 	"internal/Measure.h" "internal/Measure.cxx" "internal/MetricsCache.h" "internal/MetricsCache.cxx" "internal/Span.h"
 	"internal/OutlineReader.h" "internal/OutlineReader.cxx" "internal/CurveBuilder.h" "internal/CurveBuilder.cxx"
-	"internal/Composite.h" "internal/Composite.cxx" "internal/SvgReader.h" "internal/SvgReader.cxx"
+	"internal/Composite.h" "internal/Composite.cxx" "internal/SvgReader.h" "internal/SvgReader.cxx" "internal/SvgDocuments.h" "internal/SvgDocuments.cxx"
 	"internal/PaintGrid.h" "internal/PaintGrid.cxx" "internal/PaintWalk.h" "internal/PaintWalk.cxx" "internal/OutlineHandle.h" "internal/SlotBitmap.h" "internal/SlotBitmap.cxx"
 	"internal/GlyphBitmap.h" "internal/GlyphHandle.h" "internal/StrokerHandle.h")
 

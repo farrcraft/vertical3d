@@ -401,44 +401,33 @@ and callbacks that return paragraphs.
 
 ### Step 14 — Colour glyphs
 
-**Open.** ADR-0149 decided the formats and ADR-0150 the SVG reader, after weighing COLR alone,
+**Closed.** ADR-0149 decided the formats and ADR-0150 the SVG reader, after weighing COLR alone,
 COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
 
-Landed: a face reports its colour tables, and a glyph from any of them is read into the layered
-form. SVG is read through ThorVG, with strokes outlined by FreeType. A glyph is painted at a
-size, in a palette and the text's colour, for a glyph store of four channel pages. The colour
-suite covers each format over fixtures written by `api/font/tests/fonts/colourfonts.ts`.
-
-Noto Color Emoji's COLR version 1 build is the text renderer's emoji face, last in its chain.
-The renderer paints colour glyphs into a store of four channel pages and draws them as pictures.
-The shaper chooses a face a grapheme cluster at a time, so an emoji sequence is one glyph and a
-space after an emoji is set in the text's face. Pong's menu was photographed with emoji in its
-title, and the validation layer was silent.
-
-Curve text draws a colour glyph from its layers: the curve store keeps it as a program of fills,
-clips, gradients and groups, which the quad and world shaders run. A bitmap glyph is a scaled
-picture. The device suite checks chosen pixels of a program's gradient and its layer in the
-text's colour. Diorama's sign was photographed with emoji beside its words, and the validation
-layer was silent.
-
-A font that keeps many SVG glyphs in one document parses it again for each glyph, so a parsed
-document is kept for its face.
-
-- A face reports which colour tables it has. A COLR glyph is walked through HarfBuzz's paint
-  interface, and an SVG glyph through FreeType's SVG hooks into a ThorVG scene. Both give one
-  form: layers of filled paths, each with its clips, in a solid colour, the text's colour, or a
-  linear, radial or sweep gradient.
-- On the pixel grid, that form is painted at the glyph's device size into an RGBA page of the
-  glyph store, and drawn in its own colours with the text's alpha.
-- When scaled or in the world, the layers are drawn from their curves. The curve shader grows
-  clips and gradients.
-- A CBDT or sbix glyph is the PNG of its nearest strike, decoded by FreeType, stored in an RGBA
-  page and scaled in both modes.
-- Noto Color Emoji, in its COLR v1 build, is in the fallback chain.
-- ThorVG joins both manifests.
-- The colour suite covers a glyph from each table, a palette, the text's colour as the
-  foreground, a gradient, and an emoji sequence shaped to one glyph. The device suite checks
-  chosen pixels of a layered glyph painted and drawn from curves.
+- A face reports its colour tables, and says whether a glyph is in colour. `font::colour()`
+  walks a glyph through HarfBuzz's paint interface into one layered form. A fill is drawn inside
+  its clips in a solid colour, the text's colour, or a linear, radial or sweep gradient, and a
+  group is put down by a composite. A CBDT or sbix glyph is a picture from its nearest strike,
+  put on the strike's own pixels.
+- An SVG glyph's document is parsed by ThorVG, once for each face, with the em square as its
+  first viewport. Its element is walked into the same form, a stroke outlined by FreeType's
+  stroker. ThorVG joins both manifests, found by name.
+- `font::paint()` paints the form at a device size into four channel glyph pages, with every
+  COLR composite. The text renderer draws such a glyph as a picture in its own colours, faded by
+  the text's alpha.
+- The curve store keeps a colour glyph as a program of fills, clips, gradients and groups among
+  its band values. The quad and world shaders run it through `colour.glsl`, so curve text draws
+  a colour glyph sharp when scaled or in the world. A bitmap glyph there is a scaled picture.
+- Noto Color Emoji's COLR version 1 build is the text renderer's emoji face, last in its chain.
+  The shaper chooses a face a grapheme cluster at a time, so an emoji sequence or a keycap is
+  one glyph, and a space after an emoji is set in the text's face.
+- The colour suite covers a glyph from each table, over fixtures written by
+  `api/font/tests/fonts/colourfonts.ts`. It covers palettes, the text's colour, each gradient, a
+  transform, a stroke and the even-odd rule. It also covers a strike scaled, a stored program, a
+  document parsed once, and emoji sequences shaped to one glyph. The device suite checks chosen
+  pixels of a program's gradient and its layer in the text's colour. Noto's emoji test builds in
+  COLR version 1, SVG and sbix were painted alike. Pong's menu and Diorama's sign were photographed
+  with emoji, and the validation layer was silent.
 
 ### Step 15 — Variable fonts
 

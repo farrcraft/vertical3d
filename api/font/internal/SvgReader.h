@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -49,14 +50,31 @@ struct SvgDocument final {
 class SvgReader final {
  public:
     /**
-     * Read a glyph.
+     * Lets a picture go when it leaves scope.
+     **/
+    struct Release final {
+        void operator()(tvg::Picture* picture) const {
+            picture->unref();
+        }
+    };
+
+    /**
+     * Parse a document, inflated when it is compressed and given the em square as its first
+     * viewport.
      *
-     * @param document the SVG document, which may hold other glyphs
+     * @return its picture, or null when ThorVG cannot start or the document does not parse
+     **/
+    static std::unique_ptr<tvg::Picture, Release> load(const SvgDocument& document);
+
+    /**
+     * Read a glyph from a parsed document.
+     *
+     * @param picture the document, which may hold other glyphs
      * @param toEm maps the document's units, with y downwards, into em units
      * @param library the FreeType library whose stroker outlines strokes
      * @return whether the glyph was found, its layers added to the glyph's
      **/
-    static bool read(const SvgDocument& document, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph);
+    static bool read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph);
 
  private:
     /**
@@ -82,15 +100,6 @@ class SvgReader final {
 
      private:
         bool started_;
-    };
-
-    /**
-     * Lets a picture go when it leaves scope.
-     **/
-    struct Release final {
-        void operator()(tvg::Picture* picture) const {
-            picture->unref();
-        }
     };
 
     /**

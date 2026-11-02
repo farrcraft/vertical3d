@@ -9,6 +9,7 @@
 #include <api/font/internal/FaceHandle.h>
 #include <api/font/internal/LibraryHandle.h>
 #include <api/font/internal/PaintWalk.h>
+#include <api/font/internal/SvgDocuments.h>
 #include <api/font/internal/SvgReader.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
@@ -316,7 +317,8 @@ hb_bool_t image(hb_paint_funcs_t* /*funcs*/, void* data, hb_blob_t* blob, unsign
         flip[0][0] = walk->finer;
         flip[1][1] = -walk->finer;
         const internal::SvgDocument document{ .text = std::string_view(text, length), .unitsPerEm = walk->units, .memory = walk->memory };
-        return internal::SvgReader::read(document, walk->index, walk->current() * flip, walk->library, &walk->glyph) ? 1 : 0;
+        tvg::Picture* picture = walk->documents != nullptr ? walk->documents->picture(document) : nullptr;
+        return internal::SvgReader::read(picture, walk->index, walk->current() * flip, walk->library, &walk->glyph) ? 1 : 0;
     }
     std::optional<ColourImage> made;
     if (format == HB_PAINT_IMAGE_FORMAT_PNG) {
@@ -450,6 +452,7 @@ ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, f
 
     internal::PaintWalk walk{ .library = face.library() ? face.library()->handle().library : nullptr,
         .memory = face.handle().face != nullptr ? face.handle().face->memory : nullptr,
+        .documents = face.handle().documents.get(),
         .index = index,
         .units = hb_face_get_upem(shaping),
         .finer = static_cast<float>(FINER) };

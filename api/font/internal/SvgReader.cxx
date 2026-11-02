@@ -361,22 +361,30 @@ std::string SvgReader::withViewport(const std::string& text, unsigned int unitsP
     return text.substr(0, at) + added + text.substr(at);
 }
 
-bool SvgReader::read(const SvgDocument& document, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph) {
-    if (!started() || library == nullptr) {
-        return false;
+std::unique_ptr<tvg::Picture, SvgReader::Release> SvgReader::load(const SvgDocument& document) {
+    std::unique_ptr<tvg::Picture, Release> none;
+    if (!started()) {
+        return none;
     }
     const std::optional<std::string> text = inflated(document);
     if (!text || text->empty()) {
-        return false;
+        return none;
     }
     const std::string sized = withViewport(*text, document.unitsPerEm);
-    const std::unique_ptr<tvg::Picture, Release> picture(tvg::Picture::gen());
+    std::unique_ptr<tvg::Picture, Release> picture(tvg::Picture::gen());
     if (!picture) {
-        return false;
+        return none;
     }
     picture->ref();
     picture->accessible = true;
     if (picture->load(sized.data(), static_cast<std::uint32_t>(sized.size()), "svg", nullptr, true) != tvg::Result::Success) {
+        return none;
+    }
+    return picture;
+}
+
+bool SvgReader::read(tvg::Picture* picture, unsigned int index, const glm::mat3& toEm, FT_Library library, ColourGlyph* glyph) {
+    if (picture == nullptr || library == nullptr) {
         return false;
     }
     const std::string name = "glyph" + std::to_string(index);
@@ -388,7 +396,7 @@ bool SvgReader::read(const SvgDocument& document, unsigned int index, const glm:
         return false;
     }
     accessor->set(
-        picture.get(),
+        picture,
         [wanted, &found](const tvg::Paint* paint, void* /*data*/) {
             if (paint->id == wanted) {
                 found = paint;
