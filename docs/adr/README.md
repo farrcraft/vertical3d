@@ -179,13 +179,14 @@ content went. Numbers are never reused.
 | [0122](0122-editor-import-gltf-and-usd-as-scenes-of-items.md) | Editor: import glTF and USD as scenes of items | accepted |
 | [0124](0124-editor-curves-are-items-with-a-type-per-curve.md) | Editor: curves are items with a type per curve | accepted |
 | [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
-| [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | accepted |
+| [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | amended by 0154 |
 | [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
 | [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
 | [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
 | [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
 | [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
 | [0140](0140-editor-a-project-names-its-unit-of-length.md) | Editor: a project names its unit of length | accepted |
+| [0154](0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted |
 
 ## Build, testing and code
 

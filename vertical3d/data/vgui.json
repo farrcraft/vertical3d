@@ -237,6 +237,7 @@
               "items": [
                 { "label": "Render", "type": "action", "context": "render", "command": "view" },
                 { "label": "Batch Render", "type": "action", "context": "render", "command": "batch" },
+                { "label": "Stop", "type": "action", "context": "render", "command": "stop" },
                 { "type": "separator" },
                 { "label": "Settings", "type": "action", "context": "render", "command": "settings" }
               ]
@@ -353,83 +354,6 @@
                     { "type": "button", "name": "answer0", "label": "", "context": "project", "command": "prompt::answer0" },
                     { "type": "button", "name": "answer1", "label": "", "context": "project", "command": "prompt::answer1" },
                     { "type": "button", "name": "answer2", "label": "", "context": "project", "command": "prompt::answer2" }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "render-view",
-      "visible": false,
-      "components": [
-        {
-          "type": "panel",
-          "name": "renderPanel",
-          "pickable": true,
-          "position": ["52%", "10%"],
-          "size": [520, 470],
-          "children": [
-            {
-              "type": "vbox",
-              "name": "renderColumn",
-              "position": [12, 12],
-              "size": [496, 446],
-              "spacing": 8,
-              "children": [
-                { "type": "label", "name": "renderStatus", "label": "" },
-                { "type": "icon", "name": "renderPicture", "size": [496, 372] },
-                {
-                  "type": "hbox",
-                  "name": "renderButtons",
-                  "spacing": 8,
-                  "children": [
-                    { "type": "button", "name": "renderAgain", "label": "Render", "context": "render", "command": "view" },
-                    { "type": "button", "name": "renderStop", "label": "Stop", "context": "render", "command": "stop" },
-                    { "type": "button", "name": "renderClose", "label": "Close", "context": "render", "command": "close" }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "render-settings",
-      "visible": false,
-      "components": [
-        {
-          "type": "panel",
-          "name": "settingsPanel",
-          "pickable": true,
-          "position": ["35%", "20%"],
-          "size": [360, 330],
-          "children": [
-            {
-              "type": "vbox",
-              "name": "settingsColumn",
-              "position": [12, 12],
-              "size": [336, 306],
-              "spacing": 6,
-              "stretch": true,
-              "children": [
-                { "type": "label", "name": "settingsWidthLabel", "label": "Width" },
-                { "type": "textbox", "name": "settingsWidth", "placeholder": "pixels" },
-                { "type": "label", "name": "settingsHeightLabel", "label": "Height" },
-                { "type": "textbox", "name": "settingsHeight", "placeholder": "pixels" },
-                { "type": "label", "name": "settingsSamplesLabel", "label": "Samples along each side of a pixel" },
-                { "type": "textbox", "name": "settingsSamples", "placeholder": "1 to 16" },
-                { "type": "list", "name": "settingsHider", "size": ["100%", 48], "items": ["hidden", "raytrace"] },
-                {
-                  "type": "hbox",
-                  "name": "settingsButtons",
-                  "spacing": 8,
-                  "children": [
-                    { "type": "button", "name": "settingsApply", "label": "Apply", "context": "render", "command": "settings::apply" },
-                    { "type": "button", "name": "settingsCancel", "label": "Cancel", "context": "render", "command": "settings::cancel" }
                   ]
                 }
               ]

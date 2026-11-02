@@ -15,7 +15,7 @@
 #include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/chrome/Pointer.h>
-#include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include <boost/shared_ptr.hpp>
 
@@ -60,6 +61,12 @@ struct Context final {
      * @return the area a command acts on: the one whose id it carries, or the active area
      **/
     std::size_t areaOf(const v3d::event::Event& event) const;
+
+    /**
+     * Show an editor of a kind: the first one an area holds, or a new one added as a tab of the
+     * active area when no area holds one.
+     **/
+    void show(std::string_view kind) const;
 
     /**
      * Run something that needs a view's camera, with the active view's. Without an active
@@ -104,7 +111,7 @@ struct Context final {
     boost::shared_ptr<control::Playback> playback;
     // every timeline editor, which share the chosen keys
     boost::shared_ptr<control::TimelineEditor> timeline;
-    boost::shared_ptr<control::RenderWindow> renderWindow;
+    boost::shared_ptr<control::RenderView> renderView;
     boost::shared_ptr<v3d::ui::shell::FileChooser> chooser;
     boost::shared_ptr<v3d::ui::shell::Prompt> prompt;
     // run after the areas change, so the views take their regions again

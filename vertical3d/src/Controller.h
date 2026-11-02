@@ -28,11 +28,14 @@
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
+#include <vertical3d/src/control/RenderSettingsEditor.h>
+#include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/tool/Router.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -236,6 +239,11 @@ class Controller final : public v3d::engine::Engine {
     void drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas);
 
     /**
+     * @return whether any area shows an editor of a kind
+     **/
+    bool shows(std::string_view kind) const;
+
+    /**
      * @return what the top bar shows: the workspaces, the one shown, and the project's name and
      *         whether it has unsaved changes
      **/
@@ -288,6 +296,9 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::PropertiesEditor> properties_;
     // every graph editor, which share the chosen key
     boost::shared_ptr<control::GraphEditor> graph_;
+    boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
+    // what a render view's buttons asked for in the last frame drawn
+    control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<control::chrome::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;

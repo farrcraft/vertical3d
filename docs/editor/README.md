@@ -17,7 +17,7 @@ notices over the same canvas.
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
 | [Animation.md](Animation.md) | Key item properties, and play them back with the Animate menu |
-| [Rendering.md](Rendering.md) | Render the scene with moya, in the render window or as a batch of frames |
+| [Rendering.md](Rendering.md) | Render the scene with moya, into the render view or as a batch of frames |
 | [Files.md](Files.md) | Change the project layout, the scene document format, importing, or the RIB export |
 
 ## Running it
@@ -86,13 +86,13 @@ a higher one is in the wrong place.
 | `src/scene/` | The model. `item/` holds the kinds of item and their parts: which parts of each mesh are selected, and the items made from a view. The root holds the scene, its evaluation, animation and render settings, and the items an imported scene becomes | nothing of the editor's |
 | `src/selection/` | What a select mask takes | `scene/` |
 | `src/store/` | The project directory and the scene document it saves, with a codec for each kind of item | `scene/` |
-| `src/render/` | Rendering the scene with moya: the RIB export, a shot, the render window, live render and batches | `scene/` |
+| `src/render/` | Rendering the scene with moya: the RIB export, a shot, live render and batches | `scene/` |
 | `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass | `scene/` |
 | `src/manipulator/` | The translate, rotate and scale handles, and what they move | `scene/`, `selection/` |
 | `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
-| `src/control/` | The editors and panels: the controllers for playback and the Render menu, the workspaces, the command search, the icon sheet, the outliner, and the properties, timeline and graph editors. `chrome/` holds the window's furniture: the routing of the mouse, the areas' headers, the top bar, the divider hint, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/control/` | The editors and panels: the controllers for playback and the Render menu, the workspaces, the command search, the icon sheet, the outliner, and the properties, timeline, graph, render view and render settings editors. `chrome/` holds the window's furniture: the routing of the mouse, the areas' headers, the top bar, the divider hint, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
 | `src/app/` | The commands: the `Context` they act on, the `CommandTable` they register in, a class of commands for each part of the editor, the project's files and the questions asked about them, and the workspace shown | every directory above it here |
 | `src/Controller.*` | The app: building the parts, the ui that shows them, the routing of input, and the command search | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |

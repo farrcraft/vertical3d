@@ -40,6 +40,8 @@ v3d_add_test(vertical3d
 	"control/PropertiesEditorTest.cxx"
 	"control/TimelineEditorTest.cxx"
 	"control/GraphEditorTest.cxx"
+	"control/RenderSettingsEditorTest.cxx"
+	"control/RenderViewTest.cxx"
 	"control/StatusBarTest.cxx"
 	"control/TopBarTest.cxx"
 	"control/WorkspacesTest.cxx"
@@ -55,7 +57,6 @@ v3d_add_test(vertical3d
 
 	"render/DelegateTest.cxx"
 	"render/BatchTest.cxx"
-	"render/PanelsTest.cxx"
 
 	"tool/CameraControlTest.cxx"
 	"tool/PickerTest.cxx"

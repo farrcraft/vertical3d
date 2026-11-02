@@ -11,14 +11,19 @@
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <variant>
+#include <vector>
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/json.hpp>
 #include <boost/optional/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -55,6 +60,25 @@ std::size_t Context::areaOf(const v3d::event::Event& event) const {
         return layout->find(static_cast<std::size_t>(std::get<int>(*data)));
     }
     return pointer ? pointer->activeArea() : layout->areas().size();
+}
+
+/**
+ **/
+void Context::show(std::string_view kind) const {
+    const std::vector<view::AreaLayout::Area>& areas = layout->areas();
+    for (std::size_t area = 0; area < areas.size(); area++) {
+        const std::vector<view::AreaLayout::Editor>& editors = areas[area].editors;
+        const auto found = std::ranges::find(editors, kind, &view::AreaLayout::Editor::kind);
+        if (found != editors.end()) {
+            layout->choose(area, static_cast<std::size_t>(found - editors.begin()));
+            areasChanged();
+            return;
+        }
+    }
+    const std::size_t active = pointer ? pointer->activeArea() : 0;
+    if (layout->add(active, boost::json::object{ { "kind", kind } })) {
+        areasChanged();
+    }
 }
 
 /**

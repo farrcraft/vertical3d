@@ -135,8 +135,8 @@ view beside the properties. Rendering puts the render view beside the render set
 |---|---|
 | Editor: the ui's text size. Decided in ADR-0138: 12 pixels, with the scale preference for larger. | 1 |
 | Editor: the scene's unit of length. Decided in ADR-0140: each project names its own, metres by default. | 6 |
-| Editor: what the console runs. Open: the editor's commands by name, or a scripting language. | 13 |
-| Editor: where a render is shown. Open: an editor in an area, a floating window, or both. | 14 |
+| Editor: what the console runs. Decided in ADR-0152 and ADR-0153: named commands with typed arguments, called from TypeScript run on QuickJS. | 13 |
+| Editor: where a render is shown. Decided in ADR-0154: an editor in an area, or in a window of its own when no area holds one. | 14 |
 | Editor: how icons are made. Decided in ADR-0139: SVG files, drawn at the ui's scale. | 4 |
 
 Each decision is researched against how established tools answer it before it is drafted as an
@@ -367,20 +367,33 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 13 — The console
 
-**Open.** Decide what the console runs.
+**Open.** ADR-0152 and ADR-0153 decided what it runs, after weighing named commands alone, a
+language bound straight to the document, Lua, Luau and TypeScript on V8. Python was ruled out.
 
-- A console is a kind of editor an area can hold.
-- It lists each command run and each notice posted, in the order they happened.
-- Its line takes a command as decided, runs it, and lists what it said. The arrows step
-  through what was typed before.
+- Every command a script can run declares typed arguments. A menu or key sends it with none,
+  and its handler fills them from the context. Items, parts and frames have a text form.
+- Scripts and console lines are TypeScript limited to syntax that can be erased. The editor
+  strips the types and runs the result on QuickJS-ng. A declaration file for the commands ships
+  with the editor.
+- A console is a kind of editor an area can hold. It lists each command run, from any source,
+  as a script would write it, and each notice posted, in the order they happened.
+- Its line takes TypeScript, runs it, and lists what it said. The arrows step through what was
+  typed before.
 
 ### Step 14 — The render view and the render settings
 
-**Open.** Decide where a render is shown.
+**Open.** ADR-0154 decided where a render is shown, after weighing an editor in an area only and
+the floating panel. The editors are in. The window is not.
 
-- The render view and the render settings are kinds of editor an area can hold, as decided.
-  Each shows what its floating container shows now.
-- Render opens the render view in an area that holds one, as decided.
+- Done: the render view and the render settings are kinds of editor an area can hold, and
+  Shift+F11 and Shift+F10 show them. The floating panels are gone. The settings take each
+  number when its edit ends, through the history. Render and Settings show the first editor of
+  their kind an area holds, and otherwise add one as a tab of the active area. The Render menu
+  gains Stop. The render view and render settings suites cover the fitted picture, the state, a
+  render again only while shown, the buttons, a dragged side, a refused number and the hider.
+- Render opens a window of its own holding an area with the render view when no area holds one.
+  A second window needs one device to present to two surfaces, events that name their window,
+  and a screen, a pointer and an area tree for each window.
 
 ### Step 15 — The workspaces
 

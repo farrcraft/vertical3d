@@ -19,6 +19,8 @@
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
+#include <vertical3d/src/control/RenderSettingsEditor.h>
+#include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
@@ -251,6 +253,8 @@ const std::vector<Area::Kind>& Area::kinds() {
         { .kind = std::string(PropertiesEditor::KIND), .label = "Properties" },
         { .kind = std::string(TimelineEditor::KIND), .label = "Timeline" },
         { .kind = std::string(GraphEditor::KIND), .label = "Graph Editor" },
+        { .kind = std::string(RenderView::KIND), .label = "Render View" },
+        { .kind = std::string(RenderSettingsEditor::KIND), .label = "Render Settings" },
     };
     return each;
 }

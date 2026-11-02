@@ -2,7 +2,7 @@
 
 The editor renders its scene with moya, the offline renderer, in two ways:
 
-- Render View, in a window of the editor's ui, while the user works.
+- Render, into a render view in an area, while the user works.
 - Batch Render, as files, for every frame of the timeline.
 
 This page covers both, the render settings, and what the editor hands moya.
@@ -66,14 +66,29 @@ samples takes a great deal of it. The ray-trace hider keeps nothing per sample.
 
 | Item | Command | Effect |
 |---|---|---|
-| Settings | `render::settings` | Put up the settings, filled from the document's. Apply takes them through the history, so one undo puts them back, and refuses a field that is not a whole number or settings out of range |
-| Render | `render::view` | Open the render window and render into it |
+| Render | `render::view` | Render the shot, and show the render view |
 | Batch Render | `render::batch` | Render every frame of the timeline's range from each scene camera into the project's `renders/` directory |
+| Stop | `render::stop` | Stop the render and the batch |
+| Settings | `render::settings` | Show the render settings |
 
-**The render window** shows what the render is doing, then its picture, fitted to the window
-without changing its shape. While it is open, the editor brings the render up to date each tick,
-so an edit renders again. Its buttons render again, stop the render, and close the window, which
-stops the render too.
+To show an editor, Render and Settings choose the first area's tab that holds one. When no area
+holds one, they add one as a tab of the active area.
+
+## The render view
+
+The render view (`render-view`) is an editor an area holds. Its first row has a Render button, a
+Stop button, and what the render is doing. Below them is the latest picture, fitted to the rest
+of the area without changing its shape. Every render view shows the same render. While any area
+shows one, the editor brings the render up to date each tick, so an edit renders again.
+`RenderView` in `src/control/` draws it, and owns the renderer and the batch.
+
+**The render settings** (`render-settings`) are an editor too. The width, the height and the
+samples are numbers that are dragged or typed. A change is taken when its drag or its typing
+ends, and a number that is not a whole one within its range is refused. The hider is chosen from
+a list and taken at once. Each change goes through the history, so one undo puts it back.
+`RenderSettingsEditor` in `src/control/` draws it.
+
+Background: [ADR-0154](../adr/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md)
 
 **A batch** names each camera by its document id, as `camera3`. A scene with no camera is
 rendered from the active view, as `view`. Each camera has a directory under `renders/`, holding

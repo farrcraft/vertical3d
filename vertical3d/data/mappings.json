@@ -361,6 +361,28 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f11",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::render-view"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+f10",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::render-settings"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "delete",
         "state": "pressed"
       },

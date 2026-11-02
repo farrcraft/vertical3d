@@ -46,7 +46,7 @@ as a parent is, so a key does not move its item's revision.
 frame shows is an `Evaluation` the scene makes, and making one changes nothing in the scene. The
 evaluation gives each item its `Pose`, the placement, lens and emission a curve can drive, and
 its `Placed` matrices. Every reader takes those from an evaluation: the views, the picker, the
-manipulators, Set Key, the RIB export, the render window and the batch. A save writes the items'
+manipulators, Set Key, the RIB export, the render view and the batch. A save writes the items'
 own values, and playback moves no revision.
 
 - `Scene::evaluate()` evaluates the current frame, as the views show it.

@@ -1,7 +1,8 @@
 # ADR-0127: Editor: tiled areas that hold editors as tabs
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-30
+**Amended by**: ADR-0154
 **Documented in**: [editor/Scene.md](../editor/Scene.md#viewports)
 
 ## Context

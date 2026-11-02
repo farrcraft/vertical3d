@@ -40,14 +40,14 @@
 #include <vertical3d/src/control/chrome/Pointer.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
 #include <vertical3d/src/control/TimelineEditor.h>
-#include <vertical3d/src/control/RenderWindow.h>
+#include <vertical3d/src/control/RenderSettingsEditor.h>
+#include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
-#include <vertical3d/src/render/Panels.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
@@ -68,6 +68,8 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "Renderer.h"
@@ -250,14 +252,16 @@ bool Controller::buildUi() {
     context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
     graph_ = boost::make_shared<control::GraphEditor>(context_.document, [this](const document::Outcome& outcome) { context_.report(outcome); });
+    renderSettings_ = boost::make_shared<control::RenderSettingsEditor>(context_.document,
+        [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderer_->panels([this](v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) { drawPanels(layer, canvas); });
     context_.chooser = boost::make_shared<v3d::ui::shell::FileChooser>(vgui);
     context_.prompt = boost::make_shared<v3d::ui::shell::Prompt>(vgui);
     search_ = boost::make_shared<control::CommandSearch>(vgui);
     topBar_ = boost::make_shared<control::chrome::TopBar>(vgui, firstDialog, renderer_->type());
     // moya.exe is built beside the editor
-    context_.renderWindow = boost::make_shared<control::RenderWindow>(boost::make_shared<render::Panels>(vgui),
-        boost::make_shared<render::MoyaDelegate>(logger()), boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
+    context_.renderView = boost::make_shared<control::RenderView>(boost::make_shared<render::MoyaDelegate>(logger()),
+        boost::make_shared<render::Batch>(logger(), boost::filesystem::path(context_.path) / MOYA),
         [this](const boost::shared_ptr<v3d::image::Image>& image) { return renderer_->picture(image); });
     return findBars(vgui);
 }
@@ -392,7 +396,7 @@ void Controller::syncCaption() {
     }
     std::string caption = "Vertical|3D - " + document->project()->directory().filename().string() +
         (document->dirty() ? " *" : "") + " - frame " + std::to_string(document->scene()->timeline().frame);
-    const render::Batch::Status batch = context_.renderWindow ? context_.renderWindow->batchStatus() : render::Batch::Status();
+    const render::Batch::Status batch = context_.renderView ? context_.renderView->batchStatus() : render::Batch::Status();
     if (batch.running) {
         caption += " - rendering " + std::to_string(batch.done + 1) + " of " + std::to_string(batch.total);
     }
@@ -457,6 +461,7 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
             break;
     }
     std::vector<std::size_t> outliners;
+    control::RenderView::Asked asked = control::RenderView::Asked::Nothing;
     for (const view::AreaLayout::Area& area : context_.layout->areas()) {
         const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
         const view::AreaLayout::Editor& editor = area.editor();
@@ -472,10 +477,15 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
             context_.timeline->draw(layer, editor.id, region);
         } else if (editor.kind == control::GraphEditor::KIND && graph_) {
             graph_->draw(layer, editor.id, region, navigate);
+        } else if (editor.kind == control::RenderView::KIND && context_.renderView) {
+            asked = std::max(asked, context_.renderView->draw(layer, editor.id, region));
+        } else if (editor.kind == control::RenderSettingsEditor::KIND && renderSettings_) {
+            renderSettings_->draw(layer, editor.id, region);
         }
     }
     layer->end();
     outliner_.keep(outliners);
+    asked_ = std::max(asked_, asked);
     if (pointer) {
         pointer->settle();
     }
@@ -626,8 +636,8 @@ bool Controller::release() {
         context_.document->close();
     }
     // a render's thread and a batch's are waited for, before anything they report to goes
-    if (context_.renderWindow) {
-        context_.renderWindow->release();
+    if (context_.renderView) {
+        context_.renderView->release();
     }
     // the screen draws through the renderer, so it goes first
     shell_.release();
@@ -644,13 +654,24 @@ bool Controller::tick(unsigned int delta) {
     if (context_.document) {
         context_.document->tick(delta);
     }
-    if (context_.renderWindow && context_.renderWindow->open() && context_.activeView() && context_.activeView()->camera()) {
-        context_.renderWindow->tick(*context_.document->scene(), context_.shot());
+    // a render view's buttons send what the Render menu does, after the frame that drew them
+    const control::RenderView::Asked asked = std::exchange(asked_, control::RenderView::Asked::Nothing);
+    if (asked != control::RenderView::Asked::Nothing) {
+        commands().invoke(v3d::event::Event(asked == control::RenderView::Asked::Render ? "render::view" : "render::stop"));
     }
-    if (context_.renderWindow) {
+    if (context_.renderView && context_.activeView() && context_.activeView()->camera()) {
+        context_.renderView->tick(*context_.document->scene(), context_.shot(), shows(control::RenderView::KIND));
+    }
+    if (context_.renderView) {
         syncCaption();
     }
     return Engine::tick(delta);
+}
+
+/**
+ **/
+bool Controller::shows(std::string_view kind) const {
+    return std::ranges::any_of(context_.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; });
 }
 
 /**
