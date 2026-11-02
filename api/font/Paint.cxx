@@ -7,6 +7,7 @@
 
 #include <api/font/internal/Composite.h>
 #include <api/font/internal/LibraryHandle.h>
+#include <api/font/internal/PaintGrid.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -40,11 +41,6 @@
 namespace v3d::font {
 
 namespace {
-
-/**
- * FreeType's outline coordinates are 26.6 fixed point, 64 to the pixel.
- **/
-constexpr float FIXED_POINT = 64.0F;
 
 /**
  * The most a byte holds.
@@ -95,40 +91,11 @@ unsigned char toByte(float value) {
 }
 
 /**
- * Where a glyph is painted: a box of whole pixels, its lower left pixel at origin, with the pixel
- * grid's y upwards.
- **/
-struct Grid {
-    glm::ivec2 origin{ 0 };
-    glm::ivec2 size{ 0 };
-    float scale = 0.0F;  /**< pixels to the em **/
-    float shift = 0.0F;  /**< how far the pen is moved right, in pixels **/
-
-    std::size_t pixels() const {
-        return static_cast<std::size_t>(size.x) * static_cast<std::size_t>(size.y);
-    }
-
-    /**
-     * @return the centre of a pixel, counted in rows from the top, in em units
-     **/
-    glm::vec2 em(int column, int row) const {
-        return glm::vec2((static_cast<float>(origin.x + column) + 0.5F - shift) / scale, (static_cast<float>(origin.y + size.y - row) - 0.5F) / scale);
-    }
-
-    /**
-     * @return a point in em units in FreeType's units from the box's lower left
-     **/
-    FT_Vector device(const glm::vec2& point) const {
-        const glm::vec2 at = ((point * scale) + glm::vec2(shift, 0.0F) - glm::vec2(origin)) * FIXED_POINT;
-        return FT_Vector{ .x = static_cast<FT_Pos>(std::lround(at.x)), .y = static_cast<FT_Pos>(std::lround(at.y)) };
-    }
-};
-
-/**
  * @return how much of each pixel of the grid an outline covers, by the nonzero rule, from 0 to 1,
  *         in rows from the top
  **/
-std::vector<float> coverage(FT_Library library, const std::vector<QuadraticCurve>& curves, const Grid& grid) {
+std::vector<float> coverage(FT_Library library, const ColourClip& clip, const internal::PaintGrid& grid) {
+    const std::vector<QuadraticCurve>& curves = clip.curves;
     std::vector<float> covered(grid.pixels(), 0.0F);
     std::vector<FT_Vector> points;
     std::vector<unsigned char> tags;
@@ -167,7 +134,7 @@ std::vector<float> coverage(FT_Library library, const std::vector<QuadraticCurve
     }
 
     FT_Outline outline{ .n_contours = static_cast<std::uint16_t>(ends.size()), .n_points = static_cast<std::uint16_t>(points.size()),
-        .points = points.data(), .tags = tags.data(), .contours = ends.data(), .flags = FT_OUTLINE_NONE };
+        .points = points.data(), .tags = tags.data(), .contours = ends.data(), .flags = clip.evenOdd ? FT_OUTLINE_EVEN_ODD_FILL : FT_OUTLINE_NONE };
     std::vector<unsigned char> bytes(grid.pixels(), 0);
     FT_Bitmap bitmap{};
     bitmap.rows = static_cast<unsigned int>(grid.size.y);
@@ -186,9 +153,9 @@ std::vector<float> coverage(FT_Library library, const std::vector<QuadraticCurve
 /**
  * @return how much of each pixel is inside every one of a layer's clips
  **/
-std::vector<float> mask(FT_Library library, const ColourLayer& layer, const Grid& grid) {
+std::vector<float> mask(FT_Library library, const ColourLayer& layer, const internal::PaintGrid& grid) {
     std::vector<float> inside(grid.pixels(), 1.0F);
-    for (const std::vector<QuadraticCurve>& clip : layer.clips) {
+    for (const ColourClip& clip : layer.clips) {
         const std::vector<float> covered = coverage(library, clip, grid);
         std::transform(inside.begin(), inside.end(), covered.begin(), inside.begin(), [](float kept, float clipped) { return kept * clipped; });
     }
@@ -388,7 +355,7 @@ int samplesFor(const ColourImage& image, const glm::mat3& inverse, float pixel) 
  * layer's clips.
  **/
 template <typename Colour>
-void lay(std::vector<glm::vec4>* buffer, const std::vector<float>& inside, const Grid& grid, const Colour& colourAt) {
+void lay(std::vector<glm::vec4>* buffer, const std::vector<float>& inside, const internal::PaintGrid& grid, const Colour& colourAt) {
     for (int row = 0; row < grid.size.y; row++) {
         for (int column = 0; column < grid.size.x; column++) {
             const std::size_t pixel = (static_cast<std::size_t>(row) * static_cast<std::size_t>(grid.size.x)) + static_cast<std::size_t>(column);
@@ -409,7 +376,7 @@ GlyphBitmap paint(const ColourGlyph& glyph, const Library& library, float size, 
     if (glyph.empty() || !(size > 0.0F) || freetype == nullptr) {
         return made;
     }
-    Grid grid{ .scale = size, .shift = static_cast<float>(subpixel % SUBPIXEL_STEPS) / static_cast<float>(SUBPIXEL_STEPS) };
+    internal::PaintGrid grid{ .scale = size, .shift = static_cast<float>(subpixel % SUBPIXEL_STEPS) / static_cast<float>(SUBPIXEL_STEPS) };
     const glm::vec2 low = glm::floor((glyph.min * size) + glm::vec2(grid.shift + SNAP, SNAP));
     const glm::vec2 high = glm::ceil((glyph.max * size) + glm::vec2(grid.shift - SNAP, -SNAP));
     const auto within = [](float edge) { return std::isfinite(edge) && std::abs(edge) <= FURTHEST; };
@@ -440,7 +407,9 @@ GlyphBitmap paint(const ColourGlyph& glyph, const Library& library, float size, 
                 const std::vector<glm::vec4> gathered = std::move(groups.back());
                 groups.pop_back();
                 std::transform(gathered.begin(), gathered.end(), groups.back().begin(), groups.back().begin(),
-                    [&layer](const glm::vec4& source, const glm::vec4& beneath) { return internal::composite(source, beneath, layer.composite); });
+                    [&layer](const glm::vec4& source, const glm::vec4& beneath) {
+                        return internal::composite(source * layer.opacity, beneath, layer.composite);
+                    });
             }
             break;
         case ColourLayer::Kind::Image: {

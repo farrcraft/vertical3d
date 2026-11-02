@@ -330,13 +330,22 @@ it.
 - **`colour(face, index, palette, size)`** reads a `ColourGlyph` through HarfBuzz's paint
   interface, in a palette. A palette the face does not have is its first. A bitmap is taken
   from the strike nearest the size in pixels to the em. A glyph no colour table draws reads as
-  empty. SVG glyphs are not read yet, and read as empty.
+  empty.
+- **SVG glyphs** are read through ThorVG, from the document element whose id is `glyph` and the
+  glyph's index. A document compressed by gzip is inflated first. The document's first
+  viewport is the em square, which a `viewBox` on its root maps onto, and nothing is clipped to
+  it. Each shape's fill and stroke becomes a fill layer: inside the shape's outline, by its fill
+  rule, or inside the outline FreeType's stroker draws around its path. Clip paths clip the
+  layers beneath them, and opacity multiplies their colours' alpha. A masked element is a
+  group that its mask's alpha keeps or removes. A luminance mask is read as an alpha mask, and
+  a dashed stroke is drawn whole.
 
 **The form.** A `ColourGlyph` is every format in one shape: a list of `ColourLayer`s, in em
 units with y upwards, and the `min` and `max` of what it draws.
 
-- A **`Fill`** layer is drawn inside every one of its `clips`, each a closed outline of
-  `QuadraticCurve`s filled by the nonzero rule. Its `ColourFill` is one colour or a gradient:
+- A **`Fill`** layer is drawn inside every one of its `clips`. A `ColourClip` is a closed
+  outline of `QuadraticCurve`s, filled by the nonzero rule, or by the even-odd rule when it says
+  so. Its `ColourFill` is one colour or a gradient:
   linear, from one point to another; radial, from one circle to another; or a sweep, around a
   centre counter-clockwise from one angle to another. A gradient's points are in its own space,
   which its `transform` maps into em units, and its `ColourExtend` pads, repeats or reflects past
@@ -348,9 +357,9 @@ units with y upwards, and the `min` and `max` of what it draws.
   inside its clips. The picture fills a box in its own space, which its `transform` maps into
   em units. The box is on the strike's own pixels.
 - **`BeginGroup`** and **`EndGroup`** gather the layers between them apart. The group is then
-  put on what is beneath it by the end's `ColourComposite`: one of Porter and Duff's modes, or a
-  blend mode as CSS defines it. Layers outside a group, and within one, are drawn over each
-  other in order.
+  put on what is beneath it by the end's `ColourComposite`, its colours times the end's
+  `opacity`. The composite is one of Porter and Duff's modes, or a blend mode as CSS defines
+  it. Layers outside a group, and within one, are drawn over each other in order.
 
 **Painting.** **`paint(key)`** makes a colour glyph's pixels for the glyph store, as a
 `GlyphStore::Rasterizer`, from the key's face, index, palette and size.

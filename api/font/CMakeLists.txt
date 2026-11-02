@@ -10,14 +10,16 @@ v3d_add_api_library(font "TextBuffer.h" "TextBuffer.cxx" "TextureFont.h" "Textur
 	"internal/BreakHandle.h" "internal/BreakHandle.cxx" "internal/BidiHandle.h" "internal/BidiHandle.cxx" "internal/Icu.h"
 	"internal/Measure.h" "internal/Measure.cxx" "internal/MetricsCache.h" "internal/MetricsCache.cxx" "internal/Span.h"
 	"internal/OutlineReader.h" "internal/OutlineReader.cxx" "internal/CurveBuilder.h" "internal/CurveBuilder.cxx"
-	"internal/Composite.h" "internal/Composite.cxx" "internal/SlotBitmap.h" "internal/SlotBitmap.cxx"
+	"internal/Composite.h" "internal/Composite.cxx" "internal/SvgReader.h" "internal/SvgReader.cxx"
+	"internal/PaintGrid.h" "internal/PaintGrid.cxx" "internal/PaintWalk.h" "internal/PaintWalk.cxx" "internal/OutlineHandle.h" "internal/SlotBitmap.h" "internal/SlotBitmap.cxx"
 	"internal/GlyphBitmap.h" "internal/GlyphHandle.h" "internal/StrokerHandle.h")
 
 # PUBLIC: these sources compile Logger.h, and so do their consumers.
 target_link_libraries(v3dlib_font PUBLIC v3dlib_log v3dlib_image glm::glm)
 # PRIVATE: Library.h, Face.h, Segmenter.h and Bidi.h hide FreeType and ICU behind
-# forward-declared classes. Only the sources and the internal/ headers include them.
-target_link_libraries(v3dlib_font PRIVATE Freetype::Freetype harfbuzz::harfbuzz ICU::uc ICU::data)
+# forward-declared classes. Only the sources and the internal/ headers include
+# them, and ThorVG.
+target_link_libraries(v3dlib_font PRIVATE Freetype::Freetype harfbuzz::harfbuzz ICU::uc ICU::data thorvg::thorvg)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

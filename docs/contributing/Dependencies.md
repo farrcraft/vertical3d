@@ -43,6 +43,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
+| thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |

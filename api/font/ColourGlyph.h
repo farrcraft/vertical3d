@@ -57,6 +57,14 @@ enum class ColourComposite : std::uint8_t {
 };
 
 /**
+ * A closed outline a layer is drawn inside, in em units.
+ **/
+struct ColourClip final {
+    std::vector<QuadraticCurve> curves;
+    bool evenOdd = false;  /**< whether it is filled by the even-odd rule rather than the nonzero rule **/
+};
+
+/**
  * One colour of a fill or a gradient.
  **/
 struct ColourStop final {
@@ -119,10 +127,11 @@ struct ColourLayer final {
     };
 
     Kind kind = Kind::Fill;
-    std::vector<std::vector<QuadraticCurve>> clips;  /**< each a closed outline in em units, filled by the nonzero rule **/
+    std::vector<ColourClip> clips;
     ColourFill fill;
     std::size_t image = 0;                           /**< an image's index in its glyph **/
     ColourComposite composite = ColourComposite::SourceOver;  /**< how an ended group is put down **/
+    float opacity = 1.0F;                                     /**< what an ended group's colours are multiplied by as it is put down **/
 };
 
 /**
@@ -148,8 +157,6 @@ struct ColourGlyph final {
 /**
  * Read a colour glyph from a face's colour tables, in a palette. An image is taken from the
  * strike nearest a size in pixels to the em. A palette the face does not have is its first.
- *
- * An SVG glyph is not read yet, and reads as empty.
  *
  * @return the glyph, or an empty one when the face has no colour glyph at that index
  **/

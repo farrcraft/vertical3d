@@ -7,6 +7,9 @@
 
 #include <api/font/internal/CurveBuilder.h>
 #include <api/font/internal/FaceHandle.h>
+#include <api/font/internal/LibraryHandle.h>
+#include <api/font/internal/PaintWalk.h>
+#include <api/font/internal/SvgReader.h>
 #include <api/image/Image.h>
 #include <api/image/reader/Png.h>
 #include <api/log/Logger.h>
@@ -21,11 +24,13 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "Curves.h"
 #include "Face.h"
+#include "Library.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -76,37 +81,6 @@ glm::mat3 affine(float xx, float yx, float xy, float yy, float dx, float dy) {
     return glm::mat3(glm::vec3(xx, yx, 0.0F), glm::vec3(xy, yy, 0.0F), glm::vec3(dx, dy, 1.0F));
 }
 
-/**
- * Everything a walk through a glyph's paint has seen so far.
- *
- * HarfBuzz gives every coordinate in the font's scale, under the transforms pushed so far. Outlines
- * are mapped into em units as they are read, and a gradient keeps its own coordinates with the
- * transform that maps them there.
- **/
-struct Walk {
-    glm::mat3 toEm{ 1.0F };
-    std::vector<glm::mat3> transforms{ glm::mat3(1.0F) };
-    std::vector<std::vector<QuadraticCurve>> clips;
-    std::optional<internal::CurveBuilder> path;
-    ColourGlyph glyph;
-
-    /**
-     * @return the transform from the font's scale, as transformed now, into em units
-     **/
-    glm::mat3 current() const {
-        return toEm * transforms.back();
-    }
-
-    /**
-     * Add a fill inside the clips pushed so far.
-     **/
-    void fill(ColourFill&& made) {
-        ColourLayer layer{ .kind = ColourLayer::Kind::Fill, .clips = clips };
-        layer.fill = std::move(made);
-        glyph.layers.push_back(std::move(layer));
-    }
-};
-
 // the draw functions build an outline through the builder they are given
 void moveTo(hb_draw_funcs_t* /*funcs*/, void* data, hb_draw_state_t* /*state*/, float x, float y, void* /*user*/) {
     static_cast<internal::CurveBuilder*>(data)->moveTo(glm::vec2(x, y));
@@ -147,49 +121,49 @@ hb_draw_funcs_t* drawFuncs() {
 }
 
 void pushTransform(hb_paint_funcs_t* /*funcs*/, void* data, float xx, float yx, float xy, float yy, float dx, float dy, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     walk->transforms.push_back(walk->transforms.back() * affine(xx, yx, xy, yy, dx, dy));
 }
 
 void popTransform(hb_paint_funcs_t* /*funcs*/, void* data, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     if (walk->transforms.size() > 1) {
         walk->transforms.pop_back();
     }
 }
 
 void pushClipGlyph(hb_paint_funcs_t* /*funcs*/, void* data, hb_codepoint_t glyph, hb_font_t* font, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     internal::CurveBuilder builder(walk->current());
     hb_font_draw_glyph_or_fail(font, glyph, drawFuncs(), &builder);
-    walk->clips.push_back(builder.take());
+    walk->clips.push_back(ColourClip{ .curves = builder.take() });
 }
 
 void pushClipRectangle(hb_paint_funcs_t* /*funcs*/, void* data, float xmin, float ymin, float xmax, float ymax, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     internal::CurveBuilder builder(walk->current());
     builder.moveTo(glm::vec2(xmin, ymin));
     builder.lineTo(glm::vec2(xmin, ymax));
     builder.lineTo(glm::vec2(xmax, ymax));
     builder.lineTo(glm::vec2(xmax, ymin));
-    walk->clips.push_back(builder.take());
+    walk->clips.push_back(ColourClip{ .curves = builder.take() });
 }
 
 hb_draw_funcs_t* pushClipPathStart(hb_paint_funcs_t* /*funcs*/, void* data, void** drawData, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     walk->path.emplace(walk->current());
     *drawData = &*walk->path;
     return drawFuncs();
 }
 
 void pushClipPathEnd(hb_paint_funcs_t* /*funcs*/, void* data, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
-    walk->clips.push_back(walk->path ? walk->path->take() : std::vector<QuadraticCurve>());
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
+    walk->clips.push_back(ColourClip{ .curves = walk->path ? walk->path->take() : std::vector<QuadraticCurve>() });
     walk->path.reset();
 }
 
 void popClip(hb_paint_funcs_t* /*funcs*/, void* data, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     if (!walk->clips.empty()) {
         walk->clips.pop_back();
     }
@@ -198,13 +172,13 @@ void popClip(hb_paint_funcs_t* /*funcs*/, void* data, void* /*user*/) {
 void solid(hb_paint_funcs_t* /*funcs*/, void* data, hb_bool_t foreground, hb_color_t colour, void* /*user*/) {
     ColourFill fill;
     fill.stops.push_back(ColourStop{ .offset = 0.0F, .colour = unpack(colour), .foreground = foreground != 0 });
-    static_cast<Walk*>(data)->fill(std::move(fill));
+    static_cast<internal::PaintWalk*>(data)->fill(std::move(fill));
 }
 
 /**
  * @return a gradient's stops in order of offset, and how it extends past them
  **/
-ColourFill gradient(const Walk& walk, hb_color_line_t* line, ColourFill::Kind kind) {
+ColourFill gradient(const internal::PaintWalk& walk, hb_color_line_t* line, ColourFill::Kind kind) {
     ColourFill fill{ .kind = kind, .transform = walk.current() };
     std::array<hb_color_stop_t, STOPS_AT_ONCE> read{};
     unsigned int start = 0;
@@ -238,7 +212,7 @@ ColourFill gradient(const Walk& walk, hb_color_line_t* line, ColourFill::Kind ki
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - HarfBuzz fixes the parameters
 void linear(hb_paint_funcs_t* /*funcs*/, void* data, hb_color_line_t* line, float x0, float y0, float x1, float y1, float x2, float y2, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     ColourFill fill = gradient(*walk, line, ColourFill::Kind::Linear);
     // the third point turns the gradient's lines of equal colour, which run from the first point
     // towards it. The end the gradient runs to is the second point moved along those lines until
@@ -255,7 +229,7 @@ void linear(hb_paint_funcs_t* /*funcs*/, void* data, hb_color_line_t* line, floa
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - HarfBuzz fixes the parameters
 void radial(hb_paint_funcs_t* /*funcs*/, void* data, hb_color_line_t* line, float x0, float y0, float r0, float x1, float y1, float r1, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     ColourFill fill = gradient(*walk, line, ColourFill::Kind::Radial);
     fill.from = glm::vec2(x0, y0);
     fill.fromRadius = r0;
@@ -266,7 +240,7 @@ void radial(hb_paint_funcs_t* /*funcs*/, void* data, hb_color_line_t* line, floa
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - HarfBuzz fixes the parameters
 void sweep(hb_paint_funcs_t* /*funcs*/, void* data, hb_color_line_t* line, float x, float y, float start, float end, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
     ColourFill fill = gradient(*walk, line, ColourFill::Kind::Sweep);
     fill.from = glm::vec2(x, y);
     fill.startAngle = start;
@@ -333,7 +307,17 @@ ColourImage decodeBgra(hb_blob_t* blob, unsigned int width, unsigned int height)
 
 hb_bool_t image(hb_paint_funcs_t* /*funcs*/, void* data, hb_blob_t* blob, unsigned int width, unsigned int height, hb_tag_t format, float /*slant*/,
     hb_glyph_extents_t* extents, void* /*user*/) {
-    Walk* walk = static_cast<Walk*>(data);
+    internal::PaintWalk* walk = static_cast<internal::PaintWalk*>(data);
+    if (format == HB_PAINT_IMAGE_FORMAT_SVG) {
+        // a document's units are design units with y downwards
+        unsigned int length = 0;
+        const char* text = hb_blob_get_data(blob, &length);
+        glm::mat3 flip(1.0F);
+        flip[0][0] = walk->finer;
+        flip[1][1] = -walk->finer;
+        const internal::SvgDocument document{ .text = std::string_view(text, length), .unitsPerEm = walk->units, .memory = walk->memory };
+        return internal::SvgReader::read(document, walk->index, walk->current() * flip, walk->library, &walk->glyph) ? 1 : 0;
+    }
     std::optional<ColourImage> made;
     if (format == HB_PAINT_IMAGE_FORMAT_PNG) {
         made = decodePng(blob);
@@ -362,14 +346,14 @@ hb_bool_t image(hb_paint_funcs_t* /*funcs*/, void* data, hb_blob_t* blob, unsign
 }
 
 void pushGroup(hb_paint_funcs_t* /*funcs*/, void* data, void* /*user*/) {
-    static_cast<Walk*>(data)->glyph.layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::BeginGroup });
+    static_cast<internal::PaintWalk*>(data)->glyph.layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::BeginGroup });
 }
 
 void popGroup(hb_paint_funcs_t* /*funcs*/, void* data, hb_paint_composite_mode_t mode, void* /*user*/) {
     // the modes are numbered as HarfBuzz numbers them
     const auto composite = static_cast<int>(mode) <= static_cast<int>(ColourComposite::Luminosity) ? static_cast<ColourComposite>(mode)
                                                                                                     : ColourComposite::SourceOver;
-    static_cast<Walk*>(data)->glyph.layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::EndGroup, .composite = composite });
+    static_cast<internal::PaintWalk*>(data)->glyph.layers.push_back(ColourLayer{ .kind = ColourLayer::Kind::EndGroup, .composite = composite });
 }
 
 /**
@@ -400,26 +384,11 @@ hb_paint_funcs_t* paintFuncs() {
 }
 
 /**
- * A box grown to hold points, empty until it holds one.
- **/
-struct Box {
-    glm::vec2 min{ 0.0F };
-    glm::vec2 max{ 0.0F };
-    bool any = false;
-
-    void hold(const glm::vec2& point) {
-        min = any ? glm::min(min, point) : point;
-        max = any ? glm::max(max, point) : point;
-        any = true;
-    }
-};
-
-/**
  * Set a glyph's box to hold everything it draws: each fill within the box shared by its clips,
  * and each image within its corners.
  **/
 void bound(ColourGlyph* glyph) {
-    Box drawn;
+    internal::PaintWalk::Box drawn;
     for (const ColourLayer& layer : glyph->layers) {
         if (layer.kind == ColourLayer::Kind::Image) {
             const ColourImage& placed = glyph->images[layer.image];
@@ -429,9 +398,9 @@ void bound(ColourGlyph* glyph) {
         } else if (layer.kind == ColourLayer::Kind::Fill && !layer.clips.empty()) {
             glm::vec2 low(-std::numeric_limits<float>::max());
             glm::vec2 high(std::numeric_limits<float>::max());
-            for (const std::vector<QuadraticCurve>& clip : layer.clips) {
-                Box outline;
-                for (const QuadraticCurve& curve : clip) {
+            for (const ColourClip& clip : layer.clips) {
+                internal::PaintWalk::Box outline;
+                for (const QuadraticCurve& curve : clip.curves) {
                     for (const glm::vec2& point : { curve.p1, curve.p2, curve.p3 }) {
                         outline.hold(point);
                     }
@@ -465,7 +434,8 @@ bool ColourGlyph::foreground() const noexcept {
     });
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - a glyph's index, then its palette, as GlyphKey orders them
+// a glyph's index, then its palette, as GlyphKey orders them
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, float size) {
     hb_face_t* shaping = face.handle().shaping;
     if (shaping == nullptr || !face.coloured(index)) {
@@ -478,7 +448,11 @@ ColourGlyph colour(const Face& face, unsigned int index, unsigned int palette, f
     const auto ppem = static_cast<unsigned int>(strike);  // checked: finite, and clamped to 1 to LARGEST_STRIKE
     hb_font_set_ppem(font.get(), ppem, ppem);
 
-    Walk walk;
+    internal::PaintWalk walk{ .library = face.library() ? face.library()->handle().library : nullptr,
+        .memory = face.handle().face != nullptr ? face.handle().face->memory : nullptr,
+        .index = index,
+        .units = hb_face_get_upem(shaping),
+        .finer = static_cast<float>(FINER) };
     walk.toEm = glm::mat3(1.0F / static_cast<float>(std::max(units, 1)));
     walk.toEm[2][2] = 1.0F;
     const unsigned int palettes = hb_ot_color_palette_get_count(shaping);

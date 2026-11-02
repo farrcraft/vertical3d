@@ -36,6 +36,10 @@ OutlineReader::OutlineReader(float unitsPerEm) :
     builder_(toEm(unitsPerEm)) {
 }
 
+OutlineReader::OutlineReader(const glm::mat3& transform) :
+    builder_(transform) {
+}
+
 std::vector<QuadraticCurve> OutlineReader::read(FT_Outline* outline) {
     const FT_Outline_Funcs funcs{ .move_to = moveTo, .line_to = lineTo, .conic_to = conicTo, .cubic_to = cubicTo, .shift = 0, .delta = 0 };
     if (FT_Outline_Decompose(outline, &funcs, this) != 0) {

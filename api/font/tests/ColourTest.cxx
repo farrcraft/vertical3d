@@ -272,6 +272,47 @@ BOOST_AUTO_TEST_CASE(a_bitmap_glyph_is_its_strike_scaled) {
     }
 }
 
+/**
+ * An SVG glyph is its element in the document, with the rectangle each half uses drawn twice.
+ **/
+BOOST_AUTO_TEST_CASE(an_svg_glyph_is_read_from_its_element) {
+    const v3d::font::ColourGlyph read = v3d::font::colour(*svg, svg->glyphIndex(FIRST), 0, SIZE);
+    BOOST_REQUIRE_EQUAL(read.layers.size(), 2U);
+    BOOST_CHECK_CLOSE(read.min.y, -0.2F, 0.01F);
+    BOOST_CHECK_CLOSE(read.max.y, 0.8F, 0.01F);
+
+    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 0));
+    BOOST_REQUIRE(painted.size == glm::uvec2(20));
+    BOOST_CHECK(painted.bearing == glm::ivec2(0, -16));
+    BOOST_CHECK(near(at(painted, 2, 10), red()));
+    BOOST_CHECK(near(at(painted, 17, 10), blue()));
+}
+
+BOOST_AUTO_TEST_CASE(an_svg_gradient_runs_across_its_glyph) {
+    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 1));
+    BOOST_REQUIRE(painted.size == glm::uvec2(20));
+    BOOST_CHECK(near(at(painted, 0, 10), glm::ivec4(249, 0, 6, 255)));
+    BOOST_CHECK(near(at(painted, 10, 10), glm::ivec4(121, 0, 134, 255)));
+}
+
+/**
+ * A stroke is the outline drawn around its path, as thick as its width, with butt ends.
+ **/
+BOOST_AUTO_TEST_CASE(an_svg_stroke_is_drawn_around_its_path) {
+    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 2));
+    BOOST_REQUIRE(painted.size == glm::uvec2(20, 4));
+    BOOST_CHECK(painted.bearing == glm::ivec2(0, -8));
+    BOOST_CHECK(near(at(painted, 0, 0), green()));
+    BOOST_CHECK(near(at(painted, 19, 3), green()));
+}
+
+BOOST_AUTO_TEST_CASE(an_svg_path_is_filled_by_its_rule) {
+    const v3d::font::GlyphBitmap painted = v3d::font::paint(key(svg, 3));
+    BOOST_REQUIRE(painted.size == glm::uvec2(20));
+    BOOST_CHECK(near(at(painted, 2, 10), blue()));
+    BOOST_CHECK_EQUAL(at(painted, 10, 10).w, 0);
+}
+
 BOOST_AUTO_TEST_CASE(composites_put_one_colour_on_another) {
     const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
     const glm::vec4 halfBlue(0.0F, 0.0F, 0.5F, 0.5F);

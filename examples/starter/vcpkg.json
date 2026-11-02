@@ -35,6 +35,7 @@
     "sdl3-mixer",
     "spdlog",
     "sqlite3",
+    "thorvg",
     "vulkan",
     "vulkan-memory-allocator"
   ]

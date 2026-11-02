@@ -27,7 +27,8 @@
     "libpng",
     "nanosvg",
     "spdlog",
-    "sqlite3"
+    "sqlite3",
+    "thorvg"
   ],
   "default-features": [
     "platform",

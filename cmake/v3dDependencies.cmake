@@ -55,6 +55,25 @@ macro(v3d_find_packages)
 			# memory::Allocator suballocates through VMA. Header only, and it requires the
 			# include directory holding vulkan.h, which Vulkan::Vulkan already carries.
 			find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+		elseif(v3d_package STREQUAL "thorvg")
+			# vcpkg's thorvg port installs pkg-config files and no CMake config, so the header
+			# and the library are found by name and given a target here. A debug build links
+			# the debug library.
+			find_path(V3D_THORVG_INCLUDE_DIR NAMES "thorvg.h" PATH_SUFFIXES "thorvg-1" REQUIRED)
+			find_library(V3D_THORVG_LIBRARY_RELEASE NAMES "thorvg-1" "thorvg" REQUIRED)
+			find_library(V3D_THORVG_LIBRARY_DEBUG NAMES "thorvg-1" "thorvg"
+				PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/lib" NO_DEFAULT_PATH)
+			if(NOT TARGET thorvg::thorvg)
+				add_library(thorvg::thorvg INTERFACE IMPORTED)
+				target_include_directories(thorvg::thorvg INTERFACE "${V3D_THORVG_INCLUDE_DIR}")
+				if(V3D_THORVG_LIBRARY_DEBUG)
+					target_link_libraries(thorvg::thorvg INTERFACE
+						"$<$<CONFIG:Debug>:${V3D_THORVG_LIBRARY_DEBUG}>"
+						"$<$<NOT:$<CONFIG:Debug>>:${V3D_THORVG_LIBRARY_RELEASE}>")
+				else()
+					target_link_libraries(thorvg::thorvg INTERFACE "${V3D_THORVG_LIBRARY_RELEASE}")
+				endif()
+			endif()
 		elseif(v3d_package STREQUAL "unofficial-sqlite3")
 			# vcpkg's sqlite3 port provides only a config package, under this name.
 			find_package(unofficial-sqlite3 CONFIG REQUIRED)

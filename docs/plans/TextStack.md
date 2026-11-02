@@ -404,10 +404,11 @@ and callbacks that return paragraphs.
 **Open.** ADR-0149 decided the formats and ADR-0150 the SVG reader, after weighing COLR alone,
 COLR with bitmaps, bitmaps alone, plutosvg, lunasvg and nanosvg.
 
-Landed: a face reports its colour tables, and COLR, CBDT and sbix glyphs are read into the
-layered form and painted at a size, in a palette and the text's colour, for a glyph store of
-four channel pages. The colour suite covers each of those formats over fixtures written by
-`api/font/tests/fonts/colourfonts.ts`. SVG, the ui, the curves and the emoji font remain.
+Landed: a face reports its colour tables, and a glyph from any of them is read into the layered
+form. SVG is read through ThorVG, with strokes outlined by FreeType. A glyph is painted at a
+size, in a palette and the text's colour, for a glyph store of four channel pages. The colour
+suite covers each format over fixtures written by `api/font/tests/fonts/colourfonts.ts`. The ui,
+the curves and the emoji font remain.
 
 - A face reports which colour tables it has. A COLR glyph is walked through HarfBuzz's paint
   interface, and an SVG glyph through FreeType's SVG hooks into a ThorVG scene. Both give one

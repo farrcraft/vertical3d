@@ -14,6 +14,7 @@
 
 #include <vector>
 
+#include <glm/mat3x3.hpp>
 #include <glm/vec2.hpp>
 
 namespace v3d::font::internal {
@@ -27,6 +28,11 @@ class OutlineReader final {
      * @param unitsPerEm the face's design units to the em, which every point is divided by
      **/
     explicit OutlineReader(float unitsPerEm);
+
+    /**
+     * @param transform maps every point, in the outline's units, into the curves' space
+     **/
+    explicit OutlineReader(const glm::mat3& transform);
 
     /**
      * @return the outline's curves, or none when it cannot be read

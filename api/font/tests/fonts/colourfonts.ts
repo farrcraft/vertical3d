@@ -14,7 +14,10 @@
  *   from entry 0 to entry 1, counter-clockwise from the right of the centre. U+E004 is the left
  *   half in entry 2, moved right by 500 units.
  * - svg.ttf: U+E000 is red on the left and blue on the right, both halves drawn by one shared
- *   rectangle. U+E001 is the em square under a linear gradient from red to blue.
+ *   rectangle. U+E001 is the em square under a linear gradient from red to blue. U+E002 is a
+ *   green line across the em, 200 units thick and centred 300 units above the baseline. U+E003
+ *   is the em square in blue, with a hole from 250 to 750 across and from 50 to 550 up, which
+ *   only the even-odd rule leaves.
  * - cbdt.ttf and sbix.ttf: U+E000 is a 32 pixel PNG at 32 pixels to the em, red on the left and
  *   blue on the right.
  *
@@ -553,7 +556,11 @@ function write(file: string, bytes: Uint8Array): void {
 }
 
 {
-    const glyphs = [...outlines(), { name: 'halves', box: SQUARE, code: FIRST }, { name: 'gradient', box: SQUARE, code: FIRST + 1 }];
+    const glyphs = [...outlines(),
+        { name: 'halves', box: SQUARE, code: FIRST },
+        { name: 'gradient', box: SQUARE, code: FIRST + 1 },
+        { name: 'stroke', box: SQUARE, code: FIRST + 2 },
+        { name: 'frame', box: SQUARE, code: FIRST + 3 }];
     const document = [
         '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">',
         '<defs>',
@@ -564,9 +571,12 @@ function write(file: string, bytes: Uint8Array): void {
         '</defs>',
         '<g id="glyph4"><use xlink:href="#half" fill="#ff0000"/><use xlink:href="#half" x="500" fill="#0000ff"/></g>',
         `<rect id="glyph5" x="0" y="${-ASCENDER}" width="${UNITS}" height="${UNITS}" fill="url(#ramp)"/>`,
+        `<path id="glyph6" d="M0,-300 L${UNITS},-300" fill="none" stroke="#00ff00" stroke-width="200"/>`,
+        // both squares wind the same way, so only the even-odd rule leaves a hole
+        `<path id="glyph7" fill-rule="evenodd" fill="#0000ff" d="M0,${-ASCENDER} H${UNITS} V${-DESCENDER} H0 Z M250,-550 H750 V-50 H250 Z"/>`,
         '</svg>',
     ].join('');
-    write('svg.ttf', font('V3D Colour SVG', glyphs, { 'SVG ': svg(4, 5, document) }));
+    write('svg.ttf', font('V3D Colour SVG', glyphs, { 'SVG ': svg(4, 7, document) }));
 }
 
 {
