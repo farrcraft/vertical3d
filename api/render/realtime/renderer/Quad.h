@@ -37,7 +37,6 @@ class Image;
 
 namespace v3d::render::realtime {
 class DeviceContext;
-class RenderTarget;
 };  // namespace v3d::render::realtime
 
 namespace v3d::render::realtime::renderer {
