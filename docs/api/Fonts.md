@@ -270,6 +270,27 @@ line's baseline is rounded to a whole pixel.
 
 Background: [ADR-0145](../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
+## Curve glyphs
+
+Text that is scaled, turned or placed in the world is drawn from its glyphs' curves, as the
+Slug algorithm draws it. **`outline(face, index)`** reads a glyph's `CurveGlyph`.
+
+- **Curves.** The outline is read unscaled and unhinted, in em units with y upwards, as
+  `QuadraticCurve`s from `p1` to `p3` pulled towards `p2`. A straight line has `p2` on `p3`. A
+  cubic, as a CFF face holds, is split into four quadratics. A segment that goes nowhere is left
+  out. The outline is closed, contour by contour, and filled by the nonzero rule. `min` and
+  `max` bound it.
+- **Bands.** Each axis is divided into strips of one thickness, about the square root of the
+  number of curves of them, from 1 to 16. A `horizontal` band
+  holds every curve whose height reaches into it, except a horizontal line, sorted from the
+  largest x down. A `vertical` band holds the curves reaching into its strip, except a vertical
+  line, sorted from the largest y down. Bands overlap their neighbours by `BAND_OVERLAP`, a
+  1024th of an em, so a curve on the line between two is in both.
+- **`bandTransform()`** gives the scale (x and y) and offset (z and w) that turn a point in em
+  units into the band it is in. The reader clamps each axis to its bands.
+- A glyph with no outline, such as a space, or one that cannot be loaded has no curves and no
+  bands.
+
 ## Texture fonts
 
 - **`TextureFont(face, size, logger, spread)`** draws one face at one size.

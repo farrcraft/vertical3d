@@ -307,7 +307,8 @@ beside a multi-channel distance field, all three, and distance fields for all te
 
 ### Step 10 — Curve text
 
-**Open.** Decided with step 9.
+**Open.** ADR-0145 decided it with step 9. `font::outline()` reads a glyph's quadratic curves and
+bands them; the device's storage, the curve shader and the canvas path follow.
 
 - A glyph's quadratic curves are stored on the device, banded so a pixel reads only the curves
   that cross it.
