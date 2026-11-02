@@ -155,6 +155,24 @@ BOOST_AUTO_TEST_CASE(a_key_that_is_not_a_number_is_drawn_last) {
     BOOST_CHECK_EQUAL(quadAt(canvas, 3), 2.0F);
 }
 
+/**
+ * A glyph sorts among quads by its key, and comes out as a glyph.
+ **/
+BOOST_AUTO_TEST_CASE(a_glyph_is_sorted_with_the_quads) {
+    DepthOrder order;
+    order.quad(1.0F, tile(0.0F, 0.0F), white);
+    const canvas::World::Glyph glyph{ .bands = 3, .curveTexture = v3d::render::realtime::TextureHandle(1),
+        .bandTexture = v3d::render::realtime::TextureHandle(2) };
+    order.glyph(2.0F, tile(1.0F, 0.0F), glyph, white);
+
+    canvas::World canvas;
+    order.into(&canvas);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK_EQUAL(quadAt(canvas, 0), 1.0F);
+    BOOST_CHECK(canvas.batches()[0].bands.valid());
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 3U);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

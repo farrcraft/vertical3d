@@ -121,7 +121,7 @@ Current blocks:
 | Pipeline | Block | Size |
 |---|---|---|
 | Quad | `mat4 projection; uint text; uint texture; uint bands` | 76 bytes |
-| World | `vec4 tint; uint texture` | 20 bytes |
+| World | `vec4 tint; uint texture; uint bands; uint curves` | 28 bytes |
 | Line, FullScreen, Lit | none | |
 
 The block is copied into the item by value, so the unused part of the 128 bytes is copied per

@@ -307,18 +307,27 @@ beside a multi-channel distance field, all three, and distance fields for all te
 
 ### Step 10 — Curve text
 
-**Open.** ADR-0145 decided it with step 9. `font::outline()` reads a glyph's quadratic curves and
-bands them. Float textures hold curves and bands on the device, `Canvas::curves()` draws them,
-and the quad shader's curve branch finds coverage from them. `font::CurveStore` keeps the curves,
-`ui::paint::CurvePages` keeps them on the device, and `ui::paint::CurveText` draws a paragraph
-through any 2D transform. Text in world space and in depth order, and the reference images, follow.
+**Closed.** ADR-0145 decided it with step 9.
 
-- A glyph's quadratic curves are stored on the device, banded so a pixel reads only the curves
-  that cross it.
-- The curve shader finds each pixel's coverage from those curves, at any size and angle.
-- `Canvas` draws text in world space and in depth order.
-- The curve suite covers a glyph's bands. The device suite compares text drawn turned and at
-  several sizes against reference images. A game is photographed with text in the world.
+- `font::outline()` reads a glyph's outline as quadratic curves in em units and bands them, as
+  the Slug algorithm reads them. `font::CurveStore` keeps them, the same at every size, in two
+  float arrays.
+- Float textures hold the arrays on the device, and `ui::paint::CurvePages` keeps them in step.
+  The quad and world shaders find each pixel's coverage from the curves crossing it, through
+  `curves.glsl`, at any size and angle.
+- `Canvas::curves()` draws glyphs on the screen, and `canvas::World::glyph()` and
+  `canvas::DepthOrder::glyph()` stand them in the world and in depth order.
+  `ui::paint::CurveText` draws a paragraph through any 2D transform, or into the world.
+- Antialiased text is not output the Vulkan specification fixes, so by ADR-0054 it has no
+  reference image. The device suite checks chosen pixels of a square drawn from curves, upright,
+  turned, in the world through a camera, and sorted by depth. A word drawn at 14 pixels and
+  turned at three times that was looked at.
+- The curve suite covers an outline enclosing its strokes, closed contours, sorted bands and the
+  band transform. The curve store suite covers a glyph read once, stored as the shader reads it,
+  and changed rows given once. The ui suite covers glyph quads, curves reaching the device once,
+  a transform placing them, and a paragraph standing in the world.
+- Diorama stands a sign over its well, drawn from its curves and facing the camera, and was
+  photographed. The validation layer was silent.
 
 ### Step 11 — Effects
 

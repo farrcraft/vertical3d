@@ -66,6 +66,16 @@ renderer_->worldQuads()->submit(world, pass.get(), 0, renderer::World::Blend::Al
 - A world canvas and a line canvas in the same pass are not sorted against each other by
   depth. The `layer` argument decides which is drawn first.
 
+### Text in the world
+
+`canvas::World::glyph(corners, glyph, colour)` stands a glyph drawn from its curves over a quad,
+sharp at any distance and angle, as `Canvas::curves()` draws one on the screen. A
+`canvas::World::Glyph` names the place in the em square each corner carries, with y upwards,
+where the glyph's data starts among its bands, and the float textures of its curves and its
+bands. A run of glyphs never merges with quads drawn another way. `ui::paint::CurveText` builds
+glyphs from a laid-out paragraph and a transform into the world, so an app seldom builds one
+itself.
+
 ### Depth order
 
 **Quads draw in the order they were added.** What "further away" means is the game's decision:
@@ -79,10 +89,12 @@ write it. Solid geometry hides a world quad, and one world quad never hides anot
 DepthOrder order;
 order.clear();
 order.quad(key, corners, uv0, uv1, colour, texture);   // larger key = further away
+order.glyph(key, corners, glyph, colour);               // a glyph drawn from its curves
 order.into(&world);                                     // furthest first
 ```
 
-Equal keys are grouped by texture and otherwise keep the order they were added. Rounding the
+Equal keys are grouped by texture, and glyphs by their bands, and otherwise keep the order they
+were added. Rounding the
 key to a tile row means fewer texture changes and so fewer draws. A key that is not a number is
 drawn after every key that is.
 

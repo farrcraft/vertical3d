@@ -97,6 +97,18 @@ void World::quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& 
 
 /**
  **/
+void World::glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& colour) {
+    open(glyph.curveTexture, glyph.bandTexture);
+
+    const uint32_t first = static_cast<uint32_t>(vertices_.size());
+    for (std::size_t corner = 0; corner < corners.size(); corner++) {
+        vertex(corners[corner], glyph.em[corner], colour, glyph.bands);
+    }
+    fan(first);
+}
+
+/**
+ **/
 const std::vector<World::Vertex>& World::vertices() const noexcept {
     return vertices_;
 }
@@ -121,12 +133,13 @@ bool World::empty() const noexcept {
 
 /**
  **/
-void World::open(const TextureHandle& texture) {
-    if (!batches_.empty() && batches_.back().texture == texture) {
+void World::open(const TextureHandle& texture, const TextureHandle& bands) {
+    if (!batches_.empty() && batches_.back().texture == texture && batches_.back().bands == bands) {
         return;
     }
     Batch batch;
     batch.texture = texture;
+    batch.bands = bands;
     batch.firstIndex = static_cast<uint32_t>(indices_.size());
     batch.indices = 0;
     batches_.push_back(batch);
@@ -134,11 +147,12 @@ void World::open(const TextureHandle& texture) {
 
 /**
  **/
-void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour) {
+void World::vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour, uint32_t glyph) {
     Vertex added;
     added.position = glm::vec3(transforms_.top() * glm::vec4(position, 1.0F));
     added.uv = uv;
     added.colour = colour * tint_;
+    added.glyph = glyph;
     vertices_.push_back(added);
 }
 

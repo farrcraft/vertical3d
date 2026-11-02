@@ -223,6 +223,26 @@ BOOST_AUTO_TEST_CASE(clearing_returns_the_tint_to_white) {
     BOOST_TEST((canvas.vertices()[0].colour == red));
 }
 
+/**
+ * A glyph drawn from its curves is a quad whose corners carry its em corners and where its bands
+ * start, in a run of its own that names its bands.
+ **/
+BOOST_AUTO_TEST_CASE(a_glyph_is_a_quad_over_its_curves) {
+    v3d::render::realtime::canvas::World canvas;
+    canvas.quad(tile(0.0F, 0.0F), glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 1.0F), white, handle(1));
+    const v3d::render::realtime::canvas::World::Glyph glyph{ .em = { glm::vec2(0.0F, 1.0F), glm::vec2(1.0F, 1.0F), glm::vec2(1.0F, 0.0F),
+        glm::vec2(0.0F, 0.0F) }, .bands = 7, .curveTexture = handle(1), .bandTexture = handle(2) };
+    canvas.glyph(tile(1.0F, 0.0F), glyph, red);
+
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(canvas.batches()[1].bands == handle(2));
+    BOOST_CHECK(canvas.batches()[1].texture == handle(1));
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[4].glyph, 7U);
+    BOOST_CHECK(canvas.vertices()[6].uv == glm::vec2(1.0F, 0.0F));
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].glyph, 0U);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

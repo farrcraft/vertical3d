@@ -10,9 +10,12 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 colour;
+layout(location = 3) in uint glyph;
 
 layout(location = 0) out vec2 fragmentUv;
 layout(location = 1) out vec4 fragmentColour;
+// where a curve glyph's bands start, the same at every corner of its quad
+layout(location = 2) flat out uint fragmentGlyph;
 
 // set 0 holds per frame data: the camera the whole pass draws through
 layout(set = 0, binding = 0) uniform Camera {
@@ -31,4 +34,5 @@ void main() {
     gl_Position = camera.viewProjection * vec4(position, 1.0);
     fragmentUv = uv;
     fragmentColour = colour * push.tint;
+    fragmentGlyph = glyph;
 }

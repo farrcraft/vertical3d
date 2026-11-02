@@ -11,6 +11,8 @@
 #include <api/render/realtime/RenderTarget.h>
 #include <api/render/realtime/Textures.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
 #include <api/render/realtime/vulkan/memory/TextureFactory.h>
 
@@ -26,7 +28,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 #include "Headless.h"
@@ -97,6 +101,44 @@ boost::shared_ptr<v3d::image::Image> draw(v3d::test::Headless* headless, float t
 }
 
 /**
+ * A projection measuring the world in pixels of the target.
+ **/
+glm::mat4 pixels() {
+    glm::mat4 projection(1.0F);
+    projection[0][0] = 2.0F / static_cast<float>(kSize);
+    projection[1][1] = 2.0F / static_cast<float>(kSize);
+    projection[3][0] = -1.0F;
+    projection[3][1] = -1.0F;
+    return projection;
+}
+
+/**
+ * The square standing in the world over a stretch of the target, in pixels, far or near.
+ **/
+v3d::render::realtime::canvas::World::Corners square(float from, float to, float depth) {
+    return { glm::vec3(from, from, depth), glm::vec3(to, from, depth), glm::vec3(to, to, depth), glm::vec3(from, to, depth) };
+}
+
+/**
+ * Draw world glyphs of the square sorted by depth, through a camera measuring the world in
+ * pixels, and read the target back.
+ **/
+boost::shared_ptr<v3d::image::Image> drawWorld(v3d::test::Headless* headless, const v3d::render::realtime::canvas::DepthOrder& order,
+    const std::string& path) {
+    v3d::render::realtime::canvas::World world;
+    order.into(&world);
+    const boost::shared_ptr<v3d::render::realtime::RenderTarget> target = boost::make_shared<v3d::render::realtime::RenderTarget>(*headless->context,
+        v3d::render::realtime::RenderTarget::Spec{ .width = kSize, .height = kSize, .colour = kColourFormat });
+    v3d::render::realtime::Frame frame;
+    const boost::shared_ptr<v3d::render::realtime::Pass> pass = frame.pass("world");
+    pass->target(target);
+    pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+    pass->camera(glm::mat4(1.0F), pixels());
+    headless->context->worldQuads()->submit(world, pass.get());
+    return headless->picture(frame, *target, path);
+}
+
+/**
  * @return the red of a texel of a picture
  **/
 int red(v3d::image::Image& picture, uint32_t x, uint32_t y) {
@@ -137,6 +179,33 @@ BOOST_AUTO_TEST_CASE(curves_stay_whole_when_turned) {
     BOOST_CHECK_EQUAL(red(*picture, 16, 5), 255);
     BOOST_CHECK_EQUAL(red(*picture, 4, 4), 0);
     BOOST_CHECK_EQUAL(red(*picture, 27, 27), 0);
+}
+
+/**
+ * A glyph standing in the world is drawn from its curves through the pass's camera, and of two
+ * glyphs sorted by depth the nearer is drawn over the further.
+ **/
+BOOST_AUTO_TEST_CASE(world_glyphs_are_drawn_in_depth_order) {
+    v3d::test::Headless headless(kColourFormat, kSize, kSize);
+    const boost::shared_ptr<v3d::render::realtime::Textures> textures = headless.context->textures();
+    const v3d::render::realtime::canvas::World::Glyph glyph{
+        .em = { glm::vec2(0.0F, 0.0F), glm::vec2(1.0F, 0.0F), glm::vec2(1.0F, 1.0F), glm::vec2(0.0F, 1.0F) },
+        .curveTexture = textures->texture(TextureFactory::Texels{ .data = kCurves.data(), .width = 8, .height = 1 }),
+        .bandTexture = textures->texture(TextureFactory::Texels{ .data = kBands.data(), .width = 4, .height = 1 }) };
+    v3d::render::realtime::canvas::DepthOrder order;
+    // the near one added first, so only the sort puts it over the far one
+    order.glyph(1.0F, square(8.0F, 40.0F, 0.25F), glyph, glm::vec4(0.0F, 1.0F, 0.0F, 1.0F));
+    order.glyph(2.0F, square(0.0F, 32.0F, 0.5F), glyph, glm::vec4(1.0F, 0.0F, 0.0F, 1.0F));
+    const boost::shared_ptr<v3d::image::Image> picture = drawWorld(&headless, order, "data_out/curve_square_world.png");
+    BOOST_REQUIRE(picture);
+    BOOST_CHECK(headless.silent());
+    // the far square alone covers its own middle less a margin; the near one reaches past it
+    BOOST_CHECK_EQUAL(red(*picture, 9, 9), 255);
+    BOOST_CHECK_EQUAL(red(*picture, 2, 2), 0);
+    // where both cover, the near one is on top
+    const std::size_t overlap = ((std::size_t{22} * kSize) + 22) * 4;
+    BOOST_CHECK_EQUAL(static_cast<int>(picture->data()[overlap]), 0);
+    BOOST_CHECK_EQUAL(static_cast<int>(picture->data()[overlap + 1]), 255);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

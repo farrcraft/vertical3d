@@ -125,6 +125,8 @@ class World final {
     struct Push final {
         glm::vec4 tint;
         uint32_t texture;
+        uint32_t bands = 0;   /**< a curve batch's bands **/
+        uint32_t curves = 0;  /**< 1 when the batch draws glyphs from their curves **/
     };
 
     /**

@@ -49,6 +49,18 @@ class World final {
         glm::vec3 position;
         glm::vec2 uv;
         glm::vec4 colour;
+        uint32_t glyph = 0;  /**< where a curve glyph's data starts among its bands. Every other quad leaves it 0 **/
+    };
+
+    /**
+     * A glyph drawn from its curves, as Canvas::curves() draws one: the place in the em square
+     * each corner of its quad carries, with y upwards, and where its data starts among the bands.
+     **/
+    struct Glyph final {
+        std::array<glm::vec2, 4> em{};
+        uint32_t bands = 0;
+        TextureHandle curveTexture;  /**< the float texture of the glyph's curves **/
+        TextureHandle bandTexture;   /**< and of its bands **/
     };
 
     /**
@@ -59,6 +71,7 @@ class World final {
         Batch() noexcept;
 
         TextureHandle texture;  /**< unset for the untextured quads drawn against white **/
+        TextureHandle bands;    /**< set for a run of curve glyphs, whose curves are in texture **/
         uint32_t firstIndex;    /**< where the run starts in indices() **/
         uint32_t indices;       /**< how long the run is **/
     };
@@ -140,6 +153,13 @@ class World final {
         const glm::vec4& colour, const TextureHandle& texture);
 
     /**
+     * A glyph drawn from its curves over a quad, sharp at any distance and angle. Its corners
+     * take the glyph's em corners in the order they are given. A run of glyphs never merges with
+     * quads drawn another way.
+     **/
+    void glyph(const Corners& corners, const Glyph& glyph, const glm::vec4& colour);
+
+    /**
      * @return the vertex stream, in the layout the world quad pipeline declares
      **/
     const std::vector<Vertex>& vertices() const noexcept;
@@ -164,14 +184,14 @@ class World final {
     static constexpr uint32_t QUAD_INDICES = 6;
 
     /**
-     * Start a batch, or extend the open one when it draws against the same texture.
+     * Start a batch, or extend the open one when it draws against the same texture and bands.
      **/
-    void open(const TextureHandle& texture);
+    void open(const TextureHandle& texture, const TextureHandle& bands = TextureHandle());
 
     /**
      * Add a vertex with the current transform applied.
      **/
-    void vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour);
+    void vertex(const glm::vec3& position, const glm::vec2& uv, const glm::vec4& colour, uint32_t glyph = 0);
 
     /**
      * Index the four vertices starting at first as two triangles, fanned from the first

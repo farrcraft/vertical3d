@@ -20,7 +20,7 @@ colour and depth formats they draw into, and each of them compiles a variant per
 |---|---|---|---|
 | `Quad` | 2 | neither tests nor writes | one vertex format (position, uv, colour, glyph); untextured quads sample white; the `text` push value selects a picture, the distance-field branch or the curve branch; into an `_SRGB` format, `quad.frag` is compiled with `LINEARISE` and decodes before it writes |
 | `Line` | 2 | tests and writes, unless the pass turns writing off | `LINE_LIST`, no index buffer; positions in world space through set 0 |
-| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept |
+| `World` | 4 (alpha and additive, each with and without depth) | tests, does not write unless the pass turns writing on | additive: colour added by source alpha, destination alpha kept; a vertex carries a glyph, and the `curves` push value selects the curve branch, as `Quad`'s does |
 | `Lit` | cel, outline, shadow, and a skinned version of each | tests and writes | front face given at construction, clockwise by default; back faces culled (outline culls front); shadow pipeline has depth bias and a push constant, the cascade; built only when given a shadow format |
 | `FullScreen` | 1 | neither | one triangle from three vertices and no vertex buffer; caller's fragment SPIR-V |
 

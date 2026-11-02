@@ -123,6 +123,14 @@ paragraph, in pixels with y downwards, through an affine `glm::mat3` into the ca
   otherwise copies the rows the store changed. `draw()` syncs before it hands the quads to the
   canvas.
 
+**Text in the world.** `draw(world, paragraph, transform)` stands the paragraph in a
+`canvas::World`, and `draw(order, key, paragraph, transform)` adds it to a `canvas::DepthOrder`
+with every glyph at one key. The transform is a `glm::mat4` from the paragraph's space, in pixels
+with y downwards on the plane z = 0, into the world. A glyph there is wider than its outline by
+`WORLD_MARGIN`, a sixteenth of an em on every side, because a screen pixel is not known there.
+That is enough for text drawn larger than sixteen pixels to the em. To face the camera, build the
+transform from the camera's right and the world's up.
+
 Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-when-scaled.md)
 
 ### Glyph pages

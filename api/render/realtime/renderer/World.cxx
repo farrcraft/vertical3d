@@ -89,6 +89,7 @@ PipelineHandle World::createPipeline(const std::string& name, const vulkan::pipe
         .vertexAttribute({.location = 0, .binding = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(canvas::World::Vertex, position)})
         .vertexAttribute({.location = 1, .binding = 0, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(canvas::World::Vertex, uv)})
         .vertexAttribute({.location = 2, .binding = 0, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(canvas::World::Vertex, colour)})
+        .vertexAttribute({.location = 3, .binding = 0, .format = VK_FORMAT_R32_UINT, .offset = offsetof(canvas::World::Vertex, glyph)})
         // a quad standing in the world is seen from whichever side the camera is on, and a
         // tile highlight is seen from above and below
         .cull(VK_CULL_MODE_NONE)
@@ -141,7 +142,9 @@ void World::submit(const canvas::World& canvas, Pass* pass, uint16_t layer, Blen
             continue;
         }
         // an unset texture is the untextured case, drawn against white
-        const Push constants{.tint = tint, .texture = textures_->slot(batch.texture)};
+        // a run with bands draws curves, and the shader takes the curves from its texture
+        const Push constants{.tint = tint, .texture = textures_->slot(batch.texture), .bands = batch.bands.valid() ? textures_->slot(batch.bands) : 0U,
+            .curves = batch.bands.valid() ? 1U : 0U};
 
         DrawItem item;
         item.key.layer = layer;

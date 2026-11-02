@@ -3,6 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/font/Curves.h>
 #include <api/font/Face.h>
 #include <api/font/Family.h>
 #include <api/font/FallbackChain.h>
@@ -13,6 +14,8 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/Handle.h>
 #include <api/render/realtime/canvas/Canvas.h>
+#include <api/render/realtime/canvas/DepthOrder.h>
+#include <api/render/realtime/canvas/World.h>
 #include <api/ui/paint/CurvePages.h>
 #include <api/ui/paint/CurveText.h>
 
@@ -25,6 +28,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 #include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 
 namespace {
@@ -131,6 +135,41 @@ BOOST_AUTO_TEST_CASE(a_transform_places_the_quads) {
     // the quad's top edge, along x before the turn, now runs along y
     BOOST_CHECK_SMALL(canvas.vertices()[1].position.x - canvas.vertices()[0].position.x, 0.001F);
     BOOST_CHECK_CLOSE(std::abs(canvas.vertices()[1].position.y - canvas.vertices()[0].position.y), plain, 0.01F);
+}
+
+/**
+ * A paragraph stands in the world as glyph quads on the plane its transform gives, with the
+ * world margin around each outline, and among other quads by its key.
+ **/
+BOOST_AUTO_TEST_CASE(a_paragraph_stands_in_the_world) {
+    const v3d::font::Paragraph paragraph(cache, "H", style);
+    v3d::render::realtime::canvas::World world;
+    // a paragraph pixel is a hundredth of a world unit, laid on the ground plane
+    glm::mat4 ground(1.0F);
+    ground[0] = glm::vec4(0.01F, 0.0F, 0.0F, 0.0F);
+    ground[1] = glm::vec4(0.0F, 0.0F, 0.01F, 0.0F);
+    text.draw(&world, paragraph, ground);
+    BOOST_REQUIRE_EQUAL(world.vertices().size(), 4U);
+    BOOST_REQUIRE_EQUAL(world.batches().size(), 1U);
+    BOOST_CHECK(world.batches()[0].bands.valid());
+    for (const v3d::render::realtime::canvas::World::Vertex& corner : world.vertices()) {
+        BOOST_CHECK_EQUAL(corner.position.y, 0.0F);
+    }
+    // the quad is as wide as the outline, and the world margin on either side
+    const boost::shared_ptr<v3d::font::Face> face = style.fonts->faces({}).front();
+    const v3d::font::CurveGlyph outlined = v3d::font::outline(*face, face->glyphIndex(U'H'));
+    BOOST_CHECK_CLOSE(world.vertices()[1].uv.x - world.vertices()[0].uv.x,
+        (outlined.max.x - outlined.min.x) + (2.0F * v3d::ui::paint::CurveText::WORLD_MARGIN), 0.01F);
+
+    v3d::render::realtime::canvas::DepthOrder order;
+    text.draw(&order, 1.0F, paragraph, ground);
+    text.draw(&order, 2.0F, v3d::font::Paragraph(cache, "Hi", style), ground);
+    v3d::render::realtime::canvas::World sorted;
+    order.into(&sorted);
+    // the further paragraph, of two glyphs, comes out first
+    BOOST_REQUIRE_EQUAL(sorted.vertices().size(), 12U);
+    BOOST_CHECK_NE(sorted.vertices()[0].glyph, sorted.vertices()[4].glyph);
+    BOOST_CHECK_EQUAL(sorted.vertices()[8].glyph, world.vertices()[0].glyph);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

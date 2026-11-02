@@ -8,6 +8,7 @@
 #include <api/render/realtime/Handle.h>
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "World.h"
@@ -22,7 +23,8 @@ namespace v3d::render::realtime::canvas {
  *
  * The caller supplies the key. In an isometric projection it is how far up the ground plane a
  * sprite's feet are, which nothing here can compute. A larger key is further away and is drawn
- * first. Equal keys are drawn grouped by texture and otherwise in the order they were added. A
+ * first. Equal keys are drawn grouped by texture, and glyphs by their bands, and otherwise in
+ * the order they were added. A
  * caller that needs fewer batch cuts quantises its key, to a tile row for example, and lets
  * the tie-break merge them. A key that is not a number is drawn last.
  *
@@ -49,6 +51,12 @@ class DepthOrder final {
         const glm::vec2& uv1, const glm::vec4& colour, const TextureHandle& texture);
 
     /**
+     * A glyph drawn from its curves, with World::glyph's meaning for the rest.
+     * @param key how far away the glyph is, in whatever measure the caller sorts by
+     **/
+    void glyph(float key, const World::Corners& corners, const World::Glyph& glyph, const glm::vec4& colour);
+
+    /**
      * Add everything collected to a canvas, furthest first. The canvas's current transform
      * applies to it as it would to quads added directly.
      **/
@@ -67,6 +75,7 @@ class DepthOrder final {
         glm::vec2 uv1;
         glm::vec4 colour;
         TextureHandle texture;  /**< unset for an untextured quad **/
+        std::optional<World::Glyph> glyph;  /**< set for a glyph drawn from its curves **/
     };
 
     std::vector<Entry> entries_;

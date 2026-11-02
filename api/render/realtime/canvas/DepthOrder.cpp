@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numeric>
+#include <optional>
 #include <vector>
 
 namespace v3d::render::realtime::canvas {
@@ -32,7 +33,13 @@ void DepthOrder::quad(float key, const World::Corners& corners, const glm::vec4&
  **/
 void DepthOrder::quad(float key, const World::Corners& corners, const glm::vec2& uv0,
     const glm::vec2& uv1, const glm::vec4& colour, const TextureHandle& texture) {
-    entries_.push_back(Entry{key, corners, uv0, uv1, colour, texture});
+    entries_.push_back(Entry{key, corners, uv0, uv1, colour, texture, std::nullopt});
+}
+
+/**
+ **/
+void DepthOrder::glyph(float key, const World::Corners& corners, const World::Glyph& glyph, const glm::vec4& colour) {
+    entries_.push_back(Entry{key, corners, glm::vec2(0.0F), glm::vec2(0.0F), colour, glyph.curveTexture, glyph});
 }
 
 /**
@@ -55,12 +62,21 @@ void DepthOrder::into(World* canvas) const {
         if (!firstMissing && first.key != second.key) {
             return first.key > second.key;
         }
-        return first.texture < second.texture;
+        if (first.texture != second.texture) {
+            return first.texture < second.texture;
+        }
+        const TextureHandle firstBands = first.glyph ? first.glyph->bandTexture : TextureHandle();
+        const TextureHandle secondBands = second.glyph ? second.glyph->bandTexture : TextureHandle();
+        return firstBands < secondBands;
     });
 
     for (std::size_t index : order) {
         const Entry& entry = entries_[index];
-        canvas->quad(entry.corners, entry.uv0, entry.uv1, entry.colour, entry.texture);
+        if (entry.glyph) {
+            canvas->glyph(entry.corners, *entry.glyph, entry.colour);
+        } else {
+            canvas->quad(entry.corners, entry.uv0, entry.uv1, entry.colour, entry.texture);
+        }
     }
 }
 
