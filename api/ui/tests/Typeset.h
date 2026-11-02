@@ -76,8 +76,8 @@ inline boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const v3d::ui::p
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>(".", logger);
     v3d::ui::paint::GlyphPages pages(
-        [](const unsigned char*, std::uint32_t) { return v3d::render::realtime::TextureHandle(pageTexture); },
-        [](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&) {},
+        [](const unsigned char*, std::uint32_t, std::uint32_t) { return v3d::render::realtime::TextureHandle(pageTexture); },
+        [](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {},
         [](const v3d::render::realtime::TextureHandle&) {});
     return boost::make_shared<v3d::ui::paint::TextRenderer>(assets, logger, std::move(pages), size, faces);
 }
@@ -90,6 +90,7 @@ inline v3d::ui::paint::TextRenderer::Faces only(const std::string& face) {
     faces.regular = face;
     faces.semiBold.clear();
     faces.fallback.clear();
+    faces.emoji.clear();
     return faces;
 }
 

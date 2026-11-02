@@ -75,8 +75,8 @@ struct Drawing {
             [this](const TextureHandle&, const glm::uvec2&, const float*, const glm::uvec2&) { device.updated++; },
             [](const TextureHandle&) {}),
             v3d::ui::paint::GlyphPages(
-            [](const unsigned char*, std::uint32_t) { return TextureHandle(FIELD_PAGE); },
-            [](const TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&) {},
+            [](const unsigned char*, std::uint32_t, std::uint32_t) { return TextureHandle(FIELD_PAGE); },
+            [](const TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {},
             [](const TextureHandle&) {})) {
         const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>("Inter");
         family->add(v3d::font::Face::open(library, "data/fonts/Inter-Regular.ttf", logger));

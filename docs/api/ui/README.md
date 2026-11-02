@@ -79,7 +79,7 @@ text, pen, colour, weight and size.
 `input::Cursor` takes the same `Type`, to place a text box's caret where it is clicked.
 
 `v3d::ui::paint::TextRenderer` holds one typeface in two weights. Every size and weight from one
-`TextRenderer` shares one glyph store.
+`TextRenderer` shares one glyph store, and one store of colour glyphs.
 
 The faces are in the shared data directory:
 
@@ -88,10 +88,11 @@ The faces are in the shared data directory:
 | Regular | `fonts/Inter-Regular.ttf` | all text, unless a role asks for semibold |
 | SemiBold | `fonts/Inter-SemiBold.ttf` | a role whose weight is semibold, such as a window's title |
 | Fallback | `fonts/NotoSans-Regular.ttf` | a character the two Inter faces lack, in either weight |
+| Emoji | `fonts/NotoColorEmoji.ttf` | an emoji, in colour, from Noto Color Emoji's COLR version 1 build |
 
 `TextRenderer::Faces` names other files. A semibold face that cannot be loaded sets semibold text
-in the regular face, and a fallback that cannot be loaded leaves the missing glyph in place. Both
-are logged. Each face's licence is beside it in `fonts/`.
+in the regular face, and a fallback or an emoji face that cannot be loaded leaves the missing
+glyph in place. Each is logged. Each face's licence is beside it in `fonts/`.
 
 Background: [ADR-0129](../../adr/0129-ui-inter-in-two-weights-noto-sans-as-fallback.md)
 
@@ -102,6 +103,12 @@ quarter of a pixel and each line's baseline is on a whole pixel. It is hinted ve
 text on the pixel grid is drawn at its exact size and sharp. A change of scale draws at the new
 size. A `Screen` calls `beginFrame()` on its text renderer each frame, so a glyph unused since
 the frame before may make room for another.
+
+A glyph its face draws in colour, such as an emoji, is painted at its size into the store of
+colour glyphs, as [Fonts.md](../Fonts.md#colour-glyphs) describes. It is painted in its face's
+first palette, any layer in the text's colour taking the text's red, green and blue. It is
+drawn as a picture in its own colours, faded by the text's alpha, and not corrected as text is.
+How a face draws each glyph is read once and kept.
 
 `width()` counts the space at the end of a string, so a caret placed after it lands past it.
 `draw()` starts a new line below at a newline.
@@ -157,8 +164,9 @@ Background: [ADR-0145](../../adr/0145-text-coverage-on-the-pixel-grid-curves-whe
 ### Glyph pages
 
 `paint::GlyphPages` keeps the device's copy of a `font::GlyphStore`'s pages, one texture for
-each. `sync(store)` is called once a frame, after the frame's glyphs have been asked of the
-store and before the frame is submitted:
+each, in the store's channels: one byte a pixel, or four for colour glyphs. A `TextRenderer`
+copies the pages it is given, one for each of its stores. `sync(store)` is called once a frame,
+after the frame's glyphs have been asked of the store and before the frame is submitted:
 
 - A page the store added becomes a texture, made whole from its pixels.
 - A plot the store changed is copied into its page's texture. Earlier frames may still draw the
@@ -171,9 +179,12 @@ context's `Textures`:
 
 ```cpp
 GlyphPages pages(
-    [textures](const unsigned char* pixels, uint32_t side) { return textures->texture(pixels, side, side, 1); },
-    [textures](const TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
-        textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = 1 });
+    [textures](const unsigned char* pixels, uint32_t side, uint32_t channels) {
+        return textures->texture(pixels, side, side, channels);
+    },
+    [textures](const TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+        uint32_t channels) {
+        textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
     },
     [textures](const TextureHandle& page) { textures->release(page); });
 ```

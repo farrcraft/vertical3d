@@ -97,9 +97,10 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window, const b
         },
         [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }),
         v3d::ui::paint::GlyphPages(
-        [textures](const unsigned char* pixels, uint32_t side) { return textures->texture(pixels, side, side, 1); },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
-            textures->update(page, at, {.data = pixels, .width = size.x, .height = size.y, .channels = 1});
+        [textures](const unsigned char* pixels, uint32_t side, uint32_t channels) { return textures->texture(pixels, side, side, channels); },
+        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+            uint32_t channels) {
+            textures->update(page, at, {.data = pixels, .width = size.x, .height = size.y, .channels = channels});
         },
         [textures](const v3d::render::realtime::TextureHandle& page) { textures->release(page); }));
 }

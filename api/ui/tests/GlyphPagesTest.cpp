@@ -39,11 +39,11 @@ struct Device {
 struct Recording {
     Recording() :
         pages(
-            [this](const unsigned char*, std::uint32_t side) {
+            [this](const unsigned char*, std::uint32_t side, std::uint32_t) {
                 device.created.push_back(side);
                 return TextureHandle(static_cast<std::uint32_t>(device.created.size()));
             },
-            [this](const TextureHandle&, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2&) {
+            [this](const TextureHandle&, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2&, std::uint32_t) {
                 device.updated.push_back(at);
                 device.firstTexels.push_back(pixels[0]);
             },

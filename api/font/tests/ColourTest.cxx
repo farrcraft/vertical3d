@@ -5,9 +5,13 @@
 
 #include <api/font/ColourGlyph.h>
 #include <api/font/Face.h>
+#include <api/font/FallbackChain.h>
+#include <api/font/Family.h>
 #include <api/font/GlyphStore.h>
 #include <api/font/Library.h>
 #include <api/font/Paint.h>
+#include <api/font/ShapedRun.h>
+#include <api/font/Shaper.h>
 #include <api/font/internal/Composite.h>
 #include <api/log/Logger.h>
 
@@ -15,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -311,6 +316,62 @@ BOOST_AUTO_TEST_CASE(an_svg_path_is_filled_by_its_rule) {
     BOOST_REQUIRE(painted.size == glm::uvec2(20));
     BOOST_CHECK(near(at(painted, 2, 10), blue()));
     BOOST_CHECK_EQUAL(at(painted, 10, 10).w, 0);
+}
+
+/**
+ * A woman and a laptop joined by a zero width joiner are one emoji, which the emoji face shapes
+ * to one glyph drawn in colour. The letter before it is set in Inter.
+ **/
+BOOST_AUTO_TEST_CASE(an_emoji_sequence_is_shaped_to_one_glyph) {
+    const boost::shared_ptr<v3d::font::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
+    BOOST_CHECK(emoji->colour().paint);
+    const boost::shared_ptr<v3d::font::FallbackChain> chain = boost::make_shared<v3d::font::FallbackChain>();
+    for (const auto& face : { inter, emoji }) {
+        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(face->family());
+        family->add(face);
+        chain->add(family);
+    }
+    const v3d::font::Shaper shaper(chain);
+    const std::vector<v3d::font::ShapedRun> runs = shaper.shape("a\U0001F469\u200D\U0001F4BB", {}, SIZE, {});
+    BOOST_REQUIRE_EQUAL(runs.size(), 2U);
+    BOOST_CHECK(runs[0].face == inter);
+    BOOST_REQUIRE(runs[1].face == emoji);
+    BOOST_REQUIRE_EQUAL(runs[1].glyphs.size(), 1U);
+    const unsigned int index = runs[1].glyphs[0].index;
+    BOOST_CHECK(emoji->coloured(index));
+    BOOST_CHECK(!v3d::font::colour(*emoji, index, 0, SIZE).empty());
+}
+
+/**
+ * A space after an emoji is set in the text's face, not the emoji face, whose space is wider.
+ * A digit with the emoji variation selector and a keycap asks for emoji, and is one glyph of the
+ * emoji face, though the text face has the digit.
+ **/
+BOOST_AUTO_TEST_CASE(a_cluster_asking_for_emoji_is_set_in_the_emoji_face) {
+    const boost::shared_ptr<v3d::font::Face> emoji = open("data/fonts/NotoColorEmoji.ttf");
+    const boost::shared_ptr<v3d::font::FallbackChain> chain = boost::make_shared<v3d::font::FallbackChain>();
+    for (const auto& face : { inter, emoji }) {
+        const boost::shared_ptr<v3d::font::Family> family = boost::make_shared<v3d::font::Family>(face->family());
+        family->add(face);
+        chain->add(family);
+    }
+    const v3d::font::Shaper shaper(chain);
+    const std::vector<v3d::font::ShapedRun> spaced = shaper.shape("\U0001F600 a", {}, SIZE, {});
+    BOOST_REQUIRE_EQUAL(spaced.size(), 2U);
+    BOOST_CHECK(spaced[0].face == emoji);
+    BOOST_CHECK_EQUAL(spaced[0].end, 4U);
+    BOOST_CHECK(spaced[1].face == inter);
+
+    const std::vector<v3d::font::ShapedRun> keycap = shaper.shape("1️⃣", {}, SIZE, {});
+    BOOST_REQUIRE_EQUAL(keycap.size(), 1U);
+    BOOST_CHECK(keycap[0].face == emoji);
+    BOOST_REQUIRE_EQUAL(keycap[0].glyphs.size(), 1U);
+    BOOST_CHECK(emoji->coloured(keycap[0].glyphs[0].index));
+
+    // the text variation selector keeps a digit in the text face
+    const std::vector<v3d::font::ShapedRun> text = shaper.shape("1︎", {}, SIZE, {});
+    BOOST_REQUIRE_EQUAL(text.size(), 1U);
+    BOOST_CHECK(text[0].face == inter);
 }
 
 BOOST_AUTO_TEST_CASE(composites_put_one_colour_on_another) {

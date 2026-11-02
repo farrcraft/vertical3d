@@ -39,7 +39,15 @@ const char* const eAcute = "\xC3\xA9";
 struct Device {
     std::size_t created = 0;
     std::size_t updated = 0;
+    std::size_t colourPages = 0;  /**< the pages made of four channels **/
 };
+
+/**
+ * The handle a page of a number of channels is given, so a case can tell colour pages apart.
+ **/
+std::uint32_t pageHandle(std::uint32_t channels) {
+    return channels == 4 ? 4 : 1;
+}
 
 /**
  * A renderer over the shared font whose pages are handed back without a device, since nothing
@@ -50,13 +58,14 @@ boost::shared_ptr<v3d::ui::paint::TextRenderer> renderer(const v3d::ui::paint::T
     const boost::shared_ptr<v3d::log::Logger> logger = boost::make_shared<v3d::log::Logger>();
     const boost::shared_ptr<v3d::asset::Manager> assets = boost::make_shared<v3d::asset::Manager>("data", logger);
     v3d::ui::paint::GlyphPages pages(
-        [device](const unsigned char*, std::uint32_t) {
+        [device](const unsigned char*, std::uint32_t, std::uint32_t channels) {
             if (device != nullptr) {
                 device->created++;
+                device->colourPages += channels == 4 ? 1 : 0;
             }
-            return v3d::render::realtime::TextureHandle(1);
+            return v3d::render::realtime::TextureHandle(pageHandle(channels));
         },
-        [device](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&) {
+        [device](const v3d::render::realtime::TextureHandle&, const glm::uvec2&, const unsigned char*, const glm::uvec2&, std::uint32_t) {
             if (device != nullptr) {
                 device->updated++;
             }
@@ -154,6 +163,49 @@ BOOST_AUTO_TEST_CASE(semibold_text_is_set_in_its_own_face) {
 }
 
 /**
+ * A glyph its face draws in colour is painted onto a page of four channels, and drawn there as a
+ * picture in its own colours, faded by the text's alpha, beside text drawn as coverage.
+ **/
+BOOST_AUTO_TEST_CASE(a_colour_glyph_is_drawn_from_a_colour_page) {
+    // Inter has a glyph of its own at U+E000, so the fixture is the first face and draws it, and
+    // Inter sets the A after it
+    v3d::ui::paint::TextRenderer::Faces faces;
+    faces.regular = "../fonts/colr0.ttf";
+    faces.semiBold.clear();
+    faces.fallback = v3d::ui::paint::TextRenderer::defaultFont;
+    Device device;
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer(faces, &device);
+    BOOST_REQUIRE(text->loaded());
+    v3d::render::realtime::canvas::Canvas canvas;
+    // the fixture's U+E000, red on the left and blue on the right, then an A
+    text->draw(&canvas, "\uE000A", glm::vec2(10.0F, 50.0F), glm::vec4(0.0F, 0.0F, 0.0F, 0.5F), 20.0F);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 8U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
+    BOOST_CHECK(canvas.vertices()[0].colour == glm::vec4(1.0F, 1.0F, 1.0F, 0.5F));
+    BOOST_CHECK_GE(canvas.vertices()[4].contrast, 0.0F);
+    // the em square is 20 pixels, from 4 below the baseline
+    BOOST_CHECK_CLOSE(canvas.vertices()[2].position.y - canvas.vertices()[0].position.y, 20.0F, 0.01F);
+    BOOST_CHECK_EQUAL(device.colourPages, 1U);
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK_EQUAL(canvas.batches()[0].texture.id(), pageHandle(4));
+}
+
+/**
+ * An emoji the text faces lack is drawn from the emoji face, its sequence one glyph in colour.
+ **/
+BOOST_AUTO_TEST_CASE(an_emoji_is_drawn_in_colour_from_the_emoji_face) {
+    Device device;
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = renderer(v3d::ui::paint::TextRenderer::Faces(), &device);
+    BOOST_REQUIRE(text->loaded());
+    v3d::render::realtime::canvas::Canvas canvas;
+    // a woman and a laptop, joined by a zero width joiner
+    text->draw(&canvas, "\U0001F469\u200D\U0001F4BB", glm::vec2(10.0F, 50.0F), glm::vec4(1.0F), 20.0F);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
+    BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, -1.0F);
+    BOOST_CHECK_EQUAL(device.colourPages, 1U);
+}
+
+/**
  * A character the regular face lacks is drawn from the fallback, and measures as it does in a
  * renderer of the fallback's face alone.
  **/
@@ -165,6 +217,7 @@ BOOST_AUTO_TEST_CASE(a_character_the_face_lacks_comes_from_the_fallback) {
     alone.regular = v3d::ui::paint::TextRenderer::fallbackFont;
     alone.semiBold.clear();
     alone.fallback.clear();
+    alone.emoji.clear();
     const boost::shared_ptr<v3d::ui::paint::TextRenderer> noto = renderer(alone);
     BOOST_REQUIRE(text->loaded());
     BOOST_REQUIRE(noto->loaded());

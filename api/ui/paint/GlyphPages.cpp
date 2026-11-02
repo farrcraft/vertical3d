@@ -36,21 +36,22 @@ void GlyphPages::sync(font::GlyphStore* store) {
     // a page added is made whole, so the plots the store gives for it need no copy of their own
     const std::size_t kept = textures_.size();
     const std::uint32_t side = store->spec().pageSize;
+    const std::uint32_t channels = store->spec().channels;
     for (std::size_t page = kept; page < store->pages(); page++) {
-        textures_.push_back(create_(store->pixels(page).data(), side));
+        textures_.push_back(create_(store->pixels(page).data(), side, channels));
     }
     for (const font::GlyphRegion& region : store->regions()) {
         if (region.page >= kept) {
             continue;
         }
         const std::vector<unsigned char>& pixels = store->pixels(region.page);
-        rows_.resize(static_cast<std::size_t>(region.size.x) * region.size.y);
+        const std::size_t width = static_cast<std::size_t>(region.size.x) * channels;
+        rows_.resize(width * region.size.y);
         for (std::uint32_t row = 0; row < region.size.y; row++) {
-            const std::size_t from = (static_cast<std::size_t>(region.position.y + row) * side) + region.position.x;
-            std::copy_n(pixels.begin() + static_cast<std::ptrdiff_t>(from), region.size.x,
-                rows_.begin() + static_cast<std::ptrdiff_t>(static_cast<std::size_t>(row) * region.size.x));
+            const std::size_t from = ((static_cast<std::size_t>(region.position.y + row) * side) + region.position.x) * channels;
+            std::copy_n(pixels.begin() + static_cast<std::ptrdiff_t>(from), width, rows_.begin() + static_cast<std::ptrdiff_t>(row * width));
         }
-        update_(textures_[region.page], region.position, rows_.data(), region.size);
+        update_(textures_[region.page], region.position, rows_.data(), region.size, channels);
     }
 }
 

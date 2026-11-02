@@ -52,11 +52,21 @@ kerning, mark positioning, ligatures and contextual forms, and any OpenType feat
   offset to another, with a `Bidi` resolved over the whole string. The rest of the string is
   the context, so the characters either side shape the range's edges as they would inside one
   run. A paragraph shapes each of its style ranges this way.
-- **Runs.** A character stays in the run before it when that run's face has it, or is the face
-  the chain finds for it. Otherwise it starts a run in the face the chain finds. A run also ends
-  where the script changes. A character with no script of its own, such as a space, a digit or
-  a combining mark, takes the script of its run, or of the first character after it that has
-  one. Text with no script at all is shaped as Latin.
+- **Clusters.** A string is split a cluster at a time. A cluster is a character with the marks,
+  joiners, variation selectors and emoji modifiers after it, a character a zero width joiner
+  joins to it, or a pair of regional indicators, which is a flag. A cluster asks for emoji when
+  it holds U+FE0F or a keycap, or starts with a character shown as an emoji by default, and it
+  has no U+FE0E.
+- **Faces.** A cluster that asks for emoji is set in the chain's first colour face that has its
+  first character. Any other is set in the chain's first face that has all its characters but
+  the invisible ones, or the face the chain finds for its first character when none has them
+  all.
+- **Runs.** A cluster stays in the run before it when that run's face is the one found for it,
+  or has all its characters and is not a colour face. A space after an emoji is therefore set
+  in the text's face, not the emoji face, and a space or a mark otherwise does not start a run
+  of its own. A run also ends where the script changes. A character with no script of its
+  own, such as a space, a digit or a combining mark, takes the script of its run, or of the
+  first character after it that has one. Text with no script at all is shaped as Latin.
 - **Direction.** A run also ends where the embedding level changes, as [Bidi](#bidi) resolves
   it. A run's `level` is that level, and its direction is right to left when the level is odd,
   so a number inside Arabic text is a run of its own, shaped left to right. The last argument of

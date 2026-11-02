@@ -13,6 +13,8 @@
 #include <api/font/GlyphStore.h>
 #include <api/font/Library.h>
 #include <api/font/Paragraph.h>
+#include <api/font/ColourGlyph.h>
+#include <api/font/Paint.h>
 #include <api/font/Rasterize.h>
 #include <api/font/ShapedGlyph.h>
 #include <api/font/ShapingCache.h>
@@ -48,11 +50,21 @@ namespace {
  **/
 constexpr unsigned int SEMIBOLD_WEIGHT = 600;
 
+/**
+ * @return the pages colour glyphs are kept in: the default pages, of four bytes a pixel
+ **/
+font::GlyphStore::Spec colourPages() {
+    font::GlyphStore::Spec spec;
+    spec.channels = 4;
+    return spec;
+}
+
 };  // namespace
 
 const char* const TextRenderer::defaultFont = "fonts/Inter-Regular.ttf";
 const char* const TextRenderer::semiBoldFont = "fonts/Inter-SemiBold.ttf";
 const char* const TextRenderer::fallbackFont = "fonts/NotoSans-Regular.ttf";
+const char* const TextRenderer::emojiFont = "fonts/NotoColorEmoji.ttf";
 
 const float TextRenderer::baseSize = 48.0F;
 
@@ -61,7 +73,8 @@ const float TextRenderer::baseSize = 48.0F;
 TextRenderer::Faces::Faces() :
 regular(defaultFont),
 semiBold(semiBoldFont),
-fallback(fallbackFont) {
+fallback(fallbackFont),
+emoji(emojiFont) {
 }
 
 /**
@@ -72,14 +85,17 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     float size,
     const Faces& faces) :
     shaping_(boost::make_shared<font::ShapingCache>("", logger)),
-    pages_(std::move(pages)),
+    colourStore_(colourPages()),
+    pages_(pages),
+    colourPages_(std::move(pages)),
     size_(size) {
     // each face is opened here, not loaded as an asset. The manager only supplies the file's path
     const boost::shared_ptr<font::Library> library = boost::make_shared<font::Library>();
     const auto open = [&](const std::string& file) {
         return file.empty() ? boost::shared_ptr<font::Face>() : font::Face::open(library, assetManager->path(file), logger);
     };
-    // the regular and semibold faces are one family, and the fallback the next in the chain
+    // the regular and semibold faces are one family, and the fallback and the emoji the next in
+    // the chain
     const boost::shared_ptr<font::Family> primary = boost::make_shared<font::Family>("primary");
     primary->add(open(faces.regular));
     primary->add(open(faces.semiBold));
@@ -88,6 +104,11 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     if (!faces.fallback.empty() && fallback->empty()) {
         logger->get()->warn("{} could not be loaded, so a character the faces lack draws as their missing glyph", faces.fallback);
     }
+    const boost::shared_ptr<font::Family> emoji = boost::make_shared<font::Family>("emoji");
+    emoji->add(open(faces.emoji));
+    if (!faces.emoji.empty() && emoji->empty()) {
+        logger->get()->warn("{} could not be loaded, so an emoji the faces lack draws as their missing glyph", faces.emoji);
+    }
     if (primary->empty()) {
         logger->get()->error("{} could not be opened, so nothing drawn through it will have text", faces.regular);
         return;
@@ -95,6 +116,7 @@ TextRenderer::TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetMa
     chain_ = boost::make_shared<font::FallbackChain>();
     chain_->add(primary);
     chain_->add(fallback);
+    chain_->add(emoji);
 }
 
 /**
@@ -113,6 +135,7 @@ float TextRenderer::size() const noexcept {
  **/
 void TextRenderer::beginFrame() {
     store_.beginFrame();
+    colourStore_.beginFrame();
 }
 
 /**
@@ -234,15 +257,22 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const fon
 
     // a page a glyph was just put on has to be on the device before a quad names it
     pages_.sync(&store_);
+    colourPages_.sync(&colourStore_);
 
     // every glyph's effects beneath every glyph, each layer beneath the next
     internal::layerEffects(&effects_);
     internal::drawEffects(canvas, effects_, pages_, glm::mat3(1.0F), &vertices_, &indices_);
 
-    // each glyph a quad of text sampling its page, one call for each run on one page
-    const auto side = static_cast<float>(store_.spec().pageSize);
+    drawPlaced(canvas);
+}
+
+/**
+ **/
+void TextRenderer::drawPlaced(v3d::render::realtime::canvas::Canvas* canvas) {
+    // each glyph a quad sampling its page, one call for each run on one page
     for (std::size_t index = 0; index < placed_.size(); index++) {
         const Placed& placed = placed_[index];
+        const auto side = static_cast<float>((placed.coloured ? colourStore_ : store_).spec().pageSize);
         const glm::vec2 low = placed.position;
         const glm::vec2 high = low + glm::vec2(placed.glyph.size);
         const glm::vec2 from = glm::vec2(placed.glyph.position) / side;
@@ -255,8 +285,8 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const fon
         for (const std::uint32_t corner : { 0U, 1U, 2U, 2U, 3U, 0U }) {
             indices_.push_back(first + corner);
         }
-        if (index + 1 == placed_.size() || placed_[index + 1].glyph.page != placed.glyph.page) {
-            canvas->glyphs(vertices_, indices_, pages_.texture(placed.glyph.page));
+        if (index + 1 == placed_.size() || placed_[index + 1].glyph.page != placed.glyph.page || placed_[index + 1].coloured != placed.coloured) {
+            canvas->glyphs(vertices_, indices_, (placed.coloured ? colourPages_ : pages_).texture(placed.glyph.page));
             vertices_.clear();
             indices_.clear();
         }
@@ -271,12 +301,43 @@ void TextRenderer::place(const font::LineRun& run, unsigned int index, const fon
     const float whole = std::floor(pen.x);
     const float steps = std::min<float>(std::floor((pen.x - whole) * font::SUBPIXEL_STEPS), font::SUBPIXEL_STEPS - 1);
     const auto step = static_cast<std::uint8_t>(steps);  // checked: the pen is finite, so the step is from 0 to 3
-    const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step };
-    const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
+    const Drawn how = drawn(*run.face, index, run.size);
+    if (how == Drawn::Coverage) {
+        const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step };
+        const std::optional<font::StoredGlyph> stored = store_.glyph(key, font::rasterize);
+        if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
+            const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
+            placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour, .contrast = styled.contrast });
+        }
+        return;
+    }
+    // a glyph with no layer in the text's colour is the same in every colour, so it is kept once
+    const glm::vec4 opaque(glm::vec3(styled.colour), 1.0F);
+    const font::GlyphKey key{ .face = run.face.get(), .index = index, .size = run.size, .subpixel = step, .mode = font::GlyphMode::Colour,
+        .foreground = how == Drawn::Foreground ? font::packColour(opaque) : 0 };
+    const std::optional<font::StoredGlyph> stored = colourStore_.glyph(key, [](const font::GlyphKey& asked) { return font::paint(asked); });
     if (stored.has_value() && stored->size.x > 0 && stored->size.y > 0) {
         const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
-        placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour, .contrast = styled.contrast });
+        // a picture quad, not text: its texel is its colour, and the text's alpha fades it
+        placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = glm::vec4(1.0F, 1.0F, 1.0F, styled.colour.a), .contrast = -1.0F,
+            .coloured = true });
     }
+}
+
+/**
+ **/
+TextRenderer::Drawn TextRenderer::drawn(const font::Face& face, unsigned int index, float size) {
+    const std::pair<const font::Face*, unsigned int> key(&face, index);
+    const auto found = drawn_.find(key);
+    if (found != drawn_.end()) {
+        return found->second;
+    }
+    Drawn how = Drawn::Coverage;
+    if (face.coloured(index)) {
+        how = font::colour(face, index, 0, size).foreground() ? Drawn::Foreground : Drawn::Colour;
+    }
+    drawn_.emplace(key, how);
+    return how;
 }
 
 /**

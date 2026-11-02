@@ -18,8 +18,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "GlyphPages.h"
@@ -34,9 +36,9 @@ namespace v3d::ui::paint {
 /**
  * One typeface in two weights, and the text drawn with it.
  *
- * The regular and the semibold face are one family, and the fallback face is the next in a
- * font::FallbackChain, so a string mixing the faces lays out as one font. Text is shaped and
- * laid out as a font::Paragraph, through a cache that keeps what it shaped.
+ * The regular and the semibold face are one family, and the fallback and the emoji face are
+ * the next in a font::FallbackChain, so a string mixing the faces lays out as one font. Text is
+ * shaped and laid out as a font::Paragraph, through a cache that keeps what it shaped.
  *
  * Every glyph is rasterized the first time it is drawn, at the size it is drawn at, into a
  * font::GlyphStore whose pages reach the device through GlyphPages. Its pen is kept to a
@@ -44,8 +46,12 @@ namespace v3d::ui::paint {
  * drawn at its exact size and sharp. A glyph is a batched quad sampling its page, so a line of
  * text joins whatever canvas the app is already filling, and costs the frame no pass of its own.
  *
+ * A glyph a face draws in colour, such as an emoji, is painted at its size into a second store
+ * of colour pages. It is painted in the face's first palette, and a layer that takes the text's
+ * colour takes it. It is drawn in its own colours, times the text's alpha.
+ *
  * A style's effects are drawn beneath its text from each glyph's distance field, kept in the
- * same store, and every glyph's effects before any glyph.
+ * coverage store, and every glyph's effects before any glyph.
  *
  * ComponentRenderer and Immediate measure, wrap and draw through one, which the screen owns. It
  * needs no device, so a ui is drawn and tested without one.
@@ -69,9 +75,15 @@ class TextRenderer {
     static const char* const fallbackFont;
 
     /**
+     * The face in the shared data directory that emoji are drawn from, in colour, used when the
+     * caller names no other.
+     **/
+    static const char* const emojiFont;
+
+    /**
      * The files a renderer loads its faces from, each resolved against the asset manager's
      * path. An empty semibold draws semibold text in the regular face, and an empty fallback
-     * draws a code point the faces lack as their missing glyph.
+     * or emoji face leaves the code points it would draw to the faces before it.
      **/
     struct Faces final {
         /**
@@ -82,6 +94,7 @@ class TextRenderer {
         std::string regular;
         std::string semiBold;
         std::string fallback;
+        std::string emoji;
     };
 
     /**
@@ -112,10 +125,10 @@ class TextRenderer {
      *
      * A regular face that cannot be loaded leaves this measuring zero and drawing nothing, and
      * the log says so. The app then loses its labels but still draws its frame. A semibold face
-     * that cannot be loaded draws semibold text in the regular face, and a fallback that cannot
-     * be loaded leaves the missing glyphs in place, and the log says so.
+     * that cannot be loaded draws semibold text in the regular face. A fallback or an emoji face
+     * that cannot be loaded leaves the missing glyphs in place. The log says so of each.
      *
-     * @param pages what puts the glyph pages on the device
+     * @param pages what puts the glyph pages on the device, for the coverage and the colour stores
      * @param size the size text is drawn at when a draw names none
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
@@ -223,7 +236,22 @@ class TextRenderer {
         glm::vec2 position{ 0.0F };
         glm::vec4 colour{ 1.0F };
         float contrast = 0.0F;
+        bool coloured = false;  /**< whether it is on a colour page **/
     };
+
+    /**
+     * How a face draws a glyph.
+     **/
+    enum class Drawn : std::uint8_t {
+        Coverage,   /**< from its outline, in the text's colour **/
+        Colour,     /**< in its own colours **/
+        Foreground  /**< in its own colours, some of its layers in the text's colour **/
+    };
+
+    /**
+     * @return how a face draws a glyph, read once and kept
+     **/
+    Drawn drawn(const font::Face& face, unsigned int index, float size);
 
     /**
      * Place a glyph and its style's effects for a draw, the glyph rasterized at its pen's step of
@@ -234,6 +262,11 @@ class TextRenderer {
     void place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen);
 
     /**
+     * Append the glyphs placed for a draw to a canvas, each a quad sampling its page.
+     **/
+    void drawPlaced(v3d::render::realtime::canvas::Canvas* canvas);
+
+    /**
      * Tell the trace of a line drawn with its baseline starting at a pen.
      **/
     void report(const font::Paragraph& paragraph, const font::Line& line, const glm::vec2& pen) const;
@@ -241,7 +274,10 @@ class TextRenderer {
     boost::shared_ptr<font::FallbackChain> chain_;
     boost::shared_ptr<font::ShapingCache> shaping_;
     font::GlyphStore store_;
+    font::GlyphStore colourStore_;
     GlyphPages pages_;
+    GlyphPages colourPages_;
+    std::map<std::pair<const font::Face*, unsigned int>, Drawn> drawn_;
     float size_;
     Trace trace_;
     // what draw() places, kept between draws so a frame of labels does not allocate

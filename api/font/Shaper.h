@@ -22,12 +22,22 @@ class FallbackChain;
 /**
  * Shapes text into glyphs as its fonts define: kerning, marks, ligatures and contextual forms.
  *
- * A string is split into runs. A character stays in the run before it when that run's face
- * has it, or is the face the chain finds for it. A space or a combining mark therefore does not
- * start a run of its own. Otherwise a character starts a run in the face the chain finds for
- * it. A run also ends where the script or the embedding level changes. A character that belongs
- * to no script, such as a space, a digit or a mark, takes the script of the run it is in, or of
- * the first character after it with one.
+ * A string is split into runs, a cluster at a time. A cluster is a character and the marks,
+ * joiners, variation selectors and emoji modifiers after it. A zero width joiner joins the next
+ * character to it, and two regional indicators are one cluster, a flag. A cluster asks for emoji
+ * when it holds the emoji variation selector or a keycap, or starts with a character shown as
+ * an emoji by default, and has no text variation selector.
+ *
+ * A cluster stays in the run before it when that run's face is the one found for it, or holds
+ * it and is not a colour face. A space after an emoji is therefore set in the text's face, and a
+ * space or a mark otherwise does not start a run of its own. Otherwise a cluster starts a run.
+ * A cluster that asks for emoji is set in the chain's first colour face that has its first
+ * character. Any other is set in the chain's first face that has all its visible characters.
+ * When no face has them all, it is set in the face the chain finds for its first character.
+ *
+ * A run also ends where the script or the embedding level changes. A character that belongs to
+ * no script, such as a space, a digit or a mark, takes the script of the run it is in, or of the
+ * first character after it with one.
  *
  * Each run's embedding level is resolved as UAX #9 resolves it, and its direction is its level's,
  * so a number in an Arabic sentence is shaped left to right. Runs are in the string's order, and

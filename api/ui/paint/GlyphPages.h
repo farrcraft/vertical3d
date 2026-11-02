@@ -25,22 +25,25 @@ namespace v3d::ui::paint {
  * copied into its page's texture, and a page it let go is released. A plot is copied while
  * earlier frames may still draw the page, as a region update allows.
  *
+ * A page's pixels have the store's channels: one byte, or four for a store of colour glyphs.
+ *
  * The device is reached through callbacks, so the ui names no renderer. With a context's
- * Textures, create is textures->texture(pixels, side, side, 1), update is textures->update()
- * with one channel, and release is textures->release().
+ * Textures, create is textures->texture(pixels, side, side, channels), update is
+ * textures->update() with the channels given, and release is textures->release().
  **/
 class GlyphPages final {
  public:
     /**
-     * Make a texture from a page: one byte a pixel, side pixels square.
+     * Make a texture from a page: side pixels square, each of a number of channels.
      **/
-    using Create = std::function<render::realtime::TextureHandle(const unsigned char* pixels, std::uint32_t side)>;
+    using Create = std::function<render::realtime::TextureHandle(const unsigned char* pixels, std::uint32_t side, std::uint32_t channels)>;
 
     /**
-     * Copy rows of one byte pixels into a region of a texture, its top left texel at a place.
+     * Copy rows of pixels of a number of channels into a region of a texture, its top left
+     * texel at a place.
      **/
     using Update = std::function<void(const render::realtime::TextureHandle& texture, const glm::uvec2& at, const unsigned char* pixels,
-        const glm::uvec2& size)>;
+        const glm::uvec2& size, std::uint32_t channels)>;
 
     /**
      * Release a page's texture.

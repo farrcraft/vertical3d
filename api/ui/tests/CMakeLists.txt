@@ -61,10 +61,14 @@ target_link_libraries(v3dtest_ui PRIVATE
 v3d_add_shared_data(v3dtest_ui)
 
 # The faces in fonts/ are fixtures: a monospaced face the cases measure predictably, and a face
-# that sets Hebrew. The editor's suite copies them too.
+# that sets Hebrew. The editor's suite copies them too. The font library's colour fixture
+# beside them draws an emoji's layers.
 add_custom_command(TARGET v3dtest_ui POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
 		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		"${V3D_ROOT}/api/font/tests/fonts/colr0.ttf"
+		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts/colr0.ttf"
 	COMMENT "Copying ui test fonts"
 	VERBATIM)

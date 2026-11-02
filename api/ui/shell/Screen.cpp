@@ -54,12 +54,13 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
     // need one
     const boost::shared_ptr<v3d::render::realtime::Textures> textures = engine != nullptr ? engine->textures() : nullptr;
     paint::GlyphPages pages(
-        [textures](const unsigned char* pixels, std::uint32_t side) {
-            return textures ? textures->texture(pixels, side, side, 1) : v3d::render::realtime::TextureHandle();
+        [textures](const unsigned char* pixels, std::uint32_t side, std::uint32_t channels) {
+            return textures ? textures->texture(pixels, side, side, channels) : v3d::render::realtime::TextureHandle();
         },
-        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size) {
+        [textures](const v3d::render::realtime::TextureHandle& page, const glm::uvec2& at, const unsigned char* pixels, const glm::uvec2& size,
+            std::uint32_t channels) {
             if (textures) {
-                textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = 1 });
+                textures->update(page, at, { .data = pixels, .width = size.x, .height = size.y, .channels = channels });
             }
         },
         [textures](const v3d::render::realtime::TextureHandle& page) {
