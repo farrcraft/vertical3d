@@ -58,3 +58,12 @@ target_link_libraries(v3dtest_ui PRIVATE
 
 # TextRendererTest packs real glyphs, so the shared font has to sit beside the executable.
 v3d_add_shared_data(v3dtest_ui)
+
+# The faces in fonts/ are fixtures: a monospaced face the cases measure predictably, and a face
+# that sets Hebrew. The editor's suite copies them too.
+add_custom_command(TARGET v3dtest_ui POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+		"$<TARGET_FILE_DIR:v3dtest_ui>/fonts"
+	COMMENT "Copying ui test fonts"
+	VERBATIM)

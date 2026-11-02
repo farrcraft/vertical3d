@@ -213,8 +213,8 @@ BOOST_AUTO_TEST_CASE(pushid_tells_two_widgets_of_one_label_apart) {
 }
 
 /**
- * Wrapped text breaks at the spaces that do not fit, and a word too wide for the width is
- * left over the edge rather than split.
+ * Wrapped text breaks at the spaces that do not fit, and a word too wide for the width breaks
+ * where it reaches the edge.
  **/
 BOOST_AUTO_TEST_CASE(wrapped_text_breaks_at_a_space) {
     std::vector<Written> written;
@@ -235,7 +235,8 @@ BOOST_AUTO_TEST_CASE(wrapped_text_breaks_at_a_space) {
     ui.begin(&canvas, hover(glm::vec2(-1.0F, -1.0F)));
     ui.textWrapped("aaaaaaaaaaaaaaaa");
     ui.end();
-    BOOST_REQUIRE_EQUAL(written.size(), 1U);
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "aaaaaaaaaa");
 }
 
 /**
@@ -295,11 +296,12 @@ BOOST_AUTO_TEST_CASE(a_progress_bar_fills_what_it_was_given) {
     ui.begin(&canvas, hover(glm::vec2(-1.0F, -1.0F)));
     ui.progressBar(0.5F, "half");
     ui.end();
-    BOOST_CHECK_EQUAL(canvas.indices().size(), 2U * 6U);
+    // the track and the fill are untextured, so they are one batch, and the overlay's glyphs
+    // sample their page after them
+    BOOST_REQUIRE_EQUAL(canvas.batches().size(), 2U);
+    BOOST_CHECK(!canvas.batches()[0].texture.valid());
+    BOOST_CHECK_EQUAL(canvas.batches()[0].indices, 2U * 6U);
     BOOST_CHECK(wrote(written, "half"));
-
-    // everything the layer drew is untextured, so it is one batch
-    BOOST_CHECK_EQUAL(canvas.batches().size(), 1U);
 }
 
 /**

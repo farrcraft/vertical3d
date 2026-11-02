@@ -107,6 +107,7 @@ content went. Numbers are never reused.
 | [0130](0130-shell-games-share-one-designed-shell-with-their-own-accent.md) | Shell: games share one designed shell with their own accent | accepted |
 | [0131](0131-ui-tools-scale-with-the-monitor-games-with-the-window.md) | UI: tools scale with the monitor, games with the window | accepted |
 | [0132](0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted |
+| [0148](0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted |
 
 ## Engine, input and assets
 

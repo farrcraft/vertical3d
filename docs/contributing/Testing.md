@@ -117,11 +117,14 @@ rules a test file shares with the rest of the tree.
 
 A suite with fixture files copies a directory of them beside the executable in a `POST_BUILD`
 command, which the suite's `tests/CMakeLists.txt` writes. Most suites copy their `tests/data/`
-to `data/`. Three copy something else:
+to `data/`. Some copy something else:
 
 - `engine` copies `api/engine/tests/fixtures/` to `fixtures/`.
 - `asset_media` copies the asset suite's `api/asset/tests/data/` to `data/`.
 - `render_device` copies `api/render/tests/device/data/` to `data/`.
+- `ui` and `vertical3d` copy `api/ui/tests/fonts/` to `fonts/`: a monospaced face at which
+  `api/ui/tests/Typeset.h` sets every character ten pixels wide, and a face that sets Hebrew.
+  The helper's renderer tells a test each line it draws, through `TextRenderer::trace()`.
 
 Some suites take data through the build rule an app uses instead, which copies an edited file
 on the next build whether or not the suite relinks:

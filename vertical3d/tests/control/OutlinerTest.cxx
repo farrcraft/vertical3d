@@ -8,6 +8,7 @@
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/scene/Group.h>
 #include <vertical3d/src/scene/Item.h>
@@ -82,10 +83,7 @@ struct Rig {
 /**
  * What the outliner wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * An outliner drawn into a 200 by 300 region at the canvas's corner, through a layer that
@@ -93,8 +91,7 @@ struct Written final {
  **/
 struct Drawn : Rig {
     Drawn() :
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }) {
+        layer(v3d::ui::typeset::mono(&written)) {
         canvas.resize(glm::uvec2(400, 400));
     }
 

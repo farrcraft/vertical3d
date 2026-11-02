@@ -206,9 +206,8 @@ bool App::onEvent(const SDL_Event& event) {
 ### Titles and headers
 
 A window's title and a table's header are set in the dressing's `titleWeight`, semibold by
-default. They are drawn through the writer given to `titles(write)`, which a `Screen` fills in
-with its text renderer's semibold face. A layer given no such writer, or a `titleWeight` below
-500, draws them through the writer given to `text()`.
+default, through the layer's text renderer. A `titleWeight` below 500 sets them in the regular
+face.
 
 ### Moving and folding a window
 

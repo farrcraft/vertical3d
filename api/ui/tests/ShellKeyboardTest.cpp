@@ -15,6 +15,7 @@
 #include <api/ui/component/Panel.h>
 #include <api/ui/component/TextBox.h>
 #include <api/ui/shell/Keyboard.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <SDL3/SDL.h>
 
@@ -286,9 +287,7 @@ BOOST_AUTO_TEST_CASE(what_is_announced_is_what_is_focused) {
  **/
 BOOST_AUTO_TEST_CASE(keys_reach_an_immediate_field_with_no_retained_ui) {
     // the layer is made first so that it outlives the adapter holding it
-    v3d::ui::Immediate layer(
-        [](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-        [](std::string_view, const glm::vec2&, const glm::vec4&) {});
+    v3d::ui::Immediate layer(v3d::ui::typeset::mono());
     const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
     v3d::ui::shell::Keyboard seam(boost::shared_ptr<v3d::ui::Interface>(), dispatcher, nullptr);
     seam.immediate(&layer);

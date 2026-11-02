@@ -102,11 +102,10 @@ void Screen::build() {
         // built once and given the new text after that, so a rescale keeps where its windows
         // were dragged, what is folded and how far each list is scrolled
         if (immediate_) {
-            immediate_->text(text_->measure(drawn), text_->write(&canvas_, drawn));
+            immediate_->text(text_, drawn);
         } else {
-            immediate_ = boost::make_shared<Immediate>(text_->measure(drawn), text_->write(&canvas_, drawn));
+            immediate_ = boost::make_shared<Immediate>(text_, drawn);
         }
-        immediate_->titles(text_->write(&canvas_, drawn, paint::Weight::SemiBold));
         immediate_->scale(built_);
         // the app's Dress fills in a hud's sizes, and they are larger than a tool panel's. Only
         // the line height follows the text, so only it is copied across

@@ -107,7 +107,7 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         // had pushed it
         const float caret = context_->measure(context_->edit.text().substr(0, context_->edit.caret()));
         const float slid = std::max(caret - room, 0.0F);
-        context_->edit.caret(context_->edit.at(context_->input.cursor.x - (low.x - slid), context_->measure));
+        context_->edit.caret(context_->edit.at(context_->input.cursor.x - (low.x - slid), [this](std::string_view prefix) { return context_->measure(prefix); }));
     }
 
     bool changed = false;

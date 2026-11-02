@@ -5,6 +5,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/paint/Text.h>
 
 #include <cstddef>
 #include <string>
@@ -368,39 +369,35 @@ BOOST_AUTO_TEST_CASE(a_dragged_window_keeps_its_title_bar_on_the_canvas) {
 }
 
 /**
- * A window's title is drawn through the semibold writer when the title weight is semibold, and
- * through the ordinary one when it is regular. The window's contents always use the ordinary one.
+ * A window's title is drawn in the semibold face when the title weight is semibold, and in the
+ * regular face when it is regular. The window's contents are always regular.
  **/
 BOOST_AUTO_TEST_CASE(a_title_is_drawn_in_the_title_weight) {
     std::vector<Written> written;
-    std::vector<Written> titled;
     v3d::render::realtime::canvas::Canvas canvas;
     canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
-    ui.titles([&titled](std::string_view text, const glm::vec2& pen, const glm::vec4& colour) {
-        titled.push_back(Written{std::string(text), pen, colour});
-    });
 
     ui.begin(&canvas, hover(glm::vec2(0.0F, 0.0F)));
     ui.window("Encounter", {.position = glm::vec2(50.0F, 40.0F), .size = glm::vec2(200.0F, 150.0F)}, 1.0F);
     ui.text("turn 3");
     ui.endWindow();
     ui.end();
-    BOOST_REQUIRE_EQUAL(titled.size(), 1U);
-    BOOST_CHECK_EQUAL(titled[0].text, "Encounter");
-    BOOST_REQUIRE_EQUAL(written.size(), 1U);
-    BOOST_CHECK_EQUAL(written[0].text, "turn 3");
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "Encounter");
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK_EQUAL(written[1].text, "turn 3");
+    BOOST_CHECK(written[1].weight == v3d::ui::paint::Weight::Regular);
 
-    titled.clear();
     written.clear();
     ui.dressing().titleWeight = 400.0F;
     ui.begin(&canvas, hover(glm::vec2(0.0F, 0.0F)));
     ui.window("Encounter", {.position = glm::vec2(50.0F, 40.0F), .size = glm::vec2(200.0F, 150.0F)}, 1.0F);
     ui.endWindow();
     ui.end();
-    BOOST_CHECK(titled.empty());
     BOOST_REQUIRE_EQUAL(written.size(), 1U);
     BOOST_CHECK_EQUAL(written[0].text, "Encounter");
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::Regular);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

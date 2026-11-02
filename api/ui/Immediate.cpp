@@ -13,7 +13,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/paint/Painter.h>
 #include <api/ui/paint/Palette.h>
-#include <api/ui/paint/Text.h>
+#include <api/ui/paint/TextRenderer.h>
 #include <api/ui/style/Resolver.h>
 #include <api/ui/style/Theme.h>
 
@@ -41,8 +41,8 @@ released(false),
 wheel(0.0F) {
 }
 
-Immediate::Immediate(const paint::Measure& measure, const paint::Write& write) :
-    context_(std::make_unique<immediate::Context>(measure, write)) {
+Immediate::Immediate(const boost::shared_ptr<paint::TextRenderer>& text, float size) :
+    context_(std::make_unique<immediate::Context>(text, size)) {
 }
 
 // out of line, so that the header need not complete the context
@@ -50,13 +50,9 @@ Immediate::~Immediate() = default;
 Immediate::Immediate(Immediate&&) noexcept = default;
 Immediate& Immediate::operator=(Immediate&&) noexcept = default;
 
-void Immediate::text(const paint::Measure& measure, const paint::Write& write) {
-    context_->measure = measure;
-    context_->write = write;
-}
-
-void Immediate::titles(const paint::Write& write) {
-    context_->strong = write;
+void Immediate::text(const boost::shared_ptr<paint::TextRenderer>& text, float size) {
+    context_->text = text;
+    context_->textSize = size;
 }
 
 void Immediate::clock(const Clock& now) noexcept {
@@ -221,10 +217,10 @@ void Immediate::textDisabled(const std::string& line) {
 }
 
 void Immediate::textWrapped(const std::string& line) {
-    if (context_->canvas == nullptr) {
+    if (context_->canvas == nullptr || !context_->text) {
         return;
     }
-    for (const std::string& row : paint::wrap(line, context_->row.right - context_->row.margin, context_->measure)) {
+    for (const std::string& row : context_->text->rows(line, context_->row.right - context_->row.margin, context_->text->style(context_->textSize))) {
         text(row);
     }
 }

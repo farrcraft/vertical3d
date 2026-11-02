@@ -12,6 +12,7 @@
 #include <api/ui/paint/GlyphPages.h>
 #include <api/ui/paint/Text.h>
 #include <api/ui/paint/TextRenderer.h>
+#include <api/ui/tests/Typeset.h>
 
 #include <cmath>
 #include <cstddef>
@@ -248,6 +249,36 @@ BOOST_AUTO_TEST_CASE(glyphs_carry_their_style_contrast) {
     text->draw(&canvas, "l", glm::vec2(10.0F, 100.0F), glm::vec4(1.0F));
     BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 4U);
     BOOST_CHECK_EQUAL(canvas.vertices()[0].contrast, 0.0F);
+}
+
+/**
+ * The monospaced fixture sets every character ten pixels wide, which the ui's cases rely on.
+ **/
+BOOST_AUTO_TEST_CASE(the_monospaced_fixture_is_ten_pixels_a_character) {
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = v3d::ui::typeset::mono();
+    BOOST_REQUIRE(text->loaded());
+    BOOST_CHECK_EQUAL(text->width("a"), v3d::ui::typeset::characterWidth);
+    BOOST_CHECK_EQUAL(text->width("Wil 24"), 6.0F * v3d::ui::typeset::characterWidth);
+}
+
+/**
+ * A trace is told each line drawn: its text without the space at its end, where its baseline
+ * starts, and its colour.
+ **/
+BOOST_AUTO_TEST_CASE(a_trace_is_told_each_line_drawn) {
+    std::vector<v3d::ui::typeset::Written> written;
+    const boost::shared_ptr<v3d::ui::paint::TextRenderer> text = v3d::ui::typeset::mono(&written);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(640, 480));
+    const glm::vec4 red(1.0F, 0.0F, 0.0F, 1.0F);
+    text->draw(&canvas, "one \ntwo", glm::vec2(10.0F, 100.0F), red);
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_CHECK_EQUAL(written[0].text, "one");
+    BOOST_CHECK_EQUAL(written[1].text, "two");
+    BOOST_CHECK_EQUAL(written[0].pen.x, 10.0F);
+    BOOST_CHECK_EQUAL(written[0].pen.y, 100.0F);
+    BOOST_CHECK_GT(written[1].pen.y, written[0].pen.y);
+    BOOST_CHECK(written[1].colour == red);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

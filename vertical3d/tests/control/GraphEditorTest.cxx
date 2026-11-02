@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/Mesh.h>
@@ -33,10 +34,7 @@ using v3d::editor::control::GraphEditor;
 /**
  * What the editor wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A graph editor over a document holding a cube with translation.x keyed 0 on frame 20 and 1 on
@@ -48,8 +46,7 @@ struct Panel {
         document(boost::make_shared<v3d::editor::document::Document>(boost::make_shared<v3d::log::Logger>(),
             boost::filesystem::temp_directory_path() / "v3d_graph_editor")),
         cube(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())),
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }),
+        layer(v3d::ui::typeset::mono(&written)),
         editor(document, [this](const v3d::editor::document::Outcome& outcome) { reported.push_back(outcome); }) {
         cube->name("Cube");
         document->scene()->add(cube);

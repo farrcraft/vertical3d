@@ -50,14 +50,6 @@ constexpr int kDisplayHalf = 128;
 constexpr int kLinearHalf = 188;
 
 /**
- * A page whose every texel is half covered, or a field whose every value is its middle.
- **/
-TextureHandle half(v3d::test::Headless* headless) {
-    const std::vector<unsigned char> pixels(static_cast<std::size_t>(kSize) * kSize, 128);
-    return headless->context->textures()->texture(pixels.data(), kSize, kSize, 1);
-}
-
-/**
  * A target of a format, cleared to black, that a frame draws one pass into.
  **/
 struct Drawn {
@@ -73,6 +65,14 @@ struct Drawn {
         pass->clearColour(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
     }
 };
+
+/**
+ * A page whose every texel is half covered, or a field whose every value is its middle.
+ **/
+TextureHandle half(v3d::test::Headless* headless) {
+    const std::vector<unsigned char> pixels(static_cast<std::size_t>(kSize) * kSize, 128);
+    return headless->context->textures()->texture(pixels.data(), kSize, kSize, 1);
+}
 
 /**
  * Draw a half covered page over the whole target as a quad with a contrast, white, and read the

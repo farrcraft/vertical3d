@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -90,6 +91,24 @@ class TextRenderer {
     static const float baseSize;
 
     /**
+     * A line of text as it was drawn: its text without the space at its end, where its baseline
+     * starts, its colour, its weight and its size.
+     **/
+    struct Traced final {
+        std::string text;
+        glm::vec2 pen{ 0.0F };
+        glm::vec4 colour{ 1.0F };
+        Weight weight = Weight::Regular;
+        float size = 0.0F;
+    };
+
+    /**
+     * Told of each line drawn, so a test or a tool can read back what a ui drew without a
+     * device.
+     **/
+    using Trace = std::function<void(const Traced&)>;
+
+    /**
      * Load the faces.
      *
      * A regular face that cannot be loaded leaves this measuring zero and drawing nothing, and
@@ -133,6 +152,18 @@ class TextRenderer {
     float width(std::string_view text, float size = 0.0F, Weight weight = Weight::Regular) const;
 
     /**
+     * Break a string into the rows it takes at a width, as a paragraph lays it out: at Unicode's
+     * line break opportunities, and inside a word wider than the width. Each row is without the
+     * space at its end.
+     *
+     * @param width the room a row has. At 0 or less the string takes one row for each of its
+     *        lines
+     * @param styled the style it is set in, from style()
+     * @return the rows, and none for a string with no text
+     **/
+    std::vector<std::string> rows(std::string_view text, float width, const font::TextStyle& styled) const;
+
+    /**
      * Lay a string out at the pen and append its glyphs to a canvas.
      *
      * The string is UTF-8. Each glyph is drawn at its pen rounded down to a quarter of a pixel,
@@ -163,6 +194,11 @@ class TextRenderer {
      * @return the cache this shapes text through, which a paragraph drawn through this can share
      **/
     const boost::shared_ptr<font::ShapingCache>& shaping() const noexcept;
+
+    /**
+     * Tell a trace of every line drawn from now on, or of none when it is empty.
+     **/
+    void trace(Trace trace);
 
     /**
      * @return width() at a size and a weight, as the callback ComponentRenderer and Immediate
@@ -202,11 +238,17 @@ class TextRenderer {
      **/
     void place(const font::LineRun& run, unsigned int index, const font::TextStyle& styled, const glm::vec2& pen);
 
+    /**
+     * Tell the trace of a line drawn with its baseline starting at a pen.
+     **/
+    void report(const font::Paragraph& paragraph, const font::Line& line, const glm::vec2& pen) const;
+
     boost::shared_ptr<font::FallbackChain> chain_;
     boost::shared_ptr<font::ShapingCache> shaping_;
     font::GlyphStore store_;
     GlyphPages pages_;
     float size_;
+    Trace trace_;
     // what draw() places, kept between draws so a frame of labels does not allocate
     std::vector<Placed> placed_;
     std::vector<internal::PlacedEffect> effects_;

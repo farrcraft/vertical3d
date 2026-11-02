@@ -31,6 +31,10 @@ class Canvas;
 
 namespace v3d::ui {
 
+namespace paint {
+class TextRenderer;
+};  // namespace paint
+
 namespace style {
 class Theme;
 };  // namespace style
@@ -86,10 +90,10 @@ class Immediate {
     };
 
     /**
-     * @param measure how wide a string is when the app draws it
-     * @param write how the app draws a string
+     * @param text what text is laid out and drawn through
+     * @param size the size text is drawn at, or 0 for the renderer's own
      **/
-    Immediate(const paint::Measure& measure, const paint::Write& write);
+    explicit Immediate(const boost::shared_ptr<paint::TextRenderer>& text, float size = 0.0F);
     ~Immediate();
 
     // what the layer holds is its own, so it moves and is not copied
@@ -99,18 +103,14 @@ class Immediate {
     Immediate& operator=(const Immediate&) = delete;
 
     /**
-     * Replace how strings are measured and drawn, as when the text is rescaled. Everything
+     * Replace what text is drawn through and its size, as when the text is rescaled. Everything
      * the layer remembers between frames - where windows were dragged, what is folded, how
-     * far a list is scrolled - is kept.
+     * far a list is scrolled - is kept. A window's title and a table's header are drawn in the
+     * semibold face when the dressing's titleWeight asks for it.
+     *
+     * @param size the size text is drawn at, or 0 for the renderer's own
      **/
-    void text(const paint::Measure& measure, const paint::Write& write);
-
-    /**
-     * How the app draws text in the semibold face. A window's title and a table's header are
-     * drawn through it when the dressing's titleWeight is semibold. Without one, they are drawn
-     * through the write given to text().
-     **/
-    void titles(const paint::Write& write);
+    void text(const boost::shared_ptr<paint::TextRenderer>& text, float size = 0.0F);
 
     /**
      * Draw larger or smaller. Every size of the dressing goes back to the built-in one at this

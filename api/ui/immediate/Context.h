@@ -9,7 +9,6 @@
 #include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
 #include <api/ui/paint/Dressing.h>
-#include <api/ui/paint/Text.h>
 #include <api/ui/style/Style.h>
 
 #include <cstdint>
@@ -20,12 +19,17 @@
 #include <string_view>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
 namespace v3d::render::realtime::canvas {
 class Canvas;
 };  // namespace v3d::render::realtime::canvas
+
+namespace v3d::ui::paint {
+class TextRenderer;
+};  // namespace v3d::ui::paint
 
 namespace v3d::ui::immediate {
 
@@ -197,7 +201,11 @@ struct Number {
  **/
 class Context final {
  public:
-    Context(const paint::Measure& measure, const paint::Write& write);
+    /**
+     * @param renderer what text is laid out and drawn through
+     * @param size the size text is drawn at, or 0 for the renderer's own
+     **/
+    Context(const boost::shared_ptr<paint::TextRenderer>& renderer, float size);
 
     /**
      * How thick a separator and the line under a tab strip are.
@@ -241,13 +249,18 @@ class Context final {
     Reaction interact(Id id, const glm::vec2& min, const glm::vec2& max);
 
     /**
+     * @return how wide a line of text is at the layer's size, or 0 with no text renderer
+     **/
+    float measure(std::string_view line) const;
+
+    /**
      * Draw a line of text with its box already worked out, vertically centred in it.
      **/
     void label(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
     /**
      * Draw a title or a header as label() does, in the semibold face when the dressing's
-     * titleWeight asks for it and there is one.
+     * titleWeight asks for it.
      **/
     void title(const std::string& line, const glm::vec2& min, const glm::vec2& size, const glm::vec4& colour) const;
 
@@ -353,10 +366,9 @@ class Context final {
      **/
     float columnStart(unsigned int index) const;
 
-    paint::Measure measure;
-    paint::Write write;
-    // how semibold text is drawn, which may be empty
-    paint::Write strong;
+    // what text is laid out and drawn through, and the size it is drawn at
+    boost::shared_ptr<paint::TextRenderer> text;
+    float textSize;
     // what a theme's sizes are multiplied by
     float scale;
     // the time transitions are measured on, and whether one has been given

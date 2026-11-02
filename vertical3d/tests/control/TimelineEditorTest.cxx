@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/document/Document.h>
@@ -34,10 +35,7 @@ using v3d::editor::control::TimelineEditor;
 /**
  * What the editor wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A timeline editor over a document holding a cube keyed on frames 20 and 40 and an empty mesh,
@@ -51,8 +49,7 @@ struct Panel {
         playback(boost::make_shared<v3d::editor::control::Playback>(document)),
         cube(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())),
         other(boost::make_shared<v3d::editor::scene::Mesh>(boost::make_shared<v3d::brep::BRep>())),
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }),
+        layer(v3d::ui::typeset::mono(&written)),
         editor(document, playback, [this](const v3d::editor::document::Outcome& outcome) { reported.push_back(outcome); }) {
         cube->name("Cube");
         other->name("Other");

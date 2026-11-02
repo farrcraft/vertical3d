@@ -64,7 +64,11 @@ Both models take text through two callbacks declared in [`paint/Text.h`](../../.
 | `paint::Measure` | `float(std::string_view)` | returns how wide a string is when drawn, in pixels |
 | `paint::Write` | `void(std::string_view, const glm::vec2& pen, const glm::vec4& colour)` | draws a string with its pen on the baseline |
 
-Neither renderer names a font type. This keeps `api/ui` testable without a window or a GPU.
+`ComponentRenderer` names no font type. The immediate layer instead takes the
+`paint::TextRenderer` it measures, wraps and draws through, and the size it draws at:
+`Immediate(text, size)`, and `text(text, size)` to rescale. `textWrapped()` breaks its rows as a
+`font::Paragraph` lays them out, through `TextRenderer::rows()`. This keeps `api/ui` testable
+without a window or a GPU, since a text renderer needs no device.
 The callbacks take a `std::string_view`, so measuring a label does not allocate. The view
 must stay valid for the length of the call.
 

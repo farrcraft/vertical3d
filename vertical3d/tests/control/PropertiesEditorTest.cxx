@@ -7,6 +7,7 @@
 #include <api/brep/Primitives.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
@@ -35,10 +36,7 @@ using v3d::editor::control::PropertiesEditor;
 /**
  * What the editor wrote, and where.
  **/
-struct Written final {
-    std::string text;
-    glm::vec2 pen;
-};
+using Written = v3d::ui::typeset::Written;
 
 /**
  * A properties editor over a scene of a cube and a camera, drawn into a 300 by 600 region at
@@ -50,8 +48,7 @@ struct Panel {
         scene(boost::make_shared<v3d::editor::scene::Scene>()),
         cube(boost::make_shared<v3d::editor::scene::Mesh>(v3d::brep::cube())),
         camera(boost::make_shared<v3d::editor::scene::Camera>()),
-        layer([](std::string_view text) { return static_cast<float>(text.size()) * 10.0F; },
-            [this](std::string_view text, const glm::vec2& pen, const glm::vec4&) { written.push_back({ std::string(text), pen }); }),
+        layer(v3d::ui::typeset::mono(&written)),
         editor(history) {
         cube->name("Cube");
         scene->add(cube);

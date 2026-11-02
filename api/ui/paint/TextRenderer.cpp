@@ -133,6 +133,12 @@ const boost::shared_ptr<font::ShapingCache>& TextRenderer::shaping() const noexc
 
 /**
  **/
+void TextRenderer::trace(Trace trace) {
+    trace_ = std::move(trace);
+}
+
+/**
+ **/
 float TextRenderer::width(std::string_view text, float size, Weight weight) const {
     if (!loaded() || text.empty()) {
         return 0.0F;
@@ -148,6 +154,28 @@ float TextRenderer::width(std::string_view text, float size, Weight weight) cons
         widest = std::max(widest, reach);
     }
     return widest;
+}
+
+/**
+ **/
+std::vector<std::string> TextRenderer::rows(std::string_view text, float width, const font::TextStyle& styled) const {
+    std::vector<std::string> found;
+    if (!loaded() || text.empty()) {
+        return found;
+    }
+    font::ParagraphStyle layout;
+    layout.width = width;
+    const font::Paragraph paragraph(shaping_, std::string(text), styled, layout);
+    for (const font::Line& line : paragraph.lines()) {
+        std::string_view row = std::string_view(paragraph.text()).substr(line.start, line.end - line.start);
+        while (!row.empty() && (row.back() == ' ' || row.back() == '\n' || row.back() == '\r')) {
+            row.remove_suffix(1);
+        }
+        if (!row.empty()) {
+            found.emplace_back(row);
+        }
+    }
+    return found;
 }
 
 /**
@@ -173,6 +201,7 @@ void TextRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const fon
     effects_.clear();
     for (const font::Line& line : lines) {
         const float baseline = pen.y + line.baseline - lines.front().baseline;
+        report(paragraph, line, glm::vec2(pen.x + line.x, baseline));
         for (const font::LineRun& run : line.runs) {
             float x = pen.x + run.x;
             for (const font::ShapedGlyph& glyph : run.glyphs) {
@@ -233,6 +262,21 @@ void TextRenderer::place(const font::LineRun& run, unsigned int index, const fon
         const glm::vec2 corner(whole + static_cast<float>(stored->bearing.x), pen.y + static_cast<float>(stored->bearing.y));
         placed_.push_back(Placed{ .glyph = *stored, .position = corner, .colour = styled.colour, .contrast = styled.contrast });
     }
+}
+
+/**
+ **/
+void TextRenderer::report(const font::Paragraph& paragraph, const font::Line& line, const glm::vec2& pen) const {
+    if (!trace_) {
+        return;
+    }
+    std::string_view shown = std::string_view(paragraph.text()).substr(line.start, line.end - line.start);
+    while (!shown.empty() && (shown.back() == ' ' || shown.back() == '\n' || shown.back() == '\r')) {
+        shown.remove_suffix(1);
+    }
+    const font::TextStyle& styled = paragraph.styleAt(line.start);
+    trace_(Traced{ .text = std::string(shown), .pen = pen, .colour = styled.colour, .weight = weight(static_cast<float>(styled.face.weight)),
+        .size = styled.size });
 }
 
 /**
