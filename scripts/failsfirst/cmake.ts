@@ -37,9 +37,9 @@ export function listedSources(revision: string): ListedSource[] {
         const text = (show(revision, file) ?? '').replace(/#[^\n]*/g, '');
         const directory = path.posix.dirname(file);
         for (const match of text.matchAll(ADD_TEST)) {
-            const suite = match[1];
-            for (const token of match[2].matchAll(LIST_TOKEN)) {
-                const source = sourceOf(directory, token[1] ?? token[2]);
+            const suite = match[1] ?? '';
+            for (const token of (match[2] ?? '').matchAll(LIST_TOKEN)) {
+                const source = sourceOf(directory, token[1] ?? token[2] ?? '');
                 if (source !== null) {
                     listed.push({ suite, directory, source });
                 }
@@ -72,9 +72,10 @@ export function dropSource(worktree: string, directory: string, suite: string, s
     if (!call) {
         return false;
     }
-    const listStart = call.index + call[0].length - call[1].length - 1;
-    for (const token of call[1].matchAll(LIST_TOKEN)) {
-        if (sourceOf(directory, token[1] ?? token[2]) === source) {
+    const list = call[1] ?? '';
+    const listStart = call.index + call[0].length - list.length - 1;
+    for (const token of list.matchAll(LIST_TOKEN)) {
+        if (sourceOf(directory, token[1] ?? token[2] ?? '') === source) {
             const at = listStart + token.index;
             fs.writeFileSync(file, content.slice(0, at) + content.slice(at + token[0].length));
             return true;
@@ -85,7 +86,7 @@ export function dropSource(worktree: string, directory: string, suite: string, s
 
 // The sources a failed configure reports it cannot find, as the CMakeLists.txt spelled them.
 export function missingSources(output: string): string[] {
-    return [...output.matchAll(/Cannot find source file:\s*\r?\n\s*(\S[^\r\n]*)/g)].map((m) => m[1].trim());
+    return [...output.matchAll(/Cannot find source file:\s*\r?\n\s*(\S[^\r\n]*)/g)].map((m) => (m[1] ?? '').trim());
 }
 
 // A call a failed configure reports to an unknown command: the file as the configure printed it,
@@ -94,7 +95,7 @@ export type UnknownCall = { file: string; line: number; command: string };
 
 export function unknownCommands(output: string): UnknownCall[] {
     const calls = output.matchAll(/CMake Error at (\S[^\r\n]*?):(\d+) \((\w+)\):\s*\r?\n\s*Unknown CMake command "\3"/g);
-    return [...calls].map((m) => ({ file: m[1], line: Number(m[2]), command: m[3] }));
+    return [...calls].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), command: m[3] ?? '' }));
 }
 
 // The text with the call to command that starts on the given line removed, up to its closing

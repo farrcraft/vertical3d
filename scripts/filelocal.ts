@@ -81,12 +81,12 @@ export function mayInclude(file: string, header: string): boolean {
 export function externNames(text: string): string[] {
     const names: string[] = [];
     for (const statement of codeLines(text).join('\n').split(';')) {
-        const match = /(?:^|[{}\s])extern\s+(?!"")([^;{}]*)$/.exec(statement);
-        if (match === null || match[1].includes('(')) {
+        const declared = /(?:^|[{}\s])extern\s+(?!"")([^;{}]*)$/.exec(statement)?.[1];
+        if (declared === undefined || declared.includes('(')) {
             continue;
         }
         // each declarator in a list such as `extern RtToken RI_A, RI_B;` is a name
-        for (const declarator of match[1].split(',')) {
+        for (const declarator of declared.split(',')) {
             names.push(variableName(declarator));
         }
     }
@@ -133,14 +133,14 @@ function stripPrefixes(text: string): string {
 
 /** The name a type definition's head gives, such as Reader for `class Reader final : Base`. */
 function typeName(head: string): string | null {
-    const match = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(head);
-    return match === null ? null : (match[1] === '' ? '(unnamed)' : match[1]);
+    const name = /^(?:typedef\s+)?(?:class|struct|union|enum)(?:\s+(?:class|struct))?\s*(?:alignas\s*\([^)]*\)\s*)?([\w:]*)/.exec(head)?.[1];
+    return name === undefined ? null : (name === '' ? '(unnamed)' : name);
 }
 
 /** The name a variable declaration defines: the last identifier before its initialiser. */
 function variableName(declarator: string): string {
     const names = declarator.replace(/\[[^\]]*\]/g, '').match(/[\w:]+/g);
-    return names === null ? '' : names[names.length - 1];
+    return names?.at(-1) ?? '';
 }
 
 /**
@@ -314,17 +314,17 @@ export function findings(text: string, kind: Kind): Finding[] {
         if (preprocessor) {
             // a quoted include names a header beside the file, so only the root-relative form
             // can reach another directory's internal/
-            const include = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index]);
-            if (include !== null && !mayInclude(kind.path, include[1])) {
-                add(line, 'internal-include', `${include[1]} is internal to its library, and this file is outside it`);
+            const header = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index] ?? '')?.[1];
+            if (header !== undefined && !mayInclude(kind.path, header)) {
+                add(line, 'internal-include', `${header} is internal to its library, and this file is outside it`);
             }
             return;
         }
         // a static declared in a function body, rather than in a class
-        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code);
-        if (local !== null && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local[1])
-            && !/\/\/\s*process-wide:/.test(raw[index])) {
-            add(line, 'mutable-static-local', `the static local ${variableName(local[1])} is mutable`);
+        const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code)?.[1];
+        if (local !== undefined && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local)
+            && !/\/\/\s*process-wide:/.test(raw[index] ?? '')) {
+            add(line, 'mutable-static-local', `the static local ${variableName(local)} is mutable`);
         }
         for (const c of code) {
             if (!atNamespaceScope()) {

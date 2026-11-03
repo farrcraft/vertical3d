@@ -34,12 +34,10 @@ export function markdownParagraphs(lines: string[]): ParagraphLine[][] {
     let inFence = false;
     let inComment = false;
     let start = 0;
-    if (lines.length > 0 && lines[0].trim() === '---') {
-        for (let index = 1; index < lines.length; index++) {
-            if (lines[index].trim() === '---') {
-                start = index + 1;
-                break;
-            }
+    if (lines[0]?.trim() === '---') {
+        const close = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
+        if (close > 0) {
+            start = close + 1;
         }
     }
     const flush = (): void => {
@@ -48,8 +46,10 @@ export function markdownParagraphs(lines: string[]): ParagraphLine[][] {
             current = [];
         }
     };
-    for (let index = start; index < lines.length; index++) {
-        const line = lines[index];
+    for (const [index, line] of lines.entries()) {
+        if (index < start) {
+            continue;
+        }
         const stripped = line.trim();
         if (FENCE.test(line)) {
             flush();
@@ -107,27 +107,31 @@ interface CommentSpan {
  */
 export function scriptSpans(lines: string[]): CommentSpan[] {
     const text = lines.join('\n');
-    const ranges = regions(text).filter((region) => region.kind === 'comment').map(({ start, end }) => {
+    const ranges = regions(text).filter((region) => region.kind === 'comment').map(({ start, end }): [number, number] => {
         // a closed block comment ends with its marker, which is not part of the text
         const closed = text.startsWith('/*', start) && end - start >= 4 && text.startsWith('*/', end - 2);
         return [start + 2, closed ? end - 2 : end];
     });
-    const starts: number[] = [];
+    // each line with the offset it starts at in the text
+    const rows: Array<{ line: string; start: number }> = [];
     let offset = 0;
     for (const line of lines) {
-        starts.push(offset);
+        rows.push({ line, start: offset });
         offset += line.length + 1;
     }
     const spans: CommentSpan[] = [];
     let row = 0;
     for (const [from, to] of ranges) {
-        while (row + 1 < starts.length && starts[row + 1] <= from) {
+        while ((rows[row + 1]?.start ?? Infinity) <= from) {
             row += 1;
         }
-        for (let at = row; at < lines.length && starts[at] <= to; at++) {
-            const column = Math.max(from, starts[at]) - starts[at];
-            const end = Math.min(to, starts[at] + lines[at].length) - starts[at];
-            const line = lines[at];
+        for (let at = row; at < rows.length; at++) {
+            const { line, start } = rows[at] ?? { line: '', start: Infinity };
+            if (start > to) {
+                break;
+            }
+            const column = Math.max(from, start) - start;
+            const end = Math.min(to, start + line.length) - start;
             const alone = column === 0 || line.slice(0, column - 2).trim() === '';
             spans.push({ number: at + 1, column, text: line.slice(column, end), alone });
         }
@@ -142,7 +146,7 @@ function commentSpans(lines: string[], kind: Kind): CommentSpan[] {
     }
     if (kind === 'slash') {
         commentLines(lines.join('\n')).forEach((comments, index) => {
-            const line = lines[index];
+            const line = lines[index] ?? '';
             for (const { column, text } of comments) {
                 const alone = column === 0 || line.slice(0, column - 2).trim() === '';
                 spans.push({ number: index + 1, column, text, alone });
@@ -202,7 +206,7 @@ export function commentParagraphs(lines: string[], kind: Kind): ParagraphLine[][
             flush();
         }
         const start = column + markerLength + (body.length - body.trimStart().length);
-        current.push({ number, column: start, line: lines[number - 1], alone });
+        current.push({ number, column: start, line: lines[number - 1] ?? '', alone });
     }
     flush();
     return paragraphs;

@@ -70,7 +70,8 @@ export function u8(...values: number[]): Buffer {
 
 /** The smallest and largest of each component of a list of vectors, as floats. */
 export function bounds(vectors: number[][]): { min: unknown[]; max: unknown[] } {
-    const components = vectors[0].map((_, at) => vectors.map((vector) => vector[at]));
+    const [first = []] = vectors;
+    const components = first.map((_, at) => vectors.map((vector) => vector[at] ?? NaN));
     return {
         min: floats(components.map((values) => Math.min(...values))),
         max: floats(components.map((values) => Math.max(...values))),

@@ -173,11 +173,14 @@ export function check(lines: Line[]): Report[] {
         for (const cast of code.matchAll(CAST)) {
             let { body, closed } = operand(code, (cast.index ?? 0) + cast[0].length - 1);
             // an operand that runs onto the next line is read from the added lines that follow
-            let following = position + 1;
-            while (!closed && following < lines.length && lines[following].path === path &&
-                lines[following].number === lines[following - 1].number + 1) {
-                ({ body, closed } = operand('(' + body + lines[following].code, 0));
-                following += 1;
+            let previous = number;
+            for (let following = position + 1; !closed; following++) {
+                const next = lines[following];
+                if (next === undefined || next.path !== path || next.number !== previous + 1) {
+                    break;
+                }
+                ({ body, closed } = operand('(' + body + next.code, 0));
+                previous = next.number;
             }
             if (FLOATY.test(body)) {
                 reports.push({ path, number, rule: 'float-cast', excerpt: text.trim() });

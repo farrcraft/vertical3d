@@ -112,8 +112,9 @@ export function findings(text: string, own: string, known: Set<string>): Finding
             found.push({ line, rule: 'no-directory', message: `${name} is the namespace of no directory` });
         }
     }
-    if (names.length > 0 && !names.some(({ name }) => name === own)) {
-        found.push({ line: names[0].line, rule: 'own-namespace', message: `the directory gives ${own}, and the file never opens it` });
+    const [first] = names;
+    if (first !== undefined && !names.some(({ name }) => name === own)) {
+        found.push({ line: first.line, rule: 'own-namespace', message: `the directory gives ${own}, and the file never opens it` });
     }
     return found;
 }

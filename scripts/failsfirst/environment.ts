@@ -31,7 +31,7 @@ export function readCache(build: string): Map<string, string> {
     for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
         const match = /^([A-Za-z_][\w-]*):[A-Z]+=(.*)$/.exec(line);
         if (match) {
-            values.set(match[1], match[2]);
+            values.set(match[1] ?? '', match[2] ?? '');
         }
     }
     return values;
@@ -58,7 +58,7 @@ export function runLogged(command: string[], log: string, env: Env): { code: num
     const fd = fs.openSync(log, 'w');
     let done;
     try {
-        done = spawnSync(command[0], command.slice(1), { env, stdio: ['ignore', fd, fd] });
+        done = spawnSync(command[0] ?? '', command.slice(1), { env, stdio: ['ignore', fd, fd] });
     } finally {
         fs.closeSync(fd);
     }

@@ -42,10 +42,10 @@ export function manifestLibraries(cmake: string): Library[] {
     if (list === null) {
         return [];
     }
-    const names = list[1].split(/\s+/).filter((name) => name !== '');
+    const names = (list[1] ?? '').split(/\s+/).filter((name) => name !== '');
     return names.map((name) => {
         const set = new RegExp(`set\\(\\s*V3D_API_${name}_PATH\\s+"([^"]*)"\\s*\\)`).exec(code);
-        return { name, directory: set === null ? '' : set[1] };
+        return { name, directory: set?.[1] ?? '' };
     });
 }
 
@@ -58,13 +58,13 @@ export function tableRows(markdown: string): Row[] {
     }
     const rows: Row[] = [];
     for (let index = start + 1; index < lines.length; index++) {
-        const line = lines[index];
+        const line = lines[index] ?? '';
         if (line.startsWith('#')) {
             break;
         }
         const cell = /^\|\s*\[`([^`]+)`\]\(([^)]*)\)\s*\|/.exec(line);
         if (cell !== null) {
-            rows.push({ name: cell[1], link: cell[2], line: index + 1 });
+            rows.push({ name: cell[1] ?? '', link: cell[2] ?? '', line: index + 1 });
         }
     }
     return rows;

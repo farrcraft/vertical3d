@@ -4,6 +4,7 @@
     "target": "esnext",
     "strict": true,
     "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "noUnusedLocals": true,

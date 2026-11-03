@@ -94,9 +94,9 @@ function checkSentence(original: string, maskedSentence: string, path: string,
     if (words > MAX_WORDS) {
         findings.push(['long-sentence', `${words} words`]);
     }
-    const first = /^[\s"'(\[*_>-]*(\w+)/.exec(maskedSentence);
-    if (first && OPENERS.has(first[1])) {
-        findings.push(['opener', `starts with "${first[1]}"`]);
+    const first = /^[\s"'(\[*_>-]*(\w+)/.exec(maskedSentence)?.[1];
+    if (first !== undefined && OPENERS.has(first)) {
+        findings.push(['opener', `starts with "${first}"`]);
     }
     // A quoted phrase is cited, not written, so the remaining rules skip it.
     const masked = maskedSentence.replace(QUOTED, (quoted) => 'x'.repeat(quoted.length));
@@ -113,16 +113,16 @@ function checkSentence(original: string, maskedSentence: string, path: string,
         findings.push(['inverted', at(inverted.index, inverted[0].length).replace(/^,\s*/, '')]);
     }
     for (const cleft of masked.matchAll(CLEFT)) {
-        if (!NOT_VERBS.has(cleft[1].toLowerCase())) {
+        if (!NOT_VERBS.has((cleft[1] ?? '').toLowerCase())) {
             findings.push(['inverted', at(cleft.index, cleft[0].length)]);
         }
     }
     for (const pattern of [PERSON_VERB, PERSON_NEGATED]) {
         for (const match of masked.matchAll(pattern)) {
-            let subject = match[1].toLowerCase();
+            const word = match[1] ?? '';
+            let subject = word.toLowerCase();
             if (subject === 'that' || subject === 'which') {
-                const relative = RELATIVE.exec(masked.slice(0, match.index + match[1].length));
-                subject = relative ? relative[1].toLowerCase() : subject;
+                subject = RELATIVE.exec(masked.slice(0, match.index + word.length))?.[1]?.toLowerCase() ?? subject;
             }
             if (masked.slice(Math.max(0, match.index - 40), match.index).toLowerCase().includes('whoever')) {
                 continue;
@@ -134,7 +134,7 @@ function checkSentence(original: string, maskedSentence: string, path: string,
     }
     if (!HISTORY_EXEMPT_PREFIXES.some((prefix) => path.startsWith(prefix))) {
         for (const match of masked.matchAll(USED_TO)) {
-            if (!PASSIVE.has(match[1].toLowerCase())) {
+            if (!PASSIVE.has((match[1] ?? '').toLowerCase())) {
                 findings.push(['history', at(match.index, match[0].length)]);
             }
         }
@@ -180,7 +180,7 @@ export function checkParagraph(paragraph: ParagraphLine[], added: Added, path: s
         }
         const sentence = original.slice(start, end);
         for (const [rule, detail] of checkSentence(sentence, masked.slice(start, end), path, phaseHeadings)) {
-            findings.push({ path, number: numbers[0], rule, detail: `${detail} | ${excerpt}` });
+            findings.push({ path, number: numbers[0] ?? 0, rule, detail: `${detail} | ${excerpt}` });
         }
     }
 

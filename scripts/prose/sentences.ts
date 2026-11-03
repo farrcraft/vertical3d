@@ -20,7 +20,7 @@ export function mask(text: string): string {
     for (const match of masked.matchAll(/!?\[([^\]]*)\]\(([^)]*)\)/g)) {
         const textStart = match.index + match[0].indexOf('[') + 1;
         blank(match.index, textStart, ' ');
-        blank(textStart + match[1].length, match.index + match[0].length, ' ');
+        blank(textStart + (match[1] ?? '').length, match.index + match[0].length, ' ');
     }
     masked = units.join('');
     for (const match of masked.matchAll(/<?https?:\/\/[^\s)>]+>?/g)) {
@@ -39,13 +39,13 @@ export function splitSentences(masked: string): Array<[number, number]> {
     let start = 0;
     for (const match of masked.matchAll(/[.!?]["')\]]*(\s+)(?=\S)/g)) {
         const before = masked.slice(0, match.index + 1).split(/\s+/).filter(Boolean);
-        const word = before.length > 0 ? before[before.length - 1].toLowerCase() : '';
+        const word = before.at(-1)?.toLowerCase() ?? '';
         // a one-letter word ends a sentence like any other: in this tree it is a variable, such
         // as the x of a vector, far more often than an initial
         if (ABBREVIATIONS.has(word.replace(/^[("']+/, ''))) {
             continue;
         }
-        const end = match.index + match[0].length - match[1].length;
+        const end = match.index + match[0].length - (match[1] ?? '').length;
         if (masked.slice(start, end).trim()) {
             sentences.push([start, end]);
         }

@@ -22,7 +22,7 @@ export const SUPPORTED_NODE = 24;
 
 /** Whether a Node version string, such as "24.19.0", is one the gates support. */
 export function supportedNode(version: string): boolean {
-    const major = Number.parseInt(version.split('.')[0], 10);
+    const major = Number.parseInt(version.split('.')[0] ?? '', 10);
     return Number.isInteger(major) && major >= SUPPORTED_NODE;
 }
 

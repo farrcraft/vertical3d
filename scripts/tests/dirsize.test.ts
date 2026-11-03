@@ -30,8 +30,8 @@ test('dirsize allows a directory of exactly the limit, and reports one over it',
     assert.deepEqual(check(new Map([['api/a', 3]]), 3, new Map()), []);
     const findings = check(new Map([['api/a', 4]]), 3, new Map());
     assert.equal(findings.length, 1);
-    assert.equal(findings[0].rule, 'over-limit');
-    assert.equal(findings[0].directory, 'api/a');
+    assert.equal(findings[0]?.rule, 'over-limit');
+    assert.equal(findings[0]?.directory, 'api/a');
 });
 
 test('dirsize allows a listed directory over the limit', () => {

@@ -57,7 +57,7 @@ function markedText(text: string, at: number, marker: RegExp): string | null {
     } else {
         const lines = before.split('\n');
         const kept: string[] = [];
-        while (lines.length > 0 && lines[lines.length - 1].trim().startsWith('//')) {
+        while (lines.at(-1)?.trim().startsWith('//')) {
             kept.unshift(lines.pop() as string);
         }
         comment = kept.join('\n');
@@ -68,8 +68,9 @@ function markedText(text: string, at: number, marker: RegExp): string | null {
     if (first < 0) {
         return null;
     }
-    const reason: string[] = [lines[first].replace(marker, '')];
-    for (const line of lines.slice(first + 1)) {
+    const [opening = '', ...rest] = lines.slice(first);
+    const reason: string[] = [opening.replace(marker, '')];
+    for (const line of rest) {
         if (line === '') {
             break;
         }
@@ -90,17 +91,17 @@ export function casesIn(text: string): Found[] {
     const found: Found[] = [];
     const suites: string[] = [];
     for (const match of blankComments(text).matchAll(TOKEN)) {
-        const macro = match[1];
+        const macro = match[1] ?? '';
         if (macro === 'BOOST_AUTO_TEST_SUITE_END') {
             suites.pop();
             continue;
         }
-        const args = match[2].split(',').map((a) => a.trim());
+        const args = (match[2] ?? '').split(',').map((a) => a.trim());
         const index = NAME_ARGUMENT[macro];
-        if (index >= args.length || !/^\w+$/.test(args[index])) {
+        const name = index === undefined ? undefined : args[index];
+        if (name === undefined || !/^\w+$/.test(name)) {
             continue;
         }
-        const name = args[index];
         if (macro.endsWith('_SUITE')) {
             suites.push(name);
         } else {

@@ -15,8 +15,8 @@ export function printTable(cases: Case[], withResult: boolean): void {
         }
         return row;
     });
-    const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
-    const line = (cells: string[]): string => cells.map((cell, i) => cell.padEnd(widths[i])).join('  ');
+    const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i]?.length ?? 0)));
+    const line = (cells: string[]): string => cells.map((cell, i) => cell.padEnd(widths[i] ?? 0)).join('  ');
     const out = [line(headers), line(widths.map((w) => '-'.repeat(w))), ...rows.map(line)];
     process.stdout.write(out.join('\n') + '\n');
 }

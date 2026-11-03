@@ -28,7 +28,7 @@ export function changedFiles(base: string, head: string): Change[] {
         .split('\0').filter((f) => f.length > 0);
     const changes: Change[] = [];
     for (let i = 0; i + 1 < fields.length; i += 2) {
-        changes.push({ status: fields[i][0], file: fields[i + 1] });
+        changes.push({ status: fields[i]?.[0] ?? '', file: fields[i + 1] ?? '' });
     }
     return changes;
 }

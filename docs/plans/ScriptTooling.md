@@ -135,14 +135,23 @@ each script in a scope of its own.
 
 ### Step 9a — An index read can miss
 
-Not started. Turn on `noUncheckedIndexedAccess` in `tsconfig.base.json`, and handle each read
-that can miss: a regular expression group, an array element, or a map entry read by index.
+**Done.** `noUncheckedIndexedAccess` is on for every TypeScript file. Most reads it reported
+became a form that cannot miss, such as `entries()`, destructuring or `at(-1)`. A read the code
+already guarantees has a fallback that is never taken. No `!` was added. Every gate prints what
+it printed before over the same inputs, and every generator writes the same bytes.
+
+It found that `make_sounds.ts` read past its samples. A quarter second at 22050 samples a second
+is not a whole number, so one crossfade sample was `NaN`, and the whole of `well.wav` is
+silence. The commit for this step keeps that output, and the next one fixes it.
 
 ### Step 10 — One reference page for the gates
 
-Not started. `docs/contributing/Gates.md` lists every gate, what it checks and how to run it, how
-to write a new one, and the shared modules. Linting.md, Conventions.md, Build.md and Testing.md
-link to it instead of repeating it. The list of gates CI runs is corrected.
+**Done.** `docs/contributing/Gates.md` lists every gate, what it checks, what it reads and where
+its rule is stated. It also covers how CI runs the gates and picks a base, running them locally,
+what a gate prints, the supported environment, where the code is, and how to write a gate. The
+environment moved there from Linting.md. Linting.md had said CI ran four gates when it ran nine,
+and now points to Gates.md. Review.md, the contributing index and CLAUDE.md link to it. The
+documents that state a rule still name the gate that checks it, since the rule lives there.
 
 ### Step 11 — Close the plan
 

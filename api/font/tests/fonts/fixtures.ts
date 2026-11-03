@@ -156,13 +156,13 @@ function glyf(box: Box | null): Uint8Array {
     if (box === null) {
         return new Uint8Array(0);
     }
-    const points = [[box.x0, box.y0], [box.x0, box.y1], [box.x1, box.y1], [box.x1, box.y0]];
+    const points: [number, number][] = [[box.x0, box.y0], [box.x0, box.y1], [box.x1, box.y1], [box.x1, box.y0]];
     const w = new Writer().u16(1).u16(box.x0).u16(box.y0).u16(box.x1).u16(box.y1).u16(points.length - 1).u16(0);
     for (const _ of points) {
         w.u8(0x01);  // on the curve, with whole 16 bit coordinates
     }
-    let previous = [0, 0];
-    for (const axis of [0, 1]) {
+    let previous: [number, number] = [0, 0];
+    for (const axis of [0, 1] as const) {
         previous = [0, 0];
         for (const point of points) {
             w.u16(point[axis] - previous[axis]);
@@ -262,7 +262,7 @@ const BLUE: Colour = [0, 0, 255, 255];
 const GREEN: Colour = [0, 255, 0, 255];
 
 function cpal(palettes: Colour[][]): Uint8Array {
-    const entries = palettes[0].length;
+    const entries = palettes[0]?.length ?? 0;
     const w = new Writer().u16(0).u16(entries).u16(palettes.length).u16(entries * palettes.length)
         .u32(12 + (palettes.length * 2));
     palettes.forEach((_, i) => w.u16(i * entries));
@@ -382,27 +382,27 @@ function colr1(bases: { glyph: number; paint: Paint }[], layers: Paint[]): Uint8
     const baseList = w.length;
     w.put32(baseListAt, baseList);
     w.u32(bases.length);
-    const offsets = bases.map((base) => {
+    const placedBases = bases.map((base) => {
         w.u16(base.glyph);
         const at = w.length;
         w.u32(0);
-        return at;
+        return { base, at };
     });
-    bases.forEach((base, i) => {
-        w.put32(offsets[i], w.length - baseList);
+    placedBases.forEach(({ base, at }) => {
+        w.put32(at, w.length - baseList);
         base.paint(w);
     });
 
     const layerList = w.length;
     w.put32(layerListAt, layerList);
     w.u32(layers.length);
-    const layerOffsets = layers.map(() => {
+    const placedLayers = layers.map((layer) => {
         const at = w.length;
         w.u32(0);
-        return at;
+        return { layer, at };
     });
-    layers.forEach((layer, i) => {
-        w.put32(layerOffsets[i], w.length - layerList);
+    placedLayers.forEach(({ layer, at }) => {
+        w.put32(at, w.length - layerList);
         layer(w);
     });
     return w.done();
@@ -533,16 +533,16 @@ function gvar(axes: number, glyphs: Tuple[][]): Uint8Array {
             const t = new Writer();
             packed(t, tuple.dx);
             packed(t, tuple.dy);
-            return t.done();
+            return { tuple, bytes: t.done() };
         });
         // shared point numbers, 0 for every point, are the first byte of the serialized data
         data.u16(0x8000 | tuples.length).u16(4 + (tuples.length * (4 + (axes * 2))));
-        tuples.forEach((tuple, i) => {
-            data.u16(serialized[i].length).u16(0x8000);
+        serialized.forEach(({ tuple, bytes }) => {
+            data.u16(bytes.length).u16(0x8000);
             tuple.peak.forEach((value) => data.f2dot14(value));
         });
         data.u8(0);
-        serialized.forEach((s) => data.append(s));
+        serialized.forEach(({ bytes }) => data.append(bytes));
         data.pad();
     }
     offsets.push(data.length);
@@ -555,9 +555,10 @@ function gvar(axes: number, glyphs: Tuple[][]): Uint8Array {
 function checksum(table: Uint8Array): number {
     const padded = new Uint8Array(Math.ceil(table.length / 4) * 4);
     padded.set(table);
+    const words = new DataView(padded.buffer);
     let sum = 0;
     for (let i = 0; i < padded.length; i += 4) {
-        sum = (sum + ((padded[i] << 24 | padded[i + 1] << 16 | padded[i + 2] << 8 | padded[i + 3]) >>> 0)) >>> 0;
+        sum = (sum + words.getUint32(i)) >>> 0;
     }
     return sum;
 }
@@ -585,26 +586,26 @@ function font(family: string, glyphs: Glyph[], own: Record<string, Uint8Array>, 
         name: name(family, names),
         post: post(),
     };
-    const tags = Object.keys(tables).sort();
-    const count = tags.length;
+    const sorted = Object.entries(tables).sort(([a], [b]) => (a < b ? -1 : 1));
+    const count = sorted.length;
     const power = 2 ** Math.floor(Math.log2(count));
     const w = new Writer().u32(0x00010000).u16(count).u16(power * 16).u16(Math.log2(power)).u16((count - power) * 16);
     const directory = 12 + (count * 16);
     let offset = directory;
-    const placed = tags.map((tag) => {
+    const placed = sorted.map(([tag, table]) => {
         const at = offset;
-        offset += Math.ceil(tables[tag].length / 4) * 4;
-        return at;
+        offset += Math.ceil(table.length / 4) * 4;
+        return { tag, table, at };
     });
-    tags.forEach((tag, i) => {
-        w.tag(tag.padEnd(4, ' ')).u32(checksum(tables[tag])).u32(placed[i]).u32(tables[tag].length);
+    placed.forEach(({ tag, table, at }) => {
+        w.tag(tag.padEnd(4, ' ')).u32(checksum(table)).u32(at).u32(table.length);
     });
     let headAt = 0;
-    tags.forEach((tag, i) => {
+    placed.forEach(({ tag, table, at }) => {
         if (tag === 'head') {
-            headAt = placed[i];
+            headAt = at;
         }
-        w.append(tables[tag]).pad();
+        w.append(table).pad();
     });
     w.put32(headAt + 8, (0xB1B0AFBA - checksum(w.done())) >>> 0);
     return w.done();

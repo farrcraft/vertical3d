@@ -76,7 +76,7 @@ export class Tree {
                 if (FORWARD_ONLY.test(text)) {
                     continue;
                 }
-                const key = m[1].split('::').slice(1).join('::');
+                const key = (m[1] ?? '').split('::').slice(1).join('::');
                 if (!this.namespaces.has(key)) {
                     this.namespaces.set(key, new Set());
                 }

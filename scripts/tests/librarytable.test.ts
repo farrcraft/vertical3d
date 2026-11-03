@@ -71,26 +71,26 @@ test('librarytable accepts a row for each library in the manifest order', () => 
 test('librarytable reports a library with no row, and a row for no library', () => {
     const found = check([ASSET, MEDIA, '| [`audio`](../../api/audio/) | Sound. |']);
     assert.equal(found.length, 2);
-    assert.match(found[0], /audio is not a library/);
-    assert.match(found[1], /log has no row/);
+    assert.match(found[0] ?? '', /audio is not a library/);
+    assert.match(found[1] ?? '', /log has no row/);
 });
 
 test('librarytable reports a second row for one library', () => {
     const found = check([ASSET, MEDIA, LOG, LOG]);
     assert.equal(found.length, 1);
-    assert.match(found[0], /log has a row already/);
+    assert.match(found[0] ?? '', /log has a row already/);
 });
 
 test('librarytable reports a row that links another directory', () => {
     const found = check([ASSET, '| [`asset_media`](../../api/media/) | Pictures. |', LOG]);
     assert.equal(found.length, 1);
-    assert.match(found[0], /asset_media links \.\.\/\.\.\/api\/media\/, and its directory is \.\.\/\.\.\/api\/asset\/media\//);
+    assert.match(found[0] ?? '', /asset_media links \.\.\/\.\.\/api\/media\/, and its directory is \.\.\/\.\.\/api\/asset\/media\//);
 });
 
 test('librarytable reports rows out of the manifest order', () => {
     const found = check([MEDIA, ASSET, LOG]);
     assert.equal(found.length, 2);
-    assert.match(found[0], /asset_media is out of order, and the manifest has asset here/);
+    assert.match(found[0] ?? '', /asset_media is out of order, and the manifest has asset here/);
 });
 
 test('librarytable reports a manifest that names no libraries', () => {

@@ -45,7 +45,7 @@ function cmakeCommands(text: string): Array<[string, string[]]> {
         }
         call.lastIndex = i;
         const m = call.exec(text);
-        if (!m || (i > 0 && /\w/.test(text[i - 1]))) {
+        if (!m || (i > 0 && /\w/.test(text.charAt(i - 1)))) {
             i += 1;
             continue;
         }
@@ -56,7 +56,7 @@ function cmakeCommands(text: string): Array<[string, string[]]> {
         let quoted = false;
         const args: string[] = [];
         while (i < n && depth > 0) {
-            const c = text[i];
+            const c = text.charAt(i);
             if (quoted) {
                 if (c === '\\' && i + 1 < n) {
                     cur += text.slice(i, i + 2);
@@ -118,34 +118,35 @@ export function loadTargets(root: string, files: readonly string[]): { targets: 
                 boost = args.slice(args.indexOf('COMPONENTS') + 1)
                     .filter((a) => a !== 'REQUIRED' && a !== 'CONFIG').map((a) => 'Boost::' + a);
             }
-            if (!f.endsWith('CMakeLists.txt') || args.length === 0) {
+            const [first] = args;
+            if (!f.endsWith('CMakeLists.txt') || first === undefined) {
                 continue;
             }
             const sources = args.slice(1).filter((a) => endsWithAny(a, SOURCE_SUFFIXES))
                 .map((a) => path.normalize(path.join(path.dirname(file), a)));
             if (low === 'v3d_add_api_library') {
-                targets.set('v3dlib_' + args[0], make('v3dlib_' + args[0], 'api', file, sources));
+                targets.set('v3dlib_' + first, make('v3dlib_' + first, 'api', file, sources));
             } else if (low === 'v3d_add_test') {
                 // v3d_add_test links the test framework, which the package rule takes as given
-                const t = make('v3dtest_' + args[0], underApi ? 'api-suite' : 'app-suite', file, sources);
+                const t = make('v3dtest_' + first, underApi ? 'api-suite' : 'app-suite', file, sources);
                 targets.set(t.name, t);
-            } else if ((low === 'add_executable' || low === 'add_library') && !args[0].startsWith('${')) {
+            } else if ((low === 'add_executable' || low === 'add_library') && !first.startsWith('${')) {
                 if (args.includes('ALIAS') || args.includes('IMPORTED')) {
                     continue;
                 }
-                targets.set(args[0], make(args[0], low === 'add_executable' ? 'app' : 'app-library', file, sources));
+                targets.set(first, make(first, low === 'add_executable' ? 'app' : 'app-library', file, sources));
             } else if (low === 'target_link_libraries') {
                 linkCalls.push(args);
             }
         }
     }
-    for (const args of linkCalls) {
-        const t = targets.get(args[0]);
+    for (const [name = '', ...items] of linkCalls) {
+        const t = targets.get(name);
         if (t === undefined) {
             continue;
         }
         let visibility: Visibility = 'PUBLIC';
-        for (const a of args.slice(1)) {
+        for (const a of items) {
             if (LINK_KEYWORDS.has(a)) {
                 visibility = a === 'PRIVATE' || a === 'LINK_PRIVATE' ? 'PRIVATE' : 'PUBLIC';
             } else {
@@ -164,14 +165,14 @@ export function loadTargets(root: string, files: readonly string[]): { targets: 
 
 /** The package targets one link item names. */
 export function expand(item: string, boost: string[]): string[] {
-    const m = /^\$\{(\w+)_LIBRARIES\}$/.exec(item);
-    if (!m) {
+    const variable = /^\$\{(\w+)_LIBRARIES\}$/.exec(item)?.[1];
+    if (variable === undefined) {
         return [item];
     }
-    if (m[1] === 'Boost') {
+    if (variable === 'Boost') {
         return boost;
     }
-    return VARIABLE_TARGETS[m[1]] ?? [item];
+    return VARIABLE_TARGETS[variable] ?? [item];
 }
 
 /** What a consumer of the named target gets from it: the target and its PUBLIC closure. */

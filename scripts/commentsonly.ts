@@ -145,13 +145,15 @@ export function compare(path: string, was: string, now: string): Finding[] {
     const findings: Finding[] = [];
     const length = Math.min(before.length, after.length);
     let index = 0;
-    while (index < length && before[index].text === after[index].text) {
+    while (index < length && before[index]?.text === after[index]?.text) {
         index++;
     }
-    if (index < before.length || index < after.length) {
-        const old = index < before.length ? before[index].text : '(end of file)';
-        const fresh = index < after.length ? after[index].text : '(end of file)';
-        const number = index < after.length ? after[index].number : (after.at(-1)?.number ?? 0);
+    const baseLine = before[index];
+    const headLine = after[index];
+    if (baseLine !== undefined || headLine !== undefined) {
+        const old = baseLine?.text ?? '(end of file)';
+        const fresh = headLine?.text ?? '(end of file)';
+        const number = headLine?.number ?? after.at(-1)?.number ?? 0;
         findings.push({ path, number, rule: 'code-changed', detail: `base: ${old} | now: ${fresh}` });
     }
     // a line the base has with the same text is not reported, so a sweep is not blamed for it
@@ -174,7 +176,7 @@ function changed(base: string): Array<{ status: string; path: string }> {
     const files: Array<{ status: string; path: string }> = [];
     const fields = git(['diff', '--name-status', '-z', ...DIFF_OPTIONS, base]).split('\0');
     for (let index = 0; index + 1 < fields.length; index += 2) {
-        files.push({ status: fields[index], path: fields[index + 1] });
+        files.push({ status: fields[index] ?? '', path: fields[index + 1] ?? '' });
     }
     for (const path of untracked()) {
         files.push({ status: 'A', path });

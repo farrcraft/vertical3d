@@ -37,7 +37,7 @@ function beforeComment(line: string): string {
             }
         } else if (c === '"' || c === "'") {
             quote = c;
-        } else if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) {
+        } else if (c === '#' && (i === 0 || /\s/.test(line.charAt(i - 1)))) {
             return line.slice(0, i);
         }
     }

@@ -181,7 +181,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
         buildAll([...bySuite.keys()].sort(), build, env, scratch);
         for (const suite of [...bySuite.keys()].sort()) {
             const suiteCases = bySuite.get(suite)!;
-            const directory = headMap.get(suiteCases[0].file)!.directory;
+            const directory = headMap.get(suiteCases[0]?.file ?? '')!.directory;
             // a base that does not add the head suite's directory, such as one where the change
             // moved it, may still build a binary of that name from somewhere else
             if (!fs.existsSync(path.join(build, ...directory.split('/'), 'CMakeFiles', `v3dtest_${suite}.dir`))) {

@@ -94,7 +94,7 @@ export function failedSources(output: string, directory: string, suite: string, 
     const executable = `v3dtest_${suite}.exe`;
     let linked = false;
     for (const match of output.matchAll(/^FAILED: (?:\[code=\d+\] )?(\S+)/gm)) {
-        const outputFile = match[1].replaceAll('\\', '/');
+        const outputFile = (match[1] ?? '').replaceAll('\\', '/');
         if (path.posix.basename(outputFile) === executable) {
             linked = true;
             continue;
@@ -102,7 +102,7 @@ export function failedSources(output: string, directory: string, suite: string, 
         if (!outputFile.includes(marker) || !outputFile.endsWith('.obj')) {
             return null;
         }
-        const relative = outputFile.split(marker)[1].slice(0, -'.obj'.length)
+        const relative = (outputFile.split(marker)[1] ?? '').slice(0, -'.obj'.length)
             .split('/').map((part) => (part === '__' ? '..' : part)).join('/');
         failed.push(path.posix.normalize(path.posix.join(directory, relative)));
     }
@@ -116,17 +116,18 @@ export function failedSources(output: string, directory: string, suite: string, 
     }
     const objects = new Set<string>();
     for (const match of output.matchAll(/^\s*(\S[^\r\n]*?\.obj) : error LNK(?:2001|2019)/gim)) {
-        objects.add(path.posix.basename(match[1].replaceAll('\\', '/')).toLowerCase());
+        objects.add(path.posix.basename((match[1] ?? '').replaceAll('\\', '/')).toLowerCase());
     }
     if (objects.size === 0) {
         return null;
     }
     for (const object of objects) {
         const owners = sources.filter((s) => (path.posix.basename(s) + '.obj').toLowerCase() === object);
-        if (owners.length !== 1) {
+        const [owner] = owners;
+        if (owners.length !== 1 || owner === undefined) {
             return null;
         }
-        failed.push(owners[0]);
+        failed.push(owner);
     }
     return failed;
 }
@@ -167,7 +168,7 @@ export function buildAll(suites: string[], build: string, env: Env, scratch: str
     if (listing.code !== 0) {
         return;
     }
-    const known = new Set(listing.output.split(/\r?\n/).map((line) => line.split(':')[0].trim()));
+    const known = new Set(listing.output.split(/\r?\n/).map((line) => (line.split(':')[0] ?? '').trim()));
     const targets = suites.map((s) => 'v3dtest_' + s).filter((t) => known.has(t));
     if (targets.length < 2) {
         return;

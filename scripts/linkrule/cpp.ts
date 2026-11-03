@@ -65,7 +65,7 @@ const QUALIFIED = /(?<![\w:])(using\s+)?(namespace\s+)?v3d((?:\s*::\s*\w+)+)/g;
 
 /** The text of each include in a C++ file, in order. */
 export function includesIn(text: string): string[] {
-    return [...stripCpp(text, true).matchAll(INCLUDE)].map((m) => m[1]);
+    return [...stripCpp(text, true).matchAll(INCLUDE)].map((m) => m[1] ?? '');
 }
 
 /**
@@ -78,7 +78,7 @@ export function usesIn(text: string, namespaces: Map<string, Set<string>>): Arra
         if (m[2] && !m[1]) {
             continue;
         }
-        const parts = m[3].split('::').slice(1).map((p) => p.trim());
+        const parts = (m[3] ?? '').split('::').slice(1).map((p) => p.trim());
         for (let k = parts.length; k > 0; k -= 1) {
             const libs = namespaces.get(parts.slice(0, k).join('::'));
             if (libs !== undefined) {

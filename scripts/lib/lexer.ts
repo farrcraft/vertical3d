@@ -71,7 +71,7 @@ export const RAW_STRING = /(?<!\w)(?:u8|[uUL])?R"([^()\\\s]{0,16})\(/y;
  */
 export function isDigitSeparator(text: string, index: number): boolean {
     let start = index;
-    while (start > 0 && /[\w.']/.test(text[start - 1])) {
+    while (start > 0 && /[\w.']/.test(text.charAt(start - 1))) {
         start -= 1;
     }
     const token = text.slice(start, index);
@@ -96,7 +96,7 @@ export function tokens(text: string): Token[] {
     };
     let index = 0;
     while (index < length) {
-        const char = text[index];
+        const char = text.charAt(index);
         RAW_STRING.lastIndex = index;
         const raw = 'uULR'.includes(char) ? RAW_STRING.exec(text) : null;
         if (text.startsWith('//', index)) {
@@ -110,8 +110,9 @@ export function tokens(text: string): Token[] {
             push('comment', index, stop);
             index = stop;
         } else if (raw) {
-            const close = text.indexOf(')' + raw[1] + '"', RAW_STRING.lastIndex);
-            const stop = close < 0 ? length : close + raw[1].length + 2;
+            const delimiter = raw[1] ?? '';
+            const close = text.indexOf(')' + delimiter + '"', RAW_STRING.lastIndex);
+            const stop = close < 0 ? length : close + delimiter.length + 2;
             push('literal', index, stop);
             index = stop;
         } else if (char === '"' || (char === '\'' && !isDigitSeparator(text, index))) {
@@ -156,7 +157,7 @@ export function lex(text: string): Segment[][] {
             }
             if (body !== '' || kind !== 'code') {
                 const column = index === 0 ? start - lineStart : 0;
-                lines[line].push({ kind, column, text: body, opens: index === 0, closes: last });
+                lines[line]?.push({ kind, column, text: body, opens: index === 0, closes: last });
             }
             offset += piece.length + 1;
             if (!last) {
