@@ -6,4 +6,5 @@ conversion to the basis curves renderers take. See [Curves.md](../../docs/api/Cu
 Its CMake target is `v3dlib_curve`. A project outside the tree links it as `v3d::curve`.
 
 - [api/Curves.md](../../docs/api/Curves.md) describes how to use it.
+- Its classes and functions are in the [API reference](https://farrcraft.github.io/vertical3d/reference/namespacev3d_1_1curve.html).
 - [api/README.md](../../docs/api/README.md) lists every library and what each one links.

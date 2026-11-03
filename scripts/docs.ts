@@ -39,6 +39,7 @@ export interface Tool {
 }
 
 const MDBOOK_RELEASES = 'https://github.com/rust-lang/mdBook/releases/download/v0.5.4';
+const DOXYGEN_RELEASES = 'https://github.com/doxygen/doxygen/releases/download/Release_1_18_0';
 
 /** The tools the site is built with. */
 export const TOOLS: readonly Tool[] = [
@@ -58,6 +59,22 @@ export const TOOLS: readonly Tool[] = [
             },
         },
     },
+    {
+        name: 'doxygen',
+        version: '1.18.0',
+        archives: {
+            'win32-x64': {
+                url: `${DOXYGEN_RELEASES}/doxygen-1.18.0.windows.x64.bin.zip`,
+                sha256: 'e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf',
+                binary: 'doxygen.exe',
+            },
+            'linux-x64': {
+                url: `${DOXYGEN_RELEASES}/doxygen-1.18.0.linux.bin.tar.gz`,
+                sha256: '14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90',
+                binary: 'doxygen-1.18.0/bin/doxygen',
+            },
+        },
+    },
 ];
 
 /** The archive of a tool for this platform. Throws a GateError when the tool has none. */
@@ -67,6 +84,15 @@ export function archiveFor(tool: Tool, platform: string): Archive {
         throw new GateError(`${tool.name} ${tool.version} has no archive for ${platform}`);
     }
     return archive;
+}
+
+/** The tool TOOLS pins by a name. Throws a GateError when it pins none. */
+export function tool(name: string): Tool {
+    const found = TOOLS.find((candidate) => candidate.name === name);
+    if (found === undefined) {
+        throw new GateError(`TOOLS pins no ${name}`);
+    }
+    return found;
 }
 
 /** The SHA-256 of some bytes, in lowercase hex. */
@@ -119,12 +145,12 @@ async function main(): Promise<number> {
     // the script takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/docs.ts', {});
     const platform = `${process.platform}-${process.arch}`;
-    const [mdbook] = TOOLS;
-    if (mdbook === undefined) {
-        throw new GateError('TOOLS names no mdbook');
-    }
-    const binary = await ensure(mdbook, platform);
-    run(binary, ['build'], path.join(ROOT, 'scripts', 'docs'));
+    const book = path.join(ROOT, 'scripts', 'docs');
+    const mdbook = await ensure(tool('mdbook'), platform);
+    const doxygen = await ensure(tool('doxygen'), platform);
+    // mdBook empties out/docs/ before it writes, so the reference is built after it
+    run(mdbook, ['build'], book);
+    run(doxygen, ['Doxyfile'], book);
     return 0;
 }
 

@@ -42,10 +42,15 @@ the rules. The script has run on Windows only, and step 3 runs it on Linux.
 
 ### Step 2 — The reference builds from the headers
 
-The same script fetches Doxygen at a pinned version and builds a reference from the public
-headers of each api library into the site, under `reference/`. A header in an `internal/`
-directory or under `tests/` is left out. The site links the reference from its index, and each
-api page links its library's part of it.
+**Done.** `scripts/docs.ts` fetches Doxygen 1.18.0 at its pinned SHA-256 and runs it after
+mdBook, with `scripts/docs/Doxyfile`. The reference covers every header under `api/` but those
+under `internal/` and `tests/`, with every public declaration listed whether documented or not.
+`docs/README.md` and `docs/api/README.md` link it, and each library's README links its namespace.
+The links use the published address, which answers once step 3 publishes.
+
+Doxygen reports 13 errors in existing doc comments, such as a `@param` that names no parameter in
+`FileChooser`, `Prompt` and `SelectList::widest`. Step 5 fixes them. The warning for a parameter
+with no `@param` is off until step 5 turns it on.
 
 ### Step 3 — The site is published
 

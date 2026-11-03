@@ -115,6 +115,7 @@ variable. [UsingTheApi.md](UsingTheApi.md) covers that.
 | To do this | Read |
 |---|---|
 | Set up a project of your own against the api | [UsingTheApi.md](UsingTheApi.md) |
+| Look up a class or a function | The [API reference](https://farrcraft.github.io/vertical3d/reference/), built from the headers |
 | Write the app: lifecycle, loop, input, config, settings, logging, audio | [engine/](engine/README.md) |
 | Draw: frames, passes, canvases, sprites, meshes, lighting | [rendering/](rendering/README.md) |
 | Build menus and HUDs | [ui/](ui/README.md) |

@@ -326,6 +326,10 @@ script fetches mdBook at a pinned version and checks it against a pinned SHA-256
   site, a link to a file outside `docs/`, or to a record under `completed/`, goes to that file on
   GitHub. A link to a directory goes to its README.
 - **A link that names nothing stops the build.** Anchors are not checked.
+- **The API reference is built from the public headers**, by Doxygen at a pinned version, into
+  `reference/` in the site. A header under `internal/` or `tests/` is left out.
+  [scripts/docs/Doxyfile](../../scripts/docs/Doxyfile) holds its settings. A document links the
+  reference by its published address, because the reference is not in the repository.
 
 Background: [ADR-0162](../adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
 

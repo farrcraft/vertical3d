@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { archiveFor, sha256, TOOLS } from '../docs.ts';
+import { archiveFor, sha256, tool, TOOLS } from '../docs.ts';
 import { GateError } from '../lib/git.ts';
 
 test('docs pins each tool for Windows and Linux on x64, by a full SHA-256', () => {
@@ -20,6 +20,12 @@ test('docs pins each tool for Windows and Linux on x64, by a full SHA-256', () =
             assert.ok(archive.url.includes(tool.version), `${archive.url} names ${tool.version}`);
         }
     }
+});
+
+test('docs pins mdBook and Doxygen, and refuses a tool it does not pin', () => {
+    assert.equal(tool('mdbook').name, 'mdbook');
+    assert.equal(tool('doxygen').name, 'doxygen');
+    assert.throws(() => tool('sphinx'), GateError);
 });
 
 test('docs refuses a platform a tool has no archive for', () => {

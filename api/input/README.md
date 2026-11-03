@@ -5,4 +5,5 @@ Keyboard and mouse devices, and the state of what is held and what changed this 
 Its CMake target is `v3dlib_input`. A project outside the tree links it as `v3d::input`.
 
 - [api/engine/Input.md](../../docs/api/engine/Input.md) describes how to use it.
+- Its classes and functions are in the [API reference](https://farrcraft.github.io/vertical3d/reference/namespacev3d_1_1input.html).
 - [api/README.md](../../docs/api/README.md) lists every library and what each one links.
