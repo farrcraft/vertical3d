@@ -39,13 +39,13 @@
  * which strips the types, and needs only Node's own modules and the gates' modules in scripts/lib.
  */
 
-import { Buffer } from 'node:buffer';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
 
 import { UsageError, options, runGate } from './lib/cli.ts';
-import { git, mergeBase, untracked } from './lib/git.ts';
+import { type Added, changeSince } from './lib/diff.ts';
+import { mergeBase } from './lib/git.ts';
 import { commentLines } from './lib/lexer.ts';
 import { ROOT } from './lib/tree.ts';
 
@@ -59,15 +59,6 @@ const SLASH_SUFFIXES = ['.h', '.hpp', '.cpp', '.cxx', '.glsl', '.vert', '.frag',
 const HASH_SUFFIXES = ['.cmake', '.yml', '.yaml'];
 const CMD_SUFFIXES = ['.cmd', '.bat'];
 const SCRIPT_SUFFIXES = ['.ts', '.js', '.mjs', '.cjs'];
-
-// The options that make git print a diff this script can read, whatever the user's
-// configuration. They fix the a/ and b/ prefixes, and turn off colour, external and
-// text-converting drivers, and rename detection.
-const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff', '--no-textconv',
-    '--no-renames'];
-
-// The escapes git's C-style quoting of a path uses, other than an octal byte.
-const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
 
 // Historical records, and third-party or generated trees. ports/ holds vcpkg's own ports, overlaid.
 const EXCLUDED_PREFIXES = ['vendor/', 'ports/', 'demos/voxel/src/noise/', 'out/', 'docs/plans/completed/', 'docs/roadmap/completed/',
@@ -145,38 +136,6 @@ export interface Finding {
     detail: string;
 }
 
-/** The lines a path adds, or null when the whole file is checked. */
-export type Added = Set<number> | null;
-
-/**
- * Return the path a diff header line such as "+++ b/name" names, or null for /dev/null. Git
- * quotes a name that holds a control character, a quote, a backslash or a byte above 127, and
- * ends an unquoted name that holds a space with a tab.
- */
-function headerPath(header: string): string | null {
-    let name = header.slice(4);
-    const quoted = /^"((?:[^"\\]|\\.)*)"/.exec(name);
-    if (quoted) {
-        const bytes: number[] = [];
-        const body = quoted[1];
-        for (let index = 0; index < body.length; index++) {
-            if (body[index] !== '\\') {
-                bytes.push(...Buffer.from(body[index], 'utf8'));
-            } else if (/[0-7]{3}/.test(body.slice(index + 1, index + 4))) {
-                bytes.push(parseInt(body.slice(index + 1, index + 4), 8));
-                index += 3;
-            } else {
-                index += 1;
-                bytes.push(ESCAPES[body[index]] ?? body.charCodeAt(index));
-            }
-        }
-        name = Buffer.from(bytes).toString('utf8');
-    } else {
-        name = name.replace(/\t$/, '');
-    }
-    return name.startsWith('b/') ? name.slice(2) : null;
-}
-
 function columns(text: string): number {
     return Array.from(text).length;
 }
@@ -207,70 +166,6 @@ function excluded(path: string, newFiles: Set<string>): boolean {
         return true;
     }
     return ADR_BODY.test(path) && !newFiles.has(path);
-}
-
-/** Map each changed path to the lines the working tree adds since base, and list the new files. */
-function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<string> } {
-    const newFiles = new Set<string>();
-    const fields = git(['diff', '--name-status', '-z', ...DIFF_OPTIONS, base]).split('\0');
-    for (let index = 0; index + 1 < fields.length; index += 2) {
-        if (fields[index] === 'A') {
-            newFiles.add(fields[index + 1]);
-        }
-    }
-    const added = new Map<string, Added>();
-    let current: Set<number> | null = null;
-    // the lines left in the current hunk, from its header; a line inside a hunk is never a file
-    // header, even when it is an added line that starts "++ "
-    let oldLeft = 0;
-    let newLeft = 0;
-    for (const line of git(['diff', '--unified=0', ...DIFF_OPTIONS, base]).split('\n')) {
-        if (oldLeft > 0 || newLeft > 0) {
-            if (line.startsWith('+')) {
-                newLeft -= 1;
-                continue;
-            }
-            if (line.startsWith('-')) {
-                oldLeft -= 1;
-                continue;
-            }
-            if (line.startsWith(' ')) {
-                oldLeft -= 1;
-                newLeft -= 1;
-                continue;
-            }
-            if (line.startsWith('\\')) {
-                continue;
-            }
-            oldLeft = 0;
-            newLeft = 0;
-        }
-        if (line.startsWith('+++ ')) {
-            const target = headerPath(line.replace(/\r$/, ''));
-            current = null;
-            if (target !== null) {
-                current = new Set<number>();
-                added.set(target, current);
-            }
-        } else if (line.startsWith('@@')) {
-            const match = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
-            if (match) {
-                const start = Number(match[2]);
-                const count = match[3] === undefined ? 1 : Number(match[3]);
-                oldLeft = match[1] === undefined ? 1 : Number(match[1]);
-                newLeft = count;
-                for (let number = start; number < start + count && current !== null; number++) {
-                    current.add(number);
-                }
-            }
-        }
-    }
-    // A file not yet added to the index is new in its entirety.
-    for (const path of untracked()) {
-        newFiles.add(path);
-        added.set(path, null);
-    }
-    return { added, newFiles };
 }
 
 function readLines(path: string): string[] {
@@ -831,7 +726,7 @@ function main(): number {
         }
     } else {
         process.chdir(ROOT);
-        const { added, newFiles } = addedLines(mergeBase(base));
+        const { added, newFiles } = changeSince(mergeBase(base));
         for (const path of [...added.keys()].sort()) {
             const lines = added.get(path) ?? null;
             if (lines !== null && lines.size === 0) {

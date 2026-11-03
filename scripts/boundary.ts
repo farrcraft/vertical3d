@@ -45,14 +45,14 @@
 // Node runs this file directly: it uses only node: modules, the gates' modules in scripts/lib,
 // and type annotations Node can strip.
 
-import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
 import { options, runGate } from './lib/cli.ts';
-import { git, mergeBase, untracked } from './lib/git.ts';
+import { changeSince } from './lib/diff.ts';
+import { mergeBase } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
-import { ROOT } from './lib/tree.ts';
+import { ROOT, isGenerated, isTestPath, isThirdParty } from './lib/tree.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
 export type Line = { path: string; number: number; text: string; code: string };
@@ -66,11 +66,6 @@ const HELPERS = new Set([
     'api/asset/Json.h',
     'api/asset/Json.cpp',
 ]);
-
-const SKIPPED = ['vendor/', 'demos/voxel/src/noise/', 'out/', 'vcpkg_installed/'];
-
-/** A test file, which converts values it chose rather than input. */
-const TEST = /(^|\/)tests\//;
 
 /** The comment that accepts a reported line, with the reason the conversion is defined. */
 const CHECKED = /\/\/\s*checked:\s*\S/;
@@ -93,113 +88,29 @@ const FLOATY = new RegExp([
     '(?<![\\w.])\\d+[fF](?![\\w.])',
 ].join('|'));
 
-/**
- * The options that make git print a diff this script can read, whatever the user's
- * configuration. They fix the a/ and b/ prefixes, and turn off colour, external and
- * text-converting drivers, and rename detection.
- */
-const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames'];
-
-/** The escapes git's C-style quoting of a path uses, other than an octal byte. */
-const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
-
-/**
- * Returns the path a diff header line such as "+++ b/name" names, or null for /dev/null. Git
- * quotes a name that holds a control character, a quote, a backslash or a byte above 127, and
- * ends an unquoted name that holds a space with a tab.
- */
-function headerPath(header: string): string | null {
-    let name = header.slice(4);
-    const quoted = /^"((?:[^"\\]|\\.)*)"/.exec(name);
-    if (quoted) {
-        const bytes: number[] = [];
-        const body = quoted[1];
-        for (let index = 0; index < body.length; index++) {
-            if (body[index] !== '\\') {
-                bytes.push(...Buffer.from(body[index], 'utf8'));
-            } else if (/[0-7]{3}/.test(body.slice(index + 1, index + 4))) {
-                bytes.push(parseInt(body.slice(index + 1, index + 4), 8));
-                index += 3;
-            } else {
-                index += 1;
-                bytes.push(ESCAPES[body[index]] ?? body.charCodeAt(index));
-            }
-        }
-        name = Buffer.from(bytes).toString('utf8');
-    } else {
-        name = name.replace(/\t$/, '');
-    }
-    return name.startsWith('b/') ? name.slice(2) : null;
-}
-
-/** Returns every added line in a C++ source or header, with its path and line number. */
+/** Every line a change adds to a C++ source or header since the base, with its code. */
 function addedLines(base: string): Line[] {
-    const diff = git(['diff', '--unified=0', ...DIFF_OPTIONS, base]);
     const added: Array<{ path: string; number: number; text: string }> = [];
-    let path: string | null = null;
-    let number = 0;
-    // the lines left in the current hunk, from its header; a line inside a hunk is never a file
-    // header, even when it is an added line that starts "++ "
-    let oldLeft = 0;
-    let newLeft = 0;
-    for (const raw of diff.split(/\r?\n/)) {
-        if (oldLeft > 0 || newLeft > 0) {
-            if (raw.startsWith('+')) {
-                if (path !== null) {
-                    added.push({ path, number, text: raw.slice(1) });
-                }
-                number += 1;
-                newLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith('-')) {
-                oldLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith(' ')) {
-                number += 1;
-                oldLeft -= 1;
-                newLeft -= 1;
-                continue;
-            }
-            if (raw.startsWith('\\')) {
-                continue;
-            }
-            oldLeft = 0;
-            newLeft = 0;
-        }
-        if (raw.startsWith('+++ ')) {
-            path = headerPath(raw);
-            if (path !== null && !SOURCE.test(path)) {
-                path = null;
-            }
-        } else if (raw.startsWith('@@')) {
-            const match = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(raw);
-            number = match ? Number(match[2]) : 0;
-            oldLeft = match ? Number(match[1] ?? 1) : 0;
-            newLeft = match ? Number(match[3] ?? 1) : 0;
-        }
-    }
-    for (const name of untracked()) {
-        if (!SOURCE.test(name)) {
+    const contents = new Map<string, string>();
+    for (const [path, lines] of changeSince(base).added) {
+        if (!SOURCE.test(path)) {
             continue;
         }
         let content: string;
         try {
-            content = readFileSync(name, 'utf8');
-        } catch {
-            continue;
-        }
-        content.split(/\r?\n/).forEach((text, index) => added.push({ path: name, number: index + 1, text }));
-    }
-    return attachCode(added, (name) => {
-        try {
-            return readFileSync(name, 'utf8');
+            content = readFileSync(path, 'utf8');
         } catch {
             // a file the diff names and the working tree lacks has no added lines to read
-            return '';
+            continue;
         }
-    });
+        contents.set(path, content);
+        content.split(/\r?\n/).forEach((text, index) => {
+            if (lines === null || lines.has(index + 1)) {
+                added.push({ path, number: index + 1, text });
+            }
+        });
+    }
+    return attachCode(added, (path) => contents.get(path) ?? '');
 }
 
 /**
@@ -244,7 +155,8 @@ export function check(lines: Line[]): Report[] {
     const reports: Report[] = [];
     lines.forEach((line, position) => {
         const { path, number, text, code } = line;
-        if (HELPERS.has(path) || !SOURCE.test(path) || TEST.test(path) || SKIPPED.some((prefix) => path.startsWith(prefix))) {
+        // a test converts values it chose, not input
+        if (HELPERS.has(path) || !SOURCE.test(path) || isTestPath(path) || isThirdParty(path) || isGenerated(path)) {
             return;
         }
         if (CHECKED.test(text)) {

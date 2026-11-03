@@ -66,9 +66,12 @@ test. Running the gates during this step found a file-local finding already on t
 
 ### Step 4 — The diff parser, tested
 
-Not started. Prose and boundary read added lines through the one parser from step 3. Tests cover
-quoted paths, a hunk line that starts `++ `, a missing newline at the end of a file, untracked
-files, and deleted files.
+**Done.** `scripts/lib/diff.ts` reads the lines a change adds, and prose and boundary both read
+through it. Tests cover quoted paths, a hunk line that starts `++ `, a missing newline at the end
+of a file, untracked and deleted files, and a user's git configuration. Two of them make a
+repository and read what git itself prints. The parser no longer counts a hunk's removed lines,
+which a hunk with no context lists before its added ones, so they cannot be read as a header.
+Over the branch and its last 150 commits, both gates report exactly what they did before.
 
 ### Step 5 — failsfirst split and tested
 
