@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None is open.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [DocsSite](DocsSite.md) | Documents, CI, editor, moya | A searchable site of the documents with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps |
 
 ## Completed plans
 

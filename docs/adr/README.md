@@ -210,6 +210,7 @@ content went. Numbers are never reused.
 | [0159](0159-build-the-portable-job-runs-in-an-image-built-locally-too.md) | Build: the portable job runs in an image built locally too | accepted |
 | [0160](0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang | accepted |
 | [0161](0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted |
+| [0162](0162-docs-an-mdbook-site-with-a-doxygen-reference.md) | Docs: an mdBook site with a Doxygen reference | accepted |
 
 ## Process
 
