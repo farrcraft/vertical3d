@@ -1,6 +1,7 @@
 # The offline renderer
 
 These pages are for anyone changing `moya` or the library under it, `api/render/offline`.
+Someone who renders with moya reads the [moya manual](../manual/moya/README.md) instead.
 
 moya is the only offline renderer in the tree. It reads a RenderMan scene file and writes an
 image file. It shares no code with the realtime Vulkan renderer: nothing it links names Vulkan
@@ -9,8 +10,8 @@ or SDL, and it opens no window. Its test suites therefore run in CI on machines 
 | Page | Read it to |
 |---|---|
 | This page | Learn the terms, and how a RIB scene becomes an image |
-| [RunningAndTesting.md](RunningAndTesting.md) | Run moya, and build and test it |
-| [Rib.md](Rib.md) | See which RIB requests are read, and the rules for reading them |
+| [RunningAndTesting.md](RunningAndTesting.md) | See how moya is laid out, and build and test it |
+| [Rib.md](Rib.md) | Change the RIB reader, writer or handler |
 | [CamerasAndSampling.md](CamerasAndSampling.md) | Change raster space, sampling, the film, cameras, depth of field or motion blur |
 | [ShadingLanguage.md](ShadingLanguage.md) | Change the shading language compiler, runtime, built-ins or normals |
 | [Reyes.md](Reyes.md) | Change the reyes hider: bucketing, splitting, dicing and hiding |
@@ -135,7 +136,7 @@ the shading language and the ray tracer. They differ in these ways:
 | Default | Yes | No |
 | Spheres | Not drawn. The first in a scene is logged | Intersected exactly |
 | Curves | Split, then diced into ribbons facing the eye | Intersected as ribbons facing each ray |
-| A shader's `Oi` | Ignored: every sample is opaque | Composited front to back |
+| A shader's `Oi` | Composited front to back, at each sample | Composited front to back, along each ray |
 | A varying `"Cs"` | Interpolated across the grid | Blended across each triangle by the hit's weights |
 | `PixelVariance` | Ignored | Adds samples where a pixel is noisy |
 | Time of shadow and traced rays | Shutter open | Each sample's own time |

@@ -49,6 +49,23 @@ every hit of a run, whatever branch each hit took, because a shader callback is 
 the hits that reached it. The rays of the hits that did not call `trace()` are cast and thrown
 away. The callback needs the run's active hits, so it casts rays for those alone.
 
+[] **Displaced slopes stripe under the reyes hider.** A displaced surface rendered by reyes shows
+black and white bands on its slopes. `moya/tests/data/reference-displaced.rib` shows them at
+256×192. The ray-trace hider renders the same scene cleanly.
+
+[] **A shader's `printf()` output is never shown.** The runtime collects what `printf()` writes,
+and nothing prints it or sends it to the log.
+
+[] **moya exits 0 when it cannot write the image.** An output file with an extension no writer
+takes logs an error, and the process still exits with 0, so a script that runs moya sees success.
+
+[] **moya's message for an out-of-range `--grid` or `--bucket` is wrong.** It says the default
+is used. A scene's `Option "limits"` can still set the size, so the message names one case of
+two.
+
+[] **`--silent` still prints the RenderMan notice.** Every other line moya prints is turned off by
+it.
+
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
@@ -84,6 +101,10 @@ images, which are recreated a moment later.
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
 menu's 85 commands has a handler. Each group below is a piece of work of its own, in any order.
+
+[] **An area header names its editor by its internal kind.** The header's first menu shows the
+kind string with a capital first letter, such as "Render-view". The Editor submenu labels the
+same editor "Render View", so the two names differ. The header can use the submenu's label.
 
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
 writes each item's geometry in full, so they read back as two copies. Keeping them shared needs

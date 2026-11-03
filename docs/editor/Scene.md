@@ -119,8 +119,9 @@ where it lives.
 
 ## Modelling operations
 
-The Transform menu's Poly items act on the selection. Each records one `command::Topology`, and
-does nothing, with a log line, on a selection it cannot use.
+The Modify menu's modelling items, which the tool shelf repeats, act on the selection. Each
+records one `command::Topology`. On a selection it cannot use, it does nothing and shows a notice
+saying why.
 
 - **Split Edge** (`transform::poly::split_edge`) works under the edge mask. It splits every
   selected edge of every selected mesh at its middle, and selects the two parts of each, so it
@@ -384,22 +385,13 @@ built as the editor runs and put before the editor's own container so its menus 
 
 - **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
   It is a menu bar that is not docked, drawn at 80% over what is beneath it, and every menu on
-  it has a drop mark. Its first menu is named for the kind of editor shown, such as Viewport,
-  and shows that kind's icon. It holds Editor, which offers each kind of editor and marks the
-  one shown. Then come Split, Join and Swap, each with Left, Right and Top or Above and Bottom
-  or Below, and then New Tab, Close Tab and Maximise. A maximise button sits at the header's
-  right end. A key shows each kind of editor in the area under the cursor.
-
-  | Key | Editor |
-  |---|---|
-  | Shift+F4 | The console |
-  | Shift+F5 | A viewport |
-  | Shift+F6 | The graph editor |
-  | Shift+F7 | The properties editor |
-  | Shift+F9 | The outliner |
-  | Shift+F10 | The render settings |
-  | Shift+F11 | The render view |
-  | Shift+F12 | The timeline |
+  it has a drop mark. Its first menu is the name of the kind of editor shown, with its first
+  letter made a capital, such as Viewport or Render-view. It shows that kind's icon. It holds
+  Editor, which offers each kind of editor and marks the one shown. Then come Split, Join and
+  Swap, each with Left, Right and Top or Above and Bottom or Below, and then New Tab, Close Tab
+  and Maximise. A maximise button sits at the header's
+  right end. A key shows each kind of editor in the area under the cursor, as
+  [Bindings.md](../manual/editor/Bindings.md#keys) in the user manual lists.
 
 - **A viewport's header** has four more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,

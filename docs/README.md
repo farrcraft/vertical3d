@@ -3,6 +3,17 @@
 The documents here describe the tree as it is now. Each one is written for one kind of reader,
 so start from the section that matches what you are doing.
 
+## Using the editor and moya
+
+For anyone modelling with the editor or rendering with moya, rather than changing them. Each
+manual starts with a tutorial, then has a guide for each task and a reference. Its first page
+says which kind each page is.
+
+| Document | Covers |
+|---|---|
+| [manual/editor/](manual/editor/README.md) | Modelling, the scene, animating, rendering, projects, the workspace, the menus and the key bindings |
+| [manual/moya/](manual/moya/README.md) | Rendering a RIB scene: hiders, lights, shaders, the camera, output and quality, the command line, RIB and the shading language |
+
 ## Working in this repository
 
 For anyone building, testing or changing the tree.

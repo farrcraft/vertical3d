@@ -13,7 +13,8 @@ manuals, and puts pictures of the apps in the documents and the top-level README
 - The Markdown in `docs/` stays the one source, and it still reads correctly on GitHub. Nothing
   in a document is written for the site alone.
 - Documents are grouped by reader first, as `docs/README.md` groups them now. Within a group, a
-  page is a tutorial, a how-to guide, a reference or an explanation, and the index says which.
+  page is a tutorial, a how-to guide, a reference or an explanation. Each manual's first page
+  says which.
 - Everything under a `completed/` directory stays out of the site. Those records are frozen, and
   their links are not repaired.
 
@@ -81,6 +82,14 @@ output to find undocumented types, and fails on any break of the three. Members 
 documented: an empty block above a trivial member stays, as Conventions.md allows.
 
 ### Step 6 — User manuals for the editor and moya
+
+**Done.** The editor manual has a tutorial, a page of concepts, eight how-to guides, and a
+reference of the menus and of the bindings. The moya manual has a tutorial with its scene in
+`first.rib`, an explanation of how moya renders, nine how-to guides, and a reference of the
+command line, RIB and the shading language. Every example scene in it was rendered by moya. Each
+manual's first page gives each page's type. The bindings table and the user-facing parts of
+the offline pages moved into the manuals, and the developer pages link them. Writing them found
+eleven false statements in the developer pages, now corrected, and six defects, now in TODO.md.
 
 `docs/manual/editor/` is for someone modelling with the editor: a tutorial that builds a first
 scene, then how-to guides for modelling, animating, rendering and saving, and a reference of the

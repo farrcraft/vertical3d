@@ -123,7 +123,7 @@ controller fills the context in at start.
 
 | Class | Commands |
 |---|---|
-| `EditCommands` | `create::*`, `timeline::set`, `transform::poly::*`, `edit::undo` and `edit::redo` |
+| `EditCommands` | `create::*`, `timeline::set`, `timeline::delete_keys`, `timeline::auto_key`, `transform::poly::*`, `edit::undo` and `edit::redo` |
 | `ToolCommands` | `select::mask::*`, `select::add`, `camera::*`, `transform::<mode>` and the held `view::camera::*` |
 | `ViewCommands` | How a view draws: `view::shade::*`, `view::cull::*`, `view::rendermode::*`, `view::show::*` and the fixed views |
 | `AreaCommands` | `area::*` |

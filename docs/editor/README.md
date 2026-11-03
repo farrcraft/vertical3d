@@ -2,6 +2,7 @@
 
 These pages are for someone working on the 3D modelling editor in `vertical3d/` or on the mesh
 library in `api/brep`.
+Someone who models with the editor reads the [user manual](../manual/editor/README.md) instead.
 
 The editor shows four viewports of one scene over a construction grid, an outliner of its items
 and a properties editor, in areas that can be split, joined, swapped and maximised. It creates
@@ -28,44 +29,8 @@ editor reads its data from the `data/` directory beside the executable, and its 
 [api/engine/README.md](../api/engine/README.md#logging) says.
 [contributing/Build.md](../contributing/Build.md) covers the build.
 
-The default bindings are in `vertical3d/data/mappings.json`:
-
-| Input | Command | Effect |
-|---|---|---|
-| Left mouse | `view::drag` | Pick, grab a handle, or drive the camera (see [Picking](PickingAndManipulators.md#picking)) |
-| Hold Left Alt + drag | `view::camera::dolly` | Dolly a perspective view; zoom an orthographic one |
-| Hold Left Ctrl + drag | `view::camera::truck` | Move the camera sideways and up or down |
-| Middle mouse drag | `view::camera::pan` | Turn a perspective camera with an arcball; does nothing in an orthographic view |
-| View > Navigate menu | `camera::truck`, `dolly`, `zoom`, `pan`, `pitch` | Latch a camera move, so a left drag with no modifier drives the camera (see [Driving a camera](PickingAndManipulators.md#driving-a-camera)) |
-| Hold Left Shift | `select::add` | A click adds to the selection or takes away from it (see [Picking](PickingAndManipulators.md#picking)) |
-| 1, 2, 3, 4 | `create::poly::cube`, `plane`, `cylinder`, `cone` | Add a primitive at the origin |
-| Create menu | `create::perspective::camera`, `ortho::camera`, `light::point`, `light::distant`, `light::spot` | Add a camera or a light at the view under the cursor, facing the way it looks |
-| 5, 6, 7, 8 | `select::mask::object`, `vertex`, `edge`, `face` | Choose what a click selects |
-| Q, W, E, R | `transform::select`, `translate`, `rotate`, `scale` | Choose the manipulator |
-| I | `transform::poly::inset_face` | Inset the selected faces (see [Modelling operations](Scene.md#modelling-operations)) |
-| J | `transform::poly::merge_vertices` | Merge the selected vertices into one |
-| G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
-| P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
-| Shift+F4 | `area::editor::console` | Show a console in the area under the cursor, which runs TypeScript against the editor's commands (see [The console](Scripting.md#the-console)) |
-| F3 | `search::open` | Search the menus' commands, and run one (see [The command search](CommandsAndUndo.md#the-command-search)) |
-| F12 | `view::show::statistics` | Toggle the frame statistics overlay |
-| Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
-| Ctrl+O, Ctrl+S | `project::load`, `project::save` | Open a project; save the current one |
-| Ctrl+Space | `area::maximise` | Maximise the area under the cursor, or give every area its place back (see [Viewports](Scene.md#viewports)) |
-| Ctrl+Page Down, Ctrl+Page Up | `workspace::next`, `previous` | Show the next or the previous workspace (see [Workspaces](Scene.md#workspaces)) |
-| File > Import menu | `project::import::gltf`, `usd` | Import a glTF file's or a USD stage's scene (see [Importing](Files.md#importing)) |
-| Escape | `ui::quit` | Quit |
-
-Left Ctrl is also the truck modifier, so truck mode is on while a Ctrl chord is pressed. It
-drives the camera only during a drag, so the chord is unaffected. Save As and RIB export are on
-the File menu only.
-
-The menu bar leads with the editor's mark in the accent, a menu holding the command search and
-Quit, then File, Edit, Create, Select, Modify, View, Animate, Render, Window and Help. Beside it
-are a tab for each workspace, together on one plate, the project's name, and a Search button.
-While a menu is open, the arrow keys walk it, as
-[api/ui/Components.md](../api/ui/Components.md) describes. The tool shelf down the left holds the
-transform tools and the modelling operations, each with a tooltip beside it.
+The default bindings are in `vertical3d/data/mappings.json`. The user manual lists them in
+[Bindings.md](../manual/editor/Bindings.md), and every menu in [Menus.md](../manual/editor/Menus.md).
 
 **Icons.** Each icon is an SVG file in `data/icons/`, drawn in white, and `data/icons.json` names
 them. The renderer draws every icon into one image, each scaled to fit a square cell at the ui's

@@ -29,7 +29,7 @@ void ToolCommands::registerCommands(CommandTable* table) const {
         table->script(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
     }
 
-    // the Camera Manipulators menu latches a move, so a drag with no modifier drives the
+    // the View > Navigate menu latches a move, so a drag with no modifier drives the
     // camera until the move is chosen again or a transform mode is
     for (const char* move : { "truck", "dolly", "zoom", "pan", "pitch" }) {
         table->press(std::string("camera::") + move, [this, move]() { context_.cameraTool->latch(move); });

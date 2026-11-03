@@ -2,6 +2,37 @@
 
 [Documentation](README.md)
 
+# Using the editor and moya
+
+- [The Vertical3D editor manual](manual/editor/README.md)
+    - [Tutorial: a first scene](manual/editor/Tutorial.md)
+    - [Concepts](manual/editor/Concepts.md)
+    - [Modelling](manual/editor/Modelling.md)
+    - [Working with the scene](manual/editor/Scene.md)
+    - [Working in the viewports](manual/editor/Views.md)
+    - [Animating](manual/editor/Animation.md)
+    - [Rendering](manual/editor/Rendering.md)
+    - [Projects and files](manual/editor/Projects.md)
+    - [Arranging the workspace](manual/editor/Workspace.md)
+    - [Running commands by name](manual/editor/Commands.md)
+    - [Menus](manual/editor/Menus.md)
+    - [Keys and mouse bindings](manual/editor/Bindings.md)
+- [The moya manual](manual/moya/README.md)
+    - [Render a first scene](manual/moya/Tutorial.md)
+    - [How moya renders](manual/moya/HowMoyaRenders.md)
+    - [Choose a hider](manual/moya/Hiders.md)
+    - [Light a scene](manual/moya/Lights.md)
+    - [Write a surface shader](manual/moya/Shaders.md)
+    - [Move a surface with a displacement shader](manual/moya/Displacement.md)
+    - [Place the camera, and add depth of field and motion blur](manual/moya/Camera.md)
+    - [Draw curves](manual/moya/Curves.md)
+    - [Put an image on a surface](manual/moya/Textures.md)
+    - [Choose the output file, its format and its size](manual/moya/Output.md)
+    - [Control quality and speed](manual/moya/Quality.md)
+    - [The command line](manual/moya/CommandLine.md)
+    - [RIB requests](manual/moya/Rib.md)
+    - [The shading language](manual/moya/ShadingLanguage.md)
+
 # Working in this repository
 
 - [Contributing](contributing/README.md)

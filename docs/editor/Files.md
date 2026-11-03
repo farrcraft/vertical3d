@@ -306,8 +306,9 @@ the offline renderer reads RIB.
 - then the hierarchy, as nested `AttributeBegin` blocks. Each item's block has an identifier
   name, such as `group1` or `mesh2`, and a `ConcatTransform` of its local matrix. A mesh's block
   then has a three-cornered `Polygon` for each triangle of each face, and the blocks of the items
-  beneath it follow inside it. A block is written only when a mesh is inside it, so a camera, a
-  light, or a group with no mesh beneath it writes none
+  beneath it follow inside it. A curve item that renders writes its curves as RI `Curves` in
+  its block. A block is written only when a mesh or a curve that renders is inside it, so a
+  camera, a light, or a group with neither beneath it writes none
 - every face is cut into triangles as `brep::triangulateFace()` cuts it, because RI draws a
   `Polygon` only when it is convex and flat, and a face of more than three corners need be
   neither. Each triangle winds as its face's loop does

@@ -76,7 +76,6 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
   ([CamerasAndSampling.md](CamerasAndSampling.md#motion-blur)). `Scene::nearest()` takes the
   poses at a time: a ray is carried back into the stored pose, and its hit is carried forward
   again.
-- **`Scene::nearest()` tests every primitive.** There is no acceleration structure.
 
 ### The tracer
 
@@ -136,8 +135,8 @@ Background: [ADR-0092](../adr/0092-offline-a-bounding-volume-hierarchy-for-trace
 ### Shadows and traced rays
 
 - **`transmission()` is how a shader casts a shadow.** The three standard directional lights call
-  it. It multiplies the light by every occluder's `Os`, read off the primitive without running
-  its shader, so a shadow ray never shades anything. A renderer that cannot answer
+  it. It multiplies the light by one minus every occluder's `Os`, read off the primitive without
+  running its shader, so a shadow ray never shades anything. A renderer that cannot answer
   `transmission()` lets all the light through.
 - **A ray leaving a surface is offset along the geometric normal, toward its target.** A ray
   started exactly on the surface hits that surface, and every lit pixel turns black in a

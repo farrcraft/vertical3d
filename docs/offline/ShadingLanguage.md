@@ -72,9 +72,10 @@ named. The language is in `api/render/offline/sl`.
 
 ### Shaders, lights and spaces
 
-- **A shader is found by name.** A `.sl` file on `Option "searchpath" "shader"` wins over a
-  built-in shader of the same name, so a scene can replace one. A file holding exactly one
-  shader may have any file name: RI identifies a shader by the name in its source.
+- **A shader is found by name.** The file `<name>.sl` on `Option "searchpath" "shader"` wins over
+  a built-in shader of the same name, so a scene can replace one. From a file holding several
+  shaders, the one with that name is used. A file holding exactly one shader supplies it,
+  whatever name its source gives it.
 - **A search path is colon-separated, and `&` stands for the previous path.** A single letter
   before a colon is a Windows drive letter, not the end of a directory.
 - **A shader that fails to parse or compile is logged by name and position**, and the failure
