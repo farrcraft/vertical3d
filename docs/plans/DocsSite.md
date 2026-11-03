@@ -119,5 +119,8 @@ describe.
 
 ### Step 8 — The top-level README
 
+**Done.** The README opens with six of the pictures, links the site, the API reference and the
+two manuals, and has no History section.
+
 The README shows a picture of the editor, of moya's output and of the demos. It links the site.
 It drops its History section, which the writing rules keep out of documents.

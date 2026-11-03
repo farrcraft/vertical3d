@@ -2,12 +2,22 @@
 
 [![ctest](https://github.com/farrcraft/vertical3d/actions/workflows/ctest.yml/badge.svg)](https://github.com/farrcraft/vertical3d/actions/workflows/ctest.yml)
 [![cpplint](https://github.com/farrcraft/vertical3d/actions/workflows/cpplint.yml/badge.svg)](https://github.com/farrcraft/vertical3d/actions/workflows/cpplint.yml)
+[![docs](https://github.com/farrcraft/vertical3d/actions/workflows/docs.yml/badge.svg)](https://farrcraft.github.io/vertical3d/)
 
 Vertical3D is a set of C++ libraries for building 3D applications and games, together with the
 applications built on them. Rendering uses Vulkan 1.3, windowing and input use SDL3, and the
 whole repository builds with CMake.
 
 It builds on Windows with MSVC. Nothing is packaged or released; you build it from source.
+
+| | | |
+|---|---|---|
+| ![The editor's four views of a cube and a cone](docs/manual/editor/images/first-scene.png) | ![A village of houses, trees and a well, lit by the sun](docs/images/diorama.png) | ![Three spheres rendered by moya with depth of field](docs/manual/moya/images/focus.png) |
+| The vertical3d editor | Diorama | moya |
+| ![Block terrain under a blue sky](docs/images/voxel.png) | ![A tetrad falling on a Tetris board](docs/images/tetris.png) | ![The player on a floor of tiles](docs/images/odyssey.png) |
+| Voxel | Tetris | Odyssey |
+
+`node scripts/pictures.ts` makes each of these from a scene or a script in the tree.
 
 ## The libraries
 
@@ -22,7 +32,7 @@ directories. The five demos, voxel, pong, tetris, odyssey and diorama, are under
 
 | Application | What it is |
 |---|---|
-| **vertical3d** | A 3D modelling tool: four viewports over a construction grid, with primitives, picking, manipulators, undo, menus, toolbars and project files. The most complete app here |
+| **vertical3d** | A 3D modelling tool: four viewports over a construction grid, with polygon modelling, curves, cameras and lights, keyframe animation, TypeScript scripts, rendering with moya, and project files. The most complete app here |
 | **voxel** | A Minecraft-style voxel terrain generator, with chunked meshes over Perlin noise |
 | **pong** | Pong, with sound and a computer opponent |
 | **tetris** | Tetris |
@@ -42,10 +52,15 @@ clone to a build, the tests and a running app.
 
 ## Documentation
 
-Start with the documents for what you are doing:
+The documents are published at [farrcraft.github.io/vertical3d](https://farrcraft.github.io/vertical3d/),
+with an [API reference](https://farrcraft.github.io/vertical3d/reference/) built from the
+headers. The same documents are in [docs/](docs/), and read the same here. Start with the ones
+for what you are doing:
 
 | You are | Read |
 |---|---|
+| Modelling with the editor | The [editor manual](docs/manual/editor/README.md), starting with its tutorial |
+| Rendering with moya | The [moya manual](docs/manual/moya/README.md), starting with its tutorial |
 | Contributing to this repository | [docs/contributing/](docs/contributing/), starting with [GettingStarted.md](docs/contributing/GettingStarted.md) |
 | Writing an app with the libraries | [docs/api/](docs/api/), and [UsingTheApi.md](docs/api/UsingTheApi.md) for an app in another repository |
 | Changing the renderer or the UI library | [docs/internals/](docs/internals/) |
@@ -63,8 +78,3 @@ for coding agents.
 
 Vertical3D is under the MIT license, in [LICENSE](LICENSE). The third-party code it carries keeps
 its own license, and LICENSE lists each one.
-
-## History
-
-Much of this code dates from the early 2000s. It has since been brought into one repository,
-moved to CMake, C++17 and newer, and Vulkan, and is still being modernised a piece at a time.
