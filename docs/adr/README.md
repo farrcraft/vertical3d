@@ -188,6 +188,8 @@ content went. Numbers are never reused.
 | [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
 | [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
 | [0140](0140-editor-a-project-names-its-unit-of-length.md) | Editor: a project names its unit of length | accepted |
+| [0152](0152-editor-scripts-call-named-commands-with-typed-arguments.md) | Editor: scripts call named commands with typed arguments | accepted |
+| [0153](0153-editor-scripts-are-typescript-run-on-quickjs.md) | Editor: scripts are TypeScript, run on QuickJS | accepted |
 | [0154](0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted |
 
 ## Build, testing and code
