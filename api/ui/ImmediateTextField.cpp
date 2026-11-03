@@ -52,6 +52,7 @@ bool Immediate::press(std::string_view key, bool shifted, bool controlled) {
         // was typed
         context_->letGo = true;
         context_->escaped = key == "escape";
+        context_->entered = key == "return";
         return true;
     }
     return input::edit(&context_->edit, key, shifted, controlled, context_->clipboard);
@@ -106,12 +107,13 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         context_->edit.text(*value);
         context_->written = *value;
     }
-    if (reaction.hovered && context_->input.pressed) {
-        if (context_->typing != id) {
-            context_->focus(id);
-            context_->edit.text(*value);
-            context_->written = *value;
-        }
+    const bool asked = context_->focusNext && context_->disabled == 0;
+    context_->focusNext = false;
+    const bool pressed = reaction.hovered && context_->input.pressed;
+    if ((pressed || asked) && context_->typing != id) {
+        context_->claim(id, *value);
+    }
+    if (pressed) {
         // the press is measured against the line as it was drawn, slid as far as the caret
         // had pushed it
         const paint::Type type(context_->text, context_->textSize);
@@ -131,12 +133,14 @@ bool Immediate::textField(const std::string& label, std::string* value, std::siz
         // a press anywhere else, a disabled field, and a return, tab or escape all give the
         // keyboard up. What was typed has been written by then
         if (context_->letGo || context_->disabled > 0 || (context_->input.pressed && !reaction.hovered)) {
+            context_->itemEntered = context_->letGo && context_->entered;
             context_->focus(0);
             context_->itemFinished = true;
         }
     }
 
     const bool focused = context_->typing == id;
+    context_->itemTyping = focused;
     paint::plateBox(context_->canvas, min, max, context_->dressing.radius, context_->dressing.borderWidth,
         {.inside = context_->eased(id, context_->face(false, reaction.hovered && !focused)), .outline = focused ? context_->dressing.focus : context_->dressing.border});
     if (high.x <= low.x) {

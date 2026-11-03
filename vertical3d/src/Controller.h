@@ -27,6 +27,7 @@
 #include <vertical3d/src/app/WorkspaceSwitcher.h>
 #include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/ConsoleEditor.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
@@ -375,6 +376,7 @@ class Controller final : public v3d::engine::Engine {
     boost::shared_ptr<control::PropertiesEditor> properties_;
     // every graph editor, which share the chosen key
     boost::shared_ptr<control::GraphEditor> graph_;
+    boost::shared_ptr<control::ConsoleEditor> console_;
     boost::shared_ptr<control::RenderSettingsEditor> renderSettings_;
     // what a render view's buttons asked for in the last frame drawn
     control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;

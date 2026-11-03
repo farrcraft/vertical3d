@@ -368,18 +368,10 @@ script, an icon font, and the hand-drawn sheet.
 
 ### Step 13 — The console
 
-**Open.** ADR-0152 and ADR-0153 decided what it runs, after weighing named commands alone, a
+**Closed.** ADR-0152 and ADR-0153 decided what it runs, after weighing named commands alone, a
 language bound straight to the document, Lua, Luau and TypeScript on V8. Python was ruled out.
+ADR-0157 decided how a script names an item.
 
-- Every command a script can run declares typed arguments. A menu or key sends it with none,
-  and its handler fills them from the context. Items, parts and frames have a text form.
-- Scripts and console lines are TypeScript limited to syntax that can be erased. The editor
-  strips the types and runs the result on QuickJS-ng. A declaration file for the commands ships
-  with the editor.
-- A console is a kind of editor an area can hold. It lists each command run, from any source,
-  as a script would write it, and each notice posted, in the order they happened.
-- Its line takes TypeScript, runs it, and lists what it said. The arrows step through what was
-  typed before.
 - Done: no two items in a scene share a name, so a script can name an item by it (ADR-0157,
   which supersedes ADR-0135). An item added with a taken name takes the lowest free number after
   it, as `Cube.001` follows `Cube`, and one with no name is called by its kind. A rename is made
@@ -411,6 +403,13 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   `script::declarations()` writes from the command table. The declarations, scripting and
   bindings suites cover the file's form, the shipped file against the commands, commands run
   from a line, a refusal stopping it, arguments that do not suit, and what a line says.
+- Done: a console, `ConsoleEditor`, is a kind of editor an area can hold, and Shift+F4 shows
+  one. It lists the journal newest at the foot, and its line runs TypeScript on Return and keeps
+  the keyboard. The arrows step through the lines run before. `api/ui`: `itemEntered()`,
+  `itemTyping()` and `focusNext()` let a field take lines. The console and text field suites
+  cover the list, entering a line, the arrows and the wheel, and a return, the field's typing
+  and focusNext. The console was not photographed, since driving it moves the user's
+  foreground and saves the workspace it changes.
 
 ### Step 14 — The render view and the render settings
 
@@ -444,7 +443,7 @@ held.
 
 ### Step 15 — The workspaces
 
-**Open.** Needs steps 11 to 14.
+**Open.** Steps 11 to 14 are closed.
 
 - Animation, Shading and Rendering ship beside Modelling and Perspective.
 - Animation's foot holds the timeline, the graph editor and the console as tabs, so a tab strip

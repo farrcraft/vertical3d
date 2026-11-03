@@ -16,6 +16,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <vertical3d/src/control/ConsoleEditor.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/PropertiesEditor.h>
@@ -253,6 +254,7 @@ const std::vector<Area::Kind>& Area::kinds() {
         { .kind = std::string(PropertiesEditor::KIND), .label = "Properties" },
         { .kind = std::string(TimelineEditor::KIND), .label = "Timeline" },
         { .kind = std::string(GraphEditor::KIND), .label = "Graph Editor" },
+        { .kind = std::string(ConsoleEditor::KIND), .label = "Console" },
         { .kind = std::string(RenderView::KIND), .label = "Render View" },
         { .kind = std::string(RenderSettingsEditor::KIND), .label = "Render Settings" },
     };

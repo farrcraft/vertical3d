@@ -33,6 +33,7 @@
 #include <api/window/Window.h>
 #include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
+#include <vertical3d/src/control/ConsoleEditor.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/chrome/Notices.h>
 #include <vertical3d/src/control/Outliner.h>
@@ -284,6 +285,7 @@ bool Controller::buildUi() {
     properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
     context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
+    console_ = boost::make_shared<control::ConsoleEditor>(table_.journal(), [this](const std::string& line) { scripting_.line(line); });
     graph_ = boost::make_shared<control::GraphEditor>(context_.document, [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderSettings_ = boost::make_shared<control::RenderSettingsEditor>(context_.document,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
@@ -538,6 +540,8 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
             context_.timeline->draw(layer, editor.id, region);
         } else if (editor.kind == control::GraphEditor::KIND && graph_) {
             graph_->draw(layer, editor.id, region, navigate);
+        } else if (editor.kind == control::ConsoleEditor::KIND && console_) {
+            console_->draw(layer, editor.id, region);
         } else if (editor.kind == control::RenderView::KIND && context_.renderView) {
             asked = std::max(asked, context_.renderView->draw(layer, editor.id, region));
         } else if (editor.kind == control::RenderSettingsEditor::KIND && renderSettings_) {
@@ -639,6 +643,12 @@ bool Controller::onEvent(const SDL_Event& event) {
             search_->close();
             return true;
         }
+    }
+    // while a console's line holds the keyboard, the up and down arrows step through the lines
+    // run before
+    if (console_ && console_->typing() && event.type == SDL_EVENT_KEY_DOWN && (event.key.key == SDLK_UP || event.key.key == SDLK_DOWN)) {
+        console_->recall(event.key.key == SDLK_UP ? -1 : 1);
+        return true;
     }
     // a key or text goes to the ui of the window it was typed in
     std::uint32_t typed = 0;

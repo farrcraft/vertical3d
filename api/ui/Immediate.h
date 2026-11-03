@@ -493,6 +493,23 @@ class Immediate {
     bool itemFinished() const noexcept;
 
     /**
+     * Whether the field just drawn gave up the keyboard to a return this frame, as a line is
+     * entered. itemFinished() is true then too.
+     **/
+    bool itemEntered() const noexcept;
+
+    /**
+     * Whether the field just drawn holds the keyboard, once this frame's input has reached it.
+     **/
+    bool itemTyping() const noexcept;
+
+    /**
+     * Give the keyboard to the next text field drawn this frame, as a console keeps it for the
+     * line after one is entered. A frame that draws no field lets the request go.
+     **/
+    void focusNext() noexcept;
+
+    /**
      * A key went down. A text field that holds the keyboard edits its line with it.
      *
      * Keys arrive between frames, as the app's event loop sees them, so the edit lands on

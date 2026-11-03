@@ -112,11 +112,21 @@ Context::Context(const boost::shared_ptr<paint::TextRenderer>& renderer, float s
     typing(0),
     letGo(false),
     escaped(false),
+    entered(false),
+    focusNext(false),
     typingDrawn(false),
     itemMin(0.0F, 0.0F),
     itemMax(0.0F, 0.0F),
     itemOwner(0),
-    itemFinished(false) {
+    itemFinished(false),
+    itemEntered(false),
+    itemTyping(false) {
+}
+
+void Context::claim(Id field, const std::string& value) {
+    focus(field);
+    edit.text(value);
+    written = value;
 }
 
 void Context::focus(Id field) {
@@ -124,6 +134,7 @@ void Context::focus(Id field) {
     typing = field;
     letGo = false;
     escaped = false;
+    entered = false;
     if (field == 0) {
         written.clear();
     }
@@ -181,6 +192,8 @@ glm::vec2 Context::place(const glm::vec2& size) {
     itemMax = corner + size;
     itemOwner = window.open ? window.id : 0;
     itemFinished = false;
+    itemEntered = false;
+    itemTyping = false;
     return corner;
 }
 

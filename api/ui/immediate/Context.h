@@ -292,6 +292,11 @@ class Context final {
     void focus(Id field);
 
     /**
+     * Give the keyboard to a text field, and start its edit from the caller's string.
+     **/
+    void claim(Id field, const std::string& value);
+
+    /**
      * Start writing into the body of a window or a region: rows go inside it, clipped to it and
      * scrolled, and the wheel over it scrolls it.
      *
@@ -403,6 +408,8 @@ class Context final {
     Id typing;            /**< the text field that holds the keyboard, or nothing **/
     bool letGo;           /**< a return, tab or escape asked the field to give it up **/
     bool escaped;         /**< and it was escape, which a number field takes as no change **/
+    bool entered;         /**< and it was return **/
+    bool focusNext;       /**< the next field drawn takes the keyboard **/
     bool typingDrawn;     /**< whether that field has been drawn this frame **/
     std::string written;  /**< what the field last wrote to the caller's string **/
     input::LineEdit edit;
@@ -413,6 +420,8 @@ class Context final {
     glm::vec2 itemMax;
     Id itemOwner;       /**< what has to have held the cursor for that item to be hovered **/
     bool itemFinished;  /**< whether an edit of that item ended this frame **/
+    bool itemEntered;   /**< whether that edit ended with a return **/
+    bool itemTyping;    /**< whether that item is a field that holds the keyboard **/
 
     Popup popup;
 

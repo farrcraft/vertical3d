@@ -97,6 +97,75 @@ BOOST_AUTO_TEST_CASE(a_return_gives_the_keyboard_up_keeping_the_text) {
 }
 
 /**
+ * A field says it holds the keyboard, and says when a return, and only a return, ended its edit,
+ * as a line is entered.
+ **/
+BOOST_AUTO_TEST_CASE(a_field_says_when_a_return_entered_it) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    std::string name;
+    bool typing = false;
+    bool entered = false;
+    bool finished = false;
+    const auto panel = [&]() {
+        ui.textField("Name", &name);
+        typing = ui.itemTyping();
+        entered = ui.itemEntered();
+        finished = ui.itemFinished();
+    };
+
+    frame(&ui, &canvas, hover(firstRow), panel);
+    BOOST_CHECK(!typing);
+    click(&ui, &canvas, firstRow, panel);
+    BOOST_CHECK(typing);
+    BOOST_CHECK(ui.press("return"));
+    frame(&ui, &canvas, hover(firstRow), panel);
+    BOOST_CHECK(entered && finished && !typing);
+    frame(&ui, &canvas, hover(firstRow), panel);
+    BOOST_CHECK(!entered && !finished);
+
+    // an edit a tab, an escape or a press elsewhere ends is finished, and not entered
+    for (const char* key : { "tab", "escape" }) {
+        click(&ui, &canvas, firstRow, panel);
+        BOOST_CHECK(ui.press(key));
+        frame(&ui, &canvas, hover(firstRow), panel);
+        BOOST_CHECK(finished && !entered);
+    }
+    click(&ui, &canvas, firstRow, panel);
+    frame(&ui, &canvas, press(nowhere), panel);
+    BOOST_CHECK(finished && !entered);
+}
+
+/**
+ * focusNext() gives the keyboard to the next field drawn, with the caret at the end, as a
+ * console keeps it after a line is entered. A frame that draws no field lets the request go.
+ **/
+BOOST_AUTO_TEST_CASE(the_next_field_drawn_can_be_given_the_keyboard) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    std::string name = "ab";
+    const auto panel = [&]() { ui.textField("Name", &name); };
+
+    frame(&ui, &canvas, hover(nowhere), [&]() {
+        ui.focusNext();
+        panel();
+    });
+    BOOST_CHECK(ui.typing());
+    BOOST_CHECK(ui.typed("c"));
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_CHECK_EQUAL(name, "abc");
+
+    BOOST_CHECK(ui.press("return"));
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_CHECK(!ui.typing());
+    frame(&ui, &canvas, hover(nowhere), [&]() { ui.focusNext(); });
+    frame(&ui, &canvas, hover(nowhere), panel);
+    BOOST_CHECK(!ui.typing());
+}
+
+/**
  * A press anywhere but the field gives the keyboard up, and the text typed before it stays.
  **/
 BOOST_AUTO_TEST_CASE(a_press_elsewhere_gives_the_keyboard_up) {

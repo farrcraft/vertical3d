@@ -350,6 +350,17 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "shift+f4",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "area",
+        "name": "editor::console"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "shift+f6",
         "state": "pressed"
       },

@@ -46,6 +46,7 @@ The default bindings are in `vertical3d/data/mappings.json`:
 | J | `transform::poly::merge_vertices` | Merge the selected vertices into one |
 | G, M, H | `view::show::grid`, `mesh`, `handle` | Toggle what the view under the cursor draws |
 | P | `view::camera::orthographic` | Switch the view under the cursor between orthographic and perspective (see [Cameras](Scene.md#viewports)) |
+| Shift+F4 | `area::editor::console` | Show a console in the area under the cursor, which runs TypeScript against the editor's commands (see [The console](Scripting.md#the-console)) |
 | F3 | `search::open` | Search the menus' commands, and run one (see [The command search](CommandsAndUndo.md#the-command-search)) |
 | F12 | `view::show::statistics` | Toggle the frame statistics overlay |
 | Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | `edit::undo`, `edit::redo` | Step the history |
@@ -94,7 +95,7 @@ a higher one is in the wrong place.
 | `src/command/` | The undo records, the stack that holds them, and the modelling operations that make them | `scene/`, `manipulator/` |
 | `src/tool/` | The camera, select and transform tools, the router that gives each press to one of them, and picking | `scene/`, `selection/`, `view/`, `manipulator/`, `command/` |
 | `src/document/` | The document: the scene, its history and its project, and every operation on them | `scene/`, `store/`, `render/`, `command/` |
-| `src/control/` | The editors and panels: the controllers for playback and the Render menu, the workspaces, the command search, the icon sheet, the outliner, and the properties, timeline, graph, render view and render settings editors. `chrome/` holds the window's furniture: the routing of the mouse, the areas' headers, the top bar, the divider hint, and what the status bar and notices say | `scene/`, `render/`, `view/`, `tool/`, `document/` |
+| `src/control/` | The editors and panels: the controllers for playback and the Render menu, the workspaces, the command search, the icon sheet, the outliner, and the properties, timeline, graph, console, render view and render settings editors. `chrome/` holds the window's furniture: the routing of the mouse, the areas' headers, the top bar, the divider hint, and what the status bar and notices say | `scene/`, `script/`, `render/`, `view/`, `tool/`, `document/` |
 | `src/app/` | The commands: the `Context` they act on, the `CommandTable` they register in, a class of commands for each part of the editor, the project's files and the questions asked about them, and the workspace shown | every directory above it here |
 | `src/Controller.*` | The app: building the parts, the ui that shows them, the routing of input, and the command search | any |
 | `src/Renderer.*` | Builds each frame's passes from the viewports and the ui | any |

@@ -92,6 +92,22 @@ points at it.
 - A command that cannot be run as a script is not listed.
 - The journal keeps the last 1000 entries, and `revision()` moves with every change to it.
 
+## The console
+
+An area can hold a console, the `console` editor, which `control::ConsoleEditor` draws in the
+immediate layer. Shift+F4 shows one in the area under the cursor.
+
+- **The list** is the journal, newest at the foot, above the line. A typed line is set after a
+  `>` in the active text, a command in the secondary text, a refusal and a problem in red, and
+  the rest in the ordinary text. An entry over lines takes a row for each. The wheel scrolls
+  back through it, and an entry added brings it to the foot again.
+- **The line** takes TypeScript. Return runs it through `app::Scripting`, empties it, and keeps
+  the keyboard for the next line. A line of nothing but spaces runs nothing.
+- **The arrows.** While a console's line holds the keyboard, the controller gives it the up and
+  down arrows before the ui and the bindings. Up steps back through the lines run before, and
+  down steps forward, past the newest to the line being written. Every console shares the lines
+  run, and each keeps its own line being written and its own scroll.
+
 ## Running a script
 
 A script is TypeScript, run by `v3dlib_script` as [api/Scripting.md](../api/Scripting.md)

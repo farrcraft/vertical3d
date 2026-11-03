@@ -115,6 +115,7 @@ void Immediate::end() {
     if (context_->typing != 0 && !context_->typingDrawn) {
         context_->focus(0);
     }
+    context_->focusNext = false;
 
     // what the cursor was found on this frame is used by the next one, so a window drawn
     // later takes the cursor from one under it
@@ -424,6 +425,18 @@ bool Immediate::itemHovered() const noexcept {
 
 bool Immediate::itemFinished() const noexcept {
     return context_->itemFinished;
+}
+
+bool Immediate::itemEntered() const noexcept {
+    return context_->itemEntered;
+}
+
+bool Immediate::itemTyping() const noexcept {
+    return context_->itemTyping;
+}
+
+void Immediate::focusNext() noexcept {
+    context_->focusNext = true;
 }
 
 void Immediate::progressBar(float fraction, const std::string& overlay) {

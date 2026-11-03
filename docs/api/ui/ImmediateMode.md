@@ -117,6 +117,17 @@ timeline. The caller draws into it and acts on what its `Surface` reports.
 let go, or a number or a text field gives up the keyboard. A caller that applies each change as
 it comes, as a drag reports them, records the whole edit as one change on that frame.
 
+Three more calls serve a field that takes lines, as a console does:
+
+- `itemEntered()` is true on the frame a return made the field just drawn give up the
+  keyboard. `itemFinished()` is true then too. A tab, an escape or a press elsewhere finishes an
+  edit without entering it.
+- `itemTyping()` says the field just drawn holds the keyboard, once the frame's input has
+  reached it.
+- `focusNext()` gives the keyboard to the next text field drawn in the same frame, with the
+  caret at the end of its text. A frame that draws no field lets the request go. A field that
+  is disabled does not take it.
+
 ### Ids, hover and capture
 
 A widget's **id** is its label hashed with the id stack. Two widgets with the same label in
