@@ -59,6 +59,11 @@ Start with the documents for what you are doing:
 [docs/README.md](docs/README.md) indexes every document. [CLAUDE.md](CLAUDE.md) is orientation
 for coding agents.
 
+## License
+
+Vertical3D is under the MIT license, in [LICENSE](LICENSE). The third-party code it carries keeps
+its own license, and LICENSE lists each one.
+
 ## History
 
 Much of this code dates from the early 2000s. It has since been brought into one repository,
