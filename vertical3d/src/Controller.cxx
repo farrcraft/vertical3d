@@ -195,7 +195,7 @@ bool Controller::start() {
     // the editor starts on the default project without reading it, so an autosave a crash left
     // there is the one way back to that session's work
     files_.offerRecovery();
-    return true;
+    return scripting_.startup(launch(), *logger());
 }
 
 /**

@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -251,6 +252,34 @@ class MinimizedEngine final : public v3d::engine::Engine {
     static Uint32 restore(void* /* user */, SDL_TimerID /* timer */, Uint32 /* interval */) {
         push(SDL_EVENT_WINDOW_RESTORED);
         return 0;
+    }
+};
+
+/**
+ * An engine with no features that counts the frames it renders. It stops itself after
+ * LIMIT frames, so a loop the capture does not end still returns.
+ **/
+class CapturingEngine final : public v3d::engine::Engine {
+ public:
+    static constexpr int LIMIT = 20;
+
+    explicit CapturingEngine(const std::string& path) :
+        Engine(path) {
+    }
+
+    bool render() override {
+        rendered_++;
+        if (rendered_ == LIMIT) {
+            quit();
+        }
+        return true;
+    }
+
+    int rendered_ = 0;
+
+ protected:
+    v3d::engine::Features features() const override {
+        return v3d::engine::Features();
     }
 };
 
@@ -916,6 +945,58 @@ BOOST_AUTO_TEST_CASE(engine_waits_while_the_window_is_minimized_test) {
         BOOST_CHECK_EQUAL(engine.ticks_, 2);
     }
     SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * The frame the command line names is handed to the capturer just before it is rendered, and
+ * the loop ends once that frame is done. The capturer is given the file the command line names.
+ **/
+BOOST_AUTO_TEST_CASE(engine_captures_the_named_frame_and_then_quits_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        CapturingEngine engine(appPath("good"));
+        engine.launch({ .capture = "frame.png", .captureAfter = 3 });
+        std::vector<std::pair<std::string, int>> captured;
+        engine.capturer([&engine, &captured](const std::string& file) {
+            captured.emplace_back(file, engine.rendered_);
+            return true;
+        });
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(engine.eventLoop());
+
+        BOOST_REQUIRE_EQUAL(captured.size(), 1U);
+        BOOST_CHECK_EQUAL(captured[0].first, "frame.png");
+        BOOST_CHECK_EQUAL(captured[0].second, 2);
+        BOOST_CHECK_EQUAL(engine.rendered_, 3);
+        BOOST_TEST(engine.quitting());
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * A capture asked for when nothing that draws has taken it fails the loop, rather than ending
+ * with no picture and a success.
+ **/
+BOOST_AUTO_TEST_CASE(engine_a_capture_nothing_can_take_fails_the_loop_test) {
+    BOOST_REQUIRE(SDL_InitSubSystem(SDL_INIT_EVENTS));
+    {
+        CapturingEngine engine(appPath("good"));
+        engine.launch({ .capture = "frame.png", .captureAfter = 3 });
+        BOOST_REQUIRE(engine.initialize());
+        BOOST_TEST(!engine.eventLoop());
+        BOOST_CHECK_EQUAL(engine.rendered_, 2);
+    }
+    SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+/**
+ * run() given a command line the engine refuses logs it and starts nothing.
+ **/
+BOOST_AUTO_TEST_CASE(engine_run_refuses_a_command_line_it_cannot_read_test) {
+    Lifecycle counts;
+    const char* arguments[] = { "engine_test.exe", "--capture-after", "soon" };
+    BOOST_CHECK_EQUAL(v3d::engine::run<LifecycleEngine>(3, const_cast<char**>(arguments), lifecycle(), &counts), EXIT_FAILURE);
+    BOOST_CHECK_EQUAL(counts.started, 0);
 }
 
 };  // namespace

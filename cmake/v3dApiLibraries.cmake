@@ -118,7 +118,7 @@ set(V3D_API_script_PACKAGES qjs)
 # What every app builds around its own code: the ui, the screen, the menu and the statistics
 # overlay. It joins engine and ui, which do not depend on each other.
 set(V3D_API_shell_PATH "shell")
-set(V3D_API_shell_REQUIRES engine event ui asset window)
+set(V3D_API_shell_REQUIRES engine event ui asset render window)
 set(V3D_API_shell_PACKAGES EnTT)
 
 set(V3D_API_type_PATH "type")

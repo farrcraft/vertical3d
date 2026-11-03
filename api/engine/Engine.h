@@ -16,6 +16,7 @@
 #include <api/window/Window.h>
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <string>
 #include <string_view>
@@ -24,6 +25,7 @@
 #include "Accumulator.h"
 #include "Feature.h"
 #include "Identity.h"
+#include "Launch.h"
 #include "Settings.h"
 #include "Statistics.h"
 
@@ -157,6 +159,27 @@ class Engine {
      **/
     void identity(const Identity& identity);
     const Identity& identity() const noexcept;
+
+    /**
+     * What the command line asked of the engine, before initialize(). run<T> does this when it
+     * is given the command line. The app reads its own options from Launch::rest.
+     **/
+    void launch(const Launch& launch);
+    const Launch& launch() const noexcept;
+
+    /**
+     * Writes the frame being rendered to a png file, and returns whether it asked for that. The
+     * capture is written when the frame is presented.
+     **/
+    using Capturer = std::function<bool(const std::string& file)>;
+
+    /**
+     * Name what writes a frame when the command line asks for a capture. The shell's present()
+     * names the app's renderer, and its release() clears it.
+     *
+     * @param capturer what writes the frame, or an empty function for nothing
+     **/
+    void capturer(const Capturer& capturer);
 
     /**
      * @return Window
@@ -377,6 +400,22 @@ class Engine {
     void route(const SDL_Event& event);
 
  private:
+     /**
+      * Ask the capturer to write the frame about to be rendered to the file the command line
+      * names.
+      *
+      * @return false, which is logged, when nothing is named to capture or it cannot capture
+      **/
+     bool requestCapture();
+
+     /**
+      * Render one frame, capturing it first when it is the frame the command line names, and
+      * clear the input edges it read.
+      *
+      * @return false when the capture or render() fails
+      **/
+     bool presentFrame();
+
      /** The settings key the player's key bindings are kept under. **/
      static constexpr const char* BINDINGS = "bindings";
 
@@ -444,7 +483,7 @@ class Engine {
      void loadSettings();
 
      template <typename T, typename... Args>
-     friend int run(const char* executable, const Identity& identity, Args&&... args);
+     friend int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args);
 
      boost::shared_ptr<v3d::log::Logger> logger_;
      boost::shared_ptr<v3d::asset::Manifest> manifest_;
@@ -469,6 +508,10 @@ class Engine {
      bool quitting_;
      bool minimized_ = false;
      boost::shared_ptr<v3d::input::Devices> devices_;
+     Launch launch_{};
+     Capturer capturer_{};
+     /**< the frames rendered so far, counted for the capture the command line asks for **/
+     unsigned int frames_ = 0;
 };
 
 };  // namespace v3d::engine

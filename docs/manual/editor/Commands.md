@@ -100,5 +100,28 @@ from:
 | `primitives.ts` | Makes a plane, a cylinder and a cone, then undoes the cone |
 | `refusals.ts` | Keys a list of items, and catches the refusal for each item the scene lacks |
 
-The console runs one line at a time. To run an example, type its statements into the console's
-line. A statement such as a loop has to fit on one line.
+The console runs one line at a time. To run an example there, type its statements into the
+console's line. A statement such as a loop has to fit on one line.
+
+## Run a script file when the editor starts
+
+Start the editor with `--script` and the path of a TypeScript file:
+
+```
+vertical3d.exe --script C:\scenes\primitives.ts
+```
+
+The editor starts, then runs the whole file once, in the scope the console's lines share. The
+console lists the commands it ran. A file that cannot be read, or a script that stops on a
+problem, is written to the log with the line it stopped at, and the editor closes.
+
+## Take a picture of the editor
+
+`--capture` writes one frame of the editor's window to a png file, and then closes the editor:
+
+```
+vertical3d.exe --script C:\scenes\primitives.ts --capture C:\pictures\editor.png --capture-after 30
+```
+
+`--capture-after` says which frame to write, counted from the first. It is 60 when not given.
+The editor closes without asking about unsaved work.

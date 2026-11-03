@@ -65,6 +65,10 @@ No suite needs a window or a GPU. The renderers are not covered.
 Two paddles and a ball, for one player against the computer or two players at one keyboard.
 Sources are in `demos/pong/src/`.
 
+![Two paddles and a ball, with each side's score at the top](images/pong.png)
+
+*Captured by `node scripts/pictures.ts`, which starts pong with `--capture`.*
+
 **Controls:**
 
 | Key | Command | Effect |
@@ -131,6 +135,10 @@ captures the next key pressed. Escape is never captured; it leaves the menu.
 
 Falling tetrads on a board. Sources are in `demos/tetris/src/`.
 
+![A falling tetrad on an empty board, with the score and the next tetrad](images/tetris.png)
+
+*Captured by `node scripts/pictures.ts`, which starts tetris with `--capture`.*
+
 **Controls:**
 
 | Key | Command | Effect |
@@ -164,6 +172,10 @@ an app command (`ui::newGame`), a text file loaded through the asset manager
 ## Voxel
 
 A first-person walk over procedurally generated block terrain. Sources are in `demos/voxel/src/`.
+
+![Block terrain of hills under a blue sky](images/voxel.png)
+
+*Captured by `node scripts/pictures.ts`, which starts voxel with `--capture`.*
 
 **Controls:**
 
@@ -219,6 +231,10 @@ says how to build it.
 A tile-based game: a player in a world of walls and crates, with line of sight. The world is made
 of regions, each a board of its own, loaded as the player approaches them. The game itself is not
 written yet. Sources are in `demos/odyssey/src/`.
+
+![The player standing on a floor of tiles, with walls around it](images/odyssey.png)
+
+*Captured by `node scripts/pictures.ts`, which starts odyssey with `--capture`.*
 
 **Controls:**
 
@@ -316,6 +332,10 @@ stands over the well, drawn from its glyphs' curves and turned to face the camer
 from every side and at every zoom, and a house in front of it hides it. A dark outline and a
 soft shadow, drawn from its glyphs' distance fields, keep it readable against the grass. There
 is no game. Sources are in `demos/diorama/src/`.
+
+![A village of two houses, a ring of trees and a well, lit and shadowed from above](images/diorama.png)
+
+*Captured by `node scripts/pictures.ts`, which starts diorama with `--capture`.*
 
 **Controls:**
 

@@ -11,11 +11,11 @@
 
 #include "Controller.h"
 
-int main(int /* argc */, char *argv[]) {
+int main(int argc, char* argv[]) {
     // Chunk generation draws its block types from rand(). Seed it from the platform's entropy
     // source: two runs started in the same second would share a seed taken from the clock.
     std::random_device entropy;
     srand(entropy());
 
-    return v3d::engine::run<Controller>(argv[0], { .organization = "Vertical3D", .application = "Voxel" });
+    return v3d::engine::run<Controller>(argc, argv, { .organization = "Vertical3D", .application = "Voxel" });
 }

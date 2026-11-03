@@ -77,7 +77,7 @@ Boost.
 | `render` | log, animation, asset, asset_media, ecs, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
 | `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
-| `shell` | engine, ui, asset | none of its own |
+| `shell` | engine, event, ui, asset, render, window | EnTT |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 

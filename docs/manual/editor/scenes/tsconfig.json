@@ -1,0 +1,4 @@
+{
+  "extends": "../../../../vertical3d/data/scripts/tsconfig.json",
+  "include": ["*.ts", "../../../../vertical3d/data/scripts/editor.d.ts"]
+}

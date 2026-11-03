@@ -37,6 +37,7 @@
 
 #include "Feature.h"
 #include "Identity.h"
+#include "Launch.h"
 #include "Settings.h"
 #include "Statistics.h"
 #include "WindowSize.h"
@@ -130,6 +131,39 @@ void Engine::identity(const Identity& identity) {
  **/
 const Identity& Engine::identity() const noexcept {
     return identity_;
+}
+
+/**
+ **/
+void Engine::launch(const Launch& launch) {
+    launch_ = launch;
+}
+
+/**
+ **/
+const Launch& Engine::launch() const noexcept {
+    return launch_;
+}
+
+/**
+ **/
+void Engine::capturer(const Capturer& capturer) {
+    capturer_ = capturer;
+}
+
+/**
+ **/
+bool Engine::requestCapture() {
+    if (!capturer_) {
+        logger_->get()->error("Frame {} cannot be captured: nothing that draws took the capture", frames_);
+        return false;
+    }
+    if (!capturer_(launch_.capture)) {
+        logger_->get()->error("Frame {} cannot be captured to {}", frames_, launch_.capture);
+        return false;
+    }
+    logger_->get()->info("Capturing frame {} to {}", frames_, launch_.capture);
+    return true;
 }
 
 /**
@@ -566,14 +600,32 @@ bool Engine::eventLoop() {
                 return false;
             }
         }
-        if (!render()) {
+        if (!presentFrame()) {
             return false;
         }
-        // the edges belong to this frame, and everything that reads them has now run. The
-        // loop clears them so that an app does not have to
-        if (devices_) {
-            devices_->flush();
-        }
+    }
+    return true;
+}
+
+/**
+ **/
+bool Engine::presentFrame() {
+    // the frame the command line names is written as it is presented, and the loop ends after
+    // it without asking the app
+    const bool capturing = launch_.due(++frames_);
+    if (capturing && !requestCapture()) {
+        return false;
+    }
+    if (!render()) {
+        return false;
+    }
+    // the edges belong to this frame, and everything that reads them has now run. The loop
+    // clears them so that an app does not have to
+    if (devices_) {
+        devices_->flush();
+    }
+    if (capturing) {
+        quit();
     }
     return true;
 }

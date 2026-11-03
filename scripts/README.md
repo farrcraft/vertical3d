@@ -10,8 +10,8 @@ The tree's own tooling.
   checks.
 - `docs.ts` builds the documentation site into `out/docs/`, with the configuration and the
   preprocessor in `docs/`.
-- `pictures.ts` renders the pictures the documents show, from scenes under `docs/`, with a built
-  moya.
+- `pictures.ts` makes the pictures the documents show: moya renders from scenes under `docs/`,
+  and each app's own capture of its window, with the editor's scene built by a script.
 - `portable.cmd` and `portable/` run the Linux Clang build in a container, locally as in CI.
   [docs/contributing/Build.md](../docs/contributing/Build.md#building-off-msvc) covers it.
 

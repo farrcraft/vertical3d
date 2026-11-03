@@ -6,10 +6,12 @@
 #pragma once
 
 #include <api/engine/Identity.h>
+#include <api/engine/Launch.h>
 #include <api/log/Logger.h>
 
 #include <cstdlib>
 #include <exception>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -48,6 +50,9 @@ std::string appPath(const char* executable);
  **/
 std::string userPath(const std::string& org, const std::string& app);
 
+template <typename T, typename... Args>
+int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args);
+
 /**
  * Build an engine, run it to completion and shut it down. This is all of an app's main().
  *
@@ -70,6 +75,48 @@ std::string userPath(const std::string& org, const std::string& app);
  **/
 template <typename T, typename... Args>
 int run(const char* executable, const Identity& identity, Args&&... args) {
+    return runLaunched<T>(executable, Launch(), identity, std::forward<Args>(args)...);
+}
+
+/**
+ * Run an engine as run(executable, identity) does, with what its command line asks of it.
+ *
+ * The command line is read into a Launch, which the engine is given before it starts. A command
+ * line Launch::parse() refuses is logged, and the app does not start.
+ *
+ * @tparam T the engine to run
+ * @param argc the number of arguments, as main() is given it
+ * @param argv the arguments, as main() is given them
+ * @param identity who the app is
+ * @param args further constructor arguments for the app's engine, forwarded after the path
+ * @return the process exit status
+ **/
+template <typename T, typename... Args>
+int run(int argc, char* argv[], const Identity& identity, Args&&... args) {
+    Launch launch;
+    try {
+        launch = Launch::parse(argc, argv);
+    } catch (const std::invalid_argument& error) {
+        v3d::log::Logger::open(appPath(argv[0]) + "v3d.log");
+        const v3d::log::Logger logger;
+        logger.get()->error("{} cannot start: {}", identity.application, error.what());
+        return EXIT_FAILURE;
+    }
+    return runLaunched<T>(argv[0], launch, identity, std::forward<Args>(args)...);
+}
+
+/**
+ * The body both forms of run() share. An app calls run().
+ *
+ * @tparam T the engine to run
+ * @param executable argv[0]
+ * @param launch what the command line asked of the engine
+ * @param identity who the app is
+ * @param args further constructor arguments for the app's engine, forwarded after the path
+ * @return the process exit status
+ **/
+template <typename T, typename... Args>
+int runLaunched(const char* executable, const Launch& launch, const Identity& identity, Args&&... args) {
     const std::string path = appPath(executable);
     // beside the executable, whatever directory it was started from: a windowed app has no
     // console, so the log is the only place its errors appear. A directory that cannot be
@@ -77,6 +124,7 @@ int run(const char* executable, const Identity& identity, Args&&... args) {
     v3d::log::Logger::open(path + "v3d.log");
     T engine(path, std::forward<Args>(args)...);
     engine.identity(identity);
+    engine.launch(launch);
     const std::string& name = identity.application;
 
     // the renderer reports failures by throwing, and an uncaught exception on Windows shows

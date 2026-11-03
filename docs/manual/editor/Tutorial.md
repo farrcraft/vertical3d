@@ -34,6 +34,11 @@ The caption now reads `Vertical|3D - first-scene - frame 1`. The editor made a d
 A cube and a cone appear at the centre of the grid, one inside the other. The outliner lists
 them as `Cube` and `Cone`. A notice at the foot of the view says each one was created.
 
+![The editor's four views with a cube and a cone at the centre, and both listed in the outliner](images/first-scene.png)
+
+*Captured by `node scripts/pictures.ts`, which starts the editor with
+[scenes/first-scene.ts](scenes/first-scene.ts) and `--capture`.*
+
 ## Select the cone
 
 1. Click an empty part of the Perspective view, away from both shapes. Nothing is selected now.

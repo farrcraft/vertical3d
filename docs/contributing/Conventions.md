@@ -345,6 +345,12 @@ script fetches mdBook at a pinned version and checks it against a pinned SHA-256
   `reference/` in the site. A header under `internal/` or `tests/` is left out.
   [scripts/docs/Doxyfile](../../scripts/docs/Doxyfile) holds its settings. A document links the
   reference by its published address, because the reference is not in the repository.
+- **A picture in a document is made by `node scripts/pictures.ts`**, and the line under it names
+  what it was made from. moya's pictures are rendered from scenes under `docs/`. A picture of an
+  app is the app's own capture of its window, taken with `--capture` as
+  [api/engine/Lifecycle.md](../api/engine/Lifecycle.md#the-command-line) describes. A new picture
+  is added to the script's list, so that one command makes every picture again after a change.
+  No picture is taken from the screen.
 - **The site is published from `main`.** [docs.yml](../../.github/workflows/docs.yml) builds it
   on each pull request, so a broken link fails the pull request. It builds and publishes it to
   GitHub Pages on each push to `main`, at https://farrcraft.github.io/vertical3d/. A branch is

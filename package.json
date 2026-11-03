@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "typecheck": "tsc -p . && tsc -p vertical3d/data/scripts",
+    "typecheck": "tsc -p . && tsc -p vertical3d/data/scripts && tsc -p docs/manual/editor/scenes",
     "test": "node --test \"scripts/tests/*.test.ts\""
   },
   "devDependencies": {

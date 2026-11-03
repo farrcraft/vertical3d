@@ -97,10 +97,20 @@ such as an offset of 712 and a height of 657, runs past the 1024 by 768 attachme
 are laid out for the new window size while that frame still draws into the old swapchain
 images, which are recreated a moment later.
 
+[] **Validation: the editor and voxel leave a surface when they quit.** Closing either app, or
+ending it with `--capture`, prints `VUID-vkDestroyInstance-instance-00629` with one
+`VkSurfaceKHR` not destroyed. The layer writes it to standard output as the instance is
+destroyed, after the log is closed, so `v3d.log` shows nothing. Pong, tetris, odyssey and
+diorama destroy their surface.
+
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
 menu's 85 commands has a handler. Each group below is a piece of work of its own, in any order.
+
+[] **A script cannot place an item.** A script can create primitives, select, key and undo, but
+no command sets an item's translation, rotation or scale to a value. A script that builds a scene
+leaves every item where its create command put it.
 
 [] **An area header names its editor by its internal kind.** The header's first menu shows the
 kind string with a capital first letter, such as "Render-view". The Editor submenu labels the

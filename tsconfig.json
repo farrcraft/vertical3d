@@ -7,5 +7,5 @@
     "types": ["node"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "out", "vendor", "vcpkg_installed", "vertical3d/data/scripts"]
+  "exclude": ["node_modules", "out", "vendor", "vcpkg_installed", "vertical3d/data/scripts", "docs/manual/editor/scenes"]
 }

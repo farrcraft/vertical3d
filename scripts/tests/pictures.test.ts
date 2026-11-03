@@ -11,16 +11,26 @@ import * as path from 'node:path';
 import { test } from 'node:test';
 
 import { ROOT } from '../lib/tree.ts';
-import { PICTURES, withShaders } from '../pictures.ts';
+import { type Capture, captureArguments, PICTURES, withShaders } from '../pictures.ts';
 
-test('pictures renders each picture from a scene in the tree, into docs/', () => {
+test('pictures makes each picture from files in the tree, into docs/', () => {
     for (const picture of PICTURES) {
-        assert.ok(existsSync(path.join(ROOT, picture.scene)), picture.scene);
         assert.ok(picture.image.startsWith('docs/') && picture.image.endsWith('.png'), picture.image);
-        if (picture.shaders !== undefined) {
-            assert.ok(existsSync(path.join(ROOT, picture.shaders)), picture.shaders);
+        const sources = picture.kind === 'render' ? [picture.scene, picture.shaders] : [picture.script];
+        for (const source of sources) {
+            if (source !== undefined) {
+                assert.ok(existsSync(path.join(ROOT, source)), source);
+            }
         }
     }
+});
+
+test('pictures starts an app with its script, then the capture and its frame', () => {
+    const picture: Capture = { kind: 'capture', image: 'docs/images/x.png', app: 'demos/x/x', after: 30, script: 'docs/x.ts' };
+    assert.deepEqual(captureArguments(picture),
+        ['--script', path.join(ROOT, 'docs/x.ts'), '--capture', path.join(ROOT, 'docs/images/x.png'), '--capture-after', '30']);
+    const { script: _script, ...unscripted } = picture;
+    assert.deepEqual(captureArguments(unscripted).slice(0, 1), ['--capture']);
 });
 
 test('pictures writes each image to a path of its own', () => {

@@ -126,6 +126,13 @@ and binds it once every command is registered.
 - **A console line** is listed in the journal as typed. Then come the commands it ran and what
   they said, then the value it came to, or the problem it stopped on as `line:column` and the
   message. Every line runs in the scope the lines before it left.
+- **A startup script** is the file the command line names after `--script`.
+  `Scripting::startup()` runs it once, at the end of the controller's `start()`, in the scope
+  the console's lines share. A missing file name, a file that cannot be read, and a script that
+  stops on a problem are logged, and `start()` fails. The editor then does not open on a scene
+  the script did not finish. The command line is read as
+  [api/engine/Lifecycle.md](../api/engine/Lifecycle.md#the-command-line) describes, and the
+  editor reads `--script` from what the engine leaves.
 
 **The declarations.** `data/scripts/editor.d.ts` declares every command a script can run, for
 `tsc` or an author's editor to check a script against. `script::declarations()` writes it

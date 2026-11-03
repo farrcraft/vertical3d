@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <api/engine/Launch.h>
+#include <api/log/Logger.h>
 #include <api/script/Runtime.h>
 #include <vertical3d/src/app/CommandTable.h>
 
@@ -40,12 +42,27 @@ class Scripting final {
     void line(const std::string& source);
 
     /**
+     * Run the script file the command line names after `--script`, once, in the scope the
+     * console's lines share. A command line with no `--script` runs nothing.
+     *
+     * @param launch what the command line asked for
+     * @param logger where a file that cannot be read, or a script that stops on a problem, is
+     *        reported
+     * @return false when `--script` names no file, the file cannot be read, or the script stops
+     *         on a problem
+     **/
+    bool startup(const v3d::engine::Launch& launch, const v3d::log::Logger& logger);
+
+    /**
      * @return the declarations of the commands a script can run, as data/scripts/editor.d.ts
      *         holds them
      **/
     std::string declarations() const;
 
  private:
+    /** The option that names a script file to run at startup. **/
+    static constexpr const char* SCRIPT = "--script";
+
     CommandTable* table_;
     v3d::script::Runtime runtime_;
 };
