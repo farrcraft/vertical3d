@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 
+import { formatFinding } from '../lib/cli.ts';
 import { includesIn, usesIn, violations } from '../linkrule.ts';
 
 const GRID = new Map([['grid', new Set(['v3dlib_grid'])]]);
@@ -72,7 +73,7 @@ function report(files: Record<string, string>): string[] {
         }
         const names = Object.keys(all).sort();
         const cmake = names.filter((f) => f.endsWith('CMakeLists.txt') || f.endsWith('.cmake'));
-        return violations(root, cmake, names.filter((f) => f.startsWith('api/')));
+        return violations(root, cmake, names.filter((f) => f.startsWith('api/'))).map(formatFinding);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

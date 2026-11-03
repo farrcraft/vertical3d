@@ -7,15 +7,9 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
-import process from 'node:process';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { compare, syntax } from '../commentsonly.ts';
-
-const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 /** The findings for a change to a file, as "line: rule" strings. */
 function findings(path: string, was: string[], now: string[]): string[] {
@@ -111,11 +105,4 @@ test('commentsonly reads C++, GLSL and CMake files and nothing else', () => {
     assert.equal(syntax('docs/README.md'), null);
     assert.equal(syntax('scripts/prose.ts'), null);
     assert.equal(syntax('notes.txt'), null);
-});
-
-test('commentsonly.ts runs when Node is started with it', () => {
-    const run = spawnSync(process.execPath, [join(ROOT, 'scripts', 'commentsonly.ts'), '--base', 'no-such-ref'],
-        { cwd: ROOT, encoding: 'utf8' });
-    assert.equal(run.status, 2, run.stderr);
-    assert.match(run.stderr, /no-such-ref/);
 });

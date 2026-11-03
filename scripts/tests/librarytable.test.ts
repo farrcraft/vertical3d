@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { formatFinding } from '../lib/cli.ts';
 import { manifestLibraries, problems, tableRows } from '../librarytable.ts';
 
 const MANIFEST = [
@@ -46,8 +47,9 @@ const ASSET = '| [`asset`](../../api/asset/) | Files. |';
 const MEDIA = '| [`asset_media`](../../api/asset/media/) | Pictures. |';
 const LOG = '| [`log`](../../api/log/) | The log. |';
 
+/** The problems with a table of the given rows, as the lines the gate prints. */
 function check(rows: string[]): string[] {
-    return problems(manifestLibraries(MANIFEST), tableRows(readme(rows)));
+    return problems(manifestLibraries(MANIFEST), tableRows(readme(rows))).map(formatFinding);
 }
 
 test('librarytable reads the libraries over several lines, each with its directory', () => {
@@ -92,7 +94,7 @@ test('librarytable reports rows out of the manifest order', () => {
 });
 
 test('librarytable reports a manifest that names no libraries', () => {
-    assert.deepEqual(problems(manifestLibraries('set(V3D_API_log_PATH "log")'), []), [
-        'cmake/v3dApiLibraries.cmake names no libraries in V3D_API_LIBRARIES',
+    assert.deepEqual(problems(manifestLibraries('set(V3D_API_log_PATH "log")'), []).map(formatFinding), [
+        'cmake/v3dApiLibraries.cmake: no-libraries: names no libraries in V3D_API_LIBRARIES',
     ]);
 });

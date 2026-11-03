@@ -42,7 +42,7 @@
 import { existsSync, statSync } from 'node:fs';
 import process from 'node:process';
 
-import { UsageError, options, runGate } from './lib/cli.ts';
+import { UsageError, options, report, runGate } from './lib/cli.ts';
 import { type Added, changeSince } from './lib/diff.ts';
 import { mergeBase } from './lib/git.ts';
 import { ROOT } from './lib/tree.ts';
@@ -151,10 +151,8 @@ function main(): number {
         }
     }
 
-    for (const { path, number, rule, detail } of findings) {
-        process.stdout.write(`${path}:${number}: ${rule}: ${detail}\n`);
-    }
-    return findings.length > 0 ? 1 : 0;
+    const found = findings.map(({ path, number, rule, detail }) => ({ path, line: number, rule, message: detail }));
+    return report(found, 'breaks the writing rules in docs/contributing/Conventions.md.');
 }
 
 runGate(import.meta.url, main);

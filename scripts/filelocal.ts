@@ -36,7 +36,7 @@
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { options, runGate } from './lib/cli.ts';
+import { options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
 import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
@@ -201,7 +201,7 @@ function isConstant(declarator: string): boolean {
 /** Every finding in a file's text. */
 export function findings(text: string, kind: Kind): Finding[] {
     const found: Finding[] = [];
-    const report = (line: number, rule: Rule, message: string): void => {
+    const add = (line: number, rule: Rule, message: string): void => {
         found.push({ line, rule, message });
     };
     const stack: Scope[] = [];
@@ -230,7 +230,7 @@ export function findings(text: string, kind: Kind): Finding[] {
         }
         if (/^(using|typedef)\b/.test(text)) {
             if (firstFunction > 0) {
-                report(line, 'after-function', `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${firstFunction}`);
+                add(line, 'after-function', `the alias "${text.slice(0, 60)}" is declared below the function definition on line ${firstFunction}`);
             }
             return;
         }
@@ -250,7 +250,7 @@ export function findings(text: string, kind: Kind): Finding[] {
         }
         const member = name.includes('::');
         if (!isConstant(declarator)) {
-            report(line, 'mutable-variable', member
+            add(line, 'mutable-variable', member
                 ? `the static data member ${name} is mutable`
                 : `${name} is a mutable variable at namespace scope`);
         }
@@ -258,10 +258,10 @@ export function findings(text: string, kind: Kind): Finding[] {
             return;
         }
         if (kind.source && !kind.test && !inAnonymous()) {
-            report(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
+            add(line, 'outside-anonymous', `${name} is file-local and outside the anonymous namespace`);
         }
         if (firstFunction > 0) {
-            report(line, 'after-function', `${name} is declared below the function definition on line ${firstFunction}`);
+            add(line, 'after-function', `${name} is declared below the function definition on line ${firstFunction}`);
         }
     };
 
@@ -271,10 +271,10 @@ export function findings(text: string, kind: Kind): Finding[] {
         if (/^namespace\s*$/.test(text)) {
             anonymous++;
             if (anonymous > 1) {
-                report(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
+                add(line, 'second-anonymous', 'a second anonymous namespace; a file has one');
             }
             if (firstFunction > 0) {
-                report(line, 'anonymous-late', `the anonymous namespace opens below the function definition on line ${firstFunction}`);
+                add(line, 'anonymous-late', `the anonymous namespace opens below the function definition on line ${firstFunction}`);
             }
             return 'anonymous';
         }
@@ -287,10 +287,10 @@ export function findings(text: string, kind: Kind): Finding[] {
         const type = typeName(text);
         if (type !== null && !text.includes('(')) {
             if (kind.source && !kind.test) {
-                report(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
+                add(line, 'type-in-source', `${type} is defined in a source file; declare it in a header`);
             }
             if (firstFunction > 0) {
-                report(line, 'after-function', `${type} is defined below the function definition on line ${firstFunction}`);
+                add(line, 'after-function', `${type} is defined below the function definition on line ${firstFunction}`);
             }
             afterTypedef = /^typedef\b/.test(text);
             return 'type';
@@ -316,7 +316,7 @@ export function findings(text: string, kind: Kind): Finding[] {
             // can reach another directory's internal/
             const include = /^\s*#\s*include\s*<([^>]+)>/.exec(raw[index]);
             if (include !== null && !mayInclude(kind.path, include[1])) {
-                report(line, 'internal-include', `${include[1]} is internal to its library, and this file is outside it`);
+                add(line, 'internal-include', `${include[1]} is internal to its library, and this file is outside it`);
             }
             return;
         }
@@ -324,7 +324,7 @@ export function findings(text: string, kind: Kind): Finding[] {
         const local = /^\s*static\s+(?!_assert)([^=;({]*)/.exec(code);
         if (local !== null && stack.length > 0 && stack[stack.length - 1] === 'body' && !isConstant(local[1])
             && !/\/\/\s*process-wide:/.test(raw[index])) {
-            report(line, 'mutable-static-local', `the static local ${variableName(local[1])} is mutable`);
+            add(line, 'mutable-static-local', `the static local ${variableName(local[1])} is mutable`);
         }
         for (const c of code) {
             if (!atNamespaceScope()) {
@@ -388,18 +388,9 @@ function main(): number {
     options('usage: node scripts/filelocal.ts', {});
     const checked = files();
     const externs = new Set(checked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
-    let count = 0;
-    for (const file of checked) {
-        for (const { line, rule, message } of findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))) {
-            console.log(`${file}:${line}: ${rule}: ${message}`);
-            count++;
-        }
-    }
-    if (count > 0) {
-        console.log(`::error::${count} findings above break "What a source file keeps to itself" in docs/contributing/Conventions.md.`);
-        return 1;
-    }
-    return 0;
+    const found = checked.flatMap((file) => findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))
+        .map(({ line, rule, message }) => ({ path: file, line, rule, message })));
+    return report(found, 'breaks "What a source file keeps to itself" in docs/contributing/Conventions.md.');
 }
 
 runGate(import.meta.url, main);

@@ -44,7 +44,7 @@
  * violation, 2 when the command is given an argument, and 0 otherwise.
  */
 
-import { options, runGate } from './lib/cli.ts';
+import { type Finding, options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { ROOT } from './lib/tree.ts';
 import { type Report, check } from './linkrule/rules.ts';
@@ -54,20 +54,20 @@ import { type Target, loadTargets } from './linkrule/targets.ts';
 export { includesIn, usesIn } from './linkrule/cpp.ts';
 
 /**
- * The violations in a tree, each as "path: rule: detail": every target its CMake files define
- * that is not an api library, checked. The files are relative to the root.
+ * The violations in a tree: every target its CMake files define that is not an api library,
+ * checked. The files are relative to the root.
  */
-export function violations(root: string, cmakeFiles: readonly string[], apiFiles: readonly string[]): string[] {
+export function violations(root: string, cmakeFiles: readonly string[], apiFiles: readonly string[]): Finding[] {
     const { targets, boost } = loadTargets(root, cmakeFiles);
     const tree = new Tree(root, targets, apiFiles);
-    const found: string[] = [];
-    const report: Report = (where, rule, detail) => {
-        found.push(`${where}: ${rule}: ${detail}`);
+    const found: Finding[] = [];
+    const add: Report = (where, rule, detail) => {
+        found.push({ path: where, line: null, rule, message: detail });
     };
     for (const name of [...targets.keys()].sort()) {
         const t = targets.get(name) as Target;
         if (t.kind !== 'api') {
-            check(tree, t, boost, report);
+            check(tree, t, boost, add);
         }
     }
     return found;
@@ -78,11 +78,7 @@ function main(): number {
     options('usage: node scripts/linkrule.ts', {});
     // examples/ is a project outside the tree's build
     const cmake = tracked('*CMakeLists.txt', '*.cmake').filter((f) => !f.startsWith('examples/'));
-    const found = violations(ROOT, cmake, tracked('api'));
-    for (const line of found) {
-        console.log(line);
-    }
-    return found.length > 0 ? 1 : 0;
+    return report(violations(ROOT, cmake, tracked('api')), 'breaks the linking rules in docs/contributing/Build.md.');
 }
 
 runGate(import.meta.url, main);

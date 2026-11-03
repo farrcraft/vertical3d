@@ -48,7 +48,7 @@
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { options, runGate } from './lib/cli.ts';
+import { options, report, runGate } from './lib/cli.ts';
 import { changeSince } from './lib/diff.ts';
 import { mergeBase } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
@@ -189,11 +189,9 @@ export function check(lines: Line[]): Report[] {
 function main(): number {
     const { values } = options('usage: node scripts/boundary.ts [--base REF]', { base: { type: 'string' } });
     process.chdir(ROOT);
-    const reports = check(addedLines(mergeBase(values.base)));
-    for (const report of reports) {
-        process.stdout.write(`${report.path}:${report.number}: ${report.rule}: ${report.excerpt}\n`);
-    }
-    return reports.length > 0 ? 1 : 0;
+    const found = check(addedLines(mergeBase(values.base)))
+        .map(({ path, number, rule, excerpt }) => ({ path, line: number, rule, message: excerpt }));
+    return report(found, 'converts boundary input without a check. Use the helpers in api/type/Checked.h and api/asset/Json.h, or name why the conversion is defined in a // checked: comment.');
 }
 
 runGate(import.meta.url, main);

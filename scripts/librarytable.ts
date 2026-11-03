@@ -16,7 +16,7 @@
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { options, runGate } from './lib/cli.ts';
+import { type Finding, options, report, runGate } from './lib/cli.ts';
 import { ROOT } from './lib/tree.ts';
 const MANIFEST = 'cmake/v3dApiLibraries.cmake';
 const TABLE = 'docs/api/README.md';
@@ -70,33 +70,36 @@ export function tableRows(markdown: string): Row[] {
     return rows;
 }
 
-/** What is wrong with the table, one message a problem. */
-export function problems(libraries: Library[], rows: Row[]): string[] {
-    const found: string[] = [];
+/** What is wrong with the table, one finding a problem. */
+export function problems(libraries: Library[], rows: Row[]): Finding[] {
+    const found: Finding[] = [];
+    const add = (line: number | null, rule: string, message: string): void => {
+        found.push({ path: TABLE, line, rule, message });
+    };
     if (libraries.length === 0) {
-        return [`${MANIFEST} names no libraries in V3D_API_LIBRARIES`];
+        return [{ path: MANIFEST, line: null, rule: 'no-libraries', message: 'names no libraries in V3D_API_LIBRARIES' }];
     }
     const known = new Map(libraries.map((library) => [library.name, library]));
     const seen = new Set<string>();
     for (const row of rows) {
         const library = known.get(row.name);
         if (library === undefined) {
-            found.push(`${TABLE}:${row.line}: ${row.name} is not a library ${MANIFEST} names`);
+            add(row.line, 'unknown-row', `${row.name} is not a library ${MANIFEST} names`);
             continue;
         }
         if (seen.has(row.name)) {
-            found.push(`${TABLE}:${row.line}: ${row.name} has a row already`);
+            add(row.line, 'second-row', `${row.name} has a row already`);
             continue;
         }
         seen.add(row.name);
         const wanted = `../../api/${library.directory}/`;
         if (row.link !== wanted) {
-            found.push(`${TABLE}:${row.line}: ${row.name} links ${row.link}, and its directory is ${wanted}`);
+            add(row.line, 'wrong-link', `${row.name} links ${row.link}, and its directory is ${wanted}`);
         }
     }
     for (const library of libraries) {
         if (!seen.has(library.name)) {
-            found.push(`${TABLE}: ${library.name} has no row`);
+            add(null, 'missing-row', `${library.name} has no row`);
         }
     }
     // the order is checked only once the rows and the libraries are the same set, so a missing
@@ -105,7 +108,7 @@ export function problems(libraries: Library[], rows: Row[]): string[] {
         const order = libraries.map((library) => library.name);
         rows.forEach((row, index) => {
             if (row.name !== order[index]) {
-                found.push(`${TABLE}:${row.line}: ${row.name} is out of order, and the manifest has ${order[index]} here`);
+                add(row.line, 'out-of-order', `${row.name} is out of order, and the manifest has ${order[index]} here`);
             }
         });
     }
@@ -117,15 +120,7 @@ function main(): number {
     options('usage: node scripts/librarytable.ts', {});
     const libraries = manifestLibraries(readFileSync(path.join(ROOT, MANIFEST), 'utf8'));
     const rows = tableRows(readFileSync(path.join(ROOT, TABLE), 'utf8'));
-    const found = problems(libraries, rows);
-    for (const problem of found) {
-        console.log(problem);
-    }
-    if (found.length > 0) {
-        console.log(`::error::The table of libraries in ${TABLE} does not match ${MANIFEST}. Give each library one row, in the manifest's order.`);
-        return 1;
-    }
-    return 0;
+    return report(problems(libraries, rows), `breaks the table of libraries in ${TABLE}. Give each library in ${MANIFEST} one row, in the manifest's order.`);
 }
 
 runGate(import.meta.url, main);

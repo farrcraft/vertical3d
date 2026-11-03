@@ -12,7 +12,7 @@
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { options, runGate } from './lib/cli.ts';
+import { type Finding, options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
@@ -36,20 +36,14 @@ export function lineCount(text: string): number {
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/filelength.ts', {});
-    const files = tracked('*.h', '*.cpp', '*.cxx').filter(checked);
-    let count = 0;
-    for (const file of files) {
+    const findings: Finding[] = [];
+    for (const file of tracked('*.h', '*.cpp', '*.cxx').filter(checked)) {
         const lines = lineCount(readFileSync(path.join(ROOT, file), 'utf8'));
         if (lines > LIMIT) {
-            console.log(`${file}: ${lines} lines, over the limit of ${LIMIT}`);
-            count++;
+            findings.push({ path: file, line: null, rule: 'too-long', message: `${lines} lines, over the limit of ${LIMIT}` });
         }
     }
-    if (count > 0) {
-        console.log(`::error::${count} files above are longer than docs/contributing/Conventions.md allows. Split each into classes with one job each.`);
-        return 1;
-    }
-    return 0;
+    return report(findings, 'breaks "Size" in docs/contributing/Conventions.md. Split each file into classes with one job each.');
 }
 
 runGate(import.meta.url, main);

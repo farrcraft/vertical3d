@@ -25,7 +25,7 @@
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { options, runGate } from './lib/cli.ts';
+import { options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { codeLines } from './lib/lexer.ts';
 import { ROOT, isTestPath } from './lib/tree.ts';
@@ -132,18 +132,9 @@ function main(): number {
     options('usage: node scripts/namespaces.ts', {});
     const checked = files();
     const known = new Set(checked.map(([, own]) => own));
-    let count = 0;
-    for (const [file, own] of checked) {
-        for (const { line, rule, message } of findings(readFileSync(path.join(ROOT, file), 'utf8'), own, known)) {
-            console.log(`${file}:${line}: ${rule}: ${message}`);
-            count++;
-        }
-    }
-    if (count > 0) {
-        console.log(`::error::${count} findings above put code in a namespace other than its directory's, which docs/contributing/Conventions.md does not allow.`);
-        return 1;
-    }
-    return 0;
+    const found = checked.flatMap(([file, own]) => findings(readFileSync(path.join(ROOT, file), 'utf8'), own, known)
+        .map(({ line, rule, message }) => ({ path: file, line, rule, message })));
+    return report(found, 'puts code in a namespace other than its directory\'s, which docs/contributing/Conventions.md does not allow.');
 }
 
 runGate(import.meta.url, main);

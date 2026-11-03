@@ -14,7 +14,7 @@
  * Usage: node scripts/dirsize.ts
  */
 
-import { options, runGate } from './lib/cli.ts';
+import { options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { isTestPath, isThirdParty } from './lib/tree.ts';
 
@@ -80,15 +80,9 @@ export function check(counts: ReadonlyMap<string, number>, limit: number, cohesi
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/dirsize.ts', {});
-    const findings = check(headerCounts(tracked('*.h')), LIMIT, COHESIVE);
-    for (const finding of findings) {
-        console.log(`${finding.directory}: ${finding.rule}: ${finding.message}`);
-    }
-    if (findings.length > 0) {
-        console.log(`::error::${findings.length} directories above break "Directories" in docs/contributing/Conventions.md. Split a directory by purpose, or list it in COHESIVE in scripts/dirsize.ts with the family its headers belong to.`);
-        return 1;
-    }
-    return 0;
+    const findings = check(headerCounts(tracked('*.h')), LIMIT, COHESIVE)
+        .map(({ directory, rule, message }) => ({ path: directory, line: null, rule, message }));
+    return report(findings, 'breaks "Directories" in docs/contributing/Conventions.md. Split a directory by purpose, or list it in COHESIVE in scripts/dirsize.ts with the family its headers belong to.');
 }
 
 runGate(import.meta.url, main);

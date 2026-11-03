@@ -6,11 +6,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
-import process from 'node:process';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { isPackage, manifestFindings, packageImports, scriptsOff } from '../npm.ts';
 
@@ -165,12 +161,4 @@ test('npm does not read an import inside a string, a template or a block comment
         "/* import('commented'); */ const real = await import('real');",
     ].join('\n');
     assert.deepEqual(packageImports(text).map((i) => `${i.line}: ${i.specifier}`), ['5: real']);
-});
-
-test('npm.ts runs when Node is started with it', () => {
-    const root = fileURLToPath(new URL('../../', import.meta.url));
-    const run = spawnSync(process.execPath, [join(root, 'scripts', 'npm.ts'), '--no-such-option'],
-        { cwd: root, encoding: 'utf8' });
-    assert.equal(run.status, 2, run.stderr);
-    assert.match(run.stderr, /usage/);
 });

@@ -21,15 +21,15 @@
  * Usage:
  *   node scripts/commentsonly.ts [--base REF]   compare the working tree with REF (default HEAD)
  *
- * Each finding prints as "path:line: rule: detail". The line is in the working tree's file, or 0
- * when the file is gone. The exit status is 1 when there is a finding, and 2 when the script
- * cannot run.
+ * Each finding prints as "path:line: rule: detail", with the line in the working tree's file. A
+ * file that is gone has no line, and prints as "path: rule: detail". The exit status is 1 when
+ * there is a finding, and 2 when the script cannot run.
  */
 
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { options, runGate } from './lib/cli.ts';
+import { options, report, runGate } from './lib/cli.ts';
 import { commit, git, untracked } from './lib/git.ts';
 import { lex } from './lib/lexer.ts';
 import { ROOT } from './lib/tree.ts';
@@ -198,10 +198,9 @@ function main(): number {
             findings.push(...compare(path, git(['show', `${base}:${path}`]), readFileSync(path, 'utf8')));
         }
     }
-    for (const { path, number, rule, detail } of findings) {
-        process.stdout.write(`${path}:${number}: ${rule}: ${detail}\n`);
-    }
-    return findings.length > 0 ? 1 : 0;
+    // a file that is gone has no line to name
+    const found = findings.map(({ path, number, rule, detail }) => ({ path, line: number === 0 ? null : number, rule, message: detail }));
+    return report(found, 'changes code, and the change was meant to touch only comments.');
 }
 
 runGate(import.meta.url, main);

@@ -26,7 +26,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { options, runGate } from './lib/cli.ts';
+import { type Finding, options, report, runGate } from './lib/cli.ts';
 import { tracked } from './lib/git.ts';
 import { codeOnly } from './lib/script.ts';
 import { ROOT } from './lib/tree.ts';
@@ -40,16 +40,6 @@ const RUNTIME_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencie
 /** One exact version: major, minor and patch, with an optional prerelease and build. */
 const EXACT = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
-export type Rule = 'runtime-dependency' | 'inexact-version' | 'lockfile' | 'install-scripts' | 'package-import';
-
-/** One report, the file it is about, and the line when it has one. */
-export interface Finding {
-    file: string;
-    line: number | null;
-    rule: Rule;
-    message: string;
-}
-
 /** An object read from JSON, or an empty one for anything else. */
 function record(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -62,17 +52,17 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
     for (const field of RUNTIME_FIELDS) {
         const value = pkg[field];
         if (value !== undefined && (Array.isArray(value) ? value.length > 0 : Object.keys(record(value)).length > 0)) {
-            findings.push({ file: 'package.json', line: null, rule: 'runtime-dependency', message: `${field} names packages; only devDependencies are allowed` });
+            findings.push({ path: 'package.json', line: null, rule: 'runtime-dependency', message: `${field} names packages; only devDependencies are allowed` });
         }
     }
     const dev = record(pkg.devDependencies);
     for (const [name, spec] of Object.entries(dev)) {
         if (typeof spec !== 'string' || !EXACT.test(spec)) {
-            findings.push({ file: 'package.json', line: null, rule: 'inexact-version', message: `${name} is ${JSON.stringify(spec)}, not one exact version` });
+            findings.push({ path: 'package.json', line: null, rule: 'inexact-version', message: `${name} is ${JSON.stringify(spec)}, not one exact version` });
         }
     }
     if (lock === null) {
-        findings.push({ file: 'package-lock.json', line: null, rule: 'lockfile', message: 'there is no lockfile; run npm install and commit it' });
+        findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: 'there is no lockfile; run npm install and commit it' });
         return findings;
     }
     const packages = record(record(lock).packages);
@@ -80,17 +70,17 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
     const locked = record(root.devDependencies);
     for (const name of new Set([...Object.keys(dev), ...Object.keys(locked)])) {
         if (dev[name] !== locked[name]) {
-            findings.push({ file: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} is ${JSON.stringify(dev[name])} in package.json and ${JSON.stringify(locked[name])} in the lockfile` });
+            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} is ${JSON.stringify(dev[name])} in package.json and ${JSON.stringify(locked[name])} in the lockfile` });
             continue;
         }
         const installed = record(packages[`node_modules/${name}`]).version;
         if (installed !== dev[name]) {
-            findings.push({ file: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} ${String(dev[name])} is locked at ${JSON.stringify(installed)}` });
+            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${name} ${String(dev[name])} is locked at ${JSON.stringify(installed)}` });
         }
     }
     for (const field of RUNTIME_FIELDS) {
         if (root[field] !== undefined) {
-            findings.push({ file: 'package-lock.json', line: null, rule: 'lockfile', message: `the root package lists ${field}` });
+            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `the root package lists ${field}` });
         }
     }
     for (const [where, value] of Object.entries(packages)) {
@@ -100,7 +90,7 @@ export function manifestFindings(manifest: unknown, lock: unknown): Finding[] {
         const entry = record(value);
         const resolved = entry.resolved;
         if (typeof resolved !== 'string' || !resolved.startsWith(REGISTRY) || typeof entry.integrity !== 'string') {
-            findings.push({ file: 'package-lock.json', line: null, rule: 'lockfile', message: `${where} does not come from ${REGISTRY} with an integrity hash` });
+            findings.push({ path: 'package-lock.json', line: null, rule: 'lockfile', message: `${where} does not come from ${REGISTRY} with an integrity hash` });
         }
     }
     return findings;
@@ -167,21 +157,14 @@ function main(): number {
     const findings = manifestFindings(readJson('package.json'), readJson('package-lock.json'));
     const npmrc = path.join(ROOT, '.npmrc');
     if (!existsSync(npmrc) || !scriptsOff(readFileSync(npmrc, 'utf8'))) {
-        findings.push({ file: '.npmrc', line: null, rule: 'install-scripts', message: 'install scripts are not turned off with ignore-scripts=true' });
+        findings.push({ path: '.npmrc', line: null, rule: 'install-scripts', message: 'install scripts are not turned off with ignore-scripts=true' });
     }
     for (const file of tracked('*.ts')) {
         for (const { line, specifier } of packageImports(readFileSync(path.join(ROOT, file), 'utf8'))) {
-            findings.push({ file, line, rule: 'package-import', message: `imports ${specifier} at run time` });
+            findings.push({ path: file, line, rule: 'package-import', message: `imports ${specifier} at run time` });
         }
     }
-    for (const { file, line, rule, message } of findings) {
-        console.log(`${file}${line === null ? '' : `:${line}`}: ${rule}: ${message}`);
-    }
-    if (findings.length > 0) {
-        console.log(`::error::${findings.length} findings above break "TypeScript tooling from npm" in docs/contributing/Dependencies.md.`);
-        return 1;
-    }
-    return 0;
+    return report(findings, 'breaks "TypeScript tooling from npm" in docs/contributing/Dependencies.md.');
 }
 
 runGate(import.meta.url, main);

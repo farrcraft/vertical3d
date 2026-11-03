@@ -9,9 +9,10 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import process from 'node:process';
 import { test } from 'node:test';
 
-import { UsageError, options } from '../lib/cli.ts';
+import { type Finding, UsageError, formatFinding, options, report } from '../lib/cli.ts';
 import { GateError, commit, git, gitOutcome, mergeBase, tracked, untracked } from '../lib/git.ts';
 import { ROOT, isGenerated, isTestPath, isThirdParty } from '../lib/tree.ts';
 
@@ -94,6 +95,40 @@ test('cli refuses an option the gate does not take, a missing or empty value, an
             error instanceof UsageError && error.message === 'usage: gate', args.join(' '));
     }
     assert.throws(() => options('usage: gate', {}, false, ['--anything']), UsageError);
+});
+
+/** What report prints for some findings, and the exit status it returns. */
+function reported(findings: Finding[]): { printed: string; status: number } {
+    let printed = '';
+    const write = process.stdout.write;
+    process.stdout.write = ((chunk: string) => {
+        printed += chunk;
+        return true;
+    }) as typeof process.stdout.write;
+    try {
+        const status = report(findings, 'breaks a rule in docs/Rules.md.');
+        return { printed, status };
+    } finally {
+        process.stdout.write = write;
+    }
+}
+
+test('cli prints a finding with its line, or without one when it has none', () => {
+    assert.equal(formatFinding({ path: 'a/b.cpp', line: 12, rule: 'some-rule', message: 'what is wrong' }), 'a/b.cpp:12: some-rule: what is wrong');
+    assert.equal(formatFinding({ path: 'a/CMakeLists.txt', line: null, rule: 'other', message: 'x' }), 'a/CMakeLists.txt: other: x');
+});
+
+test('cli reports nothing and exit 0 for no findings, and each finding and a summary otherwise', () => {
+    assert.deepEqual(reported([]), { printed: '', status: 0 });
+    const one = { path: 'a.md', line: 3, rule: 'r', message: 'm' };
+    assert.deepEqual(reported([one]), {
+        printed: 'a.md:3: r: m\n::error::1 finding above: each breaks a rule in docs/Rules.md.\n',
+        status: 1,
+    });
+    assert.deepEqual(reported([one, { ...one, line: null }]), {
+        printed: 'a.md:3: r: m\na.md: r: m\n::error::2 findings above: each breaks a rule in docs/Rules.md.\n',
+        status: 1,
+    });
 });
 
 test('cli takes positional arguments only from a gate that allows them', () => {

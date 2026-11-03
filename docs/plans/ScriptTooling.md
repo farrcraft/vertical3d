@@ -112,8 +112,14 @@ framework as given to a suite instead.
 
 ### Step 8 — One report format, and one test file per gate
 
-Not started. Step 3 put every gate on the shared modules and one option parser. Every gate also
-reports in one format, and `gates.test.ts` is split into one test file per gate.
+**Done.** Every gate prints its findings through `report()` in `lib/cli.ts`, as
+`path:line: rule: message` or `path: rule: message`, and ends with one `::error::` line saying
+what each finding breaks. Five gates printed no rule name or no such line before.
+
+Each gate's tests are in a file of its own, and `boundary.test.ts` gained a test for each rule
+and exemption. `gates.test.ts` now starts every TypeScript file in `scripts/` as a process. It
+lists them itself, and each must refuse an unknown option with exit 2. Five gates had no such
+test before, so a gate that never ran its command line would have passed CI.
 
 ### Step 9 — The tree's rules apply to scripts
 

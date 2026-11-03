@@ -1,73 +1,57 @@
 /**
- * Tests for the entry points of the review gates that read C++ through scripts/lib/lexer.ts.
+ * Tests that start each review gate as a process, as CI starts it.
  *
- * Most tests feed a gate a shape of C++ source that a lexer can misread. The last ones start each
- * gate as a process, to see that it runs. Run them with node --test "scripts/tests/*.test.ts".
+ * A gate runs its command line only when Node is started with its file, so that a test can import
+ * it. A gate that never ran would exit 0, and CI would pass it. Each gate is therefore started with
+ * an input it must refuse, and has to exit with status 2. The gates are listed from the files in
+ * scripts/, so a new gate is tested without being named here. Run them with
+ * node --test "scripts/tests/*.test.ts".
  */
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
-import { attachCode, check } from '../boundary.ts';
 import { supportedNode } from '../lib/entry.ts';
+import { ROOT } from '../lib/tree.ts';
 
-/** The boundary reports for the given lines of one C++ file, as "line: rule" strings. */
-function boundary(text: string, numbers: number[]): string[] {
-    const path = 'api/example/Example.cxx';
-    const lines = text.split('\n');
-    const added = numbers.map((number) => ({ path, number, text: lines[number - 1] }));
-    return check(attachCode(added, () => text)).map((r) => `${r.number}: ${r.rule}`);
+/** Every gate: each TypeScript file directly in scripts/. */
+const GATES = readdirSync(join(ROOT, 'scripts')).filter((name) => name.endsWith('.ts')).sort();
+
+/** The gates that compare against a base revision named by --base. */
+const BASED = ['boundary.ts', 'commentsonly.ts', 'failsfirst.ts', 'prose.ts'];
+
+/** Starts a gate with the given arguments and Node options, from the repository root. */
+function start(script: string, args: string[], nodeOptions: string[] = []) {
+    return spawnSync(process.execPath, [...nodeOptions, script, ...args], { cwd: ROOT, encoding: 'utf8' });
 }
 
-test('boundary reports a cast on a line that starts with a dereference', () => {
-    const text = 'void f(int* out, float x) {\n    *out = static_cast<int>(std::floor(x));\n}';
-    assert.deepEqual(boundary(text, [2]), ['2: float-cast']);
+test('every gate is listed', () => {
+    for (const gate of ['linkrule.ts', 'prose.ts', 'failsfirst.ts', 'npm.ts', ...BASED]) {
+        assert.ok(GATES.includes(gate), gate);
+    }
 });
 
-test('boundary skips a cast inside a block comment that an unchanged line opened', () => {
-    const text = '/* the old way:\n*out = static_cast<int>(std::floor(x));\n*/\n';
-    assert.deepEqual(boundary(text, [2]), []);
-});
-
-test('boundary reports a cast on the line after a continued string', () => {
-    const text = 'const char* s = "a \\\r\nb /* c";\r\nint n = static_cast<int>(std::floor(x));\r\n/* d */\r\n';
-    assert.deepEqual(boundary(text, [3]), ['3: float-cast']);
-});
-
-// Each gate runs its command line when Node is started with it, and not when a test imports it.
-// A gate that did not run would exit 0, so each is given an input it must refuse: a base that is
-// not a commit, or an option it does not take. Each runs from the repository root, as CI runs it.
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-
-/** Starts a gate with the given arguments, from the repository root. */
-function start(script: string, args: string[]) {
-    return spawnSync(process.execPath, [script, ...args], { cwd: ROOT, encoding: 'utf8' });
-}
-
-for (const gate of ['prose.ts', 'boundary.ts']) {
-    test(`${gate} runs when Node is started with it`, () => {
-        const run = start(join(ROOT, 'scripts', gate), ['--base', 'no-such-ref']);
+for (const gate of GATES) {
+    test(`${gate} runs when Node is started with it, and refuses an option it does not take`, () => {
+        const run = start(join(ROOT, 'scripts', gate), ['--no-such-option']);
         assert.equal(run.status, 2, run.stderr);
-        assert.match(run.stderr, /no-such-ref/);
+        assert.match(run.stderr, new RegExp(`^usage: node scripts/${gate.replace('.', '\\.')}`));
+        assert.equal(run.stdout, '');
     });
 }
 
-test('failsfirst.ts runs when Node is started with it', () => {
-    const run = start(join(ROOT, 'scripts', 'failsfirst.ts'), ['--no-such-option']);
-    assert.equal(run.status, 2, run.stderr);
-});
-
-test('linkrule.ts runs when Node is started with it', () => {
-    const run = start(join(ROOT, 'scripts', 'linkrule.ts'), ['--no-such-option']);
-    assert.equal(run.status, 2, run.stderr);
-    assert.match(run.stderr, /usage/);
-});
+for (const gate of BASED) {
+    test(`${gate} stops with exit 2 on a base that is not a commit, and names it`, () => {
+        const run = start(join(ROOT, 'scripts', gate), ['--base', 'no-such-ref']);
+        assert.equal(run.status, 2, run.stderr);
+        assert.match(run.stderr, new RegExp(`^${gate.replace('.', '\\.')}: no-such-ref: not a commit`));
+    });
+}
 
 // Node resolves a module's own path through a link, and does not resolve the path it was started
 // with through links. A gate started through a junction or a symbolic link still has to see that
@@ -96,7 +80,7 @@ test('the gates support Node 24 and later', () => {
 // The version is replaced before the gate loads, so an earlier Node is not needed to run this.
 test('a gate started on an earlier Node stops with exit 2 and says so', () => {
     const older = "data:text/javascript,Object.defineProperty(process,'versions',{value:{...process.versions,node:'22.0.0'}})";
-    const run = spawnSync(process.execPath, ['--import', older, join(ROOT, 'scripts', 'linkrule.ts')], { cwd: ROOT, encoding: 'utf8' });
+    const run = start(join(ROOT, 'scripts', 'linkrule.ts'), [], ['--import', older]);
     assert.equal(run.status, 2, run.stderr);
     assert.match(run.stderr, /Node 24 or later/);
 });
