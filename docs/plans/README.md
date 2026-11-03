@@ -20,7 +20,9 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 
 ## Open plans
 
-None is open.
+| Plan | Area | What it delivers |
+|---|---|---|
+| [ScriptTooling](ScriptTooling.md) | Review gates, TypeScript, CI | TypeScript type-checked across the tree, the gates split by job onto shared modules with their verdict logic tested, and one reference page for the gates |
 
 ## Completed plans
 

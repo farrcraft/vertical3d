@@ -20,10 +20,17 @@ jobs:
       with:
         fetch-depth: 0
     # Node runs the gates directly; they use only its own modules and the gates' shared ones in
-    # scripts/, and need no install
+    # scripts/, and need no install. The install below is the type checker and Node's type
+    # declarations, at the versions package-lock.json names
     - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: 24
+    - name: Install the TypeScript tooling
+      run: npm ci
+    # every TypeScript file in the tree: the gates, the generators, and the editor's scripts
+    # against the declarations the editor writes
+    - name: Types
+      run: npm run typecheck
     # A push names the previous tip of main. That is all zeros when the branch is new, can be
     # empty, and after a force push can name a commit the checkout does not have. The base is
     # then the pushed commit's first parent, so only that commit is checked. A root commit has no
@@ -47,6 +54,7 @@ jobs:
     # the gates' own tests, including the C++ lexer they share. Each step after this one runs
     # even when an earlier one failed, so every gate reports
     - name: Gate tests
+      if: ${{ !cancelled() }}
       run: node --test "scripts/tests/*.test.ts"
     - name: Link rule
       if: ${{ !cancelled() }}

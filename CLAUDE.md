@@ -66,6 +66,7 @@ ninja -C out/build/x64-Debug                       # build; one target by name
 ctest --test-dir out/build/x64-Debug --output-on-failure
 cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=demos/voxel/src/noise --recursive .
+npm ci && npm run typecheck                        # type-check every TypeScript file
 ```
 
 Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer

@@ -1,0 +1,16 @@
+{
+  "name": "vertical3d-tooling",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . && tsc -p vertical3d/data/scripts",
+    "test": "node --test \"scripts/tests/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

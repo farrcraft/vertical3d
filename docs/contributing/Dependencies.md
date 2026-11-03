@@ -8,6 +8,7 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 - [Packages from vcpkg](#packages-from-vcpkg)
 - [The Vulkan SDK](#the-vulkan-sdk)
 - [libnoise](#libnoise)
+- [TypeScript tooling from npm](#typescript-tooling-from-npm)
 - [Setting up vcpkg](#setting-up-vcpkg)
 - [Adding a package](#adding-a-package)
 - [Updating versions](#updating-versions)
@@ -150,6 +151,41 @@ cmake --build vendor/libnoise/build-ninja
   `cmake_minimum_required(VERSION 3.0)`, which current CMake rejects.
 - The archive must land in `vendor/libnoise/Debug`, because voxel's `target_link_directories`
   looks there.
+
+## TypeScript tooling from npm
+
+The tree's TypeScript runs on Node 24 or later, which erases the types and checks none of them.
+That covers the review gates in `scripts/`, the fixture and asset generators, and the editor's
+scripts. The type checker comes from npm through [package.json](../../package.json):
+
+```
+npm ci              # install exactly what package-lock.json names
+npm run typecheck   # check every TypeScript file in the tree
+npm test            # the review gates' own tests
+```
+
+The rules for `package.json`:
+
+- **It holds development dependencies only.** No code that runs imports a package, so a gate or
+  a generator runs with `node <file>.ts` and no install. A package that a gate would import at
+  run time is not added.
+- **Every version is exact,** and [package-lock.json](../../package-lock.json) is committed.
+  [.npmrc](../../.npmrc) saves exact versions and never runs a package's install scripts.
+- **CI installs with `npm ci`** and type-checks in
+  [review-gates.yml](../../.github/workflows/review-gates.yml), next to the gates.
+
+Two projects divide the files. [tsconfig.json](../../tsconfig.json) at the root checks every
+`.ts` file that runs on Node, with Node's declarations. It names the directories it leaves out
+rather than the ones it reads, so a new generator is checked without being listed.
+[vertical3d/data/scripts/tsconfig.json](../../vertical3d/data/scripts/tsconfig.json) checks the
+editor's scripts against `editor.d.ts`, with no Node declarations, because the editor runs them
+on QuickJS. Both extend [tsconfig.base.json](../../tsconfig.base.json), which holds the strict
+options and allows only syntax that can be erased.
+
+To update a tool, run `npm install --save-dev <package>@<version>` with a version released at
+least two weeks earlier. Then run `npm run typecheck` and commit `package.json` with the lockfile.
+
+Background: [ADR-0158](../adr/0158-tooling-typescript-is-type-checked-through-a-package-json.md)
 
 ## Setting up vcpkg
 

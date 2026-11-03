@@ -260,9 +260,11 @@ path in this repository, is exempt. To find the sha for a release, read the comm
 points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
 the tag is annotated. Updating an action means changing both the sha and the comment.
 
-The workflow first runs the gates' own tests in `scripts/tests/`, which cover the C++ lexer the
-gates share in `scripts/lexer.ts`. Run them locally with `node --test "scripts/tests/*.test.ts"`
-from the repository root.
+The workflow first type-checks every TypeScript file in the tree, as
+[Dependencies.md](Dependencies.md#typescript-tooling-from-npm) describes. It then runs the gates'
+own tests in `scripts/tests/`, which cover the C++ lexer the gates share in `scripts/lexer.ts`.
+Run them locally with `npm test`, or with `node --test "scripts/tests/*.test.ts"`, from the
+repository root.
 
 The fails-first gate, `scripts/failsfirst.ts`, runs in
 [.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's last step

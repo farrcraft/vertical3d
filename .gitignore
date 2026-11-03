@@ -6,3 +6,6 @@ vcpkg_installed/*
 
 # the logger writes beside whatever ran, and a test run leaves one in the tree root
 v3d.log
+
+# the TypeScript tooling package.json installs
+node_modules/

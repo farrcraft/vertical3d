@@ -920,7 +920,7 @@ function describeExit(status: number | null, signal: string | null): string {
     return status > 0xFFFF ? `0x${(status >>> 0).toString(16).toUpperCase()}` : String(status);
 }
 
-type Outcome = { error?: Error; status: number | null; signal: string | null; output: string };
+type Outcome = { error: Error | undefined; status: number | null; signal: string | null; output: string };
 
 function runCase(c: Case, executable: string, env: Env, timeout: number): void {
     const done = spawnSync(executable, [`--run_test=${c.path}`, "--detect_memory_leaks=0"], {
