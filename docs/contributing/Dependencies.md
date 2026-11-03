@@ -171,8 +171,12 @@ The rules for `package.json`:
   run time is not added.
 - **Every version is exact,** and [package-lock.json](../../package-lock.json) is committed.
   [.npmrc](../../.npmrc) saves exact versions and never runs a package's install scripts.
+- **Every locked package comes from the npm registry** with an integrity hash.
 - **CI installs with `npm ci`** and type-checks in
   [review-gates.yml](../../.github/workflows/review-gates.yml), next to the gates.
+
+`scripts/npm.ts` checks these rules, and that no TypeScript file imports a package at run time.
+An `import type` statement is erased before the file runs, so it may name a package.
 
 Two projects divide the files. [tsconfig.json](../../tsconfig.json) at the root checks every
 `.ts` file that runs on Node, with Node's declarations. It names the directories it leaves out

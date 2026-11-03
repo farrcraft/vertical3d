@@ -65,6 +65,11 @@ jobs:
     - name: Actions are pinned to a commit
       if: ${{ !cancelled() }}
       run: node scripts/pinned.ts
+    # npm brings only development tools at exact versions, from the registry, with install
+    # scripts off, and no TypeScript file imports a package at run time
+    - name: npm tools are pinned
+      if: ${{ !cancelled() }}
+      run: node scripts/npm.ts
     # the table of libraries in docs/api/README.md has a row for each library the manifest names,
     # in the manifest's order
     - name: Library table

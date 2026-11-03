@@ -38,8 +38,10 @@ rewrite. Step 9a turns it on once they land.
 
 ### Step 2 — Development dependencies stay pinned
 
-Not started. A gate reports a dependency that is not a development dependency, a version that
-is not exact, and a lockfile that does not match `package.json`.
+**Done.** `scripts/npm.ts` reports a runtime dependency, a version that is not exact, and a
+lockfile that disagrees with `package.json` or holds a package from outside the registry. It
+reports an `.npmrc` that leaves install scripts on, and a TypeScript file that imports a package
+at run time. Hand mutations of each rule fail a test. CI runs it beside `pinned.ts`.
 
 ### Step 3 — Shared modules in scripts/lib
 
