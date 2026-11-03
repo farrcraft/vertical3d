@@ -324,6 +324,35 @@ BOOST_FIXTURE_TEST_CASE(a_rename_is_one_change, Panel) {
 }
 
 /**
+ * A name may match another item's while it is typed, and is made unique when the edit ends.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_rename_ends_with_a_unique_name, Panel) {
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> other = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    other->name("Cubes");
+    scene->add(other);
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> start = at("Cube");
+    BOOST_REQUIRE(start);
+    const std::optional<glm::vec2> name = *start + glm::vec2(60.0F, 0.0F);
+    frame(input(*name, false, false, false));
+    frame(input(*name, true, true, false));
+    frame(input(*name, false, false, true));
+    BOOST_REQUIRE(layer.typing());
+    BOOST_CHECK(layer.typed("s"));
+    frame(input(*name, false, false, false));
+    BOOST_CHECK_EQUAL(cube->name(), "Cubes");
+    BOOST_CHECK(layer.press("return"));
+    frame(input(*name, false, false, false));
+    BOOST_CHECK_EQUAL(cube->name(), "Cubes.001");
+    BOOST_CHECK_EQUAL(other->name(), "Cubes");
+
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    history->undo()->undo();
+    BOOST_CHECK_EQUAL(cube->name(), "Cube");
+}
+
+/**
  * A rename still open when its item stops being the one shown is one change, under its own
  * name, as soon as the editor is drawn without it.
  **/

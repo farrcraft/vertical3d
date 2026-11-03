@@ -136,6 +136,7 @@ view beside the properties. Rendering puts the render view beside the render set
 | Editor: the ui's text size. Decided in ADR-0138: 12 pixels, with the scale preference for larger. | 1 |
 | Editor: the scene's unit of length. Decided in ADR-0140: each project names its own, metres by default. | 6 |
 | Editor: what the console runs. Decided in ADR-0152 and ADR-0153: named commands with typed arguments, called from TypeScript run on QuickJS. | 13 |
+| Editor: how a script names an item. Decided in ADR-0157: by its name, which is unique in its scene. | 13 |
 | Editor: where a render is shown. Decided in ADR-0154: an editor in an area, or in a window of its own when no area holds one. | 14 |
 | Editor: how icons are made. Decided in ADR-0139: SVG files, drawn at the ui's scale. | 4 |
 
@@ -379,6 +380,11 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   as a script would write it, and each notice posted, in the order they happened.
 - Its line takes TypeScript, runs it, and lists what it said. The arrows step through what was
   typed before.
+- Done: no two items in a scene share a name, so a script can name an item by it (ADR-0157,
+  which supersedes ADR-0135). An item added with a taken name takes the lowest free number after
+  it, as `Cube.001` follows `Cube`, and one with no name is called by its kind. A rename is made
+  unique when its edit ends. The scene suite covers the numbering, and the properties editor
+  suite a rename that ends on a taken name.
 
 ### Step 14 — The render view and the render settings
 

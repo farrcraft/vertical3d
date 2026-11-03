@@ -1,7 +1,8 @@
 # ADR-0135: Editor: item names are labels that need not be unique
 
-**Status**: accepted
+**Status**: superseded
 **Date**: 2026-10-30
+**Superseded by**: ADR-0157
 **Documented in**: [editor/Scene.md](../editor/Scene.md#the-scene)
 
 ## Context

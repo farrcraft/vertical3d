@@ -172,12 +172,20 @@ five kinds:
     saved that refers to an item names it by its document id.
 
   An item cannot be copied, because a copy would share both ids.
-- **Name.** `Item::name()` is what the item is called. Any text is a name, an empty one
-  included, and two items may share one, since nothing refers to an item by its name. A new
-  item is named for its kind, with each word begun in capitals, such as `Cube`, `Point Light`
-  or `Group`. An imported item takes its node's name. The document saves the name, so a rename
-  moves the revision. Background:
-  [ADR-0135](../adr/0135-editor-item-names-are-labels-that-need-not-be-unique.md)
+- **Name.** `Item::name()` is what the item is called, and a script names the item by it. No
+  two items in a scene share a name. `Scene::add()` keeps an item's name when it is free. A taken
+  name loses any number of three or more digits after its last dot, and gains the lowest free
+  one from `.001`, so `Cube.001` follows `Cube`. An item added with no name is called by its
+  kind, such as `Mesh`. `Scene::available()` makes a name by that rule, and `Scene::named()`
+  finds an item by its name.
+  - A new item is named for its kind, with each word begun in capitals, such as `Cube`,
+    `Point Light` or `Group`. An imported item takes its node's name, and a document saved with
+    two items of one name reads with a suffix on the later one.
+  - A name typed into the properties editor may match another item's while it is typed, and is
+    made unique when the edit ends. The rename and the suffix are one change in the history.
+  - The document saves the name, so a rename moves the revision.
+
+  Background: [ADR-0157](../adr/0157-editor-item-names-are-unique-in-their-scene.md)
 - **Placement.** `placement()` is a translation, a rotation and a scale, measured in the space of
   the item's parent. A command undoes a gesture by setting all three at once. `matrix()` composes
   them as translation × rotation × scale, which is the item's local matrix. Where the item is in

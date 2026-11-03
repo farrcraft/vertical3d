@@ -183,7 +183,7 @@ content went. Numbers are never reused.
 | [0126](0126-editor-the-handle-mask-selects-bezier-curve-handles.md) | Editor: the handle mask selects Bezier curve handles | accepted |
 | [0127](0127-editor-tiled-areas-that-hold-editors-as-tabs.md) | Editor: tiled areas that hold editors as tabs | amended by 0154 |
 | [0134](0134-editor-workspaces-and-layouts-live-in-user-settings.md) | Editor: workspaces and layouts live in user settings | accepted |
-| [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | accepted |
+| [0135](0135-editor-item-names-are-labels-that-need-not-be-unique.md) | Editor: item names are labels that need not be unique | superseded by 0157 |
 | [0136](0136-editor-panels-are-drawn-in-immediate-mode.md) | Editor: panels are drawn in immediate mode | accepted |
 | [0138](0138-editor-ui-text-is-12-pixels.md) | Editor: ui text is 12 pixels | accepted |
 | [0139](0139-editor-icons-are-svg-drawn-at-the-ui-scale.md) | Editor: icons are SVG, drawn at the ui's scale | accepted |
@@ -191,6 +191,7 @@ content went. Numbers are never reused.
 | [0152](0152-editor-scripts-call-named-commands-with-typed-arguments.md) | Editor: scripts call named commands with typed arguments | accepted |
 | [0153](0153-editor-scripts-are-typescript-run-on-quickjs.md) | Editor: scripts are TypeScript, run on QuickJS | accepted |
 | [0154](0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted |
+| [0157](0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene | accepted |
 
 ## Build, testing and code
 

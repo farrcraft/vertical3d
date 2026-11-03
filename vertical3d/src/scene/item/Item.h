@@ -76,8 +76,9 @@ class Item {
     glm::mat4 matrix() const;
 
     /**
-     * What the item is called. Any text is a name, an empty one included, and two items may
-     * share one. The setter moves revision().
+     * What the item is called. The item itself takes any text, an empty one included. The
+     * scene it is added to makes the name unique there, and a script names the item by it. The
+     * setter moves revision().
      **/
     const std::string& name() const noexcept;
     void name(const std::string& name);
@@ -124,6 +125,11 @@ class Item {
     std::int64_t documentId_;
     std::uint64_t changes_ = 0;
 };
+
+/**
+ * @return the word for a kind of item, such as "Mesh", which an item with no name is called
+ **/
+std::string name(Item::Kind kind);
 
 /**
  * An item as one kind, or an empty pointer when it is another kind or there is no item.

@@ -11,7 +11,6 @@
 #include <vertical3d/src/command/Keyed.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Units.h>
-#include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
@@ -84,7 +83,7 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
         const boost::shared_ptr<scene::item::Item>& item = selected.front();
         ui->tabBar("tabs");
         if (ui->tab("Item")) {
-            ui->text(Outliner::kind(item->kind()));
+            ui->text(scene::item::name(item->kind()));
             std::string name = item->name();
             if (ui->textField("Name", &name)) {
                 begin(item, "rename");
@@ -304,6 +303,13 @@ void PropertiesEditor::begin(const boost::shared_ptr<scene::item::Item>& item, c
 void PropertiesEditor::finish() {
     if (!pending_) {
         return;
+    }
+    // a name is free to match another while it is typed, and is made unique when the edit ends
+    if (pending_->scene) {
+        const std::string name = pending_->scene->available(pending_->item->name(), *pending_->item);
+        if (name != pending_->item->name()) {
+            pending_->item->name(name);
+        }
     }
     if (!command::Edit::same(pending_->before, command::Edit::of(*pending_->item)) && history_) {
         const command::Keyed::Change change{ .item = pending_->item, .before = pending_->before.pose, .after = scene::pose(*pending_->item) };

@@ -246,7 +246,8 @@ The file is read by `interchange::readGltf()` or `interchange::usd::read()`, des
 
 - **Kinds.** Each node becomes one item: a mesh, a camera, a light or a curve when it carries
   one, in that order, and a group when it carries none. A node that carries more than one
-  becomes the first, with the others as its children. Each item takes its node's name.
+  becomes the first, with the others as its children. Each item takes its node's name, with a
+  number after it when another item has it, as [Scene.md](Scene.md#the-scene) says.
 - **Meshes.** A mesh is built with `brep::build()`. glTF stores only triangles, so each pair
   that was a quad is joined back into it. USD keeps the file's polygons. Nodes that share a mesh
   give items that share one geometry. A mesh that cannot be built, such as one with three faces

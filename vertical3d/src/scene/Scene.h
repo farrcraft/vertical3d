@@ -57,6 +57,11 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
  * The scene also gives each item its document id. Ids are never reused within a document, so
  * the scene keeps the next one to give, and a saved document keeps it too.
  *
+ * **Names.** No two items in a scene share a name, so a script can name an item by it. An item
+ * added with a name another holds takes the lowest free number after it, as "Cube.001" follows
+ * "Cube". An item added with no name is called by its kind. A name typed into the properties
+ * editor may match another while it is typed, and is made unique when the edit ends.
+ *
  * **The hierarchy.** Any item may be the parent of others, and each item has at most one
  * parent, so the items form a set of trees. The scene holds each link, naming both ends by
  * document id, and every link has both ends in the scene. An item's placement is local to its
@@ -76,7 +81,8 @@ using Curves = std::map<std::string, v3d::animation::Curve>;
 class Scene final {
  public:
     /**
-     * Append an item, and give it the next document id if it has none.
+     * Append an item, give it the next document id if it has none, and give it a name no other
+     * item has, as available() makes one from its own.
      *
      * @return the id of the item, or 0 for an empty pointer. A selection names an item by
      *         this id.
@@ -184,6 +190,19 @@ class Scene final {
      * @return the item of that id, or an empty pointer
      **/
     boost::shared_ptr<item::Item> item(unsigned int id) const;
+
+    /**
+     * @return the item of that name, or an empty pointer
+     **/
+    boost::shared_ptr<item::Item> named(const std::string& name) const;
+
+    /**
+     * A name for an item that no other item in the scene has. The name wanted is kept when it is
+     * free. Otherwise a number of three or more digits after its last dot is taken off, and the
+     * lowest free one from ".001" is put on. An empty name is the item's kind.
+     * @param item the item the name is for, whose own name does not count as taken
+     **/
+    std::string available(const std::string& wanted, const item::Item& item) const;
 
     /**
      * @return the mesh item of that id, or an empty pointer when there is none or the item

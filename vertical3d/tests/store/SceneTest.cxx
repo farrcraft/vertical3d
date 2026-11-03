@@ -783,7 +783,8 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &scene));
     BOOST_REQUIRE_EQUAL(scene.count(), 1U);
     BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
-    BOOST_CHECK(scene.items()[0]->name().empty());
+    // the light was saved with no name, and the scene calls it by its kind
+    BOOST_CHECK_EQUAL(scene.items()[0]->name(), "Light");
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
 
     // the first write to it brings its tables up to date, and can then save a parent and a
@@ -802,7 +803,7 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &read));
     BOOST_REQUIRE_EQUAL(read.count(), 2U);
     BOOST_CHECK(read.parent(read.items()[0]->id()) == read.items()[1]);
-    BOOST_CHECK(read.items()[0]->name().empty());
+    BOOST_CHECK_EQUAL(read.items()[0]->name(), "Light");
     BOOST_CHECK_EQUAL(read.items()[1]->name(), "Rig");
     BOOST_CHECK(read.curves(read.items()[1]->id()).at("rotation.y") == curve);
 }

@@ -157,4 +157,22 @@ void Item::selected(bool selected) noexcept {
     selected_ = selected;
 }
 
+/**
+ **/
+std::string name(Item::Kind kind) {
+    switch (kind) {
+        case Item::Kind::Mesh:
+            return "Mesh";
+        case Item::Kind::Camera:
+            return "Camera";
+        case Item::Kind::Light:
+            return "Light";
+        case Item::Kind::Group:
+            return "Group";
+        case Item::Kind::Curve:
+            return "Curve";
+    }
+    return std::string();
+}
+
 };  // namespace v3d::editor::scene::item

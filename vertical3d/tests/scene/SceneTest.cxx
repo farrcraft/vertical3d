@@ -139,6 +139,41 @@ BOOST_AUTO_TEST_CASE(scene_add_test) {
     BOOST_CHECK_EQUAL(scene.count(), 0U);
 }
 
+BOOST_AUTO_TEST_CASE(scene_names_test) {
+    v3d::editor::scene::Scene scene;
+    const auto named = [&scene](const std::string& name) {
+        const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();
+        mesh->name(name);
+        scene.add(mesh);
+        return mesh;
+    };
+
+    // a free name is kept, and a taken one takes the lowest free number after it
+    BOOST_CHECK_EQUAL(named("Cube")->name(), "Cube");
+    BOOST_CHECK_EQUAL(named("Cube")->name(), "Cube.001");
+    BOOST_CHECK_EQUAL(named("Cube")->name(), "Cube.002");
+    // a number already on a taken name is replaced, not added to
+    BOOST_CHECK_EQUAL(named("Cube.001")->name(), "Cube.003");
+    // a dot that ends no number of three digits is part of the name
+    BOOST_CHECK_EQUAL(named("v1.2")->name(), "v1.2");
+    BOOST_CHECK_EQUAL(named("v1.2")->name(), "v1.2.001");
+    // an item with no name is called by its kind
+    BOOST_CHECK_EQUAL(named("")->name(), "Mesh");
+    BOOST_CHECK_EQUAL(named("")->name(), "Mesh.001");
+
+    // a removed item's name is free again, and the lowest free number is taken
+    BOOST_REQUIRE(scene.named("Cube.001"));
+    BOOST_CHECK_EQUAL(scene.remove(scene.named("Cube.001")->id()), true);
+    BOOST_CHECK_EQUAL(static_cast<bool>(scene.named("Cube.001")), false);
+    BOOST_CHECK_EQUAL(named("Cube")->name(), "Cube.001");
+
+    // an item's own name is not taken from it
+    const boost::shared_ptr<v3d::editor::scene::item::Item> cube = scene.named("Cube");
+    BOOST_REQUIRE(cube);
+    BOOST_CHECK_EQUAL(scene.available("Cube", *cube), "Cube");
+    BOOST_CHECK_EQUAL(scene.available("Cube.002", *cube), "Cube.004");
+}
+
 BOOST_AUTO_TEST_CASE(scene_kinds_test) {
     v3d::editor::scene::Scene scene;
     const boost::shared_ptr<v3d::editor::scene::item::Mesh> mesh = emptyMesh();

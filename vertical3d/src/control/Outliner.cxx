@@ -27,7 +27,7 @@ namespace v3d::editor::control {
 /**
  **/
 std::string Outliner::label(const scene::item::Item& item) {
-    return item.name().empty() ? kind(item.kind()) : item.name();
+    return item.name().empty() ? scene::item::name(item.kind()) : item.name();
 }
 
 /**
@@ -64,24 +64,6 @@ void Outliner::icons(const Icons& resolve) {
  **/
 v3d::ui::Image Outliner::image(const Mark& mark) const {
     return icons_ ? icons_(mark.icon) : v3d::ui::Image();
-}
-
-/**
- **/
-std::string Outliner::kind(scene::item::Item::Kind kind) {
-    switch (kind) {
-        case scene::item::Item::Kind::Mesh:
-            return "Mesh";
-        case scene::item::Item::Kind::Camera:
-            return "Camera";
-        case scene::item::Item::Kind::Light:
-            return "Light";
-        case scene::item::Item::Kind::Group:
-            return "Group";
-        case scene::item::Item::Kind::Curve:
-            return "Curve";
-    }
-    return std::string();
 }
 
 /**

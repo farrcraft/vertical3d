@@ -62,11 +62,6 @@ class Outliner final {
     static std::string label(const scene::item::Item& item);
 
     /**
-     * @return a kind of item as a person reads it, with a capital, such as "Mesh"
-     **/
-    static std::string kind(scene::item::Item::Kind kind);
-
-    /**
      * What a row shows before its label: an icon's source, and the colour it is tinted.
      **/
     struct Mark final {

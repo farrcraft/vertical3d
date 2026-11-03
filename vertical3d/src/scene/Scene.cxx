@@ -78,6 +78,10 @@ unsigned int Scene::add(const boost::shared_ptr<item::Item>& item) {
     if (item->documentId() == 0) {
         item->documentId(nextDocumentId_++);
     }
+    const std::string name = available(item->name(), *item);
+    if (name != item->name()) {
+        item->name(name);
+    }
     items_.push_back(item);
     settle(*item);
     return item->id();
@@ -371,6 +375,45 @@ boost::shared_ptr<item::Item> Scene::item(unsigned int id) const {
         return boost::shared_ptr<item::Item>();
     }
     return *it;
+}
+
+/**
+ **/
+boost::shared_ptr<item::Item> Scene::named(const std::string& name) const {
+    const auto found = std::find_if(items_.begin(), items_.end(),
+        [&name](const boost::shared_ptr<item::Item>& item) { return item->name() == name; });
+    return found == items_.end() ? boost::shared_ptr<item::Item>() : *found;
+}
+
+/**
+ **/
+std::string Scene::available(const std::string& wanted, const item::Item& item) const {
+    const std::string name = wanted.empty() ? item::name(item.kind()) : wanted;
+    std::unordered_set<std::string> taken;
+    for (const boost::shared_ptr<item::Item>& other : items_) {
+        if (other.get() != &item) {
+            taken.insert(other->name());
+        }
+    }
+    if (!taken.contains(name)) {
+        return name;
+    }
+    std::string stem = name;
+    const std::size_t dot = name.rfind('.');
+    if (dot != std::string::npos && name.size() - dot > 3 &&
+        std::all_of(name.begin() + static_cast<std::ptrdiff_t>(dot) + 1, name.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+        stem = name.substr(0, dot);
+    }
+    for (std::size_t number = 1;; ++number) {
+        std::string digits = std::to_string(number);
+        if (digits.size() < 3) {
+            digits.insert(0, 3 - digits.size(), '0');
+        }
+        std::string candidate = stem + "." + digits;
+        if (!taken.contains(candidate)) {
+            return candidate;
+        }
+    }
 }
 
 /**

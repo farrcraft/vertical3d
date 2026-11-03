@@ -122,7 +122,7 @@ std::string StatusBar::items(const scene::Items& selected) {
     }
     std::string made;
     for (const auto& [kind, number] : kinds) {
-        const std::string one = lower(Outliner::kind(kind));
+        const std::string one = lower(scene::item::name(kind));
         made += (made.empty() ? "" : std::string(PART_GAP)) + count(number, one, one == "mesh" ? "meshes" : one + "s");
     }
     return made;
