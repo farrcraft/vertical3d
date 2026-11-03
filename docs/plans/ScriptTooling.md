@@ -88,9 +88,13 @@ and four commits, and a full run on one commit reports what it did before the sp
 
 ### Step 6 — prose split and tested
 
-Not started. Split `prose.ts` into comment spans, paragraphs, sentences and rules. Test each rule
-on Markdown and on comments, and the Markdown structure the gate skips: front matter, fences,
-tables, link-only lines, and the exemptions for plans and ADRs.
+**Done.** `prose.ts` keeps the line checks, the options and `main`. `scripts/prose/` holds which
+files the gate reads, how it rebuilds paragraphs, how it divides sentences, and the rules. The
+comments of a TypeScript file come from `lib/script.ts`, which gave the same spans as the gate's
+own scanner on every TypeScript file in the tree. `tests/prose.test.ts` checks each rule on
+Markdown and on comments, the structure the gate does not read, its exemptions, and the limit to
+added lines. A hand mutation of each rule fails a test. Over every file the gate reads, and over
+the last 150 commits, it reports what it did before.
 
 ### Step 7 — linkrule split and tested
 
