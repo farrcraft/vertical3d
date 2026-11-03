@@ -19,6 +19,7 @@ document for its subject, which the table links to.
 |---|---|---|---|
 | `linkrule.ts` | Each app, app library and suite links what it includes, at the right visibility | The tree | [Build.md](Build.md#linking-rules) |
 | `librarytable.ts` | The table of libraries has one row for each library in the manifest, in order | The tree | [Build.md](Build.md#the-manifest-is-checked-on-every-configure) |
+| `readmes.ts` | Each component has a README with a heading and links that resolve, and a library's README describes it as the table does | The tree | [Conventions.md](Conventions.md#readmes) |
 | `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |

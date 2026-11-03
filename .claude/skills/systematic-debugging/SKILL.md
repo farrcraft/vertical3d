@@ -63,8 +63,8 @@ would not exist.
 
 Most defects here are a divergence from a pattern the codebase already gets right.
 
-- **Compare with another app.** Every target builds, and the four games (pong, tetris, voxel,
-  odyssey) all run through `v3d::engine::run<T>` on the `api/` framework. For anything
+- **Compare with another app.** Every target builds, and every demo in `demos/` runs through
+  `v3d::engine::run<T>` on the `api/` framework. For anything
   app-shaped — config, asset loading, engine initialisation, renderer construction — read how
   a working game does it before theorising about why another one does not.
   `docs/Demos.md` says which api features each demo is the best example of.
@@ -123,17 +123,15 @@ failed fix is itself data about what the system is really doing.
 | Wrong picture, silent `v3d.log` | First confirm the log says the instance was created with validation on; a run with no layer installed is silent too. Then run the `render_device` suite, with `VK_LAYER_VALIDATE_SYNC=1` after a barrier or layout change. |
 | App exits immediately, no window | `asset::Manifest::load` rejected `data/config.json`, and `Engine::initialize` returned false. It requires the `{"configs": [{"type", "file"}]}` form, each entry's `type` and `file` must be strings, and every listed file must load. `v3d.log` says which check failed. |
 | `vkCreateInstance` fails | An extension the loader does not advertise — `Instance::requireExtensions` names the missing one before creation is attempted. |
-| "No physical vulkan device supports 1.3" | The driver reports below 1.3, which device selection rejects per ADR-0002. Support tracks driver version more than GPU age; update the driver before suspecting the code. |
-| `LNK2019` on `vk*` symbols | A library calls Vulkan without linking `Vulkan::Vulkan`. `v3dlib_render` links it PUBLIC, so an app never names it; link it on the library that makes the call. |
-| `LNK2019` on something that obviously exists | The `.cpp`/`.cxx` is missing from its `CMakeLists.txt`. Every source list in this repo is hand-written. |
-| `static_assert` failure inside spdlog's bundled fmt | `/utf-8` missing from that target. The assert is real. |
-| `C2259` cannot instantiate abstract class | A pure virtual not overridden because the signature differs rather than being absent. Mark the override `override` and the compiler names the mismatch. |
+| "No physical vulkan device supports 1.3" | The driver reports below 1.3, which device selection rejects. Support tracks driver version more than GPU age; update the driver before suspecting the code. |
+| A compile or link error | `docs/contributing/Build.md#what-a-build-error-usually-means` maps each common one to its cause. |
+| A crash before `main`, `LNK1163`, a stale CMake cache, phantom `git status` changes | Not the code. `docs/contributing/Build.md#traps` has the fix for each. |
+| A hand-broken build still passes its tests | A stale incremental link. `docs/contributing/Testing.md#checking-that-a-new-test-fails-first` says what to delete. |
+| A `debug` log line never appears | The log flushes at `info` and above, and ending the process discards the buffer. Log at `info`, or quit cleanly. |
 | Crash or corruption after an entity dies | An `entt` reference held across a call that can `destroy()` an entity; storage compaction invalidates it. Re-fetch after the call. |
 | Use-after-free on a Vulkan handle | Destruction order. The surface must go before the instance and the window; swapchain images must not be destroyed while the queues may still read them. |
 | A resource leaks when construction fails | A constructor that acquired a handle and then threw. Nothing runs the destructor of an object whose constructor threw — see `Swapchain`, which catches, destroys and rethrows. |
 | A small edit shows as a whole-file diff | CRLF. `.gitattributes` enforces LF; strip the CRs rather than committing them. |
-| `git status` reports files as modified that `git diff` says are identical | Stale index stat cache after a bulk edit. No refresh clears it; `rm .git/index && git reset` rebuilds it and leaves the working tree alone. |
-| CMake will not configure after a Visual Studio update | The cached `CMAKE_CXX_COMPILER` points at an MSVC version that no longer exists. Delete `CMakeCache.txt`, `CMakeFiles/`, `build.ninja` and `.ninja_*` — **never** `vcpkg_installed/`. |
 
 ## Tools this project has
 

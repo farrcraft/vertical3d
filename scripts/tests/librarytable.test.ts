@@ -64,6 +64,10 @@ test('librarytable reads only the rows under its heading', () => {
     assert.deepEqual(tableRows(readme([ASSET, LOG])).map((row) => row.name), ['asset', 'log']);
 });
 
+test('librarytable reads the second cell of a row as its text', () => {
+    assert.deepEqual(tableRows(readme([MEDIA])).map((row) => row.text), ['Pictures.']);
+});
+
 test('librarytable accepts a row for each library in the manifest order', () => {
     assert.deepEqual(check([ASSET, MEDIA, LOG]), []);
 });

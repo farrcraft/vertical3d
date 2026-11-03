@@ -75,6 +75,11 @@ jobs:
     - name: Library table
       if: ${{ !cancelled() }}
       run: node scripts/librarytable.ts
+    # every component has a README with working links, and a library's README describes it as
+    # the table of libraries does
+    - name: READMEs
+      if: ${{ !cancelled() }}
+      run: node scripts/readmes.ts
     # every type is in a header, no state is global, and a file's own helpers are in one
     # anonymous namespace at its top, as docs/contributing/Conventions.md sets out
     - name: File-local code

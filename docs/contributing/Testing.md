@@ -230,6 +230,14 @@ fail. A commit the base does not contain, including one the change made, does no
 case is a weak test. A reviewer reads how the code was broken. Breaking it has to fail the case
 for the reason the case is about, not by a crash.
 
+Two things make a build of hand-broken code test the old code:
+
+- **An incremental link can keep the old library code in the suite.** Delete the suite's `.exe`,
+  `.ilk` and `.pdb` before building the broken code, and again after restoring it.
+- **A file restored by copying keeps the copy's older timestamp.** ninja then sees the source as
+  older than its object and does not rebuild it. Restore the file by writing its text, or set
+  its modification time to now.
+
 The worktree build is separate from `out/build/x64-Debug`, or the build `--build` names, and
 installs no packages. It reuses the packages that build installed, and its link job pool if it
 has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and
@@ -390,6 +398,22 @@ change locally by running an app and reading its log.
    render_device`.
 4. **Look at the picture last.** Screenshots and the `data_out/` images are for checking what
    the log and the tests cannot.
+
+### Driving a running app
+
+- **Capture a window with `PrintWindow`, using flag 2.** It draws the window's own content,
+  swapchain output included, whatever window is in front. A capture of the screen area instead
+  records whatever is on top, unless the app's window is confirmed to be the foreground window.
+- **Send keys with `keybd_event`.** SDL reads the arrow keys sent by .NET's `SendKeys` as
+  nothing, though it reads Escape and Enter. Send each key's down and up as separate events.
+- **A mouse message posted to an SDL window does nothing.** SDL does not read the mouse from
+  posted messages. A click path is left to its tests.
+- **Close an app by posting `WM_CLOSE` to its window.** SDL turns it into a quit request, so
+  `release()` runs and the app writes what it writes on a clean exit. Ending the process skips
+  `release()`.
+- **A `debug` line is not evidence that code ran.** The log is flushed at `info` and above. Debug
+  lines wait in the buffer, and ending the process discards them. Log at `info`, or quit the app
+  cleanly, before reading the log.
 
 ## Traps
 

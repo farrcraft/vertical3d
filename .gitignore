@@ -9,3 +9,6 @@ v3d.log
 
 # the TypeScript tooling package.json installs
 node_modules/
+
+# the image and render tests write what they produced here, in whatever directory they ran from
+data_out/

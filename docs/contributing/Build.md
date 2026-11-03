@@ -312,6 +312,26 @@ also checks that the manifest's dependency lists are complete.
 [examples/README.md](../../examples/README.md#building-an-example) gives the commands that build
 it locally against the packages your main build already installed.
 
+## What a build error usually means
+
+MSVC prints an error and then the chain of instantiations that led to it. The first error is
+the one to fix, and later errors are usually caused by it. Redirect a build to a file and read
+around the first `error` line, rather than reading the end of the output.
+
+| Error | Usual cause here | Fix |
+|---|---|---|
+| `LNK2019` on a symbol that plainly exists | A source file missing from its target's `CMakeLists.txt`. Every source list is written by hand | Add the file to the list |
+| `LNK2019` on `vk*` symbols | A library calls Vulkan without linking `Vulkan::Vulkan` | Link it on that library. `v3dlib_render` links it PUBLIC, so an app never names it |
+| `C1083` cannot open include file | A header that does not exist, or a path not named from the repository root | Check that the header exists, then the include rule in [Conventions.md](Conventions.md#includes) |
+| `C2039` is not a member | A member removed from a header while a use remains | Correct the use, or restore the member |
+| `C2259` cannot instantiate abstract class | A pure virtual function whose override has a different signature | Mark the override `override`, and the compiler names the mismatch |
+| `C2440` or `C4244` on a conversion | `size_t` to `int`, or `int` to `float` | A `static_cast` at the boundary, through the checked helpers for input from outside |
+| A `static_assert` inside spdlog's bundled fmt | `/utf-8` missing from the target | Add it. The assert is correct |
+
+`/permissive-` is on, so MSVC rejects code that it would otherwise accept: a dependent name
+without `typename`, a name that two-phase lookup cannot find, and a non-const reference bound
+to a temporary.
+
 ## Traps
 
 - **Never delete `out/build/<config>/vcpkg_installed/`.** That directory holds every installed
@@ -342,7 +362,21 @@ it locally against the packages your main build already installed.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and
-  build again.
+  build again. If the same object fails again at the same section number, the corrupt object is
+  another one that defines the same symbol. Run `dumpbin /headers` on the named object and read
+  the `sym=` line of the section the error names. Then search the build tree's `.obj` files for
+  that symbol's name, and delete every object that defines it. Two builds running in one build
+  directory at once can cause this.
+- **`git status` can report files that `git diff` shows as unchanged.** After an edit to many
+  files, git's cached file times can go stale, and refreshing the index does not clear them.
+  Delete `.git/index` and run `git reset`. The working tree is not changed.
+- **`Select-Object -First` stops a build.** In PowerShell, a build piped through
+  `Select-Object -First N` is ended once N lines have passed. It exits with 255 and prints no
+  error, which looks like a failed build. Redirect a build to a file and search the file.
+- **A recursive search from the repository root reads the package installs.** Each build
+  directory under `out/build/` holds its own `vcpkg_installed/`, so most of the tree is not
+  source. Name the source directories to the search, or exclude `out/`, `vcpkg_installed/` and
+  `vendor/`.
 - **An executable that crashes before `main` can be a corrupt incremental link.** A Debug link is
   incremental, and it can write an executable whose kernel32 import table is partly zeroed. The
   loader then binds none of kernel32's imports. The program faults in the C runtime's startup,

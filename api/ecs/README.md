@@ -1,0 +1,9 @@
+# ecs
+
+Shared components and helpers over the EnTT entity registry, and the particle effects its
+emitter steps.
+
+Its CMake target is `v3dlib_ecs`. A project outside the tree links it as `v3d::ecs`.
+
+- [api/ECS.md](../../docs/api/ECS.md) describes how to use it.
+- [api/README.md](../../docs/api/README.md) lists every library and what each one links.

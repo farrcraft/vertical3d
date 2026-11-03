@@ -35,6 +35,8 @@ is SDL3.
 | `api/asset`, `api/image`, `api/font` | [docs/api/Assets.md](docs/api/Assets.md), [Images.md](docs/api/Images.md), [Fonts.md](docs/api/Fonts.md) |
 | `api/interchange` | [docs/api/Interchange.md](docs/api/Interchange.md) |
 | `api/database` | [docs/api/Database.md](docs/api/Database.md) |
+| `api/script` | [docs/api/Scripting.md](docs/api/Scripting.md) |
+| An app in another repository that uses the api | [docs/api/UsingTheApi.md](docs/api/UsingTheApi.md) |
 | Using `api/render/realtime` | [docs/api/rendering/](docs/api/rendering/README.md) |
 | Changing `api/render/realtime` | [docs/internals/realtime/](docs/internals/realtime/README.md) |
 | Using `api/ui` | [docs/api/ui/](docs/api/ui/README.md) |
@@ -68,14 +70,15 @@ ctest --test-dir out/build/x64-Debug --output-on-failure
 cpplint --linelength=180 --exclude=out --exclude=vendor --exclude=vcpkg_installed \
   --exclude=demos/voxel/src/noise --recursive .
 npm ci && npm run typecheck                        # type-check every TypeScript file
+node scripts/prose.ts                              # one review gate; Gates.md lists them all
 ```
 
 Neither `ninja` nor `ctest` is on a plain shell's PATH: those two lines need a developer
 environment, and `scripts\build.cmd` and `scripts\test.cmd` are the same commands with one
 entered. [docs/contributing/Build.md](docs/contributing/Build.md) covers configuring from a cold
 tree, the options, and what has to be installed first. The tree is clean at cpplint, at `/W4`
-with `/WX`, at `/analyze` and at the 198 clang-tidy checks left enabled, so **every finding is a
-new one**.
+with `/WX`, at `/analyze`, at the clang-tidy checks `.clang-tidy` enables, and at every review
+gate in `scripts/`, so **every finding is a new one**.
 
 ## Rules that cost the most when broken
 

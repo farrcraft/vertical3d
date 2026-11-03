@@ -292,6 +292,27 @@ Each document serves one kind of reader, and [README.md](../README.md) says whic
 appear twice: once for the people who use it and once for the people who change it. Each fact
 still has one home per reader, and the other document links to it rather than copying it.
 
+### READMEs
+
+GitHub shows a directory's README to someone browsing the tree, so each component has one. A
+component is:
+
+- each directory at the repository root, other than those whose names start with a dot;
+- each directory under `demos/` or `examples/` that holds a `CMakeLists.txt`;
+- each api library's directory, as `cmake/v3dApiLibraries.cmake` names it.
+
+A README is an entry point, not a reference document. It starts with a `# ` heading, says in a
+few sentences what the directory holds, and links the documents that cover it. It does not
+restate what those documents say, such as a list of options or dependencies.
+
+An api library's README starts with the library's description from the table in
+[docs/api/README.md](../api/README.md#the-libraries), word for word, with any link pointed from
+the README's own directory. It then names the library's CMake target and links its documents.
+When a library's description changes, change it in both places.
+
+`scripts/readmes.ts` checks that each component has a README, that its links resolve, and that a
+library's README starts with the table's description.
+
 ## API design
 
 **A new option keeps today's behaviour as the default.** When a consumer needs the api to

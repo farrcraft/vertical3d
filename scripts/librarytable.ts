@@ -28,10 +28,11 @@ export interface Library {
     directory: string;
 }
 
-/** One row of the table: the name its first cell gives, where that links, and its line. */
+/** One row of the table: the name in its first cell, where that links, its text, and its line. */
 export interface Row {
     name: string;
     link: string;
+    text: string;
     line: number;
 }
 
@@ -62,9 +63,9 @@ export function tableRows(markdown: string): Row[] {
         if (line.startsWith('#')) {
             break;
         }
-        const cell = /^\|\s*\[`([^`]+)`\]\(([^)]*)\)\s*\|/.exec(line);
+        const cell = /^\|\s*\[`([^`]+)`\]\(([^)]*)\)\s*\|\s*(.*?)\s*\|?\s*$/.exec(line);
         if (cell !== null) {
-            rows.push({ name: cell[1] ?? '', link: cell[2] ?? '', line: index + 1 });
+            rows.push({ name: cell[1] ?? '', link: cell[2] ?? '', text: cell[3] ?? '', line: index + 1 });
         }
     }
     return rows;

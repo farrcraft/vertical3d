@@ -122,9 +122,9 @@ Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost re
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 8 checks by name. The tree is clean at
-the 198 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
-finding is fixed, never answered by widening an exclusion or an option.
+`.clang-tidy` enables whole check families and subtracts some checks by name. The tree is clean
+at every check that remains. Each subtraction is settled, and the `.clang-tidy` comment says why.
+A new finding is fixed, never answered by widening an exclusion or an option.
 
 `misc-include-cleaner` ignores every header installed outside the tree: vcpkg, the vendored
 trees, the Vulkan SDK and the toolchain. A library such as glm or Vulkan is included through its
@@ -154,6 +154,28 @@ Two traps, both silent:
 - **clang-tidy ignores a check name it does not recognise.** `.clang-tidy` enables whole families
   and subtracts checks by name, so a subtracted name that stops matching a check turns that check
   back on.
+
+### Fixing one check across the tree
+
+With warnings as errors, a finding stops its target, and every target that depends on it is
+not compiled. A first pass then reports only some of the sites. To find every site of one check:
+
+1. Configure an analysis build with `-DV3D_WARNINGS_AS_ERRORS=OFF`, and narrow `.clang-tidy` to
+   that one check. The build then runs to the end, and its log holds only that check's sites.
+2. Fix the sites. Restore `.clang-tidy`, turn warnings as errors back on, and build again to
+   verify.
+3. Confirm the analyser compiled each changed file, by finding its `.obj` under the analysis
+   build's `CMakeFiles/<target>.dir/`. A build that never ran prints no finding either, and
+   reads as clean.
+
+Fixing one check can move sites into another. For example, making a member function static
+leaves its callers calling it through an instance, which
+`readability-static-accessed-through-instance` reports. Expect more than one pass.
+
+`run-clang-tidy -fix` applies more than the one check. It also applies the compiler's own
+fix-its, such as reordered member initialisers. It can apply one edit twice to a header that two
+sources include. `misc-const-correctness` writes the `const` after the type. Review its diff
+line by line, keep only the check's own edits, and fix the rest by hand.
 
 ## Prose
 

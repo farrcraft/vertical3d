@@ -73,6 +73,9 @@ There is one log per process, written by spdlog. `run<T>` opens it as `v3d.log` 
 executable before anything logs. A test or a tool that never calls `log::Logger::open()` writes
 `v3d.log` in its working directory.
 
+The log is flushed after every line at `info` and above. A `debug` line waits in the buffer until
+a later line flushes it, so a process that is ended rather than quit loses it.
+
 `Logger::open(path)` returns whether the log is written to `path`. A path that cannot be opened,
 such as one in a directory the process cannot write to, does not throw: the log goes to stderr
 and its first line says why. A handle taken before `open()` keeps writing where it was taken.
