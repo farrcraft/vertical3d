@@ -135,4 +135,10 @@ integer is `number`, text and an item are `string`, and items and parts are `str
 editor suite checks the shipped file against the commands, so a command added or changed means
 writing the file again.
 
+**The examples.** `data/scripts/examples/` holds scripts that show how one is written: keying
+items, making primitives and taking one back, and catching a refusal. They ship with the editor.
+CI checks each against `editor.d.ts`, and the editor suite runs each on a document that holds a
+cube. An example fails there when a problem stops it, or when it runs no command, so an example
+that no longer works does not ship.
+
 Background: [ADR-0153](../adr/0153-editor-scripts-are-typescript-run-on-quickjs.md)

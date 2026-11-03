@@ -1,49 +1,51 @@
-// Checks the lines a changeset adds for boundary input converted without a check.
-//
-// A value read from a file, the command line or a caller goes through the checked helpers.
-// api/type/Checked.h makes a float into a count or an integer, and api/asset/Json.h reads a
-// member of a JSON object. This script reports two shapes that bypass them, on added lines only:
-//
-//   value-to     any boost::json::value_to<...>. The helpers test a value's type before they
-//                convert it, and value_to throws when the type is wrong.
-//   float-cast   a static_cast to an integer type whose operand contains something that gives a
-//                float: floor, ceil, round, trunc, fmod and their kin, sqrt or pow, .value(),
-//                as_double(), a cast to float or double, or a float literal.
-//
-// Lines in the helper files themselves are not checked, and neither is a test file: a test
-// converts values it chose, not input. Comments and the insides of string and character
-// literals are not read. A line inside a block comment is known from the whole file, not only
-// from the lines the change added.
-//
-// A line the heuristic reports and that is safe for a reason the text does not show carries a
-// trailing comment naming the reason, and is then accepted:
-//
-//   const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite
-//
-// The reason has to say why the conversion is defined. A clamp alone is not a reason, because
-// std::clamp passes a NaN through.
-//
-// Rule float-cast is a heuristic. It reads the text of the operand, not its type, so it cannot
-// see:
-//   - a float held in a plain variable, such as static_cast<int>(width) where width is a float;
-//   - a C-style cast, a functional cast such as int(x), or an implicit narrowing conversion;
-//   - a call that returns a float without a name on the list above.
-// It also reports an operand that names one of those things without producing a float, such as
-// static_cast<int>(count.value()) where count holds an integer, or a float that is clamped
-// before the cast. A report is a line to read, not a proof of a defect.
-//
-// Usage: node scripts/boundary.ts [--base REF]
-//
-// The changeset is every commit since the merge base with origin/main, or with main when there
-// is no origin/main, plus the working tree and untracked source files. --base names another
-// branch or commit, and the changeset starts at its merge base with HEAD. A --base that names no
-// commit, or that shares no history with HEAD, stops the script with exit status 2.
-//
-// Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
-// report, and 0 otherwise.
-//
-// Node runs this file directly: it uses only node: modules, the gates' modules in scripts/lib,
-// and type annotations Node can strip.
+/**
+ * Checks the lines a changeset adds for boundary input converted without a check.
+ *
+ * A value read from a file, the command line or a caller goes through the checked helpers.
+ * api/type/Checked.h makes a float into a count or an integer, and api/asset/Json.h reads a
+ * member of a JSON object. This script reports two shapes that bypass them, on added lines only:
+ *
+ *   value-to     any boost::json::value_to<...>. The helpers test a value's type before they
+ *                convert it, and value_to throws when the type is wrong.
+ *   float-cast   a static_cast to an integer type whose operand contains something that gives a
+ *                float: floor, ceil, round, trunc, fmod and their kin, sqrt or pow, .value(),
+ *                as_double(), a cast to float or double, or a float literal.
+ *
+ * Lines in the helper files themselves are not checked, and neither is a test file: a test
+ * converts values it chose, not input. Comments and the insides of string and character
+ * literals are not read. A line inside a block comment is known from the whole file, not only
+ * from the lines the change added.
+ *
+ * A line the heuristic reports and that is safe for a reason the text does not show carries a
+ * trailing comment naming the reason, and is then accepted:
+ *
+ *   const int cx = static_cast<int>(std::fmod(fx, 256.0f)) & 255;  // checked: fx is finite
+ *
+ * The reason has to say why the conversion is defined. A clamp alone is not a reason, because
+ * std::clamp passes a NaN through.
+ *
+ * Rule float-cast is a heuristic. It reads the text of the operand, not its type, so it cannot
+ * see:
+ *   - a float held in a plain variable, such as static_cast<int>(width) where width is a float;
+ *   - a C-style cast, a functional cast such as int(x), or an implicit narrowing conversion;
+ *   - a call that returns a float without a name on the list above.
+ * It also reports an operand that names one of those things without producing a float, such as
+ * static_cast<int>(count.value()) where count holds an integer, or a float that is clamped
+ * before the cast. A report is a line to read, not a proof of a defect.
+ *
+ * Usage: node scripts/boundary.ts [--base REF]
+ *
+ * The changeset is every commit since the merge base with origin/main, or with main when there
+ * is no origin/main, plus the working tree and untracked source files. --base names another
+ * branch or commit, and the changeset starts at its merge base with HEAD. A --base that names no
+ * commit, or that shares no history with HEAD, stops the script with exit status 2.
+ *
+ * Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
+ * report, and 0 otherwise.
+ *
+ * Node runs this file directly: it uses only node: modules, the gates' modules in scripts/lib,
+ * and type annotations Node can strip.
+ */
 
 import { readFileSync } from 'node:fs';
 import process from 'node:process';

@@ -166,10 +166,10 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 - **A function is at most 100 lines.** A longer one does several steps that each deserve a
   name. Give each step a function of its own, named for what it does. clang-tidy's
   `readability-function-size` reports a longer function.
-- **A C++ file is at most 1000 lines, unless it is a test.** A longer file is a class doing
-  several jobs. Split it into classes with one job each, rather than spreading one class's
-  definitions over several files. `scripts/filelength.ts` reports a longer file. A test file is
-  exempt, because its cases are independent of each other.
+- **A C++ or TypeScript file is at most 1000 lines, unless it is a test.** A longer file is a
+  class or a module doing several jobs. Split it into classes or modules with one job each,
+  rather than spreading one class's definitions over several files. `scripts/filelength.ts`
+  reports a longer file. A test file is exempt, because its cases are independent of each other.
 - An app does not register every command in one place, because that place then holds every
   job the commands do. Each part of the app has a class that registers that part's commands.
 

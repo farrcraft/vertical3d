@@ -123,8 +123,15 @@ test before, so a gate that never ran its command line would have passed CI.
 
 ### Step 9 — The tree's rules apply to scripts
 
-Not started. `filelength.ts` reads `scripts/**/*.ts`, with tests exempt. One quote style and one
-form of file header across the gates. Example editor scripts are checked against `editor.d.ts`.
+**Done.** `filelength.ts` reads every tracked TypeScript file but tests and third-party code, and
+the size rule in Conventions.md names TypeScript. Every gate uses single quotes and opens with a
+`/** */` header. The fails-first harness and boundary were the exceptions.
+
+Three example scripts in `vertical3d/data/scripts/examples/` ship with the editor. The editor's
+type check reads them against `editor.d.ts`, and `the_example_scripts_run` in the editor suite
+runs each on a document holding a cube. That check read only the files directly in
+`data/scripts` before, so it saw no script at all. It now reads the whole directory, and checks
+each script in a scope of its own.
 
 ### Step 9a — An index read can miss
 

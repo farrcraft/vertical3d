@@ -1,9 +1,9 @@
 /**
- * Check that no C++ file but a test is longer than the limit in docs/contributing/Conventions.md,
- * under "Size".
+ * Check that no C++ or TypeScript file but a test is longer than the limit in
+ * docs/contributing/Conventions.md, under "Size".
  *
- * The script reads every tracked .h, .cpp and .cxx file but the vendored ones and those under a
- * tests directory, and reports each that has more lines than LIMIT. A line is a line of the file,
+ * The script reads every tracked .h, .cpp, .cxx and .ts file but the vendored ones and those under
+ * a tests directory, and reports each that has more lines than LIMIT. A line is a line of the file,
  * whatever it holds, so comments and blank lines count.
  *
  * Usage: node scripts/filelength.ts
@@ -19,9 +19,9 @@ import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 /** The most lines a file may have. */
 export const LIMIT = 1000;
 
-/** Whether a path is checked: a C++ file that is neither third-party code nor a test. */
+/** Whether a path is checked: C++ or TypeScript, and neither third-party code nor a test. */
 export function checked(file: string): boolean {
-    return /\.(h|cpp|cxx)$/.test(file) && !isTestPath(file) && !isThirdParty(file);
+    return /\.(h|cpp|cxx|ts)$/.test(file) && !isTestPath(file) && !isThirdParty(file);
 }
 
 /** How many lines a text has. A final line break ends the last line rather than starting one. */
@@ -37,7 +37,7 @@ function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
     options('usage: node scripts/filelength.ts', {});
     const findings: Finding[] = [];
-    for (const file of tracked('*.h', '*.cpp', '*.cxx').filter(checked)) {
+    for (const file of tracked('*.h', '*.cpp', '*.cxx', '*.ts').filter(checked)) {
         const lines = lineCount(readFileSync(path.join(ROOT, file), 'utf8'));
         if (lines > LIMIT) {
             findings.push({ path: file, line: null, rule: 'too-long', message: `${lines} lines, over the limit of ${LIMIT}` });

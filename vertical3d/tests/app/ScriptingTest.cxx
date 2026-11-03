@@ -15,11 +15,15 @@
 #include <vertical3d/src/script/Journal.h>
 #include <vertical3d/src/tool/Select.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
@@ -140,6 +144,33 @@ BOOST_FIXTURE_TEST_CASE(what_a_line_says_is_listed, Console) {
     BOOST_CHECK(typed("let n: number = 6; n * 7") == (Added{ { Journal::Kind::Typed, "let n: number = 6; n * 7" }, { Journal::Kind::Said, "42" } }));
     BOOST_CHECK(typed("enum E { A }").back() == (std::pair<Journal::Kind, std::string>{ Journal::Kind::Failed,
         "1:1 an enum cannot be erased, so a script cannot hold one. An object of constants can stand in for it" }));
+}
+
+/**
+ * Each example script the editor ships runs to its end on a document holding a cube, and runs at
+ * least one command. A refusal it catches is allowed, and one it does not catch fails the case.
+ **/
+BOOST_AUTO_TEST_CASE(the_example_scripts_run) {
+    std::vector<boost::filesystem::path> examples;
+    boost::system::error_code error;
+    for (boost::filesystem::directory_iterator it("data/scripts/examples", error), end; !error && it != end; it.increment(error)) {
+        if (it->path().extension() == ".ts") {
+            examples.push_back(it->path());
+        }
+    }
+    std::sort(examples.begin(), examples.end());
+    BOOST_REQUIRE(!examples.empty());
+    for (const boost::filesystem::path& example : examples) {
+        BOOST_TEST_CONTEXT(example.generic_string()) {
+            std::ifstream file(example.string(), std::ios::binary);
+            const std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            BOOST_REQUIRE(!text.empty());
+            Console console;
+            const Added added = console.typed(text);
+            BOOST_CHECK(std::none_of(added.begin(), added.end(), [](const auto& entry) { return entry.first == Journal::Kind::Failed; }));
+            BOOST_CHECK(std::any_of(added.begin(), added.end(), [](const auto& entry) { return entry.first == Journal::Kind::Done; }));
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

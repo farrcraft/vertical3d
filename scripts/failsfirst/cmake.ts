@@ -3,12 +3,12 @@
  * failed configure reports.
  */
 
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-import { isTestPath } from "../lib/tree.ts";
-import { git, show } from "./repo.ts";
-import type { ListedSource, SuiteEntry } from "./types.ts";
+import { isTestPath } from '../lib/tree.ts';
+import { git, show } from './repo.ts';
+import type { ListedSource, SuiteEntry } from './types.ts';
 
 const ADD_TEST = /v3d_add_test\s*\(\s*(\w+)([\s\S]*?)\)/g;
 
@@ -18,8 +18,8 @@ const LIST_TOKEN = /"([^"]+)"|([^\s()"]+)/g;
 // The file a v3d_add_test entry in <directory>/CMakeLists.txt names, relative to the repository
 // root, or null for an entry that depends on a variable other than CMAKE_CURRENT_SOURCE_DIR.
 export function sourceOf(directory: string, entry: string): string | null {
-    const spelled = entry.replace(/^\$\{CMAKE_CURRENT_SOURCE_DIR\}\//, "");
-    if (spelled.includes("$")) {
+    const spelled = entry.replace(/^\$\{CMAKE_CURRENT_SOURCE_DIR\}\//, '');
+    if (spelled.includes('$')) {
         return null;
     }
     return path.posix.normalize(path.posix.join(directory, spelled));
@@ -29,12 +29,12 @@ export function sourceOf(directory: string, entry: string): string | null {
 // of the tests/CMakeLists.txt that names it. A source two suites name appears once for each.
 export function listedSources(revision: string): ListedSource[] {
     const listed: ListedSource[] = [];
-    const files = git(["ls-tree", "-r", "-z", "--name-only", revision]).stdout.split("\0");
+    const files = git(['ls-tree', '-r', '-z', '--name-only', revision]).stdout.split('\0');
     for (const file of files) {
-        if (path.posix.basename(file) !== "CMakeLists.txt" || !isTestPath(file)) {
+        if (path.posix.basename(file) !== 'CMakeLists.txt' || !isTestPath(file)) {
             continue;
         }
-        const text = (show(revision, file) ?? "").replace(/#[^\n]*/g, "");
+        const text = (show(revision, file) ?? '').replace(/#[^\n]*/g, '');
         const directory = path.posix.dirname(file);
         for (const match of text.matchAll(ADD_TEST)) {
             const suite = match[1];
@@ -61,13 +61,13 @@ export function suiteMap(revision: string): Map<string, SuiteEntry> {
 // Removes a source from the v3d_add_test(<suite> ...) list in the worktree's
 // <directory>/CMakeLists.txt, whether the list quotes it or not. Returns whether it was there.
 export function dropSource(worktree: string, directory: string, suite: string, source: string): boolean {
-    const file = path.join(worktree, directory, "CMakeLists.txt");
+    const file = path.join(worktree, directory, 'CMakeLists.txt');
     if (!fs.existsSync(file)) {
         return false;
     }
-    const content = fs.readFileSync(file, "utf8");
+    const content = fs.readFileSync(file, 'utf8');
     // comments are blanked to spaces, so an offset in the copy is the same offset in the file
-    const uncommented = content.replace(/#[^\n]*/g, (comment) => " ".repeat(comment.length));
+    const uncommented = content.replace(/#[^\n]*/g, (comment) => ' '.repeat(comment.length));
     const call = new RegExp(`v3d_add_test\\s*\\(\\s*${escapeRegExp(suite)}\\b([\\s\\S]*?)\\)`).exec(uncommented);
     if (!call) {
         return false;
@@ -102,13 +102,13 @@ export function unknownCommands(output: string): UnknownCall[] {
 export function dropCall(text: string, line: number, command: string): string | null {
     let start = 0;
     for (let n = 1; n < line; n++) {
-        start = text.indexOf("\n", start) + 1;
+        start = text.indexOf('\n', start) + 1;
         if (start === 0) {
             return null;
         }
     }
-    const end = text.indexOf("\n", start);
-    const found = new RegExp(`\\b${escapeRegExp(command)}\\s*\\(`, "i").exec(text.slice(start, end === -1 ? undefined : end));
+    const end = text.indexOf('\n', start);
+    const found = new RegExp(`\\b${escapeRegExp(command)}\\s*\\(`, 'i').exec(text.slice(start, end === -1 ? undefined : end));
     if (!found) {
         return null;
     }
@@ -117,16 +117,16 @@ export function dropCall(text: string, line: number, command: string): string | 
     for (let i = start + found.index + found[0].length - 1; i < text.length; i++) {
         const c = text[i];
         if (quoted) {
-            if (c === "\\") {
+            if (c === '\\') {
                 i++;
-            } else if (c === "\"") {
+            } else if (c === '"') {
                 quoted = false;
             }
-        } else if (c === "\"") {
+        } else if (c === '"') {
             quoted = true;
-        } else if (c === "(") {
+        } else if (c === '(') {
             depth++;
-        } else if (c === ")" && --depth === 0) {
+        } else if (c === ')' && --depth === 0) {
             return text.slice(0, start + found.index) + text.slice(i + 1);
         }
     }
@@ -134,5 +134,5 @@ export function dropCall(text: string, line: number, command: string): string | 
 }
 
 function escapeRegExp(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

@@ -22,10 +22,10 @@ export type Case = {
 };
 
 // The result of a case, as the table prints it.
-export const FAILS = "fails";
-export const FAILS_TO_BUILD = "fails to build";
-export const PASSES = "PASSES - weak";
-export const PASSES_STATED = "passes, stated";
-export const PASSES_COVERS = "passes, covers the base";
-export const SKIPPED = "skipped";
-export const NOT_RUN = "not run";
+export const FAILS = 'fails';
+export const FAILS_TO_BUILD = 'fails to build';
+export const PASSES = 'PASSES - weak';
+export const PASSES_STATED = 'passes, stated';
+export const PASSES_COVERS = 'passes, covers the base';
+export const SKIPPED = 'skipped';
+export const NOT_RUN = 'not run';

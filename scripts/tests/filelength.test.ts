@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { LIMIT, checked, lineCount } from '../filelength.ts';
 
-test('filelength checks C++ sources and headers, but not tests or vendored files', () => {
+test('filelength checks C++ and TypeScript, but not tests or vendored files', () => {
     assert.equal(checked('vertical3d/src/Controller.cxx'), true);
     assert.equal(checked('api/ui/Immediate.h'), true);
     assert.equal(checked('api/ui/paint/ComponentRenderer.cpp'), true);
@@ -17,7 +17,12 @@ test('filelength checks C++ sources and headers, but not tests or vendored files
     assert.equal(checked('vertical3d/tests/store/SceneTest.cxx'), false);
     assert.equal(checked('vendor/libnoise/src/noise.cpp'), false);
     assert.equal(checked('demos/voxel/src/noise/noiseutils.cpp'), false);
-    assert.equal(checked('scripts/filelength.ts'), false);
+    assert.equal(checked('scripts/filelength.ts'), true);
+    assert.equal(checked('scripts/failsfirst/build.ts'), true);
+    assert.equal(checked('scripts/tests/prose.test.ts'), false);
+    assert.equal(checked('api/asset/tests/data/gltf_writer.ts'), false);
+    assert.equal(checked('scripts/build.cmd'), false);
+    assert.equal(checked('docs/README.md'), false);
 });
 
 test('filelength counts a line without a final line break, and not an empty one after one', () => {
