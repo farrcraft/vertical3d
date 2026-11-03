@@ -21,13 +21,6 @@
 
 namespace v3d::render::realtime::vulkan::frame {
 
-/**
- **/
-Presenter::Acquisition::Acquisition() noexcept :
-image(0),
-commands(VK_NULL_HANDLE) {
-}
-
 namespace {
 
 /**
@@ -44,6 +37,13 @@ VkSemaphore semaphore(VkDevice device) {
 }
 
 };  // namespace
+
+/**
+ **/
+Presenter::Acquisition::Acquisition() noexcept :
+image(0),
+commands(VK_NULL_HANDLE) {
+}
 
 /**
  **/
