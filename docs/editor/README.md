@@ -16,6 +16,7 @@ notices over the same canvas.
 | [Scene.md](Scene.md) | Work with meshes, the scene items that hold them, and the viewports that show the scene |
 | [PickingAndManipulators.md](PickingAndManipulators.md) | Change how clicks select things, and how handles move them |
 | [CommandsAndUndo.md](CommandsAndUndo.md) | Add a command, or make a change undoable |
+| [Scripting.md](Scripting.md) | Let a script run a command, or change what the console lists |
 | [Animation.md](Animation.md) | Key item properties, and play them back with the Animate menu |
 | [Rendering.md](Rendering.md) | Render the scene with moya, into the render view or as a batch of frames |
 | [Files.md](Files.md) | Change the project layout, the scene document format, importing, or the RIB export |
@@ -85,6 +86,7 @@ a higher one is in the wrong place.
 |---|---|---|
 | `src/scene/` | The model. `item/` holds the kinds of item and their parts: which parts of each mesh are selected, and the items made from a view. The root holds the scene, its evaluation, animation and render settings, and the items an imported scene becomes | nothing of the editor's |
 | `src/selection/` | What a select mask takes | `scene/` |
+| `src/script/` | What a script names: a command's parameters and arguments, the text forms of items and parts, and the journal of what was run | `scene/` |
 | `src/store/` | The project directory and the scene document it saves, with a codec for each kind of item | `scene/` |
 | `src/render/` | Rendering the scene with moya: the RIB export, a shot, live render and batches | `scene/` |
 | `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass | `scene/` |

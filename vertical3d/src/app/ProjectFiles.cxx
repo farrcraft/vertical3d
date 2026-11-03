@@ -33,7 +33,7 @@ ProjectFiles::ProjectFiles(const Context& context, WorkspaceSwitcher* workspaces
 void ProjectFiles::registerCommands(CommandTable* table) const {
     const Context& context = context_;
     table->press("project::load", [this]() { open(); });
-    table->press("project::save", [&context]() { context.document->save(); });
+    table->script("project::save", [&context]() { context.document->save(); });
     table->press("project::saveAs", [this]() { saveAs(); });
     table->press("project::chooser::pick", [&context]() { context.chooser->pick(); });
     table->press("project::chooser::accept", [&context]() { context.chooser->accept(); });

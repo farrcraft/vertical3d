@@ -23,15 +23,15 @@ RenderCommands::RenderCommands(const Context& context) :
  **/
 void RenderCommands::registerCommands(CommandTable* table) const {
     const Context& context = context_;
-    table->press("render::view", [&context]() {
+    table->script("render::view", [&context]() {
         context.atView("a render is seen", [&context](const v3d::type::camera::Profile&) {
             context.renderView->render(*context.document->scene(), context.shot());
             context.show(control::RenderView::KIND, true);
         });
     });
-    table->press("render::stop", [&context]() { context.renderView->stop(); });
-    table->press("render::settings", [&context]() { context.show(control::RenderSettingsEditor::KIND); });
-    table->press("render::batch", [&context]() {
+    table->script("render::stop", [&context]() { context.renderView->stop(); });
+    table->script("render::settings", [&context]() { context.show(control::RenderSettingsEditor::KIND); });
+    table->script("render::batch", [&context]() {
         context.atView("a batch with no scene camera is seen", [&context](const v3d::type::camera::Profile& view) {
             context.report(context.renderView->batch(context.document->scene().get(), view, context.document->project()->directory() / "renders"));
         });

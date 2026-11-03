@@ -388,7 +388,7 @@ boost::shared_ptr<item::Item> Scene::named(const std::string& name) const {
 /**
  **/
 std::string Scene::available(const std::string& wanted, const item::Item& item) const {
-    const std::string name = wanted.empty() ? item::name(item.kind()) : wanted;
+    std::string name = wanted.empty() ? item::name(item.kind()) : wanted;
     std::unordered_set<std::string> taken;
     for (const boost::shared_ptr<item::Item>& other : items_) {
         if (other.get() != &item) {
@@ -401,7 +401,7 @@ std::string Scene::available(const std::string& wanted, const item::Item& item) 
     std::string stem = name;
     const std::size_t dot = name.rfind('.');
     if (dot != std::string::npos && name.size() - dot > 3 &&
-        std::all_of(name.begin() + static_cast<std::ptrdiff_t>(dot) + 1, name.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+        std::all_of(name.begin() + static_cast<std::ptrdiff_t>(dot) + 1, name.end(), [](char letter) { return letter >= '0' && letter <= '9'; })) {
         stem = name.substr(0, dot);
     }
     for (std::size_t number = 1;; ++number) {
@@ -409,7 +409,9 @@ std::string Scene::available(const std::string& wanted, const item::Item& item) 
         if (digits.size() < 3) {
             digits.insert(0, 3 - digits.size(), '0');
         }
-        std::string candidate = stem + "." + digits;
+        std::string candidate = stem;
+        candidate += '.';
+        candidate += digits;
         if (!taken.contains(candidate)) {
             return candidate;
         }

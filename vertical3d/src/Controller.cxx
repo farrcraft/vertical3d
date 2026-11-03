@@ -251,6 +251,7 @@ void Controller::buildRenderer() {
     renderer_->transformTool(context_.transformTool);
     renderer_->selectTool(context_.selectTool);
     context_.notices = boost::make_shared<control::chrome::Notices>();
+    context_.journal = table_.journal();
     renderer_->notices(context_.notices);
 }
 

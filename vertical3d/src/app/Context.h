@@ -19,6 +19,9 @@
 #include <vertical3d/src/control/TimelineEditor.h>
 #include <vertical3d/src/control/Workspaces.h>
 #include <vertical3d/src/document/Document.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/script/Arguments.h>
+#include <vertical3d/src/script/Journal.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/CameraControl.h>
 #include <vertical3d/src/tool/Select.h>
@@ -46,7 +49,7 @@ namespace v3d::editor::app {
  **/
 struct Context final {
     /**
-     * Log what an operation said, and show it as a notice.
+     * Log what an operation said, show it as a notice, and list it in the journal.
      **/
     void report(const document::Outcome& outcome) const;
 
@@ -109,10 +112,21 @@ struct Context final {
     void atView(const std::string& what, const std::function<void(const v3d::type::camera::Profile&)>& run) const;
 
     /**
-     * Run an operation on the selected parts, when the select mask selects the parts it works
-     * on. Under any other mask it says so and does nothing.
+     * Run an operation on the parts a command's "parts" names, which are selected first, as
+     * script::select() does. When it names none, the operation runs on the selected parts if the
+     * select mask selects the kind it works on, and they fill the parameter. Under any other
+     * mask it says so and does nothing.
      **/
-    void masked(selection::SelectMask mask, const std::string& name, const std::function<document::Outcome()>& operation) const;
+    void masked(script::Arguments* arguments, selection::SelectMask mask, const std::string& name,
+        const std::function<document::Outcome()>& operation) const;
+
+    /**
+     * The items a command's parameter names, or the selected items when it names none, which
+     * then fill it. A name no item has is refused.
+     * @param what what the command does, for the refusal
+     * @return the items, or nothing when one was refused
+     **/
+    std::optional<scene::Items> items(script::Arguments* arguments, std::string_view parameter, const std::string& what) const;
 
     /**
      * The camera a render sees through: the one selected scene camera, or the active view.
@@ -139,6 +153,8 @@ struct Context final {
     boost::shared_ptr<view::AreaViews> views;
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<control::chrome::Notices> notices;
+    // what was run and what was said, which the console lists
+    boost::shared_ptr<script::Journal> journal;
     boost::shared_ptr<tool::CameraControl> cameraTool;
     boost::shared_ptr<tool::Select> selectTool;
     boost::shared_ptr<tool::Transform> transformTool;

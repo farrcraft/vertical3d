@@ -144,10 +144,14 @@ The table registers a handler in one of three ways:
 - `add(name, handler)` registers a handler that receives the whole event and is not followed
   by the read back below. The area and workspace commands use it, and give the views their
   regions again instead.
+- `script(name, parameters, handler)` registers a command a script can run too. It runs on a
+  press, as `press()` does, and its handler fills each parameter a script left out from the
+  context. `script(name, handler)` registers one that takes nothing. The journal lists every
+  run of one, as [Scripting.md](Scripting.md) describes.
 
-A command registered with `press()` or `hold()` is followed by `syncUi()`. That sets the check
-marks on menu items and toolbar toggles from the editor's state: the active view's show flags,
-the select mask and the transform mode.
+A command registered with `press()`, `hold()` or `script()` is followed by `syncUi()`. That
+sets the check marks on menu items and toolbar toggles from the editor's state: the active
+view's show flags, the select mask and the transform mode.
 
 **How a command arrives.** Three sources produce the same `event::Event`, so all three reach
 the same handler:
@@ -194,8 +198,10 @@ Mouse motion and window resizes reach the editor as `event::kind::MouseMotion` a
 1. If it changes the document, add an operation to `Document` that applies itself, records
    itself and returns an `Outcome`.
 2. Register a handler in the `registerCommands()` of the part's class in `src/app/`, with
-   `press()` or `hold()`. A handler that runs an operation passes it what it acts on, and
-   reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
+   `script()` when a script should be able to run it, and `press()` or `hold()` otherwise. A
+   command that acts on items, parts or a frame declares a parameter for each, and fills it from
+   the context when it is left out. A handler that runs an operation passes it what it acts on,
+   and reports its `Outcome`. `Context::report()` logs the message and shows it as a notice, and
    `Context::refuse()` does the same for a request the handler turns down itself. A command for
    a part with no class yet gets a class of its own.
 3. Bind it in `data/mappings.json`, add it to a menu or toolbar in `data/vgui.json`, or both,

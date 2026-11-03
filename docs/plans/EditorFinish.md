@@ -385,6 +385,14 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   it, as `Cube.001` follows `Cube`, and one with no name is called by its kind. A rename is made
   unique when its edit ends. The scene suite covers the numbering, and the properties editor
   suite a rename that ends on a taken name.
+- Done: a command a script can run is registered through `CommandTable::script()` with its
+  parameters, and `CommandTable::run()` runs it as a script does. Set Key and Group take their
+  items, Set Key its frame, Auto Key its state, and the modelling operations their parts, each
+  filled from the editor's state when left out. The edit, playback and render commands, the
+  select masks, the transform modes and Save can be run. Items are named by name, and parts as
+  `Cube.f[0:3]`. `script::Journal` lists each command run as the line that runs it again, then
+  each notice it posted. The arguments, text and command table suites cover the checks, the
+  fills, the forms, the selection of named parts and the journal's lines.
 
 ### Step 14 — The render view and the render settings
 

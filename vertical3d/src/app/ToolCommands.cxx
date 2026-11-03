@@ -26,7 +26,7 @@ ToolCommands::ToolCommands(const Context& context) :
  **/
 void ToolCommands::registerCommands(CommandTable* table) const {
     for (const char* mask : { "object", "vertex", "edge", "face", "mesh", "light", "camera", "curve", "handle" }) {
-        table->press(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
+        table->script(std::string("select::mask::") + mask, [this, mask]() { selectMask(mask); });
     }
 
     // the Camera Manipulators menu latches a move, so a drag with no modifier drives the
@@ -35,7 +35,7 @@ void ToolCommands::registerCommands(CommandTable* table) const {
         table->press(std::string("camera::") + move, [this, move]() { context_.cameraTool->latch(move); });
     }
     for (const char* mode : { "select", "translate", "rotate", "scale" }) {
-        table->press(std::string("transform::") + mode, [this, mode]() { transformMode(mode); });
+        table->script(std::string("transform::") + mode, [this, mode]() { transformMode(mode); });
     }
 
     // these are held: the modifier going down chooses what a drag of the primary button

@@ -10,6 +10,10 @@
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Shot.h>
+#include <vertical3d/src/scene/Scene.h>
+#include <vertical3d/src/script/Arguments.h>
+#include <vertical3d/src/script/Journal.h>
+#include <vertical3d/src/script/Text.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/ViewPort.h>
@@ -37,6 +41,9 @@ void Context::report(const document::Outcome& outcome) const {
         logger->get()->info("{}", outcome.message);
         if (notices) {
             notices->post({ .text = outcome.message, .done = outcome.done, .undoable = outcome.undoable });
+        }
+        if (journal) {
+            journal->add(outcome.done ? script::Journal::Kind::Done : script::Journal::Kind::Refused, outcome.message);
         }
     }
 }
@@ -143,12 +150,35 @@ void Context::atView(const std::string& what, const std::function<void(const v3d
 
 /**
  **/
-void Context::masked(selection::SelectMask mask, const std::string& name, const std::function<document::Outcome()>& operation) const {
-    if (selectTool->mask() != mask) {
-        refuse(name + " needs the " + selectMaskName(mask) + " select mask");
-        return;
+void Context::masked(script::Arguments* arguments, selection::SelectMask mask, const std::string& name,
+    const std::function<document::Outcome()>& operation) const {
+    const boost::shared_ptr<scene::Scene> scene = document->scene();
+    if (arguments->has("parts")) {
+        if (const std::optional<std::string> problem = script::select(scene.get(), arguments->names("parts", {}))) {
+            refuse(name + ": " + *problem);
+            return;
+        }
+    } else {
+        if (selectTool->mask() != mask) {
+            refuse(name + " needs the " + selectMaskName(mask) + " select mask");
+            return;
+        }
+        arguments->names("parts", [&scene]() { return script::selectedParts(*scene, scene->selection()); });
     }
     report(operation());
+}
+
+/**
+ **/
+std::optional<scene::Items> Context::items(script::Arguments* arguments, std::string_view parameter, const std::string& what) const {
+    const boost::shared_ptr<scene::Scene> scene = document->scene();
+    scene::Items found;
+    const std::vector<std::string> named = arguments->names(parameter, [&scene]() { return script::names(scene->selection()); });
+    if (const std::optional<std::string> problem = script::resolve(*scene, named, &found)) {
+        refuse(what + ": " + *problem);
+        return std::nullopt;
+    }
+    return found;
 }
 
 /**
