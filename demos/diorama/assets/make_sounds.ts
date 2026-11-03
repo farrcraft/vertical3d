@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const RATE = 22050;
 const SECONDS = 4;
-const CROSSFADE = RATE / 4;
+// a quarter second, in whole samples
+const CROSSFADE = Math.floor(RATE / 4);
 const LEVEL = 0.35;
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -48,9 +49,13 @@ const loop = raw.subarray(0, length).map((sample, index) => {
         return sample;
     }
     const across = index / CROSSFADE;
-    return sample * across + (raw[length + index] ?? NaN) * (1 - across);
+    return sample * across + (raw[length + index] ?? 0) * (1 - across);
 });
 const peak = loop.reduce((most, sample) => Math.max(most, Math.abs(sample)), 0);
+// a peak that is not a positive number would scale every sample to silence
+if (!(peak > 0)) {
+    throw new Error(`the loop's peak is ${peak}, so the file would be silent`);
+}
 
 const data = Buffer.alloc(length * 2);
 loop.forEach((sample, index) => {
