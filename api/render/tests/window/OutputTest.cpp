@@ -6,7 +6,10 @@
 #include <api/render/realtime/WindowRenderer.h>
 #include <api/render/realtime/frame/Frame.h>
 #include <api/render/realtime/frame/Pass.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/window/Window.h>
+
+#include <cstdint>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -61,6 +64,30 @@ BOOST_AUTO_TEST_CASE(window_renderer_draws_a_second_window_test) {
     }
     // the renderer's own window goes on after the other is closed and destroyed
     windowed.renderer->renderFrame();
+    BOOST_TEST(windowed.silent());
+}
+
+/**
+ * A pass on another window that tests depth is given a depth buffer of that window's own, and
+ * the frames that draw it raise no validation message.
+ **/
+BOOST_AUTO_TEST_CASE(window_renderer_gives_another_window_depth_test) {
+    const v3d::test::Windowed windowed;
+    const Second second(windowed);
+    const boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output = windowed.renderer->open(second.window);
+    BOOST_REQUIRE(output);
+    BOOST_CHECK(!output->depth());
+    for (int frame = 0; frame < 3; frame++) {
+        output->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass)->depth(true);
+        BOOST_REQUIRE(output->frame()->swapchainDepth());
+        windowed.renderer->renderFrame();
+    }
+    const boost::shared_ptr<v3d::render::realtime::vulkan::frame::DepthBuffer> depth = output->depth();
+    BOOST_REQUIRE(depth);
+    BOOST_CHECK(depth->valid());
+    BOOST_CHECK_EQUAL(depth->extent().width, static_cast<std::uint32_t>(second.window->width()));
+    BOOST_CHECK_EQUAL(depth->extent().height, static_cast<std::uint32_t>(second.window->height()));
+    windowed.renderer->close(output);
     BOOST_TEST(windowed.silent());
 }
 

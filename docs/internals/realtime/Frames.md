@@ -101,7 +101,9 @@ Background: [ADR-0155](../../adr/0155-rendering-one-device-presents-to-every-win
    context's depth buffer if any pass on the swapchain tests depth.
 4. `FrameUniforms::begin(ring->frame())` starts the frame's set 0 slots.
 5. `frame::Recorder::record()` records every pass. Then each other window that gave the frame an
-   image has its own frame recorded into that image, with no depth buffer.
+   image has its own frame recorded into that image. An `Output` keeps a depth buffer of its own,
+   made when a pass of its frame first tests depth and replaced through the ring when the
+   swapchain's extent changes.
 6. If `capture()` named a file, `Capture::record()` copies the image, which the recorder left in
    `PRESENT_SRC_KHR`. A chain that is not `copyable()` logs an error and drops the request
    instead, since `Capture` throws for it.

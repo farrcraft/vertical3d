@@ -95,6 +95,12 @@ boost::shared_ptr<v3d::window::Window> WindowRenderer::Output::window() const {
 
 /**
  **/
+boost::shared_ptr<vulkan::frame::DepthBuffer> WindowRenderer::Output::depth() const {
+    return depth_;
+}
+
+/**
+ **/
 boost::shared_ptr<WindowRenderer::Output> WindowRenderer::open(const boost::shared_ptr<v3d::window::Window>& window) {
     if (!context_) {
         return nullptr;
@@ -328,13 +334,28 @@ void WindowRenderer::recordOutputs(const vulkan::frame::Presenter::Acquisition& 
         if (opened == outputs_.end()) {
             continue;
         }
+        Output& output = **opened;
         const vulkan::frame::Swapchain& chain = *taken.joined->swapchain();
         frame::Recorder::Target target;
         target.image = chain.images()[taken.image];
         target.view = chain.views()[taken.image];
         target.extent = chain.extent();
         target.format = chain.format();
-        frame::Recorder::record(acquisition.commands, *(*opened)->frame_, target, *context_->resources(), uniforms,
+        if (output.frame_->swapchainDepth()) {
+            const VkExtent2D& had = output.depth_ ? output.depth_->extent() : VkExtent2D{ 0, 0 };
+            if (had.width != target.extent.width || had.height != target.extent.height) {
+                // a frame in flight may still be testing against the old one
+                const boost::shared_ptr<vulkan::frame::DepthBuffer> outgrown = output.depth_;
+                output.depth_ = boost::make_shared<vulkan::frame::DepthBuffer>(context_->device(), target.extent.width, target.extent.height);
+                context_->ring()->retire([outgrown]() {});
+            }
+            if (output.depth_->valid()) {
+                target.depthImage = output.depth_->image();
+                target.depthView = output.depth_->view();
+                target.depthFormat = output.depth_->format();
+            }
+        }
+        frame::Recorder::record(acquisition.commands, *output.frame_, target, *context_->resources(), uniforms,
             &context_->ring()->timings());
     }
 }

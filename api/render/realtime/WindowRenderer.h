@@ -9,6 +9,7 @@
 #include <api/render/realtime/frame/Present.h>
 #include <api/render/realtime/frame/Recorder.h>
 #include <api/render/realtime/vulkan/frame/Capture.h>
+#include <api/render/realtime/vulkan/frame/DepthBuffer.h>
 #include <api/render/realtime/vulkan/frame/FrameUniforms.h>
 #include <api/render/realtime/vulkan/frame/Presenter.h>
 #include <api/render/realtime/vulkan/memory/Allocator.h>
@@ -32,8 +33,8 @@ namespace v3d::render::realtime {
  *
  * It can draw to other windows too, each opened with open(). Every window is drawn by the one
  * device, so anything uploaded can be drawn in any of them. Each window has a frame of its own,
- * recorded and presented in the same renderFrame() as the renderer's own window. A window opened
- * this way has no depth buffer, so its passes test no depth.
+ * recorded and presented in the same renderFrame() as the renderer's own window, and a depth
+ * buffer of its own, made the first frame one of its passes tests depth.
  **/
 class WindowRenderer final {
  public:
@@ -53,11 +54,19 @@ class WindowRenderer final {
          **/
         boost::shared_ptr<v3d::window::Window> window() const;
 
+        /**
+         * @return the depth buffer the window's passes test against, the size of its swapchain,
+         *         or null before one of them has tested depth
+         **/
+        boost::shared_ptr<vulkan::frame::DepthBuffer> depth() const;
+
      private:
         friend class WindowRenderer;
 
         boost::shared_ptr<WindowContext::Attached> attached_;
         boost::shared_ptr<frame::Frame> frame_;
+        // made the first frame a pass tests depth, and again at each new size of the swapchain
+        boost::shared_ptr<vulkan::frame::DepthBuffer> depth_;
     };
 
     /**

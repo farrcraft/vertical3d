@@ -261,7 +261,9 @@ renderer_->close(output);                              // before the window is d
   glyph page made for one can be drawn in any of them. The other window takes the renderer's
   colour format.
 - **Every window is presented in the same frame.** The slowest window paces them all.
-- **Another window has no depth buffer.** Its passes test no depth.
+- **Another window has a depth buffer of its own,** made the first frame one of its passes tests
+  depth and made again whenever its swapchain changes size. `Output::depth()` returns it, or null
+  before a pass has tested depth.
 - **`open()` returns null** before `initialize()`, and when the device cannot present to the
   window or its surface does not offer the renderer's format.
 - **Close a window before it is destroyed.** `close()` waits for the device. `shutdown()` closes
