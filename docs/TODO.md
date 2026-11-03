@@ -19,6 +19,20 @@ up. None waits for a game, a scene or a second caller to need it first.
 An open plan or roadmap may order entries from here. The entry stays here until the work lands,
 and its section names the plan or roadmap that orders it.
 
+## Review gates
+
+[] **No linter or formatter reads the tree's TypeScript.** The type check catches wrong types and
+unused code, and the gates' tests catch wrong behaviour. Style, such as quotes and the form of
+a header, is kept by hand. Choosing a linter or a formatter is a decision of its own, and
+whether `typescript-eslint` supports TypeScript 7 bears on it.
+
+- Background: [ScriptTooling](plans/completed/ScriptTooling.md#outcome).
+
+[] **Nothing holds a TypeScript function to 100 lines.** clang-tidy checks the rule for C++, and
+no tool in the tree measures a TypeScript function.
+
+- Background: [ScriptTooling](plans/completed/ScriptTooling.md#outcome).
+
 ## Lit scenes
 
 [] **`lighting::fitShadow` covers each caster's position and a margin, not its extent or

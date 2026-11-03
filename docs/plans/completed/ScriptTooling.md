@@ -155,11 +155,37 @@ documents that state a rule still name the gate that checks it, since the rule l
 
 ### Step 11 — Close the plan
 
-Not started.
+**Done.** The open questions moved to TODO.md.
 
-## Open questions
+## Outcome
 
-- Whether to add a linter or a formatter. Each is a separate decision, and the support of
-  `typescript-eslint` for TypeScript 7 is not settled.
-- Whether a function-length rule for TypeScript is worth a gate, since no tool in the tree
-  measures one.
+Closed 2026-11-03. The review gates are type-checked, split by job onto shared modules, and
+tested rule by rule, and a hand mutation of each rule fails a test. One page describes them.
+
+**Delivered:**
+
+- A `package.json` of exact development tools, the type check in CI, and a gate that keeps npm
+  to pinned tools and no script to a runtime package (ADR-0158).
+- `scripts/lib/`: one way to run git, read a change, list the tree, read options and report.
+- failsfirst, prose and linkrule split into modules, each under 1000 lines, with tests for each
+  module. No gate's output changed over the comparisons each step ran.
+- One output format and an `::error::` line for every gate, and a test that starts every gate.
+- The tree's size rule and `noUncheckedIndexedAccess` over all of its TypeScript.
+- Three editor example scripts, type-checked and run by the editor suite.
+- `docs/contributing/Gates.md`.
+
+**Different from the plan:**
+
+- The work found seven defects outside its scope, each fixed in its own commit or step:
+  - the npm gate read an import inside a string;
+  - linkrule never reported a suite that named the test framework;
+  - failsfirst printed an NTSTATUS as a negative number;
+  - five gates had no test that they run at all;
+  - the editor's type check read no script;
+  - `Presenter.cxx` broke the file-local rule;
+  - `well.wav` was silent.
+- Step 3 did most of step 8's plumbing, so step 8 became the output format and the test files.
+- `noUncheckedIndexedAccess` was a step of its own, after the splits, so each read was fixed once.
+
+**Left open:** two entries in TODO.md, under Review gates. There is no linter or formatter for
+the TypeScript, and no check of a TypeScript function's length.
