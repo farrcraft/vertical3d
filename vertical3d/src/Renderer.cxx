@@ -39,6 +39,7 @@
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaFrame.h>
+#include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ConstructionPlane.h>
 #include <vertical3d/src/view/ShadedPass.h>
@@ -76,17 +77,7 @@ Renderer::Renderer(const boost::shared_ptr<v3d::window::Window>& window,
     engine_.initialize(window);
     engine_.clearColour(background_);
 
-    v3d::ui::shell::Screen::Options options;
-    options.size = fontSize;
-    options.immediate = true;
-    options.dress = [](v3d::ui::paint::Dressing* style, float size) {
-        style->lineHeight = size * lineHeightScale;
-        style->padding = size * paddingScale;
-        style->barHeight = size * barHeightScale;
-        style->panelPadding = size * panelPaddingScale;
-        style->iconSize = size * iconScale;
-    };
-    shell_->present(&engine_, options);
+    shell_->present(&engine_, screenOptions());
     screen_ = shell_->screen();
 
     shaded_ = boost::make_shared<view::ShadedPass>(engine_.context());
@@ -102,23 +93,51 @@ Renderer::~Renderer() {
 
 /**
  **/
+v3d::ui::shell::Screen::Options Renderer::screenOptions() {
+    v3d::ui::shell::Screen::Options options;
+    options.size = fontSize;
+    options.immediate = true;
+    options.dress = [](v3d::ui::paint::Dressing* style, float size) {
+        style->lineHeight = size * lineHeightScale;
+        style->padding = size * paddingScale;
+        style->barHeight = size * barHeightScale;
+        style->panelPadding = size * panelPaddingScale;
+        style->iconSize = size * iconScale;
+    };
+    return options;
+}
+
+/**
+ **/
 void Renderer::opened(const Opened& draw) {
     opened_ = draw;
 }
 
 /**
  **/
-bool Renderer::open(const boost::shared_ptr<v3d::window::Window>& window) {
+bool Renderer::open(const boost::shared_ptr<v3d::window::Window>& window, const Shown& shown) {
     const boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output = engine_.open(window);
     if (!output) {
         return false;
     }
+    v3d::ui::shell::Screen::Options options = screenOptions();
+    options.statistics = false;
+    options.window = window;
+    options.text = screen_->text();
     const boost::shared_ptr<Other> other = boost::make_shared<Other>();
     other->window = window;
     other->output = output;
-    other->layer = boost::make_shared<v3d::ui::Immediate>(screen_->text(), screen_->size());
+    other->screen = boost::make_shared<v3d::ui::shell::Screen>(&engine_, assetManager_, logger_, options);
+    other->shown = shown;
     others_.push_back(other);
     return true;
+}
+
+/**
+ **/
+v3d::ui::shell::Screen* Renderer::screen(const boost::shared_ptr<v3d::window::Window>& window) const {
+    const auto found = std::ranges::find(others_, window, &Other::window);
+    return found != others_.end() ? (*found)->screen.get() : nullptr;
 }
 
 /**
@@ -134,32 +153,44 @@ void Renderer::close(const boost::shared_ptr<v3d::window::Window>& window) {
 
 /**
  **/
+void Renderer::drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen,
+    const view::AreaLayout& layout, const control::chrome::Pointer& pointer) {
+    const v3d::ui::paint::Dressing& dress = std::as_const(screen.components()).dressing();
+    const float factor = screen.factor();
+    const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
+        .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
+        .radius = view::FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
+    const std::optional<control::chrome::Pointer::Drop> landing = pointer.drop();
+    drawFrame(canvas, layout, look, pointer.activeArea(), pointer.lit(),
+        landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
+}
+
+/**
+ **/
 void Renderer::drawOthers() {
-    v3d::ui::Immediate* main = screen_->immediate();
-    const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
     for (const boost::shared_ptr<Other>& other : others_) {
-        const glm::uvec2 size(static_cast<unsigned int>(std::max(0, other->window->width())),
-            static_cast<unsigned int>(std::max(0, other->window->height())));
-        if (size.x == 0 || size.y == 0) {
+        v3d::ui::shell::Screen& screen = *other->screen;
+        const Shown& shown = other->shown;
+        // the window follows the ui's scale and the monitor's, as the editor's own does
+        screen.scale(screen_->scale());
+        screen.display(screen_->display());
+        if (!screen.begin(shown.ui.get())) {
             continue;
         }
-        if (other->canvas.width() != size.x || other->canvas.height() != size.y) {
-            other->canvas.resize(size);
-        }
-        other->canvas.clear();
-        // the layer follows the main one's scale, theme and clock, so both windows look alike
-        other->layer->scale(screen_->factor());
-        other->layer->dressing() = main->dressing();
-        other->layer->clock(screen_->clock());
+        v3d::render::realtime::canvas::Canvas& canvas = screen.canvas();
         if (opened_) {
-            opened_(other->layer.get(), &other->canvas, other->window->id());
+            opened_(screen.immediate(), &canvas, other->window->id());
         }
+        if (shown.views && shown.pointer) {
+            drawAreaFrame(&canvas, screen, *shown.views->layout(), *shown.pointer);
+        }
+        screen.draw(shown.ui.get(), {});
         const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
             other->output->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
-        pass->clearColour(dress.panel);
+        pass->clearColour(std::as_const(screen.components()).dressing().gap);
         pass->depth(false);
-        if (!other->canvas.empty()) {
-            engine_.quads()->submit(other->canvas, pass.get());
+        if (!canvas.empty()) {
+            engine_.quads()->submit(canvas, pass.get());
         }
     }
 }
@@ -441,14 +472,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::frame::Fram
     }
     // the frame around the areas goes first, so a menu dropped over it covers it
     if (views_ && pointer_) {
-        const v3d::ui::paint::Dressing& dress = std::as_const(screen_->components()).dressing();
-        const float factor = screen_->factor();
-        const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
-            .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
-            .radius = view::FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
-        const std::optional<control::chrome::Pointer::Drop> landing = pointer_->drop();
-        drawFrame(&canvas, *views_->layout(), look, pointer_->activeArea(), pointer_->lit(),
-            landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
+        drawAreaFrame(&canvas, *screen_, *views_->layout(), *pointer_);
     }
     drawNotice(&canvas);
     drawDividerHint(&canvas);

@@ -75,12 +75,10 @@ To show an editor, Render and Settings choose the first area's tab that holds on
 holds one, Render opens a window of its own showing a render view, and Settings adds one as a tab
 of the active area. Render adds a tab too when no window can be opened.
 
-**The render's window** is a second window of the platform's, 800 by 600 at first, titled
-Vertical|3D - Render View. The render view fills it, drawn in the editor's theme and at its
-scale. It has no header, so it cannot be split or hold tabs. Render brings the render up to date
-in it while it is open, as in an area. Its close button closes it and leaves the render running.
-`Controller::openWindow()` opens it through `Engine::addWindow()` and `Renderer::open()`, and it is
-drawn by the editor's device in the same frames as the editor's own window.
+**The render's window** is a second window of the platform's, 800 by 600 at first, holding one
+area that shows the render view. It is a window of areas as [Scene.md](Scene.md#other-windows)
+describes, so it can be split and hold tabs. Render brings the render up to date in it while it
+is open, as in an area. Its close button closes it and leaves the render running.
 
 ## The render view
 

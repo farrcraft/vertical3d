@@ -108,8 +108,10 @@ class AreaLayout final {
 
     /**
      * @param logger
+     * @param first the first id its areas and editors are given. Commands carry those ids, so
+     *        the layouts of different windows start far enough apart never to give out the same
      **/
-    explicit AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger);
+    explicit AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t first = 1);
 
     /**
      * Read a layout: an object with a root node and an optional name.

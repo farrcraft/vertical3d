@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -60,6 +61,46 @@ std::size_t Context::areaOf(const v3d::event::Event& event) const {
         return layout->find(static_cast<std::size_t>(std::get<int>(*data)));
     }
     return pointer ? pointer->activeArea() : layout->areas().size();
+}
+
+/**
+ **/
+Context::Placed Context::placeOf(const v3d::event::Event& event) const {
+    const boost::optional<v3d::event::EventData> data = event.data();
+    if (data && std::holds_alternative<int>(*data)) {
+        const std::size_t id = static_cast<std::size_t>(std::get<int>(*data));
+        for (const boost::shared_ptr<view::AreaLayout>& other : others) {
+            const std::size_t found = other->find(id);
+            if (found < other->areas().size()) {
+                return { .layout = other, .area = found, .main = false };
+            }
+        }
+        return { .layout = layout, .area = layout->find(id), .main = true };
+    }
+    return { .layout = layout, .area = pointer ? pointer->activeArea() : layout->areas().size(), .main = true };
+}
+
+/**
+ **/
+std::optional<Context::Placed> Context::editorOf(std::size_t editor) const {
+    const auto in = [editor](const boost::shared_ptr<view::AreaLayout>& held, bool main) -> std::optional<Placed> {
+        for (std::size_t area = 0; area < held->areas().size(); area++) {
+            const std::vector<view::AreaLayout::Editor>& editors = held->areas()[area].editors;
+            if (std::ranges::find(editors, editor, &view::AreaLayout::Editor::id) != editors.end()) {
+                return Placed{ .layout = held, .area = area, .main = main };
+            }
+        }
+        return std::nullopt;
+    };
+    if (const std::optional<Placed> found = in(layout, true)) {
+        return found;
+    }
+    for (const boost::shared_ptr<view::AreaLayout>& other : others) {
+        if (const std::optional<Placed> found = in(other, false)) {
+            return found;
+        }
+    }
+    return std::nullopt;
 }
 
 /**

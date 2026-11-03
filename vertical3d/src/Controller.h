@@ -250,17 +250,58 @@ class Controller final : public v3d::engine::Engine {
     bool shows(std::string_view kind) const;
 
     /**
-     * Show an editor of a kind in a window of its own: the window already open with one, or a
-     * new one.
+     * Show an editor of a kind in a window of its own: the first an opened window holds, or a
+     * new window holding it in one area.
      * @return whether it is shown
      **/
     bool openWindow(std::string_view kind);
 
     /**
-     * Draw the editor an opened window shows, filling the window, through its layer. The layer
-     * has the mouse while the cursor is in that window.
+     * Open a window beside the editor's own, its areas laid out as a layout says.
+     * @return whether it opened
+     **/
+    bool openWindow(const boost::json::object& layout, const glm::ivec2& size);
+
+    /**
+     * Close a window the editor opened.
+     **/
+    void closeWindow(std::uint32_t window);
+
+    /**
+     * @return each window the editor opened, as a workspace keeps it: its width, its height and
+     *         its layout
+     **/
+    boost::json::array keptWindows() const;
+
+    /**
+     * Close the windows the editor opened, and open those a workspace kept. Before the ui is
+     * built, they are held and opened once it is.
+     **/
+    void reopenWindows(const boost::json::array& windows);
+
+    /**
+     * Draw the panels of an opened window's areas, through its screen's layer.
      **/
     void drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window);
+
+    /**
+     * Draw the panel of each area of a layout that shows an editor other than a view, under its
+     * header. The layer has the mouse while the pointer gives the panels the cursor in the
+     * window it is in.
+     **/
+    void drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+        control::chrome::Pointer* pointer, std::uint32_t window);
+
+    /**
+     * Lay out each opened window's areas in it, and build their headers again where they
+     * changed.
+     **/
+    void syncOpened();
+
+    /**
+     * Show a divider as the pointer over one window says it is lit.
+     **/
+    static void shapePointer(v3d::window::Window* window, const control::chrome::Pointer& pointer);
 
     /**
      * @return whether a mouse event in a window belongs to the editor's own window
@@ -325,27 +366,41 @@ class Controller final : public v3d::engine::Engine {
     control::RenderView::Asked asked_ = control::RenderView::Asked::Nothing;
 
     /**
-     * A window the editor opened beside its own, and the editor it shows.
+     * A window the editor opened beside its own: its ui, its areas and their headers, and the
+     * pointer over them.
      **/
     struct Opened final {
         boost::shared_ptr<v3d::window::Window> window;
-        std::string kind;
-        std::size_t editor;  /**< the id the editor's widgets are kept apart by, past every area's **/
+        boost::shared_ptr<v3d::ui::Interface> ui;
+        boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
+        boost::shared_ptr<control::chrome::Area> chrome;
+        boost::shared_ptr<control::chrome::Pointer> pointer;
     };
     std::vector<Opened> opened_;
-    // the id the next opened window's editor takes
-    std::size_t nextOpened_ = OPENED_EDITORS;
+    // where the next opened window's layout starts giving out ids
+    std::size_t nextOpened_ = OPENED_IDS;
 
     /**
-     * Where the ids of opened windows' editors start, far past any an area's editor takes.
+     * How far apart each opened window's layout starts its ids, past every one the editor's own
+     * layout gives out.
      **/
-    static constexpr std::size_t OPENED_EDITORS = 1000000;
+    static constexpr std::size_t OPENED_IDS = 1000000;
 
     /**
      * The size an opened window starts at.
      **/
     static constexpr int OPENED_WIDTH = 800;
     static constexpr int OPENED_HEIGHT = 600;
+
+    /**
+     * The sides a kept window is opened again at, outside which it opens at its first size.
+     **/
+    static constexpr int MIN_OPENED = 64;
+    static constexpr int MAX_OPENED = 16384;
+
+    // the windows a workspace kept, held until there is a ui to open them in
+    boost::json::array pendingWindows_;
     // the workspaces, the project and the search, beside the menus
     boost::shared_ptr<control::chrome::TopBar> topBar_;
     boost::shared_ptr<tool::Router> tools_;

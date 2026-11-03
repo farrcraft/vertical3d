@@ -151,25 +151,41 @@ class Renderer final {
     void panels(const Panels& draw);
 
     /**
-     * Draws the panel a window opened beside the editor's own shows, into that window's
-     * canvas, through an immediate layer of its own.
+     * Draws the panels of a window opened beside the editor's own, into that window's canvas,
+     * through its screen's immediate layer.
      *
      * @param window the window's id, as Window::id() gives it
      **/
     typedef std::function<void(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window)> Opened;
 
     /**
-     * What draws each opened window's panel each frame, or empty for none.
+     * What draws each opened window's panels each frame, or empty for none.
      **/
     void opened(const Opened& draw);
 
     /**
-     * Draw to another window too, from the next frame. It is cleared to the theme's panel colour
-     * and drawn with the ui's text and dressing, at the ui's scale.
+     * What another window shows: the ui its headers are built in, its areas, and the pointer
+     * that says which area is active and which divider is lit.
+     **/
+    struct Shown final {
+        boost::shared_ptr<v3d::ui::Interface> ui;
+        boost::shared_ptr<view::AreaViews> views;
+        boost::shared_ptr<control::chrome::Pointer> pointer;
+    };
+
+    /**
+     * Draw to another window too, from the next frame, with a screen of its own that shares the
+     * ui's text, scale and dressing. Each frame its panels are drawn, then the frame around its
+     * areas, then its ui.
      *
      * @return whether the device can draw to the window
      **/
-    bool open(const boost::shared_ptr<v3d::window::Window>& window);
+    bool open(const boost::shared_ptr<v3d::window::Window>& window, const Shown& shown);
+
+    /**
+     * @return the screen a window open() opened draws with, or null for any other window
+     **/
+    v3d::ui::shell::Screen* screen(const boost::shared_ptr<v3d::window::Window>& window) const;
 
     /**
      * Stop drawing to a window open() opened, before it is destroyed.
@@ -445,20 +461,33 @@ class Renderer final {
     std::vector<std::string> viewPasses_;
 
     /**
-     * A window drawn beside the editor's own: what is drawn to it, and the canvas and immediate
-     * layer its panel draws into.
+     * A window drawn beside the editor's own: what is drawn to it, the screen it is drawn with,
+     * and what it shows.
      **/
     struct Other final {
         boost::shared_ptr<v3d::window::Window> window;
         boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output;
-        v3d::render::realtime::canvas::Canvas canvas;
-        boost::shared_ptr<v3d::ui::Immediate> layer;
+        boost::shared_ptr<v3d::ui::shell::Screen> screen;
+        Shown shown;
     };
 
     /**
-     * Draw each other window's panel into its canvas, and the canvas into its frame.
+     * Draw each other window's panels, the frame around its areas and its ui into its screen's
+     * canvas, and the canvas into its frame.
      **/
     void drawOthers();
+
+    /**
+     * @return how a screen of the editor's is built: its text size, an immediate layer, and the
+     *         dressing sized from the text
+     **/
+    static v3d::ui::shell::Screen::Options screenOptions();
+
+    /**
+     * Draw the frame around a layout's areas, as the theme dresses it at the screen's scale.
+     **/
+    static void drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen,
+        const view::AreaLayout& layout, const control::chrome::Pointer& pointer);
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;

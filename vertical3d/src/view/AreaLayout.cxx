@@ -54,8 +54,10 @@ const AreaLayout::Editor& AreaLayout::Area::editor() const {
 
 /**
  **/
-AreaLayout::AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger) :
-    logger_(logger) {
+AreaLayout::AreaLayout(const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t first) :
+    logger_(logger),
+    nextArea_(first),
+    nextEditor_(first) {
 }
 
 /**

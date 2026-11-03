@@ -128,8 +128,13 @@ void Controller::registerCommands() {
     table_.press("search::open", [this]() { openSearch(); });
     table_.press("search::run", [this]() { runSearch(); });
     table_.hold("view::drag", [this](const v3d::event::Event& event) {
-        if (context_.pointer) {
-            context_.pointer->button(event.state() == v3d::event::State::Pressed, clicks_);
+        // the press goes to the pointer over the window the cursor is in
+        const v3d::input::MouseState* held = mouse();
+        const std::uint32_t in = held != nullptr ? held->window() : 0;
+        const auto opened = std::ranges::find_if(opened_, [in](const Opened& each) { return each.window->id() == in; });
+        const boost::shared_ptr<control::chrome::Pointer> pointer = opened != opened_.end() ? opened->pointer : context_.pointer;
+        if (pointer) {
+            pointer->button(event.state() == v3d::event::State::Pressed, clicks_);
             syncPointerShape();
         }
     });
@@ -144,6 +149,8 @@ bool Controller::start() {
     }
     context_.logger = logger();
     context_.settings = settings();
+    context_.keptWindows = [this]() { return keptWindows(); };
+    context_.reopen = [this](const boost::json::array& windows) { reopenWindows(windows); };
     if (!buildDocument() || !workspaces_.start(document(view::AreaLayout::DOCUMENT)) || !buildViews()) {
         return false;
     }
@@ -161,6 +168,9 @@ bool Controller::start() {
     reportCommands();
 
     layoutViews(window()->width(), window()->height());
+    // the windows the first workspace keeps open once there is a ui to give them
+    const boost::json::array pending = std::exchange(pendingWindows_, boost::json::array());
+    reopenWindows(pending);
     syncUi();
     syncCaption();
     logger()->get()->info("{} with {} areas", context_.layout->name(), context_.layout->areas().size());
@@ -417,13 +427,12 @@ void Controller::syncCaption() {
 /**
  **/
 void Controller::syncPointerShape() {
-    const std::optional<view::AreaLayout::Divider> lit = context_.pointer ? context_.pointer->lit() : std::nullopt;
-    if (!lit) {
-        window()->pointer(v3d::window::Window::Pointer::Arrow);
-        return;
+    if (context_.pointer) {
+        shapePointer(window().get(), *context_.pointer);
     }
-    // a divider between stacked areas moves up and down
-    window()->pointer(lit->across ? v3d::window::Window::Pointer::Rows : v3d::window::Window::Pointer::Columns);
+    for (const Opened& opened : opened_) {
+        shapePointer(opened.window.get(), *opened.pointer);
+    }
 }
 
 /**
@@ -432,16 +441,43 @@ void Controller::areasChanged() {
     if (context_.pointer) {
         context_.pointer->place();
     }
+    for (const Opened& opened : opened_) {
+        opened.views->sync();
+        opened.pointer->place();
+    }
     syncPointerShape();
 }
 
 /**
  **/
 void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas) {
-    const boost::shared_ptr<control::chrome::Pointer>& pointer = context_.pointer;
+    drawAreas(layer, canvas, *context_.layout, context_.pointer.get(), window() ? window()->id() : 0);
+    // an outliner keeps its folds while any window shows it
+    std::vector<std::size_t> outliners;
+    const auto held = [&outliners](const view::AreaLayout& layout) {
+        for (const view::AreaLayout::Area& area : layout.areas()) {
+            for (const view::AreaLayout::Editor& editor : area.editors) {
+                if (editor.kind == control::Outliner::KIND) {
+                    outliners.push_back(editor.id);
+                }
+            }
+        }
+    };
+    held(*context_.layout);
+    for (const Opened& opened : opened_) {
+        held(*opened.layout);
+    }
+    outliner_.keep(outliners);
+}
+
+/**
+ **/
+void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, const view::AreaLayout& layout,
+    control::chrome::Pointer* pointer, std::uint32_t window) {
     v3d::ui::Immediate::Input input;
     const v3d::input::MouseState* held = mouse();
-    if (held != nullptr && pointer && pointer->panels() && ownWindow(held->window())) {
+    const bool here = held != nullptr && (held->window() == window || (held->window() == 0 && ownWindow(window)));
+    if (here && pointer != nullptr && pointer->panels()) {
         input.cursor = pointer->cursor();
         input.down = held->held("left");
         input.pressed = held->pressed("left");
@@ -467,9 +503,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         case tool::CameraControl::CAMERA_MODE_NONE:
             break;
     }
-    std::vector<std::size_t> outliners;
     control::RenderView::Asked asked = control::RenderView::Asked::Nothing;
-    for (const view::AreaLayout::Area& area : context_.layout->areas()) {
+    for (const view::AreaLayout::Area& area : layout.areas()) {
         const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
         const view::AreaLayout::Editor& editor = area.editor();
         if (region.z <= 0.0F || region.w <= 0.0F) {
@@ -477,7 +512,6 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         }
         if (editor.kind == control::Outliner::KIND) {
             outliner_.draw(layer, context_.document->scene().get(), editor.id, region, context_.selectTool->adding());
-            outliners.push_back(editor.id);
         } else if (editor.kind == control::PropertiesEditor::KIND) {
             properties_->draw(layer, context_.document->scene(), editor.id, region);
         } else if (editor.kind == control::TimelineEditor::KIND && context_.timeline) {
@@ -491,9 +525,8 @@ void Controller::drawPanels(v3d::ui::Immediate* layer, v3d::render::realtime::ca
         }
     }
     layer->end();
-    outliner_.keep(outliners);
     asked_ = std::max(asked_, asked);
-    if (pointer) {
+    if (pointer != nullptr) {
         pointer->settle();
     }
 }
@@ -630,6 +663,7 @@ bool Controller::render() {
     if (chrome_) {
         chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight(), context_.pointer ? context_.pointer->activeArea() : 0);
     }
+    syncOpened();
     renderer_->status(status());
     renderer_->draw();
     return true;
@@ -679,54 +713,146 @@ bool Controller::tick(unsigned int delta) {
  **/
 bool Controller::shows(std::string_view kind) const {
     return std::ranges::any_of(context_.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; }) ||
-        std::ranges::any_of(opened_, [kind](const Opened& each) { return each.kind == kind; });
+        std::ranges::any_of(opened_, [kind](const Opened& each) {
+            return std::ranges::any_of(each.layout->areas(), [kind](const view::AreaLayout::Area& area) { return area.editor().kind == kind; });
+        });
 }
 
 /**
  **/
 bool Controller::openWindow(std::string_view kind) {
-    const bool shown = std::ranges::any_of(opened_, [kind](const Opened& each) { return each.kind == kind; });
-    if (shown) {
-        return true;
+    for (const Opened& opened : opened_) {
+        const std::vector<view::AreaLayout::Area>& areas = opened.layout->areas();
+        for (std::size_t area = 0; area < areas.size(); area++) {
+            const auto found = std::ranges::find(areas[area].editors, kind, &view::AreaLayout::Editor::kind);
+            if (found != areas[area].editors.end()) {
+                opened.layout->choose(area, static_cast<std::size_t>(found - areas[area].editors.begin()));
+                return true;
+            }
+        }
     }
-    const boost::shared_ptr<v3d::window::Window> made = addWindow(glm::ivec2(OPENED_WIDTH, OPENED_HEIGHT));
-    if (!made) {
+    const boost::json::object layout{ { "root", boost::json::object{ { "editors", boost::json::array{ boost::json::object{ { "kind", kind } } } } } } };
+    return openWindow(layout, glm::ivec2(OPENED_WIDTH, OPENED_HEIGHT));
+}
+
+/**
+ **/
+bool Controller::openWindow(const boost::json::object& layout, const glm::ivec2& size) {
+    Opened opened;
+    opened.layout = boost::make_shared<view::AreaLayout>(logger(), nextOpened_);
+    if (!opened.layout->load(layout)) {
         return false;
     }
-    if (!renderer_->open(made)) {
-        removeWindow(made);
+    opened.window = addWindow(size);
+    if (!opened.window) {
         return false;
     }
-    const auto named = std::ranges::find(control::chrome::Area::kinds(), kind, &control::chrome::Area::Kind::kind);
-    made->caption("Vertical|3D - " + (named != control::chrome::Area::kinds().end() ? named->label : std::string(kind)));
-    opened_.push_back({ .window = made, .kind = std::string(kind), .editor = nextOpened_++ });
+    nextOpened_ += OPENED_IDS;
+    opened.layout->metrics(context_.layout->metrics());
+    // an opened window's areas show no viewport, so nothing makes one
+    opened.views = boost::make_shared<view::AreaViews>(opened.layout, view::AreaViews::Make());
+    opened.ui = boost::make_shared<v3d::ui::Interface>(events(), dispatcher(), logger());
+    opened.ui->shareThemes(*shell_.ui());
+    opened.chrome = boost::make_shared<control::chrome::Area>(opened.ui, std::string(),
+        [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); }, false);
+    const boost::shared_ptr<v3d::ui::input::Cursor> cursor = boost::make_shared<v3d::ui::input::Cursor>(opened.ui, dispatcher(), renderer_->type());
+    opened.pointer = boost::make_shared<control::chrome::Pointer>(cursor, opened.views, tools_, [](const boost::shared_ptr<view::ViewPort>&) {});
+    const boost::shared_ptr<control::chrome::Area> chrome = opened.chrome;
+    opened.pointer->tabs([chrome](const glm::vec2& point) { return chrome->tabAt(point); });
+    opened.pointer->controls([](const glm::vec2&) { return false; });
+    if (!renderer_->open(opened.window, { .ui = opened.ui, .views = opened.views, .pointer = opened.pointer })) {
+        removeWindow(opened.window);
+        return false;
+    }
+    opened.window->caption("Vertical|3D");
+    opened.pointer->resize(glm::vec4(0.0F, 0.0F, static_cast<float>(size.x), static_cast<float>(size.y)));
+    context_.others.push_back(opened.layout);
+    opened_.push_back(opened);
     return true;
+}
+
+/**
+ **/
+boost::json::array Controller::keptWindows() const {
+    boost::json::array kept;
+    for (const Opened& opened : opened_) {
+        kept.emplace_back(boost::json::object{ { "width", opened.window->width() }, { "height", opened.window->height() },
+            { "layout", opened.layout->save() } });
+    }
+    return kept;
+}
+
+/**
+ **/
+void Controller::reopenWindows(const boost::json::array& windows) {
+    if (!renderer_ || !chrome_) {
+        pendingWindows_ = windows;
+        return;
+    }
+    pendingWindows_.clear();
+    while (!opened_.empty()) {
+        closeWindow(opened_.back().window->id());
+    }
+    for (const boost::json::value& entry : windows) {
+        const boost::json::object* window = entry.if_object();
+        const boost::json::object* layout = window != nullptr ? v3d::asset::readObject(*window, "layout") : nullptr;
+        const std::optional<int> width = window != nullptr ? v3d::asset::readInt(*window, "width") : std::nullopt;
+        const std::optional<int> height = window != nullptr ? v3d::asset::readInt(*window, "height") : std::nullopt;
+        // a window too small to hold an area, or larger than any display, opens at its first size
+        const auto side = [](const std::optional<int>& kept, int first) {
+            return kept && *kept >= MIN_OPENED && *kept <= MAX_OPENED ? *kept : first;
+        };
+        if (layout == nullptr || !openWindow(*layout, glm::ivec2(side(width, OPENED_WIDTH), side(height, OPENED_HEIGHT)))) {
+            logger()->get()->warn("A workspace's window could not be opened again");
+        }
+    }
+}
+
+/**
+ **/
+void Controller::closeWindow(std::uint32_t window) {
+    const auto found = std::ranges::find_if(opened_, [window](const Opened& each) { return each.window->id() == window; });
+    if (found == opened_.end()) {
+        return;
+    }
+    const Opened closed = std::move(*found);
+    opened_.erase(found);
+    std::erase(context_.others, closed.layout);
+    renderer_->close(closed.window);
+    removeWindow(closed.window);
+}
+
+/**
+ **/
+void Controller::syncOpened() {
+    for (const Opened& opened : opened_) {
+        const glm::vec4 region(0.0F, 0.0F, static_cast<float>(opened.window->width()), static_cast<float>(opened.window->height()));
+        if (opened.layout->region() != region) {
+            opened.pointer->resize(region);
+        }
+        opened.chrome->sync(*opened.views, context_.selectTool->mask(), renderer_->barHeight(), opened.pointer->activeArea());
+    }
 }
 
 /**
  **/
 void Controller::drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window) {
     const auto found = std::ranges::find_if(opened_, [window](const Opened& each) { return each.window->id() == window; });
-    if (found == opened_.end()) {
+    if (found != opened_.end()) {
+        drawAreas(layer, canvas, *found->layout, found->pointer.get(), window);
+    }
+}
+
+/**
+ **/
+void Controller::shapePointer(v3d::window::Window* window, const control::chrome::Pointer& pointer) {
+    const std::optional<view::AreaLayout::Divider> lit = pointer.lit();
+    if (!lit) {
+        window->pointer(v3d::window::Window::Pointer::Arrow);
         return;
     }
-    v3d::ui::Immediate::Input input;
-    const v3d::input::MouseState* held = mouse();
-    if (held != nullptr && held->window() == window) {
-        input.cursor = held->position();
-        input.down = held->held("left");
-        input.pressed = held->pressed("left");
-        input.released = held->released("left");
-        input.wheel = held->wheel();
-    }
-    layer->begin(canvas, input);
-    const glm::vec4 region(0.0F, 0.0F, static_cast<float>(canvas->width()), static_cast<float>(canvas->height()));
-    if (found->kind == control::RenderView::KIND && context_.renderView) {
-        asked_ = std::max(asked_, context_.renderView->draw(layer, found->editor, region));
-    } else if (found->kind == control::RenderSettingsEditor::KIND && renderSettings_) {
-        renderSettings_->draw(layer, found->editor, region);
-    }
-    layer->end();
+    // a divider between stacked areas moves up and down
+    window->pointer(lit->across ? v3d::window::Window::Pointer::Rows : v3d::window::Window::Pointer::Columns);
 }
 
 /**
@@ -738,14 +864,7 @@ bool Controller::ownWindow(std::uint32_t window) const {
 /**
  **/
 void Controller::handleClose(const v3d::event::kind::WindowClose& event) {
-    const auto found = std::ranges::find_if(opened_, [&event](const Opened& each) { return each.window->id() == event.window(); });
-    if (found == opened_.end()) {
-        return;
-    }
-    const boost::shared_ptr<v3d::window::Window> window = found->window;
-    opened_.erase(found);
-    renderer_->close(window);
-    removeWindow(window);
+    closeWindow(event.window());
 }
 
 /**
@@ -774,6 +893,12 @@ void Controller::handleResize(const v3d::event::kind::WindowResize& event) {
 /**
  **/
 void Controller::handleMotion(const v3d::event::kind::MouseMotion& event) {
+    const auto opened = std::ranges::find_if(opened_, [&event](const Opened& each) { return each.window->id() == event.window(); });
+    if (opened != opened_.end()) {
+        opened->pointer->motion(event.position(), event.modifiers().ctrl);
+        syncPointerShape();
+        return;
+    }
     if (context_.pointer && ownWindow(event.window())) {
         context_.pointer->motion(event.position(), event.modifiers().ctrl);
         syncPointerShape();

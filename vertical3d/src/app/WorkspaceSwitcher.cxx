@@ -75,7 +75,7 @@ void WorkspaceSwitcher::registerCommands(CommandTable* table) {
         }
     });
     change("workspace::save", [this](const v3d::event::Event&) {
-        boost::json::object layout = context_->layout->save();
+        boost::json::object layout = arranged();
         layout["name"] = shown_;
         context_->workspaces->keep(layout);
         record();
@@ -88,6 +88,17 @@ void WorkspaceSwitcher::registerCommands(CommandTable* table) {
     });
     change("workspace::export", [this](const v3d::event::Event&) { exportShown(); });
     change("workspace::import", [this](const v3d::event::Event&) { importChosen(); });
+}
+
+/**
+ **/
+boost::json::object WorkspaceSwitcher::arranged() const {
+    boost::json::object layout = context_->layout->save();
+    const boost::json::array windows = context_->keptWindows ? context_->keptWindows() : boost::json::array();
+    if (!windows.empty()) {
+        layout["windows"] = windows;
+    }
+    return layout;
 }
 
 /**
@@ -135,6 +146,12 @@ bool WorkspaceSwitcher::show(const std::string& name) {
         return false;
     }
     shown_ = name;
+    // a workspace's windows come with it, and the last one's go
+    if (context_->reopen) {
+        const boost::json::object& shownLayout = own ? arranged->second : workspaces.all()[index];
+        const boost::json::array* windows = v3d::asset::readArray(shownLayout, "windows");
+        context_->reopen(windows != nullptr ? *windows : boost::json::array());
+    }
     if (context_->views) {
         context_->areasChanged();
     }
@@ -147,7 +164,7 @@ void WorkspaceSwitcher::record() {
     if (!context_->workspaces || !context_->layout || shown_.empty()) {
         return;
     }
-    context_->workspaces->remember({ .project = context_->projectKey(), .workspace = shown_ }, context_->layout->save());
+    context_->workspaces->remember({ .project = context_->projectKey(), .workspace = shown_ }, arranged());
     saveSettings();
 }
 
@@ -211,7 +228,7 @@ void WorkspaceSwitcher::step(int step) {
 void WorkspaceSwitcher::exportShown() {
     context_->chooser->open(v3d::ui::shell::FileChooser::Mode::Save, context_->document->project()->directory().parent_path(), { ".json" },
         [this](const boost::filesystem::path& chosen) {
-            boost::json::object layout = context_->layout->save();
+            boost::json::object layout = arranged();
             layout["name"] = shown_;
             boost::filesystem::path file = chosen;
             if (file.extension() != ".json") {

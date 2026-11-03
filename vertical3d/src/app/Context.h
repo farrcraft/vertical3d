@@ -29,9 +29,12 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
+#include <boost/json.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace v3d::editor::app {
@@ -61,6 +64,26 @@ struct Context final {
      * @return the area a command acts on: the one whose id it carries, or the active area
      **/
     std::size_t areaOf(const v3d::event::Event& event) const;
+
+    /**
+     * An area and the layout it is in.
+     **/
+    struct Placed final {
+        boost::shared_ptr<view::AreaLayout> layout;
+        std::size_t area = 0;   /**< an index into the layout's areas, or their count when there is none **/
+        bool main = true;       /**< whether the layout is the editor's own window's, whose areas can show viewports **/
+    };
+
+    /**
+     * @return the area a command acts on, in whichever window's layout holds the area whose id
+     *         it carries, or the editor's own window's active area when it carries none
+     **/
+    Placed placeOf(const v3d::event::Event& event) const;
+
+    /**
+     * @return the area and layout an editor is in, by its id, or nothing when no layout holds it
+     **/
+    std::optional<Placed> editorOf(std::size_t editor) const;
 
     /**
      * Show an editor of a kind: the first one an area holds. When no area holds one, it is shown
@@ -102,6 +125,8 @@ struct Context final {
     // the workspaces kept, and the layout of the one shown
     boost::shared_ptr<control::Workspaces> workspaces;
     boost::shared_ptr<view::AreaLayout> layout;
+    // the layouts of the windows the editor opened beside its own
+    std::vector<boost::shared_ptr<view::AreaLayout>> others;
     boost::shared_ptr<view::AreaViews> views;
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<control::chrome::Notices> notices;
@@ -120,6 +145,10 @@ struct Context final {
     // shows an editor of a kind in a window of its own, the one already open or a new one, and
     // says whether it could
     std::function<bool(std::string_view kind)> window;
+    // the windows the editor opened, as a workspace keeps them: each one's size and layout
+    std::function<boost::json::array()> keptWindows;
+    // closes the windows the editor opened, and opens those a workspace kept
+    std::function<void(const boost::json::array& windows)> reopen;
 };
 
 };  // namespace v3d::editor::app

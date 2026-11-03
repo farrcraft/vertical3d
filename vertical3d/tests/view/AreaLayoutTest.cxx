@@ -122,6 +122,18 @@ BOOST_FIXTURE_TEST_CASE(a_point_falls_in_the_area_under_it_and_a_gap_in_none, Qu
     BOOST_CHECK_EQUAL(layout.areaAt(2000.0F, 10.0F), 4U);
 }
 
+/**
+ * A layout gives its areas and editors ids from the first it is told, so two windows' layouts
+ * never give out the same one.
+ **/
+BOOST_AUTO_TEST_CASE(ids_start_where_the_layout_is_told) {
+    AreaLayout layout(logger(), 5000);
+    BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));
+    BOOST_REQUIRE_EQUAL(layout.areas().size(), 1U);
+    BOOST_CHECK_EQUAL(layout.areas()[0].id, 5000U);
+    BOOST_CHECK_EQUAL(layout.areas()[0].editor().id, 5000U);
+}
+
 BOOST_AUTO_TEST_CASE(one_area_needs_no_split) {
     AreaLayout layout(logger());
     BOOST_REQUIRE(layout.load(parse(R"({"root": )" + view("Perspective") + "}")));

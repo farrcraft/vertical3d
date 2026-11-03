@@ -70,6 +70,12 @@ class WorkspaceSwitcher final {
     static std::string nameOf(const boost::json::object& workspace);
 
     /**
+     * @return the workspace shown, as it is arranged: the editor's own window's layout, and under
+     *         "windows" each window the editor opened, with its size and layout
+     **/
+    boost::json::object arranged() const;
+
+    /**
      * Write the workspaces and the projects' records to the settings.
      **/
     void saveSettings();

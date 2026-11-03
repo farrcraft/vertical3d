@@ -3,11 +3,13 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/event/Event.h>
 #include <api/log/Logger.h>
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/view/AreaLayout.h>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -59,6 +61,15 @@ struct Shown {
     mutable int changes = 0;
 };
 
+/**
+ * @return an area command carrying an area's id, as a header's items do
+ **/
+v3d::event::Event carrying(int area) {
+    v3d::event::Event made("area::maximise");
+    made.data(area);
+    return made;
+}
+
 BOOST_AUTO_TEST_SUITE(context_test)
 
 /**
@@ -102,6 +113,44 @@ BOOST_AUTO_TEST_CASE(an_editor_not_windowed_becomes_a_tab) {
     shown.context.show("render-settings");
     BOOST_CHECK(shown.asked.empty());
     BOOST_CHECK(shown.kinds(0) == std::vector<std::string>({ "viewport", "render-settings" }));
+}
+
+/**
+ * A command carrying an area's id acts on the layout that holds it, which may be another
+ * window's, and one carrying none acts on the editor's own window.
+ **/
+BOOST_AUTO_TEST_CASE(a_command_finds_its_areas_window) {
+    Shown shown;
+    const boost::shared_ptr<AreaLayout> other = boost::make_shared<AreaLayout>(boost::make_shared<v3d::log::Logger>(), 5000);
+    BOOST_REQUIRE(other->load(boost::json::parse(R"({"root": {"editors": [{"kind": "render-view"}]}})").as_object()));
+    shown.context.others.push_back(other);
+
+    const v3d::editor::app::Context::Placed there = shown.context.placeOf(carrying(5000));
+    BOOST_CHECK(there.layout == other);
+    BOOST_CHECK_EQUAL(there.area, 0U);
+    BOOST_CHECK(!there.main);
+
+    const std::size_t first = shown.layout->areas()[1].id;
+    const v3d::editor::app::Context::Placed here = shown.context.placeOf(carrying(static_cast<int>(first)));
+    BOOST_CHECK(here.layout == shown.layout);
+    BOOST_CHECK_EQUAL(here.area, 1U);
+    BOOST_CHECK(here.main);
+
+    BOOST_CHECK(shown.context.placeOf(v3d::event::Event("area::maximise")).layout == shown.layout);
+}
+
+/**
+ * An editor is found by its id in whichever window's layout holds it.
+ **/
+BOOST_AUTO_TEST_CASE(an_editor_is_found_in_its_window) {
+    Shown shown;
+    const boost::shared_ptr<AreaLayout> other = boost::make_shared<AreaLayout>(boost::make_shared<v3d::log::Logger>(), 5000);
+    BOOST_REQUIRE(other->load(boost::json::parse(R"({"root": {"editors": [{"kind": "render-view"}]}})").as_object()));
+    shown.context.others.push_back(other);
+
+    const std::optional<v3d::editor::app::Context::Placed> found = shown.context.editorOf(5000);
+    BOOST_CHECK(found && found->layout == other);
+    BOOST_CHECK(!shown.context.editorOf(4999));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

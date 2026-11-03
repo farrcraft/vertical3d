@@ -382,8 +382,9 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
 
 ### Step 14 — The render view and the render settings
 
-**Open.** ADR-0154 decided where a render is shown, after weighing an editor in an area only and
-the floating panel. The editors are in. The window is not.
+**Closed.** ADR-0154 decided where a render is shown, after weighing an editor in an area only and
+the floating panel. ADR-0155 and ADR-0156 decided how a second window is drawn and how its ui is
+held.
 
 - Done: the render view and the render settings are kinds of editor an area can hold, and
   Shift+F11 and Shift+F10 show them. The floating panels are gone. The settings take each
@@ -397,10 +398,13 @@ the floating panel. The editors are in. The window is not.
   the render view when no area holds one, and its close button closes it. The output, engine,
   mouse and context suites cover the second window, the events and when a window is opened.
   The editor was photographed rendering into the window.
-- The window's area is not yet an area: it has no header, so it cannot be split or hold tabs as
-  ADR-0154 says it can. Each window needs an area tree and headers of its own.
-- A workspace does not record the windows it has open, so the window does not come back with
-  the workspace.
+- Done: each window has a retained interface of its own (ADR-0156). The render's window is a
+  tree of areas with headers, tabs and splits, whose areas show every kind but a viewport. Area
+  and editor ids are unique across windows, and an area command acts on the layout holding its
+  area. A workspace keeps the windows open with it and opens them when it is shown. The screen,
+  layout, context and switcher suites cover the second screen, the shared themes, the ids, the
+  commands' windows and the kept windows. The editor was photographed with the window's header,
+  and quit and started again with the window open.
 
 ### Step 15 — The workspaces
 

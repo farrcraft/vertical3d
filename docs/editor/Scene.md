@@ -469,6 +469,11 @@ areas never marks a project unsaved, and the project's files hold only content.
 - The current project's arrangement is recorded and the settings saved when the editor closes,
   before another project is opened, and around each change of workspace. A project opened or
   saved under a new name shows its own last workspace, or keeps the arrangement it has.
+- **A workspace keeps its windows.** A layout's `windows` lists each window the editor opened
+  beside its own: its `width`, its `height`, and its `layout`. Showing a workspace closes the
+  windows open and opens those it keeps, and a side outside 64 to 16384 opens at the first size.
+  Windows a workspace keeps at startup open once the ui is built. Saving, exporting and recording
+  a workspace keep the windows open with it.
 
 **The top bar.** Beside the menus, `TopBar` puts a tab for each workspace. A tab shows its
 workspace (`workspace::show`, carrying the workspace's name) and is checked while it is shown.
@@ -624,6 +629,27 @@ for 2.5 seconds on the ui's clock, from the first frame it is drawn, and fades i
 A selected face is drawn as its outline and a selected vertex as a small box, on the wireframe
 over the surface. The outline covers every edge of the face, including the edges it shares with
 a neighbour.
+
+## Other windows
+
+The editor can open windows beside its own, each a tree of areas as the main window is. Render
+opens one when no area holds a render view. Each window has its own ui, its own `AreaLayout`, its
+own headers from a `chrome::Area`, and its own `chrome::Pointer`, so a divider, a tab or a menu in
+it acts on its areas. It is drawn by the editor's device in the same frames as the main window,
+through a screen of its own that shares the main screen's text, scale and theme.
+
+- **Its areas show no viewport.** Their Editor menu offers every other kind, and New Tab adds
+  another of the kind the area shows.
+- **Ids are unique across windows.** Each window's layout starts its area and editor ids a
+  million past the last, so a command carrying an id acts on the layout that holds it.
+  `Context::placeOf()` finds it, and a command carrying none acts on the main window's active
+  area.
+- **The mouse acts on the window it is in.** Every mouse event names its window, and the
+  pointer of that window takes it. The keyboard's bindings act on the main window's active area.
+- **Its close button closes it.** Closing the main window quits, and the windows open are kept
+  with the workspace, as [Workspaces](#workspaces) describes.
+
+Background: [ADR-0156](../adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
 
 ## Panels
 

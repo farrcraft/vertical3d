@@ -93,8 +93,10 @@ class Area final {
     /**
      * @param before the container the areas' containers go before
      * @param resolve what resolves the images of what is added, which may be empty
+     * @param viewports whether the areas can show viewports, which only the editor's own
+     *        window's can. The Editor menu of one that cannot offers every other kind
      **/
-    Area(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve);
+    Area(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve, bool viewports = true);
 
     /**
      * Build the containers again if the areas, their editors or the names of their menus
@@ -117,7 +119,7 @@ class Area final {
      * @return the containers the areas of the views' layout are drawn with, under a select mask,
      *         as Interface::add() reads them
      **/
-    static boost::json::object document(const view::AreaViews& views, selection::SelectMask mask);
+    static boost::json::object document(const view::AreaViews& views, selection::SelectMask mask, bool viewports = true);
 
     /**
      * @return the name of an area's container
@@ -288,6 +290,7 @@ class Area final {
     std::string signature_;
     // the containers sync() last added, by name
     std::vector<std::string> held_;
+    bool viewports_;
 };
 
 };  // namespace v3d::editor::control::chrome

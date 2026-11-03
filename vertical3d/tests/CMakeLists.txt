@@ -41,6 +41,7 @@ v3d_add_test(vertical3d
 	"control/TimelineEditorTest.cxx"
 	"control/GraphEditorTest.cxx"
 	"app/ContextTest.cxx"
+	"app/WorkspaceSwitcherTest.cxx"
 	"control/RenderSettingsEditorTest.cxx"
 	"control/RenderViewTest.cxx"
 	"control/StatusBarTest.cxx"
