@@ -313,6 +313,22 @@ When a library's description changes, change it in both places.
 `scripts/readmes.ts` checks that each component has a README, that its links resolve, and that a
 library's README starts with the table's description.
 
+### The documentation site
+
+`node scripts/docs.ts` builds the documents in `docs/` into a site in `out/docs/`, with mdBook. The
+script fetches mdBook at a pinned version and checks it against a pinned SHA-256. Open
+`out/docs/index.html` to read the result.
+
+- **The site holds the pages [SUMMARY.md](../SUMMARY.md) lists.** A new page is added there, under
+  its reader's group and after the page that leads to it. `scripts/summary.ts` reports a page under
+  `docs/` that is not listed, other than the records under a `completed/` directory.
+- **A document is written for GitHub, and the site follows it.** Links stay relative. On the
+  site, a link to a file outside `docs/`, or to a record under `completed/`, goes to that file on
+  GitHub. A link to a directory goes to its README.
+- **A link that names nothing stops the build.** Anchors are not checked.
+
+Background: [ADR-0162](../adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
+
 ## API design
 
 **A new option keeps today's behaviour as the default.** When a consumer needs the api to

@@ -31,16 +31,14 @@ manuals, and puts pictures of the apps in the documents and the top-level README
 
 ### Step 1 — The site builds from docs/
 
-A script, `scripts/docs.ts`, fetches mdBook at a pinned version, checks the archive against a
-pinned SHA-256, and builds the site into `out/docs/`. It runs the same on Windows and on Linux.
-`docs/SUMMARY.md` lists every page the site holds.
-
-A link from a document to a file outside `docs/`, such as a header or a CMakeLists, would break
-on the site. An mdBook preprocessor, written in TypeScript and run by Node, rewrites each such
-link to the file on GitHub. A link that resolves to nothing fails the build.
-
-A gate reports a page under `docs/` that `SUMMARY.md` does not list, outside `completed/`
-directories, and an entry that names no page.
+**Done.** `node scripts/docs.ts` fetches mdBook 0.5.4 into `out/tools/`, checks the archive
+against its pinned SHA-256, and builds `out/docs/` from the configuration in
+`scripts/docs/book.toml`. `docs/SUMMARY.md` lists every page outside `completed/` directories,
+grouped by reader as `docs/README.md` groups them. The preprocessor `scripts/docs/outside.ts`
+points each link the site cannot serve at the file on GitHub, sends a link to a directory to its
+README, and stops the build on a link that names nothing. A link added by hand that named nothing
+stopped the build. `scripts/summary.ts` checks `SUMMARY.md`, and CI runs it. Conventions.md states
+the rules. The script has run on Windows only, and step 3 runs it on Linux.
 
 ### Step 2 — The reference builds from the headers
 
@@ -57,9 +55,8 @@ publishing it, so a broken link fails the pull request.
 
 ### Step 4 — The rules are written down
 
-A reference page, `docs/contributing/Docs.md`, states how the site is built and published, how to
-build it locally, what `SUMMARY.md` must hold, and how a link outside `docs/` is rewritten.
-Conventions.md links it from its section on documents. CLAUDE.md routes to it.
+Conventions.md, under "The documentation site", states how the site is built since step 1. It
+gains how the reference is built and how the site is published, and CLAUDE.md routes to it.
 
 ### Step 5 — The public headers are documented
 

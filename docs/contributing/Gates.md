@@ -20,6 +20,7 @@ document for its subject, which the table links to.
 | `linkrule.ts` | Each app, app library and suite links what it includes, at the right visibility | The tree | [Build.md](Build.md#linking-rules) |
 | `librarytable.ts` | The table of libraries has one row for each library in the manifest, in order | The tree | [Build.md](Build.md#the-manifest-is-checked-on-every-configure) |
 | `readmes.ts` | Each component has a README with a heading and links that resolve, and a library's README describes it as the table does | The tree | [Conventions.md](Conventions.md#readmes) |
+| `summary.ts` | `docs/SUMMARY.md` lists each page under `docs/` once, outside `completed/` directories | The tree | [Conventions.md](Conventions.md#the-documentation-site) |
 | `filelocal.ts` | What a source file keeps to itself | The tree | [Conventions.md](Conventions.md#what-a-source-file-keeps-to-itself) |
 | `filelength.ts` | No C++ or TypeScript file but a test is over 1000 lines | The tree | [Conventions.md](Conventions.md#size) |
 | `dirsize.ts` | No directory holds more than 15 headers unless it is listed as one family | The tree | [Conventions.md](Conventions.md#directories) |
@@ -108,6 +109,7 @@ The gates support one environment:
 |---|---|
 | `scripts/<gate>.ts` | Each gate's command line: its header, its options and `main`. Node runs it directly. |
 | `scripts/<gate>/` | The modules of a gate too large for one file: `failsfirst/`, `prose/`, `linkrule/` |
+| `scripts/docs.ts`, `scripts/docs/` | Building the documentation site: the pinned tools, the book's configuration, and the preprocessor that rewrites links |
 | `scripts/lib/cli.ts` | Running a gate, reading its options, printing its findings, and the exit status |
 | `scripts/lib/git.ts` | Running git, and naming a commit and a merge base |
 | `scripts/lib/diff.ts` | The lines a change adds |

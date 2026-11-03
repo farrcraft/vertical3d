@@ -12,3 +12,7 @@ node_modules/
 
 # the image and render tests write what they produced here, in whatever directory they ran from
 data_out/
+
+# the documentation site and the tools that build it, which scripts/docs.ts writes
+out/docs/
+out/tools/
