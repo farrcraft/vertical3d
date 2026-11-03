@@ -25,6 +25,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+namespace v3d::window {
+class Window;
+};  // namespace v3d::window
+
 namespace v3d::render::realtime {
 class WindowRenderer;
 };  // namespace v3d::render::realtime
@@ -91,6 +95,19 @@ class Screen final {
         Scaling scaling { Scaling::Display };  /**< what the ui's size follows **/
         float reference { referenceHeight };  /**< the window height Scaling::Height draws at a scale of one **/
         paint::ComponentRenderer::Shortcut shortcut;  /**< the shortcut a command shows in a menu and a tooltip. Empty shows none **/
+        /**
+         * The window the screen draws for, when it is another window the renderer opened rather
+         * than the renderer's own. begin() then sizes the canvas to that window and begins no
+         * frame, and the app submits the canvas to that window's frame. Null for the renderer's
+         * own window
+         **/
+        boost::shared_ptr<v3d::window::Window> window;
+        /**
+         * The text renderer to draw with, shared with another screen on the same renderer so
+         * both draw from the same glyph pages. Null builds one of its own. A screen sharing one
+         * does not begin its frames, so the screen that owns it begins first in each frame
+         **/
+        boost::shared_ptr<paint::TextRenderer> text;
     };
 
     /**
@@ -144,6 +161,11 @@ class Screen final {
      * Options::scaling is Display is rebuilt at it.
      **/
     void display(float monitor);
+
+    /**
+     * @return the monitor's scale the screen was last given, 1 until one is
+     **/
+    float display() const noexcept;
 
     /**
      * @return what every size is multiplied by: scale() times the monitor's scale or the

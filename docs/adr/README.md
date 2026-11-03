@@ -112,6 +112,7 @@ content went. Numbers are never reused.
 | [0132](0132-ui-transition-state-lives-on-what-it-animates.md) | UI: transition state lives on what it animates | accepted |
 | [0148](0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted |
 | [0151](0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree | accepted |
+| [0156](0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own | accepted |
 
 ## Engine, input and assets
 

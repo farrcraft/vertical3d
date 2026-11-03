@@ -23,6 +23,7 @@
 #include <api/ui/paint/TextRenderer.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
+#include <api/window/Window.h>
 
 #include "StatisticsOverlay.h"
 
@@ -68,7 +69,7 @@ Screen::Screen(v3d::render::realtime::WindowRenderer* engine, const boost::share
                 textures->release(page);
             }
         });
-    text_ = boost::make_shared<paint::TextRenderer>(assets, logger, std::move(pages));
+    text_ = options_.text ? options_.text : boost::make_shared<paint::TextRenderer>(assets, logger, std::move(pages));
     if (options_.statistics) {
         statistics_ = boost::make_shared<StatisticsOverlay>(text_);
         if (engine != nullptr && engine->context()) {
@@ -125,7 +126,13 @@ bool Screen::begin(const Interface* ui) {
     }
     resized_ = false;
     glm::ivec2 frame(0, 0);
-    if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
+    if (options_.window) {
+        // another window's frame is begun with the renderer's own, so only its size is read
+        frame = glm::ivec2(options_.window->width(), options_.window->height());
+        if (frame.x <= 0 || frame.y <= 0) {
+            return false;
+        }
+    } else if (engine_ == nullptr || !engine_->beginFrame(&frame)) {
         return false;
     }
     const auto width = static_cast<std::uint32_t>(frame.x);
@@ -139,7 +146,11 @@ bool Screen::begin(const Interface* ui) {
         }
     }
     canvas_.clear();
-    text_->beginFrame();
+    // a shared text renderer is begun by the screen that owns it, earlier in the frame, so the
+    // glyphs that screen drew are not made room over
+    if (!options_.text) {
+        text_->beginFrame();
+    }
 
     // real time rather than the simulation's, so a menu still eases open over a paused game.
     // The first frame starts the clock at zero
@@ -182,6 +193,12 @@ void Screen::display(float monitor) {
     if (factor() != built_) {
         build();
     }
+}
+
+/**
+ **/
+float Screen::display() const noexcept {
+    return display_;
 }
 
 /**

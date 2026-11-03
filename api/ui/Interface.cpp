@@ -401,6 +401,13 @@ boost::shared_ptr<style::Theme> Interface::activeTheme() const {
 
 /**
  **/
+void Interface::shareThemes(const Interface& other) {
+    themes_ = other.themes_;
+    activeTheme_ = other.activeTheme_;
+}
+
+/**
+ **/
 bool Interface::activeTheme(const std::string_view& name) {
     const boost::shared_ptr<style::Theme> found = theme(name);
     if (!found) {

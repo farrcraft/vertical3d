@@ -246,6 +246,13 @@ class Interface {
     bool activeTheme(const std::string_view& name);
 
     /**
+     * Take another interface's themes and its active theme, as a second window's interface does
+     * so that both windows draw alike. The themes are shared, not copied, and a theme activated
+     * in one later is not activated in the other.
+     **/
+    void shareThemes(const Interface& other);
+
+    /**
      * Resolve the images the loaded themes name, and the ones the loaded components do.
      * resolveComponentImages() is also how an app resolves the one component it has just
      * pointed at a different source, without resolving the whole ui again. A null component,

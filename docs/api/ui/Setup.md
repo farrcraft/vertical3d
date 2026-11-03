@@ -106,6 +106,27 @@ reference points at an object that is no longer drawn. `immediate()` and `text()
 objects across a rescale, given the new size, so the immediate layer keeps where its windows
 were dragged, what is folded and how far each list is scrolled.
 
+### Another window
+
+Each window an app draws to has a retained `Interface` and a `Screen` of its own. The menus, the
+tooltip, the focus and the hover of one window stay in it, and nothing in the retained ui knows
+about windows.
+
+- **The interface** is built as the first is, over the same router and dispatcher, so its
+  commands reach the same handlers. `shareThemes(first)` gives it the first's themes and active
+  theme. Activating a theme in one later does not activate it in the other.
+- **The screen** is built with `Options::window` set to the other window, and `Options::text` set
+  to the first screen's `text()` so both draw from the same glyph pages. Its `begin()` sizes the
+  canvas to that window and begins no frame of the renderer's, and returns false while the window
+  has no area. A screen sharing text does not begin the text renderer's frame, so the screen that
+  owns the text begins first in each frame.
+- **The canvas** is submitted to the other window's frame, from `WindowRenderer::open()`, as the
+  first screen's is to `frame()`.
+- **A cursor** of its own, over the window's interface, is fed that window's mouse events, which
+  name their window.
+
+Background: [ADR-0156](../../adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
+
 An app that needs a piece `Screen` does not build writes it beside the screen. An app that
 does not use `WindowRenderer` builds `TextRenderer` itself with its own `Upload`.
 

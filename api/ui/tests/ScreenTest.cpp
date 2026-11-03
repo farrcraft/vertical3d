@@ -12,6 +12,7 @@
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
 #include <api/ui/style/Theme.h>
+#include <api/window/Window.h>
 
 #include <string>
 
@@ -20,6 +21,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <entt/entt.hpp>
+#include <glm/vec2.hpp>
 
 namespace {
 
@@ -260,6 +262,54 @@ BOOST_AUTO_TEST_CASE(the_immediate_layer_follows_the_screen) {
     screen.display(2.0F);
     BOOST_CHECK_CLOSE(screen.immediate()->dressing().padding, padding * 2.0F, 0.001F);
     BOOST_CHECK(screen.immediate()->dressing().text == red);
+}
+
+/**
+ * A screen for another window sizes its canvas to that window and needs no renderer to begin,
+ * and begins nothing while the window has no area.
+ **/
+BOOST_AUTO_TEST_CASE(a_screen_for_another_window_takes_its_size) {
+    const boost::shared_ptr<v3d::window::Window> window = boost::make_shared<v3d::window::Window>(boost::make_shared<v3d::log::Logger>());
+    window->resize(glm::ivec2(300, 200));
+    v3d::ui::shell::Screen::Options options = sized(20.0F);
+    options.statistics = false;
+    options.window = window;
+    v3d::ui::shell::Screen screen(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), options);
+    BOOST_REQUIRE(screen.begin(nullptr));
+    BOOST_CHECK_EQUAL(screen.canvas().width(), 300U);
+    BOOST_CHECK_EQUAL(screen.canvas().height(), 200U);
+
+    window->resize(glm::ivec2(0, 200));
+    BOOST_CHECK(!screen.begin(nullptr));
+}
+
+/**
+ * A screen given another's text draws with it rather than building its own.
+ **/
+BOOST_AUTO_TEST_CASE(a_screen_shares_another_screens_text) {
+    const v3d::ui::shell::Screen first(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), sized(20.0F));
+    v3d::ui::shell::Screen::Options options = sized(20.0F);
+    options.text = first.text();
+    const v3d::ui::shell::Screen second(nullptr, nowhere(), boost::make_shared<v3d::log::Logger>(), options);
+    BOOST_CHECK(second.text() == first.text());
+}
+
+/**
+ * An interface takes another's themes and its active theme, and activating one in it later
+ * leaves the other's alone.
+ **/
+BOOST_AUTO_TEST_CASE(an_interface_shares_another_interfaces_themes) {
+    const boost::shared_ptr<v3d::ui::Interface> first = themed();
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    v3d::ui::Interface second(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    BOOST_CHECK(!second.activeTheme());
+
+    second.shareThemes(*first);
+    BOOST_CHECK(second.activeTheme() == first->theme("dark"));
+    BOOST_CHECK(second.theme("light") == first->theme("light"));
+
+    BOOST_REQUIRE(second.activeTheme("light"));
+    BOOST_CHECK(first->activeTheme() == first->theme("dark"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
