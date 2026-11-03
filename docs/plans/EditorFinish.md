@@ -393,6 +393,11 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   `Cube.f[0:3]`. `script::Journal` lists each command run as the line that runs it again, then
   each notice it posted. The arguments, text and command table suites cover the checks, the
   fills, the forms, the selection of named parts and the journal's lines.
+- Done: `script::strip()` takes the types out of a script, blanking each with spaces so its
+  lines and columns stay, and refuses an enum, a namespace, a parameter property, a `<T>value`
+  assertion, `import =` and `export =`. Its output matches Node's own stripper byte for byte, on
+  the repository's scripts and on a corpus of every construct. The strip suite covers each kind
+  of erasure, the refusals, a source that does not read, and the nesting limit.
 
 ### Step 14 — The render view and the render settings
 

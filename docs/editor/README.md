@@ -86,7 +86,7 @@ a higher one is in the wrong place.
 |---|---|---|
 | `src/scene/` | The model. `item/` holds the kinds of item and their parts: which parts of each mesh are selected, and the items made from a view. The root holds the scene, its evaluation, animation and render settings, and the items an imported scene becomes | nothing of the editor's |
 | `src/selection/` | What a select mask takes | `scene/` |
-| `src/script/` | What a script names: a command's parameters and arguments, the text forms of items and parts, and the journal of what was run | `scene/` |
+| `src/script/` | Scripts: a command's parameters and arguments, the text forms of items and parts, the journal of what was run, and the stripping of a script's types. `internal/` holds the stripper's scanner and parser | `scene/` |
 | `src/store/` | The project directory and the scene document it saves, with a codec for each kind of item | `scene/` |
 | `src/render/` | Rendering the scene with moya: the RIB export, a shot, live render and batches | `scene/` |
 | `src/view/` | The viewports and their layout, the construction plane, the wireframe and its glyphs, and the shaded pass | `scene/` |
