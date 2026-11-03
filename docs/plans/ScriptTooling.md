@@ -75,9 +75,16 @@ Over the branch and its last 150 commits, both gates report exactly what they di
 
 ### Step 5 — failsfirst split and tested
 
-Not started. Split `failsfirst.ts` by job: finding cases, editing CMake lists, the worktree, the
-developer environment, configure, build, running and classifying, the report. Test `classify`,
-`failedSources`, `missingSources`, `dropSource` and the options without a build.
+**Done.** `failsfirst.ts` keeps its header, its options, the order of the steps and `main`, in
+about 300 lines. The rest moved unchanged into `scripts/failsfirst/`: one module each for the
+words it uses, git, finding cases, CMake lists, the developer environment, the worktree, the
+build, running a case, and the report. `tests/failsfirst.test.ts` covers each of them without a
+build, and holds the cases that were in `gates.test.ts`. A hand mutation of each verdict rule
+fails a test.
+
+The tests found that `describeExit` printed an NTSTATUS read as a signed number as a negative
+decimal, and it now prints it in hexadecimal. `--list` prints the same as before over the branch
+and four commits, and a full run on one commit reports what it did before the split.
 
 ### Step 6 — prose split and tested
 

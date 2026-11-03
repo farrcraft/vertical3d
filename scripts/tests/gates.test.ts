@@ -16,7 +16,6 @@ import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
 import { supportedNode } from '../lib/entry.ts';
-import { casesIn, dropCall, inBase, namedCommit, unknownCommands } from '../failsfirst.ts';
 import { includesIn, usesIn } from '../linkrule.ts';
 import { checkLines } from '../prose.ts';
 
@@ -139,77 +138,6 @@ test('boundary skips a cast inside a block comment that an unchanged line opened
 test('boundary reports a cast on the line after a continued string', () => {
     const text = 'const char* s = "a \\\r\nb /* c";\r\nint n = static_cast<int>(std::floor(x));\r\n/* d */\r\n';
     assert.deepEqual(boundary(text, [3]), ['3: float-cast']);
-});
-
-test('failsfirst finds a case after a CRLF-continued string and after a raw string', () => {
-    const text = [
-        'BOOST_AUTO_TEST_SUITE(suite)',
-        'const char* a = "one \\',
-        'two /* not a comment";',
-        'BOOST_AUTO_TEST_CASE(after_continued) {}',
-        'const char* b = R"(" /* )";',
-        'BOOST_AUTO_TEST_CASE(after_raw) {}',
-        '/* a real comment */',
-        'BOOST_AUTO_TEST_SUITE_END()',
-        '',
-    ].join('\r\n');
-    assert.deepEqual(casesIn(text).map((c) => c.path), ['suite/after_continued', 'suite/after_raw']);
-});
-
-test('failsfirst reads a Covers the base: line, wrapped onto the next line', () => {
-    const text = [
-        '/**',
-        ' * Pans each way.',
-        ' *',
-        ' * Covers the base: 48412a1c merged the controller untested. Checked by swapping two',
-        ' * pan directions, which fails it.',
-        ' **/',
-        'BOOST_AUTO_TEST_CASE(pans) {}',
-        'BOOST_AUTO_TEST_CASE(plain) {}',
-        '',
-    ].join('\n');
-    const found = casesIn(text);
-    assert.equal(found[0].covers,
-        '48412a1c merged the controller untested. Checked by swapping two pan directions, which fails it.');
-    assert.equal(found[0].stated, null);
-    assert.equal(found[1].covers, null);
-    assert.equal(namedCommit(found[0].covers!), '48412a1c');
-    assert.equal(namedCommit('no commit named here'), null);
-});
-
-test('failsfirst accepts a covered commit only when the base contains it', () => {
-    // two commits on main: 957a7434 is the second parent of the merge 48412a1c
-    assert.equal(inBase('957a7434 brought it', '48412a1c'), '957a74343d34043c61315af330384508b6db4c97');
-    assert.equal(inBase('48412a1c brought it', '957a7434'), null);
-    assert.equal(inBase('deadbeefdeadbeef brought it', '48412a1c'), null);
-    assert.equal(inBase('no commit at all', '48412a1c'), null);
-});
-
-test('failsfirst reads an unknown command from a failed configure', () => {
-    const output = [
-        '-- vertical3d api: asset',
-        'CMake Error at vertical3d/tests/CMakeLists.txt:75 (v3d_copy_usd_plugins):',
-        '  Unknown CMake command "v3d_copy_usd_plugins".',
-        '',
-        'CMake Error at api/x/tests/CMakeLists.txt:3 (v3d_add_test):',
-        '  Cannot find source file:',
-        '',
-    ].join('\r\n');
-    assert.deepEqual(unknownCommands(output),
-        [{ file: 'vertical3d/tests/CMakeLists.txt', line: 75, command: 'v3d_copy_usd_plugins' }]);
-});
-
-test('failsfirst drops a call that spans lines and holds parentheses', () => {
-    const text = 'a(x)\nv3d_helper(t\n    "$<A:(b)>" ")"\n    (c))\nb(y)\n';
-    assert.equal(dropCall(text, 2, 'v3d_helper'), 'a(x)\n\nb(y)\n');
-    assert.equal(dropCall(text, 2, 'V3D_HELPER'), 'a(x)\n\nb(y)\n');
-    assert.equal(dropCall(text, 1, 'v3d_helper'), null);
-    assert.equal(dropCall(text, 9, 'v3d_helper'), null);
-});
-
-test('failsfirst skips a case inside a comment', () => {
-    const text = '// BOOST_AUTO_TEST_CASE(commented) {}\n/* BOOST_AUTO_TEST_CASE(blocked) {} */\nBOOST_AUTO_TEST_CASE(real) {}\n';
-    assert.deepEqual(casesIn(text).map((c) => c.path), ['real']);
 });
 
 const GRID = new Map([['grid', new Set(['v3dlib_grid'])]]);
