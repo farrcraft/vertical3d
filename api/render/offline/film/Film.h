@@ -78,6 +78,8 @@ class Film final {
     /**
      * Writes the resolved pixels into a renderer's planes.
      *
+     * @param frame the framebuffer written to. Only the pixels inside both the film and the
+     *        frame are written
      * @param colour the first of three planes the colour goes into
      * @param coverage the plane the coverage goes into
      * @param depth the plane the depth goes into, or negative for none. A pixel no sample

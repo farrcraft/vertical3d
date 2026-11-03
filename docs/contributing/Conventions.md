@@ -282,6 +282,21 @@ the commit, or describe a later phase.
   something now reads, is fixed in the same change.
 - Doc comments are `/** **/` blocks, often left empty above trivial members.
 
+### Doc comments in a public header
+
+The API reference is built from the headers outside `internal/` and `tests/`. Three rules hold
+there, and `node scripts/docs.ts` reports a break of each:
+
+- **Each class, struct and enum has a doc comment** saying what it is or holds.
+- **A function that documents one parameter with `@param` documents each of them**, in the order
+  of the signature. A template parameter is documented with `@tparam`.
+- **A doc comment is true of the declaration it is on.** It names no parameter the function does
+  not take, and documents no return value for a function that returns nothing. A name in angle
+  brackets, such as `<T>`, and a preprocessor word such as `#include`, are written in backticks.
+
+A member is documented when it holds something its declaration cannot say, as any other comment
+is. An empty block above a trivial member is allowed.
+
 ## Documents
 
 A reference document states how a thing works and the rules a reader must follow, completely.

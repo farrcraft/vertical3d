@@ -130,6 +130,7 @@ class Lit final {
      * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
      *        the meshes are drawn through. Set 1 is the textures' layout, and their white
      *        texture stands in for a shadow map until a scene names one
+     * @param spec the formats, shaders and front face the pipelines are built against
      * @throw std::runtime_error if a pipeline or the scene layout cannot be created
      **/
     Lit(const DeviceContext& context, const Spec& spec);
@@ -187,6 +188,7 @@ class Lit final {
      * last submission to finish, as StreamRing::claim() does. Call it while the frame is
      * built, before the Ring begins the frame, and before any object() call for the frame.
      *
+     * @param uniforms this frame's light, bands and shadow matrices, from lighting::pack()
      * @param shadowMap the depth the shadow passes drew, a sampled depth target of a layer
      *        per cascade, or an unset handle for no shadow
      * @param palette every joint matrix drawn this frame, from entity::Poses::palette()

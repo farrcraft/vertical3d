@@ -11,6 +11,10 @@ namespace v3d::image::format {
 
 #pragma pack(push, 2)
 
+/**
+ * The bmp info header that follows the file header, as the file stores it. It gives the
+ * picture's size, bit depth and compression.
+ **/
 struct bmp_info_header {
     uint32_t size_;
     int32_t width_;

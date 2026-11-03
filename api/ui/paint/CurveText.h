@@ -72,6 +72,8 @@ class CurveText final {
      * Draw a paragraph's glyphs onto a canvas, each in the colour of its style, with its style's
      * effects beneath it. A glyph's margin is a pixel of the canvas.
      *
+     * @param canvas what the glyphs are drawn on, or null to draw nothing
+     * @param paragraph the laid out text drawn
      * @param transform from the paragraph's space, in pixels with y downwards, to the canvas's,
      *        as an affine matrix whose last row is 0, 0, 1
      **/
@@ -81,6 +83,8 @@ class CurveText final {
      * Stand a paragraph's glyphs in the world, in the order they are laid out, with their
      * effects before them.
      *
+     * @param canvas what the glyphs are drawn into, or null to draw nothing
+     * @param paragraph the laid out text drawn
      * @param transform from the paragraph's space, in pixels with y downwards on the plane z = 0,
      *        to the world
      **/
@@ -90,7 +94,11 @@ class CurveText final {
      * Stand a paragraph's glyphs in the world among other quads sorted by depth, every glyph and
      * effect at one key. Each effect's layer is its place among its glyph's effects.
      *
+     * @param order what the glyphs are sorted into, or null to draw nothing
      * @param key how far away the paragraph is, in whatever measure the order sorts by
+     * @param paragraph the laid out text drawn
+     * @param transform from the paragraph's space, in pixels with y downwards on the plane
+     *        z = 0, to the world
      **/
     void draw(render::realtime::canvas::DepthOrder* order, float key, const font::text::Paragraph& paragraph, const glm::mat4& transform);
 

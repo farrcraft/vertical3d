@@ -77,6 +77,7 @@ class LineEdit final {
      * Clamped to the text and moved to a character boundary, so an offset inside a
      * multi-byte character is not expressible.
      *
+     * @param offset the byte offset the caret moves to
      * @param extend whether the anchor stays where it is, so the move selects the run
      *        travelled
      **/
@@ -175,6 +176,7 @@ class LineEdit final {
      *
      * @param into how far past the start of the line the point is, in pixels
      * @param type what the line is drawn in
+     * @param extend whether the anchor stays where it was, as it does during a drag
      **/
     void at(float into, const paint::Type& type, bool extend = false);
 
@@ -244,10 +246,12 @@ class LineEdit final {
  * letter typed into a line does not also reach the app's bindings. A return is not handled
  * here, because what it does depends on what holds the line.
  *
+ * @param line the line edited, or null to take no key
  * @param key the name api/input gives it - "backspace", "arrow_left", "a"
  * @param shifted whether a shift key is held. Shift and a caret key selects the run moved over
  * @param controlled whether a control key is held. Ctrl with c, x, v and a is copy, cut, paste
  *        and select all. Every other chord goes on to the app
+ * @param clipboard what a cut and a copy write to, and a paste reads from
  * @return whether the line took the key
  **/
 bool edit(LineEdit* line, std::string_view key, bool shifted, bool controlled, const Clipboard& clipboard);

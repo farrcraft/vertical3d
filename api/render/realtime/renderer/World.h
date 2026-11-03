@@ -87,6 +87,7 @@ class World final {
      * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
      *        the quads are built on and drawn through. Every pipeline reads set 0. A world
      *        canvas is in world space, so the pass's camera is its only transform
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines cannot be created
      **/
     World(const DeviceContext& context, const Spec& spec);

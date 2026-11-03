@@ -59,6 +59,7 @@ class FullScreen final {
     /**
      * @param context the device, pipeline cache, resources, ring and frame uniforms the
      *        pipeline is built on
+     * @param spec the fragment shader, how many images it samples, and the formats it draws into
      * @throw std::runtime_error if the pipeline cannot be built, or names no source
      **/
     FullScreen(const DeviceContext& context, const Spec& spec);

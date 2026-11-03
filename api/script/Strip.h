@@ -36,7 +36,7 @@ struct Stripped final {
  * and its line breaks are kept, so every line and column of the JavaScript is where it was. A
  * return type that runs onto another line takes the ) before it to its end, since => may not
  * follow a line break. Syntax with no JavaScript to keep when its types go is refused: an
- * enum, a namespace, a parameter property, a type assertion written <T>value, import = and
+ * enum, a namespace, a parameter property, a type assertion written `<T>value`, import = and
  * export =. A source that does not read as TypeScript is refused too.
  *
  * The types are never checked.

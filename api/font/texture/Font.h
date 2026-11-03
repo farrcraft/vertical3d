@@ -27,6 +27,9 @@ class Face;
 namespace v3d::font::texture {
 
 
+/**
+ * One face drawn at one size, with its glyphs rasterized and packed into a texture atlas.
+ **/
 class Font {
  public:
     typedef enum : std::uint8_t {
@@ -42,6 +45,10 @@ class Font {
      **/
     static constexpr char32_t SOLID = 0xFFFFFFFF;
 
+    /**
+     * A glyph packed into the atlas: its size, offset and advance in pixels, and the texture
+     * coordinates of its corners in the atlas.
+     **/
     typedef struct {
         unsigned int id_;
         char32_t charcode_;
@@ -56,12 +63,14 @@ class Font {
     } Glyph;
 
     /**
+     * @param face the face to draw, which the font shares
      * @param size the size the face is rasterized at. For a distance field this is the
      *        base size, and every drawn size is a ratio of it
      * @param spread how far either side of an edge the distance field runs, in pixels at
      *        the base size, or zero to rasterize coverage. It decides how far a glyph can
      *        be scaled up before its edge softens, and adds twice its value to each axis of
      *        every glyph in the atlas
+     * @param logger where errors in rasterizing and packing are written
      **/
     Font(const boost::shared_ptr<face::Face>& face, float size, const boost::shared_ptr<v3d::log::Logger> & logger,
         unsigned int spread = 0);
@@ -125,6 +134,7 @@ class Font {
      * A code point with no packed glyph adds nothing, the same as the layout draws nothing for
      * it. Nothing is packed.
      *
+     * @param utf8 the string to measure
      * @param size the size it is laid out at. Zero or less means the font's own size
      **/
     float width(std::string_view utf8, float size = 0.0F) const;

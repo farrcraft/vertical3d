@@ -59,6 +59,8 @@ using AlbedoUploaded = std::function<bool(const std::string& key)>;
  * the file names is keyed by its path beside the model, relative to the manager's root, and is
  * decoded through the manager. One that cannot be found has a key and no pixels.
  *
+ * @param assets the manager the model and each image it names are read through
+ * @param path the model's path, relative to the manager's root
  * @param uploaded the keys whose pixels are not needed; none are skipped when it is empty
  * @throw std::runtime_error if the file is not a model
  **/

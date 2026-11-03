@@ -14,6 +14,7 @@
 
 namespace v3d::audio::kind {
 /**
+ * An audio clip loaded from a sound file, as the asset manager hands it out.
  **/
 class Sound : public v3d::asset::Asset {
  public:

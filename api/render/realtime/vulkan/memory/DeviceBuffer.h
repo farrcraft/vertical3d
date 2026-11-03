@@ -43,7 +43,11 @@ class DeviceBuffer final {
 
     /**
      * Allocate and fill in one step, as static geometry needs.
+     * @param device the device to allocate on
+     * @param uploader runs the staging copy
+     * @param usage what the buffer will be bound as. Transfer destination usage is added.
      * @param data the content to copy in, of bytes length
+     * @param bytes how large to allocate, and how much of data is copied
      **/
     DeviceBuffer(const boost::shared_ptr<device::Device>& device, const boost::shared_ptr<Uploader>& uploader,
         VkBufferUsageFlags usage, const void* data, VkDeviceSize bytes);

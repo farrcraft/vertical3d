@@ -20,6 +20,8 @@ namespace v3d::event {
 using EventData = std::variant<int, bool, std::string>;
 
 /**
+ * A named event in a context, with an edge, a type and an optional parameter. A source event,
+ * such as a key, and the destination event it is bound to are both Events.
  **/
 class Event {
  public:

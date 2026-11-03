@@ -36,6 +36,7 @@ class Imager final {
      * opacity. The framebuffer holds the colour and how much of the pixel was covered,
      * and when each sample either hits or misses, that coverage is the opacity.
      *
+     * @param frame the finished framebuffer, read and written in place
      * @param coverage which plane holds per-pixel coverage, which the shader reads and
      *        writes as `alpha`. `background` sets it, because a pixel it paints counts as
      *        covered

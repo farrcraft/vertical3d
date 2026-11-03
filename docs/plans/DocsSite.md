@@ -69,9 +69,16 @@ CLAUDE.md routes to it.
 
 ### Step 5 — The public headers are documented
 
-Doxygen reports each public class and function with no doc comment, and each empty `/** **/`
-block. The comments are filled library by library, following the rules for comments in
-Conventions.md. When a library has none left, the script fails on a new one in that library.
+**Done.** The first run reported 60 types with no comment, 185 functions that documented some
+parameters but not all, and 13 comments that contradicted their declarations. All are fixed, in
+comments only. Six other false comments came to light and were corrected, such as two that said
+displacement shaders do not run. Conventions.md states the rules under "Doc comments in a public
+header".
+
+Each public type has a doc comment, a function that documents one parameter documents each, and
+no doc comment contradicts its declaration. `scripts/docs.ts` runs Doxygen a second time with no
+output to find undocumented types, and fails on any break of the three. Members are not all
+documented: an empty block above a trivial member stays, as Conventions.md allows.
 
 ### Step 6 — User manuals for the editor and moya
 

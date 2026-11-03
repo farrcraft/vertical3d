@@ -10,6 +10,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * An if statement, with an optional else.
+ **/
 class Conditional final : public Statement {
  public:
     /** What runs when the condition holds, and what runs when it does not, which may be null. **/

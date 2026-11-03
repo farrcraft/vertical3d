@@ -144,6 +144,9 @@ enum class Opcode : std::uint8_t {
     RETURN
 };
 
+/**
+ * One step of a compiled program: an opcode and the register indices it reads and writes.
+ **/
 class Instruction final {
  public:
     Opcode opcode = Opcode::MOVE;

@@ -11,6 +11,9 @@
 
 namespace v3d::brep {
 
+/**
+ * A face of a mesh: its normal and one of the half edges around it.
+ **/
 class Face final {
  public:
     Face();

@@ -76,6 +76,8 @@ void advance(entt::registry& registry, float step);
  * is a moment such as a footstep, or the frame an attack lands. Zero when the step changed clip
  * or nothing plays.
  *
+ * @param previous the playback as it was before the step
+ * @param current the playback as it is after the step
  * @param marker a time within the clip, in seconds
  **/
 uint32_t crossed(const Playback& previous, const Playback& current, float marker);

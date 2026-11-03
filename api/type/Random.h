@@ -18,7 +18,7 @@ namespace v3d::type {
  * that resumes the sequence where it stands. A save stores state(), and a load passes it to
  * the constructor.
  *
- * Every value is derived here. The distributions in <random> are implementation-defined, but
+ * Every value is derived here. The distributions in `<random>` are implementation-defined, but
  * a seed here gives the same floats under any standard library, so a test can pin them.
  *
  * Not thread-safe. Its output depends on the order of the calls.

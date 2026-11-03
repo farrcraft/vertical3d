@@ -20,8 +20,8 @@ namespace v3d::render::offline::sl::compiler {
  * Whitespace and newlines are not significant. Comments are C's, both forms, and a block
  * comment does not nest: the first close ends it however many opens came before.
  *
- * The C preprocessor is **not run**. Many .sl files are put through cpp for #include and
- * #define. A '#' is an error that says a preprocessor is needed, so such a shader is
+ * The C preprocessor is **not run**. Many .sl files are put through cpp for `#include` and
+ * `#define`. A '#' is an error that says a preprocessor is needed, so such a shader is
  * rejected here and not mis-parsed later.
  **/
 class Lexer final {

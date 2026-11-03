@@ -12,6 +12,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A break, continue or return statement.
+ **/
 class Jump final : public Statement {
  public:
     enum class Where : std::uint8_t {

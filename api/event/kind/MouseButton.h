@@ -39,6 +39,8 @@ class MouseButton : public Event {
 
     /**
      * @param button the button's name, one of the names a binding config uses
+     * @param edge where the cursor was, which way the button went, the clicks and the window
+     * @param context the context the event belongs to, the mouse's
      **/
     // not noexcept: the base takes the event name as a std::string, which allocates
     MouseButton(const std::string& button, const Edge& edge, const boost::shared_ptr<Context>& context);

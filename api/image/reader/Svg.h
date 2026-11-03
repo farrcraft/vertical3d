@@ -39,6 +39,8 @@ class Svg : public v3d::image::Reader {
     boost::shared_ptr<Image> read(const unsigned char* encoded, std::size_t size) override;
 
     /**
+     * @param encoded the SVG document's bytes
+     * @param size how many bytes encoded holds
      * @param into the size of the image made. The document is scaled to fit inside it, keeping
      *             its proportions, and centred in it
      * @return the document drawn into an image of that size, or null when it cannot be read,

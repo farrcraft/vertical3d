@@ -35,6 +35,7 @@ class Tooltip final {
     /**
      * @param under what the cursor rests on now, or null
      * @param now the ui clock's time, in seconds
+     * @param delays how long the cursor rests before the tooltip shows
      * @return whether its tooltip shows this frame. A component with no tooltip never does
      **/
     bool due(const boost::shared_ptr<Component>& under, float now, const Delays& delays);

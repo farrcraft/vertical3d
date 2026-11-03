@@ -180,6 +180,9 @@ class ComponentRenderer {
      * and is moved back onto the canvas where it would leave it. Draw it last, over everything
      * else.
      *
+     * @param canvas what the tooltip is drawn on, or null to draw nothing
+     * @param text the line of text. With keys also empty, nothing is drawn
+     * @param keys the shortcut drawn after the text, or empty for none
      * @param below the box it hangs by, which is the component it describes
      * @param beside whether it hangs to the right of the box, centred on it, rather than under
      *        it. A tooltip that would leave the canvas there goes to the left instead
@@ -321,6 +324,8 @@ class ComponentRenderer {
     /**
      * Draw a toolbar - a row of buttons across the canvas, or a column down its side.
      *
+     * @param canvas what the toolbar is drawn on, or null to draw nothing
+     * @param bar the toolbar drawn, or null to draw nothing
      * @param corner the strip's top left, past the room the strips before it have taken
      *      along the same edge
      **/

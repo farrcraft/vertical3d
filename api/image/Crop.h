@@ -22,6 +22,8 @@ namespace v3d::image {
  * @param source the image to cut from, which is not modified
  * @param x the rectangle's left edge in the source's pixels
  * @param y its top edge
+ * @param width the rectangle's width in pixels
+ * @param height the rectangle's height in pixels
  * @return the cut image, or null when the rectangle is empty, the source has no depth, or
  *         the rectangle is not wholly inside the source. A partly outside crop would read
  *         whatever follows a row and return wrong pixels instead of failing

@@ -25,11 +25,12 @@ FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        = ../..
 STRIP_FROM_INC_PATH    = ../..
 
-# every public declaration is listed, documented or not, until the doc comments are complete
+# every public declaration is listed, documented or not; Doxyfile.check reports the types that
+# have no comment, and a comment that documents some parameters of a function but not all
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
 EXTRACT_STATIC         = NO
 WARN_IF_UNDOCUMENTED   = NO
-WARN_IF_INCOMPLETE_DOC = NO
+WARN_IF_INCOMPLETE_DOC = YES
 JAVADOC_AUTOBRIEF      = YES
 SOURCE_BROWSER         = NO

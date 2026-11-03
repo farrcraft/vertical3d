@@ -15,6 +15,10 @@
 
 namespace v3d::ui {
 
+/**
+ * A named group of top-level components, shown and hidden as a whole. A ui config lists its
+ * containers, and they are drawn in that order.
+ **/
 class Container {
  public:
     explicit Container(const std::string& name, bool visible);

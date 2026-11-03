@@ -92,6 +92,7 @@ class RenderTarget final {
     /**
      * @param context the device to allocate on, and the ring that images recreate() releases
      *        are retired through
+     * @param spec the size, images and layers the target holds
      * @throw std::runtime_error if allocation fails or either dimension is zero. A target with
      *        no colour and no sampled depth throws too, because it would have nothing to read.
      *        Images that are neither one nor the frames in flight throw, as does more than one

@@ -130,9 +130,12 @@ class Scene final {
      * from two threads at once. A moving primitive's box holds it across the whole motion.
      * Two hits at one distance resolve to the primitive added first.
      *
+     * @param ray in world space. A hit's distance is in multiples of its direction
      * @param from how far along the ray to start looking. Without it, a ray leaving a
      *        surface would meet the surface it left, so a shadow ray is offset rather
      *        than started at zero
+     * @param hit written with what the ray met, when it met something. Null asks only whether
+     *        it met anything
      * @param poses where the moving primitives are. The ray is transformed back into a moving
      *        primitive's stored pose, and the primitive is not moved. The hit's normals are
      *        then transformed forward to the ray's time

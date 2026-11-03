@@ -31,6 +31,9 @@ class Curve final {
         Bezier    /**< a cubic to the next key, by the two keys' slopes **/
     };
 
+    /**
+     * A value at a frame, with the slopes the curve arrives and leaves with.
+     **/
     struct Key final {
         float frame = 0.0F;
         float value = 0.0F;

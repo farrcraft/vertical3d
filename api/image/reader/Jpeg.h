@@ -11,6 +11,7 @@
 
 namespace v3d::image::reader {
 /**
+ * Reads a jpeg file into an RGB image, through libjpeg.
  **/
 class Jpeg final : public v3d::image::Reader {
  public:

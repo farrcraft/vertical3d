@@ -59,13 +59,17 @@ class ShapingCache final {
     /**
      * @param locale the BCP 47 language tag whose rules divide words and lines, and the language
      *        text is shaped in when its style names none
+     * @param logger where an error is written when the locale's rules cannot be loaded
+     * @param capacity how many texts are kept. Zero is taken as one
      **/
     ShapingCache(const std::string& locale, const boost::shared_ptr<v3d::log::Logger>& logger, std::size_t capacity = CAPACITY);
 
     /**
+     * @param text the UTF-8 string to shape
      * @param ranges the styles over the text, in order, each starting where the last ended. A
      *        text whose ranges do not cover it in that way is shaped in the first range's style
      *        throughout
+     * @param base the direction each paragraph of the text is read in
      * @return the text shaped, found or made
      **/
     boost::shared_ptr<const ShapedText> shape(std::string_view text, const std::vector<StyledRange>& ranges, BaseDirection base);

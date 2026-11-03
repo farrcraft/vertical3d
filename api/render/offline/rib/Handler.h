@@ -99,6 +99,8 @@ class Handler {
     }
     /**
      * @param angle in degrees, counter clockwise about the axis
+     * @param axis the direction to turn about, through the origin of the current space. It
+     *        need not be unit length
      **/
     virtual void rotate(float angle, const glm::vec3 & axis) {
         (void)angle;

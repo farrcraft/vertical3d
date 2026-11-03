@@ -11,6 +11,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A string literal, with its escapes resolved and without its quotes.
+ **/
 class String final : public Expression {
  public:
     String(const std::string & value, const v3d::render::offline::source::Position & at);

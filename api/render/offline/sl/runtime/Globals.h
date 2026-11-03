@@ -101,10 +101,18 @@ class Globals final {
      * light's P is instead the point sampled on its surface for each shading point. While this
      * runs, the renderer resolves "shader" space from the light's placement.
      *
+     * @param light the light shader and the transform that placed it
      * @param machine prepared for the light's program, whose globals these are
+     * @param batch how many surface points there are
      * @param surface the points being lit, in the renderer's current space
      * @param gathering the cone the surface's illuminance loop gathers from, which a `solar`
      *        with an angle chooses its direction against
+     * @param direction written with the light's L at each point, or zero when the light has
+     *        no L
+     * @param colour written with the light's Cl at each point, or zero when the light has no
+     *        Cl
+     * @param reached written with which points the light lit, nonzero for a lit point
+     * @param ambient written with whether the light has neither `illuminate` nor `solar`
      * @param from for an area light, the point it shines from at each shading point, in the
      *        renderer's current space. Null for any other light
      * @return whether the light ran

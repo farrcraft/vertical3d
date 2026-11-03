@@ -106,6 +106,8 @@ class TextureFactory final {
 
     /**
      * @param image the image to upload, whose bpp decides the channel count
+     * @param encoding how a shader reads the colour back, as for a Pixels source
+     * @param sampler how a shader reads the image, as for a Pixels source
      **/
     pipeline::Texture create(const boost::shared_ptr<v3d::image::Image>& image, Encoding encoding = Encoding::Display,
         const pipeline::Sampler::Spec& sampler = pipeline::Sampler::Spec()) const;
@@ -147,7 +149,10 @@ class TextureFactory final {
      * before. The frame being recorded and every later one draw the new pixels. The rest of the
      * texture is kept.
      *
-     * @param x and y where the region's top left texel goes
+     * @param image the texture to copy into, which this factory made
+     * @param source the pixels to copy, with their size and channels
+     * @param x the column the region's top left texel goes to
+     * @param y the row the region's top left texel goes to
      * @throw std::runtime_error if the pixels do not fit the image, as fits() decides, or the
      *        upload fails
      **/
@@ -157,6 +162,9 @@ class TextureFactory final {
      * A 3D texture, read as it is stored, because it is a lookup table and not an authored
      * colour.
      * @param texels four bytes a texel, rows then slices
+     * @param width the texture's width in texels, above zero
+     * @param height the texture's height in texels, above zero
+     * @param depth how many slices, above zero
      * @throw std::runtime_error if there are no texels or any part of the upload fails
      **/
     pipeline::Texture volume(const unsigned char* texels, uint32_t width, uint32_t height, uint32_t depth) const;

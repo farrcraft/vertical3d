@@ -53,6 +53,7 @@ class Segmenter final {
     /**
      * @param locale a BCP 47 language tag, such as "ja" or "en-US". An empty tag uses Unicode's
      *        rules untailored
+     * @param logger where an error is written when the locale's rules cannot be loaded
      **/
     Segmenter(const std::string& locale, const boost::shared_ptr<v3d::log::Logger>& logger);
     Segmenter(const Segmenter&) = delete;

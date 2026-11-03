@@ -87,6 +87,10 @@ class Screen final {
      **/
     static constexpr const char* statisticsStyle = "statistics";
 
+    /**
+     * How a screen is built: its text size and dressing, which layers it builds, what its scale
+     * follows, and the window and text renderer it shares.
+     **/
     struct Options final {
         float size { paint::TextRenderer::baseSize };  /**< the font's size at a scale of one **/
         Dress dress;              /**< fills the dressing. When empty, sets only the line height, to 1.4 sizes **/
@@ -114,6 +118,11 @@ class Screen final {
      * @param engine the renderer the atlas is uploaded through and frames are begun on. Not
      *        owned, and it must outlive this. Null builds everything with no device, which
      *        uploads nothing and begins no frame
+     * @param assets what the text renderer's faces are loaded through. Unused when
+     *        Options::text is given
+     * @param logger where a face that cannot be loaded is reported. Unused when Options::text
+     *        is given
+     * @param options what the screen builds and how
      **/
     Screen(v3d::render::realtime::WindowRenderer* engine, const boost::shared_ptr<v3d::asset::Manager>& assets,
         const boost::shared_ptr<v3d::log::Logger>& logger, const Options& options);
@@ -199,6 +208,7 @@ class Screen final {
      * instead, so moving along a row of buttons shows each one's at once. A press puts it away.
      *
      * @param ui what to draw, or null for nothing but the statistics
+     * @param statistics the numbers the statistics overlay shows, when there is one
      **/
     void draw(const Interface* ui, const StatisticsOverlay::Sample& statistics);
 

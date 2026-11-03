@@ -27,7 +27,7 @@ namespace v3d::render::offline::sl::compiler {
  *
  * Every diagnostic names a line, a column and what was expected.
  *
- * Every shader type parses. Displacement and volume shaders are not executed. They come
+ * Every shader type parses. Volume shaders are not executed. They come
  * back as shaders whose `Shader::supported()` returns false, so the error for a scene that
  * uses one says the type is unsupported, not that the source is malformed.
  *

@@ -33,6 +33,7 @@ namespace v3d::render::offline::sl::compiler {
 class Inference final {
  public:
     /**
+     * @param shader the checked tree, whose expressions run() annotates
      * @param symbols the checker's symbols, whose storage this decides
      **/
     Inference(const syntax::ShaderPtr & shader, std::vector<Symbol>* symbols);

@@ -38,7 +38,9 @@ class Curve final : public Primitive {
     using Controls = std::array<glm::vec3, 4>;
 
     /**
+     * @param controls the segment's Bezier control points, in world space
      * @param widths the ribbon's width at the segment's start and at its end
+     * @param colour the colour that was current, which is SL's Cs
      **/
     Curve(const Controls & controls, const glm::vec2 & widths, const glm::vec3 & colour);
 

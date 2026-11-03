@@ -92,6 +92,8 @@ class StatisticsOverlay final {
     /**
      * Append the overlay to a canvas, or nothing at all while it is hidden.
      *
+     * @param canvas what the overlay is appended to, or null to draw nothing
+     * @param sample the numbers shown
      * @param dress what the readout is dressed in, as text over the scene is: its text, and a
      *        plate of the panel's colour as opaque as the plate opacity and with its corners
      **/

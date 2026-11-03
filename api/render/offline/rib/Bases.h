@@ -49,7 +49,12 @@ Segment toBezier(const Basis::Matrix & basis, const Segment & points);
  * round to its first points for the last ones. A curve with too few points for one segment has
  * none.
  *
+ * @param points the curve's control points, in order
  * @param cubic whether the curve is cubic, in which case basis and step are the v direction's
+ * @param periodic whether the curve wraps round to its first points
+ * @param basis the basis matrix of a cubic curve. A linear curve ignores it
+ * @param step how many points one segment advances to the next under the basis. A linear
+ *        curve ignores it, and a step of zero gives a cubic curve no segments
  **/
 std::vector<Segment> segments(const std::vector<glm::vec3> & points, bool cubic, bool periodic,
     const Basis::Matrix & basis, unsigned int step);

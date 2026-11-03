@@ -77,6 +77,7 @@ class Quad final {
      * @param context the device, pipeline cache, resources, ring, frame uniforms and textures
      *        the quads are built on and drawn through. Set 0's layout is declared so that a
      *        pass can bind one camera across the quads and every other pipeline
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines or their resources cannot be created
      **/
     Quad(const DeviceContext& context, const Spec& spec);

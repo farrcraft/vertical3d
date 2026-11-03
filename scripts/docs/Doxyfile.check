@@ -1,0 +1,9 @@
+# The check of the doc comments, which node scripts/docs.ts runs after building the reference. It
+# reads the same headers as Doxyfile and writes nothing. Doxygen reports an undocumented
+# declaration only when it does not list every one, so this run lists only documented ones.
+
+@INCLUDE               = Doxyfile
+EXTRACT_ALL            = NO
+WARN_IF_UNDOCUMENTED   = YES
+GENERATE_HTML          = NO
+OUTPUT_DIRECTORY       = ../../out/tools/doxygen-check

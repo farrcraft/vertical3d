@@ -11,7 +11,8 @@
 #include <string>
 
 namespace v3d::image::writer {
-/** 
+/**
+ * Encodes an image as a png file, through libpng.
  **/
 class Png : public v3d::image::Writer {
  public:

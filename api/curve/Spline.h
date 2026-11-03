@@ -26,6 +26,7 @@ class Spline final {
  public:
     /**
      * @param nurbs a curve that problem() finds nothing wrong with
+     * @param closed whether the curve's end meets its start
      **/
     Spline(const Nurbs& nurbs, bool closed);
 

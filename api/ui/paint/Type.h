@@ -38,7 +38,9 @@ class Type final {
     Type() = default;
 
     /**
+     * @param text the renderer the text is set through, or null to measure and draw nothing
      * @param size in pixels, or 0 for the renderer's own
+     * @param weight the face the text is drawn in
      **/
     Type(const boost::shared_ptr<TextRenderer>& text, float size, Weight weight = Weight::Regular);
 

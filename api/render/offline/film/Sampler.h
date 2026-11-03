@@ -46,6 +46,8 @@ class Sampler final {
      * An axis with one stratum is sampled at the pixel centre rather than jittered, so one
      * sample a pixel is exactly the pixel centre.
      *
+     * @param column the pixel's column, counting from zero at the image's left
+     * @param row the pixel's row, counting from zero at the image's top
      * @param pass which set of samples. A pixel sampled more than once is given a different
      *        set for each pass, and the same set for the same pass
      **/

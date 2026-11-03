@@ -40,6 +40,7 @@ class Settings final {
      * @param org the organization the app belongs to, as userPath() takes it
      * @param app what this app is called, never changed once chosen. Changing it orphans
      *        every existing player's settings
+     * @param logger where a document that cannot be read or written is reported
      **/
     Settings(const std::string& org, const std::string& app,
         const boost::shared_ptr<v3d::log::Logger>& logger);

@@ -19,6 +19,7 @@
 
 namespace v3d::image::reader {
 /**
+ * Reads a bmp file into an image.
  **/
 class Bmp final : public v3d::image::Reader {
  public:

@@ -121,6 +121,7 @@ class Line final {
     /**
      * A run of connected segments.
      * @param points at least two, or nothing is added
+     * @param colour the colour of every segment
      * @param closed whether to join the last point back to the first
      **/
     void polyline(const std::vector<glm::vec3>& points, const glm::vec4& colour, bool closed = false);

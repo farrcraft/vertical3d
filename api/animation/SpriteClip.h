@@ -25,6 +25,7 @@ namespace v3d::animation {
 class SpriteClip final {
  public:
     /**
+     * One region of the sheet and how long it is shown.
      **/
     struct Frame final {
         glm::vec2 uv0;   /**< the region's top-left **/

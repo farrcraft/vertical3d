@@ -56,9 +56,9 @@ std::string userPath(const std::string& org, const std::string& app);
  * calls quit() instead: tearing the window down inside a handler would leave the next frame
  * drawing to a destroyed window.
  *
- * @param T the engine to run: the app's subclass of v3d::engine::Engine, with its own
- *          features(), start() and release(). This function is the only caller of
- *          shutdown(), which an app cannot reach
+ * @tparam T the engine to run: the app's subclass of v3d::engine::Engine, with its own
+ *           features(), start() and release(). This function is the only caller of
+ *           shutdown(), which an app cannot reach
  * @param executable argv[0]
  * @param identity who the app is. The engine is given it before it starts, and keeps the
  *        player's settings under it. Its application names the app in the log line that

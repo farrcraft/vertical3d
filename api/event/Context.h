@@ -9,6 +9,8 @@
 
 namespace v3d::event {
 /**
+ * The namespace an event's name belongs to, such as "keyboard" for a key or "pong" for a
+ * command. An event's identity is "context::name".
  **/
 class Context {
  public:

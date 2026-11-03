@@ -47,8 +47,11 @@ class ShaderLibrary final {
      * An instance of the named shader with the scene's parameters bound onto it, or
      * fallback() when the name will not compile.
      *
+     * @param name the shader's name: a `.sl` file on the search path, or a built-in shader
+     *        when no file has that name
      * @param wanted the shader type the scene expects. A name that is a shader of another
      *        type is reported, and fallback() is returned for it too
+     * @param parameters the values the scene named, bound over the shader's defaults
      **/
     InstancePtr instance(const std::string & name, ShaderType wanted,
         const rib::ParameterList & parameters);

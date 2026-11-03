@@ -39,6 +39,8 @@ bool isKeyName(std::string_view name);
 v3d::event::Modifiers modifiers(SDL_Keymod held) noexcept;
 
 /**
+ * Turns SDL's key and text events into this library's events, and tracks which keys are held.
+ * A key with no name from keyName() is ignored.
  **/
 class Keyboard final : public Device {
  public:

@@ -79,6 +79,9 @@ class TileGrid {
      * A grid placed in the world by its minimum corner: the corner of tile (0, 0) with the
      * lowest world X and Z.
      *
+     * @param width tiles along world +X
+     * @param height tiles along world +Z
+     * @param tileSize tile edge length in world units
      * @param corner the corner's world position. Its y is ignored, because the grid lies on the
      *        Y = 0 plane
      * @throws std::invalid_argument with the reason refusal() gives
@@ -92,6 +95,9 @@ class TileGrid {
      * positive number. It is also refused for a tile size that makes a side too long to hold in a
      * float, or a corner whose x or z is not finite.
      *
+     * @param width tiles along world +X
+     * @param height tiles along world +Z
+     * @param tileSize tile edge length in world units
      * @param corner the corner a placed grid is given; a centred grid passes the origin
      **/
     static std::optional<std::string> refusal(int width, int height, float tileSize, const glm::vec3& corner);

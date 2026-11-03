@@ -71,6 +71,7 @@ class Grade final {
     /**
      * @param context the device, resources, ring and frame uniforms the grade is built on, and
      *        the logger a failed release is reported through
+     * @param spec the formats the grade draws into, and its starting table
      * @throw std::runtime_error if the pipeline or the table cannot be made
      **/
     Grade(const DeviceContext& context, const Spec& spec);

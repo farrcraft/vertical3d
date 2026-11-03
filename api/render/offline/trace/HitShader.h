@@ -53,6 +53,8 @@ class Tracer;
 class HitShader final : public v3d::render::offline::sl::runtime::Renderer {
  public:
     /**
+     * @param tracer the scene and the rays this shader's trace() and transmission() calls go
+     *        to. Kept by pointer, and must outlive the HitShader
      * @param hits what to shade, which the Tracer grouped to share one run. Each is kept by
      *        pointer, and must outlive the HitShader
      * @param times when each hit's sample was taken

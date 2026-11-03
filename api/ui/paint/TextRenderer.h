@@ -137,8 +137,11 @@ class TextRenderer {
      * that cannot be loaded draws semibold text in the regular face. A fallback or an emoji face
      * that cannot be loaded leaves the missing glyphs in place. The log says so of each.
      *
+     * @param assetManager what each face's file is resolved against
+     * @param logger where a face that cannot be loaded is reported
      * @param pages what puts the glyph pages on the device, for the coverage and the colour stores
      * @param size the size text is drawn at when a draw names none
+     * @param faces the files the faces are loaded from
      **/
     TextRenderer(const boost::shared_ptr<v3d::asset::Manager>& assetManager,
         const boost::shared_ptr<v3d::log::Logger>& logger,
@@ -167,6 +170,7 @@ class TextRenderer {
     /**
      * How wide a string is when it is drawn at a size, in pixels, including any space at its end.
      *
+     * @param text the string measured, in UTF-8
      * @param size the size it will be drawn at, defaulting to size()
      * @param weight the face it will be drawn in
      **/
@@ -175,6 +179,7 @@ class TextRenderer {
     /**
      * How wide a string is in a style, in pixels, including any space at its end.
      *
+     * @param text the string measured, in UTF-8
      * @param styled the style it is set in, from style(), with any features it asks for
      **/
     float width(std::string_view text, const font::text::Style& styled) const;
@@ -184,6 +189,7 @@ class TextRenderer {
      * line break opportunities, and inside a word wider than the width. Each row is without the
      * space at its end.
      *
+     * @param text the string broken, in UTF-8
      * @param width the room a row has. At 0 or less the string takes one row for each of its
      *        lines
      * @param styled the style it is set in, from style()
@@ -197,7 +203,10 @@ class TextRenderer {
      * The string is UTF-8. Each glyph is drawn at its pen rounded down to a quarter of a pixel,
      * and each line's baseline at its pen rounded to a whole pixel. A newline starts a line below.
      *
+     * @param canvas what the glyphs are appended to, or null to draw nothing
+     * @param text the string drawn. An empty one draws nothing
      * @param pen where the baseline of the first line starts
+     * @param colour what the glyphs are drawn in
      * @param size the size to draw at, defaulting to size()
      * @param weight the face to draw in
      **/
@@ -208,6 +217,9 @@ class TextRenderer {
      * Lay a string out in a style at the pen and append its glyphs to a canvas, as the draw
      * above does.
      *
+     * @param canvas what the glyphs are appended to, or null to draw nothing
+     * @param text the string drawn. An empty one draws nothing
+     * @param pen where the baseline of the first line starts
      * @param styled the style it is set in, from style(), with its colour and any features
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, std::string_view text, const glm::vec2& pen, const font::text::Style& styled);
@@ -216,6 +228,8 @@ class TextRenderer {
      * Append a paragraph's glyphs to a canvas, each in the colour of its style, with its
      * style's effects beneath it. Glyphs are placed as the string draw places them.
      *
+     * @param canvas what the glyphs are appended to, or null to draw nothing
+     * @param paragraph the laid out text drawn
      * @param pen where the baseline of the first line starts
      **/
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const font::text::Paragraph& paragraph, const glm::vec2& pen);

@@ -39,6 +39,7 @@ std::string filterName(Filter filter);
 /**
  * A pixel filter's weight at an offset from the pixel centre, with RI's formulas.
  *
+ * @param kind which filter's formula to use
  * @param offset from the centre, in pixels
  * @param width the filter's whole extent along each axis, in pixels. Every filter is zero
  *        outside it, including catmull-rom and sinc, whose RI formulas ignore the width

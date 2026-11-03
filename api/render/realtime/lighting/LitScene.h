@@ -105,6 +105,7 @@ class LitScene final {
     /**
      * @param context the device and the stores the scene is built on. The scene holds what it
      *        uses of them, and not the context
+     * @param spec the targets' sizes and formats, the shadow map's layers, and the shaders
      * @throw std::runtime_error if a target or a pipeline cannot be built, if the size is zero,
      *        if no output format is named, or for cascades outside 1 to maximumCascades
      **/
@@ -136,8 +137,12 @@ class LitScene final {
      * the frame is submitted would add its draws to the first call's passes, and rewrite the
      * scene those draws name, so it throws.
      *
+     * @param frame the frame being built, which the shadow and lit passes are added to
      * @param into the pass the graded scene is drawn into, such as the window's colour pass. It
      *        is the caller's, and draws into something of the output format
+     * @param registry the entities whose meshes are drawn
+     * @param meshes resolves each entity's component::Mesh to its parts
+     * @param shot the camera, lighting, shadows, alpha and poses this frame is drawn with
      * @return the lit pass, for anything else the scene draws after its meshes, such as world
      *         quads built against target()'s formats
      * @throw std::runtime_error if the shot names more cascades than the map has layers, names

@@ -13,6 +13,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A list of statements in braces, run in order.
+ **/
 class Block final : public Statement {
  public:
     Block(const v3d::render::offline::source::Position & at);

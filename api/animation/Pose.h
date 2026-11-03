@@ -20,6 +20,9 @@ namespace v3d::animation {
  * Sampling a clip at a time gives one.
  **/
 struct Pose final {
+    /**
+     * One joint's translation, rotation and scale, local to its parent.
+     **/
     struct Joint final {
         glm::vec3 translation{ 0.0F };
         glm::quat rotation = glm::identity<glm::quat>();
@@ -46,6 +49,8 @@ Pose blend(const Pose& from, const Pose& to, float weight);
  * skeleton's root, then times its inverse bind. A skeleton at the pose it was bound in gives
  * the identity for every joint.
  *
+ * @param skeleton the joints, their parents and their inverse binds
+ * @param pose the local transforms. A joint past its end uses the skeleton's rest transform.
  * @param out resized to the skeleton's joints, so a caller can reuse one across frames
  **/
 void palette(const Skeleton& skeleton, const Pose& pose, std::vector<glm::mat4>* out);

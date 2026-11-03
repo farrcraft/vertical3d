@@ -30,6 +30,11 @@ namespace v3d::font::glyph {
  * font gives, blended as they are encoded, as browsers blend them. A gradient's colours are
  * mixed premultiplied, as COLR asks.
  *
+ * @param glyph the colour glyph's layers, in em units
+ * @param library the FreeType library the clips are rasterized with
+ * @param size the size to paint at, in pixels to the em
+ * @param subpixel how many steps of a pixel the pen is moved right, of SUBPIXEL_STEPS. A larger
+ *        value is taken modulo SUBPIXEL_STEPS
  * @param foreground the text's colour, red, green, blue and alpha from 0 to 1, which a layer in
  *        the text's colour takes
  * @return the glyph's colours, four bytes a pixel, unpremultiplied, with its top left pixel from

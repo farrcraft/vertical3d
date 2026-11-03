@@ -51,6 +51,7 @@ bool mirrored(const Listener& listener) noexcept;
  * which are the axes SDL_mixer places a track in.
  *
  * @param listener a listener orthonormal() returned
+ * @param point a position in the world, in the same coordinates as the listener's position
  **/
 glm::vec3 relative(const Listener& listener, const glm::vec3& point) noexcept;
 

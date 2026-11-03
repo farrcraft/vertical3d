@@ -73,6 +73,7 @@ class Interface {
      * under it. A document that does not read, or that names a container already held, adds
      * nothing. Images are not resolved: resolveComponentImages() resolves what was added.
      *
+     * @param document the containers to add, in the form of a ui config's "containers"
      * @param before the container to put them before, or empty or a name not held to put them
      *        after every container
      * @return whether the containers were added
@@ -267,6 +268,8 @@ class Interface {
      * Resolve one component's image and write the whole result onto it, so that resolving
      * again restores the texture region as well as the texture.
      *
+     * @param resolve what turns the source into an image
+     * @param source the image the component names, or empty when it names none
      * @param target anything with an image(Image) setter, such as an icon or a button
      * @return whether an image was set. A component that names no image returns false
      **/

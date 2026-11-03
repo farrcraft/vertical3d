@@ -148,9 +148,11 @@ class World final {
      * The uv rectangle is laid over the corners in the order they are given, so the first
      * corner takes uv0 and the third takes uv1 and the other two take one of each.
      *
+     * @param corners the quad's corners in perimeter order, placed through the current transform
      * @param uv0 the texture coordinate at the first corner
      * @param uv1 the texture coordinate at the third
      * @param colour multiplied with what is sampled, so white leaves the texture alone
+     * @param texture the texture to sample. An unset handle samples the renderer's white texture
      **/
     void quad(const Corners& corners, const glm::vec2& uv0, const glm::vec2& uv1,
         const glm::vec4& colour, const resource::TextureHandle& texture);
@@ -167,6 +169,11 @@ class World final {
      * or a glow, with quad()'s meaning for the corners and the uv rectangle. A run of fields
      * never merges with quads drawn another way.
      *
+     * @param corners the quad's corners in perimeter order, placed through the current transform
+     * @param uv0 the field's texture coordinate at the first corner
+     * @param uv1 the field's texture coordinate at the third
+     * @param colour the effect's colour, whose alpha is multiplied by the effect's coverage
+     * @param texture the atlas holding the glyph's distance field
      * @param ramp where the effect is whole and where it is gone, from fieldRamp()
      * @param contrast how much its coverage is strengthened, as text's is
      **/

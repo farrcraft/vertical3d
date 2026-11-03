@@ -41,7 +41,7 @@ struct IsometricCommands final {
 struct IsometricSpeeds final {
     float pan = 10.0F;   /**< world units a second **/
     float zoom = 10.0F;  /**< orthographic half height a second **/
-    /**< orthographic half height a notch of the wheel zooms by. A notch away from the player
+    /** orthographic half height a notch of the wheel zooms by. A notch away from the player
      * zooms in. A negative value turns the wheel round, for a player who prefers it **/
     float notch = 1.0F;
 };
@@ -83,13 +83,18 @@ class IsometricController final {
      * @param orbit the orbit to drive. The app owns it, and it outlives this
      * @param dispatcher where the rotate commands arrive
      * @param held asked each simulate() step whether a pan or zoom command is held
+     * @param commands the command each move answers to
+     * @param speeds how fast a held command moves the orbit, and how far a wheel notch zooms
      **/
     IsometricController(type::camera::Isometric* orbit, const boost::shared_ptr<entt::dispatcher>& dispatcher, Held held,
         const Commands& commands = Commands(), const Speeds& speeds = Speeds());
 
     /**
+     * @param orbit the orbit to drive. The app owns it, and it outlives this
      * @param engine the engine whose dispatcher and held() the controller reads, which outlives
      *        this
+     * @param commands the command each move answers to
+     * @param speeds how fast a held command moves the orbit, and how far a wheel notch zooms
      **/
     IsometricController(type::camera::Isometric* orbit, const Engine& engine, const Commands& commands = Commands(),
         const Speeds& speeds = Speeds());

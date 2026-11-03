@@ -73,7 +73,9 @@ class Unpacking final {
  * depth is not 8, 24 or 32 bits. Last, they are refused when `largest` is under 16, or when
  * they do not all fit in `largest`.
  *
+ * @param sprites the named images to pack, which are not modified
  * @param largest the longest side the sheet may have
+ * @param logger where the atlas writes its errors
  **/
 Packing pack(const std::vector<Sprite> & sprites, unsigned int largest, const boost::shared_ptr<v3d::log::Logger> & logger);
 

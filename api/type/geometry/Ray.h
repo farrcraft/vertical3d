@@ -75,6 +75,9 @@ class Ray final {
     /**
      * Moller-Trumbore against a triangle, hit from either side.
      *
+     * @param vertexA the triangle's first corner, in the ray's own space
+     * @param vertexB the triangle's second corner
+     * @param vertexC the triangle's third corner
      * @param distance where the hit is, if there is one - may be null
      * @return whether the ray meets the triangle at a non negative distance
      **/
@@ -90,6 +93,9 @@ class Ray final {
      * The weights are of vertexB and vertexC: the hit is
      * vertexA + u * (vertexB - vertexA) + v * (vertexC - vertexA), so vertexA carries 1 - u - v.
      *
+     * @param vertexA the triangle's first corner, in the ray's own space
+     * @param vertexB the triangle's second corner
+     * @param vertexC the triangle's third corner
      * @param distance where the hit is, if there is one - may be null
      * @param weights the weights of vertexB and then vertexC, if there is a hit - may be null
      * @return whether the ray meets the triangle at a non negative distance

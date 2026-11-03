@@ -37,9 +37,13 @@ namespace v3d::render::realtime::entity {
  * The pass is the caller's, and has to name the scene Lit::scene() returned for this frame.
  * Each draw's object is added to that scene, so scene() is called first.
  *
+ * @param registry the entities to draw
  * @param alpha engine::Engine::alpha(), the fraction of a step elapsed since the last one
+ * @param meshes resolves each entity's component::Mesh to its parts
+ * @param lit the renderer whose pipelines draw each part
  * @param outline how far the outline hull is pushed out, from lighting::Settings::outline.
  *        Zero submits no outlines
+ * @param pass the lit pass the draws are added to
  * @param poses this frame's, whose palette the scene the pass names was written with
  **/
 void meshes(const entt::registry& registry, float alpha, const resource::MeshRegistry& meshes, renderer::Lit* lit,

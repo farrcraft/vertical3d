@@ -72,6 +72,9 @@ struct Emitter final {
  * A particle whose life ends within the step is removed by swapping the last into its place, so
  * the order of particles is not the order they were born in.
  *
+ * @param emitter the emitter that made the particles
+ * @param state the emitter's particles, which are moved and removed
+ * @param seconds how far to step
  * @param wind added to the emitter's acceleration for this step
  **/
 void travel(const Emitter& emitter, State* state, float seconds, const glm::vec3& wind = glm::vec3(0.0F));
@@ -86,6 +89,9 @@ uint32_t owing(State* state, float rate, float seconds);
  * Add one particle at a place in the world, launched as the emitter launches, unless the
  * emitter is at its cap.
  *
+ * @param emitter the emitter whose launch and cap the particle takes
+ * @param state the emitter's particles, which the particle is added to
+ * @param position where the particle is born, in world space
  * @param orientation how the emitter is turned, which turns the launch direction
  * @return whether there was room for it
  **/
@@ -97,6 +103,8 @@ bool spawn(const Emitter& emitter, State* state, const glm::vec3& position, cons
  *
  * A particle born this step has both its position and its previous position at its birthplace.
  *
+ * @param emitter the emitter to step
+ * @param state the emitter's particles, which are moved, removed and added to
  * @param origin where the emitter stands in the world
  * @param orientation how the emitter is turned, which turns its spawn shape and direction
  * @param seconds how far to step

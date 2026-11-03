@@ -11,6 +11,9 @@
 #include <string>
 
 namespace v3d::image::writer {
+/**
+ * Encodes an image as a tga file.
+ **/
 class Tga final : public v3d::image::Writer {
  public:
     /**

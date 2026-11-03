@@ -91,8 +91,10 @@ class Bindings final {
     /**
      * Point one of a command's sources at a different name, leaving its others as they are.
      *
+     * @param command the destination the binding drives, as "context::name"
      * @param source the name the document gives the source being replaced, which stays the
      *        way to name it however often it is rebound
+     * @param name the source event name to bind it to instead
      * @return whether the bindings were rebuilt, which is false with no document loaded or
      *         when the document does not bind the command to that source
      **/

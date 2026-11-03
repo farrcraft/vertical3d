@@ -63,6 +63,9 @@ class Textures final {
     static constexpr std::size_t DEFAULT_UPLOAD_BUDGET = std::size_t{1} * 1024 * 1024;
 
     /**
+     * @param device the device every texture is created on
+     * @param resources where each texture is registered, so a draw can name it by handle
+     * @param ring the frame ring a released texture is retired through, once no frame draws it
      * @param uploader the context's Uploader, which copies every texture
      * @throw std::runtime_error if the white texture cannot be uploaded
      **/
@@ -76,6 +79,7 @@ class Textures final {
 
     /**
      * Upload an image and register it, so a draw can name it.
+     * @param image the decoded image to upload
      * @param encoding how a shader reads it back: as authored, unless the texture is lit
      * @param sampler how a shader reads the image. The default is linear and clamped to the
      *        edge. A surface meant to tile names a repeating address mode
@@ -86,6 +90,8 @@ class Textures final {
 
     /**
      * @param pixels tightly packed rows of width * channels bytes
+     * @param width the image's width in pixels
+     * @param height the image's height in pixels
      * @param channels 1 for a coverage mask or a glyph atlas, 3 or 4 for colour
      * @param sampler how a shader reads the image, as above
      **/
@@ -100,6 +106,7 @@ class Textures final {
      * copies. The frame being recorded and every later one draw the new pixels. The rest of the
      * texture is kept, and the texture keeps its slot.
      *
+     * @param handle the texture to copy into
      * @param at where the region's top left texel goes
      * @param pixels tightly packed rows of width * channels bytes, with the texture's channels:
      *        1 for a coverage mask, and 3 or 4 for colour
@@ -128,6 +135,8 @@ class Textures final {
      * Where request() reads an image from and decodes it: the asset manager a path is relative
      * to, and the worker it is decoded on. Until this is called, request() throws.
      *
+     * @param assets the manager each requested path is read through
+     * @param worker the worker each image is decoded on
      * @param logger where an image that could not be read or uploaded is reported
      **/
     void requestFrom(const boost::shared_ptr<asset::Manager>& assets, const boost::shared_ptr<asset::Worker>& worker,
@@ -144,7 +153,8 @@ class Textures final {
      * its image arrives drops what the worker decodes for it.
      *
      * @param path relative to the asset manager's root
-     * @param encoding and sampler as texture() takes them
+     * @param encoding how a shader reads it back, as texture() takes it
+     * @param sampler how a shader reads the image, as texture() takes it
      * @throw std::logic_error if requestFrom() has not been called
      **/
     TextureHandle request(const std::string& path,
@@ -176,6 +186,7 @@ class Textures final {
      * A target with no colour image has nothing to register, and returns the white texture,
      * as depthTexture() does for a target with no depth to read.
      *
+     * @param target the target whose colour image is registered
      * @param slot which of the target's images. A target with one image per frame in flight
      *        has one handle per slot, and a reader names current() or previous() each frame.
      **/

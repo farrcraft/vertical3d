@@ -66,15 +66,23 @@ class FileChooser final {
     static const char* const parent;
 
     /**
+     * Look the components up under the default Names.
+     *
      * @param engine the ui the components are looked up in, or null for none
-     * @param names what the components are called, which are Names' own when not given
      **/
     explicit FileChooser(const boost::shared_ptr<Interface>& engine);
+    /**
+     * @param engine the ui the components are looked up in, or null for none
+     * @param names what the components are called
+     **/
     FileChooser(const boost::shared_ptr<Interface>& engine, const Names& names);
 
     /**
      * Put the chooser up, listing a directory.
      *
+     * @param mode whether a file is opened or a name is saved under
+     * @param directory the directory listed first. One that cannot be listed is replaced by
+     *        the current working directory
      * @param extensions the files listed, each as ".json"; none lists every file. A name
      *        saved with none of them is given the first
      * @param chosen called with the path when accept() succeeds, after the chooser closes

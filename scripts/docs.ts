@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
 
-import { options, UsageError } from './lib/cli.ts';
+import { type Finding, options, report, UsageError } from './lib/cli.ts';
 import { shouldRun } from './lib/entry.ts';
 import { GateError } from './lib/git.ts';
 import { ROOT } from './lib/tree.ts';
@@ -108,6 +108,42 @@ function run(command: string, args: readonly string[], cwd: string): void {
     }
 }
 
+/** Runs a command and returns what it wrote to standard error. Throws a GateError when it fails. */
+function errors(command: string, args: readonly string[], cwd: string): string {
+    const result = spawnSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'inherit', 'pipe'] });
+    if (result.error !== undefined || result.status !== 0) {
+        process.stderr.write(result.stderr);
+        throw new GateError(`${command} ${args.join(' ')} failed`);
+    }
+    return result.stderr;
+}
+
+/**
+ * Doxygen's warnings as findings. A warning starts "path:line: warning:" and may go on over
+ * indented lines, which are joined to it. A path under the root is given relative to it. Only
+ * an undocumented type is kept from the check run, because that run repeats the other warnings.
+ */
+export function commentFindings(output: string, check: boolean): Finding[] {
+    const found: Finding[] = [];
+    for (const line of output.split(/\r?\n/)) {
+        const start = /^(.*?):(\d+): warning: (.*)$/.exec(line);
+        const last = found.at(-1);
+        if (start === null) {
+            if (last !== undefined && /^\s+\S/.test(line)) {
+                last.message = `${last.message} ${line.trim()}`;
+            }
+            continue;
+        }
+        const file = path.relative(ROOT, path.resolve(start[1] ?? '')).split(path.sep).join('/');
+        const message = start[3] ?? '';
+        const rule = /^Compound .* is not documented\.$/.test(message)
+            ? 'undocumented-type'
+            : /parameters? of .* (is|are) not documented:$/.test(message) ? 'missing-param' : 'comment-error';
+        found.push({ path: file, line: Number(start[2]), rule, message });
+    }
+    return check ? found.filter((finding) => finding.rule === 'undocumented-type') : found;
+}
+
 /**
  * The path of a tool's binary, fetched and extracted first when it is not there. A file beside
  * the binary records the SHA-256 of the archive it came from.
@@ -150,8 +186,11 @@ async function main(): Promise<number> {
     const doxygen = await ensure(tool('doxygen'), platform);
     // mdBook empties out/docs/ before it writes, so the reference is built after it
     run(mdbook, ['build'], book);
-    run(doxygen, ['Doxyfile'], book);
-    return 0;
+    const findings = [
+        ...commentFindings(errors(doxygen, ['Doxyfile'], book), false),
+        ...commentFindings(errors(doxygen, ['Doxyfile.check'], book), true),
+    ];
+    return report(findings, 'breaks the rule for doc comments in docs/contributing/Conventions.md, under "Comments".');
 }
 
 // runGate takes a main that returns at once, and this one waits on the network

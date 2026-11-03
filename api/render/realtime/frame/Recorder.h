@@ -70,6 +70,8 @@ class Recorder final {
     /**
      * Record a whole frame, including the layout transitions either side of it.
      * @param commands a command buffer that has already been begun
+     * @param frame the passes to record
+     * @param target the image and depth buffer the frame draws into
      * @param resources what the frame's draw items name by handle
      * @param uniforms where each pass's camera is written and bound from, or null for a
      *        frame whose pipelines declare nothing at set 0
@@ -90,6 +92,8 @@ class Recorder final {
      * record() calls it whenever it binds a pipeline. It needs no device, so it can be tested
      * on its own.
      *
+     * @param pass the pass that binds the pipeline
+     * @param pipeline the pipeline to check against the pass
      * @param into what the pass draws into, whose formats go unchecked where it leaves them
      *        undefined
      * @throw std::runtime_error naming the pass and what it lacks

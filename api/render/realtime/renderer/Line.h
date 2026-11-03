@@ -66,6 +66,7 @@ class Line final {
      * @param context the device, pipeline cache, resources, ring and frame uniforms the lines
      *        are built on and drawn through. Both pipelines read set 0. A line canvas is in
      *        world space, so the pass's camera is its only transform
+     * @param spec the colour and depth formats the pipelines are built against
      * @throw std::runtime_error if the pipelines cannot be created
      **/
     Line(const DeviceContext& context, const Spec& spec);

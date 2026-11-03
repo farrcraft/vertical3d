@@ -46,6 +46,8 @@ class Sight final {
      * board is seen at once. Only the tiles within range are traced. A board of another size
      * is treated as a different board, and replaces what is remembered.
      *
+     * @param grid the board the viewer stands on
+     * @param from the viewer's tile
      * @param blocks tiles that stop sight on top of the grid's cover, as hasLineOfSight()
      *        takes them
      **/
@@ -61,6 +63,8 @@ class Sight final {
      *
      * A board not in the set has nothing in sight, as blind() leaves it.
      *
+     * @param grids the set sight is traced across
+     * @param board the grid whose tiles this Sight holds
      * @param from the viewer's world tile
      * @param blocks asked about world tiles
      **/

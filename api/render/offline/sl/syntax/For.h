@@ -10,6 +10,9 @@
 
 namespace v3d::render::offline::sl::syntax {
 
+/**
+ * A for loop: an initialiser, a condition, a step and a body.
+ **/
 class For final : public Statement {
  public:
     For(const v3d::render::offline::source::Position & at);

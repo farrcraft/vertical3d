@@ -108,6 +108,7 @@ class Immediate {
      * far a list is scrolled - is kept. A window's title and a table's header are drawn in the
      * semibold face when the dressing's titleWeight asks for it.
      *
+     * @param text what text is laid out and drawn through
      * @param size the size text is drawn at, or 0 for the renderer's own
      **/
     void text(const boost::shared_ptr<paint::TextRenderer>& text, float size = 0.0F);
@@ -188,6 +189,7 @@ class Immediate {
      * Pair every call with endWindow(), whatever it returned. A collapsed window returns
      * false and still has to be closed.
      *
+     * @param title drawn in the title bar, and the window's id
      * @param area where the window's top left corner is, and its size
      * @param alpha what the window's background is drawn at, 1 for opaque
      * @return whether what goes in it should be drawn, false for a collapsed window
@@ -203,6 +205,7 @@ class Immediate {
      * cursor from what was drawn before it. Pair every call with endRegion().
      *
      * @param name the region's id, which is not drawn
+     * @param area where the region's top left corner is, and its size
      * @param alpha what its background is drawn at, 0 to draw none
      **/
     void region(const std::string& name, const v3d::type::geometry::Bound2D::Area& area, float alpha);
@@ -282,7 +285,10 @@ class Immediate {
     /**
      * An integer scrubbed by dragging across it.
      *
+     * @param label drawn before the value, and the widget's id
      * @param value read and written; left alone when nothing dragged
+     * @param low the least a drag sets the value to
+     * @param high the most a drag sets the value to
      * @return whether the value changed this frame
      **/
     bool dragInt(const std::string& label, int* value, int low, int high);
@@ -295,6 +301,7 @@ class Immediate {
      * for each pixel. A typed value is taken when the field gives up the keyboard, as a text
      * field does, unless escape gave it up or what was typed is not a finite number.
      *
+     * @param label drawn at the left, and the widget's id
      * @param value read and written; left alone when nothing changed it
      * @param speed how far the value moves for each pixel the cursor travels
      * @return whether the value changed this frame
@@ -318,6 +325,7 @@ class Immediate {
     /**
      * A filled track spanning the width, with a line of text over it.
      * @param fraction how full, clamped to 0..1
+     * @param overlay the text centred over the track, or empty for none
      **/
     void progressBar(float fraction, const std::string& overlay);
 
@@ -439,6 +447,7 @@ class Immediate {
      * The label is the field's id, and is drawn in it in the placeholder colour while it is
      * empty and does not have the keyboard.
      *
+     * @param label the field's id, and its placeholder
      * @param value read and written. A change the caller makes while the field holds the
      *        keyboard replaces what is being edited
      * @param limit how many bytes the value may hold, or zero for no limit. Typing past it
@@ -450,6 +459,7 @@ class Immediate {
     /**
      * A box that is ticked or not, with its label beside it.
      *
+     * @param label drawn beside the box, and the widget's id
      * @param value read and written; flipped by a click
      * @return whether it was clicked this frame
      **/
@@ -458,7 +468,10 @@ class Immediate {
     /**
      * A number between two ends, set by pressing on the track or dragging along it.
      *
+     * @param label drawn on the track before the value, and the widget's id
      * @param value read and written; left alone when nothing is held on it
+     * @param low the value at the left end of the track
+     * @param high the value at the right end of the track
      * @return whether the value changed this frame
      **/
     bool sliderFloat(const std::string& label, float* value, float low, float high);
@@ -471,7 +484,9 @@ class Immediate {
      * on a tab does at endTabBar(). A press anywhere outside the list closes it, and so does
      * a frame that does not draw the combo.
      *
+     * @param label the combo's id, which is not drawn
      * @param selected read and written - the index of the chosen item
+     * @param items what the list offers, in order. An index outside it shows no item
      * @return whether the choice changed this frame
      **/
     bool combo(const std::string& label, int* selected, const std::vector<std::string>& items);

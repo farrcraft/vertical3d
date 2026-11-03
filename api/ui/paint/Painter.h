@@ -36,7 +36,12 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
  * inside the outline. An outline thicker than the radius it turns squares its corners off
  * rather than folding them.
  *
+ * @param canvas what the outline is drawn on, or null to draw nothing
+ * @param min the box's top left corner, in canvas pixels
+ * @param max the box's bottom right corner, in canvas pixels
+ * @param radius how far the corners are rounded, clamped to half the shorter side
  * @param width how thick the outline is, clamped to half the shorter side
+ * @param colour what the outline is drawn in. A transparent one draws nothing
  **/
 void strokeBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, float width, const glm::vec4& colour);
@@ -56,6 +61,11 @@ struct Plate {
  * usually carries an alpha. An outline behind it would tint the whole box, and would hide
  * whatever the box covers.
  *
+ * @param canvas what the box is drawn on, or null to draw nothing
+ * @param min the box's top left corner, in canvas pixels
+ * @param max the box's bottom right corner, in canvas pixels
+ * @param radius how far the outline's corners are rounded. The fill's corners are rounded by
+ *        the radius less the width
  * @param width how thick the outline is. Nothing is traced when it is zero
  * @param colours what the box is filled with, and what its outline is
  **/

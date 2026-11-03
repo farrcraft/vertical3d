@@ -112,6 +112,7 @@ class Canvas final {
      *
      * @param size how wide and tall the space is, in its own units. Zero in either goes
      *        back to drawing in pixels
+     * @param fit how the space maps onto the canvas when their aspects differ
      **/
     void space(const glm::vec2& size, Fit fit);
 
@@ -212,14 +213,18 @@ class Canvas final {
      * An untextured rectangle, drawn against the renderer's white texture.
      * @param min the top left corner in pixels
      * @param max the bottom right corner in pixels
+     * @param colour the fill colour
      **/
     void rect(const glm::vec2& min, const glm::vec2& max, const glm::vec4& colour);
 
     /**
      * A rectangle sampling a region of a texture.
+     * @param min the top left corner in pixels
+     * @param max the bottom right corner in pixels
      * @param uv0 the texture coordinate at min
      * @param uv1 the texture coordinate at max
      * @param colour multiplied with what is sampled, so white leaves the texture alone
+     * @param texture the texture to sample. An unset handle samples the renderer's white texture
      **/
     void rect(const glm::vec2& min, const glm::vec2& max, const glm::vec2& uv0, const glm::vec2& uv1,
         const glm::vec4& colour, const resource::TextureHandle& texture);
@@ -245,7 +250,10 @@ class Canvas final {
 
     /**
      * A filled circle, as a fan of triangles.
+     * @param centre the centre in pixels
+     * @param radius the radius in pixels
      * @param sides how many segments to approximate it with
+     * @param colour the fill colour
      **/
     void circle(const glm::vec2& centre, float radius, unsigned int sides, const glm::vec4& colour);
 
@@ -341,6 +349,7 @@ class Canvas final {
      *
      * @param vertices positions, page coordinates, colours and contrasts, copied rather than kept
      * @param indices three per triangle, each naming one of these vertices
+     * @param page the texture holding the glyphs' coverage
      **/
     void glyphs(std::span<const Vertex> vertices, std::span<const uint32_t> indices, const resource::TextureHandle& page);
 

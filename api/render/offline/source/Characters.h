@@ -55,6 +55,7 @@ class Characters final {
      *
      * @param lineEnds whether a newline ends the string unterminated rather than being part
      *        of it
+     * @param text the string's characters are appended to it, without the closing quote
      * @return false when the string was not terminated
      **/
     bool quoted(bool lineEnds, std::string* text);

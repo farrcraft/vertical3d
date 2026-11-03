@@ -9,6 +9,10 @@
 
 namespace v3d::brep {
 
+/**
+ * One side of an edge. It names the vertex it ends at, the face to its left, the half edge
+ * running the other way, and the next half edge around its face.
+ **/
 class HalfEdge {
  public:
     HalfEdge();

@@ -12,6 +12,7 @@
 namespace v3d::event::kind {
 
 /**
+ * A key came up. The event's name is the key's name.
  **/
 class KeyUp final : public Key {
  public:

@@ -69,6 +69,7 @@ class Transition final {
 class Opening final {
  public:
     /**
+     * @param clock the time and frame this is drawn at
      * @param duration how long opening takes, in seconds. Zero or less is open at once
      * @return how far open, from 0 to 1
      **/

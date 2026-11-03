@@ -40,6 +40,8 @@ namespace v3d::render::offline::trace {
 class Tracer final {
  public:
     /**
+     * @param scene what the rays are traced through, kept by pointer. Null gives a tracer whose
+     *        rays meet nothing
      * @param textures the images a shader may name, or null for a scene that names none,
      *        which leaves every texture() black
      **/

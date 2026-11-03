@@ -77,6 +77,8 @@ class Bar : public Component {
      * menu's own bounds are its panel.
      *
      * @param index which menu, which must be less than count()
+     * @param position the label's top left corner, in canvas pixels
+     * @param size the label's width and height, in pixels
      **/
     void place(std::size_t index, const glm::vec2& position, const glm::vec2& size);
 

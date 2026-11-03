@@ -12,6 +12,9 @@
 
 namespace v3d::image::writer {
 
+/**
+ * Encodes an image as a bmp file.
+ **/
 class Bmp final : public v3d::image::Writer {
  public:
     Bmp(const boost::shared_ptr<v3d::log::Logger> & logger);

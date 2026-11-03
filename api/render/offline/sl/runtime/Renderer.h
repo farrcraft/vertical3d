@@ -19,6 +19,17 @@
 namespace v3d::render::offline::sl::runtime {
 
 /**
+ * The cone a surface's illuminance loop gathers light from at each point: its axis and its half
+ * angle in radians. Both null for a loop with no cone, which gathers from every direction. A
+ * light with a `solar` angle chooses its direction against it.
+ **/
+class Cone final {
+ public:
+    const Value* axis = nullptr;
+    const Value* angle = nullptr;
+};
+
+/**
  * What the machine reads from a renderer.
  *
  * A shader run has no access to buckets, grids, rays or scenes. What it does need arrives
@@ -30,17 +41,6 @@ namespace v3d::render::offline::sl::runtime {
  * test's stand-in for one, implements only what it supports. Only the coordinate space is
  * required, because a renderer that cannot say where it is shading has nothing to shade.
  **/
-/**
- * The cone a surface's illuminance loop gathers light from at each point: its axis and its half
- * angle in radians. Both null for a loop with no cone, which gathers from every direction. A
- * light with a `solar` angle chooses its direction against it.
- **/
-class Cone final {
- public:
-    const Value* axis = nullptr;
-    const Value* angle = nullptr;
-};
-
 class Renderer {
  public:
     /**

@@ -17,6 +17,8 @@ namespace v3d::input {
  **/
 bool isButtonName(std::string_view name);
 /**
+ * Turns SDL's mouse button, motion and wheel events into this library's events, and tracks the
+ * cursor, the held buttons and the wheel.
  **/
 class Mouse : public Device {
  public:

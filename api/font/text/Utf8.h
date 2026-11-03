@@ -17,6 +17,7 @@ namespace v3d::font::text {
  * A byte that does not begin a well formed sequence gives U+FFFD, the replacement character,
  * and the index moves on by that one byte. Overlong forms and surrogates count as malformed.
  *
+ * @param utf8 the string to read from
  * @param index where to read, which must be before the end, moved to the next character
  **/
 char32_t next(std::string_view utf8, std::size_t* index);

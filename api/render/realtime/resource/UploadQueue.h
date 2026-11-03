@@ -49,6 +49,8 @@ class UploadQueue final {
      * A completion holds the queue weakly, so a result that arrives after the queue is gone is
      * dropped.
      *
+     * @param worker the worker the job runs on. It is not kept
+     * @param handle the handle the result is uploaded for, passed back to poll()'s callbacks
      * @param job takes nothing and returns a Value. It runs on the worker thread
      * @throw whatever the worker's post() throws, and then nothing is queued
      **/

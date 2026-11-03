@@ -78,6 +78,7 @@ class Runtime final {
 
     /**
      * Strip a source's types and run it.
+     * @param source TypeScript, or JavaScript, which has no types to strip
      * @param name what the source is called in a problem it reports
      **/
     Result run(std::string_view source, std::string_view name);

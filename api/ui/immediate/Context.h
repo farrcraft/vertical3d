@@ -300,6 +300,7 @@ class Context final {
      * Start writing into the body of a window or a region: rows go inside it, clipped to it and
      * scrolled, and the wheel over it scrolls it.
      *
+     * @param body the window or region the rows go into
      * @param shown false for a folded window, which takes the rows' margins and nothing else
      **/
     void openBody(const Body& body, bool shown);

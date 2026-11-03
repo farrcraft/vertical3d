@@ -23,7 +23,10 @@ namespace v3d::render::realtime::entity {
  * measured as sprites() measures a sprite's, so particles and sprites handed to one order sort
  * among each other.
  *
+ * @param registry the emitters to draw
  * @param alpha engine::Engine::alpha(), or one for emitters stepped once a frame
+ * @param billboard the camera's right and up, and the axis keys are measured along
+ * @param order the depth order the quads are added to
  **/
 void particles(const entt::registry& registry, float alpha, const Billboard& billboard, canvas::DepthOrder* order);
 

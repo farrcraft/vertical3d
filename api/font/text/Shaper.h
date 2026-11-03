@@ -68,6 +68,9 @@ class Shaper final {
     /**
      * Shape a UTF-8 string at a size in pixels.
      *
+     * @param utf8 the string to shape
+     * @param style the weight and style each face is chosen by
+     * @param size the size to shape at, in pixels
      * @param features turned on or off across the whole string. A tag that is not four letters
      *        is left out
      * @param variations set on each variable face's axes across the whole string
@@ -85,7 +88,16 @@ class Shaper final {
      * string. The rest of the string is the context, so the characters either side of the range
      * shape its edges as they would inside one run.
      *
+     * @param utf8 the whole string
+     * @param from the byte offset the range starts at
+     * @param to the byte offset just past the range's end
      * @param bidi resolved over the whole string
+     * @param style the weight and style each face is chosen by
+     * @param size the size to shape at, in pixels
+     * @param features turned on or off across the range. A tag that is not four letters is
+     *        left out
+     * @param variations set on each variable face's axes across the range
+     * @param language the BCP 47 tag of the string's language, or empty for none
      * @return the range's runs, or none for an empty range, a range out of the string, a size
      *         that is not from 0 to LARGEST, or a chain with no faces
      **/

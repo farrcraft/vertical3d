@@ -56,6 +56,7 @@ std::uint8_t fieldSpread(float reach);
 Key fieldKey(const face::Face* face, unsigned int index, float reach, const std::vector<std::int32_t>& coordinates = {});
 
 /**
+ * @param effect the effect, whose width and softness are in pixels
  * @param size the size the text is drawn at, in pixels
  * @return how far past a glyph's edge an effect reaches, in em units
  **/
@@ -65,7 +66,9 @@ float effectReach(const text::Effect& effect, float size);
  * Where an effect's coverage is whole and where it reaches nothing, as values of a field made
  * with a spread. Coverage fades between the two, and is whole inside the first.
  *
+ * @param effect the effect, whose width and softness are in pixels
  * @param size the size the text is drawn at, in pixels
+ * @param spread the field's spread, in its pixels, as fieldSpread() gives it
  * @return the value at which the effect is whole, then the value at which it is gone
  **/
 glm::vec2 effectRamp(const text::Effect& effect, float size, std::uint8_t spread);

@@ -11,6 +11,9 @@
 
 namespace v3d::brep {
 
+/**
+ * A point of a mesh. It also holds a half edge index, which no brep operation sets.
+ **/
 class Vertex final {
  public:
     Vertex();

@@ -12,6 +12,7 @@
 namespace v3d::event::kind {
 
 /**
+ * A key changed edge. The event's name is the key's name, such as "escape".
  **/
 class Key : public Event {
  public:

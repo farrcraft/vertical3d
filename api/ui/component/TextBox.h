@@ -52,6 +52,7 @@ class TextBox : public Component {
      * Clamped to the text and moved to a character boundary, so an offset inside a
      * multi-byte character is not expressible.
      *
+     * @param offset the byte offset the caret moves to
      * @param extend whether the anchor stays where it is, so the move selects the run
      *        travelled
      **/
@@ -162,6 +163,7 @@ class TextBox : public Component {
      * puts it near the start of its text. The point is in canvas pixels and only its x is
      * read, because a box holds one line.
      *
+     * @param point where the press landed, in canvas pixels
      * @param type what the box's text is drawn in
      * @param extend whether the anchor stays where it was, as it does during a drag
      **/
