@@ -9,24 +9,19 @@
  * Usage: node scripts/filelength.ts
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
 /** The most lines a file may have. */
 export const LIMIT = 1000;
 
-/** Directories whose files are not this tree's code. */
-const VENDORED = ['vendor/', 'demos/voxel/src/noise/'];
-
-/** Whether a path is checked: a C++ file that is neither vendored nor a test. */
+/** Whether a path is checked: a C++ file that is neither third-party code nor a test. */
 export function checked(file: string): boolean {
-    return /\.(h|cpp|cxx)$/.test(file) && !/(^|\/)tests\//.test(file) && !VENDORED.some((v) => file.startsWith(v));
+    return /\.(h|cpp|cxx)$/.test(file) && !isTestPath(file) && !isThirdParty(file);
 }
 
 /** How many lines a text has. A final line break ends the last line rather than starting one. */
@@ -40,13 +35,8 @@ export function lineCount(text: string): number {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/filelength.ts');
-        return 2;
-    }
-    const files = execFileSync('git', ['ls-files', '-z', '--', '*.h', '*.cpp', '*.cxx'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
-        .filter((f) => f !== '' && checked(f));
+    options('usage: node scripts/filelength.ts', {});
+    const files = tracked('*.h', '*.cpp', '*.cxx').filter(checked);
     let count = 0;
     for (const file of files) {
         const lines = lineCount(readFileSync(path.join(ROOT, file), 'utf8'));
@@ -62,6 +52,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

@@ -1,5 +1,5 @@
 /**
- * Tests for the entry points of the review gates that read C++ through scripts/lexer.ts.
+ * Tests for the entry points of the review gates that read C++ through scripts/lib/lexer.ts.
  *
  * Most tests feed a gate a shape of C++ source that a lexer can misread. The last ones start each
  * gate as a process, to see that it runs. Run them with node --test "scripts/tests/*.test.ts".
@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
-import { supportedNode } from '../entry.ts';
+import { supportedNode } from '../lib/entry.ts';
 import { casesIn, dropCall, inBase, namedCommit, unknownCommands } from '../failsfirst.ts';
 import { includesIn, usesIn } from '../linkrule.ts';
 import { checkLines } from '../prose.ts';

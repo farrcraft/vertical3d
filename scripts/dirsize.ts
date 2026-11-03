@@ -14,19 +14,12 @@
  * Usage: node scripts/dirsize.ts
  */
 
-import { execFileSync } from 'node:child_process';
-import * as path from 'node:path';
-import process from 'node:process';
-
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { isTestPath, isThirdParty } from './lib/tree.ts';
 
 /** The most headers a directory may hold before it has to be split or listed. */
 export const LIMIT = 15;
-
-/** Directories whose files are not this tree's code. */
-const VENDORED = ['vendor/', 'demos/voxel/src/noise/'];
 
 /**
  * The directories allowed more than LIMIT headers, each with the family every header in it
@@ -48,9 +41,9 @@ export interface Finding {
     message: string;
 }
 
-/** Whether a path is counted: a header that is neither vendored nor a test. */
+/** Whether a path is counted: a header that is neither third-party code nor a test. */
 export function counted(file: string): boolean {
-    return file.endsWith('.h') && !/(^|\/)tests\//.test(file) && !VENDORED.some((v) => file.startsWith(v));
+    return file.endsWith('.h') && !isTestPath(file) && !isThirdParty(file);
 }
 
 /** How many counted headers are directly in each directory. A file at the root is in ".". */
@@ -86,14 +79,8 @@ export function check(counts: ReadonlyMap<string, number>, limit: number, cohesi
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/dirsize.ts');
-        return 2;
-    }
-    const files = execFileSync('git', ['ls-files', '-z', '--', '*.h'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
-        .filter((f) => f !== '');
-    const findings = check(headerCounts(files), LIMIT, COHESIVE);
+    options('usage: node scripts/dirsize.ts', {});
+    const findings = check(headerCounts(tracked('*.h')), LIMIT, COHESIVE);
     for (const finding of findings) {
         console.log(`${finding.directory}: ${finding.rule}: ${finding.message}`);
     }
@@ -104,6 +91,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

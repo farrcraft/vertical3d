@@ -11,7 +11,7 @@
 //     node scripts/failsfirst.ts --build out/build/ci   reuse another build's packages.
 //
 // Node runs this file directly, with its types stripped. It uses only Node's built-in modules
-// and the lexer and entry modules beside it.
+// and the gates' modules in scripts/lib.
 //
 // What it does:
 //
@@ -93,9 +93,9 @@
 // without the code it tests, so the line also says how that was checked: by breaking the code by
 // hand and watching the case fail. A reviewer reads that part.
 //
-// The build environment is the one scripts\build.cmd enters: vcvars64.bat under Visual Studio 18
-// or 2022 Community, or the file V3D_VCVARS names. A cold build of a suite compiles every library
-// it links, which takes several minutes for the render suites.
+// The build environment is the one scripts\vcvars.cmd enters for scripts\build.cmd: vcvars64.bat
+// under Visual Studio 18 or 2022 Community, or the file V3D_VCVARS names. A cold build of a suite
+// compiles every library it links, which takes several minutes for the render suites.
 //
 // Limits:
 //
@@ -123,10 +123,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 import process from "node:process";
 
-import { shouldRun } from "./entry.ts";
-import { blankComments } from "./lexer.ts";
+import { options, runGate } from "./lib/cli.ts";
+import { GateError, commit, gitOutcome, mergeBase } from "./lib/git.ts";
+import { blankComments } from "./lib/lexer.ts";
+import { ROOT, isTestPath } from "./lib/tree.ts";
 
-const ROOT = path.resolve(import.meta.dirname, "..");
 const DEFAULT_BUILD = path.join("out", "build", "x64-Debug");
 const MAX_BUFFER = 512 * 1024 * 1024;
 
@@ -177,17 +178,11 @@ const COVERS = /^Covers the base:\s*/;
 const COMMIT = /\b[0-9a-f]{7,40}\b/;
 const SOURCE_SUFFIXES = [".cpp", ".cxx", ".cc", ".c"];
 
-// The developer environment, as scripts\build.cmd enters it, followed by a dump of the
+// The developer environment, as scripts\vcvars.cmd enters it, followed by a dump of the
 // environment it leaves, which the build steps below are given.
 const ENVIRONMENT_CMD = [
     "@echo off",
-    'if not defined V3D_VCVARS set "V3D_VCVARS=%ProgramFiles%\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"',
-    'if not exist "%V3D_VCVARS%" set "V3D_VCVARS=%ProgramFiles%\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"',
-    'if not exist "%V3D_VCVARS%" (',
-    "    echo Could not find vcvars64.bat. Set V3D_VCVARS to it, or see docs/contributing/Build.md. 1>&2",
-    "    exit /b 1",
-    ")",
-    'call "%V3D_VCVARS%" >nul || exit /b 1',
+    `call "${path.join(ROOT, "scripts", "vcvars.cmd")}" || exit /b 1`,
     "set",
     "",
 ].join("\r\n");
@@ -221,31 +216,20 @@ type Options = {
     build: string;
 };
 
-class Failure extends Error {}
-
 // Runs git with every path taken literally, so that a file name with a glob character in it
 // names only that file.
 function git(args: string[], cwd: string = ROOT, check: boolean = true): { code: number; stdout: string } {
-    const done = spawnSync("git", ["--literal-pathspecs", ...args], { cwd, encoding: "utf8", maxBuffer: MAX_BUFFER });
-    const code = done.status ?? 1;
-    if (check && code !== 0) {
-        throw new Failure(`git ${args.join(" ")} failed:\n${(done.stderr ?? "").trim()}`);
+    const done = gitOutcome(["--literal-pathspecs", ...args], cwd);
+    if (check && done.code !== 0) {
+        throw new GateError(`git ${args.join(" ")} failed:\n${done.stderr.trim()}`);
     }
-    return { code, stdout: done.stdout ?? "" };
-}
-
-function resolve(ref: string): string {
-    return git(["rev-parse", "--verify", ref + "^{commit}"]).stdout.trim();
+    return done;
 }
 
 // The file's text at the revision, or null when it does not exist there.
 function show(revision: string, file: string): string | null {
     const done = git(["show", `${revision}:${file}`], ROOT, false);
     return done.code === 0 ? done.stdout : null;
-}
-
-function isTestFile(file: string): boolean {
-    return file.split("/").slice(0, -1).includes("tests");
 }
 
 function isSource(file: string): boolean {
@@ -355,7 +339,7 @@ function listedSources(revision: string): ListedSource[] {
     const listed: ListedSource[] = [];
     const files = git(["ls-tree", "-r", "-z", "--name-only", revision]).stdout.split("\0");
     for (const file of files) {
-        if (path.posix.basename(file) !== "CMakeLists.txt" || !isTestFile(file)) {
+        if (path.posix.basename(file) !== "CMakeLists.txt" || !isTestPath(file)) {
             continue;
         }
         const text = (show(revision, file) ?? "").replace(/#[^\n]*/g, "");
@@ -400,7 +384,7 @@ export function inBase(covers: string, base: string): string | null {
 function findNewCases(base: string, head: string, changes: Change[]): { cases: Case[]; unregistered: string[] } {
     const headMap = suiteMap(head);
     const baseMap = suiteMap(base);
-    const touched = [...new Set(changes.map((c) => c.file).filter((f) => isTestFile(f) && isSource(f)))].sort();
+    const touched = [...new Set(changes.map((c) => c.file).filter((f) => isTestPath(f) && isSource(f)))].sort();
 
     const collect = (revision: string, mapping: Map<string, SuiteEntry>): Map<string, Map<string, [string, Found]>> => {
         const bySuite = new Map<string, Map<string, [string, Found]>>();
@@ -450,16 +434,6 @@ function findNewCases(base: string, head: string, changes: Change[]): { cases: C
     return { cases, unregistered };
 }
 
-function defaultBase(): string {
-    for (const ref of ["origin/main", "main"]) {
-        const done = git(["merge-base", "HEAD", ref], ROOT, false);
-        if (done.code === 0) {
-            return done.stdout.trim();
-        }
-    }
-    throw new Failure("no merge base with origin/main or main; pass --base");
-}
-
 function printTable(cases: Case[], withResult: boolean): void {
     const headers = ["case", "suite", "file", ...(withResult ? ["result"] : [])];
     const rows = cases.map((c) => {
@@ -500,7 +474,7 @@ function printStated(cases: Case[]): void {
 function readCache(build: string): Map<string, string> {
     const file = path.join(build, "CMakeCache.txt");
     if (!fs.existsSync(file)) {
-        throw new Failure(`${build} is not configured; the worktree build reuses its packages`);
+        throw new GateError(`${build} is not configured; the worktree build reuses its packages`);
     }
     const values = new Map<string, string>();
     for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
@@ -517,7 +491,7 @@ function developerEnvironment(scratch: string): Env {
     fs.writeFileSync(script, ENVIRONMENT_CMD);
     const done = spawnSync("cmd", ["/d", "/c", script], { encoding: "utf8", maxBuffer: MAX_BUFFER });
     if (done.status !== 0) {
-        throw new Failure("could not enter the developer environment:\n" + (done.stderr ?? "").trim());
+        throw new GateError("could not enter the developer environment:\n" + (done.stderr ?? "").trim());
     }
     const env: Env = {};
     for (const line of done.stdout.split(/\r?\n/)) {
@@ -576,8 +550,8 @@ function makeWorktree(head: string, base: string, changes: Change[], worktree: s
     git(["worktree", "add", "--detach", worktree, head]);
     // a deleted file comes back even under tests/, because a base CMakeLists.txt may add the
     // test directory it was in. A head list does not name it, so it builds into nothing
-    const restore = changes.filter((c) => c.status === "D" || (!isTestFile(c.file) && c.status !== "A")).map((c) => c.file);
-    const remove = changes.filter((c) => !isTestFile(c.file) && c.status === "A").map((c) => c.file);
+    const restore = changes.filter((c) => c.status === "D" || (!isTestPath(c.file) && c.status !== "A")).map((c) => c.file);
+    const remove = changes.filter((c) => !isTestPath(c.file) && c.status === "A").map((c) => c.file);
     for (let i = 0; i < restore.length; i += 100) {
         git(["checkout", base, "--", ...restore.slice(i, i + 100)], worktree);
     }
@@ -735,7 +709,7 @@ function configure(worktree: string, build: string, mainBuild: string, cache: Ma
         // a head tests/CMakeLists.txt can call a helper the change added outside tests/
         for (const { file, line, command: name } of unknownCommands(output)) {
             const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join("/");
-            if (!isTestFile(relative)) {
+            if (!isTestPath(relative)) {
                 continue;
             }
             const full = path.join(worktree, ...relative.split("/"));
@@ -747,7 +721,7 @@ function configure(worktree: string, build: string, mainBuild: string, cache: Ma
             }
         }
         if (!progress || attempt >= 10) {
-            throw new Failure("the worktree did not configure:\n" + tail(output));
+            throw new GateError("the worktree did not configure:\n" + tail(output));
         }
     }
 }
@@ -869,7 +843,7 @@ function buildSuite(suite: string, directory: string, sources: string[], cases: 
         // a test file that does not build is dropped whether or not it has new cases: one with
         // none loses nothing, and the rest of the suite can still run
         const failed = failedSources(output, directory, suite, sources);
-        if (!failed || failed.length === 0 || failed.some((f) => !isTestFile(f) || dropped.has(f))) {
+        if (!failed || failed.length === 0 || failed.some((f) => !isTestPath(f) || dropped.has(f))) {
             console.log(tail(output, 20));
             markUnbuilt(cases);
             return null;
@@ -970,7 +944,7 @@ function check(cases: Case[], base: string, head: string, changes: Change[], opt
     const scratch = options.scratch ??
         path.join(os.tmpdir(), "v3d-failsfirst", `${base.slice(0, 8)}-${head.slice(0, 8)}`);
     if (fs.existsSync(scratch)) {
-        throw new Failure(`${scratch} exists; remove it or pass --scratch`);
+        throw new GateError(`${scratch} exists; remove it or pass --scratch`);
     }
     // read before the scratch directory exists, so a build that is not configured leaves nothing
     const cache = readCache(options.build);
@@ -1053,100 +1027,80 @@ Check that the test cases a changeset adds fail without its code.
   --build DIR        the configured build whose packages and settings are reused
                      (default: out/build/x64-Debug)`;
 
-function parseOptions(argv: string[]): Options {
-    const options: Options = {
-        base: null, commit: null, list: false, keep: false, scratch: null, timeout: 900, build: path.join(ROOT, DEFAULT_BUILD),
-    };
-    for (let i = 0; i < argv.length; i++) {
-        const arg = argv[i];
-        const value = (): string => {
-            if (i + 1 >= argv.length) {
-                throw new Failure(`${arg} needs a value`);
-            }
-            return argv[++i];
-        };
-        if (arg === "--base") {
-            options.base = value();
-        } else if (arg === "--commit") {
-            options.commit = value();
-        } else if (arg === "--scratch") {
-            options.scratch = value();
-        } else if (arg === "--build") {
-            options.build = path.resolve(ROOT, value());
-        } else if (arg === "--timeout") {
-            options.timeout = Number.parseInt(value(), 10);
-            if (!(options.timeout > 0)) {
-                throw new Failure("--timeout needs a whole number of seconds");
-            }
-        } else if (arg === "--list") {
-            options.list = true;
-        } else if (arg === "--keep") {
-            options.keep = true;
-        } else if (arg === "-h" || arg === "--help") {
-            console.log(USAGE);
-            process.exit(0);
-        } else {
-            throw new Failure(`unknown argument ${arg}\n${USAGE}`);
-        }
+// The options, or null when the command line asks for the usage.
+function parseOptions(argv: string[]): Options | null {
+    const { values } = options(USAGE, {
+        base: { type: "string" }, commit: { type: "string" }, scratch: { type: "string" }, build: { type: "string" },
+        timeout: { type: "string" }, list: { type: "boolean" }, keep: { type: "boolean" }, help: { type: "boolean", short: "h" },
+    }, false, argv);
+    if (values.help === true) {
+        return null;
     }
-    return options;
+    const timeout = values.timeout ?? "900";
+    // a whole number of seconds, written in digits alone
+    if (!/^\d+$/.test(timeout) || Number(timeout) === 0) {
+        throw new GateError("--timeout needs a whole number of seconds");
+    }
+    return {
+        base: values.base ?? null,
+        commit: values.commit ?? null,
+        list: values.list === true,
+        keep: values.keep === true,
+        scratch: values.scratch ?? null,
+        timeout: Number(timeout),
+        build: path.resolve(ROOT, values.build ?? DEFAULT_BUILD),
+    };
 }
 
 function main(): number {
-    try {
-        const options = parseOptions(process.argv.slice(2));
-        let base: string;
-        let head: string;
-        if (options.commit) {
-            if (options.base) {
-                throw new Failure("--commit and --base cannot be combined");
-            }
-            head = resolve(options.commit);
-            base = resolve(head + "^");
-        } else {
-            head = resolve("HEAD");
-            base = options.base ? resolve(options.base) : defaultBase();
-        }
-
-        const changes = changedFiles(base, head);
-        const { cases, unregistered } = findNewCases(base, head, changes);
-        console.log(`changeset ${base.slice(0, 9)}..${head.slice(0, 9)}: ${changes.length} files changed, ${cases.length} new test cases`);
-        for (const file of unregistered) {
-            console.log(`warning: ${file} has cases but no v3d_add_test list names it`);
-        }
-        if (cases.length === 0) {
-            return 0;
-        }
-        if (options.list) {
-            printTable(cases, false);
-            printStated(cases);
-            return 0;
-        }
-
-        check(cases, base, head, changes, options);
-        console.log();
-        printTable(cases, true);
-        printStated(cases);
-        const weak = cases.filter((c) => c.result === PASSES);
-        const unrun = cases.filter((c) => c.result === NOT_RUN || c.result === SKIPPED);
-        if (weak.length > 0) {
-            console.log(`\n${weak.length} case(s) pass without the change. Each is a weak test.`);
-            return 1;
-        }
-        if (unrun.length > 0) {
-            console.log(`\n${unrun.length} case(s) were not run, so they are not checked.`);
-            return 2;
-        }
+    const options = parseOptions(process.argv.slice(2));
+    if (options === null) {
+        console.log(USAGE);
         return 0;
-    } catch (error) {
-        if (error instanceof Failure) {
-            console.error(`failsfirst: ${error.message}`);
-            return 2;
-        }
-        throw error;
     }
+    let base: string;
+    let head: string;
+    if (options.commit !== null) {
+        if (options.base !== null) {
+            throw new GateError("--commit and --base cannot be combined");
+        }
+        head = commit(options.commit);
+        base = commit(head + "^");
+    } else {
+        head = commit("HEAD");
+        base = options.base !== null ? commit(options.base) : mergeBase();
+    }
+
+    const changes = changedFiles(base, head);
+    const { cases, unregistered } = findNewCases(base, head, changes);
+    console.log(`changeset ${base.slice(0, 9)}..${head.slice(0, 9)}: ${changes.length} files changed, ${cases.length} new test cases`);
+    for (const file of unregistered) {
+        console.log(`warning: ${file} has cases but no v3d_add_test list names it`);
+    }
+    if (cases.length === 0) {
+        return 0;
+    }
+    if (options.list) {
+        printTable(cases, false);
+        printStated(cases);
+        return 0;
+    }
+
+    check(cases, base, head, changes, options);
+    console.log();
+    printTable(cases, true);
+    printStated(cases);
+    const weak = cases.filter((c) => c.result === PASSES);
+    const unrun = cases.filter((c) => c.result === NOT_RUN || c.result === SKIPPED);
+    if (weak.length > 0) {
+        console.log(`\n${weak.length} case(s) pass without the change. Each is a weak test.`);
+        return 1;
+    }
+    if (unrun.length > 0) {
+        console.log(`\n${unrun.length} case(s) were not run, so they are not checked.`);
+        return 2;
+    }
+    return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

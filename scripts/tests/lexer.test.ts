@@ -1,5 +1,5 @@
 /**
- * Tests for scripts/lexer.ts, the C++ lexer the review gates share.
+ * Tests for scripts/lib/lexer.ts, the C++ lexer the review gates share.
  *
  * Run them with node --test "scripts/tests/*.test.ts".
  */
@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { blankComments, codeLines, commentLines, isDigitSeparator, lex } from '../lexer.ts';
+import { blankComments, codeLines, commentLines, isDigitSeparator, lex } from '../lib/lexer.ts';
 
 /** The comment bodies of the text, as [line number, body] pairs. */
 function comments(text: string): Array<[number, string]> {

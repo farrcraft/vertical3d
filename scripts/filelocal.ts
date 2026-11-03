@@ -24,27 +24,22 @@
  *                        to its library's own sources and tests.
  *
  * A file is a test file when its path has a tests directory in it. The check reads code through
- * scripts/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor lines.
- * It does not parse C++. It follows braces, and sorts what comes before each brace or semicolon
- * at namespace scope by its first words. A variable initialised in parentheses is read as one
- * when the parentheses open on a literal, as in `std::atomic<int> next(1);`. One that opens on a
- * name, such as `Foo foo(bar);`, reads as a function declaration and is not reported.
+ * scripts/lib/lexer.ts, so nothing in a comment or a literal counts, and it skips preprocessor
+ * lines. It does not parse C++. It follows braces, and sorts what comes before each brace or
+ * semicolon at namespace scope by its first words. A variable initialised in parentheses is read
+ * as one when the parentheses open on a literal, as in `std::atomic<int> next(1);`. One that opens
+ * on a name, such as `Foo foo(bar);`, reads as a function declaration and is not reported.
  *
  * Usage: node scripts/filelocal.ts
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { codeLines } from './lexer.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
-
-/** Directories whose files are not this tree's code. */
-const VENDORED = ['vendor/', 'demos/voxel/src/noise/'];
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { codeLines } from './lib/lexer.ts';
+import { ROOT, isTestPath, isThirdParty } from './lib/tree.ts';
 
 export type Rule = 'type-in-source' | 'mutable-variable' | 'mutable-static-local' | 'outside-anonymous' | 'second-anonymous' | 'anonymous-late'
     | 'after-function' | 'internal-include';
@@ -70,7 +65,7 @@ export interface Kind {
 
 /** The kind of a repository path. */
 export function kindOf(file: string, externs: ReadonlySet<string> = new Set()): Kind {
-    return { path: file, source: /\.(cpp|cxx)$/.test(file), test: /(^|\/)tests\//.test(file), externs };
+    return { path: file, source: /\.(cpp|cxx)$/.test(file), test: isTestPath(file), externs };
 }
 
 /**
@@ -385,21 +380,16 @@ export function findings(text: string, kind: Kind): Finding[] {
 
 /** The tracked C++ files the check reads, relative to the root. */
 export function files(): string[] {
-    return execFileSync('git', ['ls-files', '-z', '--', '*.h', '*.cpp', '*.cxx'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
-        .filter((f) => f !== '' && !VENDORED.some((v) => f.startsWith(v)));
+    return tracked('*.h', '*.cpp', '*.cxx').filter((f) => !isThirdParty(f));
 }
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/filelocal.ts');
-        return 2;
-    }
-    const tracked = files();
-    const externs = new Set(tracked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
+    options('usage: node scripts/filelocal.ts', {});
+    const checked = files();
+    const externs = new Set(checked.filter((f) => f.endsWith('.h')).flatMap((f) => externNames(readFileSync(path.join(ROOT, f), 'utf8'))));
     let count = 0;
-    for (const file of tracked) {
+    for (const file of checked) {
         for (const { line, rule, message } of findings(readFileSync(path.join(ROOT, file), 'utf8'), kindOf(file, externs))) {
             console.log(`${file}:${line}: ${rule}: ${message}`);
             count++;
@@ -412,6 +402,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

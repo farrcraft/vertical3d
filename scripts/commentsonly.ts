@@ -26,12 +26,13 @@
  * cannot run.
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { lex } from './lexer.ts';
+import { options, runGate } from './lib/cli.ts';
+import { commit, git, untracked } from './lib/git.ts';
+import { lex } from './lib/lexer.ts';
+import { ROOT } from './lib/tree.ts';
 
 const SLASH_SUFFIXES = ['.h', '.hpp', '.cpp', '.cxx', '.glsl', '.vert', '.frag', '.comp'];
 const HASH_SUFFIXES = ['.cmake'];
@@ -50,18 +51,6 @@ export interface Finding {
     number: number;
     rule: string;
     detail: string;
-}
-
-/** A reason the script cannot run, printed as one line with exit status 2. */
-class Stop extends Error {}
-
-function git(...args: string[]): string {
-    try {
-        return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'pipe'] });
-    } catch (error) {
-        const stderr = String((error as { stderr?: unknown }).stderr ?? '').trim().split('\n')[0];
-        throw new Stop(`git ${args.join(' ')} failed${stderr ? ': ' + stderr : ''}`);
-    }
 }
 
 /** Whether the script reads a path, and which comment syntax it uses. */
@@ -183,40 +172,21 @@ export function compare(path: string, was: string, now: string): Finding[] {
 /** The checked files that differ from the base, with the status git gives each. */
 function changed(base: string): Array<{ status: string; path: string }> {
     const files: Array<{ status: string; path: string }> = [];
-    const fields = git('diff', '--name-status', '-z', ...DIFF_OPTIONS, base).split('\0');
+    const fields = git(['diff', '--name-status', '-z', ...DIFF_OPTIONS, base]).split('\0');
     for (let index = 0; index + 1 < fields.length; index += 2) {
         files.push({ status: fields[index], path: fields[index + 1] });
     }
-    for (const path of git('ls-files', '-z', '--others', '--exclude-standard').split('\0')) {
-        if (path) {
-            files.push({ status: 'A', path });
-        }
+    for (const path of untracked()) {
+        files.push({ status: 'A', path });
     }
     return files.filter((file) => syntax(file.path) !== null).sort((a, b) => a.path.localeCompare(b.path));
 }
 
-function usage(): never {
-    process.stderr.write('usage: node scripts/commentsonly.ts [--base REF]\n');
-    process.exit(2);
-}
-
 function main(): number {
-    const args = process.argv.slice(2);
-    let base = 'HEAD';
-    if (args.length === 2 && args[0] === '--base' && args[1].trim() !== '') {
-        base = args[1];
-    } else if (args.length === 1 && args[0].startsWith('--base=') && args[0].length > '--base='.length) {
-        base = args[0].slice('--base='.length);
-    } else if (args.length !== 0) {
-        usage();
-    }
-
-    process.chdir(git('rev-parse', '--show-toplevel').trim());
-    try {
-        git('rev-parse', '--verify', '--quiet', `${base}^{commit}`);
-    } catch {
-        throw new Stop(`--base ${base}: not a commit`);
-    }
+    const { values } = options('usage: node scripts/commentsonly.ts [--base REF]', { base: { type: 'string' } });
+    const base = values.base ?? 'HEAD';
+    process.chdir(ROOT);
+    commit(base);
 
     const findings: Finding[] = [];
     for (const { status, path } of changed(base)) {
@@ -225,7 +195,7 @@ function main(): number {
         } else if (status === 'D') {
             findings.push({ path, number: 0, rule: 'deleted', detail: 'a removed file is a code change' });
         } else {
-            findings.push(...compare(path, git('show', `${base}:${path}`), readFileSync(path, 'utf8')));
+            findings.push(...compare(path, git(['show', `${base}:${path}`]), readFileSync(path, 'utf8')));
         }
     }
     for (const { path, number, rule, detail } of findings) {
@@ -234,14 +204,4 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    try {
-        process.exitCode = main();
-    } catch (error) {
-        if (!(error instanceof Stop)) {
-            throw error;
-        }
-        process.stderr.write(`commentsonly.ts: ${error.message}\n`);
-        process.exitCode = 2;
-    }
-}
+runGate(import.meta.url, main);

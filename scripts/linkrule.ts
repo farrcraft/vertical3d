@@ -44,14 +44,13 @@
  * violation, 2 when the command is given an argument, and 0 otherwise.
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
-import { shouldRun } from './entry.ts';
-import { blankComments, codeLines } from './lexer.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { blankComments, codeLines } from './lib/lexer.ts';
+import { ROOT, isTestPath } from './lib/tree.ts';
 
 const SOURCE_SUFFIXES = ['.h', '.hpp', '.inl', '.c', '.cpp', '.cxx'];
 const HEADER_SUFFIXES = ['.h', '.hpp', '.inl'];
@@ -110,12 +109,6 @@ function read(p: string): string {
 
 function isFile(p: string): boolean {
     return existsSync(p) && statSync(p).isFile();
-}
-
-/** The tracked files matching the pathspecs, as plain paths: -z stops git quoting a name. */
-function lsFiles(...pathspecs: string[]): string[] {
-    return execFileSync('git', ['ls-files', '-z', '--', ...pathspecs], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0').filter((line) => line.length > 0);
 }
 
 function endsWithAny(name: string, suffixes: string[]): boolean {
@@ -196,7 +189,7 @@ function cmakeCommands(text: string): Array<[string, string[]]> {
 }
 
 function loadTargets(): { targets: Map<string, Target>; boost: string[] } {
-    const files = lsFiles('*CMakeLists.txt', '*.cmake').filter((f) => !f.startsWith('examples/'));
+    const files = tracked('*CMakeLists.txt', '*.cmake').filter((f) => !f.startsWith('examples/'));
     const targets = new Map<string, Target>();
     const linkCalls: string[][] = [];
     let boost: string[] = [];
@@ -359,7 +352,7 @@ class Tree {
 
     /** The target owning a path relative to the root, or null for a local file. */
     owner(relpath: string): string | null {
-        if (('/' + relpath).includes('/tests/')) {
+        if (isTestPath(relpath)) {
             return null;
         }
         let best: string | null = null;
@@ -377,7 +370,7 @@ class Tree {
 
     /** Map each namespace an api library declares, joined by ::, to the libraries declaring it. */
     findNamespaces(): void {
-        for (const f of lsFiles('api')) {
+        for (const f of tracked('api')) {
             if (!endsWithAny(f, SOURCE_SUFFIXES)) {
                 continue;
             }
@@ -489,7 +482,7 @@ function check(tree: Tree, t: Target, boost: string[], report: Report): void {
         }
         for (const [name, found] of scan.includes) {
             let lib: string | null = null;
-            if (name.startsWith('api/') && !name.includes('/tests/')) {
+            if (name.startsWith('api/') && !isTestPath(name)) {
                 lib = tree.owner(name);
             } else if (found !== null) {
                 const r = rel(found);
@@ -609,10 +602,7 @@ function check(tree: Tree, t: Target, boost: string[], report: Report): void {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/linkrule.ts');
-        return 2;
-    }
+    options('usage: node scripts/linkrule.ts', {});
     const { targets, boost } = loadTargets();
     const tree = new Tree(targets);
     const found: string[] = [];
@@ -631,6 +621,4 @@ function main(): number {
     return found.length > 0 ? 1 : 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

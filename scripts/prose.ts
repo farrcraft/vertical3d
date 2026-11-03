@@ -36,17 +36,18 @@
  * Each finding prints as "path:line: rule: detail | sentence". The exit status is 1 when there
  * is a finding. It is 2 when the script cannot run: a --base that names no commit or shares no
  * history with HEAD, an empty --base, or a failed git command. It runs on Node 24 or later,
- * which strips the types. It needs only Node's own modules, scripts/lexer.ts and scripts/entry.ts.
+ * which strips the types, and needs only Node's own modules and the gates' modules in scripts/lib.
  */
 
 import { Buffer } from 'node:buffer';
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { commentLines } from './lexer.ts';
+import { UsageError, options, runGate } from './lib/cli.ts';
+import { git, mergeBase, untracked } from './lib/git.ts';
+import { commentLines } from './lib/lexer.ts';
+import { ROOT } from './lib/tree.ts';
 
 const MAX_WORDS = 35;
 const MAX_COLUMNS = 100;
@@ -147,45 +148,6 @@ export interface Finding {
 /** The lines a path adds, or null when the whole file is checked. */
 export type Added = Set<number> | null;
 
-/** A reason the script cannot run, printed as one line with exit status 2. */
-class Stop extends Error {}
-
-function git(...args: string[]): string {
-    try {
-        return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'pipe'] });
-    } catch (error) {
-        const stderr = String((error as { stderr?: unknown }).stderr ?? '').trim().split('\n')[0];
-        throw new Stop(`git ${args.join(' ')} failed${stderr ? ': ' + stderr : ''}`);
-    }
-}
-
-function succeeds(...args: string[]): boolean {
-    try {
-        git(...args);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-function mergeBase(ref: string | undefined): string {
-    if (ref !== undefined) {
-        if (!succeeds('rev-parse', '--verify', '--quiet', `${ref}^{commit}`)) {
-            throw new Stop(`--base ${ref}: not a commit`);
-        }
-        if (!succeeds('merge-base', 'HEAD', ref)) {
-            throw new Stop(`--base ${ref}: no merge base with HEAD`);
-        }
-        return git('merge-base', 'HEAD', ref).trim();
-    }
-    for (const candidate of ['origin/main', 'main']) {
-        if (succeeds('merge-base', 'HEAD', candidate)) {
-            return git('merge-base', 'HEAD', candidate).trim();
-        }
-    }
-    throw new Stop('no merge base of HEAD with origin/main or main; pass --base');
-}
-
 /**
  * Return the path a diff header line such as "+++ b/name" names, or null for /dev/null. Git
  * quotes a name that holds a control character, a quote, a backslash or a byte above 127, and
@@ -250,7 +212,7 @@ function excluded(path: string, newFiles: Set<string>): boolean {
 /** Map each changed path to the lines the working tree adds since base, and list the new files. */
 function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<string> } {
     const newFiles = new Set<string>();
-    const fields = git('diff', '--name-status', '-z', ...DIFF_OPTIONS, base).split('\0');
+    const fields = git(['diff', '--name-status', '-z', ...DIFF_OPTIONS, base]).split('\0');
     for (let index = 0; index + 1 < fields.length; index += 2) {
         if (fields[index] === 'A') {
             newFiles.add(fields[index + 1]);
@@ -262,7 +224,7 @@ function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<st
     // header, even when it is an added line that starts "++ "
     let oldLeft = 0;
     let newLeft = 0;
-    for (const line of git('diff', '--unified=0', ...DIFF_OPTIONS, base).split('\n')) {
+    for (const line of git(['diff', '--unified=0', ...DIFF_OPTIONS, base]).split('\n')) {
         if (oldLeft > 0 || newLeft > 0) {
             if (line.startsWith('+')) {
                 newLeft -= 1;
@@ -304,11 +266,9 @@ function addedLines(base: string): { added: Map<string, Added>; newFiles: Set<st
         }
     }
     // A file not yet added to the index is new in its entirety.
-    for (const path of git('ls-files', '-z', '--others', '--exclude-standard').split('\0')) {
-        if (path) {
-            newFiles.add(path);
-            added.set(path, null);
-        }
+    for (const path of untracked()) {
+        newFiles.add(path);
+        added.set(path, null);
     }
     return { added, newFiles };
 }
@@ -852,32 +812,16 @@ export function checkLines(path: string, lines: string[], added: Added): Finding
         || a.detail.localeCompare(b.detail));
 }
 
-function usage(): never {
-    process.stderr.write('usage: node scripts/prose.ts [--base REF] | --all FILE...\n');
-    process.exit(2);
-}
+const USAGE = 'usage: node scripts/prose.ts [--base REF] | --all FILE...';
 
 function main(): number {
-    const args = process.argv.slice(2);
-    let base: string | undefined;
-    let all: string[] | null = null;
-    for (let index = 0; index < args.length; index++) {
-        const arg = args[index];
-        if (arg === '--base' || arg.startsWith('--base=')) {
-            base = arg === '--base' ? args[++index] : arg.slice('--base='.length);
-            if (base === undefined || base.trim() === '') {
-                usage();
-            }
-        } else if (arg === '--all') {
-            all = args.slice(index + 1);
-            break;
-        } else {
-            usage();
-        }
+    const { values, positionals } = options(USAGE, { base: { type: 'string' }, all: { type: 'boolean' } }, true);
+    // --all names the files to check, and nothing else names files
+    if (values.all === true ? positionals.length === 0 || values.base !== undefined : positionals.length > 0) {
+        throw new UsageError(USAGE);
     }
-    if (all !== null && all.length === 0) {
-        usage();
-    }
+    const all = values.all === true ? positionals : null;
+    const base = values.base;
 
     const findings: Finding[] = [];
     if (all !== null) {
@@ -886,7 +830,7 @@ function main(): number {
             findings.push(...checkFile(path, null, new Set([path])));
         }
     } else {
-        process.chdir(git('rev-parse', '--show-toplevel').trim());
+        process.chdir(ROOT);
         const { added, newFiles } = addedLines(mergeBase(base));
         for (const path of [...added.keys()].sort()) {
             const lines = added.get(path) ?? null;
@@ -903,14 +847,4 @@ function main(): number {
     return findings.length > 0 ? 1 : 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    try {
-        process.exitCode = main();
-    } catch (error) {
-        if (!(error instanceof Stop)) {
-            throw error;
-        }
-        process.stderr.write(`prose.ts: ${error.message}\n`);
-        process.exitCode = 2;
-    }
-}
+runGate(import.meta.url, main);

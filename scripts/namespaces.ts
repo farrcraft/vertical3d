@@ -15,22 +15,20 @@
  *                      v3d::render::offline::uniform when there is no uniform directory.
  *
  * A file may open other namespaces besides its own, to forward-declare what another directory
- * defines. The check reads code through scripts/lexer.ts, so nothing in a comment or a literal
+ * defines. The check reads code through scripts/lib/lexer.ts, so nothing in a comment or a literal
  * counts, and it skips preprocessor lines. A nested namespace is named in full, so
  * `namespace v3d::font { namespace internal {` opens both v3d::font and v3d::font::internal.
  *
  * Usage: node scripts/namespaces.ts
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { codeLines } from './lexer.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { codeLines } from './lib/lexer.ts';
+import { ROOT, isTestPath } from './lib/tree.ts';
 
 /** Each root directory, and the namespace of the files directly in it. */
 export const ROOTS: Array<[string, string]> = [
@@ -60,7 +58,7 @@ export interface Opened {
  * a tests directory. The first root that holds the file is used, so a deeper root comes first.
  */
 export function expected(file: string): string | null {
-    if (/(^|\/)tests\//.test(file)) {
+    if (isTestPath(file)) {
         return null;
     }
     const root = ROOTS.find(([dir]) => file.startsWith(dir));
@@ -122,8 +120,7 @@ export function findings(text: string, own: string, known: Set<string>): Finding
 
 /** The tracked C++ files the check reads, relative to the root, each with its namespace. */
 export function files(): Array<[string, string]> {
-    return execFileSync('git', ['ls-files', '-z', '--', '*.h', '*.cpp', '*.cxx'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
+    return tracked('*.h', '*.cpp', '*.cxx')
         .flatMap((f) => {
             const own = expected(f);
             return own === null ? [] : [[f, own] as [string, string]];
@@ -132,10 +129,7 @@ export function files(): Array<[string, string]> {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/namespaces.ts');
-        return 2;
-    }
+    options('usage: node scripts/namespaces.ts', {});
     const checked = files();
     const known = new Set(checked.map(([, own]) => own));
     let count = 0;
@@ -152,6 +146,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

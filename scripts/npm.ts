@@ -23,14 +23,13 @@
  * Usage: node scripts/npm.ts
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { tracked } from './lib/git.ts';
+import { codeOnly } from './lib/script.ts';
+import { ROOT } from './lib/tree.ts';
 
 /** The npm registry, which every package in the lockfile has to come from. */
 const REGISTRY = 'https://registry.npmjs.org/';
@@ -126,31 +125,31 @@ export function isPackage(specifier: string): boolean {
 }
 
 /**
+ * Each statement that imports at run time: a static import or export from a specifier, an import
+ * for its side effects, and a dynamic import of a literal specifier. The patterns are matched on
+ * the code alone, where a specifier's quotes stay and its text is blanked, and the last group of
+ * each is the specifier's place. A static import starts a line, and its clause may span lines.
+ */
+const IMPORTS: RegExp[] = [
+    /^[ \t]*(?:import|export)\b(?!\s+type\b)[^;'"]*?\bfrom\s*['"]( *)['"]/dgm,
+    /^[ \t]*import\s*['"]( *)['"]/dgm,
+    /\bimport\s*\(\s*['"]( *)['"]\s*\)/dg,
+];
+
+/**
  * The packages a TypeScript file imports at run time, each with the line its statement starts on.
- * A static import or export from a package counts, and so does an import for its side effects
- * and a dynamic import of a literal specifier.
+ * An import or export inside a comment or a literal is not one.
  */
 export function packageImports(text: string): Array<{ line: number; specifier: string }> {
+    const code = codeOnly(text);
     const found: Array<{ line: number; specifier: string }> = [];
-    const lineOf = (index: number): number => text.slice(0, index).split('\n').length;
-    // a statement that starts a line, whose clause before "from" may span lines
-    const statement = /^[ \t]*(import|export)\b(?:\s+(type)\b)?([^;'"]*?)\bfrom\s*(['"])([^'"\n]+)\4/gm;
-    for (const match of text.matchAll(statement)) {
-        const specifier = match[5] ?? '';
-        if (match[2] === undefined && isPackage(specifier)) {
-            found.push({ line: lineOf(match.index), specifier });
-        }
-    }
-    for (const match of text.matchAll(/^[ \t]*import\s*(['"])([^'"\n]+)\1/gm)) {
-        const specifier = match[2] ?? '';
-        if (isPackage(specifier)) {
-            found.push({ line: lineOf(match.index), specifier });
-        }
-    }
-    for (const match of text.matchAll(/\bimport\s*\(\s*(['"])([^'"\n]+)\1\s*\)/g)) {
-        const specifier = match[2] ?? '';
-        if (isPackage(specifier)) {
-            found.push({ line: lineOf(match.index), specifier });
+    for (const pattern of IMPORTS) {
+        for (const match of code.matchAll(pattern)) {
+            const [start, end] = match.indices?.[1] ?? [0, 0];
+            const specifier = text.slice(start, end);
+            if (specifier !== '' && isPackage(specifier)) {
+                found.push({ line: text.slice(0, match.index).split('\n').length, specifier });
+            }
         }
     }
     return found.sort((a, b) => a.line - b.line);
@@ -164,19 +163,13 @@ function readJson(name: string): unknown {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/npm.ts');
-        return 2;
-    }
+    options('usage: node scripts/npm.ts', {});
     const findings = manifestFindings(readJson('package.json'), readJson('package-lock.json'));
     const npmrc = path.join(ROOT, '.npmrc');
     if (!existsSync(npmrc) || !scriptsOff(readFileSync(npmrc, 'utf8'))) {
         findings.push({ file: '.npmrc', line: null, rule: 'install-scripts', message: 'install scripts are not turned off with ignore-scripts=true' });
     }
-    const sources = execFileSync('git', ['ls-files', '-z', '--', '*.ts'], { cwd: ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
-        .split('\0')
-        .filter((f) => f !== '');
-    for (const file of sources) {
+    for (const file of tracked('*.ts')) {
         for (const { line, specifier } of packageImports(readFileSync(path.join(ROOT, file), 'utf8'))) {
             findings.push({ file, line, rule: 'package-import', message: `imports ${specifier} at run time` });
         }
@@ -191,6 +184,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

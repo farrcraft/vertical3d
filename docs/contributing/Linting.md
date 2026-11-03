@@ -262,7 +262,7 @@ the tag is annotated. Updating an action means changing both the sha and the com
 
 The workflow first type-checks every TypeScript file in the tree, as
 [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) describes. It then runs the gates'
-own tests in `scripts/tests/`, which cover the C++ lexer the gates share in `scripts/lexer.ts`.
+own tests in `scripts/tests/`, which cover the C++ lexer the gates share in `scripts/lib/lexer.ts`.
 Run them locally with `npm test`, or with `node --test "scripts/tests/*.test.ts"`, from the
 repository root.
 

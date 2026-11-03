@@ -45,12 +45,24 @@ at run time. Hand mutations of each rule fail a test. CI runs it beside `pinned.
 
 ### Step 3 — Shared modules in scripts/lib
 
-Not started. One module runs git and finds the merge base, and one reads the lines a change
-adds. One lists tracked files against a single list of vendored directories. One holds the
-command line: `parseArgs`, usage, the report format and the exit status. `lexer.ts` and
-`entry.ts` move there.
+**Done.** Every gate runs on the modules in `scripts/lib`:
+
+- `tree.ts` holds the root, one list of third-party directories and one of generated ones, and
+  the rule for a test path.
+- `git.ts` runs git, throws a `GateError` when a command fails, and names a commit and a merge
+  base.
+- `cli.ts` runs a gate when Node is started with it, reads its options through `parseArgs`, and
+  turns a `GateError` into exit status 2.
+- `script.ts` blanks the comments and literals of a TypeScript file.
+- `lexer.ts` and `entry.ts` moved there unchanged.
+
 `scripts/vcvars.cmd` enters the developer environment for `build.cmd`, `test.cmd` and
-failsfirst.
+failsfirst. A full failsfirst run on one commit entered it, built the suite and reported.
+
+The npm gate from step 2 read an import inside a string as a real one, and reported its own test
+file. It now matches on the code that `script.ts` leaves. Hand mutations of each module fail a
+test. Running the gates during this step found a file-local finding already on the branch, in
+`Presenter.cxx`, fixed in a commit of its own.
 
 ### Step 4 — The diff parser, tested
 
@@ -75,10 +87,10 @@ tables, link-only lines, and the exemptions for plans and ADRs.
 Not started. Split `linkrule.ts` into the CMake reader, targets, the include walk and the rules.
 Test each of the six rules against a small fixture tree.
 
-### Step 8 — The remaining gates on the shared modules
+### Step 8 — One report format, and one test file per gate
 
-Not started. Every gate uses the modules from step 3, takes its options through one parser, and
-reports in one format. `gates.test.ts` is split into one test file per gate.
+Not started. Step 3 put every gate on the shared modules and one option parser. Every gate also
+reports in one format, and `gates.test.ts` is split into one test file per gate.
 
 ### Step 9 — The tree's rules apply to scripts
 

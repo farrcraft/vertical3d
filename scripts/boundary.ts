@@ -42,16 +42,17 @@
 // Each report is printed as path:line: rule: excerpt. The exit status is 1 when there is any
 // report, and 0 otherwise.
 //
-// Node runs this file directly: it uses only node: modules, scripts/lexer.ts, scripts/entry.ts and
-// type annotations Node can strip.
+// Node runs this file directly: it uses only node: modules, the gates' modules in scripts/lib,
+// and type annotations Node can strip.
 
-import { spawnSync } from 'node:child_process';
 import { Buffer } from 'node:buffer';
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-import { codeLines } from './lexer.ts';
+import { options, runGate } from './lib/cli.ts';
+import { git, mergeBase, untracked } from './lib/git.ts';
+import { codeLines } from './lib/lexer.ts';
+import { ROOT } from './lib/tree.ts';
 
 /** An added line: its text, and its code with comments and the insides of literals removed. */
 export type Line = { path: string; number: number; text: string; code: string };
@@ -99,40 +100,6 @@ const FLOATY = new RegExp([
  */
 const DIFF_OPTIONS = ['--src-prefix=a/', '--dst-prefix=b/', '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames'];
 
-/** Runs git and returns its standard output, or null when it fails. */
-function git(...args: string[]): string | null {
-    const result = spawnSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30 });
-    if (result.status !== 0 || result.error) {
-        return null;
-    }
-    return result.stdout;
-}
-
-function stop(message: string): never {
-    process.stderr.write('boundary.ts: ' + message + '\n');
-    process.exit(2);
-}
-
-/** Returns the commit the changeset is measured from. */
-function mergeBase(override: string | null): string {
-    if (override !== null) {
-        if (git('rev-parse', '--verify', '--quiet', override + '^{commit}') === null) {
-            stop(`--base ${override}: not a commit`);
-        }
-        const base = git('merge-base', 'HEAD', override);
-        return base === null ? stop(`--base ${override}: no merge base with HEAD`) : base.trim();
-    }
-    // the changeset starts where it left the branch it is compared with, so commits that branch
-    // has gained since are not counted as the changeset's
-    for (const branch of ['origin/main', 'main']) {
-        const base = git('merge-base', 'HEAD', branch);
-        if (base) {
-            return base.trim();
-        }
-    }
-    return stop('no merge base with origin/main or main; pass --base REF');
-}
-
 /** The escapes git's C-style quoting of a path uses, other than an octal byte. */
 const ESCAPES: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
 
@@ -167,10 +134,7 @@ function headerPath(header: string): string | null {
 
 /** Returns every added line in a C++ source or header, with its path and line number. */
 function addedLines(base: string): Line[] {
-    const diff = git('diff', '--unified=0', ...DIFF_OPTIONS, base);
-    if (diff === null) {
-        stop('git diff against ' + base + ' failed');
-    }
+    const diff = git(['diff', '--unified=0', ...DIFF_OPTIONS, base]);
     const added: Array<{ path: string; number: number; text: string }> = [];
     let path: string | null = null;
     let number = 0;
@@ -216,8 +180,7 @@ function addedLines(base: string): Line[] {
             newLeft = match ? Number(match[3] ?? 1) : 0;
         }
     }
-    const untracked = git('ls-files', '-z', '--others', '--exclude-standard') ?? '';
-    for (const name of untracked.split('\0')) {
+    for (const name of untracked()) {
         if (!SOURCE.test(name)) {
             continue;
         }
@@ -312,33 +275,13 @@ export function check(lines: Line[]): Report[] {
 }
 
 function main(): number {
-    const args = process.argv.slice(2);
-    const usage = 'usage: node scripts/boundary.ts [--base REF]';
-    let base: string | null = null;
-    for (let index = 0; index < args.length; index++) {
-        if (args[index] === '--base' && index + 1 < args.length) {
-            base = args[++index];
-        } else if (args[index].startsWith('--base=')) {
-            base = args[index].slice('--base='.length);
-        } else {
-            stop(usage);
-        }
-        if (base.trim() === '') {
-            stop(usage);
-        }
-    }
-    const root = git('rev-parse', '--show-toplevel');
-    if (root === null) {
-        stop('not inside a git repository');
-    }
-    process.chdir(root.trim());
-    const reports = check(addedLines(mergeBase(base)));
+    const { values } = options('usage: node scripts/boundary.ts [--base REF]', { base: { type: 'string' } });
+    process.chdir(ROOT);
+    const reports = check(addedLines(mergeBase(values.base)));
     for (const report of reports) {
         process.stdout.write(`${report.path}:${report.number}: ${report.rule}: ${report.excerpt}\n`);
     }
     return reports.length > 0 ? 1 : 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

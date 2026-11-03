@@ -15,11 +15,9 @@
 
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { ROOT } from './lib/tree.ts';
 const MANIFEST = 'cmake/v3dApiLibraries.cmake';
 const TABLE = 'docs/api/README.md';
 const HEADING = '## The libraries';
@@ -116,10 +114,7 @@ export function problems(libraries: Library[], rows: Row[]): string[] {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/librarytable.ts');
-        return 2;
-    }
+    options('usage: node scripts/librarytable.ts', {});
     const libraries = manifestLibraries(readFileSync(path.join(ROOT, MANIFEST), 'utf8'));
     const rows = tableRows(readFileSync(path.join(ROOT, TABLE), 'utf8'));
     const found = problems(libraries, rows);
@@ -133,6 +128,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

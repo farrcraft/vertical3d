@@ -16,11 +16,9 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
-import process from 'node:process';
 
-import { shouldRun } from './entry.ts';
-
-const ROOT = path.resolve(import.meta.dirname, '..');
+import { options, runGate } from './lib/cli.ts';
+import { ROOT } from './lib/tree.ts';
 
 /** A uses: value that is not pinned, and the line it is on. */
 export interface Unpinned {
@@ -93,10 +91,7 @@ export function files(root: string): string[] {
 
 function main(): number {
     // the check takes no arguments, so an option meant for it is refused rather than ignored
-    if (process.argv.length > 2) {
-        console.error('usage: node scripts/pinned.ts');
-        return 2;
-    }
+    options('usage: node scripts/pinned.ts', {});
     let count = 0;
     for (const file of files(ROOT)) {
         for (const { line, value } of unpinned(readFileSync(path.join(ROOT, file), 'utf8'))) {
@@ -111,6 +106,4 @@ function main(): number {
     return 0;
 }
 
-if (shouldRun(import.meta.url)) {
-    process.exitCode = main();
-}
+runGate(import.meta.url, main);

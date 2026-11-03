@@ -156,6 +156,17 @@ test('npm does not read an import inside a comment', () => {
     assert.deepEqual(packageImports(text), []);
 });
 
+test('npm does not read an import inside a string, a template or a block comment', () => {
+    const text = [
+        "const line = \"const later = await import('dynamic');\";",
+        'const template = `',
+        "import ts from 'typescript';",
+        "${'not code'} import('also-not')`;",
+        "/* import('commented'); */ const real = await import('real');",
+    ].join('\n');
+    assert.deepEqual(packageImports(text).map((i) => `${i.line}: ${i.specifier}`), ['5: real']);
+});
+
 test('npm.ts runs when Node is started with it', () => {
     const root = fileURLToPath(new URL('../../', import.meta.url));
     const run = spawnSync(process.execPath, [join(root, 'scripts', 'npm.ts'), '--no-such-option'],
