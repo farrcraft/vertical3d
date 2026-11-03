@@ -408,8 +408,8 @@ ADR-0157 decided how a script names an item.
   the keyboard. The arrows step through the lines run before. `api/ui`: `itemEntered()`,
   `itemTyping()` and `focusNext()` let a field take lines. The console and text field suites
   cover the list, entering a line, the arrows and the wheel, and a return, the field's typing
-  and focusNext. The console was not photographed, since driving it moves the user's
-  foreground and saves the workspace it changes.
+  and focusNext. The editor was photographed with a console listing the transform tools' commands,
+  a line's value, a refusal in red, and a line recalled by the up arrow.
 
 ### Step 14 — The render view and the render settings
 
