@@ -731,11 +731,12 @@ bool Controller::release() {
     if (context_.document) {
         context_.document->close();
     }
-    // each opened window's keyboard lets go of its screen's layer before the renderer releases
-    // the screen
+    // each window's keyboard, the editor's own and each opened one's, lets go of its screen's
+    // layer before the renderer releases the screen
     for (Opened& opened : opened_) {
         opened.keys.reset();
     }
+    uiKeys_.reset();
     // a render's thread and a batch's are waited for, before anything they report to goes
     if (context_.renderView) {
         context_.renderView->release();
