@@ -27,6 +27,7 @@ is SDL3.
 | A dependency, vcpkg, the Vulkan SDK, the overlay ports in `ports/` | [docs/contributing/Dependencies.md](docs/contributing/Dependencies.md) |
 | Tests, or verifying a rendering change | [docs/contributing/Testing.md](docs/contributing/Testing.md) |
 | A lint or analyser finding | [docs/contributing/Linting.md](docs/contributing/Linting.md) |
+| A review gate, or anything in `scripts/` | [docs/contributing/Gates.md](docs/contributing/Gates.md) |
 | Reviewing a change, or fixing a review finding | [docs/contributing/Review.md](docs/contributing/Review.md) |
 | Style, comments and documents | [docs/contributing/Conventions.md](docs/contributing/Conventions.md) |
 | `api/engine`, `event`, `input`, `audio`, `log`, `window`, `shell` | [docs/api/engine/](docs/api/engine/README.md) |

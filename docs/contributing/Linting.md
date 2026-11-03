@@ -7,16 +7,16 @@ The four checks are cpplint, the compiler's warnings, MSVC `/analyze` and clang-
 is clean at all four**, so every finding is new and should be fixed. cpplint runs in CI. The
 other three are build options declared in [CMakeLists.txt](../../CMakeLists.txt).
 
-A fifth check, the prose gate, applies the writing rules. It reads only the lines a change adds.
-It runs in CI with the link rule and boundary gates. [Review.md](Review.md) lists every gate.
+The review gates in `scripts/` check the rules a compiler cannot, such as the writing rules and
+the linking rules. [Gates.md](Gates.md) lists them and says how they run.
 
 - [cpplint](#cpplint)
 - [The compiler](#the-compiler)
 - [MSVC /analyze](#msvc-analyze)
 - [clang-tidy](#clang-tidy)
 - [Prose](#prose)
+- [Comments only](#comments-only)
 - [CI](#ci)
-- [The review gates' environment](#the-review-gates-environment)
 
 ## cpplint
 
@@ -232,18 +232,9 @@ Vulkan SDK, a vcpkg install and the libnoise submodule.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 
-[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs four of the
-review gates on an Ubuntu runner with Node: the link rule (`scripts/linkrule.ts`), the library
-table (`scripts/librarytable.ts`), prose (`scripts/prose.ts`) and boundary input
-(`scripts/boundary.ts`). It runs on each pull request and on each push to `main`. The link rule
-and the library table check the whole tree. The prose and boundary gates
-read only the lines added since a base:
-
-- on a pull request, the base is the branch the pull request merges into;
-- on a push to `main`, the base is the previous tip of `main`. When the push names no previous
-  tip, as on a new branch, or names one the checkout does not have, as after some force pushes,
-  the base is the pushed commit's parent. A pushed root commit has no parent, and the step fails
-  with a message.
+[.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs the review
+gates on each pull request and on each push to `main`. [Gates.md](Gates.md#in-ci) says what it
+runs and what each gate compares against.
 
 **Every action a workflow uses is pinned to a full commit sha**, with the release it came from in
 a comment:
@@ -260,29 +251,3 @@ path in this repository, is exempt. To find the sha for a release, read the comm
 points at: `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, followed by `git/tags/<sha>` when
 the tag is annotated. Updating an action means changing both the sha and the comment.
 
-The workflow first type-checks every TypeScript file in the tree, as
-[Dependencies.md](Dependencies.md#typescript-tooling-from-npm) describes. It then runs the gates'
-own tests in `scripts/tests/`, which cover the C++ lexer the gates share in `scripts/lib/lexer.ts`.
-Run them locally with `npm test`, or with `node --test "scripts/tests/*.test.ts"`, from the
-repository root.
-
-The fails-first gate, `scripts/failsfirst.ts`, runs in
-[.github/workflows/ctest.yml](../../.github/workflows/ctest.yml) instead, as that job's last step
-on each pull request. It needs the compiler, the packages and the software Vulkan driver, which
-that job already has. It compares against the branch the pull request merges into, and fails
-the job when a new case passes without the change or was not run. Its scratch directory is under
-`RUNNER_TEMP`, which the job excludes from Defender. A link that a scan breaks would mark every new
-case as failing to build, and the gate would pass them. Run it locally as well, before review: see
-[Testing.md](Testing.md#checking-that-a-new-test-fails-first).
-
-## The review gates' environment
-
-The review gates in `scripts/` support one environment:
-
-- Node 24 or later. An earlier Node that can run TypeScript stops a gate with exit 2 and a
-  message. A Node too old to run TypeScript fails to load the gate at all.
-- A checkout of this repository with its full history, so a gate can find a merge base.
-- The repository root as the working directory, as CI and these documents run them.
-- For `scripts/failsfirst.ts` only, the Windows developer environment `scripts\build.cmd` uses.
-
-[Review.md](Review.md) grades a fault in the gates by whether it arises in this environment.
