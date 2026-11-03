@@ -88,13 +88,8 @@ void AreaCommands::registerTabs(CommandTable* table) const {
         if (at.area >= at.layout->areas().size()) {
             return;
         }
-        // a new tab shows the camera the area shows, or the perspective view. An area in
-        // another window shows no viewport, so its new tab is another of the kind it shows
+        // a new tab shows the camera the area shows, or the perspective view
         const view::AreaLayout::Editor& shown = at.layout->areas()[at.area].editor();
-        if (!at.main) {
-            at.layout->add(at.area, boost::json::object{ { "kind", shown.kind } });
-            return;
-        }
         const std::optional<std::string> camera = v3d::asset::readString(shown.state, "camera");
         at.layout->add(at.area, boost::json::object{ { "kind", view::AreaViews::KIND }, { "camera", camera.value_or("Perspective") } });
     });
@@ -103,10 +98,6 @@ void AreaCommands::registerTabs(CommandTable* table) const {
         change(table, "area::editor::" + named, [&context, named](const v3d::event::Event& event) {
             const Context::Placed at = context.placeOf(event);
             if (at.area >= at.layout->areas().size() || at.layout->areas()[at.area].editor().kind == named) {
-                return;
-            }
-            // an area in another window shows no viewport
-            if (named == view::AreaViews::KIND && !at.main) {
                 return;
             }
             // a viewport made this way starts from the perspective view

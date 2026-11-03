@@ -48,11 +48,10 @@ namespace v3d::editor::control::chrome {
 
 /**
  **/
-Area::Area(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve, bool viewports) :
+Area::Area(const boost::shared_ptr<v3d::ui::Interface>& ui, const std::string& before, const Resolve& resolve) :
     ui_(ui),
     before_(before),
-    resolve_(resolve),
-    viewports_(viewports) {
+    resolve_(resolve) {
 }
 
 /**
@@ -301,7 +300,7 @@ std::string Area::signature(const view::AreaViews& views, selection::SelectMask 
 
 /**
  **/
-boost::json::object Area::document(const view::AreaViews& views, selection::SelectMask mask, bool viewports) {
+boost::json::object Area::document(const view::AreaViews& views, selection::SelectMask mask) {
     const view::AreaLayout& layout = *views.layout();
     boost::json::array containers;
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
@@ -309,9 +308,6 @@ boost::json::object Area::document(const view::AreaViews& views, selection::Sele
         const std::size_t id = area.id;
         boost::json::array kinds;
         for (const Kind& kind : Area::kinds()) {
-            if (!viewports && kind.kind == view::AreaViews::KIND) {
-                continue;
-            }
             kinds.emplace_back(boost::json::object{ { "label", kind.label }, { "type", "radio" }, { "context", CONTEXT },
                 { "command", "editor::" + kind.kind }, { "data", static_cast<std::int64_t>(id) } });
         }
@@ -367,7 +363,7 @@ void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float 
         }
         held_.clear();
         signature_ = now;
-        if (ui_->add(document(views, mask, viewports_), before_)) {
+        if (ui_->add(document(views, mask), before_)) {
             for (const view::AreaLayout::Area& area : layout.areas()) {
                 held_.push_back(name(area.id));
                 if (resolve_) {

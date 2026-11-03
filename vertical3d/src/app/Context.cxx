@@ -69,34 +69,39 @@ Context::Placed Context::placeOf(const v3d::event::Event& event) const {
     const boost::optional<v3d::event::EventData> data = event.data();
     if (data && std::holds_alternative<int>(*data)) {
         const std::size_t id = static_cast<std::size_t>(std::get<int>(*data));
-        for (const boost::shared_ptr<view::AreaLayout>& other : others) {
-            const std::size_t found = other->find(id);
-            if (found < other->areas().size()) {
-                return { .layout = other, .area = found, .main = false };
+        for (const Areas& other : others) {
+            const std::size_t found = other.layout->find(id);
+            if (found < other.layout->areas().size()) {
+                return { .layout = other.layout, .views = other.views, .area = found };
             }
         }
-        return { .layout = layout, .area = layout->find(id), .main = true };
+        return { .layout = layout, .views = views, .area = layout->find(id) };
     }
-    return { .layout = layout, .area = pointer ? pointer->activeArea() : layout->areas().size(), .main = true };
+    if (keyed) {
+        if (const std::optional<Placed> there = keyed()) {
+            return *there;
+        }
+    }
+    return { .layout = layout, .views = views, .area = pointer ? pointer->activeArea() : layout->areas().size() };
 }
 
 /**
  **/
 std::optional<Context::Placed> Context::editorOf(std::size_t editor) const {
-    const auto in = [editor](const boost::shared_ptr<view::AreaLayout>& held, bool main) -> std::optional<Placed> {
-        for (std::size_t area = 0; area < held->areas().size(); area++) {
-            const std::vector<view::AreaLayout::Editor>& editors = held->areas()[area].editors;
+    const auto in = [editor](const Areas& held) -> std::optional<Placed> {
+        for (std::size_t area = 0; area < held.layout->areas().size(); area++) {
+            const std::vector<view::AreaLayout::Editor>& editors = held.layout->areas()[area].editors;
             if (std::ranges::find(editors, editor, &view::AreaLayout::Editor::id) != editors.end()) {
-                return Placed{ .layout = held, .area = area, .main = main };
+                return Placed{ .layout = held.layout, .views = held.views, .area = area };
             }
         }
         return std::nullopt;
     };
-    if (const std::optional<Placed> found = in(layout, true)) {
+    if (const std::optional<Placed> found = in({ .layout = layout, .views = views })) {
         return found;
     }
-    for (const boost::shared_ptr<view::AreaLayout>& other : others) {
-        if (const std::optional<Placed> found = in(other, false)) {
+    for (const Areas& other : others) {
+        if (const std::optional<Placed> found = in(other)) {
             return found;
         }
     }

@@ -638,14 +638,16 @@ own headers from a `chrome::Area`, and its own `chrome::Pointer`, so a divider, 
 it acts on its areas. It is drawn by the editor's device in the same frames as the main window,
 through a screen of its own that shares the main screen's text, scale and theme.
 
-- **Its areas show no viewport.** Their Editor menu offers every other kind, and New Tab adds
-  another of the kind the area shows.
+- **Its areas show any kind of editor,** viewports among them. Its views are drawn into its own
+  frame with a depth buffer of its own, and the tools act in them as in the main window's.
 - **Ids are unique across windows.** Each window's layout starts its area and editor ids a
   million past the last, so a command carrying an id acts on the layout that holds it.
   `Context::placeOf()` finds it, and a command carrying none acts on the main window's active
   area.
-- **The mouse acts on the window it is in.** Every mouse event names its window, and the
-  pointer of that window takes it. The keyboard's bindings act on the main window's active area.
+- **The mouse and the keyboard act on the window they are in.** Every mouse event names its
+  window, and the pointer of that window takes it. A key or text goes to the ui of the window it
+  was typed in, so a field there takes typing, and a binding that names no area acts on that
+  window's active area.
 - **Its close button closes it.** Closing the main window quits, and the windows open are kept
   with the workspace, as [Workspaces](#workspaces) describes.
 

@@ -33,15 +33,15 @@ class ViewCommands final {
     /**
      * Register a command that changes the view of the area it acts on, on a press.
      **/
-    void display(CommandTable* table, const std::string& name, const std::function<void(std::size_t area, view::ViewPort* view)>& change) const;
+    void display(CommandTable* table, const std::string& name, const std::function<void(const Context::Placed& at, view::ViewPort* view)>& change) const;
 
     /**
      * Show a camera profile in an area's view, keeping the view's region.
      *
-     * @param area an index into the layout's areas
+     * @param at the area, and the layout of the window it is in
      * @param view the view the area shows
      **/
-    void look(std::size_t area, view::ViewPort* view, const std::string& profile) const;
+    void look(const Context::Placed& at, view::ViewPort* view, const std::string& profile) const;
 
     /**
      * Switch a view between perspective and orthographic.

@@ -123,19 +123,37 @@ BOOST_AUTO_TEST_CASE(a_command_finds_its_areas_window) {
     Shown shown;
     const boost::shared_ptr<AreaLayout> other = boost::make_shared<AreaLayout>(boost::make_shared<v3d::log::Logger>(), 5000);
     BOOST_REQUIRE(other->load(boost::json::parse(R"({"root": {"editors": [{"kind": "render-view"}]}})").as_object()));
-    shown.context.others.push_back(other);
+    shown.context.others.push_back({ .layout = other, .views = nullptr });
 
     const v3d::editor::app::Context::Placed there = shown.context.placeOf(carrying(5000));
     BOOST_CHECK(there.layout == other);
     BOOST_CHECK_EQUAL(there.area, 0U);
-    BOOST_CHECK(!there.main);
 
     const std::size_t first = shown.layout->areas()[1].id;
     const v3d::editor::app::Context::Placed here = shown.context.placeOf(carrying(static_cast<int>(first)));
     BOOST_CHECK(here.layout == shown.layout);
     BOOST_CHECK_EQUAL(here.area, 1U);
-    BOOST_CHECK(here.main);
 
+    BOOST_CHECK(shown.context.placeOf(v3d::event::Event("area::maximise")).layout == shown.layout);
+}
+
+/**
+ * A command carrying no area, as a key's does, acts on the active area of the window the
+ * keyboard is in, and on the editor's own window while the keyboard is there.
+ **/
+BOOST_AUTO_TEST_CASE(a_key_acts_in_the_window_it_was_typed_in) {
+    Shown shown;
+    const boost::shared_ptr<AreaLayout> other = boost::make_shared<AreaLayout>(boost::make_shared<v3d::log::Logger>(), 5000);
+    BOOST_REQUIRE(other->load(boost::json::parse(R"({"root": {"editors": [{"kind": "render-view"}]}})").as_object()));
+    bool there = true;
+    shown.context.keyed = [&]() -> std::optional<v3d::editor::app::Context::Placed> {
+        if (!there) {
+            return std::nullopt;
+        }
+        return v3d::editor::app::Context::Placed{ .layout = other, .views = nullptr, .area = 0 };
+    };
+    BOOST_CHECK(shown.context.placeOf(v3d::event::Event("area::maximise")).layout == other);
+    there = false;
     BOOST_CHECK(shown.context.placeOf(v3d::event::Event("area::maximise")).layout == shown.layout);
 }
 
@@ -146,7 +164,7 @@ BOOST_AUTO_TEST_CASE(an_editor_is_found_in_its_window) {
     Shown shown;
     const boost::shared_ptr<AreaLayout> other = boost::make_shared<AreaLayout>(boost::make_shared<v3d::log::Logger>(), 5000);
     BOOST_REQUIRE(other->load(boost::json::parse(R"({"root": {"editors": [{"kind": "render-view"}]}})").as_object()));
-    shown.context.others.push_back(other);
+    shown.context.others.push_back({ .layout = other, .views = nullptr });
 
     const std::optional<v3d::editor::app::Context::Placed> found = shown.context.editorOf(5000);
     BOOST_CHECK(found && found->layout == other);

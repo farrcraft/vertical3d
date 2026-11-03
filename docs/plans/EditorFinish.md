@@ -399,12 +399,16 @@ held.
   mouse and context suites cover the second window, the events and when a window is opened.
   The editor was photographed rendering into the window.
 - Done: each window has a retained interface of its own (ADR-0156). The render's window is a
-  tree of areas with headers, tabs and splits, whose areas show every kind but a viewport. Area
+  tree of areas with headers, tabs and splits, whose areas show every kind of editor. Area
   and editor ids are unique across windows, and an area command acts on the layout holding its
   area. A workspace keeps the windows open with it and opens them when it is shown. The screen,
   layout, context and switcher suites cover the second screen, the shared themes, the ids, the
   commands' windows and the kept windows. The editor was photographed with the window's header,
   and quit and started again with the window open.
+- Done: an opened window's areas show viewports too, drawn into its frame with a depth buffer of
+  its own, and keys and typing go to the window they were typed in, whose active area a binding
+  acts on. The output suite covers the depth buffer, and the context suite a key acting in its
+  window. The editor was photographed with a viewport shown in the opened window by Shift+F5.
 
 ### Step 15 — The workspaces
 

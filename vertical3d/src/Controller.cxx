@@ -150,6 +150,13 @@ bool Controller::start() {
     context_.logger = logger();
     context_.settings = settings();
     context_.keptWindows = [this]() { return keptWindows(); };
+    context_.keyed = [this]() -> std::optional<app::Context::Placed> {
+        const auto opened = std::ranges::find_if(opened_, [this](const Opened& each) { return each.window->id() == keyWindow_; });
+        if (opened == opened_.end()) {
+            return std::nullopt;
+        }
+        return app::Context::Placed{ .layout = opened->layout, .views = opened->views, .area = opened->pointer->activeArea() };
+    };
     context_.reopen = [this](const boost::json::array& windows) { reopenWindows(windows); };
     if (!buildDocument() || !workspaces_.start(document(view::AreaLayout::DOCUMENT)) || !buildViews()) {
         return false;
@@ -198,16 +205,20 @@ bool Controller::buildDocument() {
 /**
  **/
 bool Controller::buildViews() {
-    context_.views = boost::make_shared<view::AreaViews>(context_.layout, [this](const view::AreaLayout::Editor& editor) -> boost::shared_ptr<view::ViewPort> {
-        const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
-        if (!camera || !context_.profiles->has(*camera)) {
-            logger()->get()->error("A viewport in the layout names no camera profile that exists");
-            return nullptr;
-        }
-        // the name is the view's pass name, so the editor's id keeps two views of a profile apart
-        return boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
-    });
+    context_.views = boost::make_shared<view::AreaViews>(context_.layout, [this](const view::AreaLayout::Editor& editor) { return makeView(editor); });
     return context_.views->sync();
+}
+
+/**
+ **/
+boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::Editor& editor) const {
+    const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
+    if (!camera || !context_.profiles->has(*camera)) {
+        logger()->get()->error("A viewport in the layout names no camera profile that exists");
+        return nullptr;
+    }
+    // the name is the view's pass name, so the editor's id keeps two views of a profile apart
+    return boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
 }
 
 /**
@@ -620,6 +631,27 @@ bool Controller::onEvent(const SDL_Event& event) {
             return true;
         }
     }
+    // a key or text goes to the ui of the window it was typed in
+    std::uint32_t typed = 0;
+    switch (event.type) {
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+            typed = event.key.windowID;
+            break;
+        case SDL_EVENT_TEXT_INPUT:
+            typed = event.text.windowID;
+            break;
+        case SDL_EVENT_TEXT_EDITING:
+            typed = event.edit.windowID;
+            break;
+        default:
+            return uiKeys_ && uiKeys_->event(event);
+    }
+    keyWindow_ = typed;
+    const auto opened = std::ranges::find_if(opened_, [typed](const Opened& each) { return each.window->id() == typed; });
+    if (opened != opened_.end()) {
+        return opened->keys && opened->keys->event(event);
+    }
     return uiKeys_ && uiKeys_->event(event);
 }
 
@@ -675,6 +707,11 @@ bool Controller::release() {
     workspaces_.record();
     if (context_.document) {
         context_.document->close();
+    }
+    // each opened window's keyboard lets go of its screen's layer before the renderer releases
+    // the screen
+    for (Opened& opened : opened_) {
+        opened.keys.reset();
     }
     // a render's thread and a batch's are waited for, before anything they report to goes
     if (context_.renderView) {
@@ -749,24 +786,40 @@ bool Controller::openWindow(const boost::json::object& layout, const glm::ivec2&
     }
     nextOpened_ += OPENED_IDS;
     opened.layout->metrics(context_.layout->metrics());
-    // an opened window's areas show no viewport, so nothing makes one
-    opened.views = boost::make_shared<view::AreaViews>(opened.layout, view::AreaViews::Make());
+    opened.views = boost::make_shared<view::AreaViews>(opened.layout, [this](const view::AreaLayout::Editor& editor) { return makeView(editor); });
+    opened.views->sync();
     opened.ui = boost::make_shared<v3d::ui::Interface>(events(), dispatcher(), logger());
     opened.ui->shareThemes(*shell_.ui());
     opened.chrome = boost::make_shared<control::chrome::Area>(opened.ui, std::string(),
-        [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); }, false);
+        [this](const boost::shared_ptr<v3d::ui::Component>& component) { renderer_->resolve(component); });
     const boost::shared_ptr<v3d::ui::input::Cursor> cursor = boost::make_shared<v3d::ui::input::Cursor>(opened.ui, dispatcher(), renderer_->type());
-    opened.pointer = boost::make_shared<control::chrome::Pointer>(cursor, opened.views, tools_, [](const boost::shared_ptr<view::ViewPort>&) {});
+    // the show flags a check item draws are the active view's, in whichever window it is
+    opened.pointer = boost::make_shared<control::chrome::Pointer>(cursor, opened.views, tools_, [this](const boost::shared_ptr<view::ViewPort>&) { syncUi(); });
     const boost::shared_ptr<control::chrome::Area> chrome = opened.chrome;
     opened.pointer->tabs([chrome](const glm::vec2& point) { return chrome->tabAt(point); });
-    opened.pointer->controls([](const glm::vec2&) { return false; });
+    // a press on a ball of a view's gizmo turns its camera to look down that axis
+    const boost::shared_ptr<view::AreaViews> views = opened.views;
+    opened.pointer->controls([this, views](const glm::vec2& point) {
+        const boost::shared_ptr<view::ViewPort> view = views->of(views->layout()->areaAt(point.x, point.y));
+        const std::optional<view::AxisEnd> end = view ? gizmoAt(*view, renderer_->overlay(), point) : std::nullopt;
+        if (!end) {
+            return false;
+        }
+        lookAlong(view->camera().get(), *end);
+        syncUi();
+        return true;
+    });
     if (!renderer_->open(opened.window, { .ui = opened.ui, .views = opened.views, .pointer = opened.pointer })) {
         removeWindow(opened.window);
         return false;
     }
     opened.window->caption("Vertical|3D");
+    opened.keys = boost::make_shared<v3d::ui::shell::Keyboard>(opened.ui, dispatcher(), opened.window);
+    if (v3d::ui::shell::Screen* screen = renderer_->screen(opened.window)) {
+        opened.keys->immediate(screen->immediate());
+    }
     opened.pointer->resize(glm::vec4(0.0F, 0.0F, static_cast<float>(size.x), static_cast<float>(size.y)));
-    context_.others.push_back(opened.layout);
+    context_.others.push_back({ .layout = opened.layout, .views = opened.views });
     opened_.push_back(opened);
     return true;
 }
@@ -815,9 +868,11 @@ void Controller::closeWindow(std::uint32_t window) {
     if (found == opened_.end()) {
         return;
     }
+    // the keyboard lets go of the screen's layer before the screen goes
+    found->keys.reset();
     const Opened closed = std::move(*found);
     opened_.erase(found);
-    std::erase(context_.others, closed.layout);
+    std::erase_if(context_.others, [&closed](const app::Context::Areas& each) { return each.layout == closed.layout; });
     renderer_->close(closed.window);
     removeWindow(closed.window);
 }

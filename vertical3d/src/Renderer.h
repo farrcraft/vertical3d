@@ -414,7 +414,8 @@ class Renderer final {
      * removed. A new view's pass is added after the ui pass, so the ui pass is removed too, and
      * is made again after every view's.
      **/
-    void retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views);
+    static void retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views,
+        std::vector<std::string>* passes);
 
     /**
      * Draw the status bar across the foot of the canvas, beside any toolbar down the left: what
@@ -452,13 +453,29 @@ class Renderer final {
     control::chrome::Status status_;
     boost::shared_ptr<control::chrome::Notices> notices_;
     control::chrome::DividerHint dividerHint_;
-    // one canvas per view shown. Each view fills its own and submits it before the next view
-    // draws, and the submit copies it
-    std::vector<v3d::render::realtime::canvas::Line> canvases_;
-    // one more canvas per view for the handles, which are drawn in a pass of their own
-    std::vector<v3d::render::realtime::canvas::Line> overlays_;
-    // the names of the views the frame holds passes for
-    std::vector<std::string> viewPasses_;
+    /**
+     * What one window's views are drawn with. Each view fills its own canvas and submits it
+     * before the next view draws, and the submit copies it.
+     **/
+    struct ViewCanvases final {
+        std::vector<v3d::render::realtime::canvas::Line> scenes;   /**< one per view shown **/
+        std::vector<v3d::render::realtime::canvas::Line> handles;  /**< one per view, for the handles' pass **/
+        std::vector<std::string> passes;                           /**< the views the frame holds passes for **/
+    };
+
+    /**
+     * Draw each view shown into a pass of its own in a frame, with its handles over it.
+     **/
+    void drawViews(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views, ViewCanvases* canvases);
+
+    /**
+     * Draw each view's axis marker and gizmo into a window's ui canvas, at its screen's scale.
+     **/
+    void drawOverlays(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen, const view::AreaViews& views,
+        const control::chrome::Pointer& pointer) const;
+
+    // the editor's own window's views
+    ViewCanvases drawn_;
 
     /**
      * A window drawn beside the editor's own: what is drawn to it, the screen it is drawn with,
@@ -469,6 +486,7 @@ class Renderer final {
         boost::shared_ptr<v3d::render::realtime::WindowRenderer::Output> output;
         boost::shared_ptr<v3d::ui::shell::Screen> screen;
         Shown shown;
+        ViewCanvases drawn;
     };
 
     /**

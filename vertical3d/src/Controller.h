@@ -263,6 +263,12 @@ class Controller final : public v3d::engine::Engine {
     bool openWindow(const boost::json::object& layout, const glm::ivec2& size);
 
     /**
+     * @return the view a viewport editor shows, from the camera profile its state names, or null
+     *         when it names none that exists
+     **/
+    boost::shared_ptr<view::ViewPort> makeView(const view::AreaLayout::Editor& editor) const;
+
+    /**
      * Close a window the editor opened.
      **/
     void closeWindow(std::uint32_t window);
@@ -376,8 +382,12 @@ class Controller final : public v3d::engine::Engine {
         boost::shared_ptr<view::AreaViews> views;
         boost::shared_ptr<control::chrome::Area> chrome;
         boost::shared_ptr<control::chrome::Pointer> pointer;
+        // what the keyboard edits while it is in the window
+        boost::shared_ptr<v3d::ui::shell::Keyboard> keys;
     };
     std::vector<Opened> opened_;
+    // the window the last key or text event went to, as Window::id() names it
+    std::uint32_t keyWindow_ = 0;
     // where the next opened window's layout starts giving out ids
     std::size_t nextOpened_ = OPENED_IDS;
 

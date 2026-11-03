@@ -124,6 +124,9 @@ about windows.
   first screen's is to `frame()`.
 - **A cursor** of its own, over the window's interface, is fed that window's mouse events, which
   name their window.
+- **A `Keyboard`** of its own, over the window's interface and its screen's immediate layer, and
+  built on that window, is offered the key and text events SDL names the window in. It goes
+  before the screen, since it holds the screen's layer.
 
 Background: [ADR-0156](../../adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
 

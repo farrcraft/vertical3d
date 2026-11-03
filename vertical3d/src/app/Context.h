@@ -66,17 +66,26 @@ struct Context final {
     std::size_t areaOf(const v3d::event::Event& event) const;
 
     /**
-     * An area and the layout it is in.
+     * One window's areas: its layout and the views its areas show.
+     **/
+    struct Areas final {
+        boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
+    };
+
+    /**
+     * An area, the layout it is in, and the views of that layout's areas.
      **/
     struct Placed final {
         boost::shared_ptr<view::AreaLayout> layout;
+        boost::shared_ptr<view::AreaViews> views;
         std::size_t area = 0;   /**< an index into the layout's areas, or their count when there is none **/
-        bool main = true;       /**< whether the layout is the editor's own window's, whose areas can show viewports **/
     };
 
     /**
      * @return the area a command acts on, in whichever window's layout holds the area whose id
-     *         it carries, or the editor's own window's active area when it carries none
+     *         it carries. One that carries none, as a key's does, acts on the active area of the
+     *         window the keyboard is in
      **/
     Placed placeOf(const v3d::event::Event& event) const;
 
@@ -125,8 +134,8 @@ struct Context final {
     // the workspaces kept, and the layout of the one shown
     boost::shared_ptr<control::Workspaces> workspaces;
     boost::shared_ptr<view::AreaLayout> layout;
-    // the layouts of the windows the editor opened beside its own
-    std::vector<boost::shared_ptr<view::AreaLayout>> others;
+    // the areas of the windows the editor opened beside its own
+    std::vector<Areas> others;
     boost::shared_ptr<view::AreaViews> views;
     // what commands said, shown at the foot of the active area
     boost::shared_ptr<control::chrome::Notices> notices;
@@ -149,6 +158,9 @@ struct Context final {
     std::function<boost::json::array()> keptWindows;
     // closes the windows the editor opened, and opens those a workspace kept
     std::function<void(const boost::json::array& windows)> reopen;
+    // the active area of the window the editor opened that the keyboard is in, or nothing while
+    // it is in the editor's own window
+    std::function<std::optional<Placed>()> keyed;
 };
 
 };  // namespace v3d::editor::app

@@ -178,6 +178,13 @@ void Renderer::drawOthers() {
             continue;
         }
         v3d::render::realtime::canvas::Canvas& canvas = screen.canvas();
+        v3d::render::realtime::frame::Frame* frame = other->output->frame().get();
+        // the window is cleared to the gap between areas, and each view draws over its area
+        frame->pass(v3d::render::realtime::WindowRenderer::colourPass)->clearColour(std::as_const(screen.components()).dressing().gap);
+        if (shown.views && shown.pointer) {
+            drawViews(frame, shown.views->shown(), &other->drawn);
+            drawOverlays(&canvas, screen, *shown.views, *shown.pointer);
+        }
         if (opened_) {
             opened_(screen.immediate(), &canvas, other->window->id());
         }
@@ -185,13 +192,14 @@ void Renderer::drawOthers() {
             drawAreaFrame(&canvas, screen, *shown.views->layout(), *shown.pointer);
         }
         screen.draw(shown.ui.get(), {});
-        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass =
-            other->output->frame()->pass(v3d::render::realtime::WindowRenderer::colourPass);
-        pass->clearColour(std::as_const(screen.components()).dressing().gap);
-        pass->depth(false);
-        if (!canvas.empty()) {
-            engine_.quads()->submit(canvas, pass.get());
+        if (canvas.empty()) {
+            continue;
         }
+        // over every view, as the editor's own window's ui is
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame->pass(uiPass);
+        pass->keepColour();
+        pass->depth(false);
+        engine_.quads()->submit(canvas, pass.get());
     }
 }
 
@@ -378,65 +386,8 @@ void Renderer::draw() {
         return;
     }
 
-    const boost::shared_ptr<v3d::render::realtime::renderer::Line> lines = engine_.lines();
-
-    // a view with no scene still draws its grid: an empty document is not an error
-    const scene::Scene empty;
-    const scene::Scene& scene = scene_ ? *scene_ : empty;
-
-    // the handles sit about what the tool would move, which every view draws the same
-    const boost::shared_ptr<manipulator::Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<manipulator::Manipulator>();
-    const manipulator::Target target = transform_ ? transform_->target() : manipulator::Target();
-
     static const std::vector<boost::shared_ptr<view::ViewPort>> none;
-    const std::vector<boost::shared_ptr<view::ViewPort>>& views = views_ ? views_->shown() : none;
-    retire(frame.get(), views);
-    const view::ConstructionPlane::Colours grid = gridColours();
-    canvases_.resize(views.size());
-    overlays_.resize(views.size());
-    for (std::size_t index = 0; index < views.size(); index++) {
-        const boost::shared_ptr<view::ViewPort>& view = views[index];
-        if (!view) {
-            continue;
-        }
-
-        view->grid().colours(grid);
-        view->draw(scene, &canvases_[index], select_ ? select_->mask() : selection::SelectMask::Object);
-        // the handles go to a canvas of their own because they are an overlay, drawn in a
-        // second pass that does not depth test. On the scene's canvas a handle would be in
-        // the depth tested pass, where the grid's axis lines lie in the same plane and hide it
-        overlays_[index].clear();
-        if (manipulator && view->shows(view::ViewPort::SHOW_HANDLE)) {
-            manipulator->draw(target, manipulator::Screen{ .camera = view->camera(), .region = view->region() }, &overlays_[index]);
-        }
-
-        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame->pass(view->name());
-        pass->viewport(view->region());
-        pass->clearColour(background_);
-        // every view depth tests, so a wireframe is occluded by what is in front of it.
-        // depth is cleared with colour, and each pass clears only its own region
-        pass->depth(true);
-        pass->camera(view->camera()->view(), view->camera()->projection());
-
-        // the handles are drawn over what the scene pass left, without a depth test, so
-        // a handle lying in the plane of the grid is not hidden by it
-        const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = frame->pass(view->name() + handleSuffix);
-        overlay->viewport(view->region());
-        overlay->keepColour();
-        overlay->depth(false);
-        overlay->camera(view->camera()->view(), view->camera()->projection());
-
-        // the surfaces first, so the wireframe drawn after them is drawn over them
-        if (shaded_ && view->shows(view::ViewPort::SHOW_MESH)) {
-            shaded_->submit(scene, view->display(), pass.get());
-        }
-        if (lines) {
-            lines->submit(canvases_[index], pass.get());
-            if (!overlays_[index].empty()) {
-                lines->submit(overlays_[index], overlay.get());
-            }
-        }
-    }
+    drawViews(frame.get(), views_ ? views_->shown() : none, &drawn_);
 
     drawUi(frame);
     drawOthers();
@@ -453,18 +404,7 @@ void Renderer::drawUi(const boost::shared_ptr<v3d::render::realtime::frame::Fram
     v3d::render::realtime::canvas::Canvas& canvas = screen_->canvas();
     // each view's axis marker and gizmo go under the frame, whose corners cover the views' own
     if (views_ && pointer_) {
-        const float factor = screen_->factor();
-        view::OverlayLook look;
-        look.text *= factor;
-        look.line = std::max(1.0F, std::round(look.line * factor));
-        const view::OverlayMetrics metrics = overlay();
-        const v3d::ui::paint::Type type(screen_->text(), look.text, v3d::ui::paint::Weight::SemiBold);
-        const glm::vec2& cursor = pointer_->cursor();
-        for (const boost::shared_ptr<view::ViewPort>& view : views_->shown()) {
-            const glm::vec4& region = view->region();
-            const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
-            drawOverlay(&canvas, *view, metrics, look, type, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
-        }
+        drawOverlays(&canvas, *screen_, *views_, *pointer_);
     }
     // the panels fill their areas, and the frame's corners and lines go over them
     if (panels_) {
@@ -518,21 +458,22 @@ view::ConstructionPlane::Colours Renderer::gridColours() const {
 
 /**
  **/
-void Renderer::retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views) {
+void Renderer::retire(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views,
+    std::vector<std::string>* passes) {
     std::vector<std::string> names;
     for (const boost::shared_ptr<view::ViewPort>& view : views) {
         if (view) {
             names.push_back(view->name());
         }
     }
-    if (names == viewPasses_) {
+    if (names == *passes) {
         return;
     }
     bool added = false;
     for (const std::string& name : names) {
-        added = added || std::ranges::find(viewPasses_, name) == viewPasses_.end();
+        added = added || std::ranges::find(*passes, name) == passes->end();
     }
-    for (const std::string& name : viewPasses_) {
+    for (const std::string& name : *passes) {
         if (std::ranges::find(names, name) == names.end()) {
             frame->remove(name);
             frame->remove(name + handleSuffix);
@@ -541,7 +482,88 @@ void Renderer::retire(v3d::render::realtime::frame::Frame* frame, const std::vec
     if (added) {
         frame->remove(uiPass);
     }
-    viewPasses_ = std::move(names);
+    *passes = std::move(names);
+}
+
+/**
+ **/
+void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views,
+    ViewCanvases* canvases) {
+    const boost::shared_ptr<v3d::render::realtime::renderer::Line> lines = engine_.lines();
+
+    // a view with no scene still draws its grid: an empty document is not an error
+    const scene::Scene empty;
+    const scene::Scene& scene = scene_ ? *scene_ : empty;
+
+    // the handles sit about what the tool would move, which every view draws the same
+    const boost::shared_ptr<manipulator::Manipulator> manipulator = transform_ ? transform_->manipulator() : boost::shared_ptr<manipulator::Manipulator>();
+    const manipulator::Target target = transform_ ? transform_->target() : manipulator::Target();
+
+    retire(frame, views, &canvases->passes);
+    const view::ConstructionPlane::Colours grid = gridColours();
+    canvases->scenes.resize(views.size());
+    canvases->handles.resize(views.size());
+    for (std::size_t index = 0; index < views.size(); index++) {
+        const boost::shared_ptr<view::ViewPort>& view = views[index];
+        if (!view) {
+            continue;
+        }
+
+        view->grid().colours(grid);
+        view->draw(scene, &canvases->scenes[index], select_ ? select_->mask() : selection::SelectMask::Object);
+        // the handles go to a canvas of their own because they are an overlay, drawn in a
+        // second pass that does not depth test. On the scene's canvas a handle would be in
+        // the depth tested pass, where the grid's axis lines lie in the same plane and hide it
+        canvases->handles[index].clear();
+        if (manipulator && view->shows(view::ViewPort::SHOW_HANDLE)) {
+            manipulator->draw(target, manipulator::Screen{ .camera = view->camera(), .region = view->region() }, &canvases->handles[index]);
+        }
+
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> pass = frame->pass(view->name());
+        pass->viewport(view->region());
+        pass->clearColour(background_);
+        // every view depth tests, so a wireframe is occluded by what is in front of it.
+        // depth is cleared with colour, and each pass clears only its own region
+        pass->depth(true);
+        pass->camera(view->camera()->view(), view->camera()->projection());
+
+        // the handles are drawn over what the scene pass left, without a depth test, so
+        // a handle lying in the plane of the grid is not hidden by it
+        const boost::shared_ptr<v3d::render::realtime::frame::Pass> overlay = frame->pass(view->name() + handleSuffix);
+        overlay->viewport(view->region());
+        overlay->keepColour();
+        overlay->depth(false);
+        overlay->camera(view->camera()->view(), view->camera()->projection());
+
+        // the surfaces first, so the wireframe drawn after them is drawn over them
+        if (shaded_ && view->shows(view::ViewPort::SHOW_MESH)) {
+            shaded_->submit(scene, view->display(), pass.get());
+        }
+        if (lines) {
+            lines->submit(canvases->scenes[index], pass.get());
+            if (!canvases->handles[index].empty()) {
+                lines->submit(canvases->handles[index], overlay.get());
+            }
+        }
+    }
+}
+
+/**
+ **/
+void Renderer::drawOverlays(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen, const view::AreaViews& views,
+    const control::chrome::Pointer& pointer) const {
+    const float factor = screen.factor();
+    view::OverlayLook look;
+    look.text *= factor;
+    look.line = std::max(1.0F, std::round(look.line * factor));
+    const view::OverlayMetrics metrics = overlay();
+    const v3d::ui::paint::Type type(screen.text(), look.text, v3d::ui::paint::Weight::SemiBold);
+    const glm::vec2& cursor = pointer.cursor();
+    for (const boost::shared_ptr<view::ViewPort>& view : views.shown()) {
+        const glm::vec4& region = view->region();
+        const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
+        drawOverlay(canvas, *view, metrics, look, type, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
+    }
 }
 
 /**
