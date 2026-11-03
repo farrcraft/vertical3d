@@ -38,6 +38,49 @@
     {
       "name": "Perspective",
       "root": { "editors": [{ "kind": "viewport", "camera": "Perspective" }] }
+    },
+    {
+      "name": "Animation",
+      "root": {
+        "split": "vertical",
+        "children": [
+          {
+            "split": "horizontal",
+            "share": 3,
+            "children": [
+              { "editors": [{ "kind": "viewport", "camera": "Perspective" }], "share": 4 },
+              {
+                "split": "vertical",
+                "children": [
+                  { "editors": [{ "kind": "outliner" }] },
+                  { "editors": [{ "kind": "properties" }], "share": 2 }
+                ]
+              }
+            ]
+          },
+          { "editors": [{ "kind": "timeline" }, { "kind": "graph" }, { "kind": "console" }] }
+        ]
+      }
+    },
+    {
+      "name": "Shading",
+      "root": {
+        "split": "horizontal",
+        "children": [
+          { "editors": [{ "kind": "viewport", "camera": "Perspective", "shading": "smooth" }], "share": 3 },
+          { "editors": [{ "kind": "properties" }] }
+        ]
+      }
+    },
+    {
+      "name": "Rendering",
+      "root": {
+        "split": "horizontal",
+        "children": [
+          { "editors": [{ "kind": "render-view" }], "share": 3 },
+          { "editors": [{ "kind": "render-settings" }] }
+        ]
+      }
     }
   ]
 }

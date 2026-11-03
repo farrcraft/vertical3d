@@ -34,8 +34,13 @@ ViewCommands::ViewCommands(const Context& context) :
 /**
  **/
 void ViewCommands::registerCommands(CommandTable* table) const {
-    display(table, "view::shade::flat", [](const Context::Placed&, view::ViewPort* view) { view->display().shading = view::Shading::Flat; });
-    display(table, "view::shade::smooth", [](const Context::Placed&, view::ViewPort* view) { view->display().shading = view::Shading::Smooth; });
+    // the shading is kept in the editor's state, so a saved layout and the view's tab show it
+    for (const view::Shading shading : { view::Shading::Flat, view::Shading::Smooth }) {
+        display(table, "view::shade::" + std::string(view::name(shading)), [shading](const Context::Placed& at, view::ViewPort* view) {
+            view->display().shading = shading;
+            at.layout->set(at.layout->areas()[at.area].editor().id, "shading", boost::json::string(view::name(shading)));
+        });
+    }
     for (const auto& [name, cull] : std::vector<std::pair<const char*, view::ViewPort::Cull>>{ { "none", view::ViewPort::Cull::None },
         { "front", view::ViewPort::Cull::Front }, { "back", view::ViewPort::Cull::Back }, { "both", view::ViewPort::Cull::Both } }) {
         display(table, std::string("view::cull::") + name, [cull](const Context::Placed&, view::ViewPort* view) { view->display().cull = cull; });

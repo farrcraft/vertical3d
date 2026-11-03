@@ -304,7 +304,9 @@ vertical and horizontal splits whose leaves are areas. A layout reads like this:
   side.
 - An area lists at least one editor. Each editor is an object that names its `kind`, and the
   whole object is the editor's state. A viewport's state names the camera profile it starts
-  from. `chosen` is the index of the editor the area shows, and is 0 when it is missing.
+  from, and may name its `shading`, `flat` or `smooth`, which is flat when it is missing. The
+  fixed views and the Flat and Smooth items of the view's header write both back to the state.
+  `chosen` is the index of the editor the area shows, and is 0 when it is missing.
 - `load()` refuses a layout without a root, a split with no children, and a node that is
   neither. It refuses an area with no editors, an editor with no kind, and a chosen editor the
   area does not hold. It refuses any of these of the wrong type. A refused layout leaves the one
@@ -460,10 +462,19 @@ An area that a tab leaves with no editor gives its room to its neighbour.
 A workspace is a named layout. `Workspaces` holds them, and the project's arrangement of each.
 
 **Where they come from.** `data/layout.json` holds the workspaces a new user starts with, as an
-array of named layouts under `workspaces`. Modelling is Front, Top, Left and Perspective, with
-an outliner over a properties editor down the right. Perspective is one view. A layout with no
-name, one that cannot be read, or a second of one name is left out, and the editor stops at
-startup when none is left.
+array of named layouts under `workspaces`. A layout with no name, one that cannot be read, or a
+second of one name is left out, and the editor stops at startup when none is left.
+
+| Workspace | Areas |
+|---|---|
+| Modelling | Front, Top, Left and Perspective, with an outliner over a properties editor down the right |
+| Perspective | One perspective view |
+| Animation | A perspective view, the outliner over the properties down the right, and along the foot a quarter of the height holding the timeline, the graph editor and the console as tabs |
+| Shading | A perspective view shaded smooth, with the properties beside it |
+| Rendering | The render view, with the render settings beside it |
+
+A user whose settings hold a set of their own sees that set instead, so a workspace the editor
+ships later reaches them through `workspace::reset` or an import, as below.
 
 **What the user's settings hold.** The engine's settings document, under the app's identity,
 holds three keys:

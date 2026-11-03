@@ -9,12 +9,16 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <fstream>
 #include <initializer_list>
+#include <map>
 #include <optional>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include <boost/json/parse.hpp>
+#include <boost/json.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 #include <glm/vec4.hpp>
@@ -627,6 +631,45 @@ BOOST_AUTO_TEST_CASE(the_metrics_set_the_gap) {
     BOOST_CHECK_EQUAL(layout.areas()[1].region.x, 103.0F);
     BOOST_CHECK(!layout.divider(94.0F, 50.0F));
     BOOST_CHECK(layout.divider(95.0F, 50.0F));
+}
+
+/**
+ * Every workspace the editor ships loads. Animation holds the timeline, the graph editor and the
+ * console as tabs along its foot, Shading a smooth view beside the properties, and Rendering the
+ * render view beside its settings.
+ **/
+BOOST_AUTO_TEST_CASE(the_shipped_workspaces_load) {
+    const std::ifstream file("data/layout.json");
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+    std::map<std::string, std::vector<std::vector<std::string>>> kinds;
+    std::map<std::string, AreaLayout> loaded;
+    for (const boost::json::value& workspace : boost::json::parse(text.str()).at("workspaces").as_array()) {
+        AreaLayout layout(logger());
+        BOOST_REQUIRE(layout.load(workspace.as_object()));
+        layout.resize(glm::vec4(0.0F, 0.0F, 1024.0F, 768.0F));
+        std::vector<std::vector<std::string>>& areas = kinds[layout.name()];
+        for (const AreaLayout::Area& area : layout.areas()) {
+            areas.emplace_back();
+            for (const AreaLayout::Editor& editor : area.editors) {
+                areas.back().push_back(editor.kind);
+            }
+        }
+        loaded.emplace(layout.name(), std::move(layout));
+    }
+    using Areas = std::vector<std::vector<std::string>>;
+    BOOST_CHECK(kinds.at("Modelling").size() == 6U);
+    BOOST_CHECK(kinds.at("Perspective") == (Areas{ { "viewport" } }));
+    BOOST_CHECK(kinds.at("Animation") == (Areas{ { "viewport" }, { "outliner" }, { "properties" }, { "timeline", "graph", "console" } }));
+    BOOST_CHECK(kinds.at("Shading") == (Areas{ { "viewport" }, { "properties" } }));
+    BOOST_CHECK(kinds.at("Rendering") == (Areas{ { "render-view" }, { "render-settings" } }));
+
+    // the foot is a quarter of the window, tall enough for the timeline under its tabs
+    const AreaLayout::Area& foot = loaded.at("Animation").areas().back();
+    BOOST_CHECK_GE(foot.content.w, 132.0F);
+    BOOST_CHECK_LT(foot.region.w, 768.0F / 3.0F);
+    BOOST_CHECK_EQUAL(std::string(loaded.at("Shading").areas().front().editor().state.at("shading").as_string()), "smooth");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

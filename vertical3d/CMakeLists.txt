@@ -43,7 +43,7 @@ add_library("v3dlib_editor"
 	"src/view/ViewOverlay.h" "src/view/ViewOverlay.cxx"
 	"src/view/ViewPort.h" "src/view/ViewPort.cxx"
 	"src/view/ConstructionPlane.h" "src/view/ConstructionPlane.cxx"
-	"src/view/Shading.h"
+	"src/view/Shading.h" "src/view/Shading.cxx"
 	"src/view/ShadedPass.h" "src/view/ShadedPass.cxx"
 
 	"src/scene/item/Item.h" "src/scene/item/Item.cxx"

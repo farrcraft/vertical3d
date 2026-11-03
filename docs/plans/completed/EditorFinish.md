@@ -7,12 +7,12 @@ editor, status bar and notices show what the design shows. A timeline, a graph e
 console, a render view and render settings are editors an area can hold. The shipped
 workspaces include Animation, Shading and Rendering.
 
-The editor is described in [editor/](../editor/README.md), and `api/ui` in
-[api/ui/](../api/ui/README.md) and [internals/ui/](../internals/ui/README.md).
+The editor is described in [editor/](../../editor/README.md), and `api/ui` in
+[api/ui/](../../api/ui/README.md) and [internals/ui/](../../internals/ui/README.md).
 
 A step with a testable CPU half brings test cases with it. A step that changes how something
 looks is checked by running the editor and reading a screenshot, as
-[Testing.md](../contributing/Testing.md) describes.
+[Testing.md](../../contributing/Testing.md) describes.
 
 ## What the survey found
 
@@ -443,8 +443,36 @@ held.
 
 ### Step 15 — The workspaces
 
-**Open.** Steps 11 to 14 are closed.
+**Closed.**
 
 - Animation, Shading and Rendering ship beside Modelling and Perspective.
-- Animation's foot holds the timeline, the graph editor and the console as tabs, so a tab strip
-  shows from the start.
+- Animation's foot holds the timeline, the graph editor and the console as tabs, a quarter of
+  the height, so a tab strip shows from the start. Shading's view is shaded smooth, beside the
+  properties. Rendering is the render view beside the render settings.
+- A viewport's state may name its `shading`, which a new view starts from, and Flat and Smooth
+  write it back, as the fixed views write the camera.
+- The area layout suite loads every shipped workspace and checks the three new ones, and the
+  viewport suite the shading's names. The editor was photographed showing each workspace.
+
+## Outcome
+
+Closed 2026-11-02.
+
+**Delivered.** Every part of the editor's window matches the design its areas were built from.
+The views draw from the theme, the headers read as menus with icons, and the outliner,
+properties editor, status bar and notices show what the design shows, from icons drawn from SVG.
+A timeline, a graph editor, a console, a render view and render settings are editors an area
+can hold, each with a key. The console runs TypeScript on QuickJS-ng against the editor's
+commands, which declare typed arguments and are listed as the lines that run them again. The
+render view opens in a window of its own when no area holds one. Animation, Shading and
+Rendering ship beside Modelling and Perspective.
+
+**What differed from the plan.** Each step records its own differences. The largest were these:
+
+- Step 4 made icons SVG files drawn at the ui's scale (ADR-0139), which the plan had not foreseen.
+- Step 6 left out the properties editor's Shading tab, since an item has no shading of its own.
+- Step 13 made item names unique in a scene (ADR-0157, superseding ADR-0135), so a script can
+  name an item, and added `v3dlib_script`, since an app links only api libraries.
+- Step 14 also gave each window a retained interface of its own (ADR-0155, ADR-0156).
+
+**Left open.** Nothing in the code.

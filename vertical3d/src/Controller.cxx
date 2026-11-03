@@ -59,6 +59,7 @@
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
+#include <vertical3d/src/view/Shading.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -227,7 +228,12 @@ boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::E
         return nullptr;
     }
     // the name is the view's pass name, so the editor's id keeps two views of a profile apart
-    return boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
+    const boost::shared_ptr<view::ViewPort> made = boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
+    // a shading the state names, as the Shading workspace's view names smooth, is how the view starts
+    if (const std::optional<std::string> named = v3d::asset::readString(editor.state, "shading")) {
+        made->display().shading = view::shading(*named).value_or(view::Shading::Flat);
+    }
+    return made;
 }
 
 /**
