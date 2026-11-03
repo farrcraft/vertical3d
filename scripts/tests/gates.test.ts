@@ -16,7 +16,6 @@ import { fileURLToPath } from 'node:url';
 
 import { attachCode, check } from '../boundary.ts';
 import { supportedNode } from '../lib/entry.ts';
-import { includesIn, usesIn } from '../linkrule.ts';
 
 /** The boundary reports for the given lines of one C++ file, as "line: rule" strings. */
 function boundary(text: string, numbers: number[]): string[] {
@@ -39,41 +38,6 @@ test('boundary skips a cast inside a block comment that an unchanged line opened
 test('boundary reports a cast on the line after a continued string', () => {
     const text = 'const char* s = "a \\\r\nb /* c";\r\nint n = static_cast<int>(std::floor(x));\r\n/* d */\r\n';
     assert.deepEqual(boundary(text, [3]), ['3: float-cast']);
-});
-
-const GRID = new Map([['grid', new Set(['v3dlib_grid'])]]);
-
-test('linkrule counts a using-directive and not a namespace declaration', () => {
-    assert.deepEqual(usesIn('using namespace v3d::grid;', GRID), [[['v3dlib_grid'], 'v3d::grid']]);
-    assert.deepEqual(usesIn('namespace v3d::grid {\n}', GRID), []);
-});
-
-test('linkrule does not count a name inside a comment or a literal', () => {
-    const text = '// v3d::grid::Cell\nconst char* s = "v3d::grid::Cell";\nauto r = u8R"(v3d::grid::Cell)";\n';
-    assert.deepEqual(usesIn(text, GRID), []);
-});
-
-test('linkrule counts a name after a character literal holding a quote', () => {
-    assert.deepEqual(usesIn('auto c = u8\'"\'; v3d::grid::Cell cell;', GRID), [[['v3dlib_grid'], 'v3d::grid::Cell']]);
-});
-
-test('linkrule counts a name after a CRLF-continued string, and not one inside it', () => {
-    // the continued part holds a qualified name; read as code it would be counted as a use
-    const text = 'const char* s = "a \\\r\nv3d::grid::Other";\r\nv3d::grid::Cell cell;\r\n';
-    assert.deepEqual(usesIn(text, GRID), [[['v3dlib_grid'], 'v3d::grid::Cell']]);
-});
-
-test('linkrule reads includes outside comments and #if 0 blocks', () => {
-    const text = [
-        '#include "a.h"  // #include "b.h"',
-        '/* #include "c.h"',
-        '#include "d.h" */',
-        '#if 0',
-        '#include "e.h"',
-        '#endif',
-        '#include <f.h>',
-    ].join('\n');
-    assert.deepEqual(includesIn(text), ['a.h', 'f.h']);
 });
 
 // Each gate runs its command line when Node is started with it, and not when a test imports it.

@@ -98,8 +98,17 @@ the last 150 commits, it reports what it did before.
 
 ### Step 7 — linkrule split and tested
 
-Not started. Split `linkrule.ts` into the CMake reader, targets, the include walk and the rules.
-Test each of the six rules against a small fixture tree.
+**Done.** `linkrule.ts` keeps `violations()`, which checks a tree given by its root and its file
+lists, and `main`. `scripts/linkrule/` holds the CMake reader and targets, what a C++ file
+includes and uses, the tree of owners, and the rules. The 140-line check is one function per
+rule. `tests/linkrule.test.ts` checks each rule on a small tree written to a temporary
+directory, and a hand mutation of each rule fails a test. With violations planted in the real
+tree, the gate reports what it did before.
+
+The tests found that a suite naming `Boost::unit_test_framework` was not reported, although the
+rule forbids it. The gate stood in for what `v3d_add_test` links by adding the framework to every
+suite's links, so a suite that named it as well looked the same. The package rule now takes the
+framework as given to a suite instead.
 
 ### Step 8 — One report format, and one test file per gate
 
