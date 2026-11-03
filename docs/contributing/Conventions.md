@@ -330,6 +330,10 @@ script fetches mdBook at a pinned version and checks it against a pinned SHA-256
   `reference/` in the site. A header under `internal/` or `tests/` is left out.
   [scripts/docs/Doxyfile](../../scripts/docs/Doxyfile) holds its settings. A document links the
   reference by its published address, because the reference is not in the repository.
+- **The site is published from `main`.** [docs.yml](../../.github/workflows/docs.yml) builds it
+  on each pull request, so a broken link fails the pull request. It builds and publishes it to
+  GitHub Pages on each push to `main`, at https://farrcraft.github.io/vertical3d/. A branch is
+  never published.
 
 Background: [ADR-0162](../adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
 

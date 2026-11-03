@@ -54,14 +54,18 @@ with no `@param` is off until step 5 turns it on.
 
 ### Step 3 — The site is published
 
-A workflow builds the site on every push to `main` and publishes it to GitHub Pages. Each action
-it uses is pinned to a commit, as `pinned.ts` requires. A pull request builds the site without
-publishing it, so a broken link fails the pull request.
+`.github/workflows/docs.yml` builds the site on each pull request, and builds and publishes it to
+GitHub Pages on each push to `main`. Each action it uses is pinned to a commit, and `pinned.ts`
+passes.
+
+Open: the repository's Pages source has to be set to GitHub Actions before the first publish. The
+workflow has not run yet, so the build on Linux is unproven until it does.
 
 ### Step 4 — The rules are written down
 
-Conventions.md, under "The documentation site", states how the site is built since step 1. It
-gains how the reference is built and how the site is published, and CLAUDE.md routes to it.
+**Done.** Conventions.md, under "The documentation site", states how the site and the reference
+are built, what `SUMMARY.md` holds, how links are rewritten, and how the site is published.
+CLAUDE.md routes to it.
 
 ### Step 5 — The public headers are documented
 
