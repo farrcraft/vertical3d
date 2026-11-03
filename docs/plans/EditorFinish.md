@@ -398,6 +398,12 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   assertion, `import =` and `export =`. Its output matches Node's own stripper byte for byte, on
   the repository's scripts and on a corpus of every construct. The strip suite covers each kind
   of erasure, the refusals, a source that does not read, and the nesting limit.
+- Done: `v3dlib_script` holds the stripper and `script::Runtime`, which runs TypeScript on
+  QuickJS-ng in one scope every run shares. A host binds functions a script calls by a path
+  such as `timeline.set`, whose arguments and value are JSON, and a refusal is an error the
+  script can catch. A run past a second, 256 MB of memory or 256 kB of stack is stopped. The
+  runtime suite covers the value of a run, the shared scope, binding, a refusal, where an error
+  arose, a source that cannot be stripped, and the time and stack limits.
 
 ### Step 14 — The render view and the render settings
 

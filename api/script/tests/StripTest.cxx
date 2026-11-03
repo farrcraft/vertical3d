@@ -3,7 +3,7 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
-#include <vertical3d/src/script/Strip.h>
+#include <api/script/Strip.h>
 
 #include <cstddef>
 #include <string>
@@ -19,7 +19,7 @@ namespace {
  **/
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - the source, then what it strips to
 void stripsTo(std::string_view source, std::string_view expected) {
-    const v3d::editor::script::Stripped stripped = v3d::editor::script::strip(source);
+    const v3d::script::Stripped stripped = v3d::script::strip(source);
     const std::string why = stripped.problem ? stripped.problem->message : std::string();
     BOOST_REQUIRE_MESSAGE(!stripped.problem, why);
     BOOST_CHECK_EQUAL(stripped.code, expected);
@@ -30,10 +30,10 @@ void stripsTo(std::string_view source, std::string_view expected) {
  * Check that a source is refused at a line and column, for a reason that begins some way.
  **/
 void refused(std::string_view source, std::size_t line, std::size_t column, std::string_view begins) {
-    const v3d::editor::script::Stripped stripped = v3d::editor::script::strip(source);
+    const v3d::script::Stripped stripped = v3d::script::strip(source);
     BOOST_CHECK(stripped.problem);
     BOOST_CHECK(stripped.code.empty());
-    const v3d::editor::script::Problem problem = stripped.problem.value_or(v3d::editor::script::Problem{});
+    const v3d::script::Problem problem = stripped.problem.value_or(v3d::script::Problem{});
     BOOST_CHECK_EQUAL(problem.line, line);
     BOOST_CHECK_EQUAL(problem.column, column);
     BOOST_CHECK_MESSAGE(problem.message.starts_with(begins), problem.message);
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(nesting_is_bounded) {
         defaults += "(a" + std::to_string(each) + " = ";
     }
     defaults += "1" + std::string(40, ')') + ";";
-    const v3d::editor::script::Stripped stripped = v3d::editor::script::strip(defaults);
+    const v3d::script::Stripped stripped = v3d::script::strip(defaults);
     BOOST_CHECK(!stripped.problem);
     BOOST_CHECK_EQUAL(stripped.code, defaults);
 }

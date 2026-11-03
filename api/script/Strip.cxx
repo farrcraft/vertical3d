@@ -5,7 +5,7 @@
 
 #include "Strip.h"
 
-#include <vertical3d/src/script/internal/Eraser.h>
+#include <api/script/internal/Eraser.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -14,7 +14,7 @@
 #include <string_view>
 #include <utility>
 
-namespace v3d::editor::script {
+namespace v3d::script {
 
 /**
  **/
@@ -32,4 +32,4 @@ Stripped strip(std::string_view source) {
     return { .code = std::move(code), .problem = std::nullopt };
 }
 
-};  // namespace v3d::editor::script
+};  // namespace v3d::script

@@ -77,7 +77,7 @@ macro(v3d_find_packages)
 		elseif(v3d_package STREQUAL "unofficial-sqlite3")
 			# vcpkg's sqlite3 port provides only a config package, under this name.
 			find_package(unofficial-sqlite3 CONFIG REQUIRED)
-		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog|pxr|NanoSVG|harfbuzz)$")
+		elseif(v3d_package MATCHES "^(glm|EnTT|spdlog|pxr|NanoSVG|harfbuzz|qjs)$")
 			find_package(${v3d_package} CONFIG REQUIRED)
 		else()
 			find_package(${v3d_package} REQUIRED)

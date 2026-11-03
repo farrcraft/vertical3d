@@ -21,7 +21,6 @@ v3d_add_test(vertical3d
 	"scene/ImportTest.cxx"
 	"script/ArgumentsTest.cxx"
 	"script/TextTest.cxx"
-	"script/StripTest.cxx"
 	"view/GlyphsTest.cxx"
 	"view/WireframeVisitorTest.cxx"
 	"render/RIBExportVisitorTest.cxx"

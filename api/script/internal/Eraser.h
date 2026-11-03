@@ -16,7 +16,7 @@
 
 #include "Scanner.h"
 
-namespace v3d::editor::script::internal {
+namespace v3d::script::internal {
 
 /**
  * Reads TypeScript just far enough to find its types, and makes each a blank.
@@ -220,4 +220,4 @@ class Eraser final {
     std::set<std::pair<std::size_t, bool>> notArrows_;
 };
 
-};  // namespace v3d::editor::script::internal
+};  // namespace v3d::script::internal

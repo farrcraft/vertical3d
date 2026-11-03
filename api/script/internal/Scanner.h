@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace v3d::editor::script::internal {
+namespace v3d::script::internal {
 
 /**
  * What a token of TypeScript is.
@@ -104,4 +104,4 @@ class Scanner final {
     std::size_t position_ = 0;
 };
 
-};  // namespace v3d::editor::script::internal
+};  // namespace v3d::script::internal

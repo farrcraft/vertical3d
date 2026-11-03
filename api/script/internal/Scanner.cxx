@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <string_view>
 
-namespace v3d::editor::script::internal {
+namespace v3d::script::internal {
 
 namespace {
 
@@ -272,4 +272,4 @@ char Scanner::at(std::size_t offset) const noexcept {
     return offset < source_.size() ? source_[offset] : '\0';
 }
 
-};  // namespace v3d::editor::script::internal
+};  // namespace v3d::script::internal

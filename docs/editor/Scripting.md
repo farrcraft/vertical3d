@@ -1,7 +1,7 @@
 # Scripting
 
 How a script names the commands it runs and what they act on, how the editor lists what was
-run, and how a script's types are taken out before it runs. Read
+run, and what runs a script. Read
 [CommandsAndUndo.md](CommandsAndUndo.md) first for how a command is registered and reached from
 a menu or a key.
 
@@ -90,43 +90,9 @@ points at it.
 - A command that cannot be run as a script is not listed.
 - The journal keeps the last 1000 entries, and `revision()` moves with every change to it.
 
-## Stripping the types
+## Running a script
 
-A script is TypeScript limited to syntax that can be erased. `script::strip()` takes the types
-out and leaves JavaScript to run. The types are never checked.
-
-- **What is erased.**
-  - Annotations on variables, parameters, returns and fields.
-  - The `?` of an optional parameter or member, and the `!` of a definite assignment.
-  - Type parameters and type arguments.
-  - `as`, `satisfies` and the non-null `!`.
-  - Interfaces, type aliases, `declare` declarations, overloads and `implements` clauses.
-  - The modifiers `public`, `private`, `protected`, `readonly` and `override`, abstract members
-    and index signatures.
-  - Type-only imports and exports.
-- **Positions are kept.** Each run erased becomes spaces, and its line breaks stay, so an error
-  the engine reports names the line and column of the TypeScript.
-- **Two runs carry a character.** A return type that runs onto another line takes the `)` before
-  it to its end, since `=>` may not follow a line break. An erased modifier that opens a member
-  with a computed name or a generator's `*` leaves a `;`, so a field before it that has none
-  does not run on into it.
-- **What is refused.** An `enum`, a `namespace` or `module` that is not `declare`d, a parameter
-  property, a type assertion written `<T>value`, `import =` and `export =`. Each needs code
-  written for it, so none can be erased. A refusal names the line and column where the syntax
-  begins.
-- **What does not read.** A source that does not read as TypeScript is refused where reading
-  stopped. A comment, string or template left open is refused at the place it opens, and a
-  source nested more than 256 levels deep where it passes that depth.
-
-The output is what Node's `module.stripTypeScriptTypes()` makes of the same source in its strip
-mode, byte for byte, which the strip suite's cases are taken from.
-
-**How it reads.** `script/internal/` holds a scanner and a parser that reads statements and
-expressions just far enough to find where each type begins and ends, and keeps nothing else.
-Where the source can be read two ways, it tries one and goes back for the other, as TypeScript
-does. A parenthesis may open an arrow function's parameters or an expression, and a `<` may open
-type arguments or be a comparison. Type arguments are taken only when what follows them could, as
-TypeScript decides. A place where an arrow function did not read is remembered, so a nesting
-read twice is not read again at every level.
+A script is TypeScript, run by `v3dlib_script` as [api/Scripting.md](../api/Scripting.md)
+describes: its types are stripped, and the JavaScript left runs on QuickJS-ng.
 
 Background: [ADR-0153](../adr/0153-editor-scripts-are-typescript-run-on-quickjs.md)

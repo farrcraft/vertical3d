@@ -12,7 +12,7 @@
 
 #include "Scanner.h"
 
-namespace v3d::editor::script::internal {
+namespace v3d::script::internal {
 
 /**
  **/
@@ -497,4 +497,4 @@ bool Eraser::typeArguments(bool heritage) {
     return true;
 }
 
-};  // namespace v3d::editor::script::internal
+};  // namespace v3d::script::internal

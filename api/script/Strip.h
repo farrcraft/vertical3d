@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-namespace v3d::editor::script {
+namespace v3d::script {
 
 /**
  * Where a script could not be stripped, and why.
@@ -43,4 +43,4 @@ struct Stripped final {
  **/
 Stripped strip(std::string_view source);
 
-};  // namespace v3d::editor::script
+};  // namespace v3d::script

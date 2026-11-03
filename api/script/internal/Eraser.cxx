@@ -12,7 +12,7 @@
 
 #include "Scanner.h"
 
-namespace v3d::editor::script::internal {
+namespace v3d::script::internal {
 
 namespace {
 
@@ -609,4 +609,4 @@ void Eraser::tryStatement() {
     }
 }
 
-};  // namespace v3d::editor::script::internal
+};  // namespace v3d::script::internal

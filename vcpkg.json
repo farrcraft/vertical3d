@@ -26,6 +26,7 @@
     "libjpeg-turbo",
     "libpng",
     "nanosvg",
+    "quickjs-ng",
     "spdlog",
     "sqlite3",
     "thorvg"
