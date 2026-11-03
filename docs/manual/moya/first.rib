@@ -7,9 +7,9 @@ Display "first.png" "file" "rgb"
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
 Imager "background" "background" [0.55 0.65 0.8]
-# the camera: 6 units back from the origin, 1.5 units up, tilted down by 20 degrees
-Rotate -20 1 0 0
-Translate 0 -1.5 6
+# the camera: 5.5 units back from the origin, 1.4 units up, tilted down by 12 degrees
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
 WorldBegin
 LightSource "ambientlight" 1 "intensity" [0.2]
 LightSource "distantlight" 2 "intensity" [0.9] "to" [0.5 -1 0.8]

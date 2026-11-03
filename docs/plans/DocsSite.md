@@ -102,6 +102,12 @@ table in `docs/editor/README.md`. Those pages keep what a developer needs, and l
 
 ### Step 7 — Pictures of the apps
 
+moya's pictures are done. `node scripts/pictures.ts` renders each from a scene in
+`docs/manual/moya/`, with the shaders the pages print, into `docs/manual/moya/images/`. The
+tutorial, the shader, displacement and depth of field pages show them, each with a line naming
+the scene and the command. Open: the pictures of the editor and the demos, which need a way to
+start an app, capture a frame and quit.
+
 Each picture is made by a script or by a command the app has, so it can be made again when the
 app changes. moya's pictures are rendered from scenes in the tree. A picture of a running app
 comes from the renderer's capture of a frame, not from a capture of the screen. Each picture

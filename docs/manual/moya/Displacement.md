@@ -46,6 +46,11 @@ WorldEnd
 The quad shows vertical ripples, lit on one slope and shaded on the other. The quad's normal
 points away from the camera, so a negative `height` moves it toward the camera.
 
+![A panel standing on a floor, its surface raised in vertical ridges](images/ripple.png)
+
+*[scenes/ripple.rib](scenes/ripple.rib): the same shader on a panel lit from the left, rendered by
+`node scripts/pictures.ts`.*
+
 `Displacement` names the shader for the surfaces that follow, as `Surface` does. `Option
 "searchpath"` is described in [Shaders.md](Shaders.md#2-tell-moya-where-the-shader-is).
 

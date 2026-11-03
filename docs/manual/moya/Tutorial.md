@@ -24,8 +24,8 @@ Display "first.png" "file" "rgb"
 Projection "perspective" "fov" [40]
 Clipping 0.1 100
 Imager "background" "background" [0.55 0.65 0.8]
-Rotate -20 1 0 0
-Translate 0 -1.5 6
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
 ```
 
 - `Hider "raytrace"` renders by tracing rays. The hider is the part of moya that works out what
@@ -36,7 +36,7 @@ Translate 0 -1.5 6
 - `Clipping 0.1 100` draws only what lies between 0.1 and 100 units from the camera.
 - `Imager "background"` paints a pale blue behind everything the scene does not cover.
 - `Rotate` and `Translate` place the camera. moya applies them to the scene, last request first.
-  The scene moves 1.5 units down and 6 units away, and then tilts up by 20 degrees. The camera
+  The scene moves 1.4 units down and 5.5 units away, and then tilts up by 12 degrees. The camera
   therefore sees it from above and in front.
 
 The camera looks along +z. +x is to the right and +y is up.
@@ -97,6 +97,10 @@ few seconds on this scene. When the command prompt returns, the picture is writt
 
 Open `C:\renders\first.png` in any image viewer. You see a red sphere and a blue box on a pale
 floor, against a pale blue sky. Each object casts a shadow to the right and away from the camera.
+
+![A red sphere and a blue box on a pale floor, each casting a shadow](images/first.png)
+
+*`first.rib`, rendered by `node scripts/pictures.ts`.*
 
 ## 4. Check the log
 

@@ -64,7 +64,12 @@ Polygon "P" [-1.5 -1 5  1.5 -1 5  1.5 1 5  -1.5 1 5] "st" [0 0  1 0  1 1  0 1]
 WorldEnd
 ```
 
-The quad shows six yellow and six blue stripes.
+The quad shows six yellow and six blue stripes. On a sphere, `s` runs once around it, so the
+stripes run from pole to pole. Here the left sphere uses `stripes` and the right one `matte`.
+
+![A sphere with yellow and blue stripes beside a plain blue sphere](images/stripes.png)
+
+*[scenes/stripes.rib](scenes/stripes.rib), rendered by `node scripts/pictures.ts`.*
 
 - **Give each parameter its type**, as in `"float frequency"`. moya has the types of RI's
   standard names, such as `Kd` and `roughness`, and of no others. A parameter with no type is

@@ -6,14 +6,14 @@ The camera sits at the origin of camera space and looks along +z. +x is to the r
 up. The transformation requests before `WorldBegin` move the scene in front of the camera:
 
 ```
-Rotate -20 1 0 0
-Translate 0 -1.5 6
+Rotate -12 1 0 0
+Translate 0 -1.4 5.5
 WorldBegin
 ```
 
 moya applies the requests to each point of the scene in the opposite order to the file, the
-last first. Here the scene moves 1.5 units down and 6 units away from the camera, and then
-tilts up by 20 degrees about x. The effect is a camera above and in front of the scene, looking
+last first. Here the scene moves 1.4 units down and 5.5 units away from the camera, and then
+tilts up by 12 degrees about x. The effect is a camera above and in front of the scene, looking
 down at it.
 
 - `Rotate` takes an angle in degrees and an axis. A positive angle about y turns +z toward +x.
@@ -67,6 +67,11 @@ WorldEnd
 ```
 
 The red quad, four units away, is sharp. The blue quad, ten units away, is blurred.
+
+![Three spheres at different distances: the middle one sharp, the near one blurred](images/focus.png)
+
+*[scenes/focus.rib](scenes/focus.rib): a lens radius of 0.36, focused on the middle sphere,
+rendered by `node scripts/pictures.ts`.*
 
 - `DepthOfField fstop focallength focaldistance` sets the lens. Objects at `focaldistance` from
   the camera are sharp.
