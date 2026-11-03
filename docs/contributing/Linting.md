@@ -122,8 +122,8 @@ Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost re
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables four check families and subtracts 7 checks by name. The tree is clean at
-the 199 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
+`.clang-tidy` enables four check families and subtracts 8 checks by name. The tree is clean at
+the 198 that remain. Each subtraction is settled, and the `.clang-tidy` comment says why. A new
 finding is fixed, never answered by widening an exclusion or an option.
 
 `misc-include-cleaner` ignores every header installed outside the tree: vcpkg, the vendored

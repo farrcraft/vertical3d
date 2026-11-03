@@ -1,7 +1,8 @@
 # ADR-0107: Build: the api libraries build with Clang off Windows
 
-**Status**: accepted
+**Status**: amended
 **Date**: 2026-10-25
+**Amended by**: [ADR-0159](0159-build-the-portable-job-runs-in-an-image-built-locally-too.md), [ADR-0160](0160-build-the-portable-job-uses-the-oldest-supported-clang.md)
 **Documented in**: [contributing/Build.md](../contributing/Build.md)
 
 ## Context

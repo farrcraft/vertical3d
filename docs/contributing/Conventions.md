@@ -197,6 +197,12 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
   protected accessor, such as `logger()` or `registry()`. A struct whose data members are all
   public is a record, and is exempt. clang-tidy's `misc-non-private-member-variables-in-classes`
   reports a protected data member, and a public one in a class that also has private data.
+- **A record field that a designated initialiser may leave out has a default member
+  initialiser.** Write `{}` when the type's default is the value wanted:
+  `std::vector<ColourStop> stops{};`. A field with no initialiser is one every initialiser has to
+  name. Clang and GCC both report a designated initialiser that leaves such a field out, under
+  `-Wextra`. MSVC does not, so the Clang build on Linux is where it fails. clang-tidy's
+  `readability-redundant-member-init` would remove the `{}`, and is turned off for that reason.
 - **A number whose meaning is not plain from its line is a named constant.** The name says
   what the number means, not its value. Numbers that are one value, such as a colour or a
   table, are one constant. A count or a length is derived, with `std::size` or `sizeof`,
@@ -221,6 +227,8 @@ Background: [ADR-0137](../adr/0137-code-only-stateless-helpers-are-file-local.md
 - **Log through the spdlog wrapper:** `logger_->get()->info("... {}", value)`. Do not use the
   old `LOG_INFO` and `LOG_ERROR` macros. They appear only in commented-out or non-compiling code.
 - Doc comments are `/** **/` blocks. Many trivial members have an empty one.
+
+Background: [ADR-0161](../adr/0161-code-a-field-a-caller-may-omit-has-a-default.md)
 
 ## Writing
 

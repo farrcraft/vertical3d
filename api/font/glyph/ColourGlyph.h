@@ -94,7 +94,7 @@ struct ColourFill final {
     };
 
     Kind kind = Kind::Solid;
-    std::vector<ColourStop> stops;   /**< in order of offset. A solid fill has one **/
+    std::vector<ColourStop> stops{}; /**< in order of offset. A solid fill has one **/
     ColourExtend extend = ColourExtend::Pad;
     glm::vec2 from{ 0.0F };          /**< a linear gradient's start, a radial gradient's first centre, or a sweep's centre **/
     glm::vec2 to{ 0.0F };            /**< a linear gradient's end, or a radial gradient's second centre **/
@@ -110,7 +110,7 @@ struct ColourFill final {
  **/
 struct ColourImage final {
     glm::uvec2 size{ 0 };
-    std::vector<unsigned char> pixels;  /**< red, green, blue and alpha, unpremultiplied, in rows from the top **/
+    std::vector<unsigned char> pixels{};  /**< red, green, blue and alpha, unpremultiplied, in rows from the top **/
     glm::vec2 min{ 0.0F };              /**< the lower left of the box it fills, in its own space **/
     glm::vec2 max{ 0.0F };
     glm::mat3 transform{ 1.0F };        /**< from its own space into em units **/
@@ -132,8 +132,8 @@ struct ColourLayer final {
     };
 
     Kind kind = Kind::Fill;
-    std::vector<ColourClip> clips;
-    ColourFill fill;
+    std::vector<ColourClip> clips{};
+    ColourFill fill{};
     std::size_t image = 0;                           /**< an image's index in its glyph **/
     ColourComposite composite = ColourComposite::SourceOver;  /**< how an ended group is put down **/
     float opacity = 1.0F;                                     /**< what an ended group's colours are multiplied by as it is put down **/

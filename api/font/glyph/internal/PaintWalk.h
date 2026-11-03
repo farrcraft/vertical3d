@@ -50,9 +50,9 @@ struct PaintWalk final {
     float finer = 1.0F;          /**< the font's scale in design units **/
     glm::mat3 toEm{ 1.0F };
     std::vector<glm::mat3> transforms{ glm::mat3(1.0F) };
-    std::vector<ColourClip> clips;
-    std::optional<font::internal::CurveBuilder> path;
-    ColourGlyph glyph;
+    std::vector<ColourClip> clips{};
+    std::optional<font::internal::CurveBuilder> path{};
+    ColourGlyph glyph{};
 
     /**
      * @return the transform from the font's scale, as transformed now, into em units

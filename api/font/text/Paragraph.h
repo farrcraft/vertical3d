@@ -41,7 +41,7 @@ struct LineRun final {
     std::vector<std::int32_t> coordinates;  /**< its face's normalized coordinates, or none at every axis's default **/
     float x = 0.0F;                  /**< its left edge, from the paragraph's left **/
     float advance = 0.0F;
-    std::vector<ShapedGlyph> glyphs; /**< left to right, each drawn at the sum of the advances before it **/
+    std::vector<ShapedGlyph> glyphs{}; /**< left to right, each drawn at the sum of the advances before it **/
 };
 
 /**

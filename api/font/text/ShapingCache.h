@@ -30,11 +30,11 @@ namespace v3d::font::text {
 struct ShapedText final {
     std::string text;
     Bidi bidi;
-    std::vector<StyledRange> ranges;      /**< the styles it was shaped in, adjacent ones that shape alike joined **/
-    std::vector<ShapedRun> runs;          /**< in the text's order **/
-    std::vector<std::size_t> runRanges;   /**< for each run, the index of the range it was shaped in **/
-    std::vector<std::size_t> graphemes;   /**< as Segmenter::graphemes() gives them **/
-    std::vector<LineBreak> breaks;        /**< as Segmenter::lineBreaks() gives them **/
+    std::vector<StyledRange> ranges{};    /**< the styles it was shaped in, adjacent ones that shape alike joined **/
+    std::vector<ShapedRun> runs{};        /**< in the text's order **/
+    std::vector<std::size_t> runRanges{}; /**< for each run, the index of the range it was shaped in **/
+    std::vector<std::size_t> graphemes{}; /**< as Segmenter::graphemes() gives them **/
+    std::vector<LineBreak> breaks{};      /**< as Segmenter::lineBreaks() gives them **/
 };
 
 /**

@@ -44,7 +44,7 @@ struct Key final {
     std::uint8_t spread = 0;               /**< how far a distance field reaches from the edge, in pixels. Coverage leaves it 0 **/
     std::uint16_t palette = 0;             /**< a colour glyph's palette. Other modes leave it 0 **/
     std::uint32_t foreground = 0;          /**< the text's colour, which a colour glyph's layers may take, packed by packColour(). Other modes leave it 0 **/
-    std::vector<std::int32_t> coordinates; /**< a variable font's axes, normalized, or none **/
+    std::vector<std::int32_t> coordinates{}; /**< a variable font's axes, normalized, or none **/
 
     auto operator<=>(const Key& other) const = default;
 };
@@ -56,7 +56,7 @@ struct Key final {
 struct Bitmap final {
     glm::uvec2 size{ 0 };
     glm::ivec2 bearing{ 0 };            /**< the top left pixel from the pen, y downwards **/
-    std::vector<unsigned char> pixels;  /**< size.x * size.y * channels of them **/
+    std::vector<unsigned char> pixels{};  /**< size.x * size.y * channels of them **/
     std::uint8_t channels = 1;
 };
 
@@ -174,8 +174,8 @@ class Store final {
     struct Plot {
         std::size_t page = 0;
         glm::uvec2 origin{ 0 };
-        std::vector<Shelf> shelves;
-        std::vector<Key> keys;  /**< the glyphs in it **/
+        std::vector<Shelf> shelves{};
+        std::vector<Key> keys{};  /**< the glyphs in it **/
         std::uint64_t used = 0;      /**< the last frame a glyph in it was asked for **/
         bool dirty = false;
     };

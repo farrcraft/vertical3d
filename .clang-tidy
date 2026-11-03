@@ -1,7 +1,7 @@
 # The check list clang-tidy runs under -DV3D_CLANG_TIDY=ON. Four families are enabled and
 # named checks are subtracted, rather than the live checks being listed one by one: a name
 # clang-tidy does not recognise is not an error, so a list that has gone stale turns findings
-# on and fails loudly instead of quietly covering less. 199 of the 206 checks in these families
+# on and fails loudly instead of quietly covering less. 198 of the 206 checks in these families
 # are live, and the tree is clean at all of them.
 #
 # The cppcoreguidelines, modernize and google families are not enabled at all. Each argues with
@@ -9,7 +9,7 @@
 # body that is not indented, .h for every header - and a gate is worth nothing if reading it
 # means deciding which findings to believe.
 #
-# Seven of the subtractions are settled rather than pending, and are not backlog:
+# Eight of the subtractions are settled rather than pending, and are not backlog:
 #
 #  - bugprone-invalid-enum-default-initialization fires on every VkSomethingCreateInfo x{},
 #    because a Vulkan flag bits enum has no zero enumerator. Value initialising the struct and
@@ -33,6 +33,10 @@
 #    boost::program_options::variables_map inherits contains() from std::map, but the built
 #    boost does not export that instantiation - the call compiles and then fails to link
 #    with an unresolved __declspec(dllimport). count() is what those two keep.
+#  - readability-redundant-member-init reports the {} on a record field whose type's default
+#    constructor gives the same value. That {} is what tells Clang and GCC that a designated
+#    initialiser may leave the field out. Without it, -Wextra reports every initialiser that
+#    does.
 #
 # One check is off in part of the tree rather than all of it. Each tests directory has a
 # .clang-tidy of its own that turns off readability-magic-numbers, because a test's literal is
@@ -50,7 +54,8 @@ Checks: >
   -readability-ambiguous-smartptr-reset-call,
   -readability-container-contains,
   -readability-make-member-function-const,
-  -readability-non-const-parameter
+  -readability-non-const-parameter,
+  -readability-redundant-member-init
 
 # A header is diagnosed wherever it is included from, so an api header is covered by whichever
 # library compiles it. The third party trees are not this repository's to fix, and each would

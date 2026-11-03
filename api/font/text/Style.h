@@ -58,15 +58,15 @@ struct Style final {
     static constexpr float DEFAULT_SIZE = 16.0F;
 
     boost::shared_ptr<face::FallbackChain> fonts;
-    face::Style face;
+    face::Style face{};
     float size = DEFAULT_SIZE;          /**< in pixels **/
-    std::vector<Feature> features;
-    std::vector<face::Variation> variations;  /**< set on each variable face's axes, in this order **/
-    std::string language;               /**< a BCP 47 tag, such as "ja", that picks a face's forms for the language. Empty is the shaping cache's locale **/
+    std::vector<Feature> features{};
+    std::vector<face::Variation> variations{};  /**< set on each variable face's axes, in this order **/
+    std::string language{};             /**< a BCP 47 tag, such as "ja", that picks a face's forms for the language. Empty is the shaping cache's locale **/
     glm::vec4 colour{ 1.0F };
     bool underline = false;
     bool strikethrough = false;
-    std::vector<Effect> effects;    /**< drawn beneath the text in this order, the first furthest back **/
+    std::vector<Effect> effects{};  /**< drawn beneath the text in this order, the first furthest back **/
     float contrast = 0.0F;              /**< how much the glyphs' coverage is strengthened, from 0 to 1, as light text on a dark ground needs **/
 
     bool operator==(const Style& other) const = default;

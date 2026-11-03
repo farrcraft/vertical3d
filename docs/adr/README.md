@@ -204,9 +204,12 @@ content went. Numbers are never reused.
 | [0048](0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted |
 | 0050 | *Merged into 0054* | removed |
 | [0054](0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output | accepted |
-| [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | accepted |
+| [0107](0107-build-the-api-libraries-build-with-clang-off-windows.md) | Build: the api libraries build with Clang off Windows | amended by 0159, 0160 |
 | [0137](0137-code-only-stateless-helpers-are-file-local.md) | Code: only stateless helpers are file-local | accepted |
 | [0158](0158-tooling-typescript-is-type-checked-through-a-package-json.md) | Tooling: TypeScript is type-checked through a package.json | accepted |
+| [0159](0159-build-the-portable-job-runs-in-an-image-built-locally-too.md) | Build: the portable job runs in an image built locally too | accepted |
+| [0160](0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang | accepted |
+| [0161](0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted |
 
 ## Process
 
