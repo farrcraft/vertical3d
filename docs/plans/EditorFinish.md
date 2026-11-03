@@ -404,6 +404,13 @@ language bound straight to the document, Lua, Luau and TypeScript on V8. Python 
   script can catch. A run past a second, 256 MB of memory or 256 kB of stack is stopped. The
   runtime suite covers the value of a run, the shared scope, binding, a refusal, where an error
   arose, a source that cannot be stripped, and the time and stack limits.
+- Done: `app::Scripting` binds every command a script can run by its path, and `console.log`. A
+  command's refusal, whether of its arguments or in its notice, is an `Error` in the script. A
+  console line is listed in the journal as typed, then what it ran, then its value or the
+  problem it stopped on. The editor ships `data/scripts/editor.d.ts`, which
+  `script::declarations()` writes from the command table. The declarations, scripting and
+  bindings suites cover the file's form, the shipped file against the commands, commands run
+  from a line, a refusal stopping it, arguments that do not suit, and what a line says.
 
 ### Step 14 — The render view and the render settings
 

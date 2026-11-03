@@ -150,7 +150,11 @@ JSValue call(JSContext* context, JSValueConst self, int count, JSValueConst* val
         arguments.push_back(error ? boost::json::value(nullptr) : std::move(parsed));
     }
     try {
-        const std::string returned = boost::json::serialize((*function)(arguments));
+        const boost::json::value value = (*function)(arguments);
+        if (value.is_null()) {
+            return JS_UNDEFINED;
+        }
+        const std::string returned = boost::json::serialize(value);
         return JS_ParseJSON(context, returned.c_str(), returned.size(), "<returned>");
     } catch (const Refused& refused) {
         return JS_ThrowPlainError(context, "%s", refused.what());

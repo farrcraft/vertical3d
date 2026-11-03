@@ -21,6 +21,7 @@
 #include <vertical3d/src/app/PlaybackCommands.h>
 #include <vertical3d/src/app/ProjectFiles.h>
 #include <vertical3d/src/app/RenderCommands.h>
+#include <vertical3d/src/app/Scripting.h>
 #include <vertical3d/src/app/ToolCommands.h>
 #include <vertical3d/src/app/ViewCommands.h>
 #include <vertical3d/src/app/WorkspaceSwitcher.h>
@@ -107,6 +108,11 @@ class Controller final : public v3d::engine::Engine {
      * Close a window the editor opened, when the user asks to.
      **/
     void handleClose(const v3d::event::kind::WindowClose& event);
+
+    /**
+     * @return the declarations of the commands a script can run, as the editor ships them
+     **/
+    std::string declarations() const;
 
  protected:
     /**
@@ -346,6 +352,8 @@ class Controller final : public v3d::engine::Engine {
     // the ui, the screen and the statistics overlay. The editor's menu is its own menu bar
     v3d::shell::Shell shell_;
     app::CommandTable table_;
+    // runs scripts and console lines against the commands in the table
+    app::Scripting scripting_;
     app::EditCommands edits_;
     app::ToolCommands toolCommands_;
     app::ViewCommands viewCommands_;

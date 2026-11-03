@@ -90,7 +90,14 @@ std::optional<std::string> CommandTable::run(const std::string& name, const boos
     if (const std::optional<std::string> problem = script::Arguments::check(given, found->second.parameters)) {
         return script::path(name) + ": " + *problem;
     }
+    const std::uint64_t before = journal_->last();
     execute(name, found->second, script::Arguments(given));
+    // a command that refuses says so in a notice, which is the script's refusal too
+    for (const script::Journal::Entry& entry : journal_->entries()) {
+        if (entry.number > before && entry.kind == script::Journal::Kind::Refused) {
+            return entry.text;
+        }
+    }
     return std::nullopt;
 }
 

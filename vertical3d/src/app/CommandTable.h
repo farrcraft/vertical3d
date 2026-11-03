@@ -74,8 +74,9 @@ class CommandTable final {
     /**
      * Run a command as a script does.
      * @param given the arguments, by parameter name
-     * @return why it did not run: no command a script can run has the name, or an argument does
-     *         not suit it. Nothing when it ran, whether or not it did what it was asked
+     * @return why it did not do what it was asked: no command a script can run has the name, an
+     *         argument does not suit it, or the command refused, as its notice says. Nothing
+     *         when it did
      **/
     std::optional<std::string> run(const std::string& name, const boost::json::object& given);
 

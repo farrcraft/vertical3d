@@ -24,7 +24,8 @@ thread.
   object binds nothing.
 - **A call's arguments and value are JSON.** Each argument arrives as a `boost::json::value`,
   as `JSON.stringify` writes it. One JSON cannot hold, such as a function or `undefined`,
-  arrives as null. The value the function returns is the call's value in the script.
+  arrives as null. The value the function returns is the call's value in the script, and a
+  null returned is `undefined`, so a function with nothing to return gives nothing.
 - **A refusal is an error in the script.** A function throws `v3d::script::Refused` to refuse
   a call, and the script sees an `Error` with its message, which it can catch. Any other
   exception arrives as an `InternalError`.

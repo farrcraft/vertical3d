@@ -30,7 +30,7 @@ had been given.
 `CommandTable::run()` runs a command as a script does. It refuses, and runs nothing, when no
 command a script can run has the name, when an argument names no parameter, or when a value is
 not of its parameter's type. A command that runs and then cannot do what it was asked says so
-as a notice, as it does from a menu.
+as a notice, as it does from a menu, and `run()` returns that notice's text as its refusal.
 
 The commands a script can run are those of `EditCommands`, `PlaybackCommands` and
 `RenderCommands`, the select masks, the transform modes, and `project::save`. A command that
@@ -85,6 +85,8 @@ points at it.
   `timeline.auto_key({ on: true })`, so the line sets it rather than flipping it.
 - **A notice** follows the command that posted it, as done or refused. `Context::report()` and
   `Context::refuse()` list it.
+- **A console line** is listed as typed before what it ran. What a script printed or a line
+  came to is listed as said, and the problem a script stopped on as failed.
 - The line goes in before the command runs, and is written again with its filled arguments
   once it has, so what the command said follows it.
 - A command that cannot be run as a script is not listed.
@@ -94,5 +96,27 @@ points at it.
 
 A script is TypeScript, run by `v3dlib_script` as [api/Scripting.md](../api/Scripting.md)
 describes: its types are stripped, and the JavaScript left runs on QuickJS-ng.
+
+`app::Scripting` holds the editor's runtime. The controller builds it over the command table,
+and binds it once every command is registered.
+
+- **Each command is a function by its path.** `timeline.set({ items: ["Cube"], frame: 24 })`
+  runs `timeline::set` as `CommandTable::run()` does. A command takes one object of arguments,
+  or none. Anything else, or a refusal from `run()`, is an `Error` in the script with the
+  refusal's text, so a script stops where a menu would show a notice, unless it catches it. A
+  command's call comes to `undefined`.
+- **`console.log`** lists what it is given in the journal, a string as it is and anything else
+  as JSON, joined by spaces.
+- **A console line** is listed in the journal as typed. Then come the commands it ran and what
+  they said, then the value it came to, or the problem it stopped on as `line:column` and the
+  message. Every line runs in the scope the lines before it left.
+
+**The declarations.** `data/scripts/editor.d.ts` declares every command a script can run, for
+`tsc` or an author's editor to check a script against. `script::declarations()` writes it
+from the command table: each command is a function in the namespace of its path, and takes an
+optional object of its arguments, each optional. A boolean is `boolean`, a number or an
+integer is `number`, text and an item are `string`, and items and parts are `string[]`. The
+editor suite checks the shipped file against the commands, so a command added or changed means
+writing the file again.
 
 Background: [ADR-0153](../adr/0153-editor-scripts-are-typescript-run-on-quickjs.md)

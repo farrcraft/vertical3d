@@ -42,6 +42,12 @@ void Journal::rewrite(std::uint64_t number, const std::string& text) {
 
 /**
  **/
+std::uint64_t Journal::last() const noexcept {
+    return made_;
+}
+
+/**
+ **/
 const std::deque<Journal::Entry>& Journal::entries() const noexcept {
     return entries_;
 }

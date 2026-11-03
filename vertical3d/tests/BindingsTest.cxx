@@ -15,6 +15,7 @@
 
 #include <fstream>
 #include <initializer_list>
+#include <ios>
 #include <set>
 #include <sstream>
 #include <string>
@@ -65,6 +66,19 @@ BOOST_AUTO_TEST_CASE(every_binding_sends_a_handled_command) {
     const v3d::editor::Controller engine("");
     const std::vector<std::string> unhandled = engine.unhandled(boost::json::parse(text.str()).as_object());
     BOOST_TEST(unhandled.empty(), "nothing handles " << boost::algorithm::join(unhandled, ", "));
+}
+
+/**
+ * The declarations the editor ships are those of the commands it registers, so a script an
+ * author's editor checks against them can run.
+ **/
+BOOST_AUTO_TEST_CASE(the_shipped_declarations_match_the_commands) {
+    const v3d::editor::Controller engine("");
+    const std::ifstream file("data/scripts/editor.d.ts", std::ios::binary);
+    BOOST_REQUIRE(file.is_open());
+    std::stringstream text;
+    text << file.rdbuf();
+    BOOST_CHECK(text.str() == engine.declarations());
 }
 
 /**

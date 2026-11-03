@@ -10,6 +10,7 @@ add_library("v3dlib_editor"
 	"src/app/PlaybackCommands.h" "src/app/PlaybackCommands.cxx"
 	"src/app/ProjectFiles.h" "src/app/ProjectFiles.cxx"
 	"src/app/RenderCommands.h" "src/app/RenderCommands.cxx"
+	"src/app/Scripting.h" "src/app/Scripting.cxx"
 	"src/app/ToolCommands.h" "src/app/ToolCommands.cxx"
 	"src/app/ViewCommands.h" "src/app/ViewCommands.cxx"
 	"src/app/WorkspaceSwitcher.h" "src/app/WorkspaceSwitcher.cxx"
@@ -61,6 +62,7 @@ add_library("v3dlib_editor"
 	"src/scene/Units.h" "src/scene/Units.cxx"
 	"src/scene/Scene.h" "src/scene/Scene.cxx"
 	"src/script/Arguments.h" "src/script/Arguments.cxx"
+	"src/script/Declarations.h" "src/script/Declarations.cxx"
 	"src/script/Journal.h" "src/script/Journal.cxx"
 	"src/script/Text.h" "src/script/Text.cxx"
 
@@ -137,6 +139,7 @@ target_link_libraries("v3dlib_editor" PUBLIC
 	v3dlib_log
 	v3dlib_render
 	v3dlib_render_offline
+	v3dlib_script
 	v3dlib_type
 	v3dlib_shell
 	v3dlib_ui

@@ -168,7 +168,9 @@ BOOST_FIXTURE_TEST_CASE(set_key_takes_its_items_and_frame, Edits) {
     const std::vector<float> frames = context.document->scene()->keyedFrames({ cube });
     BOOST_CHECK(frames == (std::vector<float>{ 1.0F, 24.0F }));
 
-    BOOST_CHECK(!table.run("timeline::set", boost::json::parse(R"({"items": ["Sphere"]})").as_object()));
+    // a refusal in a notice is the run's refusal too
+    BOOST_CHECK_EQUAL(table.run("timeline::set", boost::json::parse(R"({"items": ["Sphere"]})").as_object()).value_or(""),
+        "set key: there is no item called Sphere");
     BOOST_CHECK_EQUAL(table.journal()->entries().back().text, "set key: there is no item called Sphere");
     BOOST_CHECK(table.journal()->entries().back().kind == Journal::Kind::Refused);
 }
@@ -184,7 +186,8 @@ BOOST_FIXTURE_TEST_CASE(auto_key_is_listed_with_its_state, Edits) {
     const std::string line = std::string("timeline.auto_key({ on: ") + (was ? "false" : "true") + " })";
     BOOST_CHECK_EQUAL(table.journal()->entries().front().text, line);
 
-    BOOST_CHECK(!table.run("timeline::auto_key", boost::json::parse(was ? R"({"on": false})" : R"({"on": true})").as_object()));
+    BOOST_CHECK_EQUAL(table.run("timeline::auto_key", boost::json::parse(was ? R"({"on": false})" : R"({"on": true})").as_object()).value_or(""),
+        was ? "auto key is already off" : "auto key is already on");
     BOOST_CHECK_EQUAL(context.document->scene()->timeline().autoKey, !was);
 }
 
@@ -209,7 +212,8 @@ BOOST_FIXTURE_TEST_CASE(a_modelling_operation_takes_its_parts, Edits) {
     BOOST_CHECK(commands.invoke(v3d::event::Event("transform::poly::extrude_face")));
     BOOST_CHECK_EQUAL(table.journal()->entries()[table.journal()->entries().size() - 2].text, R"(transform.poly.extrude_face({ parts: ["Cube.f[0]"] }))");
 
-    BOOST_CHECK(!table.run("transform::poly::extrude_face", boost::json::parse(R"({"parts": ["Cube.f[99]"]})").as_object()));
+    BOOST_CHECK_EQUAL(table.run("transform::poly::extrude_face", boost::json::parse(R"({"parts": ["Cube.f[99]"]})").as_object()).value_or(""),
+        "extrude face: Cube has no part 99 of the kind Cube.f[99] names");
     BOOST_CHECK_EQUAL(table.journal()->entries().back().text, "extrude face: Cube has no part 99 of the kind Cube.f[99] names");
 }
 

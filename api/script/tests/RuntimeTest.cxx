@@ -66,6 +66,11 @@ BOOST_AUTO_TEST_CASE(a_bound_function_is_called_by_its_path) {
     BOOST_REQUIRE_EQUAL(calls.size(), 1U);
     BOOST_CHECK_EQUAL(boost::json::serialize(calls.front()), R"([{"items":["Cube"],"frame":24},null,null])");
     BOOST_CHECK_EQUAL(runtime.run("timeline.play()", "console").value, "\"playing\"");
+
+    // a null returned is undefined, so a call with nothing to return comes to nothing
+    BOOST_CHECK(runtime.bind("timeline.stop", [](const boost::json::array&) { return boost::json::value(); }));
+    BOOST_CHECK_EQUAL(runtime.run("timeline.stop()", "console").value, "");
+    BOOST_CHECK_EQUAL(runtime.run("typeof timeline.stop()", "console").value, "\"undefined\"");
 }
 
 /**

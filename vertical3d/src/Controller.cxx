@@ -89,6 +89,7 @@ Controller::Controller(const std::string& path) :
 v3d::engine::Engine(path),
 shell_(this, shellOptions()),
 table_(&commands(), [this]() { commandRan(); }),
+scripting_(&table_),
 edits_(context_),
 toolCommands_(context_),
 viewCommands_(context_),
@@ -100,6 +101,12 @@ renderCommands_(context_) {
     context_.path = path;
     context_.areasChanged = [this]() { areasChanged(); };
     registerCommands();
+}
+
+/**
+ **/
+std::string Controller::declarations() const {
+    return scripting_.declarations();
 }
 
 /**
@@ -125,6 +132,7 @@ void Controller::registerCommands() {
     playbackCommands_.registerCommands(&table_);
     renderCommands_.registerCommands(&table_);
 
+    scripting_.bind();
     table_.press("search::open", [this]() { openSearch(); });
     table_.press("search::run", [this]() { runSearch(); });
     table_.hold("view::drag", [this](const v3d::event::Event& event) {

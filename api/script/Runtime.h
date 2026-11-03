@@ -36,7 +36,8 @@ class Refused final : public std::runtime_error {
 
 /**
  * Something a script can call: it takes the call's arguments as JSON values, and returns one.
- * An argument a JSON value cannot hold, such as a function or undefined, arrives as null.
+ * An argument a JSON value cannot hold, such as a function or undefined, arrives as null. A
+ * null returned is undefined in the script, so a function with nothing to return gives nothing.
  **/
 using Function = std::function<boost::json::value(const boost::json::array& arguments)>;
 
