@@ -268,12 +268,25 @@ frames until it renders.
 
 ### Step 8 — The render settings
 
+**Done, with no change of its own.** Step 1's combo draws its label, so the hider reads Hider
+and Reyes, and the width, the height and the samples were already labelled numbers. The render
+settings were photographed in an area. The frame range goes from the mockup in step 9.
+
 - The render settings' fields carry labels through step 1's combo and the existing fields.
 - The mockup lists a frame range, which the render settings do not hold. The scene's range is
   set in the timeline, and a batch renders every frame of it. Step 9 takes the range out of the
   mockup's render settings.
 
 ### Step 9 — The mockups
+
+**Done.** The canvas's viewport part is Y-up in every view, its marker and its gizmo. It puts the
+view's name on a control-colour pill, adds the mask menu and the editor's maximised note, and can
+draw a camera view's dimmed frame and a tabbed viewport's strip. The top bar has five
+workspaces, the status bar the editor's bindings, and Properties no Shading tab. The combined
+board is the Animation workspace, a free view beside the scene camera's, with Properties standing
+alone and an area menu on the foot's strip. New boards show the F3 command search, a divider with
+its hint, Rendering as two areas with no frame range, and a tabbed viewport. The summary note lists
+what is left different, which is nothing.
 
 Each difference settled as "the mockup changes" is redrawn on the canvas:
 
