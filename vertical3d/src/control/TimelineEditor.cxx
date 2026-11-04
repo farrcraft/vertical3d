@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -122,8 +123,9 @@ void TimelineEditor::draw(v3d::ui::Immediate* ui, std::size_t editor, const glm:
     ui->pushId(id);
     prune();
     State& state = states_[editor];
-    transport(ui);
-    fields(ui, &state);
+    Flow flow{ .room = ui->rowWidth(), .used = 0.0F };
+    transport(ui, &flow);
+    fields(ui, &state, &flow);
 
     const v3d::ui::Immediate::Surface rule = ruler(ui, &state);
     float bottom = rule.max.y;
@@ -160,60 +162,114 @@ void TimelineEditor::deleteChosen() {
 
 /**
  **/
-void TimelineEditor::transport(v3d::ui::Immediate* ui) {
-    const scene::Items selected = document_->scene()->selection();
-    if (ui->button("First")) {
-        playback_->first();
+void TimelineEditor::icons(const Icons& resolve) {
+    icons_ = resolve;
+}
+
+/**
+ **/
+void TimelineEditor::shortcuts(const Shortcuts& find) {
+    shortcuts_ = find;
+}
+
+/**
+ **/
+std::vector<TimelineEditor::Control> TimelineEditor::controls(bool playing) {
+    using enum Action;
+    return {
+        { .action = First, .id = "first", .icon = "icon:first-frame", .tooltip = "First frame", .command = "timeline::playback::first" },
+        { .action = PreviousKey, .id = "previous key", .icon = "icon:previous-key", .tooltip = "Previous key",
+            .command = "timeline::playback::previous_key" },
+        playing ? Control{ .action = Stop, .id = "play", .icon = "icon:stop", .tooltip = "Stop", .command = "timeline::playback::toggle" }
+                : Control{ .action = Play, .id = "play", .icon = "icon:play", .tooltip = "Play", .command = "timeline::playback::toggle" },
+        { .action = NextKey, .id = "next key", .icon = "icon:next-key", .tooltip = "Next key", .command = "timeline::playback::next_key" },
+        { .action = Last, .id = "last", .icon = "icon:last-frame", .tooltip = "Last frame", .command = "timeline::playback::last" },
+    };
+}
+
+/**
+ **/
+void TimelineEditor::place(v3d::ui::Immediate* ui, Flow* flow, float width, bool sized, float after) {
+    const float spacing = ui->dressing().spacing;
+    const float more = after > 0.0F ? spacing + after : 0.0F;
+    if (flow->used > 0.0F && flow->used + spacing + width + more <= flow->room) {
+        ui->sameLine();
+        flow->used += spacing + width;
+    } else {
+        flow->used = width;
     }
-    ui->sameLine();
-    if (ui->button("Previous Key")) {
-        playback_->nextKey(selected, false);
-    }
-    ui->sameLine();
-    const bool playing = playback_->playing();
-    if (ui->button(playing ? "Stop" : "Play")) {
-        if (playing) {
-            playback_->stop();
-        } else {
-            playback_->play();
-        }
-    }
-    ui->sameLine();
-    if (ui->button("Next Key")) {
-        playback_->nextKey(selected, true);
-    }
-    ui->sameLine();
-    if (ui->button("Last")) {
-        playback_->last();
+    // a width set for a control that sizes itself would be left for the next one
+    if (sized) {
+        ui->nextItemWidth(width);
     }
 }
 
 /**
  **/
-void TimelineEditor::fields(v3d::ui::Immediate* ui, State* state) {
+void TimelineEditor::transport(v3d::ui::Immediate* ui, Flow* flow) {
+    const scene::Items selected = document_->scene()->selection();
+    const bool playing = playback_->playing();
+    for (const Control& control : controls(playing)) {
+        place(ui, flow, ui->dressing().barHeight, false);
+        // stop is drawn as a toggle that is on, since playback is under way
+        const v3d::ui::Immediate::IconLook look{ .icon = icons_ ? icons_(control.icon) : v3d::ui::Image(), .tooltip = control.tooltip,
+            .keys = shortcuts_ ? shortcuts_(control.command) : std::string(), .on = control.action == Action::Stop };
+        if (!ui->iconButton(control.id, look)) {
+            continue;
+        }
+        switch (control.action) {
+            case Action::First:
+                playback_->first();
+                break;
+            case Action::PreviousKey:
+                playback_->nextKey(selected, false);
+                break;
+            case Action::Play:
+                playback_->play();
+                break;
+            case Action::Stop:
+                playback_->stop();
+                break;
+            case Action::NextKey:
+                playback_->nextKey(selected, true);
+                break;
+            case Action::Last:
+                playback_->last();
+                break;
+        }
+    }
+}
+
+/**
+ **/
+std::string TimelineEditor::rateName(float rate) {
+    return std::format("{:g} fps", rate);
+}
+
+/**
+ **/
+void TimelineEditor::fields(v3d::ui::Immediate* ui, State* state, Flow* flow) {
     const scene::Timeline& timeline = document_->scene()->timeline();
     if (!state->editing) {
         state->start = static_cast<float>(timeline.start);
         state->end = static_cast<float>(timeline.end);
-        state->rate = timeline.rate;
     }
-    // four fields share what the check leaves of the row
+    // each field is as wide as its label and a frame number, so the row stays compact
     const v3d::ui::paint::Dressing& dress = ui->dressing();
-    const float check = dress.lineHeight + dress.padding + ui->measure(AUTO_KEY);
-    const float width = std::max(0.0F, (ui->rowWidth() - check - (dress.spacing * 4.0F)) / 4.0F);
+    const auto fit = [&](const char* label) { return ui->measure(label) + ui->measure(FIGURES) + dress.spacing + (dress.padding * 2.0F); };
     float frame = static_cast<float>(timeline.frame);
-    ui->nextItemWidth(width);
-    if (ui->dragFloat("Frame", &frame, FRAME_SPEED)) {
+    place(ui, flow, fit(FRAME), true);
+    if (ui->dragFloat(FRAME, &frame, FRAME_SPEED)) {
         if (const std::optional<int> at = whole(frame)) {
             goTo(*at);
         }
     }
+    // the range's two ends go on one row
     bool finished = false;
-    for (const auto& [label, value, speed] : { std::tuple<const char*, float*, float>{ "Start", &state->start, FRAME_SPEED },
-        { "End", &state->end, FRAME_SPEED }, { "Rate", &state->rate, RATE_SPEED } }) {
-        ui->sameLine();
-        ui->nextItemWidth(width);
-        if (ui->dragFloat(label, value, speed)) {
+    for (const auto& [label, value, after] : { std::tuple<const char*, float*, float>{ RANGE, &state->start, fit(RANGE_END) },
+        { RANGE_END, &state->end, 0.0F } }) {
+        place(ui, flow, fit(label), true, after);
+        if (ui->dragFloat(label, value, FRAME_SPEED)) {
             state->editing = true;
         }
         finished = finished || ui->itemFinished();
@@ -222,16 +278,46 @@ void TimelineEditor::fields(v3d::ui::Immediate* ui, State* state) {
         state->editing = false;
         const std::optional<int> start = whole(state->start);
         const std::optional<int> end = whole(state->end);
-        const document::Outcome outcome = start && end ? document_->timing(state->rate, *start, *end)
+        const document::Outcome outcome = start && end ? document_->timing(timeline.rate, *start, *end)
             : document::Outcome{ .done = false, .message = "a frame is a whole number within a million of 0" };
         if (report_) {
             report_(outcome);
         }
     }
+    rates(ui, flow);
     bool on = timeline.autoKey;
-    ui->sameLine();
+    place(ui, flow, dress.lineHeight + dress.padding + ui->measure(AUTO_KEY), false);
     if (ui->checkbox(AUTO_KEY, &on) && report_) {
         report_(document_->autoKey(on));
+    }
+}
+
+/**
+ **/
+void TimelineEditor::rates(v3d::ui::Immediate* ui, Flow* flow) {
+    const scene::Timeline& timeline = document_->scene()->timeline();
+    // the common rates, and the timeline's own where it is none of them
+    std::vector<float> offered(RATES.begin(), RATES.end());
+    if (std::ranges::find(offered, timeline.rate) == offered.end()) {
+        offered.insert(std::ranges::upper_bound(offered, timeline.rate), timeline.rate);
+    }
+    std::vector<std::string> names;
+    int chosen = 0;
+    for (std::size_t index = 0; index < offered.size(); index++) {
+        names.push_back(rateName(offered[index]));
+        if (offered[index] == timeline.rate) {
+            chosen = static_cast<int>(index);
+        }
+    }
+    // as wide as its label, its widest rate and its drop mark, so no rate is cut short
+    float widest = 0.0F;
+    for (const std::string& name : names) {
+        widest = std::max(widest, ui->measure(name));
+    }
+    const v3d::ui::paint::Dressing& dress = ui->dressing();
+    place(ui, flow, ui->measure(RATE) + widest + dress.lineHeight + dress.spacing + (dress.padding * 2.0F), true);
+    if (ui->combo(RATE, &chosen, names) && chosen >= 0 && static_cast<std::size_t>(chosen) < offered.size() && report_) {
+        report_(document_->timing(offered[static_cast<std::size_t>(chosen)], timeline.start, timeline.end));
     }
 }
 

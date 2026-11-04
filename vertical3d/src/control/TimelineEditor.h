@@ -5,16 +5,19 @@
 
 #pragma once
 
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Timeline.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -29,11 +32,13 @@ namespace v3d::editor::control {
  * The timeline: an editor that plays and steps through the frames, edits the frame, the range
  * and the rate, and shows the selected items' keys along the frames.
  *
- * Its controls go to the first frame, the previous key, play or stop, the next key and the last
- * frame. Below them are fields for the frame, the first and last frames of the range, the rate,
- * and a check for auto key. The ruler labels the range's first frame, and every multiple of its
- * step that has room after it. A change to the range or the rate is recorded when its drag or its
- * typing ends.
+ * Its controls are one row, which goes on to a second where the area is too narrow. Five icon
+ * buttons go to the first frame, the previous key, play or
+ * stop, the next key and the last frame, each with a tooltip that names what it does and its key.
+ * A field for the frame, a pair for the first and last frames of the range, a menu of rates and a
+ * check for auto key follow them. The ruler labels the range's first frame, and every multiple of
+ * its step that has room after it. A change to the range is recorded when its drag or its typing
+ * ends, and a change of rate when it is chosen.
  *
  * Under a ruler of frame numbers, each selected item has a row with its keys as diamonds, the
  * chosen ones in the selection's amber. A key is every key the item has on one frame. The
@@ -80,6 +85,54 @@ class TimelineEditor final {
     TimelineEditor(const boost::shared_ptr<document::Document>& document, const boost::shared_ptr<Playback>& playback, const Report& report);
 
     /**
+     * What gives the image an icon's source resolves to.
+     **/
+    using Icons = std::function<v3d::ui::Image(const std::string& source)>;
+
+    /**
+     * Resolve the transport's icons through this. With none, its buttons are drawn blank.
+     **/
+    void icons(const Icons& resolve);
+
+    /**
+     * What gives the key bound to a command, or nothing when none is.
+     **/
+    using Shortcuts = std::function<std::string(const std::string& command)>;
+
+    /**
+     * Find the keys the transport's tooltips name through this. With none, they name none.
+     **/
+    void shortcuts(const Shortcuts& find);
+
+    /**
+     * What a button of the transport does.
+     **/
+    enum class Action : std::uint8_t { First, PreviousKey, Play, Stop, NextKey, Last };
+
+    /**
+     * One button of the transport: what it does, its id, its icon, its tooltip and the command
+     * whose key the tooltip names.
+     **/
+    struct Control final {
+        Action action = Action::First;
+        const char* id = "";
+        const char* icon = "";
+        const char* tooltip = "";
+        const char* command = "";
+    };
+
+    /**
+     * @return the transport's buttons, in order: first frame, previous key, play or stop, next
+     *         key and last frame. Play is stop while the scene plays
+     **/
+    static std::vector<Control> controls(bool playing);
+
+    /**
+     * @return how the rate menu names a rate, such as "24 fps" or "29.97 fps"
+     **/
+    static std::string rateName(float rate);
+
+    /**
      * Draw one timeline editor into a region of the window, and act on what it is asked.
      *
      * @param editor the editor's id, which keeps its fields and its drag apart from another's
@@ -109,9 +162,25 @@ class TimelineEditor final {
     static constexpr float KEY_SLACK = 0.15F;
 
     /**
-     * The check that turns auto key on and off.
+     * The check that turns auto key on and off, and the labels of the frame, the range's two
+     * ends and the rate.
      **/
     static constexpr const char* AUTO_KEY = "Auto Key";
+    static constexpr const char* FRAME = "Frame";
+    static constexpr const char* RANGE = "Range";
+    static constexpr const char* RANGE_END = "to";
+    static constexpr const char* RATE = "Rate";
+
+    /**
+     * The widest frame number a field of the frame or the range is sized for, with room for its
+     * last figure.
+     **/
+    static constexpr const char* FIGURES = "000000";
+
+    /**
+     * The rates the menu offers.
+     **/
+    static constexpr std::array<float, 10> RATES = { 12.0F, 15.0F, 23.976F, 24.0F, 25.0F, 29.97F, 30.0F, 48.0F, 50.0F, 60.0F };
 
     /**
      * How far down the ruler a frame's tick starts, against the line height.
@@ -127,7 +196,6 @@ class TimelineEditor final {
      * How far a pixel of drag moves the range and the rate.
      **/
     static constexpr float FRAME_SPEED = 0.2F;
-    static constexpr float RATE_SPEED = 0.1F;
 
     /**
      * What a press on a track is doing while it is held.
@@ -135,27 +203,52 @@ class TimelineEditor final {
     enum class Drag : std::uint8_t { None, Scrub, Move };
 
     /**
-     * What one timeline editor keeps between frames: the range and rate its fields show while
-     * one is being changed, and its drag.
+     * What one timeline editor keeps between frames: the range its fields show while one is
+     * being changed, and its drag.
      **/
     struct State final {
         float start = 0.0F;
         float end = 0.0F;
-        float rate = 0.0F;
-        bool editing = false;  /**< whether a field of the range or the rate is being changed **/
+        bool editing = false;  /**< whether a field of the range is being changed **/
         Drag drag = Drag::None;
         int offset = 0;  /**< how far a drag has moved the chosen keys so far **/
     };
 
     /**
-     * Draw the buttons that play and step, and act on a click.
+     * How far along its row the controls have reached, and how wide the row is.
      **/
-    void transport(v3d::ui::Immediate* ui);
+    struct Flow final {
+        float room = 0.0F;
+        float used = 0.0F;
+    };
 
     /**
-     * Draw the fields of the frame, the range and the rate, and the check for auto key.
+     * Place the next control of the row beside the last, or at the start of a new row where it
+     * would pass the right edge.
+     *
+     * @param width how wide the control is
+     * @param sized whether the control takes its width from the layer, as a field does, rather
+     *        than sizing itself
+     * @param after how much more has to fit beside it, so that two controls that belong
+     *        together, such as the range's ends, stay on one row
      **/
-    void fields(v3d::ui::Immediate* ui, State* state);
+    static void place(v3d::ui::Immediate* ui, Flow* flow, float width, bool sized, float after = 0.0F);
+
+    /**
+     * Draw the buttons that play and step, and act on a click.
+     **/
+    void transport(v3d::ui::Immediate* ui, Flow* flow);
+
+    /**
+     * Draw the fields of the frame and the range, the menu of rates and the check for auto key,
+     * after the transport.
+     **/
+    void fields(v3d::ui::Immediate* ui, State* state, Flow* flow);
+
+    /**
+     * Draw the menu of rates, and set the rate chosen.
+     **/
+    void rates(v3d::ui::Immediate* ui, Flow* flow);
 
     /**
      * Draw the ruler of frame numbers, and scrub on a press.
@@ -209,6 +302,8 @@ class TimelineEditor final {
     Report report_;
     std::vector<scene::FrameKey> chosen_;
     std::map<std::size_t, State> states_;
+    Icons icons_;
+    Shortcuts shortcuts_;
 };
 
 };  // namespace v3d::editor::control

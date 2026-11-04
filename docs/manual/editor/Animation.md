@@ -25,7 +25,10 @@ Any of these sets the current frame:
 - Click or drag on the ruler at the top of the timeline or the graph editor.
 - Choose an item from the **Animate** menu: **Next Frame**, **Previous Frame**, **First Frame**,
   **Last Frame**, **Next Key**, **Previous Key**, **First Key** or **Last Key**.
-- Click **First**, **Previous Key**, **Next Key** or **Last** in the timeline.
+- Click the first frame, previous key, next key or last frame button in the timeline. Rest the
+  cursor on a button to see what it does and its key.
+- Press Shift+Left or Shift+Right for the first or last frame, and Up or Down for the next or
+  previous key.
 
 The key items go to the keys of the selected items, or of every item when nothing is selected.
 The frame stays within the range. The window's caption and the status bar show the frame.
@@ -56,8 +59,9 @@ Choose **Animate > Auto Key** again to turn it off. The project saves whether it
 
 ## Set the frame range and rate
 
-In the timeline, change the **Start**, **End** and **Rate** fields. Rate is in frames a second.
-The change is one step of the history.
+In the timeline, drag or type into the two **Range** fields for the first and last frames, and
+choose a rate from the **Rate** list, in frames a second. Each change is one step of the
+history.
 
 A new scene runs at 24 frames a second, over frames 1 to 120. The range cannot run backwards,
 and the rate must be above zero. Keys stay on their frames when the rate changes, so the
@@ -65,9 +69,10 @@ animation plays faster or slower.
 
 ## Play the animation
 
-Choose **Animate > Play**, or click **Play** in the timeline. Playback runs at the frame rate
-and starts again from the first frame after the last. Choose **Animate > Stop**, or click
-**Stop**, to stop.
+Choose **Animate > Play**, or click the play button in the timeline. Playback runs at the frame
+rate and starts again from the first frame after the last. While it plays, the button shows a
+square. Choose **Animate > Stop**, or click the button again, to stop. Space plays and stops
+too.
 
 ## Edit keys in the timeline
 

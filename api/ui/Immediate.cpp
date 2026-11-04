@@ -109,6 +109,7 @@ void Immediate::end() {
     // the open combo's list goes over everything, so it is drawn after everything, and takes
     // the cursor from whatever it covers
     context_->drawPopup();
+    context_->drawTip();
 
     // a field that was not drawn cannot be typed into, so it does not keep the keys from the
     // app's bindings
@@ -265,6 +266,29 @@ bool Immediate::smallButton(const std::string& label) {
     paint::fillBox(context_->canvas, min, min + size, context_->dressing.radius, context_->eased(id, context_->face(reaction.held, reaction.hovered)));
     context_->label(label, min + glm::vec2(context_->dressing.padding * 0.5F, 0.0F), size,
         context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
+    return reaction.clicked;
+}
+
+bool Immediate::iconButton(const std::string& id, const IconLook& look) {
+    if (context_->canvas == nullptr) {
+        return false;
+    }
+    const float bar = context_->dressing.barHeight;
+    const glm::vec2 min = context_->place(glm::vec2(bar, bar));
+    const glm::vec2 max = min + glm::vec2(bar, bar);
+    const Id named = context_->identify(id);
+    const immediate::Reaction reaction = context_->interact(named, min, max);
+
+    paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->eased(named, context_->face(look.on || reaction.held, reaction.hovered)));
+    if (look.icon.valid()) {
+        const float side = std::min(context_->dressing.iconSize, bar);
+        const glm::vec2 corner = min + glm::vec2((bar - side) * 0.5F);
+        const glm::vec4 ink = context_->ink(look.on || reaction.hovered ? context_->dressing.activeText : context_->dressing.text);
+        context_->canvas->rect(corner, corner + glm::vec2(side), look.icon.uv0, look.icon.uv1, ink, look.icon.texture);
+    }
+    if (reaction.hovered && (!look.tooltip.empty() || !look.keys.empty())) {
+        context_->askTip(named, look.tooltip, look.keys, min, max);
+    }
     return reaction.clicked;
 }
 

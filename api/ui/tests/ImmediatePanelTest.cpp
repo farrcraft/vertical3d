@@ -241,6 +241,77 @@ BOOST_AUTO_TEST_CASE(a_tree_row_ends_with_its_icon) {
 }
 
 /**
+ * An icon button is a bar square, with its icon in the middle. One that is on is filled as a
+ * checked toggle is.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_button_is_a_square_of_its_icon) {
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build();
+    const v3d::ui::Image icon(v3d::render::realtime::resource::TextureHandle(5));
+    const float bar = ui.dressing().barHeight;
+    bool clicked = false;
+    const auto panel = [&]() { clicked = ui.iconButton("play", {.icon = icon, .tooltip = std::string(), .keys = std::string(), .on = true}); };
+
+    frame(&ui, &canvas, hover(nowhere), panel);
+    const glm::vec4 lit = ui.dressing().highlight;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&lit](const auto& vertex) { return vertex.colour == lit; }));
+    const glm::vec4 ink = ui.dressing().activeText;
+    const auto drawn = std::ranges::find_if(canvas.vertices(), [&ink](const auto& vertex) { return vertex.colour == ink; });
+    BOOST_REQUIRE(drawn != canvas.vertices().end());
+    BOOST_CHECK_CLOSE(drawn->position.x, (bar - std::min(ui.dressing().iconSize, bar)) * 0.5F, 0.001F);
+
+    bool any = false;
+    click(&ui, &canvas, glm::vec2(bar * 0.5F), [&]() {
+        panel();
+        any = any || clicked;
+    });
+    BOOST_CHECK(any);
+}
+
+/**
+ * An icon button's tooltip shows once the cursor has rested on it for the tooltip delay, with
+ * its keys after it in secondary text. A press puts it away until the cursor moves.
+ **/
+BOOST_AUTO_TEST_CASE(an_icon_buttons_tooltip_shows_after_a_rest) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+    const float bar = ui.dressing().barHeight;
+    const auto panel = [&]() {
+        ui.iconButton("play", {.icon = v3d::ui::Image(), .tooltip = "Play", .keys = "Space", .on = false});
+    };
+    const auto at = [&](float now, const v3d::ui::Immediate::Input& input) {
+        written.clear();
+        ui.clock({.now = now, .frame = 0});
+        frame(&ui, &canvas, input, panel);
+    };
+    const glm::vec2 middle(bar * 0.5F);
+
+    at(0.0F, hover(middle));
+    at(0.1F, hover(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.1F, hover(middle));
+    BOOST_CHECK(wrote(written, "Play"));
+    BOOST_CHECK(wrote(written, "Space"));
+    for (const Written& each : written) {
+        if (each.text == "Space") {
+            BOOST_CHECK(each.colour == ui.dressing().secondaryText);
+            BOOST_CHECK_GT(each.pen.y, bar);
+        }
+    }
+
+    // a press puts it away, and moving the cursor brings it back
+    at(ui.dressing().tooltipDelay + 0.2F, press(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.3F, release(middle));
+    BOOST_CHECK(!wrote(written, "Play"));
+    at(ui.dressing().tooltipDelay + 0.4F, hover(middle + glm::vec2(1.0F, 0.0F)));
+    BOOST_CHECK(wrote(written, "Play"));
+}
+
+/**
  * Text can be written in a colour of its own, and an image is drawn the size given, tinted,
  * and centred down a line when it is shorter than one.
  **/

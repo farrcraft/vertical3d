@@ -44,6 +44,9 @@ The Alt, Ctrl and Shift bindings that are held are the left-hand keys only.
 | Shift+F12 | | Shows a timeline in the area |
 | Ctrl+Z | Edit > Undo | Takes back the last change |
 | Ctrl+Y, Ctrl+Shift+Z | Edit > Redo | Makes the change undo took back |
+| Space | Animate > Play, Animate > Stop | Plays the animation, or stops it while it plays |
+| Shift+Left, Shift+Right | Animate > First Frame, Last Frame | Goes to the start or the end of the range |
+| Up, Down | Animate > Next Key, Previous Key | Goes to the nearest keyed frame after or before the current one |
 | Ctrl+H | Edit > Hide | Hides the selected items from the views |
 | Ctrl+Shift+H | Edit > Show All | Shows every hidden item in the views |
 | Alt+H | Edit > Isolate | Shows only the selected items, the items above them and what is under them |

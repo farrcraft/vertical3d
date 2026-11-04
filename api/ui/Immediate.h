@@ -255,6 +255,30 @@ class Immediate {
     bool smallButton(const std::string& label);
 
     /**
+     * How a button drawn from an icon looks, and what its tooltip says.
+     **/
+    struct IconLook final {
+        Image icon;           /**< drawn in the middle at the dressing's icon size, or nothing when it is not valid **/
+        std::string tooltip;  /**< what the button does, shown once the cursor rests on it, or empty for no tooltip **/
+        std::string keys;     /**< the shortcut shown after the tooltip in secondary text, or empty for none **/
+        bool on = false;      /**< filled as a checked toggle is, for a button whose action is under way **/
+    };
+
+    /**
+     * A square button a bar high, drawn from an icon in the text colour.
+     *
+     * Once the cursor has rested on it for the dressing's tooltip delay, its tooltip is drawn
+     * at end(), over everything else. The plate hangs just under the button, or above it where
+     * it would leave the canvas. Moving along a row of such buttons shows each one's after the
+     * quick delay. A press puts the tooltip away until the cursor moves. A layer with no clock
+     * shows a tooltip at once.
+     *
+     * @param id the button's id within the scope
+     * @return whether it was clicked this frame
+     **/
+    bool iconButton(const std::string& id, const IconLook& look);
+
+    /**
      * A row that spans the width, drawn highlighted when it is the selected one.
      * @return whether it was clicked
      **/

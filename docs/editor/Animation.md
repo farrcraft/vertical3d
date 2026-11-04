@@ -94,10 +94,10 @@ The Animate menu:
 | Set Key | `timeline::set` | Key every property of each selected item at the current frame, through the history, so one undo takes the keys away |
 | Auto Key | `timeline::auto_key` | Turn auto key on or off. The item is checked while it is on |
 | Delete Keys | `timeline::delete_keys`, Delete | Delete the keys chosen in the timeline editor, as one change, and choose none |
-| Play, Stop | `timeline::playback::play`, `stop` | Start and stop playback. While playing, `simulate()` steps the frame at the frame rate and starts again from the first frame after the last |
+| Play, Stop | `timeline::playback::play`, `stop` | Start and stop playback. While playing, `simulate()` steps the frame at the frame rate and starts again from the first frame after the last. `timeline::playback::toggle`, Space, stops playback while it runs and starts it otherwise |
 | Next Frame, Previous Frame | `timeline::playback::next`, `previous` | Step one frame, held within the range |
-| First Frame, Last Frame | `timeline::playback::first`, `last` | Go to either end of the range |
-| Next Key, Previous Key | `timeline::playback::next_key`, `previous_key` | Go to the nearest keyed frame after or before the current one |
+| First Frame, Last Frame | `timeline::playback::first`, `last`, Shift+Left and Shift+Right | Go to either end of the range |
+| Next Key, Previous Key | `timeline::playback::next_key`, `previous_key`, Up and Down | Go to the nearest keyed frame after or before the current one |
 | First Key, Last Key | `timeline::playback::first_key`, `last_key` | Go to the earliest or the latest keyed frame |
 
 The keyed frames are those of the selection, or of every item when nothing is selected. Each
@@ -108,13 +108,22 @@ move to a frame sets the frame, which drops every pending edit.
 An area can hold a timeline, the `timeline` editor, which `TimelineEditor` draws in the
 immediate layer.
 
-- **The controls** go to the first frame, the previous key, play or stop, the next key and the
-  last frame, as the Animate menu's items do.
-- **The fields** set the frame, the first and last frames of the range, and the rate, and a
-  check turns auto key on or off. The frame moves as its field is dragged, and is not a change.
-  The range and the rate are one change, `frame range`, recorded when a field's drag or typing
-  ends. `Document::timing()` refuses a rate that is not a positive number and a range that runs
-  backwards. A new range holds the frame within it.
+- **The controls** are one row. A control that would pass the area's right edge starts a new
+  row, and the range's two ends stay on one.
+- **The transport** is five icon buttons: first frame, previous key, play, next key and last
+  frame, which do what the Animate menu's items do. Each key button carries a key's diamond.
+  Play shows a stop icon while the scene plays, filled as a checked toggle is. Each button's
+  tooltip names what it does, and the key bound to its command when there is one.
+- **The fields** set the frame, and the first and last frames of the range, labelled Range and
+  to. Each is as wide as its label and a frame number. The frame moves as its field is dragged,
+  and is not a change. The range is one change, `frame range`, recorded when a field's drag or
+  typing ends.
+- **The rate** is chosen from a menu of 12, 15, 23.976, 24, 25, 29.97, 30, 48, 50 and 60 frames
+  a second, each named as `24 fps`. A scene whose rate is none of them has its rate offered
+  among them. A choice is the same `frame range` change. `Document::timing()` refuses a rate
+  that is not a positive number and a range that runs backwards. A new range holds the frame
+  within it.
+- **A check** turns auto key on or off.
 - **The ruler** counts frames in steps of 1, 2 or 5 times a power of ten, the smallest that
   leaves room for each number. The range's first frame sits half a frame in from the left of the
   tracks, and its last half a frame in from the right.

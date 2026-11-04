@@ -118,7 +118,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `hairline` | a faint line that divides without drawing the eye, such as the edge of an area | the app, through `dressing()` |
 | `text` | ordinary text | both |
 | `active-text` | the text of the chosen or hovered item | both |
-| `secondary-text` | text that says less than the text beside it, such as a shortcut | the app, through `dressing()` |
+| `secondary-text` | text that says less than the text beside it, such as a shortcut | both |
 | `disabled-text` | the text of a control that cannot be used | both |
 | `highlight` | what is drawn behind the chosen item, and behind selected text | both |
 | `selected` | what is drawn behind an item that is chosen, under ordinary text | the app, through `dressing()` |
@@ -133,7 +133,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `padding` | the gap between text and the panel or widget around it | both |
 | `spacing` | the gap between one widget and the next | immediate |
 | `bar-height` | how tall a menu bar, a toolbar, a title bar, a tab or a button is | both |
-| `icon-size` | the side of a button's icon | retained |
+| `icon-size` | the side of a button's icon | both |
 | `panel-padding` | the gap above and below the items of a dropped panel | retained |
 | `scrollbar-width` | how thick a scrollbar is | both |
 | `mark-size` | the side of the box, or the width of the disc, a mark sits in | retained |
@@ -147,8 +147,8 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `hover-duration` | how long a change of fill or text colour eases over, in seconds. Defaults to 0.1, and 0 changes at once | both |
 | `open-duration` | how long a menu takes to open, in seconds. Defaults to 0.12, and 0 opens at once | retained |
 | `submenu-delay` | how long the cursor rests on a dropped panel's submenu item before it opens, in seconds. Defaults to 0.2 | retained |
-| `tooltip-delay` | how long the cursor rests on a component before its tooltip shows, in seconds. Defaults to 0.5 | retained |
-| `tooltip-quick-delay` | the same, when a tooltip was showing a moment before. Defaults to 0.1 | retained |
+| `tooltip-delay` | how long the cursor rests on a component before its tooltip shows, in seconds. Defaults to 0.5 | both |
+| `tooltip-quick-delay` | the same, when a tooltip was showing a moment before. Defaults to 0.1 | both |
 | `title-weight` | how heavy a window's title and a table's header are set, as CSS numbers weights: below 500 is regular, 500 and above semibold. Defaults to 600 | immediate |
 
 The parts of the retained ui with no class of their own use the base: labels, icons, menu

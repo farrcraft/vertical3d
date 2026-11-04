@@ -23,6 +23,13 @@ void PlaybackCommands::registerCommands(CommandTable* table) const {
     const Context& context = context_;
     table->script("timeline::playback::play", [&context]() { context.playback->play(); });
     table->script("timeline::playback::stop", [&context]() { context.playback->stop(); });
+    table->script("timeline::playback::toggle", [&context]() {
+        if (context.playback->playing()) {
+            context.playback->stop();
+        } else {
+            context.playback->play();
+        }
+    });
     table->script("timeline::playback::next", [&context]() { context.playback->step(1); });
     table->script("timeline::playback::previous", [&context]() { context.playback->step(-1); });
     table->script("timeline::playback::first", [&context]() { context.playback->first(); });

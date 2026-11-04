@@ -153,6 +153,22 @@ struct Popup final {
 };
 
 /**
+ * The tooltip of the widget under the cursor, drawn over everything at end().
+ **/
+struct Tip final {
+    Id id = 0;               /**< the widget the cursor rests on, or nothing **/
+    bool asked = false;      /**< whether that widget was drawn under the cursor this frame **/
+    float since = 0.0F;      /**< when the cursor came to rest on it, on the layer's clock **/
+    std::optional<float> shown;  /**< when a tooltip was last drawn, on the layer's clock, or never **/
+    bool hidden = false;     /**< whether a press put it away **/
+    glm::vec2 pressAt{0.0F}; /**< where that press went down, which the cursor has to leave **/
+    std::string text;
+    std::string keys;
+    glm::vec2 boxMin{0.0F};  /**< the widget's box, which the tooltip hangs under **/
+    glm::vec2 boxMax{0.0F};
+};
+
+/**
  * Whether a scrolled region puts up its scrollbar: a window decides at its start, from what
  * it drew last frame, and a table whenever there is more than it shows.
  **/
@@ -387,6 +403,17 @@ class Context final {
     void drawPopup();
 
     /**
+     * Ask for a widget's tooltip, for the widget the cursor is on this frame.
+     **/
+    void askTip(Id id, const std::string& line, const std::string& keys, const glm::vec2& min, const glm::vec2& max);
+
+    /**
+     * Draw the tooltip asked for this frame, once the cursor has rested long enough, or forget
+     * it when nothing asked.
+     **/
+    void drawTip();
+
+    /**
      * Open a scrolling table's region, at the pen, the first time a row asks for one.
      *
      * Called from nextRow(), not from table(), because the region starts where the rows do:
@@ -452,6 +479,7 @@ class Context final {
     bool itemTyping;    /**< whether that item is a field that holds the keyboard **/
 
     Popup popup;
+    Tip tip;
 
  private:
     /**
@@ -468,6 +496,11 @@ class Context final {
      * How wide a number's edge is at a scale of 1, in pixels.
      **/
     static constexpr float edgeWidth = 2.0F;
+    /**
+     * How far a tooltip's text sits in from its edges, as a fraction of a line, as a component's
+     * tooltip does.
+     **/
+    static constexpr float tipInset = 0.4F;
     /**
      * @return a typed number, or nothing when the text is not a whole finite number
      **/

@@ -427,6 +427,61 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "space",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::toggle"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+arrow_left",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::first"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "shift+arrow_right",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::last"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_up",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::next_key"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "arrow_down",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "timeline",
+        "name": "playback::previous_key"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+z",
         "state": "pressed"
       },

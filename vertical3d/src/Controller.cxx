@@ -293,6 +293,8 @@ bool Controller::buildUi() {
     properties_ = boost::make_shared<control::PropertiesEditor>(context_.document->history());
     context_.timeline = boost::make_shared<control::TimelineEditor>(context_.document, context_.playback,
         [this](const document::Outcome& outcome) { context_.report(outcome); });
+    context_.timeline->icons([this](const std::string& source) { return renderer_->image(source); });
+    context_.timeline->shortcuts([this](const std::string& command) { return shell_.screen()->shortcut(v3d::event::Event(command)); });
     console_ = boost::make_shared<control::ConsoleEditor>(table_.journal(), [this](const std::string& line) { scripting_.line(line); });
     graph_ = boost::make_shared<control::GraphEditor>(context_.document, [this](const document::Outcome& outcome) { context_.report(outcome); });
     renderSettings_ = boost::make_shared<control::RenderSettingsEditor>(context_.document,

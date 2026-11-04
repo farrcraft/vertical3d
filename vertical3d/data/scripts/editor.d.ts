@@ -85,6 +85,7 @@ declare namespace timeline.playback {
     function previous(): void;
     function previous_key(): void;
     function stop(): void;
+    function toggle(): void;
 }
 
 declare namespace transform {

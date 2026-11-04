@@ -8,6 +8,7 @@
 #include <api/log/Logger.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/paint/Dressing.h>
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/Playback.h>
 #include <vertical3d/src/control/TimelineEditor.h>
@@ -16,6 +17,7 @@
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 
+#include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -100,6 +102,17 @@ struct Panel {
      **/
     glm::vec2 on(const std::string& label) const {
         return point(label) + glm::vec2(2.0F, 2.0F);
+    }
+
+    /**
+     * @return the middle of one of the transport's five buttons, which come before the frame's
+     *         field, a bar square and spaced as the row spaces its widgets
+     **/
+    glm::vec2 button(int index) {
+        const v3d::ui::paint::Dressing& dress = layer.dressing();
+        const float step = dress.barHeight + dress.spacing;
+        const float left = point("Frame").x - dress.padding - (5.0F * step);
+        return glm::vec2(left + (static_cast<float>(index) * step) + (dress.barHeight * 0.5F), point("Frame").y + 2.0F);
     }
 
     /**
@@ -247,14 +260,105 @@ BOOST_AUTO_TEST_CASE(a_choice_follows_the_selection) {
  **/
 BOOST_AUTO_TEST_CASE(the_controls_step_and_set) {
     Panel panel;
-    panel.drag(panel.on("Last"), panel.on("Last"));
+    panel.drag(panel.button(4), panel.button(4));
     BOOST_CHECK_EQUAL(panel.document->scene()->timeline().frame, v3d::editor::scene::Timeline::DEFAULT_END);
-    panel.drag(panel.on("Previous Key"), panel.on("Previous Key"));
+    panel.drag(panel.button(1), panel.button(1));
     BOOST_CHECK_EQUAL(panel.document->scene()->timeline().frame, 40);
 
     panel.drag(panel.on("Auto Key"), panel.on("Auto Key"));
     BOOST_CHECK(panel.document->scene()->timeline().autoKey);
     BOOST_CHECK_EQUAL(panel.document->history()->undoDepth(), 1U);
+}
+
+/**
+ * The transport is five buttons, and play is stop while the scene plays. Each button's tooltip
+ * names what it does, and the key bound to its command when there is one.
+ **/
+BOOST_AUTO_TEST_CASE(the_transport_names_what_each_button_does) {
+    const std::vector<TimelineEditor::Control> still = TimelineEditor::controls(false);
+    BOOST_REQUIRE_EQUAL(still.size(), 5U);
+    BOOST_CHECK_EQUAL(std::string(still[0].tooltip), "First frame");
+    BOOST_CHECK_EQUAL(std::string(still[2].tooltip), "Play");
+    BOOST_CHECK_EQUAL(std::string(still[4].command), "timeline::playback::last");
+    const std::vector<TimelineEditor::Control> playing = TimelineEditor::controls(true);
+    BOOST_CHECK(playing[2].action == TimelineEditor::Action::Stop);
+    BOOST_CHECK_EQUAL(std::string(playing[2].command), "timeline::playback::toggle");
+
+    // a layer with no clock shows a tooltip as soon as the cursor is on its button
+    Panel panel;
+    panel.editor.shortcuts([](const std::string& command) { return command == "timeline::playback::toggle" ? std::string("Space") : std::string(); });
+    panel.frame(Panel::hover(panel.button(2)));
+    panel.frame(Panel::hover(panel.button(2)));
+    BOOST_CHECK(panel.pen("Play"));
+    BOOST_CHECK(panel.pen("Space"));
+    panel.drag(panel.button(2), panel.button(2));
+    BOOST_CHECK(panel.playback->playing());
+    // the press put the tooltip away, and a move brings it back
+    panel.frame(Panel::hover(panel.button(2) + glm::vec2(1.0F, 0.0F)));
+    BOOST_CHECK(panel.pen("Stop"));
+    panel.playback->stop();
+}
+
+/**
+ * The rate is chosen from a menu that names each rate in frames a second, and the choice is a
+ * change. A rate that is none of the common ones is offered among them.
+ **/
+BOOST_AUTO_TEST_CASE(the_rate_is_chosen_from_a_menu) {
+    BOOST_CHECK_EQUAL(TimelineEditor::rateName(24.0F), "24 fps");
+    BOOST_CHECK_EQUAL(TimelineEditor::rateName(29.97F), "29.97 fps");
+
+    Panel panel;
+    BOOST_CHECK(panel.pen("24 fps"));
+    panel.drag(panel.on("Rate"), panel.on("Rate"));
+    panel.frame(Panel::hover(panel.on("Rate")));
+    const std::optional<glm::vec2> thirty = panel.pen("30 fps");
+    BOOST_REQUIRE(thirty);
+    const glm::vec2 choice = thirty.value_or(glm::vec2(0.0F)) + glm::vec2(2.0F, 2.0F);
+    panel.drag(choice, choice);
+    BOOST_CHECK_EQUAL(panel.document->scene()->timeline().rate, 30.0F);
+    BOOST_REQUIRE(!panel.reported.empty());
+    BOOST_CHECK(panel.reported.back().done);
+
+    panel.document->timing(17.0F, 1, 120);
+    panel.frame(Panel::hover(glm::vec2(690.0F, 490.0F)));
+    BOOST_CHECK(panel.pen("17 fps"));
+}
+
+/**
+ * The controls are one row in a wide area. In a narrow one, a control that would pass the right
+ * edge starts a new row rather than running over the last, and the range's ends stay together.
+ **/
+BOOST_AUTO_TEST_CASE(the_controls_wrap_in_a_narrow_area) {
+    Panel panel;
+    const auto drawn = [&panel](float width) {
+        panel.written.clear();
+        panel.layer.begin(&panel.canvas, Panel::hover(glm::vec2(1290.0F, 490.0F)));
+        panel.editor.draw(&panel.layer, 1, glm::vec4(0.0F, 0.0F, width, 400.0F));
+        panel.layer.end();
+    };
+    panel.canvas.resize(glm::uvec2(1300, 500));
+    // a check is a line high and a field a bar high, so their text sits a little apart on one row
+    const float line = panel.layer.dressing().lineHeight;
+    drawn(1200.0F);
+    BOOST_CHECK_LT(std::abs(panel.point("Auto Key").y - panel.point("Frame").y), line);
+
+    drawn(300.0F);
+    BOOST_CHECK_GT(panel.point("Auto Key").y, panel.point("Frame").y + line);
+    // the range's two ends stay on one row
+    BOOST_CHECK_EQUAL(panel.point("Range").y, panel.point("to").y);
+    BOOST_CHECK_LT(panel.point("Rate").x + panel.layer.measure("Rate"), 300.0F);
+}
+
+/**
+ * A drag of the range's first frame sets it when it is let go, as one change.
+ **/
+BOOST_AUTO_TEST_CASE(the_range_is_set_when_its_drag_ends) {
+    Panel panel;
+    const int start = panel.document->scene()->timeline().start;
+    panel.drag(panel.on("Range"), panel.on("Range") + glm::vec2(30.0F, 0.0F));
+    BOOST_CHECK_GT(panel.document->scene()->timeline().start, start);
+    BOOST_REQUIRE(!panel.reported.empty());
+    BOOST_CHECK(panel.reported.back().done);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

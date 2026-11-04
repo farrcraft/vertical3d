@@ -219,6 +219,16 @@ export writes every item.
 
 ### Step 6 — The timeline's controls
 
+**Done.** `Immediate::iconButton()` draws a bar square from an icon and gives it a tooltip,
+which waits out the theme's delay and is drawn at `end()`, as a component's tooltip is. The
+transport is five of them, drawn from new icons, and Stop is filled as a checked toggle while the
+scene plays. Each tooltip names the action and the key bound to its command. Playback is bound
+as in Blender: Space plays and stops through a new `timeline::playback::toggle`, Shift+Left and
+Shift+Right go to the ends of the range, and Up and Down step between keys. The frame, the range
+and a menu of rates follow, each as wide as it needs, and the row wraps in a narrow area with the
+range's two ends kept together. The timeline was photographed in a narrow area, with Play's
+tooltip showing.
+
 - The frame, the range and the rate sit in one compact row, as the mockup sets them: a frame
   field, a pair of fields for the range, and a menu of rates. Today they are four wide fields.
 - `api/ui`: `Immediate` gains an icon button, drawn from an SVG icon, with a tooltip.

@@ -43,6 +43,7 @@ default-constructed `Input` is no cursor at all.
 | `text(line, colour)` | a line of text in a colour of its own | |
 | `image(picture, size, tint)` | an image the size given, tinted, centred down a line when it is shorter than one | |
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
+| `iconButton(id, { .icon, .tooltip, .keys, .on })` | a square button a bar high, its icon in the middle. One that is `on` is filled as a checked toggle | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
 | `treeRow(label, { .depth, .open, .selected, .icon, .iconTint })` | a full-width row of a tree, indented by its depth, with a fold mark when `open` is given, and its icon, tinted, before the label. A selected row is drawn on the `selected` tint | true when clicked anywhere but the mark |
 | `heading(label, &open)` | a semibold line that heads a group of rows. Given `open`, it draws a fold mark before its label, and a click anywhere on it flips `*open` | whether to draw the group |
@@ -102,6 +103,16 @@ corners.
   it. The keys and the keyboard work as a text field's do.
 - What was typed is taken when the field gives up the keyboard, unless escape gave it up or the
   text is not a finite number. Then the value stays as it was.
+
+An **icon button's tooltip** shows once the cursor has rested on it for the theme's
+`tooltip-delay`. It is drawn at `end()`, over everything else, in a plate just under the
+button, or above it where it would leave the canvas. Its `keys` follow the text in
+`secondary-text`.
+
+- After a tooltip has shown, the next shows after `tooltip-quick-delay`, so moving along a row
+  of buttons shows each one's almost at once.
+- A press puts it away until the cursor moves.
+- A layer given no clock shows a tooltip at once.
 
 A **surface** is for a widget the layer does not have, such as a track of keys along a
 timeline. The caller draws into it and acts on what its `Surface` reports.

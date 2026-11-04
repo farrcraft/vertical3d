@@ -129,11 +129,11 @@ Every item acts on one view, and each view keeps its own settings.
 | Set Key | | Keys every property of each selected item at the current frame |
 | Auto Key | | Turns auto key on or off. Checked while it is on |
 | Delete Keys | Delete | Deletes the keys chosen in the timeline |
-| Play | | Plays the frame range at the frame rate, starting again after the last frame |
-| Stop | | Stops playback |
+| Play | Space | Plays the frame range at the frame rate, starting again after the last frame |
+| Stop | Space | Stops playback |
 | Next Frame, Previous Frame | | Steps one frame, staying within the range |
-| First Frame, Last Frame | | Goes to the start or the end of the range |
-| Next Key, Previous Key | | Goes to the nearest keyed frame after or before the current one |
+| First Frame, Last Frame | Shift+Left, Shift+Right | Goes to the start or the end of the range |
+| Next Key, Previous Key | Up, Down | Goes to the nearest keyed frame after or before the current one |
 | First Key, Last Key | | Goes to the earliest or the latest keyed frame |
 
 The key items use the keys of the selected items, or of every item when nothing is selected.
