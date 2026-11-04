@@ -22,7 +22,6 @@ const PACKAGE_HEADERS: Array<[string, RegExp]> = [
     ['Vulkan::Vulkan', /^vulkan\//],
     ['GPUOpen::VulkanMemoryAllocator', /^vk_mem_alloc/],
     ['spdlog::spdlog', /^(spdlog|fmt)\//],
-    ['libnoise', /^(noise\.h|interp\.h|mathconsts\.h|noise\/)/],
 ];
 
 /**

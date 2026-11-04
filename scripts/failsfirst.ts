@@ -42,9 +42,8 @@
  *    checkout's vcpkg toolchain file, so nothing is installed. The values come from the main
  *    build's CMakeCache.txt, which is out/build/x64-Debug unless --build names another. A link
  *    job pool the main build was configured with is configured here too, because the link
- *    edges it serialises also copy dlls. vendor/libnoise is linked into the worktree with a
- *    directory junction, because voxel links its prebuilt library. /WX is off, so that only an
- *    error counts as a failure to build.
+ *    edges it serialises also copy dlls. /WX is off, so that only an error counts as a
+ *    failure to build.
  * 4. Runs each new case alone, as v3dtest_<suite>.exe --run_test=<path>, from the executable's
  *    directory so that its fixtures resolve.
  * 5. Prints one row per case and exits 1 when any case passed without a stated reason. The

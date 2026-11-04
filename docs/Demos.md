@@ -192,10 +192,6 @@ A first-person walk over procedurally generated block terrain. Sources are in `d
 `window.json`. The terrain shaders are `demos/voxel/shaders/voxel.vert` and `voxel.frag`. The build
 compiles them with `v3d_add_shader` and embeds them in the executable.
 
-**Building.** Voxel is the only target that needs libnoise, a git submodule built separately.
-Its test suite links libnoise too. [contributing/Dependencies.md](contributing/Dependencies.md)
-says how to build it.
-
 **What voxel is the reference for:**
 
 - **`tick()` versus `simulate()`.** Voxel overrides both. The world, including player movement,

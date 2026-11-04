@@ -7,7 +7,6 @@ packages, as described in [UsingTheApi.md](../api/UsingTheApi.md#2-the-vcpkg-man
 
 - [Packages from vcpkg](#packages-from-vcpkg)
 - [The Vulkan SDK](#the-vulkan-sdk)
-- [libnoise](#libnoise)
 - [TypeScript tooling from npm](#typescript-tooling-from-npm)
 - [Setting up vcpkg](#setting-up-vcpkg)
 - [Adding a package](#adding-a-package)
@@ -124,33 +123,6 @@ Setting `V3D_FMOD_ROOT` back to empty builds the null backend alone again.
 
 With the SDK configured, the audio suite plays an event from the example banks the SDK ships.
 CI has no SDK, so that case never runs there.
-
-## libnoise
-
-[libnoise](https://github.com/eXpl0it3r/libnoise) is an unofficial fork of libnoise with CMake
-support. It is the tree's only git submodule, at `vendor/libnoise`. Only voxel and voxel's test
-suite link it, and neither links until libnoise has been built.
-
-### Building libnoise
-
-Build it out of source, with the commands below, from the repository root in a developer
-environment. Replace `<repo>` with the absolute path of your clone.
-
-```
-cmake -S vendor/libnoise -B vendor/libnoise/build-ninja -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-  -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL \
-  -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=<repo>/vendor/libnoise/Debug
-cmake --build vendor/libnoise/build-ninja
-```
-
-- **Do not build in the libnoise source directory.** libnoise commits a `CMakeCache.txt` that
-  names a "Visual Studio 17 2022" generator. Reusing that cache is the usual cause of a failed
-  libnoise build.
-- `CMAKE_POLICY_VERSION_MINIMUM=3.5` is required because libnoise declares
-  `cmake_minimum_required(VERSION 3.0)`, which current CMake rejects.
-- The archive must land in `vendor/libnoise/Debug`, because voxel's `target_link_directories`
-  looks there.
 
 ## TypeScript tooling from npm
 
@@ -287,7 +259,6 @@ seven days old.
   `examples/starter/vcpkg.json` together;
 - the GitHub actions the workflows use, weekly and in one group. It moves each pinned sha and the
   release in its comment together;
-- the `vendor/libnoise` submodule, monthly;
 - the development container's base image in `.devcontainer/Dockerfile`, monthly.
 
 Each pull request runs CI like any other, so an update that breaks the build is found there.

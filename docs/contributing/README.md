@@ -8,7 +8,7 @@ you work on their subject.
 |---|---|
 | [GettingStarted.md](GettingStarted.md) | From a fresh clone to a running app and a passing test run |
 | [Build.md](Build.md) | Configuring, the CMake layout and options, shaders, linking rules, and traps |
-| [Dependencies.md](Dependencies.md) | vcpkg, the Vulkan SDK, libnoise, FMOD, and adding or updating a package |
+| [Dependencies.md](Dependencies.md) | vcpkg, the Vulkan SDK, FMOD, and adding or updating a package |
 | [Testing.md](Testing.md) | Running and writing tests, the GPU tests, reference images, and checking a rendering change |
 | [Linting.md](Linting.md) | cpplint, warnings as errors, `/analyze` and clang-tidy |
 | [Gates.md](Gates.md) | The review gates in `scripts/`: what each checks, how they run, and writing one |

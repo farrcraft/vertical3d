@@ -22,7 +22,7 @@ test('tree finds the repository root', () => {
 });
 
 test('tree names third-party code by its directory, and only at the root', () => {
-    for (const file of ['vendor/libnoise/src/noise.h', 'ports/glm/portfile.cmake', 'demos/voxel/src/noise/perlin.h']) {
+    for (const file of ['vendor/x/src/noise.h', 'ports/glm/portfile.cmake']) {
         assert.equal(isThirdParty(file), true, file);
     }
     for (const file of ['api/vendor/x.h', 'demos/voxel/src/World.h', 'vendored.h']) {

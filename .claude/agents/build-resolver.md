@@ -19,8 +19,8 @@ the right one.
 - `docs/contributing/Gates.md` for a finding from a script in `scripts/`.
 
 The tree is clean at every one of those checks, so **a failure is the change's until shown
-otherwise**. Rule out the environment first: a stale cache, a corrupt object, an unbuilt
-libnoise. Build.md describes each.
+otherwise**. Rule out the environment first: a stale cache, a corrupt object, a missing
+`VULKAN_SDK`. Build.md describes each.
 
 ## The one rule that outranks finishing
 
@@ -64,8 +64,8 @@ ends the build part way.
    did.
 
 `examples/` is not part of the root build; CI builds `examples/starter` separately. `vendor/`
-is third-party: `vendor/libnoise` is a git submodule and `vendor/vcpkg` a gitignored clone. A
-fix that edits either is almost always a misread of the problem.
+is third-party: `vendor/vcpkg` is a gitignored clone. A fix that edits it is almost always a
+misread of the problem.
 
 ## Reporting
 

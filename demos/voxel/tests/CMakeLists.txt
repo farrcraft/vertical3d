@@ -24,7 +24,6 @@ v3d_add_test(voxel
 	"../src/game/GameState.cxx"
 	"../src/game/Item.cxx"
 	"../src/game/Player.cxx"
-	"../src/noise/noiseutils.cpp"
 	"../src/voxel/Chunk.cxx"
 	"../src/voxel/ChunkCulling.cxx"
 	"../src/voxel/ChunkMeshPool.cxx"
@@ -36,26 +35,9 @@ v3d_add_test(voxel
 	"../src/voxel/Voxel.cxx"
 	"../src/voxel/World.cxx")
 
-# A source file property is scoped to the directory that sets it, so the exemption the app
-# gives the vendored noise utility does not reach the suite that shares the file.
-set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES SKIP_LINTING TRUE)
-if(MSVC)
-	set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "/wd4100;/wd4189;/wd4244;/analyze-")
-else()
-	set_source_files_properties("../src/noise/noiseutils.cpp" PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter;-Wno-unused-variable")
-endif()
-
-# The suite names libnoise's include and link directories itself, as the app does. The root
-# does not name them for the whole tree.
-target_include_directories(v3dtest_voxel SYSTEM PRIVATE "${V3D_ROOT}/vendor/libnoise/include/noise")
-target_link_directories(v3dtest_voxel PRIVATE "${V3D_ROOT}/vendor/libnoise/Debug")
-
-# A chunk is built against a TerrainMap. The vtable of the TerrainMap the tests derive from
-# refers to the perlin implementation, so the suite links libnoise even where no test generates
-# noise.
+# A chunk is built against a TerrainMap, whose noise comes from glm through the type library.
 target_link_libraries(v3dtest_voxel PRIVATE
-	v3dlib_type
-	"libnoise")
+	v3dlib_type)
 
 # The mesh pool holds the render library's meshes. The controller needs the rest of what the
 # app links.

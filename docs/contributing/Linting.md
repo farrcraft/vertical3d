@@ -37,19 +37,14 @@ Run it on the whole tree from the repository root:
 
 ```
 cpplint --linelength=180 \
-  --exclude=out --exclude=vendor --exclude=vcpkg_installed \
-  --exclude=demos/voxel/src/noise --recursive .
+  --exclude=out --exclude=vendor --exclude=vcpkg_installed --recursive .
 ```
 
 **The expected output is zero errors.**
 
-The excludes:
-
-- `out`, `vendor` and `vcpkg_installed` exist only on a developer machine. They hold far more
-  files than the project, mostly third-party headers. CI checks out no submodules and installs no
-  packages, so it has none of them.
-- `demos/voxel/src/noise` is third-party code kept as it was published. The static analysers skip it
-  too.
+The excludes, `out`, `vendor` and `vcpkg_installed`, exist only on a developer machine. They hold
+far more files than the project, mostly third-party headers. CI installs no packages, so it has
+none of them.
 
 `--exclude` removes files from the lint, not from the directory walk, so a run still walks the
 excluded directories.
@@ -108,11 +103,7 @@ directories to MSVC as `/external:I`. Without `/analyze:external-`, the analyser
 and glm headers. That takes longer than the whole tree and reports findings in code this
 repository does not own.
 
-Two third-party files are excluded from both analysers:
-
-- `demos/voxel/src/noise/noiseutils.cpp`, excluded in both the voxel app and its test suite, which
-  compile the same file.
-- `api/interchange/CgltfImpl.cxx`.
+One third-party file is excluded from both analysers, `api/interchange/CgltfImpl.cxx`.
 
 `/analyze-` removes a file from MSVC's analysis, and `SKIP_LINTING TRUE` removes it from
 clang-tidy. Do not fix findings in these files, because a fix would be lost when the package is
@@ -252,7 +243,7 @@ an Ubuntu runner and runs the command above. It runs on each pull request and on
 
 It is a separate workflow from [ctest.yml](../../.github/workflows/ctest.yml), which builds the
 tree on a Windows runner and runs the tests. cpplint needs only Python. The build needs MSVC, the
-Vulkan SDK, a vcpkg install and the libnoise submodule.
+Vulkan SDK and a vcpkg install.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
 

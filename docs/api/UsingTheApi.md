@@ -55,9 +55,6 @@ git clone https://github.com/microsoft/vcpkg vendor/vcpkg
 .\vendor\vcpkg\bootstrap-vcpkg.bat
 ```
 
-vertical3d has one submodule of its own, libnoise, which only the voxel app uses. Apps are not
-built when vertical3d is nested in another project, so you do not need to clone libnoise.
-
 The layout ends up as:
 
 ```

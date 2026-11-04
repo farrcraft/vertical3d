@@ -32,8 +32,6 @@ CI builds Debug on Windows only.
   - The tree is MIT.
   - Every vcpkg package is permissive. OpenUSD, FreeType and ICU need attribution.
   - The fonts are under the SIL Open Font License, each with its licence beside it.
-  - libnoise in `vendor/` and the noise utilities in `demos/voxel/src/noise/` are LGPL 2.1, and
-    both are linked statically into voxel.
 - **Version numbers.**
   - `moya --version` prints 0.0.1, and voxel draws 0.0.1 on screen. No other app has a version.
   - The Vulkan application version is 1.0.0 for every app.
@@ -43,8 +41,7 @@ CI builds Debug on Windows only.
   - No app, and no library that needs SDL, Vulkan or USD, has been built off Windows.
   - The app code already has a branch for each platform where one is needed, such as how the
     editor starts moya.
-- **CI** builds Debug only, and uploads nothing. voxel links libnoise from
-  `vendor/libnoise/Debug`.
+- **CI** builds Debug only, and uploads nothing.
 
 ## What it needs
 
@@ -59,13 +56,10 @@ An installed app's directory is read-only, and it may be started from anywhere.
   executable.
 - `v3d.log` goes to the user's directory.
 - The editor finds moya and its USD plugins wherever the install puts them.
-- A Release build of every app runs in CI, and voxel links the libnoise built for its
-  configuration.
+- A Release build of every app runs in CI.
 
 ### 2. What the releases may ship
 
-- **libnoise.** Shipping voxel needs libnoise and the noise utilities linked dynamically, or
-  their object files shipped so that a user can relink. This is a decision.
 - **Demo assets.** The source and licence of pong's sounds and tetris's piece images are not
   recorded. Each is either recorded or replaced. `pieces.psd` stays out of the install.
 - **Third-party notices.** A script generates one notices file from the copyright files vcpkg

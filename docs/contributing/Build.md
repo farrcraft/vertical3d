@@ -248,8 +248,8 @@ PUBLIC when its headers include it, so the package reaches every app that links 
 comes through `v3dlib_type`, EnTT through `v3dlib_event`, Boost.Filesystem and Boost.JSON through
 `v3dlib_asset`, and SDL3 through `v3dlib_engine`. The one exception is a package the app's own
 sources include that none of the `v3dlib_*` targets it links carries. Examples are
-`Boost::program_options` in the apps that parse a command line, voxel's vendored `libnoise`, and
-`Boost::filesystem` in the moya suite. An app suite does not name `Boost::unit_test_framework`,
+`Boost::program_options` in the apps that parse a command line, and `Boost::filesystem` in the
+moya suite. An app suite does not name `Boost::unit_test_framework`,
 because `v3d_add_test` links it. A variable such as `${Boost_LIBRARIES}` counts as every target it
 names, and config-mode Boost sets it to every component the tree finds, so an app names a Boost
 component rather than the variable.
@@ -353,12 +353,9 @@ to a temporary.
   add that directory to their own include path. Its implementation is compiled once for every
   program, in
   [api/interchange/CgltfImpl.cxx](../../api/interchange/CgltfImpl.cxx). That file is
-  excluded from both static analysers, as `demos/voxel/src/noise/noiseutils.cpp` is.
+  excluded from both static analysers.
 - **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
   points at nothing. vcpkg still works, because the build uses the toolchain file.
-- **voxel will not link until libnoise is built.** `vendor/libnoise` is a git submodule and is
-  not prebuilt. voxel and its test suite expect the library under `vendor/libnoise/Debug`. See
-  [Dependencies.md](Dependencies.md#building-libnoise).
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and

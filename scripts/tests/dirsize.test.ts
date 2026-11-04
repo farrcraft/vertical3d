@@ -15,8 +15,7 @@ test('dirsize counts headers, but not sources, tests or vendored files', () => {
     assert.equal(counted('api/font/face/Face.cxx'), false);
     assert.equal(counted('api/ui/paint/TextRenderer.cpp'), false);
     assert.equal(counted('api/render/tests/device/Fixture.h'), false);
-    assert.equal(counted('vendor/libnoise/src/noise.h'), false);
-    assert.equal(counted('demos/voxel/src/noise/noiseutils.h'), false);
+    assert.equal(counted('vendor/x/src/noise.h'), false);
 });
 
 test('dirsize counts the headers directly in a directory, not in its subdirectories', () => {

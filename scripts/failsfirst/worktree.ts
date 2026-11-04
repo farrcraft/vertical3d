@@ -4,7 +4,6 @@
  */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 import { ROOT, isTestPath } from '../lib/tree.ts';
 import { dropSource, listedSources } from './cmake.ts';
@@ -37,33 +36,10 @@ export function makeWorktree(head: string, base: string, changes: Change[], work
             dropped.set(suite, [...(dropped.get(suite) ?? []), { source, added: true }]);
         }
     }
-
-    // voxel links libnoise from vendor/libnoise/Debug, which is built in the checkout and is
-    // not part of any commit.
-    const noise = path.join(ROOT, 'vendor', 'libnoise');
-    const link = path.join(worktree, 'vendor', 'libnoise');
-    if (fs.existsSync(path.join(noise, 'Debug'))) {
-        if (fs.existsSync(link) && fs.readdirSync(link).length === 0) {
-            fs.rmdirSync(link);
-        }
-        if (!fs.existsSync(link)) {
-            fs.symlinkSync(noise, link, 'junction');
-        }
-    }
     return dropped;
 }
 
 export function removeWorktree(worktree: string): void {
-    const link = path.join(worktree, 'vendor', 'libnoise');
-    // A junction is removed as a link. Deleting through it would delete the checkout's
-    // libnoise build.
-    try {
-        if (fs.lstatSync(link).isSymbolicLink()) {
-            fs.unlinkSync(link);
-        }
-    } catch {
-        // there is no link to remove
-    }
     if (git(['worktree', 'remove', '--force', worktree], ROOT, false).code !== 0) {
         fs.rmSync(worktree, { recursive: true, force: true });
         git(['worktree', 'prune'], ROOT, false);

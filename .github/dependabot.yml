@@ -30,14 +30,6 @@ updates:
         patterns: ["*"]
         group-by: dependency-name
 
-  # libnoise, the one submodule. voxel links the library built from it.
-  - package-ecosystem: gitsubmodule
-    directory: /
-    schedule:
-      interval: monthly
-    cooldown:
-      default-days: 7
-
   # The base image of the development container.
   - package-ecosystem: docker
     directory: /.devcontainer

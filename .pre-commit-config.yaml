@@ -14,7 +14,7 @@ repos:
   hooks:
   - id: cpplint
     args: [--linelength=180]
-    exclude: ^(out|vendor|vcpkg_installed|demos/voxel/src/noise)/
+    exclude: ^(out|vendor|vcpkg_installed)/
 # Each gate reads the tree itself, so none is passed file names. A gate whose rule covers only
 # some files runs when one of them, or anything under scripts/, is staged. The rest always run,
 # because a rename anywhere can break what they check.

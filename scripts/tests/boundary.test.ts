@@ -65,7 +65,7 @@ test('boundary reads only the added lines it is given', () => {
 test('boundary leaves out tests, the checked helpers, third-party code and other files', () => {
     const cast = 'int a = static_cast<int>(std::floor(x));\n';
     for (const path of ['api/type/tests/CheckedTest.cxx', 'api/type/Checked.h', 'api/asset/Json.cpp', 'vendor/x/a.cpp',
-        'demos/voxel/src/noise/a.cpp', 'docs/a.md']) {
+        'docs/a.md']) {
         assert.deepEqual(boundary(cast, [1], path), [], path);
     }
     assert.deepEqual(boundary(cast, [1], 'demos/voxel/src/World.cpp'), ['1: float-cast']);

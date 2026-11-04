@@ -59,15 +59,9 @@ Checks: >
 
 # A header is diagnosed wherever it is included from, so an api header is covered by whichever
 # library compiles it. The third party trees are not this repository's to fix, and each would
-# be reported once per source that reaches it. noiseutils.h is among them because it is vendored
-# where the tree's own sources are: SKIP_LINTING takes noiseutils.cpp out of the run and does
-# nothing for the header, which voxel's own sources include.
-#
-# The pattern is matched against the include as spelled rather than against a resolved path, so
-# the vendored header is named by its own last two segments - what reaches the filter is
-# demos\voxel\src\voxel\../noise/noiseutils.h, which no directory prefix matches.
+# be reported once per source that reaches it.
 HeaderFilterRegex: '.*'
-ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)|(.*[\\/]noise[\\/]noiseutils\.h)'
+ExcludeHeaderFilterRegex: '(.*[\\/](vcpkg_installed|vendor|VulkanSDK|Microsoft Visual Studio|Windows Kits)[\\/].*)'
 
 # clang-tidy would otherwise print a fix reformatted to LLVM's brace and indent style, which is
 # not this tree's. Nothing here applies one - -fix is not passed.

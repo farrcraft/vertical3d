@@ -9,7 +9,7 @@ import * as path from 'node:path';
 export const ROOT = path.resolve(import.meta.dirname, '..', '..');
 
 /** The directories of third-party code. The tree's rules do not cover them. */
-export const THIRD_PARTY: readonly string[] = ['vendor/', 'ports/', 'demos/voxel/src/noise/'];
+export const THIRD_PARTY: readonly string[] = ['vendor/', 'ports/'];
 
 /** The directories a build or an install writes. Nothing in them is a source. */
 export const GENERATED: readonly string[] = ['out/', 'node_modules/', 'vcpkg_installed/'];

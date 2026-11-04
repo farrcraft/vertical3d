@@ -15,8 +15,7 @@ test('filelength checks C++ and TypeScript, but not tests or vendored files', ()
     assert.equal(checked('api/ui/paint/ComponentRenderer.cpp'), true);
     assert.equal(checked('api/render/tests/device/LitSceneTest.cpp'), false);
     assert.equal(checked('vertical3d/tests/store/SceneTest.cxx'), false);
-    assert.equal(checked('vendor/libnoise/src/noise.cpp'), false);
-    assert.equal(checked('demos/voxel/src/noise/noiseutils.cpp'), false);
+    assert.equal(checked('vendor/x/src/noise.cpp'), false);
     assert.equal(checked('scripts/filelength.ts'), true);
     assert.equal(checked('scripts/failsfirst/build.ts'), true);
     assert.equal(checked('scripts/tests/prose.test.ts'), false);

@@ -1,6 +1,6 @@
 # Builds the tree and runs the Boost.Test suites through ctest. This is a separate workflow
 # from cpplint rather than a step added to it: cpplint needs nothing but python, and this
-# needs a compiler, the Vulkan SDK, a vcpkg install and the libnoise submodule built.
+# needs a compiler, the Vulkan SDK and a vcpkg install.
 name: ctest
 
 # push is filtered to the default branch and pull_request is not: a branch in this repository
@@ -46,9 +46,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # libnoise is a submodule and is needed: voxel compiles its headers and its suite
-          # links it. It is the only submodule; SDL3_mixer comes from vcpkg.
-          submodules: true
           # the whole history, so the fails-first step can find the branch a pull request
           # merges into and read each changed file at its version there
           fetch-depth: 0
@@ -272,21 +269,6 @@ jobs:
           & (Join-Path $root "bootstrap-vcpkg.bat") -disableMetrics
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
-
-      # libnoise is built out of source: it commits a CMakeCache.txt naming a generator that
-      # is not on this image, and its cmake_minimum_required predates what current CMake
-      # accepts on its own. The archive lands where voxel's target_link_directories expects
-      # it. It is the only vendored library.
-      - name: Build libnoise
-        shell: cmd
-        run: |
-          call "%RUNNER_TEMP%\vcvars.bat" >nul
-          cmake -S vendor/libnoise -B "%RUNNER_TEMP%\libnoise" -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
-            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL ^
-            -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="%GITHUB_WORKSPACE%\vendor\libnoise\Debug" || exit /b 1
-          cmake --build "%RUNNER_TEMP%\libnoise" || exit /b 1
 
       # The job pool holds linking to one edge at a time. A link edge does more than link:
       # vcpkg's applocal deployment runs in the same edge, reopening the binary just linked and
