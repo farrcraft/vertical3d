@@ -6,6 +6,6 @@
     "editor-viewport", "editor-outliner", "editor-properties", "editor-timeline", "editor-graph", "editor-console",
     "editor-render-view", "editor-render-settings",
     "item-scene", "item-camera", "item-light", "item-mesh", "item-curve", "item-group",
-    "mouse-left", "mouse-middle", "mouse-right", "check", "cross", "logo", "search", "unsaved", "restore"
+    "mouse-left", "mouse-middle", "mouse-right", "check", "cross", "logo", "search", "unsaved", "restore", "eye", "eye-closed"
   ]
 }

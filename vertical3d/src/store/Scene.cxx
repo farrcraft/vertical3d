@@ -83,6 +83,14 @@ const char* const MIGRATE_FROM_2 =
 const char* const MIGRATE_FROM_3 = "ALTER TABLE items ADD COLUMN name TEXT NOT NULL DEFAULT '';";
 
 /**
+ * What takes a document's tables from version 4 to version 5: where each item is shown, in the
+ * views and in renders. An item from an older document is shown in both.
+ **/
+const char* const MIGRATE_FROM_4 =
+"ALTER TABLE items ADD COLUMN views INTEGER NOT NULL DEFAULT 1 CHECK (views IN (0, 1));"
+"ALTER TABLE items ADD COLUMN renders INTEGER NOT NULL DEFAULT 1 CHECK (renders IN (0, 1));";
+
+/**
  * The size of one key of a curve: its frame, value, in slope and out slope, then its
  * interpolation and whether it is automatic, a byte each, and two bytes of padding.
  **/
@@ -169,7 +177,7 @@ bool migrate(v3d::database::Database* database, std::int32_t version) {
         return true;
     }
     return (version > 1 || database->execute(MIGRATE_FROM_1)) && (version > 2 || database->execute(MIGRATE_FROM_2)) &&
-        (version > 3 || database->execute(MIGRATE_FROM_3)) &&
+        (version > 3 || database->execute(MIGRATE_FROM_3)) && (version > 4 || database->execute(MIGRATE_FROM_4)) &&
         database->userVersion(Scene::SCHEMA_VERSION);
 }
 
@@ -221,6 +229,8 @@ boost::shared_ptr<scene::item::Item> readItem(const v3d::database::Statement& ro
     const std::string text = row.text();
     *parent = row.integer();
     const std::string name = row.text();
+    const std::int64_t views = row.integer();
+    const std::int64_t renders = row.integer();
 
     if (id <= 0 || *parent < 0 || !finite(translation) || !finite(axis) || !std::isfinite(w) || !finite(scale)) {
         *problem = "its id or its placement is not valid";
@@ -238,6 +248,7 @@ boost::shared_ptr<scene::item::Item> readItem(const v3d::database::Statement& ro
     }
     item->documentId(id);
     item->name(name);
+    item->shown({ .views = views != 0, .renders = renders != 0 });
     item->translation(translation);
     item->rotation(glm::quat(w, axis.x, axis.y, axis.z));
     item->scale(scale);
@@ -273,9 +284,11 @@ bool load(v3d::database::Database* database, std::int32_t version, internal::Loa
     const std::string parent = version >= 2 ? "parent" : "NULL";
     // nor one from before items had names
     const std::string name = version >= 4 ? "name" : "''";
+    // and an item from before items could be hidden is shown everywhere
+    const std::string shown = version >= 5 ? "views, renders" : "1, 1";
     v3d::database::Statement rows = database->prepare(
-        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent + ", " + name +
-        " FROM items ORDER BY position, id");
+        "SELECT id, kind, type_version, tx, ty, tz, rx, ry, rz, rw, sx, sy, sz, payload, " + parent + ", " + name + ", " +
+        shown + " FROM items ORDER BY position, id");
     v3d::database::Statement buffers = database->prepare("SELECT role, count, data FROM buffers WHERE item = ?1");
     if (!rows.valid() || !buffers.valid()) {
         *problem = database->error();
@@ -511,7 +524,8 @@ bool storeItem(internal::Inserts* inserts, const boost::shared_ptr<scene::item::
     if (!Binder(&inserts->item).integer(item->documentId()).integer(position).text(std::string(codec.name()))
         .integer(codec.version())
         .reals({ translation.x, translation.y, translation.z, rotation.x, rotation.y, rotation.z, rotation.w })
-        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).text(item->name()).run()) {
+        .reals({ scale.x, scale.y, scale.z }).text(payload).integer(reference(parent)).text(item->name())
+        .integer(item->shown().views ? 1 : 0).integer(item->shown().renders ? 1 : 0).run()) {
         return false;
     }
     return std::ranges::all_of(codec.buffers(*item), [&](const Buffer& buffer) {

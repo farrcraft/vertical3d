@@ -379,6 +379,98 @@ BOOST_FIXTURE_TEST_CASE(a_rename_ends_when_its_item_is_no_longer_shown, Panel) {
     BOOST_CHECK_EQUAL(history->undo()->name(), "rename");
 }
 
+/**
+ * The Item tab has three headings: Transform over the placement, Camera over what a camera has
+ * of its own, and Item over the name and parent. A click on a heading folds what is under it,
+ * and leaves the rest. A fold stays when another item is shown.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_item_tab_is_under_headings_that_fold, Panel) {
+    camera->selected(true);
+    frame({});
+    BOOST_CHECK(wrote("Transform"));
+    BOOST_CHECK(wrote("Camera"));
+    BOOST_CHECK(wrote("Name"));
+    BOOST_CHECK(wrote("Parent"));
+    BOOST_CHECK(wrote("Translation"));
+
+    const std::optional<glm::vec2> heading = at("Transform");
+    BOOST_REQUIRE(heading);
+    frame(input(*heading, false, false, false));
+    frame(input(*heading, true, true, false));
+    frame(input(*heading, false, false, true));
+    frame({});
+    BOOST_CHECK(wrote("Transform"));
+    BOOST_CHECK(!wrote("Translation"));
+    BOOST_CHECK(wrote("Lens"));
+    BOOST_CHECK(wrote("Name"));
+
+    // a mesh has nothing of its own to head
+    camera->selected(false);
+    cube->selected(true);
+    frame({});
+    BOOST_CHECK(!wrote("Lens"));
+    BOOST_CHECK(!wrote("Translation"));
+}
+
+/**
+ * The Parent combo offers None and every item but the one shown and what is beneath it. A choice
+ * puts the item beneath the one chosen as one change, which undo takes back.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_new_parent_is_one_change, Panel) {
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> child = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    child->name("Child");
+    scene->add(child);
+    scene->parent(child->id(), cube->id());
+    cube->selected(true);
+    frame({});
+    BOOST_CHECK(wrote("None"));
+
+    const std::optional<glm::vec2> combo = at("Parent");
+    BOOST_REQUIRE(combo);
+    frame(input(*combo, false, false, false));
+    frame(input(*combo, true, true, false));
+    frame(input(*combo, false, false, true));
+    frame({});
+    BOOST_CHECK(wrote("Camera"));
+    BOOST_CHECK(!wrote("Child"));
+
+    const std::optional<glm::vec2> choice = at("Camera");
+    BOOST_REQUIRE(choice);
+    frame(input(*choice, false, false, false));
+    frame(input(*choice, true, true, false));
+    frame(input(*choice, false, false, true));
+    frame({});
+    BOOST_CHECK(scene->parent(cube->id()) == camera);
+    BOOST_CHECK(scene->parent(child->id()) == cube);
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+
+    const boost::shared_ptr<v3d::editor::command::Command> undone = history->undo();
+    BOOST_CHECK_EQUAL(undone->name(), "parent");
+    undone->undo();
+    BOOST_CHECK(!scene->parent(cube->id()));
+}
+
+/**
+ * The Shown in renders check takes the item out of renders as one change, and leaves it in the
+ * views.
+ **/
+BOOST_FIXTURE_TEST_CASE(shown_in_renders_is_one_change, Panel) {
+    cube->selected(true);
+    frame({});
+    const std::optional<glm::vec2> check = at("Shown in renders");
+    BOOST_REQUIRE(check);
+    frame(input(*check, false, false, false));
+    frame(input(*check, true, true, false));
+    frame(input(*check, false, false, true));
+    BOOST_CHECK(!cube->shown().renders);
+    BOOST_CHECK(cube->shown().views);
+    BOOST_REQUIRE_EQUAL(history->undoDepth(), 1U);
+    const boost::shared_ptr<v3d::editor::command::Command> undone = history->undo();
+    BOOST_CHECK_EQUAL(undone->name(), "shown in renders");
+    undone->undo();
+    BOOST_CHECK(cube->shown().renders);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

@@ -112,6 +112,28 @@ BOOST_AUTO_TEST_CASE(nodes_become_items_of_their_kind) {
  * half a turn. A child of the camera's node stays where the file put it, and so does the
  * camera's view under a key.
  **/
+/**
+ * A node that is not seen becomes an item hidden in the views and in renders, and one that is
+ * seen and not rendered an item hidden in renders alone. Any other is shown in both.
+ **/
+BOOST_AUTO_TEST_CASE(a_node_keeps_where_it_is_shown) {
+    Scene scene;
+    scene.nodes.push_back(node("plain", std::nullopt));
+    scene.nodes.push_back(node("hidden", std::nullopt));
+    scene.nodes.back().visible = false;
+    scene.nodes.back().renders = false;
+    scene.nodes.push_back(node("guide", std::nullopt));
+    scene.nodes.back().renders = false;
+
+    const v3d::editor::scene::Import imported = v3d::editor::scene::importScene(scene, { .rate = 24.0F, .metres = 1.0 });
+
+    using Shown = v3d::editor::scene::item::Item::Shown;
+    BOOST_REQUIRE_EQUAL(imported.items.size(), 3U);
+    BOOST_CHECK(imported.items[0]->shown() == Shown{});
+    BOOST_CHECK(imported.items[1]->shown() == (Shown{ .views = false, .renders = false }));
+    BOOST_CHECK(imported.items[2]->shown() == (Shown{ .views = true, .renders = false }));
+}
+
 BOOST_AUTO_TEST_CASE(a_camera_is_turned_to_look_where_the_file_says) {
     Scene scene;
     scene.cameras.emplace_back();

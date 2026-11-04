@@ -127,6 +127,35 @@ BOOST_AUTO_TEST_CASE(picker_object_test) {
     BOOST_CHECK_EQUAL(missed.valid, false);
 }
 
+/**
+ * An item hidden in the views cannot be picked, by a click or a band, and neither can one
+ * beneath it. One left out of renders alone still can.
+ **/
+BOOST_AUTO_TEST_CASE(picker_hidden_test) {
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> cube = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    scene.add(holder);
+    const unsigned int id = scene.add(cube);
+    scene.parent(id, holder->id());
+    const boost::shared_ptr<v3d::editor::view::ViewPort> view = frontView();
+    v3d::editor::tool::Picker picker;
+    const auto picked = [&]() {
+        return picker.pick(scene, *view, glm::vec2(200.0F, 200.0F), v3d::editor::selection::SelectMask::Object).valid;
+    };
+
+    cube->shown({ .views = true, .renders = false });
+    BOOST_CHECK(picked());
+    cube->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!picked());
+    // a band over both holds the group alone
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-1.0F, -1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), v3d::editor::selection::SelectMask::Object), 1U);
+    cube->shown({});
+    holder->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!picked());
+    BOOST_CHECK_EQUAL(inside(scene, glm::vec3(-1.0F, -1.0F, 0.0F), glm::vec3(1.0F, 1.0F, 0.0F), v3d::editor::selection::SelectMask::Object), 0U);
+}
+
 BOOST_AUTO_TEST_CASE(picker_nearest_test) {
     v3d::editor::scene::Scene scene;
 

@@ -164,6 +164,19 @@ panel's header and a maximised view were photographed in the editor.
 
 ### Step 4 — The outliner and Properties
 
+**Done.** A text field takes a `FieldLook`,
+which can lead it with an icon in the placeholder colour, with its label drawn as a number's is,
+or with both. The outliner's filter leads with the magnifier. A number's `NumberLook` takes an
+edge, and each field of a row along x, y and z is edged in its axis's colour. `Immediate` gains
+a semibold `heading()` that folds. The Item tab is under Transform, the kind's name for a camera,
+a light or a curve, and Item, and each Properties editor keeps its own folds. The Item heading
+holds the name, labelled in its field, and a Parent combo. A choice there is a new
+`command::Parent`, which keeps the item where it is in the world, as grouping does. The
+Properties tabs took the chosen pill in step 1. With step 5, each outliner row ends in an eye,
+through a tree row's new end icon, and a hidden item's row is dimmed. The Item heading has a
+Shown in renders check, and a curve's own render check is labelled Ribbons so that the two are
+not confused.
+
 - The outliner's filter field leads with a magnifier.
 - The current Properties tab is in the control colour and semibold, on a filled pill, in place
   of the accent fill.
@@ -175,6 +188,15 @@ panel's header and a maximised view were photographed in the editor.
   Both edit step 5's flags.
 
 ### Step 5 — An item can be hidden, and left out of renders
+
+**Done.** `Item::shown()` holds the two flags, and `Scene::shown()` folds in the items above.
+`Scene::accept()` takes which flag a walk honours, and the views, the picker and a shot each walk
+by theirs. The shaded pass skips a hidden mesh. `command::Show` sets the flags of a set of items
+and deselects what it hides. Edit > Hide (Ctrl+H), Show All (Ctrl+Shift+H) and Isolate (Alt+H)
+build it. H already shows handles, and the chords follow Maya's. The store is at schema version
+5, with a column for each flag. The interchange `Node` gains `visible` and `renders`. The glTF
+reader reads `KHR_node_visibility` from the extension's JSON, and the USD reader reads
+`visibility` and `purpose`. ADR-0168 records the decision.
 
 No item carries visibility. The importers drop the visibility a USD or glTF file holds, and RIB
 export writes every item.

@@ -16,8 +16,10 @@
 #include <cstddef>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
@@ -26,13 +28,14 @@
 namespace v3d::editor::control {
 
 /**
- * The properties editor: an editor that shows the selected item's name, placement and settings,
- * and edits them.
+ * The properties editor: an editor that shows the selected item's name, parent, placement and
+ * settings, and edits them.
  *
  * It shows one item, when exactly one is selected, and otherwise says how many are. Each number
  * a curve can drive is shown as the current frame shows it, so a keyed number follows playback.
- * A camera adds its projection and a light its type. A curve item adds whether a render draws
- * it, and its width.
+ * A camera adds its lens and projection, and a light its emission and type. A curve item adds
+ * whether a render draws it, and its width. A new parent is a change of its own, which keeps the
+ * item where it is in the world.
  *
  * An edit is written into the item as it happens, so the views follow a drag of a number. When
  * the edit ends, or its item stops being the one shown, it is recorded in the history as one
@@ -79,10 +82,13 @@ class PropertiesEditor final {
      * edits.
      *
      * With nothing selected it shows the scene's own settings: its unit of length. With one
-     * item selected it shows tabs. Item holds the item's name and every number and setting it
-     * has. Mesh, for a mesh, counts its vertices and faces. Keys lists the item's curves. A group
-     * of numbers along x, y and z is one row of three, each led by its axis's letter in the axis's
-     * colour.
+     * item selected it shows tabs. Item holds every number and setting the item has, under
+     * three headings that each fold. Transform holds its placement. The kind's name holds what a
+     * camera, a light or a curve has of its own. Item holds its name, its parent and whether it
+     * is shown in renders. Mesh, for a mesh, counts its vertices and faces. Keys lists the item's
+     * curves. A group of numbers along x, y and z is one row of three, each led by its axis's
+     * letter and edged on its left in the axis's colour. Each editor keeps its own folds while
+     * the editor runs.
      *
      * @param editor the editor's id, which keeps its widgets apart from another's
      **/
@@ -118,9 +124,32 @@ class PropertiesEditor final {
     };
 
     /**
-     * Draw the numbers a curve can drive, and write what is dragged or typed.
+     * Draw the Item tab: the item's placement, what its kind has of its own, and its name and
+     * parent, each under a heading.
      **/
-    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length);
+    void itemTab(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, const boost::shared_ptr<scene::item::Item>& item);
+
+    /**
+     * Draw a heading that folds, kept folded or open for the editor being drawn.
+     *
+     * @return whether to draw what is under it
+     **/
+    bool heading(v3d::ui::Immediate* ui, const std::string& title);
+
+    /**
+     * Draw the item's name, the combo of what it can go beneath and whether it is shown in
+     * renders, and write and record a change to any of them.
+     **/
+    void itemSettings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, const boost::shared_ptr<scene::item::Item>& item);
+
+    /**
+     * Draw numbers a curve can drive, and write what is dragged or typed.
+     *
+     * @param paths the property paths to draw, in order. Consecutive paths of one group are drawn
+     *        under its name
+     **/
+    void numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length,
+        const std::vector<std::string>& paths);
 
     /**
      * Draw one number, and write it into the item when it is dragged or typed.
@@ -169,6 +198,9 @@ class PropertiesEditor final {
     // the item the angles were last shown for, and the angles
     boost::shared_ptr<scene::item::Item> turned_;
     glm::vec3 angles_{ 0.0F };
+    // the editor being drawn, and the headings each editor has folded
+    std::size_t editor_ = 0;
+    std::map<std::size_t, std::set<std::string>> folded_;
 };
 
 };  // namespace v3d::editor::control

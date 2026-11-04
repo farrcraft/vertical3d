@@ -44,6 +44,9 @@ The Alt, Ctrl and Shift bindings that are held are the left-hand keys only.
 | Shift+F12 | | Shows a timeline in the area |
 | Ctrl+Z | Edit > Undo | Takes back the last change |
 | Ctrl+Y, Ctrl+Shift+Z | Edit > Redo | Makes the change undo took back |
+| Ctrl+H | Edit > Hide | Hides the selected items from the views |
+| Ctrl+Shift+H | Edit > Show All | Shows every hidden item in the views |
+| Alt+H | Edit > Isolate | Shows only the selected items, the items above them and what is under them |
 | Ctrl+O | File > Open | Opens a project |
 | Ctrl+S | File > Save | Saves the open project |
 | Ctrl+Space | Window > Maximise Area | Maximises the area, or gives every area its room back |
@@ -77,6 +80,7 @@ cursor is over a view.
 | Left click on a ball | A perspective view's navigation gizmo | Looks along that axis |
 | Middle drag | A perspective view | Orbits the camera |
 | Left click | A row of the outliner | Selects its item |
+| Left click | The eye at the end of an outliner row | Hides or shows its item |
 | Left drag | A divider between areas | Resizes the areas either side |
 | Double click | A divider | Gives the areas either side the same room |
 | Right click | While dragging a divider | Puts the divider back |

@@ -56,6 +56,8 @@ v3d_add_test(vertical3d
 
 	"command/StackTest.cxx"
 	"command/GroupTest.cxx"
+	"command/ParentTest.cxx"
+	"command/ShowTest.cxx"
 	"command/KeyTest.cxx"
 	"command/KeyedTest.cxx"
 	"command/KeysTest.cxx"

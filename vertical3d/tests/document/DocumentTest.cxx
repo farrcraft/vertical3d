@@ -19,6 +19,7 @@
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 
+#include <cstddef>
 #include <string>
 #include <variant>
 #include <vector>
@@ -96,6 +97,49 @@ BOOST_AUTO_TEST_CASE(an_operation_applies_and_records_itself) {
     const v3d::editor::document::Outcome nothing = edited.redo();
     BOOST_CHECK(!nothing.done);
     BOOST_CHECK(!nothing.undoable);
+}
+
+/**
+ * Hide takes items out of the views, show all brings every one back, and each is one change. An
+ * isolation shows the items and what is above them, leaves what is beneath them as it is, and
+ * hides the rest. None of them touches where an item is rendered.
+ **/
+BOOST_AUTO_TEST_CASE(items_are_hidden_shown_and_isolated) {
+    const Scratch scratch("shown");
+    v3d::editor::document::Document edited = document(scratch.path());
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = edited.scene();
+    for (int made = 0; made < 4; made++) {
+        edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    }
+    const v3d::editor::scene::Items items = scene->items();
+    // the first holds the second, which holds the third. The fourth stands alone
+    scene->parent(items[1]->id(), items[0]->id());
+    scene->parent(items[2]->id(), items[1]->id());
+    const std::size_t depth = edited.history()->undoDepth();
+
+    const v3d::editor::document::Outcome hid = edited.hide({ items[3] });
+    BOOST_CHECK(hid.done);
+    BOOST_CHECK(hid.undoable);
+    BOOST_CHECK(!items[3]->shown().views);
+    BOOST_CHECK(items[3]->shown().renders);
+    BOOST_CHECK(!edited.hide({ items[3] }).done);
+    BOOST_CHECK(edited.showAll().done);
+    BOOST_CHECK(items[3]->shown().views);
+    BOOST_CHECK(!edited.showAll().done);
+    BOOST_CHECK_EQUAL(edited.history()->undoDepth(), depth + 2);
+
+    items[2]->shown({ .views = false, .renders = true });
+    BOOST_CHECK(edited.isolate({ items[1] }).done);
+    BOOST_CHECK(items[0]->shown().views);
+    BOOST_CHECK(items[1]->shown().views);
+    BOOST_CHECK(!items[2]->shown().views);
+    BOOST_CHECK(!items[3]->shown().views);
+    BOOST_CHECK(!edited.isolate({}).done);
+
+    edited.undo();
+    BOOST_CHECK(items[3]->shown().views);
+    BOOST_CHECK(edited.show({ items[2] }).done);
+    BOOST_CHECK(items[2]->shown().views);
 }
 
 /**

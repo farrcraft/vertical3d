@@ -17,6 +17,7 @@
 #include <vertical3d/src/scene/Scene.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -253,7 +254,7 @@ BOOST_FIXTURE_TEST_CASE(the_scene_row_holds_every_item, Drawn) {
 
 /**
  * Each kind of item has its own icon and colour, and with icons to draw, each row draws its
- * kind's icon in its kind's colour.
+ * kind's icon in its kind's colour, and the filter draws a magnifier.
  **/
 BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
     std::set<std::string> icons;
@@ -277,6 +278,54 @@ BOOST_FIXTURE_TEST_CASE(a_row_shows_its_kinds_icon, Drawn) {
     BOOST_CHECK(std::ranges::find(asked, Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).icon) != asked.end());
     const glm::vec4 mesh = Outliner::mark(v3d::editor::scene::item::Item::Kind::Mesh).colour;
     BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&mesh](const auto& vertex) { return vertex.colour == mesh; }));
+    // the filter leads with the magnifier, in the placeholder's colour
+    BOOST_CHECK(std::ranges::find(asked, "icon:search") != asked.end());
+    const glm::vec4 dim = layer.dressing().placeholder;
+    BOOST_CHECK(std::ranges::any_of(canvas.vertices(), [&dim](const auto& vertex) { return vertex.colour == dim; }));
+}
+
+/**
+ * Each item's row ends in an eye, and a click on it is handed on and selects nothing. A row whose
+ * item is hidden, by its own flag or a parent's, is dimmed.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_click_on_an_eye_is_handed_on, Drawn) {
+    std::vector<std::string> asked;
+    outliner.icons([&asked](const std::string& source) {
+        asked.push_back(source);
+        return v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(9));
+    });
+    std::vector<boost::shared_ptr<v3d::editor::scene::item::Item>> eyed;
+    outliner.eye([&eyed](const boost::shared_ptr<v3d::editor::scene::item::Item>& item) { eyed.push_back(item); });
+    rig->shown({ .views = false, .renders = true });
+    frame({});
+    BOOST_CHECK(std::ranges::find(asked, "icon:eye") != asked.end());
+    BOOST_CHECK(std::ranges::find(asked, "icon:eye-closed") != asked.end());
+    for (const Written& each : written) {
+        if (each.text == "Rig" || each.text == "Hand") {
+            BOOST_CHECK(each.colour == layer.dressing().disabledText);
+        } else if (each.text == "Cube") {
+            BOOST_CHECK(each.colour == layer.dressing().text);
+        }
+    }
+
+    // the eye is the icon drawn in secondary text on the cube's row
+    const std::optional<glm::vec2> found = at("Cube");
+    BOOST_REQUIRE(found);
+    const glm::vec2 onCube = found.value_or(glm::vec2(0.0F));
+    const glm::vec4 dim = layer.dressing().secondaryText;
+    float eye = 0.0F;
+    bool seen = false;
+    for (const auto& vertex : canvas.vertices()) {
+        if (vertex.colour == dim && std::abs(vertex.position.y - onCube.y) < layer.dressing().lineHeight && (!seen || vertex.position.x < eye)) {
+            eye = vertex.position.x;
+            seen = true;
+        }
+    }
+    BOOST_REQUIRE(seen);
+    click(glm::vec2(eye + 2.0F, onCube.y));
+    BOOST_REQUIRE_EQUAL(eyed.size(), 1U);
+    BOOST_CHECK(eyed[0] == cube);
+    BOOST_CHECK(!cube->selected());
 }
 
 /**

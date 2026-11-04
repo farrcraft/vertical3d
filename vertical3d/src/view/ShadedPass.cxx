@@ -120,7 +120,7 @@ void ShadedPass::submit(const scene::Scene& scene, const ViewPort::Display& disp
     const scene::Evaluation evaluation = scene.evaluate();
     for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
         const boost::shared_ptr<scene::item::Mesh> mesh = as<scene::item::Mesh>(item);
-        if (!mesh) {
+        if (!mesh || !scene.shown(mesh->id()).views) {
             continue;
         }
         const Upload* uploaded = upload(mesh->geometry(), display.shading);

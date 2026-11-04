@@ -14,11 +14,13 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 // cgltf.h is a C header, and cpplint sorts it with the C system headers rather than with
 // the third party ones.
+#include <boost/json.hpp>
 #include <cgltf.h>  // NOLINT(build/include_order)
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -79,6 +81,24 @@ void Reader::addTree(const cgltf_node& root) {
     }
 }
 
+bool Reader::visibleOf(const cgltf_node& source) {
+    // cgltf keeps an extension it has no struct for as JSON text
+    for (cgltf_size index = 0; index < source.extensions_count; index++) {
+        const cgltf_extension& extension = source.extensions[index];
+        if (extension.name == nullptr || extension.data == nullptr || std::string_view(extension.name) != "KHR_node_visibility") {
+            continue;
+        }
+        boost::system::error_code error;
+        const boost::json::value parsed = boost::json::parse(extension.data, error);
+        if (error || !parsed.is_object()) {
+            return true;
+        }
+        const boost::json::value* visible = parsed.as_object().if_contains("visible");
+        return visible == nullptr || !visible->is_bool() || visible->as_bool();
+    }
+    return true;
+}
+
 std::size_t Reader::addNode(const cgltf_node& source, std::optional<std::size_t> parent) {
     Node node;
     node.name = nameOf(source.name);
@@ -95,6 +115,10 @@ std::size_t Reader::addNode(const cgltf_node& source, std::optional<std::size_t>
     }
     if (source.skin != nullptr) {
         notes_.push_back("node " + node.name + " is skinned, and its mesh is read at rest");
+    }
+    if (!visibleOf(source)) {
+        node.visible = false;
+        node.renders = false;
     }
     const std::size_t index = scene_.nodes.size();
     nodes_.emplace(&source, index);

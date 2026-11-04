@@ -20,6 +20,7 @@
 #include <vertical3d/src/command/Keys.h>
 #include <vertical3d/src/command/Modelling.h>
 #include <vertical3d/src/command/Settings.h>
+#include <vertical3d/src/command/Show.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Timeline.h>
 #include <vertical3d/src/command/Topology.h>
@@ -41,6 +42,7 @@
 #include <cctype>
 #include <cstddef>
 #include <fstream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -133,6 +135,84 @@ Outcome Document::group(const scene::Items& items) {
     command->redo();
     history_->push(command);
     return { .done = true, .message = "grouped " + Document::items(items.size()) + " - " + Document::items(scene_->count()), .undoable = true };
+}
+
+Outcome Document::hide(const scene::Items& items) {
+    std::vector<command::Show::Change> changes;
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
+        changes.push_back({ .item = item, .shown = { .views = false, .renders = item->shown().renders } });
+    }
+    const boost::shared_ptr<command::Show> command = boost::make_shared<command::Show>(scene_, changes, "hide");
+    if (command->empty()) {
+        return { .done = false, .message = "hide: nothing given is shown" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "hid " + Document::items(items.size()), .undoable = true };
+}
+
+Outcome Document::show(const scene::Items& items) {
+    std::vector<command::Show::Change> changes;
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
+        changes.push_back({ .item = item, .shown = { .views = true, .renders = item->shown().renders } });
+    }
+    const boost::shared_ptr<command::Show> command = boost::make_shared<command::Show>(scene_, changes, "show");
+    if (command->empty()) {
+        return { .done = false, .message = "show: nothing given is hidden" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "showed " + Document::items(items.size()), .undoable = true };
+}
+
+Outcome Document::showAll() {
+    std::vector<command::Show::Change> changes;
+    for (const boost::shared_ptr<scene::item::Item>& item : scene_->items()) {
+        changes.push_back({ .item = item, .shown = { .views = true, .renders = item->shown().renders } });
+    }
+    const boost::shared_ptr<command::Show> command = boost::make_shared<command::Show>(scene_, changes, "show all");
+    if (command->empty()) {
+        return { .done = false, .message = "show all: nothing is hidden" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "showed every item", .undoable = true };
+}
+
+Outcome Document::isolate(const scene::Items& items) {
+    if (items.empty()) {
+        return { .done = false, .message = "isolate: an isolation keeps items shown, and none was given" };
+    }
+    // the items and what is above them are shown, what is beneath them is left alone, and the
+    // rest is hidden
+    std::set<unsigned int> shown;
+    std::set<unsigned int> beneath;
+    for (const boost::shared_ptr<scene::item::Item>& item : items) {
+        shown.insert(item->id());
+        for (const boost::shared_ptr<scene::item::Item>& above : scene_->ancestors(item->id())) {
+            shown.insert(above->id());
+        }
+    }
+    for (const boost::shared_ptr<scene::item::Item>& item : scene_->items()) {
+        const scene::Items above = scene_->ancestors(item->id());
+        const auto given = [&items](const boost::shared_ptr<scene::item::Item>& each) { return std::ranges::find(items, each) != items.end(); };
+        if (std::ranges::any_of(above, given)) {
+            beneath.insert(item->id());
+        }
+    }
+    std::vector<command::Show::Change> changes;
+    for (const boost::shared_ptr<scene::item::Item>& item : scene_->items()) {
+        if (!beneath.contains(item->id()) || shown.contains(item->id())) {
+            changes.push_back({ .item = item, .shown = { .views = shown.contains(item->id()), .renders = item->shown().renders } });
+        }
+    }
+    const boost::shared_ptr<command::Show> command = boost::make_shared<command::Show>(scene_, changes, "isolate");
+    if (command->empty()) {
+        return { .done = false, .message = "isolate: only those items are shown already" };
+    }
+    command->redo();
+    history_->push(command);
+    return { .done = true, .message = "isolated " + Document::items(items.size()), .undoable = true };
 }
 
 Outcome Document::importScene(const boost::filesystem::path& file) {

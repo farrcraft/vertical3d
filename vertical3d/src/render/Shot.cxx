@@ -56,7 +56,7 @@ void shoot(v3d::render::offline::rib::Handler* handler, const scene::Scene& scen
 
     RIBExportVisitor visitor(handler);
     visitor.begin(camera, output);
-    scene.accept(&visitor, evaluation);
+    scene.accept(&visitor, evaluation, scene::Scene::Showing::Renders);
     visitor.end();
 }
 

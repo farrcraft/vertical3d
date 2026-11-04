@@ -50,6 +50,7 @@ A command's script name is its name with dots between the parts. Each one is a f
 | Animate > Auto Key | `timeline.auto_key({ on: true })` |
 | Modify > Extrude Face | `transform.poly.extrude_face({ parts: ["Cube.f[2]"] })` |
 | Edit > Undo | `edit.undo()` |
+| Edit > Hide | `edit.hide({ items: ["Cube"] })` |
 | File > Save | `project.save()` |
 
 A command that takes arguments takes one object, and each argument can be left out. One left

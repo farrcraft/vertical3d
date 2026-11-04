@@ -16,6 +16,7 @@
 #include <api/type/camera/Camera.h>
 #include <api/type/camera/Profile.h>
 #include <vertical3d/src/render/RIBExportVisitor.h>
+#include <vertical3d/src/render/Shot.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/CreateItem.h>
 #include <vertical3d/src/scene/item/Curve.h>
@@ -314,6 +315,39 @@ BOOST_AUTO_TEST_CASE(ribexport_empty_scene_test) {
     BOOST_REQUIRE(reimport(exportScene(scene, false), &handler));
     BOOST_CHECK_EQUAL(handler.worlds_, 2U);
     BOOST_CHECK_EQUAL(handler.faces_, 0U);
+}
+
+/**
+ * A shot leaves out an item that is not shown in renders, and everything beneath it. An item
+ * hidden only in the views is still rendered.
+ **/
+BOOST_AUTO_TEST_CASE(ribexport_leaves_out_what_renders_do_not_show_test) {
+    const boost::shared_ptr<v3d::editor::scene::Scene> scene = boost::make_shared<v3d::editor::scene::Scene>();
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> held = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> beside = boost::make_shared<v3d::editor::scene::item::Mesh>(v3d::brep::cube());
+    scene->add(holder);
+    scene->add(held);
+    scene->add(beside);
+    scene->parent(held->id(), holder->id());
+    const auto faces = [&scene]() {
+        std::ostringstream stream;
+        v3d::editor::render::RIBExportVisitor::Output output;
+        output.settings.size = glm::uvec2(320, 240);
+        v3d::editor::render::writeShot(&stream, *scene, scene->evaluate(), camera(false).profile(), output);
+        ImportHandler handler;
+        BOOST_REQUIRE(reimport(stream.str(), &handler));
+        return handler.faces_;
+    };
+
+    const unsigned int both = faces();
+    BOOST_CHECK_GT(both, 0U);
+    beside->shown({ .views = false, .renders = true });
+    BOOST_CHECK_EQUAL(faces(), both);
+    holder->shown({ .views = true, .renders = false });
+    BOOST_CHECK_EQUAL(faces(), both / 2);
+    beside->shown({ .views = true, .renders = false });
+    BOOST_CHECK_EQUAL(faces(), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(ribexport_lights_test) {

@@ -37,7 +37,7 @@ namespace v3d::editor::tool {
  * A mesh or a face is hit when the ray meets a triangle of the mesh. A vertex, an edge, a curve,
  * a curve's control point or handle, or a camera's, light's or group's glyph is hit when it is
  * drawn within a few pixels of the cursor. Everything is tested where the scene's evaluation
- * puts it.
+ * puts it. An item the views do not show is never hit.
  *
  * A mask that selects whole items considers only the kinds it takes. A component mask
  * considers only meshes and curves that are already selected: an object has to be selected

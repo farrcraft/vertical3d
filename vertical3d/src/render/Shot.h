@@ -36,7 +36,7 @@ v3d::type::camera::Profile shotFrom(const scene::Evaluation& evaluation, const b
 
 /**
  * Send the scene to a RIB handler, as an evaluation of it found it, seen from a camera, as the
- * output's settings render it.
+ * output's settings render it. An item renders do not show is left out.
  *
  * The camera takes the picture's size and frame aspect from the settings, so the picture is
  * not stretched whatever the shape of the view it came from.

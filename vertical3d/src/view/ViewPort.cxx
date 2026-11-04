@@ -140,7 +140,7 @@ void ViewPort::draw(const scene::Scene& scene, v3d::render::realtime::canvas::Li
         .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
     if (shown.meshes || shown.cameras || shown.lights) {
         WireframeVisitor wireframe(canvas, shown, &scene.components());
-        scene.accept(&wireframe);
+        scene.accept(&wireframe, scene::Scene::Showing::Views);
     }
 }
 

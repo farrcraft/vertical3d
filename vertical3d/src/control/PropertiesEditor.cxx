@@ -6,11 +6,15 @@
 #include "PropertiesEditor.h"
 
 #include <api/brep/BRep.h>
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <vertical3d/src/command/Edit.h>
 #include <vertical3d/src/command/Keyed.h>
+#include <vertical3d/src/command/Parent.h>
+#include <vertical3d/src/command/Show.h>
 #include <vertical3d/src/command/Stack.h>
 #include <vertical3d/src/command/Units.h>
+#include <vertical3d/src/control/Outliner.h>
 #include <vertical3d/src/control/Text.h>
 #include <vertical3d/src/scene/item/Camera.h>
 #include <vertical3d/src/scene/item/Curve.h>
@@ -23,10 +27,12 @@
 #include <vertical3d/src/scene/Units.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -67,6 +73,7 @@ PropertiesEditor::PropertiesEditor(const boost::shared_ptr<command::Stack>& hist
  **/
 void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, std::size_t editor, const glm::vec4& region) {
     scene_ = scene;
+    editor_ = editor;
     const std::string id = "properties " + std::to_string(editor);
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     ui->pushId(id);
@@ -83,17 +90,7 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
         const boost::shared_ptr<scene::item::Item>& item = selected.front();
         ui->tabBar("tabs");
         if (ui->tab("Item")) {
-            ui->text(scene::item::name(item->kind()));
-            std::string name = item->name();
-            if (ui->textField("Name", &name)) {
-                begin(item, "rename");
-                item->name(name);
-            }
-            if (ui->itemFinished()) {
-                finish();
-            }
-            numbers(ui, item, scene->evaluate().pose(*item), scene->length());
-            settings(ui, item);
+            itemTab(ui, scene, item);
         }
         if (item->kind() == scene::item::Item::Kind::Mesh && ui->tab("Mesh")) {
             meshCounts(ui, *item);
@@ -109,7 +106,104 @@ void PropertiesEditor::draw(v3d::ui::Immediate* ui, const boost::shared_ptr<scen
 
 /**
  **/
-void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length) {
+void PropertiesEditor::itemTab(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, const boost::shared_ptr<scene::item::Item>& item) {
+    const scene::item::Item::Kind kind = item->kind();
+    const scene::Pose shown = scene->evaluate().pose(*item);
+    std::vector<std::string> placed;
+    std::vector<std::string> own;
+    for (const std::string& path : scene::properties(kind)) {
+        const bool placing = path.starts_with("translation.") || path.starts_with("rotation.") || path.starts_with("scale.");
+        (placing ? placed : own).push_back(path);
+    }
+    if (heading(ui, "Transform")) {
+        numbers(ui, item, shown, scene->length(), placed);
+    }
+    // what a kind has of its own is headed by the kind's name. A mesh and a group have nothing
+    if (kind != scene::item::Item::Kind::Mesh && kind != scene::item::Item::Kind::Group) {
+        ui->separator();
+        if (heading(ui, scene::item::name(kind))) {
+            numbers(ui, item, shown, scene->length(), own);
+            settings(ui, item);
+        }
+    }
+    ui->separator();
+    if (heading(ui, "Item")) {
+        itemSettings(ui, scene, item);
+    }
+}
+
+/**
+ **/
+bool PropertiesEditor::heading(v3d::ui::Immediate* ui, const std::string& title) {
+    std::set<std::string>& folded = folded_[editor_];
+    bool open = !folded.contains(title);
+    const bool shown = ui->heading(title, &open);
+    if (open) {
+        folded.erase(title);
+    } else {
+        folded.insert(title);
+    }
+    return shown;
+}
+
+/**
+ **/
+void PropertiesEditor::itemSettings(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::Scene>& scene, const boost::shared_ptr<scene::item::Item>& item) {
+    std::string name = item->name();
+    if (ui->textField("Name", &name, v3d::ui::Immediate::FieldLook{ .icon = v3d::ui::Image(), .labelled = true, .limit = 0 })) {
+        begin(item, "rename");
+        item->name(name);
+    }
+    if (ui->itemFinished()) {
+        finish();
+    }
+
+    // an item can go beneath any other but itself and what is beneath it
+    const boost::shared_ptr<scene::item::Item> current = scene->parent(item->id());
+    scene::Items offered{ nullptr };
+    std::vector<std::string> names{ "None" };
+    int chosen = 0;
+    for (const boost::shared_ptr<scene::item::Item>& other : scene->items()) {
+        const scene::Items above = scene->ancestors(other->id());
+        if (other == item || std::ranges::find(above, item) != above.end()) {
+            continue;
+        }
+        if (other == current) {
+            chosen = static_cast<int>(offered.size());
+        }
+        offered.push_back(other);
+        names.push_back(Outliner::label(*other));
+    }
+    if (ui->combo("Parent", &chosen, names) && chosen >= 0 && static_cast<std::size_t>(chosen) < offered.size()) {
+        finish();
+        const boost::shared_ptr<command::Parent> change = boost::make_shared<command::Parent>(scene,
+            command::Parent::Move{ .item = item, .parent = offered[static_cast<std::size_t>(chosen)] });
+        if (!change->empty()) {
+            change->redo();
+            if (history_) {
+                history_->push(change);
+            }
+        }
+    }
+
+    scene::item::Item::Shown shown = item->shown();
+    if (ui->checkbox("Shown in renders", &shown.renders)) {
+        finish();
+        const boost::shared_ptr<command::Show> change = boost::make_shared<command::Show>(scene,
+            std::vector<command::Show::Change>{ { .item = item, .shown = shown } }, "shown in renders");
+        if (!change->empty()) {
+            change->redo();
+            if (history_) {
+                history_->push(change);
+            }
+        }
+    }
+}
+
+/**
+ **/
+void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<scene::item::Item>& item, const scene::Pose& shown, scene::Length length,
+    const std::vector<std::string>& paths) {
     const scene::item::Item::Kind kind = item->kind();
     // the angles shown are kept closest to the last ones, so a drag through a half turn does
     // not jump to the other set of angles that give the same rotation
@@ -120,16 +214,15 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
     const std::map<std::string, float> now = values(kind, shown, angles_);
     angles_ = glm::vec3(now.at("rotation.x"), now.at("rotation.y"), now.at("rotation.z"));
 
-    const std::vector<std::string> paths = scene::properties(kind);
     for (std::size_t at = 0; at < paths.size();) {
         const std::string group = field(paths[at]).group;
         std::size_t end = at;
         while (end < paths.size() && field(paths[end]).group == group) {
             end++;
         }
-        ui->separator();
         ui->text(group);
-        // a group along x, y and z shares one row, each field a third of it
+        // a group along x, y and z shares one row, each field a third of it, edged in its axis's
+        // colour
         const bool axes = end - at == AXES.size() && paths[at].ends_with(".x") && paths[at + 1].ends_with(".y") &&
             paths[at + 2].ends_with(".z");
         const float third = (ui->rowWidth() - (2.0F * ui->dressing().spacing)) / 3.0F;
@@ -141,6 +234,7 @@ void PropertiesEditor::numbers(v3d::ui::Immediate* ui, const boost::shared_ptr<s
                 }
                 ui->nextItemWidth(third);
                 look.labelColour = AXES[index - at];
+                look.edge = AXES[index - at];
             }
             number(ui, item, shown, now, paths[index], look);
         }
@@ -243,7 +337,6 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
     switch (item->kind()) {
         case scene::item::Item::Kind::Camera: {
             int chosen = wanted.pose.lens.projection == scene::item::Camera::Projection::Orthographic ? 1 : 0;
-            ui->separator();
             if (ui->combo("Projection", &chosen, { "Perspective", "Orthographic" })) {
                 wanted.pose.lens.projection = chosen == 1 ? scene::item::Camera::Projection::Orthographic : scene::item::Camera::Projection::Perspective;
                 changed = true;
@@ -253,7 +346,6 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
         }
         case scene::item::Item::Kind::Light: {
             int chosen = static_cast<int>(wanted.pose.emission.type);
-            ui->separator();
             if (ui->combo("Type", &chosen, { "Point", "Distant", "Spot" })) {
                 wanted.pose.emission.type = static_cast<scene::item::Light::Type>(chosen);
                 changed = true;
@@ -262,9 +354,8 @@ void PropertiesEditor::settings(v3d::ui::Immediate* ui, const boost::shared_ptr<
             break;
         }
         case scene::item::Item::Kind::Curve: {
-            ui->separator();
             ui->text("Render");
-            changed = ui->checkbox("Renders", &wanted.style.renders);
+            changed = ui->checkbox("Ribbons", &wanted.style.renders);
             what = "edit render";
             if (ui->dragFloat("Width", &wanted.style.width, WIDTH_SPEED) && valid(*item, wanted)) {
                 begin(item, "edit width");

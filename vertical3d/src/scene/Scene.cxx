@@ -41,7 +41,13 @@ namespace v3d::editor::scene {
 
 /**
  **/
-void Scene::walk(Visitor* visitor, const boost::shared_ptr<item::Item>& item, const Evaluation& evaluation, const Tree& tree) {
+void Scene::walk(const Walk& walk, const boost::shared_ptr<item::Item>& item) {
+    const item::Item::Shown& shown = item->shown();
+    if ((walk.showing == Showing::Views && !shown.views) || (walk.showing == Showing::Renders && !shown.renders)) {
+        return;
+    }
+    Visitor* visitor = walk.visitor;
+    const Evaluation& evaluation = walk.evaluation;
     const Placed placed = evaluation.placed(item->id());
     switch (item->kind()) {
         case item::Item::Kind::Mesh:
@@ -60,10 +66,10 @@ void Scene::walk(Visitor* visitor, const boost::shared_ptr<item::Item>& item, co
             visitor->visit(boost::static_pointer_cast<item::Curve>(item), placed);
             break;
     }
-    const auto beneath = tree.find(item->documentId());
-    if (beneath != tree.end()) {
+    const auto beneath = walk.tree.find(item->documentId());
+    if (beneath != walk.tree.end()) {
         for (const boost::shared_ptr<item::Item>& child : beneath->second) {
-            walk(visitor, child, evaluation, tree);
+            Scene::walk(walk, child);
         }
     }
     visitor->leave(item);
@@ -472,13 +478,28 @@ const Items& Scene::items() const noexcept {
 
 /**
  **/
-void Scene::accept(Visitor* visitor) const {
-    accept(visitor, evaluate());
+item::Item::Shown Scene::shown(unsigned int id) const {
+    const boost::shared_ptr<item::Item> found = item(id);
+    if (!found) {
+        return { .views = false, .renders = false };
+    }
+    item::Item::Shown shown = found->shown();
+    for (const boost::shared_ptr<item::Item>& above : ancestors(id)) {
+        shown.views = shown.views && above->shown().views;
+        shown.renders = shown.renders && above->shown().renders;
+    }
+    return shown;
 }
 
 /**
  **/
-void Scene::accept(Visitor* visitor, const Evaluation& evaluation) const {
+void Scene::accept(Visitor* visitor, Showing showing) const {
+    accept(visitor, evaluate(), showing);
+}
+
+/**
+ **/
+void Scene::accept(Visitor* visitor, const Evaluation& evaluation, Showing showing) const {
     if (visitor == nullptr) {
         return;
     }
@@ -491,8 +512,9 @@ void Scene::accept(Visitor* visitor, const Evaluation& evaluation) const {
     if (roots == tree.end()) {
         return;
     }
+    const Walk walking{ .visitor = visitor, .evaluation = evaluation, .tree = tree, .showing = showing };
     for (const boost::shared_ptr<item::Item>& each : roots->second) {
-        walk(visitor, each, evaluation, tree);
+        walk(walking, each);
     }
 }
 

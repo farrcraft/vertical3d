@@ -50,6 +50,7 @@
 #include <vertical3d/src/document/Document.h>
 #include <vertical3d/src/render/Batch.h>
 #include <vertical3d/src/render/MoyaDelegate.h>
+#include <vertical3d/src/scene/item/Item.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
@@ -259,6 +260,9 @@ void Controller::buildRenderer() {
     }
     renderer_->icons(icons);
     outliner_.icons([this](const std::string& source) { return renderer_->image(source); });
+    outliner_.eye([this](const boost::shared_ptr<scene::item::Item>& item) {
+        context_.report(item->shown().views ? context_.document->hide({ item }) : context_.document->show({ item }));
+    });
     renderer_->views(context_.views);
     renderer_->scene(context_.document->scene());
     renderer_->transformTool(context_.transformTool);

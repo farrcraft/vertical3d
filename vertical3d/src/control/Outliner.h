@@ -26,7 +26,7 @@ namespace v3d::editor::control {
 
 /**
  * The outliner: an editor that lists the scene's items as the tree their parents make, under a
- * filter, and selects the item a row is clicked on.
+ * filter led by a magnifier, and selects the item a row is clicked on.
  *
  * Every item sits under a Scene row at the root, which folds them all and selects nothing. A row
  * shows an icon for its item's kind, tinted the kind's colour, and the item's name, or its kind
@@ -38,6 +38,10 @@ namespace v3d::editor::control {
  *
  * A click selects the item and nothing else. While the select tool adds to the selection, a
  * click selects an item that is not selected, deselects one that is, and leaves the rest.
+ *
+ * Each item's row ends in an eye, open while the item itself is shown in the views and closed
+ * while it is hidden. A click on the eye is handed to whoever asked, which hides or shows the
+ * item. A row whose item does not show in the views, by its own flag or a parent's, is dimmed.
  **/
 class Outliner final {
  public:
@@ -86,9 +90,20 @@ class Outliner final {
     using Icons = std::function<v3d::ui::Image(const std::string& source)>;
 
     /**
-     * Resolve the rows' icons through this. With none, rows show no icon.
+     * Resolve the rows' icons, the eyes and the filter's magnifier through this. With none,
+     * nothing shows an icon, and no eye can be clicked.
      **/
     void icons(const Icons& resolve);
+
+    /**
+     * What is told of a click on an item's eye.
+     **/
+    using Eye = std::function<void(const boost::shared_ptr<scene::item::Item>& item)>;
+
+    /**
+     * Be told of each click on an item's eye.
+     **/
+    void eye(const Eye& clicked);
 
     /**
      * The rows of a scene, in the order they are shown.
@@ -153,6 +168,7 @@ class Outliner final {
 
     std::map<std::size_t, State> states_;
     Icons icons_;
+    Eye eye_;
 };
 
 };  // namespace v3d::editor::control

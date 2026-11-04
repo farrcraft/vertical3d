@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(store_refuses_a_damaged_document_test) {
         { "a blob that belongs to no mesh",
             "INSERT INTO buffers (item, role, count, data) SELECT id, 'extra', 0, X'' FROM items WHERE kind = 'camera'" },
         { "a next id that is not above every id", "UPDATE meta SET value = 1 WHERE key = 'next_id'" },
-        { "tables from a later build", "PRAGMA user_version = 5" },
+        { "tables from a later build", "PRAGMA user_version = 6" },
         { "a curve on a property its owner does not have",
             "INSERT INTO curves SELECT id, 'lens.fov', 1, 0, X'' FROM items WHERE kind = 'light'" },
         { "a curve with no keys", "INSERT INTO curves SELECT id, 'translation.x', 1, 0, X'' FROM items WHERE kind = 'light'" },
@@ -600,6 +600,35 @@ BOOST_AUTO_TEST_CASE(store_hierarchy_round_trip_test) {
     }
 }
 
+/**
+ * Where each item is shown comes back as it was written, and a change to it alone writes the
+ * item's row.
+ **/
+BOOST_AUTO_TEST_CASE(store_shown_round_trip_test) {
+    const Scratch scratch("shown");
+    const boost::shared_ptr<v3d::editor::scene::Scene> written = everyKind();
+    const v3d::editor::scene::Items kinds = written->items();
+    kinds[0]->shown({ .views = false, .renders = true });
+    kinds[2]->shown({ .views = true, .renders = false });
+
+    v3d::editor::store::Scene store(logger());
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE views = 0"), 1);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE renders = 0"), 1);
+
+    kinds[1]->shown({ .views = false, .renders = false });
+    BOOST_REQUIRE(store.write(scratch.path(), *written));
+    BOOST_CHECK_EQUAL(store.written().rows, 1U);
+    BOOST_CHECK_EQUAL(query(scratch, "SELECT count(*) FROM items WHERE views = 0"), 2);
+
+    v3d::editor::store::Scene reader(logger());
+    v3d::editor::scene::Scene read;
+    BOOST_REQUIRE(reader.read(scratch.path(), &read));
+    for (std::size_t index = 0; index < read.count(); index++) {
+        BOOST_CHECK(read.items()[index]->shown() == kinds[index]->shown());
+    }
+}
+
 BOOST_AUTO_TEST_CASE(store_parent_change_moves_a_row_test) {
     const Scratch scratch("reparent");
     const boost::shared_ptr<v3d::editor::scene::Scene> scene = everyKind();
@@ -783,8 +812,10 @@ BOOST_AUTO_TEST_CASE(store_reads_and_migrates_version_1_test) {
     BOOST_REQUIRE(store.read(scratch.path(), &scene));
     BOOST_REQUIRE_EQUAL(scene.count(), 1U);
     BOOST_CHECK(!scene.parent(scene.items()[0]->id()));
-    // the light was saved with no name, and the scene calls it by its kind
+    // the light was saved with no name, and the scene calls it by its kind. It is shown in the
+    // views and in renders, as everything was before an item could be hidden
     BOOST_CHECK_EQUAL(scene.items()[0]->name(), "Light");
+    BOOST_CHECK(scene.items()[0]->shown() == v3d::editor::scene::item::Item::Shown{});
     BOOST_CHECK_EQUAL(query(scratch, "PRAGMA user_version"), 1);
 
     // the first write to it brings its tables up to date, and can then save a parent and a

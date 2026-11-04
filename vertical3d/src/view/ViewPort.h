@@ -148,7 +148,8 @@ class ViewPort final {
      *
      * Every view that shows meshes draws the scene into its own canvas, through its own
      * camera. The camera's matrices are rebuilt first, so whatever else draws through the
-     * camera this frame, such as the handles, sees the same view.
+     * camera this frame, such as the handles, sees the same view. An item the views do not show
+     * is not drawn.
      *
      * @param scene what to draw, which the controller owns
      * @param canvas where the view's geometry goes

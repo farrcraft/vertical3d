@@ -62,6 +62,12 @@ void Outliner::icons(const Icons& resolve) {
 
 /**
  **/
+void Outliner::eye(const Eye& clicked) {
+    eye_ = clicked;
+}
+
+/**
+ **/
 v3d::ui::Image Outliner::image(const Mark& mark) const {
     return icons_ ? icons_(mark.icon) : v3d::ui::Image();
 }
@@ -86,7 +92,8 @@ void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t edi
     ui->region(id, { .position = glm::vec2(region.x, region.y), .size = glm::vec2(region.z, region.w) }, 1.0F);
     // two outliners draw the same labels, so each draws under its own id
     ui->pushId(id);
-    ui->textField("Filter", &state.filter);
+    ui->textField("Filter", &state.filter,
+        v3d::ui::Immediate::FieldLook{ .icon = icons_ ? icons_("icon:search") : v3d::ui::Image(), .labelled = false, .limit = 0 });
     ui->separator();
     // the Scene row folds every item and selects nothing
     bool sceneOpen = !state.sceneFolded;
@@ -98,8 +105,14 @@ void Outliner::draw(v3d::ui::Immediate* ui, scene::Scene* scene, std::size_t edi
         ui->pushId(static_cast<int>(row.item->documentId()));
         bool open = row.open;
         const Mark marked = mark(row.item->kind());
+        bool eyed = false;
+        const v3d::ui::Image eye = image({ .icon = row.item->shown().views ? "icon:eye" : "icon:eye-closed", .colour = glm::vec4(1.0F) });
         const bool clicked = ui->treeRow(label(*row.item), { .depth = row.depth + 1, .open = row.parent ? &open : nullptr,
-            .selected = row.item->selected(), .icon = image(marked), .iconTint = marked.colour });
+            .selected = row.item->selected(), .icon = image(marked), .iconTint = marked.colour,
+            .dimmed = !scene->shown(row.item->id()).views, .end = eye, .endClicked = &eyed });
+        if (eyed && eye_) {
+            eye_(row.item);
+        }
         if (open != row.open) {
             if (open) {
                 state.folded.erase(row.item->documentId());

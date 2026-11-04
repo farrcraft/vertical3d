@@ -101,7 +101,7 @@ Picker::Hit Picker::pick(const scene::Scene& scene, const view::ViewPort& view, 
     }
     ray_ = camera_->ray(cursor, viewport_);
 
-    scene.accept(this);
+    scene.accept(this, scene::Scene::Showing::Views);
 
     camera_ = nullptr;
     return hit_;
@@ -117,7 +117,7 @@ std::vector<Picker::Hit> Picker::inside(const scene::Scene& scene, const view::V
     band_ = true;
 
     if (begin(view, mask)) {
-        scene.accept(this);
+        scene.accept(this, scene::Scene::Showing::Views);
     }
 
     camera_ = nullptr;

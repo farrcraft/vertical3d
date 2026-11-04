@@ -270,17 +270,32 @@ class Immediate {
         bool selected = false;   /**< drawn on the selected tint **/
         Image icon;              /**< drawn before the label, or nothing when it is not valid **/
         glm::vec4 iconTint{1.0F};  /**< what the icon is tinted **/
+        bool dimmed = false;     /**< the label in disabled text and the icon at half its alpha, as for something hidden **/
+        Image end;               /**< drawn at the row's right end in secondary text, or nothing when it is not valid **/
+        bool* endClicked = nullptr;  /**< written - whether a click landed on the end icon, or null **/
     };
 
     /**
      * A row of a tree that spans the width, indented by its depth. A row with something
      * beneath it has a mark before its label, pointing right while folded and down while open,
      * and a click on the mark folds or opens it. A row with an icon draws it between the mark's
-     * place and the label, at the dressing's icon size or a line, whichever is smaller.
+     * place and the label, at the dressing's icon size or a line, whichever is smaller. An end
+     * icon is drawn the same size in the last line of the row, and a click on it is its own,
+     * such as a toggle of whether the row's item shows.
      *
-     * @return whether the row was clicked anywhere but its mark
+     * @return whether the row was clicked anywhere but its mark and its end icon
      **/
     bool treeRow(const std::string& label, const TreeRow& row);
+
+    /**
+     * A semibold line that heads a group of rows. A heading given open folds the group: it
+     * draws a tree row's mark before its label, and a click anywhere on it flips *open.
+     *
+     * @param open read and written - whether the group shows, or null for a heading that does
+     *        not fold
+     * @return whether to draw the group: *open, or true for a heading that does not fold
+     **/
+    bool heading(const std::string& label, bool* open = nullptr);
 
     /**
      * An integer scrubbed by dragging across it.
@@ -314,6 +329,7 @@ class Immediate {
     struct NumberLook final {
         std::optional<glm::vec4> labelColour;  /**< the label's colour in place of secondary text, such as an axis's **/
         std::string unit;                      /**< written straight after the value, so one set apart by a space starts with it **/
+        std::optional<glm::vec4> edge;         /**< a rule down the field's left side, 2 pixels wide at a scale of 1, such as an axis's colour **/
     };
 
     /**
@@ -455,6 +471,21 @@ class Immediate {
      * @return whether the value changed this frame
      **/
     bool textField(const std::string& label, std::string* value, std::size_t limit = 0);
+
+    /**
+     * How a text field is dressed beyond its value and placeholder.
+     **/
+    struct FieldLook final {
+        Image icon;             /**< drawn at the left in the placeholder's colour, or nothing when it is not valid **/
+        bool labelled = false;  /**< the label drawn after the icon in secondary text, as a number's is, and not as a placeholder **/
+        std::size_t limit = 0;  /**< how many bytes the value may hold, or zero for no limit **/
+    };
+
+    /**
+     * A text field as the other textField draws it, led by an icon, by its label, or by both in
+     * that order. The text and the caret start past them.
+     **/
+    bool textField(const std::string& label, std::string* value, const FieldLook& look);
 
     /**
      * A box that is ticked or not, with its label beside it.
@@ -715,6 +746,12 @@ class Immediate {
      * and narrow enough that a move that was meant is never read as a fold.
      **/
     static constexpr float dragThreshold = 3.0F;
+
+    /**
+     * Draw a tree row's fold mark centred on a point, pointing down while open and right while
+     * folded.
+     **/
+    void foldMark(const glm::vec2& centre, bool open, const glm::vec4& ink);
 
     std::unique_ptr<immediate::Context> context_;
 };

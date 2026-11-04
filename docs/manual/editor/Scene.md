@@ -1,6 +1,7 @@
 # Working with the scene
 
-How to find and name items, group them, add cameras, lights and curves, and edit their values.
+How to find and name items, hide them, group them, add cameras, lights and curves, and edit
+their values.
 [Concepts.md](Concepts.md) defines items and parents.
 
 ## Find an item in the outliner
@@ -14,11 +15,29 @@ its name.
   folds every item.
 - **Type in the Filter field** at the top to show only the rows whose names hold every word you
   type, in any case. Each row that matches is shown with the rows above it.
+- **Click the eye** at the end of a row to hide its item from the views, or show it again.
 
 Each row has an icon for its item's kind. A mesh is orange, a curve green, a camera grey, a
 light yellow and a group a darker grey.
 
 To show an outliner in an area, move the cursor over it and press Shift+F9.
+
+## Hide and show items
+
+A hidden item is not drawn in the views and cannot be clicked there. It is still in the scene,
+and still in the outliner, where its row is dimmed and its eye is closed. Hiding an item hides
+everything under it too. Hiding deselects what it hides.
+
+- **Edit > Hide** (Ctrl+H) hides the selected items.
+- **Edit > Show All** (Ctrl+Shift+H) shows every hidden item.
+- **Edit > Isolate** (Alt+H) shows the selected items and the items above them, and hides
+  everything else. What is under the selected items stays as it was.
+
+Each is one step of the history. None of them changes what a render shows.
+
+To leave an item out of renders while still seeing it in the views, select it, and clear
+**Shown in renders** under Item in the properties editor. A file you import keeps what it hid:
+a hidden node comes in hidden, and a guide or a proxy comes in left out of renders.
 
 ## Rename an item
 
@@ -34,7 +53,10 @@ No two items in a scene share a name. If the name is taken, the editor adds a nu
 
 Select one item. The properties editor shows it under three tabs:
 
-- **Item** holds the item's kind, its name, and the values below.
+- **Item** holds the item's values under three headings. Click a heading to fold it.
+  - **Transform** holds the translation, rotation and scale.
+  - **Camera**, **Light** or **Curve** holds what that kind of item has of its own.
+  - **Item** holds its name, its parent and **Shown in renders**.
 - **Mesh**, for a mesh, counts its vertices and faces.
 - **Keys** lists each property that has keys, with how many it has.
 
@@ -49,9 +71,10 @@ The Item tab shows these values:
 | Projection | Perspective or Orthographic | A camera |
 | Emission | Intensity, Red, Green, Blue, and Cone and Soft Edge in radians | A light |
 | Type | Point, Distant or Spot | A light |
-| Render | Renders, and Width | A curve |
+| Render | Ribbons, and Width | A curve |
 
-To change a number, drag across its field, or click it and type. A drag changes a distance by a
+Each X, Y and Z field is edged on its left in its axis's colour. To change a number, drag across
+its field, or click it and type. A drag changes a distance by a
 hundredth of a unit for each pixel, and an angle by half a degree. The views follow as you
 drag. When you let go, or finish typing, the change is one step of the history.
 
@@ -70,6 +93,15 @@ nothing selected, it shows the scene's settings.
 The units are Millimetres, Centimetres, Metres, Kilometres, Inches and Feet. A new scene is in
 metres. Changing the unit changes the label on each distance. Nothing in the scene moves. An
 imported file is scaled into the scene's unit.
+
+## Change an item's parent
+
+1. Select the item, and only that item.
+2. In the properties editor, under Item, choose the new parent from the **Parent** list, or
+   **None** for no parent.
+
+The item stays where it is, and from then on moves with its new parent. The list leaves out the
+item itself and everything under it. One undo takes the change back.
 
 ## Group items
 

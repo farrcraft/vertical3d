@@ -51,6 +51,17 @@ void EditCommands::registerCommands(CommandTable* table) const {
     table->script("timeline::auto_key", { { "on", script::Type::Boolean } }, [&context](script::Arguments* arguments) {
         context.report(context.document->autoKey(arguments->boolean("on", [&context]() { return !context.document->scene()->timeline().autoKey; })));
     });
+    table->script("edit::hide", { { "items", script::Type::Items } }, [&context](script::Arguments* arguments) {
+        if (const std::optional<scene::Items> items = context.items(arguments, "items", "hide")) {
+            context.report(context.document->hide(*items));
+        }
+    });
+    table->script("edit::show_all", [&context]() { context.report(context.document->showAll()); });
+    table->script("edit::isolate", { { "items", script::Type::Items } }, [&context](script::Arguments* arguments) {
+        if (const std::optional<scene::Items> items = context.items(arguments, "items", "isolate")) {
+            context.report(context.document->isolate(*items));
+        }
+    });
     table->script("edit::undo", [&context]() { context.report(context.document->undo()); });
     table->script("edit::redo", [&context]() { context.report(context.document->redo()); });
 }

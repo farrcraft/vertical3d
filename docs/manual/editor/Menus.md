@@ -46,6 +46,9 @@ The first menu shows the editor's mark.
 |---|---|---|
 | Undo | Ctrl+Z | Takes back the last change |
 | Redo | Ctrl+Y, Ctrl+Shift+Z | Makes the change undo took back |
+| Hide | Ctrl+H | Hides the selected items from the views |
+| Show All | Ctrl+Shift+H | Shows every hidden item in the views |
+| Isolate | Alt+H | Shows only the selected items, the items above them and what is under them |
 
 ### Create
 

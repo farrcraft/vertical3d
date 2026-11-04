@@ -47,7 +47,7 @@ A scene document is a SQLite database, read and written by `v3d::editor::store::
 
 **The header.** The database's `application_id` is `0x56334453` ("V3DS"), so a database another
 program wrote is refused. Its `user_version` is the version of the tables,
-`store::Scene::SCHEMA_VERSION`, which is 4.
+`store::Scene::SCHEMA_VERSION`, which is 5.
 
 **The tables.** All four are `STRICT`, so a value of the wrong type is refused as it is written.
 
@@ -64,6 +64,8 @@ program wrote is refused. Its `user_version` is the version of the tables,
 | | `payload` | A JSON object of what the kind adds. The table checks that it is JSON |
 | | `parent` | The document id of the item's parent, or `NULL` for an item with none. It references `items(id)`, checked when the write commits |
 | | `name` | What the item is called, which may be empty |
+| | `views` | 1 when the item itself is shown in the views, and 0 when it is hidden |
+| | `renders` | 1 when the item itself is shown in renders, and 0 when it is left out |
 | `buffers` | `item` | The item the blob belongs to. Deleting the item deletes its blobs |
 | | `role` | What the blob is |
 | | `count` | How many entries it holds |
@@ -170,11 +172,13 @@ that does not move it is not saved.
   field its version does not define, so an older build refuses a newer document rather than
   dropping the fields it cannot read.
 
-Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, and versions 1
-to 3 have no `name` column. A read takes an older document as it is. Every item of a version 1
-document is at the top of the scene, and nothing in a version 1 or 2 document is animated.
-Every item of a version 1 to 3 document has an empty name. The first write to it adds what it
-lacks and sets the version to 4, in the same transaction as the rest of the write. Every kind
+Schema version 1 has no `parent` column, versions 1 and 2 have no `curves` table, versions 1
+to 3 have no `name` column, and versions 1 to 4 have no `views` or `renders` column. A read
+takes an older document as it is. Every item of a version 1 document is at the top of the scene,
+and nothing in a version 1 or 2 document is animated. Every item of a version 1 to 3 document has
+an empty name, and every item of a version 1 to 4 document is shown in the views and in renders.
+The first write to it adds what it lacks and sets the version to 5, in the same transaction as
+the rest of the write. Every kind
 and the curves are at version 1.
 
 **Reading sets the frame.** Once a document is read, its timeline's frame is the current one,

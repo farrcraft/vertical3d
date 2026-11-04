@@ -438,6 +438,39 @@
     {
       "source": {
         "context": "keyboard",
+        "name": "ctrl+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "hide"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "ctrl+shift+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "show_all"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
+        "name": "alt+h",
+        "state": "pressed"
+      },
+      "destination": {
+        "context": "edit",
+        "name": "isolate"
+      }
+    },
+    {
+      "source": {
+        "context": "keyboard",
         "name": "ctrl+y",
         "state": "pressed"
       },

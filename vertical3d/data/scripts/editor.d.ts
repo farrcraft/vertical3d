@@ -38,7 +38,10 @@ declare namespace create.poly {
 }
 
 declare namespace edit {
+    function hide(args?: { items?: string[] }): void;
+    function isolate(args?: { items?: string[] }): void;
     function redo(): void;
+    function show_all(): void;
     function undo(): void;
 }
 

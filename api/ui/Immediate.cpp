@@ -308,33 +308,90 @@ bool Immediate::treeRow(const std::string& label, const TreeRow& row) {
             *row.open = !*row.open;
         }
     }
+    // the end icon is offered after the row too, so a click on it is not a click on the row
+    const float side = std::min(context_->dressing.iconSize, line);
+    const glm::vec2 endMin(max.x - line, min.y);
+    immediate::Reaction ending;
+    if (row.end.valid()) {
+        ending = context_->interact(context_->identify(label + " end"), endMin, max);
+    }
+    if (row.endClicked != nullptr) {
+        *row.endClicked = ending.clicked;
+    }
 
     if (row.selected) {
         paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.selected);
-    } else if (reaction.hovered || fold.hovered) {
+    } else if (reaction.hovered || fold.hovered || ending.hovered) {
         paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
     }
-    const glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
+    glm::vec4 ink = context_->ink(row.selected ? context_->dressing.activeText : context_->dressing.text);
+    glm::vec4 tint = row.iconTint;
+    if (row.dimmed) {
+        ink = context_->ink(context_->dressing.disabledText);
+        tint.a *= 0.5F;
+    }
     if (row.open != nullptr) {
-        const glm::vec2 centre = (markMin + markMax) * 0.5F;
-        const float reach = line * foldScale;
-        const float width = std::max(line * foldWidth, 1.0F);
-        const glm::vec2 tip = *row.open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
-        const glm::vec2 side = *row.open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
-        const glm::vec2 back = *row.open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
-        context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
-        context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
+        foldMark((markMin + markMax) * 0.5F, *row.open, ink);
     }
     // the icon sits between the mark's place and the label, centred down the row
     float left = markMax.x;
     if (row.icon.valid()) {
-        const float side = std::min(context_->dressing.iconSize, line);
         const glm::vec2 corner(left, min.y + ((line - side) * 0.5F));
-        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.icon.uv0, row.icon.uv1, context_->ink(row.iconTint), row.icon.texture);
+        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.icon.uv0, row.icon.uv1, context_->ink(tint), row.icon.texture);
         left += side + (context_->dressing.padding * 0.5F);
     }
-    context_->label(label, glm::vec2(left, min.y), glm::vec2(max.x - left, line), ink);
+    float right = max.x;
+    if (row.end.valid()) {
+        const glm::vec2 corner(endMin.x + ((line - side) * 0.5F), min.y + ((line - side) * 0.5F));
+        context_->canvas->rect(corner, corner + glm::vec2(side, side), row.end.uv0, row.end.uv1, context_->ink(context_->dressing.secondaryText),
+            row.end.texture);
+        right = endMin.x;
+    }
+    // a long label is cut short of the end icon rather than drawn under it
+    if (row.end.valid()) {
+        context_->canvas->clip(glm::vec2(left, min.y), glm::vec2(std::max(left, right), max.y));
+    }
+    context_->label(label, glm::vec2(left, min.y), glm::vec2(std::max(right - left, 0.0F), line), ink);
+    if (row.end.valid()) {
+        context_->canvas->unclip();
+    }
     return reaction.clicked;
+}
+
+bool Immediate::heading(const std::string& label, bool* open) {
+    if (context_->canvas == nullptr) {
+        return open == nullptr || *open;
+    }
+    const float line = context_->dressing.lineHeight;
+    const glm::vec2 size(context_->itemWidth(), line);
+    const glm::vec2 min = context_->place(size);
+    const glm::vec2 max = min + size;
+    float left = min.x;
+    if (open != nullptr) {
+        const Id id = context_->identify(label);
+        const immediate::Reaction reaction = context_->interact(id, min, max);
+        if (reaction.clicked) {
+            *open = !*open;
+        }
+        if (reaction.hovered) {
+            paint::fillBox(context_->canvas, min, max, 0.0F, context_->dressing.hover);
+        }
+        foldMark(min + glm::vec2(line * 0.5F), *open, context_->ink(context_->dressing.secondaryText));
+        left += line;
+    }
+    context_->title(label, glm::vec2(left, min.y), glm::vec2(max.x - left, line), context_->ink(context_->dressing.text));
+    return open == nullptr || *open;
+}
+
+void Immediate::foldMark(const glm::vec2& centre, bool open, const glm::vec4& ink) {
+    const float line = context_->dressing.lineHeight;
+    const float reach = line * foldScale;
+    const float width = std::max(line * foldWidth, 1.0F);
+    const glm::vec2 tip = open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
+    const glm::vec2 side = open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
+    const glm::vec2 back = open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
+    context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
+    context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
 }
 
 bool Immediate::dragInt(const std::string& label, int* value, int low, int high) {

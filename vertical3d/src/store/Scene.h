@@ -26,8 +26,9 @@ namespace v3d::editor::store {
  *
  * Every item is a row of typed columns for what all items share, with a JSON payload for what
  * its kind adds. What all items share includes the item's parent, as a reference to the
- * parent's row, which is empty for an item with no parent. A kind's Codec writes and reads its
- * payload, and any blobs it adds in a table of its own, as a mesh's topology is.
+ * parent's row, which is empty for an item with no parent, and where the item is shown. A
+ * kind's Codec writes and reads its payload, and any blobs it adds in a table of its own, as a
+ * mesh's topology is.
  *
  * The database's header carries APPLICATION_ID, so a database another program wrote is
  * refused, and SCHEMA_VERSION, the version of its tables. Each kind's codec has a version of
@@ -59,7 +60,7 @@ class Scene final {
      * have no curves table, so nothing they hold is animated. Versions 1 to 3 have no name
      * column, so every item they hold has an empty name.
      **/
-    static constexpr std::int32_t SCHEMA_VERSION = 4;
+    static constexpr std::int32_t SCHEMA_VERSION = 5;
 
     /**
      * The version of a curve's keys, which a curve's row stores beside them.
@@ -153,7 +154,9 @@ class Scene final {
         "  sx REAL NOT NULL, sy REAL NOT NULL, sz REAL NOT NULL,"
         "  payload TEXT NOT NULL CHECK (json_valid(payload)),"
         "  parent INTEGER REFERENCES items(id) DEFERRABLE INITIALLY DEFERRED,"
-        "  name TEXT NOT NULL DEFAULT '') STRICT;"
+        "  name TEXT NOT NULL DEFAULT '',"
+        "  views INTEGER NOT NULL DEFAULT 1 CHECK (views IN (0, 1)),"
+        "  renders INTEGER NOT NULL DEFAULT 1 CHECK (renders IN (0, 1))) STRICT;"
         "CREATE TABLE buffers ("
         "  item INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
         "  role TEXT NOT NULL,"

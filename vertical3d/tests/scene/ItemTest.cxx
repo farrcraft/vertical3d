@@ -80,6 +80,21 @@ BOOST_AUTO_TEST_CASE(item_placement_test) {
 /**
  * A later item has a larger id than any earlier one.
  **/
+/**
+ * A new item is shown in the views and in renders. Changing where it is shown moves its revision,
+ * because a document saves it.
+ **/
+BOOST_AUTO_TEST_CASE(item_shown_test) {
+    const boost::shared_ptr<v3d::editor::scene::item::Group> group = boost::make_shared<v3d::editor::scene::item::Group>();
+    BOOST_CHECK(group->shown().views);
+    BOOST_CHECK(group->shown().renders);
+    const std::uint64_t before = group->revision();
+    group->shown({ .views = false, .renders = true });
+    BOOST_CHECK(!group->shown().views);
+    BOOST_CHECK(group->shown().renders);
+    BOOST_CHECK_GT(group->revision(), before);
+}
+
 BOOST_AUTO_TEST_CASE(item_id_order_test) {
     const v3d::editor::scene::item::Group first;
     const v3d::editor::scene::item::Group second;

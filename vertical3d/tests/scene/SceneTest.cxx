@@ -111,6 +111,41 @@ BOOST_AUTO_TEST_CASE(scene_empty_test) {
     scene.accept(nullptr);
 }
 
+/**
+ * An item is shown where it and every item above it are. A walk of the views or of renders
+ * leaves out an item that is not shown there, with everything beneath it, and a walk of every
+ * item leaves out nothing.
+ **/
+BOOST_AUTO_TEST_CASE(scene_shown_test) {
+    v3d::editor::scene::Scene scene;
+    const boost::shared_ptr<v3d::editor::scene::item::Group> holder = boost::make_shared<v3d::editor::scene::item::Group>();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> held = emptyMesh();
+    const boost::shared_ptr<v3d::editor::scene::item::Mesh> beside = emptyMesh();
+    scene.add(holder);
+    scene.add(held);
+    scene.add(beside);
+    scene.parent(held->id(), holder->id());
+    BOOST_CHECK(held->shown() == v3d::editor::scene::item::Item::Shown{});
+    BOOST_CHECK(!scene.shown(emptyMesh()->id()).views);
+
+    holder->shown({ .views = false, .renders = true });
+    beside->shown({ .views = true, .renders = false });
+    BOOST_CHECK(scene.shown(held->id()) == (v3d::editor::scene::item::Item::Shown{ .views = false, .renders = true }));
+    BOOST_CHECK(held->shown() == v3d::editor::scene::item::Item::Shown{});
+    BOOST_CHECK(scene.shown(beside->id()) == (v3d::editor::scene::item::Item::Shown{ .views = true, .renders = false }));
+
+    CountingVisitor views;
+    scene.accept(&views, v3d::editor::scene::Scene::Showing::Views);
+    BOOST_CHECK(views.visited == std::vector<unsigned int>{ beside->id() });
+    BOOST_CHECK(views.left == std::vector<unsigned int>{ beside->id() });
+    CountingVisitor renders;
+    scene.accept(&renders, v3d::editor::scene::Scene::Showing::Renders);
+    BOOST_CHECK((renders.visited == std::vector<unsigned int>{ holder->id(), held->id() }));
+    CountingVisitor every;
+    scene.accept(&every);
+    BOOST_CHECK_EQUAL(every.visited.size(), 3U);
+}
+
 BOOST_AUTO_TEST_CASE(scene_add_test) {
     v3d::editor::scene::Scene scene;
 

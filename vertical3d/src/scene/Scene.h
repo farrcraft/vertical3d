@@ -255,16 +255,28 @@ class Scene final {
     const Items& items() const noexcept;
 
     /**
+     * Where an item is shown once its ancestors are counted: in the views while it and every
+     * item above it are, and in renders likewise. Neither, for an item not in the scene.
+     **/
+    item::Item::Shown shown(unsigned int id) const;
+
+    /**
+     * Which items a walk visits: all of them, those shown in the views, or those shown in
+     * renders. A walk that leaves an item out leaves out everything beneath it too.
+     **/
+    enum class Showing : std::uint8_t { Every, Views, Renders };
+
+    /**
      * Walk the items depth first, each through the visit() for its kind, with what an
      * evaluation of the current frame found for it. Each parent comes before its children, and
      * siblings come in insertion order.
      **/
-    void accept(Visitor* visitor) const;
+    void accept(Visitor* visitor, Showing showing = Showing::Every) const;
 
     /**
      * Walk the items as accept(visitor) does, with what a given evaluation of the scene found.
      **/
-    void accept(Visitor* visitor, const Evaluation& evaluation) const;
+    void accept(Visitor* visitor, const Evaluation& evaluation, Showing showing = Showing::Every) const;
 
     /**
      * Which parts of each mesh item are selected. Removing an item, or clearing the scene,
@@ -299,9 +311,21 @@ class Scene final {
     using Tree = std::unordered_map<std::int64_t, Items>;
 
     /**
-     * Visit one item through the visit() for its kind, then everything beneath it.
+     * What one walk is given: the visitor, the evaluation it reads, the tree, and which items it
+     * visits.
      **/
-    static void walk(Visitor* visitor, const boost::shared_ptr<item::Item>& item, const Evaluation& evaluation, const Tree& tree);
+    struct Walk final {
+        Visitor* visitor;
+        const Evaluation& evaluation;
+        const Tree& tree;
+        Showing showing;
+    };
+
+    /**
+     * Visit one item through the visit() for its kind, then everything beneath it. An item the
+     * walk does not show is left out with everything beneath it.
+     **/
+    static void walk(const Walk& walk, const boost::shared_ptr<item::Item>& item);
 
     /**
      * The item of a document id, or an empty pointer.

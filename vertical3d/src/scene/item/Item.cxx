@@ -147,6 +147,19 @@ void Item::changed() noexcept {
 
 /**
  **/
+const Item::Shown& Item::shown() const noexcept {
+    return shown_;
+}
+
+/**
+ **/
+void Item::shown(const Shown& shown) noexcept {
+    shown_ = shown;
+    changed();
+}
+
+/**
+ **/
 bool Item::selected() const noexcept {
     return selected_;
 }

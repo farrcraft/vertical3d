@@ -136,6 +136,12 @@ class Reader final {
      **/
     static void reverseFaces(Mesh* mesh);
 
+    /**
+     * Read where a prim is shown into its node. An invisible prim is neither seen nor rendered,
+     * and a guide or a proxy is seen and not rendered.
+     **/
+    void shownOf(const pxr::UsdPrim& prim, Node* node) const;
+
     void addPrim(const pxr::UsdPrim& prim);
     /**
      * The group that turns a keyed prim at the top of a z up stage, made when one is first met.

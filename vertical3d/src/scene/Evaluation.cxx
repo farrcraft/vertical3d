@@ -5,6 +5,7 @@
 
 #include "Evaluation.h"
 
+#include <api/type/Transform.h>
 #include <vertical3d/src/scene/item/Item.h>
 
 #include "Properties.h"
@@ -15,6 +16,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 namespace v3d::editor::scene {
@@ -59,6 +61,17 @@ glm::quat orientation(const glm::mat4& matrix) {
  **/
 glm::mat4 withoutScale(const glm::mat4& matrix) {
     return glm::translate(glm::mat4(1.0F), glm::vec3(matrix[3])) * glm::mat4_cast(orientation(matrix));
+}
+
+/**
+ **/
+v3d::type::Transform placement(const glm::mat4& matrix) {
+    v3d::type::Transform taken;
+    taken.position = glm::vec3(matrix[3]);
+    taken.rotation = orientation(matrix);
+    const glm::mat3 stretch = glm::transpose(glm::mat3_cast(taken.rotation)) * glm::mat3(matrix);
+    taken.scale = glm::vec3(stretch[0][0], stretch[1][1], stretch[2][2]);
+    return taken;
 }
 
 };  // namespace v3d::editor::scene

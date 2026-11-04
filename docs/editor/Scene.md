@@ -192,6 +192,26 @@ five kinds:
   them as translation × rotation × scale, which is the item's local matrix. Where the item is in
   the world comes from the scene's evaluation. `translation(v)` sets the position, and
   `translate(v)` adds an offset to it. A camera and a light ignore their scale.
+- **Where it is shown.** `Item::shown()` is two flags of the item's own: `views`, whether the
+  views show it, and `renders`, whether a render does. Both are on for a new item, and the
+  document saves both. An item is shown only where it and every item above it are, which
+  `Scene::shown(id)` works out, so hiding a group hides what is beneath it.
+  - The views neither draw nor pick an item they do not show. `Scene::accept()` takes
+    `Showing::Views`, `Showing::Renders` or `Showing::Every`, and a walk of the views or of
+    renders leaves out an item it does not show, with everything beneath it.
+  - A render, RIB export included, leaves out an item not shown in renders. A curve item is
+    rendered only when its style asks for ribbons as well.
+  - Edit > Hide (`edit::hide`, Ctrl+H) hides the selection from the views. Edit > Show All
+    (`edit::show_all`, Ctrl+Shift+H) shows every item in the views. Edit > Isolate
+    (`edit::isolate`, Alt+H) shows the selection and every item above it, leaves what is beneath
+    it as it is, and hides every other item. Each is one change, named `hide`, `show all` or
+    `isolate`, and none of them changes where an item is rendered.
+  - A change that hides an item from the views deselects it, and anything selected beneath it.
+    Undo selects them again.
+  - An imported node that is not seen is hidden in both, and one that is seen and not rendered,
+    a guide or a proxy, is hidden in renders.
+
+  Background: [ADR-0168](../adr/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md)
 - **Revision.** `Item::revision()` moves whenever anything a document saves of the item changes:
   its name, its placement, its lens, emission or style, and a mesh's or a curve's geometry. It is
   the item's own count of changes, which the name's setter, every placement setter and every
@@ -271,6 +291,10 @@ share one `BRep`.
   that it stays where it was in the world. That is exact for an item that keeps its parent's
   space. An item taken from beneath a sheared parent loses the shear. Undo moves the items back
   to their parents and placements, removes the group, and leaves the items selected.
+- **Reparenting.** The properties editor's Parent combo moves one item beneath another, or out
+  from under its parent, through a `command::Parent`. The item's placement changes so that it
+  stays where it was in the world, and loses any shear its world matrix holds. An item cannot go
+  beneath itself or anything beneath it. Undo gives it back its parent and its placement.
 
 Background: [ADR-0104](../adr/0104-editor-the-scene-evaluates-a-hierarchy-of-items.md)
 
@@ -713,32 +737,47 @@ in `src/control/` draws it.
   mesh orange, a curve green and a group a darker grey. Siblings come in the scene's order.
 - A row with children has a mark before its label. A click on the mark folds the row, hiding
   everything beneath it, or opens it.
-- The field at the top filters the rows. A row is kept when its label holds every word typed,
-  in any case, and each kept row's ancestors are kept with it so it shows where it sits. A
-  filtered tree folds nothing.
+- Each item's row ends in an eye, open while the item itself is shown in the views and closed
+  while it is hidden. A click on the eye hides or shows the item as one change, and selects
+  nothing. A row whose item the views do not show, by its own flag or a parent's, is dimmed.
+- The field at the top, led by a magnifier, filters the rows. A row is kept when its label holds
+  every word typed,
+  in any case, and each kept row's ancestors are kept with it so it shows where it sits. A filtered
+  tree folds nothing.
 - A click on a row selects its item and nothing else. While Shift is held, as for the select
   tool, a click selects an item that is not selected, deselects one that is, and leaves the
   rest. The selected items' rows are drawn on the theme's `selected` tint.
 - Each outliner keeps its own filter and folds while the editor runs. Neither is saved.
 
-**The properties editor** (`properties`) shows the selected item's name, placement and settings,
-and edits them. `PropertiesEditor` in `src/control/` draws it.
+**The properties editor** (`properties`) shows the selected item's name, parent, placement and
+settings, and edits them. `PropertiesEditor` in `src/control/` draws it.
 
 - With nothing selected, it shows the scene's own settings: its unit of length, which a change
   records in the history as `unit of length`. With more than one item selected, it says how many
   are. With one, it shows that item under tabs.
-- The Item tab holds the item's kind and a field for its name. Below them is each number a curve
-  can drive, under a heading: Translation, Rotation and Scale for every kind, Lens for a camera
-  and Emission for a light. Each is shown as the current frame shows it, so a keyed number
-  follows playback. A rotation is shown as Euler angles in degrees, kept closest to the angles last
-  shown.
-- A heading of x, y and z is one row of three fields, each led by its axis's letter in the axis's
-  colour. A distance is shown in the scene's unit, an angle with a degree sign, and a light's
-  cone in radians. A value is shown to three places, without the zeros it does not need.
+- The Item tab has three headings, and a click on one folds what is under it. Transform holds
+  the placement. The kind's name, Camera, Light or Curve, holds what that kind has of its own, and
+  a mesh and a group have no such heading. Item holds the name and the parent. Each properties
+  editor keeps its own folds while the editor runs, and they are not saved.
+- Each number a curve can drive is under a group's name: Translation, Rotation and Scale under
+  Transform, Lens under Camera and Emission under Light. Each is shown as the current frame shows
+  it, so a keyed number follows playback. A rotation is shown as Euler angles in degrees, kept
+  closest to the angles last shown.
+- A group of x, y and z is one row of three fields, each led by its axis's letter in the axis's
+  colour and edged on its left in that colour. A distance is shown in the scene's unit, an angle
+  with a degree sign, and a light's cone in radians. A value is shown to three places, without the
+  zeros it does not need.
 - The Mesh tab, for a mesh, counts its vertices and faces. The Keys tab lists each curve the
   item has, by the property it drives, with its count of keys.
 - A camera adds its projection, a light its type, and a curve item whether a render draws it
   and its width.
+- The Parent combo offers None and every item but the one shown and those beneath it, by the
+  names the outliner shows. A choice puts the item beneath the one chosen, or leaves it with no
+  parent, as one change named `parent`. The item stays where it was in the world, so its
+  placement changes to suit its new parent. A shear its world placement holds is lost, because a
+  placement cannot hold one.
+- The Shown in renders check, under Item, takes the item out of renders or puts it back, as one
+  change named `shown in renders`.
 - A number is dragged or typed into, as
   [api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md) describes. A drag moves a distance a
   hundredth of a unit a pixel, and an angle half a degree.

@@ -20,10 +20,10 @@ namespace v3d::editor::scene::item {
 /**
  * One thing the scene holds: a mesh, a camera, a light, a group or curves.
  *
- * Every kind has two ids, a name, a placement, and an object selection flag. id() is unique
- * within one run of the editor, and a selection names an item by it. The document id is unique
- * within one document and is saved with it, so anything saved that refers to an item names it by
- * that.
+ * Every kind has two ids, a name, a placement, where it is shown, and an object selection flag.
+ * id() is unique within one run of the editor, and a selection names an item by it. The document
+ * id is unique within one document and is saved with it, so anything saved that refers to an item
+ * names it by that.
  *
  * The placement is local: it is measured in the space of the item's parent, which the scene
  * holds. Where the item is in the world comes from the scene's evaluation.
@@ -93,11 +93,30 @@ class Item {
 
     /**
      * A number that moves whenever anything a document saves of the item changes: its
-     * placement, what its kind holds, and a mesh's geometry. It never goes down, so a caller
-     * that kept it can tell whether the item has changed since. Its selection is not saved, and
-     * does not move it.
+     * placement, where it is shown, what its kind holds, and a mesh's geometry. It never goes
+     * down, so a caller that kept it can tell whether the item has changed since. Its selection is
+     * not saved, and does not move it.
      **/
     virtual std::uint64_t revision() const noexcept;
+
+    /**
+     * Where an item is shown: in the views, and in renders. Both are on for a new item.
+     *
+     * These are the item's own flags. A child is hidden wherever its parent is, which
+     * Scene::shown() works out.
+     **/
+    struct Shown final {
+        bool views = true;    /**< drawn in the views, and picked there **/
+        bool renders = true;  /**< written into a render **/
+
+        bool operator==(const Shown&) const = default;
+    };
+
+    /**
+     * Where the item itself is shown. The setter moves revision().
+     **/
+    const Shown& shown() const noexcept;
+    void shown(const Shown& shown) noexcept;
 
     /**
      * Whether the item as a whole is selected, which is object mode selection. A mesh's
@@ -121,6 +140,7 @@ class Item {
     unsigned int id_;
     v3d::type::Transform placement_;
     std::string name_;
+    Shown shown_;
     bool selected_;
     std::int64_t documentId_;
     std::uint64_t changes_ = 0;

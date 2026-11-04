@@ -68,6 +68,12 @@ class Reader final {
 
     std::size_t addNode(const cgltf_node& source, std::optional<std::size_t> parent);
 
+    /**
+     * @return whether a node is seen: false when its KHR_node_visibility says it is not, and
+     *         true otherwise
+     **/
+    static bool visibleOf(const cgltf_node& source);
+
     std::size_t mesh(const cgltf_mesh& source);
 
     void addPrimitive(const cgltf_primitive& primitive, Mesh* mesh);

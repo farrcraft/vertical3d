@@ -157,6 +157,8 @@ std::size_t Importer::addNode(const interchange::Node& node, std::size_t index, 
     for (const boost::shared_ptr<item::Item>& item : made) {
         item->name(node.name);
     }
+    // the others go beneath the first, so its flags hide them too
+    made.front()->shown({ .views = node.visible, .renders = node.visible && node.renders });
 
     corrections_[index] = turned(*made.front()) ? halfTurn() : glm::identity<glm::quat>();
     const glm::quat back = glm::inverse(parentCorrection(node));

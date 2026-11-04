@@ -45,12 +45,14 @@ default-constructed `Input` is no cursor at all.
 | `button(label)`, `smallButton(label)` | a button, bar-height or line-height | true on the frame it was clicked |
 | `selectable(label, selected)` | a full-width row, highlighted when selected | true when clicked |
 | `treeRow(label, { .depth, .open, .selected, .icon, .iconTint })` | a full-width row of a tree, indented by its depth, with a fold mark when `open` is given, and its icon, tinted, before the label. A selected row is drawn on the `selected` tint | true when clicked anywhere but the mark |
+| `heading(label, &open)` | a semibold line that heads a group of rows. Given `open`, it draws a fold mark before its label, and a click anywhere on it flips `*open` | whether to draw the group |
 | `dragInt(label, &value, low, high)` | an integer scrubbed by dragging across it | true when the value changed |
 | `dragFloat(label, &value, speed)` | a number scrubbed by dragging across it, or typed into after a click | true when the value changed |
 | `sliderFloat(label, &value, low, high)` | a number set by pressing or dragging along a track | true when the value changed |
 | `checkbox(label, &value)` | a box ticked or not, with its label beside it | true on the frame it was clicked |
 | `combo(label, &selected, items)` | the label at the left, and the chosen item at the right before a drop mark. A click opens the list | true on the frame the choice changed |
 | `textField(label, &value, limit)` | one line of text the user edits | true when the value changed |
+| `textField(label, &value, { .icon, .labelled, .limit })` | the same, led by an icon in the `placeholder` colour, by its label in `secondary-text`, or by both | true when the value changed |
 | `progressBar(fraction, overlay)` | a filled track with text over it | |
 | `separator()` | a rule across the width | |
 | `tabBar(id)` / `tab(label)` / `endTabBar()` | a recess across the row in the `tab` colour, shared evenly by its tabs. The chosen tab is raised to the `chosen` colour and set semibold | `tab()` is true for the selected tab |
@@ -89,8 +91,10 @@ caller draws the rows beneath an open row and skips those beneath a folded one.
 A **number** from `dragFloat()` draws its label at the left in `secondary-text` and its value
 at the right, to three places without the zeros it does not need: `1.5`, `0` and `0.123`. A
 value never starts before its label has ended. A `NumberLook` gives the label a colour of its
-own and a unit written straight after the value, so a unit set apart by a space starts with one:
-`{ .labelColour = red, .unit = " m" }`.
+own, a unit written straight after the value, and an edge, a rule 2 pixels wide at a scale of 1
+down the field's left side. A unit set apart by a space starts with one:
+`{ .labelColour = red, .unit = " m", .edge = red }`. The edge follows the field's rounded
+corners.
 
 - A press that travels more than 3 pixels across it drags the value, by `speed` for each pixel
   after those 3.
@@ -170,7 +174,10 @@ changing text.
 ### Typing into a field
 
 `textField(label, &value, limit)` edits a string the caller owns. The label is the field's id,
-and is drawn dimmed inside it while it is empty and does not have the keyboard.
+and is drawn dimmed inside it while it is empty and does not have the keyboard. A `FieldLook`
+can lead the field with an icon, drawn in the `placeholder` colour, as a filter leads with a
+magnifier. With `labelled` it draws the label at the left in `secondary-text` at all times, as a
+number does, in place of the placeholder. The text and the caret start past both.
 
 - A press on the field gives it the keyboard and puts the caret where the press landed.
 - A return, a tab, an escape or a press anywhere else gives the keyboard up. What was typed is

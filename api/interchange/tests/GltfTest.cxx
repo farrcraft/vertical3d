@@ -139,6 +139,25 @@ BOOST_AUTO_TEST_CASE(gltf_reads_keyed_translation_test) {
     BOOST_CHECK_CLOSE(channel.values.back().y, 1.0F, 0.01F);
 }
 
+/**
+ * A node KHR_node_visibility hides is neither seen nor rendered. A node beneath it keeps its own
+ * flags, since what hides a node hides what is beneath it. A node the extension shows, or one
+ * without it, is both.
+ **/
+BOOST_AUTO_TEST_CASE(gltf_reads_node_visibility_test) {
+    const Scene scene = readScene("data/visibility.gltf");
+
+    const Node& hidden = scene.nodes[nodeNamed(scene, "Hidden")];
+    BOOST_CHECK(!hidden.visible);
+    BOOST_CHECK(!hidden.renders);
+    for (const char* shown : { "Plain", "Beneath", "Visible" }) {
+        BOOST_TEST_CONTEXT(shown) {
+            BOOST_CHECK(scene.nodes[nodeNamed(scene, shown)].visible);
+            BOOST_CHECK(scene.nodes[nodeNamed(scene, shown)].renders);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE(gltf_takes_a_matrix_apart_test) {
     const Scene scene = readScene("data/nodes.gltf");
 

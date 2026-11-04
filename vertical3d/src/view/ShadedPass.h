@@ -30,7 +30,8 @@
 namespace v3d::editor::view {
 
 /**
- * The scene's meshes as shaded triangles, drawn into a view's pass before its lines.
+ * The scene's meshes as shaded triangles, drawn into a view's pass before its lines. A mesh the
+ * views do not show is not drawn.
  *
  * Each mesh is triangulated and uploaded once for each shading a view asks for, and uploaded
  * again only when its geometry's change count has moved. A mesh's placement is not part of

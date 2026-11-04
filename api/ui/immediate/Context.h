@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <api/ui/Image.h>
 #include <api/ui/Immediate.h>
 #include <api/ui/Transition.h>
 #include <api/ui/input/LineEdit.h>
@@ -182,6 +183,23 @@ struct Body {
 };
 
 /**
+ * A text field being drawn: its id, its label, the value it shows, its box, and what leads it.
+ **/
+struct Field {
+    Id id = 0;
+    std::string label;
+    const std::string* value = nullptr;
+    glm::vec2 min{0.0F};
+    glm::vec2 max{0.0F};
+    Image icon;                // drawn at the left, or nothing when it is not valid
+    float iconSide = 0.0F;     // how big the icon is drawn
+    float start = 0.0F;        // where the label starts, past the icon
+    bool labelled = false;     // the label is drawn after the icon, and not as a placeholder
+    glm::vec2 low{0.0F};       // where the text starts, past both
+    glm::vec2 high{0.0F};      // where the text ends
+};
+
+/**
  * A number field being drawn: its id, its label, the value it shows, and its box.
  **/
 struct Number {
@@ -192,6 +210,7 @@ struct Number {
     glm::vec2 max{0.0F};
     std::optional<glm::vec4> labelColour;  // in place of secondary text
     std::string unit;                      // written straight after the value
+    std::optional<glm::vec4> edge;         // a rule down the left side
 };
 
 /**
@@ -335,6 +354,12 @@ class Context final {
     void drawNumber(const Number& field, const Reaction& reaction);
 
     /**
+     * Draw a text field: its icon, its label, and its value, its placeholder or the line being
+     * typed into it.
+     **/
+    void drawField(const Field& field, const Reaction& reaction);
+
+    /**
      * Close a scrolled region, a window's body or a table: measure what was drawn into it,
      * draw its scrollbar down the right of the body, and turn the wheel over it into scroll.
      **/
@@ -439,6 +464,10 @@ class Context final {
      * typing into it, as a window's title bar decides between a move and a fold.
      **/
     static constexpr float dragThreshold = 3.0F;
+    /**
+     * How wide a number's edge is at a scale of 1, in pixels.
+     **/
+    static constexpr float edgeWidth = 2.0F;
     /**
      * @return a typed number, or nothing when the text is not a whole finite number
      **/

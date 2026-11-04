@@ -194,6 +194,7 @@ content went. Numbers are never reused.
 | [0153](0153-editor-scripts-are-typescript-run-on-quickjs.md) | Editor: scripts are TypeScript, run on QuickJS | accepted |
 | [0154](0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md) | Editor: the render view is an editor, in an area or a window | accepted |
 | [0157](0157-editor-item-names-are-unique-in-their-scene.md) | Editor: item names are unique in their scene | accepted |
+| [0168](0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md) | Editor: an item is shown in views and renders by two flags | accepted |
 
 ## Build, testing and code
 

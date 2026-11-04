@@ -54,7 +54,11 @@
               "label": "Edit",
               "items": [
                 { "label": "Undo", "type": "action", "context": "edit", "command": "undo" },
-                { "label": "Redo", "type": "action", "context": "edit", "command": "redo" }
+                { "label": "Redo", "type": "action", "context": "edit", "command": "redo" },
+                { "type": "separator" },
+                { "label": "Hide", "type": "action", "context": "edit", "command": "hide" },
+                { "label": "Show All", "type": "action", "context": "edit", "command": "show_all" },
+                { "label": "Isolate", "type": "action", "context": "edit", "command": "isolate" }
               ]
             },
             {

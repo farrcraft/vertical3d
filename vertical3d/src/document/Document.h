@@ -93,6 +93,28 @@ class Document final {
     Outcome group(const scene::Items& items);
 
     /**
+     * Hide items from the views as one change. What they hide is deselected.
+     **/
+    Outcome hide(const scene::Items& items);
+
+    /**
+     * Show items in the views as one change. An item beneath one that is hidden stays hidden.
+     **/
+    Outcome show(const scene::Items& items);
+
+    /**
+     * Show every item hidden from the views as one change.
+     **/
+    Outcome showAll();
+
+    /**
+     * Show only some items in the views, as one change. The items and every item above them are
+     * shown, so that the items show. What is beneath them keeps its own flags, and every other
+     * item is hidden.
+     **/
+    Outcome isolate(const scene::Items& items);
+
+    /**
      * Read a glTF file (.gltf, .glb) or a USD stage (.usd, .usda, .usdc, .usdz), and put its
      * scene into the document as one change. Its nodes become items, with their hierarchy and
      * their keys, and the items at the top become the selection. What the file holds that the

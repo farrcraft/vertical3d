@@ -24,6 +24,10 @@ Up is +y.
     no parent.
   - A parent always comes before its children in the list, so a walk in order meets every parent
     first.
+  - `visible` and `renders` say whether the node is seen at all and whether a render draws it.
+    Both are true unless the file says otherwise. A node that is not seen is not rendered either,
+    and one that is seen and not rendered is a guide or a stand-in. Each is the node's own value:
+    what a node hides, it hides beneath it too, and a node beneath it keeps its own.
 - **Meshes.** A list of points, a count of corners for each face, and every face's corners as
   indices into the points, one face after another. A face runs counter-clockwise seen from
   outside. `triangulated` says that the format stores only triangles, so a quad the author made
@@ -76,6 +80,7 @@ What it reads:
 - **Meshes.** All of a mesh's primitives join into one mesh of triangles. Strips and fans are cut
   into triangles, and a primitive with no indices takes its points in order. A mesh that two
   nodes use is read once, and both nodes name it.
+- **Visibility.** A node `KHR_node_visibility` makes invisible is neither seen nor rendered.
 - **Cameras and lights.** Lights come from `KHR_lights_punctual`. A directional light is a
   distant one. glTF gives a light in candela or lux, which the reader divides by 683 lumens per
   watt.
@@ -117,6 +122,9 @@ What it reads:
   is. A keyed placement is sampled at every time the stage keys it, as linear keys of its
   translation, its rotation and its scale. A part that keeps one value is not keyed. Times are
   in seconds, by the stage's time codes per second.
+- **Visibility and purpose.** A prim whose `visibility` is `invisible` at the start time is
+  neither seen nor rendered. A prim whose `purpose` is `guide` or `proxy` is seen and not
+  rendered.
 - **Meshes.** Polygons as the file gives them, so `triangulated` is false. A left handed mesh
   has each face turned round.
 - **Cameras.** The lens at the start time. Apertures are in tenths of the stage's unit.
