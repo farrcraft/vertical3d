@@ -364,19 +364,9 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
     }
     if (menu->drop()) {
         const float middle = left + room.content + (base().padding * dropGapScale) + (room.mark * 0.5F);
-        dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, ink);
+        paint::dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, ink);
     }
     return room.extent;
-}
-
-/**
- **/
-void MenuRenderer::dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour) {
-    const float half = width * 0.5F;
-    const float stroke = std::max(width * dropStroke, 1.0F);
-    const glm::vec2 tip(centre.x, centre.y + (half * 0.5F));
-    canvas->segment({.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .to = tip, .width = stroke}, colour);
-    canvas->segment({.from = tip, .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke}, colour);
 }
 
 /**

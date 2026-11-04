@@ -280,6 +280,8 @@ boost::shared_ptr<component::Button> ComponentReader::readButton(const boost::js
         button->icon(*value);
     }
     button->toggle(optionalFlag(*logger_, entry, "toggle", false));
+    button->tab(optionalChoice(*logger_, entry, "tab", {
+        {"strip", component::Button::Tab::Strip}, {"choice", component::Button::Tab::Choice}}, component::Button::Tab::None));
     const v3d::event::Event command = readCommand(entry);
     if (command.context()) {
         button->event(command);

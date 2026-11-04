@@ -198,6 +198,7 @@
     - [ADR-0148: UI: text is paragraphs from one text renderer](adr/0148-ui-text-is-paragraphs-from-one-text-renderer.md)
     - [ADR-0151: UI: Noto faces for each script, shipped in the tree](adr/0151-ui-noto-faces-for-each-script-in-the-tree.md)
     - [ADR-0156: UI: each window has a retained interface of its own](adr/0156-ui-each-window-has-a-retained-interface-of-its-own.md)
+    - [ADR-0167: UI: a chosen tab is marked as a place, not a toggle](adr/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md)
     - [ADR-0021: Audio: use SDL3_mixer](adr/0021-audio-use-sdl3-mixer.md)
     - [ADR-0028: Apps: the shared app shell lives in the api](adr/0028-apps-the-shared-app-shell-lives-in-the-api.md)
     - [ADR-0030: Models: one interleaved array](adr/0030-models-one-interleaved-array.md)

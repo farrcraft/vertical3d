@@ -85,14 +85,24 @@ canvas.
 
 ### Step 1 — A chosen tab has a look of its own, and a combo shows its label
 
+**Done.** The theme has a `chosen` role, and the `tab` role is the recess a set of tabs sits in,
+at the bar's step in both ui models. `mark` also draws the line under a strip's chosen tab. An
+immediate tab bar is a recess across its row, shared evenly by its tabs from the second frame it
+is drawn. A `TabBar` and a toggle button with the `strip` look mark the chosen tab with the
+page's colour and the line. One with the `choice` look raises it to `chosen`. Each chosen tab is
+semibold. A combo draws its label at the left, its choice at the right and a chevron from the
+painter, which the menu bar's drop mark now shares. ADR-0167 records the rule, and is proposed
+until it is accepted. The area tabs keep the toggle look until step 3 draws the recess behind
+them. The Properties tabs and both combos were photographed in the editor.
+
 A chosen tab is drawn as a pressed widget. `Immediate::tab()` fills it with the pressed face,
 and the editor builds an area's tabs as toggle buttons. Both fill with the accent's highlight,
 as a checked toggle does.
 
 - The theme gains the roles a chosen tab is drawn with: the control colour for a chosen pill,
   and an accent underline on the panel colour for a chosen tab in a strip.
-  `Immediate::tab()` and `TabBar` draw through them, and the editor's area tabs become tabs
-  rather than toggles.
+  `Immediate::tab()` and `TabBar` draw through them, and a toggle button can take either
+  look.
 - An ADR records the rule in the decision above, with the toggle-alike rule it replaces as the
   rejected option. [Themes.md](../api/ui/Themes.md) states the roles.
 
@@ -119,8 +129,8 @@ unit shows "Metres" and a square, and the render settings' hider shows "Reyes" a
 - A panel header names its editor after the editor-type button: Outliner, Properties.
 - A maximised area shows the restore icon in place of the maximise icon, and the hint
   "Ctrl+Space restores the quad" in its header.
-- The current tab in a tab strip has the accent underline on the panel colour, in place of
-  the accent fill.
+- The area tabs take the strip look, over a recess the editor draws behind the strip, in
+  place of the accent fill.
 - An area with two or more editors draws one strip: the area menu, named for the current
   tab's editor, then the tabs, a + and maximise. The area menu holds Editor, which changes the
   current tab's kind, then Split, Join, Swap and Close Tab. The + opens a list of the kinds of

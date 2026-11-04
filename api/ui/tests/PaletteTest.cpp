@@ -101,16 +101,27 @@ BOOST_AUTO_TEST_CASE(the_built_in_roles_are_legible) {
 }
 
 /**
- * The immediate layer's tracks and tabs sit at its widgets' level, and the retained ui's sit
- * below them.
+ * The immediate layer's tracks sit at its widgets' level, and the retained ui's sit below them.
  **/
 BOOST_AUTO_TEST_CASE(the_two_models_place_tracks_differently) {
     const Dressing chrome;
     const Dressing tools = Dressing::tools();
     BOOST_CHECK(tools.track == tools.widget);
-    BOOST_CHECK(tools.tab == tools.widget);
     BOOST_CHECK(chrome.track != chrome.widget);
     BOOST_CHECK(chrome.panel == tools.panel);
+}
+
+/**
+ * A set of tabs is a recess below the panel, and the chosen tab is raised out of it to a
+ * widget's level, in both models. The chosen tab is not the highlight a checked toggle is
+ * filled with, so a tab reads as the place shown and not as a setting that is on.
+ **/
+BOOST_AUTO_TEST_CASE(a_chosen_tab_is_raised_and_not_highlighted) {
+    for (const Dressing& dressing : {Dressing(), Dressing::tools()}) {
+        BOOST_CHECK(dressing.tab == dressing.bar);
+        BOOST_CHECK(dressing.chosen == dressing.widget);
+        BOOST_CHECK(dressing.chosen != dressing.highlight);
+    }
 }
 
 /**

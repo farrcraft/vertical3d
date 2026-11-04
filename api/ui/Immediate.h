@@ -479,12 +479,15 @@ class Immediate {
     /**
      * The chosen one of several items, which a click opens as a list under it.
      *
+     * The box shows the label at its left, and the chosen item at its right before a drop
+     * mark, so it reads as a field that opens a list.
+     *
      * The list is drawn at end(), over everything else, and is not clipped to the window
      * the combo is in. A click on an item takes effect on the next frame's call, as a click
      * on a tab does at endTabBar(). A press anywhere outside the list closes it, and so does
      * a frame that does not draw the combo.
      *
-     * @param label the combo's id, which is not drawn
+     * @param label what the combo is for, drawn at its left, and its id
      * @param selected read and written - the index of the chosen item
      * @param items what the list offers, in order. An index outside it shows no item
      * @return whether the choice changed this frame
@@ -598,6 +601,11 @@ class Immediate {
      * Open a strip of tabs. The strip takes a row of its own, so what a selected tab holds
      * is drawn under the whole strip rather than beside the next tab.
      *
+     * The strip is a recess across the row, in the dressing's `tab` colour, and its tabs share
+     * the row's width evenly. The chosen tab is raised to the `chosen` colour and set semibold.
+     * The shares come from how many tabs the strip held last frame, so a strip drawn for the
+     * first time sizes each tab to its label.
+     *
      * @return true, so that the call reads like the ones it wraps
      **/
     bool tabBar(const std::string& id);
@@ -693,9 +701,14 @@ class Immediate {
      **/
     static constexpr float tickInset = 0.25F;
     /**
-     * How wide the mark at the right end of a combo is, as a fraction of a row.
+     * How wide the drop mark at the right end of a combo is, as a fraction of a row.
      **/
     static constexpr float comboMark = 0.4F;
+    /**
+     * How far a tab under the cursor is raised toward the chosen tab's colour, from 0 for not
+     * at all to 1 for all the way.
+     **/
+    static constexpr float hoverLift = 0.5F;
     /**
      * How far a press on a title bar has to travel before it moves the window instead of
      * folding it. Wide enough that a hand resting on the button does not drag,

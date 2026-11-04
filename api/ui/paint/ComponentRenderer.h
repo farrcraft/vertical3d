@@ -240,6 +240,13 @@ class ComponentRenderer {
     void draw(v3d::render::realtime::canvas::Canvas* canvas, const boost::shared_ptr<component::Button>& button) const;
 
     /**
+     * Draw a toggle that is a tab, as its look says. A chosen tab is marked as the place shown:
+     * a strip's in the panel's colour with the accent's line under it, a choice raised to the
+     * chosen colour. Either is set semibold. A tab under the cursor is raised halfway.
+     **/
+    void tab(v3d::render::realtime::canvas::Canvas* canvas, component::Button& button, const v3d::type::geometry::Bound2D& box) const;
+
+    /**
      * Draw a panel: a filled box with a border, with the corner radius its style sets, at
      * the box it holds.
      **/
@@ -367,6 +374,11 @@ class ComponentRenderer {
      * How far a tooltip's text sits in from its edges, as a fraction of a line.
      **/
     static constexpr float tooltipInset = 0.4F;
+    /**
+     * How far a tab under the cursor is raised toward a chosen tab's colour, from 0 for not at
+     * all to 1 for all the way.
+     **/
+    static constexpr float tabHoverLift = 0.5F;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is

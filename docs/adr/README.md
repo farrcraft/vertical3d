@@ -113,6 +113,7 @@ content went. Numbers are never reused.
 | [0148](0148-ui-text-is-paragraphs-from-one-text-renderer.md) | UI: text is paragraphs from one text renderer | accepted |
 | [0151](0151-ui-noto-faces-for-each-script-in-the-tree.md) | UI: Noto faces for each script, shipped in the tree | accepted |
 | [0156](0156-ui-each-window-has-a-retained-interface-of-its-own.md) | UI: each window has a retained interface of its own | accepted |
+| [0167](0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md) | UI: a chosen tab is marked as a place, not a toggle | proposed |
 
 ## Engine, input and assets
 

@@ -440,6 +440,10 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     const bool held = usable(*button) && button->state() == component::Button::STATE_PRESS;
     const bool lit = held || (usable(*button) &&
         (button->checked() || button->state() == component::Button::STATE_HOVER));
+    if (button->toggle() && button->tab() != component::Button::Tab::None) {
+        tab(canvas, *button, v3d::type::geometry::Bound2D({.position = min, .size = size}));
+        return;
+    }
     if (!skin_->draw(canvas, *button, min, min + size)) {
         glm::vec4 face = button->checked() ? base().highlight : base().hover;
         if (held) {
@@ -464,6 +468,38 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
 
     const glm::vec2 baseline(min.x + ((size.x - type_.width(label)) * 0.5F), min.y + (size.y * WIDGET_BASELINE));
     type_.draw(canvas, label, baseline, shade);
+}
+
+/**
+ **/
+void ComponentRenderer::tab(v3d::render::realtime::canvas::Canvas* canvas, component::Button& button,
+    const v3d::type::geometry::Bound2D& box) const {
+    const component::Button::Tab look = button.tab();
+    const glm::vec2 min = box.position();
+    const glm::vec2 max = min + box.size();
+    const bool chosen = button.checked();
+    const bool hovered = usable(button) && button.state() != component::Button::STATE_NORMAL;
+    // a strip's chosen tab is cut from the page under the strip, a choice is raised from the
+    // recess its set sits in. One under the cursor is raised halfway, by its colour at half
+    // strength over the recess
+    glm::vec4 raised = look == component::Button::Tab::Strip ? base().panel : base().chosen;
+    if (!chosen) {
+        raised.a *= tabHoverLift;
+    }
+    const glm::vec4 shown = chosen || hovered ? easing_->toward(&button.motion().face, raised) : easing_->away(&button.motion().face);
+    if (shown.a > 0.0F) {
+        fillBox(canvas, min, max, look == component::Button::Tab::Strip ? 0.0F : base().radius, shown);
+    }
+    if (chosen && look == component::Button::Tab::Strip) {
+        canvas->rect(glm::vec2(min.x, max.y - base().focusWidth), max, base().mark);
+    }
+
+    const std::string label(button.label());
+    const paint::Type strong = type_.in(paint::weight(base().titleWeight));
+    const paint::Type& set = chosen ? strong : type_;
+    const glm::vec4 shade = easing_->toward(&button.motion().ink, ink(button, base(), chosen || hovered ? base().activeText : base().text));
+    const glm::vec2 baseline(min.x + ((box.size().x - set.width(label)) * 0.5F), min.y + (box.size().y * WIDGET_BASELINE));
+    set.draw(canvas, label, baseline, shade);
 }
 
 /**
@@ -728,25 +764,33 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     std::vector<v3d::type::geometry::Bound2D> boxes;
     boxes.reserve(pages.size());
 
+    // the strip is a recess, reaching down over the seam above the page, and the chosen tab is
+    // in the page's colour, so the two read as one surface. The tab is marked as the place
+    // shown, with a line under it, not filled as a toggle that is on would be. Every label is
+    // measured semibold, as the chosen one is set, so choosing a tab moves none of them
+    canvas->rect(min, glm::vec2(min.x + size.x, min.y + height + Arranger::ruleWidth), dress.tab);
+    const paint::Type strong = type_.in(paint::weight(dress.titleWeight));
     float pen = min.x;
     for (std::size_t index = 0; index < pages.size(); index++) {
         const std::string label(pages[index]->label());
-        const float width = type_.width(label) + dress.padding;
+        const float width = strong.width(label) + dress.padding;
         const glm::vec2 corner(pen, min.y);
         const glm::vec2 extent(width, height);
         boxes.push_back(v3d::type::geometry::Bound2D({.position = corner, .size = extent}));
 
         const bool picked = static_cast<int>(index) == bar->selected();
-        fillBox(canvas, corner, corner + extent, dress.radius, picked ? dress.highlight : dress.tab);
-        type_.draw(canvas, label, glm::vec2(corner.x + (dress.padding * 0.5F), corner.y + (height * WIDGET_BASELINE)),
-            ink(*bar, dress, picked ? dress.activeText : dress.text));
-        pen += width + dress.borderWidth;
+        const glm::vec2 baseline(corner.x + (dress.padding * 0.5F), corner.y + (height * WIDGET_BASELINE));
+        if (picked) {
+            canvas->rect(corner, corner + extent, dress.panel);
+            canvas->rect(glm::vec2(corner.x, corner.y + height - dress.focusWidth), corner + extent, dress.mark);
+            strong.draw(canvas, label, baseline, ink(*bar, dress, dress.activeText));
+        } else {
+            type_.draw(canvas, label, baseline, ink(*bar, dress, dress.text));
+        }
+        pen += width;
     }
     // where each tab ended up, for the cursor to be tested against
     bar->tabs(boxes);
-
-    // the rule under the strip, which joins the chosen tab to the page below it
-    canvas->rect(glm::vec2(min.x, min.y + height), glm::vec2(min.x + size.x, min.y + height + Arranger::ruleWidth), dress.border);
 
     if (!bar->page()) {
         return;

@@ -57,6 +57,7 @@ struct Retained final {
 
     std::uint64_t frame;  /**< the last frame that asked for it, which it is aged out from **/
     unsigned int tab;  /**< which tab of a strip is selected **/
+    unsigned int tabs; /**< how many tabs the strip held last frame, which share its width out **/
     float scroll;      /**< how far the content is scrolled up, in pixels **/
     float content;     /**< how tall what it held came to last frame **/
     glm::vec2 offset;  /**< how far a window has been dragged from where the caller put it **/
@@ -109,6 +110,7 @@ struct TabStrip final {
     bool open;
     float pen;              /**< how far along the strip the next tab goes **/
     float top;
+    float share;            /**< how wide each tab is, or 0 for as wide as its label **/
     unsigned int index;     /**< which tab of the strip this one is **/
     unsigned int wanted;    /**< the tab a click asked for, taken at endTabBar() **/
     bool changed;

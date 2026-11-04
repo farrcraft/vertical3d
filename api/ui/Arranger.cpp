@@ -20,6 +20,7 @@
 #include <api/ui/component/menu/Menu.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/paint/Type.h>
 #include <api/ui/style/Resolver.h>
 
@@ -391,6 +392,10 @@ float Arranger::extent(const component::Button& button) const {
     // because a strip is laid out before anything has been resolved
     if (!button.icon().empty()) {
         return styles_.base().iconSize;
+    }
+    // a tab is measured semibold, as it is set while chosen, so choosing it moves nothing
+    if (button.toggle() && button.tab() != component::Button::Tab::None) {
+        return type_.in(paint::weight(styles_.base().titleWeight)).width(button.label());
     }
     return type_.width(button.label());
 }

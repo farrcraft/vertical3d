@@ -5,6 +5,7 @@
 
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Immediate.h>
+#include <api/ui/paint/Text.h>
 
 #include <string>
 #include <vector>
@@ -28,12 +29,16 @@ BOOST_AUTO_TEST_CASE(a_tab_strip_keeps_which_tab_is_selected) {
     canvas.resize(glm::uvec2(400, 300));
     v3d::ui::Immediate ui = build(&written);
 
-    ui.begin(&canvas, hover(glm::vec2(-1.0F, -1.0F)));
-    BOOST_REQUIRE(ui.tabBar("panels"));
-    BOOST_CHECK(ui.tab("Turn"));
-    BOOST_CHECK(!ui.tab("Entities"));
-    ui.endTabBar();
-    ui.end();
+    // the first frame learns how many tabs share the strip, and the second lays them out by it
+    for (int frame = 0; frame < 2; frame++) {
+        written.clear();
+        ui.begin(&canvas, hover(glm::vec2(-1.0F, -1.0F)));
+        BOOST_REQUIRE(ui.tabBar("panels"));
+        BOOST_CHECK(ui.tab("Turn"));
+        BOOST_CHECK(!ui.tab("Entities"));
+        ui.endTabBar();
+        ui.end();
+    }
 
     // the second tab sits beside the first, not under it
     BOOST_REQUIRE_EQUAL(written.size(), 2U);
@@ -71,6 +76,38 @@ BOOST_AUTO_TEST_CASE(a_tab_strip_keeps_which_tab_is_selected) {
 
     BOOST_CHECK(!first);
     BOOST_CHECK(second);
+}
+
+/**
+ * Once a strip has been drawn, its tabs share the row evenly, each label centred in its share,
+ * so the second tab of two starts at the middle of the row whatever its label's length.
+ **/
+BOOST_AUTO_TEST_CASE(a_tab_strip_shares_its_row_evenly) {
+    std::vector<Written> written;
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+    v3d::ui::Immediate ui = build(&written);
+
+    for (int frame = 0; frame < 2; frame++) {
+        written.clear();
+        ui.begin(&canvas, hover(glm::vec2(-1.0F, -1.0F)));
+        ui.tabBar("groups");
+        ui.tab("A");
+        ui.tab("A much longer label");
+        ui.endTabBar();
+        ui.end();
+    }
+
+    BOOST_REQUIRE_EQUAL(written.size(), 2U);
+    BOOST_REQUIRE_EQUAL(written[0].text, "A");
+    // a one-letter label is centred in the left half. It starts well past the row's margin and
+    // short of the middle. The long label starts past the middle
+    BOOST_CHECK(written[0].pen.x > 60.0F);
+    BOOST_CHECK(written[0].pen.x < 200.0F);
+    BOOST_CHECK(written[1].pen.x > 200.0F);
+    // the chosen tab is set semibold, as the place shown, and the other in the body weight
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK(written[1].weight == v3d::ui::paint::Weight::Regular);
 }
 
 /**

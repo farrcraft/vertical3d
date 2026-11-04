@@ -20,7 +20,8 @@ Button::Button() :
     Component(component::Type::Button),
     state_(STATE_NORMAL),
     toggle_(false),
-    checked_(false) {
+    checked_(false),
+    tab_(Tab::None) {
     // a control is pickable and focusable from the start. A plain component is neither, so a
     // panel laid over a scene lets presses through
     pickable(true);
@@ -78,6 +79,14 @@ void Button::toggle(bool on) {
 
 bool Button::toggle() const {
     return toggle_;
+}
+
+void Button::tab(Tab look) noexcept {
+    tab_ = look;
+}
+
+Button::Tab Button::tab() const noexcept {
+    return tab_;
 }
 
 void Button::checked(bool on) {

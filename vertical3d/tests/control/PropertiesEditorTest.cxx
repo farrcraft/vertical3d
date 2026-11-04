@@ -235,6 +235,8 @@ BOOST_FIXTURE_TEST_CASE(the_tabs_show_keys_and_counts, Panel) {
     curve.set(10.0F, 2.0F);
     BOOST_REQUIRE(scene->curve(cube->id(), "translation.x", curve));
     cube->selected(true);
+    // the tabs share the strip's width from the second frame, once the first has counted them
+    frame({});
     frame({});
     BOOST_CHECK(wrote("Item"));
     BOOST_CHECK(wrote("Mesh"));

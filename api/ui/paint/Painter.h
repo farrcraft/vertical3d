@@ -96,6 +96,16 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
     const Shadow& shadow);
 
 /**
+ * Draw a drop mark: a chevron pointing down, which says a click opens a list or a menu.
+ *
+ * @param canvas what the mark is drawn on, or null to draw nothing
+ * @param centre the middle of the mark, in canvas pixels
+ * @param width how wide the mark is. Its strokes are a fifth of that, and never under a pixel
+ * @param colour what the mark is drawn in
+ **/
+void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);
+
+/**
  * @return whether a point is inside a box, its top and left edges included
  **/
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept;

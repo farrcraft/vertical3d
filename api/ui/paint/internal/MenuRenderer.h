@@ -165,10 +165,6 @@ class MenuRenderer final {
      **/
     static constexpr float dropScale = 0.3F;
     static constexpr float dropGapScale = 0.25F;
-    /**
-     * How thick a drop mark's strokes are, as a fraction of its width.
-     **/
-    static constexpr float dropStroke = 0.2F;
 
     /**
      * How much room a menu bar title takes: its icon or its label, its drop mark, and the gap
@@ -196,11 +192,6 @@ class MenuRenderer final {
      **/
     float title(v3d::render::realtime::canvas::Canvas* canvas, component::menu::Bar& bar, std::size_t index, const glm::vec2& at,
         float height) const;
-
-    /**
-     * Draw a drop mark: a chevron pointing down, centred on a point, the width given.
-     **/
-    static void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);
 
     /**
      * Draw one item of a dropped panel in the row the arranger gave it: its highlight, its mark

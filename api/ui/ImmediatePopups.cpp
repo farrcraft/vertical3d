@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace v3d::ui {
 
@@ -48,14 +49,18 @@ bool Immediate::combo(const std::string& label, int* selected, const std::vector
         context_->popup.selected = *selected;
     }
 
+    // the label at the left, as a field's is, and the chosen item at the right against the
+    // drop mark, which says a click opens a list
     paint::fillBox(context_->canvas, min, max, context_->dressing.radius, context_->eased(id, context_->face(open || reaction.held, reaction.hovered)));
+    const glm::vec4 ink = context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text);
     const float mark = context_->dressing.lineHeight * comboMark;
-    const glm::vec2 markMin(max.x - context_->dressing.padding - mark, min.y + ((size.y - mark) * 0.5F));
-    paint::fillBox(context_->canvas, markMin, markMin + glm::vec2(mark, mark), 0.0F,
-        context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
+    const float markLeft = max.x - context_->dressing.padding - mark;
+    paint::dropMark(context_->canvas, glm::vec2(markLeft + (mark * 0.5F), min.y + (size.y * 0.5F)), mark, ink);
+    context_->label(label, min + glm::vec2(context_->dressing.padding, 0.0F), size, context_->ink(context_->dressing.text));
     if (*selected >= 0 && static_cast<std::size_t>(*selected) < items.size()) {
-        context_->label(items[static_cast<std::size_t>(*selected)], min + glm::vec2(context_->dressing.padding, 0.0F), size,
-            context_->ink(reaction.hovered ? context_->dressing.activeText : context_->dressing.text));
+        const std::string& item = items[static_cast<std::size_t>(*selected)];
+        const float left = markLeft - context_->dressing.padding - context_->measure(item);
+        context_->label(item, glm::vec2(left, min.y), size, ink);
     }
     return changed;
 }

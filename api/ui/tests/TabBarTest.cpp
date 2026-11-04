@@ -10,12 +10,15 @@
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/Length.h>
+#include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/paint/ComponentRenderer.h>
+#include <api/ui/paint/Text.h>
 #include <api/ui/tests/Typeset.h>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -36,6 +39,14 @@ using Written = v3d::ui::typeset::Written;
 
 v3d::ui::paint::ComponentRenderer build(std::vector<Written>* written) {
     return v3d::ui::paint::ComponentRenderer(v3d::ui::typeset::body(written));
+}
+
+/**
+ * Whether anything on a canvas was drawn in a colour.
+ **/
+bool drawnIn(const v3d::render::realtime::canvas::Canvas& canvas, const glm::vec4& colour) {
+    const auto& vertices = canvas.vertices();
+    return std::any_of(vertices.begin(), vertices.end(), [&colour](const auto& vertex) { return vertex.colour == colour; });
 }
 
 /**
@@ -225,6 +236,97 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_strip_of_pages) {
     BOOST_CHECK_EQUAL(std::string(panels->page()->label()), "Entities");
     // and a page keeps what it holds, whether or not it is the one that is up
     BOOST_CHECK(ui->container("hud")->get("count"));
+}
+
+/**
+ * A strip marks its chosen tab as the place shown: a line in the mark's colour under it and
+ * its label semibold. It is not filled with the highlight a checked toggle is.
+ **/
+BOOST_AUTO_TEST_CASE(a_strip_marks_its_chosen_tab_with_a_line) {
+    std::vector<Written> written;
+    const v3d::ui::paint::ComponentRenderer renderer = build(&written);
+    v3d::render::realtime::canvas::Canvas canvas;
+    canvas.resize(glm::uvec2(400, 300));
+
+    v3d::ui::Container container("hud", true);
+    container.add(bar());
+    renderer.draw(&canvas, container);
+
+    BOOST_REQUIRE_GE(written.size(), 2U);
+    BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK(written[1].weight == v3d::ui::paint::Weight::Regular);
+    BOOST_CHECK(drawnIn(canvas, renderer.dressing().mark));
+    BOOST_CHECK(!drawnIn(canvas, renderer.dressing().highlight));
+}
+
+/**
+ * A toggle given a tab's look is drawn as one when checked: a strip's with the line under it,
+ * a choice raised to the chosen colour, either semibold. Neither is filled with the highlight
+ * a plain checked toggle is.
+ **/
+BOOST_AUTO_TEST_CASE(a_toggle_drawn_as_a_tab_is_marked_and_not_filled) {
+    using Tab = v3d::ui::component::Button::Tab;
+    for (const Tab look : {Tab::Strip, Tab::Choice}) {
+        std::vector<Written> written;
+        const v3d::ui::paint::ComponentRenderer renderer = build(&written);
+        v3d::render::realtime::canvas::Canvas canvas;
+        canvas.resize(glm::uvec2(400, 300));
+
+        const boost::shared_ptr<v3d::ui::component::Button> button = boost::make_shared<v3d::ui::component::Button>();
+        button->name("modelling");
+        button->label("Modelling");
+        button->toggle(true);
+        button->tab(look);
+        button->checked(true);
+        v3d::ui::Container container("hud", true);
+        container.add(button);
+        renderer.draw(&canvas, container);
+
+        BOOST_REQUIRE_EQUAL(written.size(), 1U);
+        BOOST_CHECK(written[0].weight == v3d::ui::paint::Weight::SemiBold);
+        BOOST_CHECK(!drawnIn(canvas, renderer.dressing().highlight));
+        BOOST_CHECK(drawnIn(canvas, look == Tab::Strip ? renderer.dressing().mark : renderer.dressing().chosen));
+    }
+}
+
+/**
+ * A button reads its tab look by name. One that names none, or names a word outside the set,
+ * is a plain toggle.
+ **/
+BOOST_AUTO_TEST_CASE(the_loader_reads_a_buttons_tab_look) {
+    const std::string document = R"({
+  "themes": [ { "name": "default" } ],
+  "containers": [
+    {
+      "name": "hud",
+      "visible": true,
+      "components": [
+        { "name": "strip", "type": "button", "label": "Timeline", "toggle": true, "tab": "strip" },
+        { "name": "choice", "type": "button", "label": "Modelling", "toggle": true, "tab": "choice" },
+        { "name": "plain", "type": "button", "label": "Snap", "toggle": true },
+        { "name": "odd", "type": "button", "label": "Odd", "toggle": true, "tab": "sideways" }
+      ]
+    }
+  ]
+})";
+
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
+        boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(ui->load(boost::json::parse(document).as_object()));
+
+    using Tab = v3d::ui::component::Button::Tab;
+    const auto look = [&ui](const char* name) {
+        const boost::shared_ptr<v3d::ui::component::Button> button =
+            boost::dynamic_pointer_cast<v3d::ui::component::Button>(ui->container("hud")->get(name));
+        BOOST_REQUIRE(button);
+        return button->tab();
+    };
+    BOOST_CHECK(look("strip") == Tab::Strip);
+    BOOST_CHECK(look("choice") == Tab::Choice);
+    BOOST_CHECK(look("plain") == Tab::None);
+    BOOST_CHECK(look("odd") == Tab::None);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

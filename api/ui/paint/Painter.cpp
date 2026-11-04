@@ -40,6 +40,11 @@ const float threeQuarterTurn = quarterTurn * 3.0F;
 const unsigned int fadeBands = 3;
 
 /**
+ * How thick a drop mark's strokes are, as a fraction of its width.
+ **/
+const float dropStroke = 0.2F;
+
+/**
  * How much of a shadow's colour is left at a share of the way out across its fade. All of it is
  * left at the box's edge and none at the far end, and it falls fastest in the middle. It is half
  * a turn of a cosine, lifted to run from one down to zero.
@@ -205,6 +210,17 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
         bend(glm::vec2(max.x - corner, max.y - corner), noTurn);
         bend(glm::vec2(min.x + corner, max.y - corner), quarterTurn);
     }
+}
+
+void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour) {
+    if (canvas == nullptr) {
+        return;
+    }
+    const float half = width * 0.5F;
+    const float stroke = std::max(width * dropStroke, 1.0F);
+    const glm::vec2 tip(centre.x, centre.y + (half * 0.5F));
+    canvas->segment({.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .to = tip, .width = stroke}, colour);
+    canvas->segment({.from = tip, .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke}, colour);
 }
 
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept {

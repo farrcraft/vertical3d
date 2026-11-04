@@ -49,11 +49,11 @@ default-constructed `Input` is no cursor at all.
 | `dragFloat(label, &value, speed)` | a number scrubbed by dragging across it, or typed into after a click | true when the value changed |
 | `sliderFloat(label, &value, low, high)` | a number set by pressing or dragging along a track | true when the value changed |
 | `checkbox(label, &value)` | a box ticked or not, with its label beside it | true on the frame it was clicked |
-| `combo(label, &selected, items)` | the chosen item, which a click opens as a list | true on the frame the choice changed |
+| `combo(label, &selected, items)` | the label at the left, and the chosen item at the right before a drop mark. A click opens the list | true on the frame the choice changed |
 | `textField(label, &value, limit)` | one line of text the user edits | true when the value changed |
 | `progressBar(fraction, overlay)` | a filled track with text over it | |
 | `separator()` | a rule across the width | |
-| `tabBar(id)` / `tab(label)` / `endTabBar()` | a strip of tabs | `tab()` is true for the selected tab |
+| `tabBar(id)` / `tab(label)` / `endTabBar()` | a recess across the row in the `tab` colour, shared evenly by its tabs. The chosen tab is raised to the `chosen` colour and set semibold | `tab()` is true for the selected tab |
 | `table(id, { .columns, .height })` / `column` / `headerRow` / `nextRow` / `nextColumn` / `endTable` | a table | |
 | `surface(id, height)` | nothing: a box the width of the row for the caller to draw into | a `Surface`: its box, the cursor, and its press |
 

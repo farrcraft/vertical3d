@@ -85,12 +85,13 @@ struct Dressing final {
     glm::vec4 track;         /**< the unfilled part of a bar or a scrollbar, and the box a mark sits in **/
     glm::vec4 fill;          /**< the filled part of a bar **/
     glm::vec4 thumb;         /**< the part of a scrollbar's track that is taken hold of **/
-    glm::vec4 mark;          /**< what a checked box or a chosen radio button is marked with **/
+    glm::vec4 mark;          /**< what a checked box or a chosen radio button is marked with, and the line under a strip's chosen tab **/
     glm::vec4 caret;         /**< a text field's caret **/
     glm::vec4 placeholder;   /**< what an empty text field shows in place of text **/
-    glm::vec4 tab;           /**< a tab that is not the chosen one **/
+    glm::vec4 tab;           /**< the recess a set of tabs sits in, which a tab that is not chosen shows **/
+    glm::vec4 chosen;        /**< the face of the chosen one of a set of choices, such as the chosen tab of a set **/
     glm::vec4 widget;        /**< the face of an immediate button, field or check box at rest **/
-    glm::vec4 rule;          /**< a separator, and the line under an immediate tab strip **/
+    glm::vec4 rule;          /**< a separator **/
     glm::vec4 hairline;      /**< a faint line that divides without drawing the eye, such as the edge of an area **/
     glm::vec4 text;          /**< ordinary text **/
     glm::vec4 activeText;    /**< the text of the chosen or hovered item: a menu item, a row, a tab, a button **/

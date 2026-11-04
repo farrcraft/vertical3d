@@ -14,7 +14,7 @@ reads besides the common ones:
 | `label` | `Label` | its text, wrapped to the width it was given, or one line when the width is `Auto` | `label` | no / no |
 | `icon` | `Icon` | an image at the component's size, or nothing until it has one | `source`; with none, the app gives it an image with `Icon::image()` | no / no |
 | `bar` | `Bar` | a track and the filled fraction of it | `fraction` (0 to 1), `direction` (`vertical`, else horizontal) | no / no |
-| `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `command`, `context` | yes / yes |
+| `button` | `Button` | a label, an icon, or a nine-slice skin | `label`, `icon`, `toggle`, `tab` (`strip` or `choice`), `command`, `context` | yes / yes |
 | `checkbox` | `CheckBox` | a square mark and a label beside it | `label`, `checked`, `command`, `context` | yes / yes |
 | `radio` | `RadioButton` | a round mark and a label beside it | as `checkbox`, plus `group` | yes / yes |
 | `scrollbar` | `Scrollbar` | a track and a thumb | `direction` (`horizontal`, else vertical), `content` and `page` (together), `offset` | yes / yes |
@@ -55,6 +55,15 @@ Notes on individual components:
   the rows its box shows and clips them to its plate.
 - **A `TabBar`** draws and lays out only the selected page. Components on other pages have no
   box that frame, so they are not picked or focused.
+- **A chosen tab is marked as the place shown, not filled as a setting that is on.** A
+  `TabBar`'s strip is a recess in the `tab` colour. Its chosen tab is in the page's `panel`
+  colour with a line in the `mark` colour under it, and its label is semibold. A toggle
+  button given a `tab` look is drawn the same way while it is checked: `strip` as a
+  `TabBar`'s tab, `choice` raised to the `chosen` colour, as one of a set of choices. The app
+  draws the recess behind a row of such buttons. A tab under the cursor is raised halfway.
+  Its label is measured semibold, so choosing it moves nothing. A plain toggle is filled with
+  the `highlight` while it is checked.
+  Background: [ADR-0167](../../adr/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md).
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button
   with an `icon` is sized to the icon; otherwise to its label. In a column, a button with an

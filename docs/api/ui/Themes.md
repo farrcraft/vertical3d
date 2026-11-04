@@ -69,7 +69,7 @@ the contrast 1, and the defaults every app starts from are derived from them.
   the base's or the accent's, measured in the OKLCH colour space. The contrast multiplies every
   distance.
 - **One step per role.** Each colour role takes one step of one scale. The `ui` and `tools`
-  classes differ only in `track` and `tab`, which sit at the level of a widget in `tools`.
+  classes differ only in `track`, which sits at the level of a widget in `tools`.
 - **Shadows and backdrops are black.** `shadow` is black at 45% in a dark theme and 18% in a
   light one, where a shadow shows more. `backdrop` is black at 60% in either, because what it
   dims is the scene behind the ui and not the theme's own surfaces.
@@ -108,12 +108,13 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `track` | the unfilled part of a bar or a scrollbar, and the box a mark sits in | both |
 | `fill` | the filled part of a bar | both |
 | `thumb` | the part of a scrollbar or a slider that is taken hold of | both |
-| `mark` | the mark in a checked box or a chosen radio button | both |
+| `mark` | the mark in a checked box or a chosen radio button, and the line under the chosen tab of a strip | both |
 | `caret` | a text field's caret | both |
 | `placeholder` | what an empty text field shows in place of text | both |
-| `tab` | a tab that is not the chosen one | both |
+| `tab` | the recess a set of tabs sits in, which a tab that is not chosen shows | both |
+| `chosen` | the face of the chosen one of a set of choices, such as the chosen tab of a set | both |
 | `widget` | the face of a button, a field or a check box at rest | immediate |
-| `rule` | a separator, and the line under a tab strip | immediate |
+| `rule` | a separator | immediate |
 | `hairline` | a faint line that divides without drawing the eye, such as the edge of an area | the app, through `dressing()` |
 | `text` | ordinary text | both |
 | `active-text` | the text of the chosen or hovered item | both |
@@ -197,7 +198,7 @@ beneath every game's document this way.
 | `checkbox` | `CheckBox` | `background`, `mark`, `border`, `text`, `border-width`, `mark-size` |
 | `radio` | `RadioButton` | as `checkbox` |
 | `list` | `SelectList` | `background`, `border`, `highlight`, `text`, `active-text`, `border-width`, `radius`, `line-height` |
-| `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `highlight`, `text`, `active-text`, `border`, `bar-height`, `radius` |
+| `tabs` | `TabBar`, `TabPage` | `background`, `tab`, `chosen`, `mark`, `text`, `active-text`, `border`, `bar-height`, `radius` |
 | `textbox` | `TextBox` | `background`, `border`, `text`, `caret`, `placeholder`, `highlight`, `border-width`, `radius`, `line-height` |
 | `hud` | `ComponentRenderer::hud()`, the statistics overlay | `background`, `border`, `text`, `plate-opacity`, `border-width`, `padding`, `radius`, `line-height` |
 | `button` | `Button` | nine images and `corner`; see below |
