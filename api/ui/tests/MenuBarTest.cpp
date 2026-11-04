@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
 
 /**
  * A title keeps one width whether it is set apart or not, so setting it apart moves nothing
- * after it. Its emphasis here is written larger, so it is wider than the plain label.
+ * after it, even where the chosen item's setting is wider than the plain one.
  **/
 BOOST_AUTO_TEST_CASE(emphasis_moves_nothing_after_a_title) {
     Fixture fixture;
@@ -297,10 +297,10 @@ BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {
 }
 
 /**
- * A title set apart is written in the chosen item's setting, semibold, on a pill of the widget
- * colour.
+ * A title set apart is on a pill of the widget colour, and written in the bar's own setting, so
+ * its text does not change as it is set apart and back.
  **/
-BOOST_AUTO_TEST_CASE(a_title_set_apart_is_semibold_on_a_pill) {
+BOOST_AUTO_TEST_CASE(a_title_set_apart_is_on_a_pill) {
     Fixture fixture;
     build(&fixture);
     v3d::ui::paint::Emphasis sets;
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(a_title_set_apart_is_semibold_on_a_pill) {
     BOOST_CHECK_EQUAL(fixture.written[0].text, "File");
     BOOST_CHECK(fixture.written[0].weight == v3d::ui::paint::Weight::Regular);
     BOOST_CHECK_EQUAL(fixture.written[1].text, "View");
-    BOOST_CHECK(fixture.written[1].weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK(fixture.written[1].weight == v3d::ui::paint::Weight::Regular);
     const glm::vec4 widget = fixture.renderer.dressing().widget;
     BOOST_CHECK(std::ranges::any_of(v3d::ui::typeset::shapeVertices(fixture.canvas), [&widget](const auto& vertex) { return vertex.colour == widget; }));
 }

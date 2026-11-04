@@ -105,6 +105,7 @@ v3d::ui::shell::Screen::Options Renderer::screenOptions() {
         style->barHeight = size * barHeightScale;
         style->panelPadding = size * panelPaddingScale;
         style->iconSize = size * iconScale;
+        style->radius = size * radiusScale;
     };
     return options;
 }

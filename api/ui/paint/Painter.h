@@ -113,6 +113,26 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
 void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);
 
 /**
+ * The three points of a chevron, in canvas pixels, and how thick its strokes are.
+ **/
+struct Chevron {
+    glm::vec2 from{0.0F};
+    glm::vec2 tip{0.0F};
+    glm::vec2 to{0.0F};
+    float width = 0.0F;
+};
+
+/**
+ * Draw a chevron: a stroke from its start to its tip and another on to its end, each smoothed
+ * along its sides. Each stroke runs on past the tip until the outer edges meet, so the bend
+ * comes to a point rather than leaving a notch. The strokes overlap there, so a translucent
+ * colour shows the overlap.
+ *
+ * @param canvas what the chevron is drawn on, or null to draw nothing
+ **/
+void chevron(v3d::render::realtime::canvas::Canvas* canvas, const Chevron& shape, const glm::vec4& colour);
+
+/**
  * @return whether a point is inside a box, its top and left edges included
  **/
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept;

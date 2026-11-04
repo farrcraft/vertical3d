@@ -194,4 +194,4 @@ A viewport's header has four more menus. Each acts on that view, whatever view i
 | Mask | The select mask in use, such as Object | The Select menu's items |
 | Overlays | Shown as an icon | Grid, Meshes, Cameras, Lights and Handles, as on the View menu's Show submenu |
 
-The name of the camera menu is set semibold while its area is active.
+The name of the camera menu is set on a pill while its area is active.

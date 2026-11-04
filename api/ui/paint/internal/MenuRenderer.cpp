@@ -328,9 +328,6 @@ MenuRenderer::Title MenuRenderer::titled(const component::menu::Menu& menu, cons
         title.content = std::min(base().iconSize, height);
     } else {
         title.content = type_.width(label);
-        if (emphasis_.chosen.type.set()) {
-            title.content = std::max(title.content, emphasis_.chosen.type.width(label));
-        }
     }
     title.extent = title.content + base().padding;
     if (menu.drop()) {
@@ -377,8 +374,8 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
         canvas->rect(corner, corner + glm::vec2(room.content, room.content), picture.uv0, picture.uv1, menu->accent() ? base().fill : ink,
             picture.texture);
     } else {
-        const Type& inked = menu->emphasis() && emphasis_.chosen.type.set() ? emphasis_.chosen.type : type_;
-        inked.draw(canvas, label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
+        // a title set apart keeps its own weight, so its text does not change as it comes and goes
+        type_.draw(canvas, label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
     }
     if (menu->drop()) {
         // the mark says less than the title it follows, until the title is under the cursor

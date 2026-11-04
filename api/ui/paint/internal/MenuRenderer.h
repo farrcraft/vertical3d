@@ -181,9 +181,8 @@ class MenuRenderer final {
 
     /**
      * @return the room a menu bar title takes on a bar the height given. An icon is as large as
-     *         the dressing's icon size or the bar, whichever is smaller. A label is as wide as
-     *         the wider of its plain and emphasised weights, so emphasis moves nothing after
-     *         it. A label set apart is measured in the weight it is written in
+     *         the dressing's icon size or the bar, whichever is smaller. A label set apart is
+     *         measured in the weight it is written in
      **/
     Title titled(const component::menu::Menu& menu, const std::string& label, float height) const;
 

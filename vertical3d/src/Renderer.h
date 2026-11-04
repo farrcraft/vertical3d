@@ -390,6 +390,12 @@ class Renderer final {
     static constexpr float panelPaddingScale = 1.0F / 3.0F;
 
     /**
+     * How far the corners of a panel, a button, a tab and a dropped menu are rounded, as a
+     * multiple of the text size: 4 pixels beside 12 pixel text, as the areas' corners are.
+     **/
+    static constexpr float radiusScale = 4.0F / 12.0F;
+
+    /**
      * Draw the icon sheet at the ui's icon size in device pixels, when it was last drawn at
      * another, and point every image the ui holds at the new texture.
      **/

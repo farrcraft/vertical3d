@@ -414,8 +414,7 @@ void Immediate::foldMark(const glm::vec2& centre, bool open, const glm::vec4& in
     const glm::vec2 tip = open ? glm::vec2(0.0F, reach * 0.5F) : glm::vec2(reach * 0.5F, 0.0F);
     const glm::vec2 side = open ? glm::vec2(reach, 0.0F) : glm::vec2(0.0F, reach);
     const glm::vec2 back = open ? glm::vec2(0.0F, -reach * 0.5F) : glm::vec2(-reach * 0.5F, 0.0F);
-    context_->canvas->segment({.from = centre + back - side, .to = centre + tip, .width = width}, ink);
-    context_->canvas->segment({.from = centre + tip, .to = centre + back + side, .width = width}, ink);
+    paint::chevron(context_->canvas, {.from = centre + back - side, .tip = centre + tip, .to = centre + back + side, .width = width}, ink);
 }
 
 bool Immediate::dragInt(const std::string& label, int* value, int low, int high) {

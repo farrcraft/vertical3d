@@ -432,7 +432,7 @@ built as the editor runs and put before the editor's own container so its menus 
   - one named for the camera the view shows, such as Front, or the scene camera's name. It holds
     the fixed views, Front, Back, Left, Right, Top, Bottom and Perspective, then the scene's
     cameras, then Orthographic, and Lock Camera to View while the view looks through a scene
-    camera. While the area is active, its name is set semibold on a pill.
+    camera. While the area is active, its name is set on a pill.
   - one named for how the view shades the scene: Points or Wireframe when the front of each
     triangle is drawn as its corners or its edges, and otherwise Flat or Smooth. It holds Flat
     and Smooth, then Front Facing and Back Facing, each with Points, Lines and Fill, and Cull,

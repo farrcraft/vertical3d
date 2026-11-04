@@ -267,8 +267,30 @@ void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& ce
     const float half = width * 0.5F;
     const float stroke = std::max(width * dropStroke, 1.0F);
     const glm::vec2 tip(centre.x, centre.y + (half * 0.5F));
-    canvas->segment({.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .to = tip, .width = stroke, .feather = smoothing}, colour);
-    canvas->segment({.from = tip, .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke, .feather = smoothing}, colour);
+    chevron(canvas, {.from = glm::vec2(centre.x - half, centre.y - (half * 0.5F)), .tip = tip,
+        .to = glm::vec2(centre.x + half, centre.y - (half * 0.5F)), .width = stroke}, colour);
+}
+
+void chevron(v3d::render::realtime::canvas::Canvas* canvas, const Chevron& shape, const glm::vec4& colour) {
+    if (canvas == nullptr) {
+        return;
+    }
+    const glm::vec2 first = shape.tip - shape.from;
+    const glm::vec2 second = shape.to - shape.tip;
+    const float firstLength = std::hypot(first.x, first.y);
+    const float secondLength = std::hypot(second.x, second.y);
+    if (firstLength <= 0.0F || secondLength <= 0.0F) {
+        return;
+    }
+    const glm::vec2 into = first / firstLength;
+    const glm::vec2 out = second / secondLength;
+    // each stroke runs on past the tip until its outer edge meets the other's, so the outside of
+    // the bend is a point rather than a notch. Half the width, by the tangent of half the turn
+    const float cross = std::abs((into.x * out.y) - (into.y * out.x));
+    const float along = (into.x * out.x) + (into.y * out.y);
+    const float mitre = along > -1.0F ? shape.width * 0.5F * cross / (1.0F + along) : 0.0F;
+    canvas->segment({.from = shape.from, .to = shape.tip + (into * mitre), .width = shape.width, .feather = smoothing}, colour);
+    canvas->segment({.from = shape.tip - (out * mitre), .to = shape.to, .width = shape.width, .feather = smoothing}, colour);
 }
 
 bool inside(const glm::vec2& min, const glm::vec2& max, const glm::vec2& point) noexcept {

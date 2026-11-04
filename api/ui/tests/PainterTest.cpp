@@ -14,6 +14,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
@@ -292,6 +293,26 @@ BOOST_AUTO_TEST_CASE(a_drop_mark_is_smoothed) {
         return vertex.colour.a == 0.0F;
     });
     BOOST_CHECK_EQUAL(clear, 8);
+}
+
+/**
+ * A chevron's strokes run on past its tip until their outer edges meet, so the bend comes to a
+ * point. In a right angle bend each stroke runs on by half its width.
+ **/
+BOOST_AUTO_TEST_CASE(a_chevron_comes_to_a_point) {
+    const float width = 2.0F;
+    v3d::render::realtime::canvas::Canvas canvas;
+    v3d::ui::paint::chevron(&canvas, {.from = glm::vec2(0.0F, 0.0F), .tip = glm::vec2(10.0F, 10.0F), .to = glm::vec2(20.0F, 0.0F), .width = width},
+        white);
+    BOOST_REQUIRE_EQUAL(canvas.vertices().size(), 16U);
+
+    // the first stroke's centre line, which its first and last lines' vertices straddle
+    const glm::vec2 into = glm::normalize(glm::vec2(1.0F, 1.0F));
+    float reach = 0.0F;
+    for (std::size_t index = 0; index < 8; index++) {
+        reach = std::max(reach, glm::dot(glm::vec2(canvas.vertices()[index].position), into));
+    }
+    BOOST_CHECK_CLOSE(reach, glm::length(glm::vec2(10.0F, 10.0F)) + (width * 0.5F), 0.01F);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
