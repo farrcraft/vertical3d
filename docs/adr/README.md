@@ -137,7 +137,7 @@ content went. Numbers are never reused.
 | [0091](0091-platform-sdl3-replaces-sdl2.md) | Platform: SDL3 replaces SDL2 | accepted |
 | [0116](0116-platform-the-window-is-a-library-below-the-renderer.md) | Platform: the window is a library below the renderer | accepted |
 | [0117](0117-apps-the-game-shell-is-an-object-an-app-holds.md) | Apps: the game shell is an object an app holds | accepted |
-| [0163](0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line | proposed |
+| [0163](0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md) | Apps: a picture is taken by the app from its command line | accepted |
 | [0118](0118-assets-a-loader-is-keyed-by-the-kind-it-produces.md) | Assets: a loader is keyed by the kind it produces | accepted |
 | [0119](0119-assets-an-apps-document-list-is-an-asset-manifest.md) | Assets: an app's document list is an asset manifest | accepted |
 | [0123](0123-interchange-file-readers-fill-a-neutral-scene.md) | Interchange: file readers fill a neutral scene | accepted |

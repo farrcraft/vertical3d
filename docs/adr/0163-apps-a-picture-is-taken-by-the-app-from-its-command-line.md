@@ -1,6 +1,6 @@
 # ADR-0163: Apps: a picture is taken by the app from its command line
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-11-03
 **Documented in**: docs/api/engine/Lifecycle.md
 
