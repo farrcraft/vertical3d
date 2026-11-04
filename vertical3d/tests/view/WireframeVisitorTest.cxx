@@ -210,7 +210,8 @@ BOOST_AUTO_TEST_CASE(wireframe_glyph_test) {
 BOOST_AUTO_TEST_CASE(wireframe_shown_kinds_test) {
     v3d::editor::scene::Scene scene;
     scene.add(quad());
-    scene.add(boost::make_shared<v3d::editor::scene::item::Camera>());
+    const boost::shared_ptr<v3d::editor::scene::item::Camera> camera = boost::make_shared<v3d::editor::scene::item::Camera>();
+    scene.add(camera);
     scene.add(boost::make_shared<v3d::editor::scene::item::Light>());
 
     // a quad of four segments, a camera of eleven, a point light of three
@@ -225,6 +226,8 @@ BOOST_AUTO_TEST_CASE(wireframe_shown_kinds_test) {
     BOOST_CHECK_EQUAL(drawn({ .cameras = false }), 7U);
     BOOST_CHECK_EQUAL(drawn({ .lights = false }), 15U);
     BOOST_CHECK_EQUAL(drawn({ .meshes = false, .cameras = false, .lights = false }), 0U);
+    // a view through the camera does not draw the camera's own glyph
+    BOOST_CHECK_EQUAL(drawn({ .through = camera->documentId() }), 7U);
 }
 
 BOOST_AUTO_TEST_CASE(wireframe_no_canvas_test) {

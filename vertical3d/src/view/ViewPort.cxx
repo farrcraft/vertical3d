@@ -193,7 +193,7 @@ void ViewPort::draw(const scene::Scene& scene, v3d::render::realtime::canvas::Li
     // a curve's control points are shown while they can be picked
     const bool controls = mask == selection::SelectMask::Vertex || mask == selection::SelectMask::Handle;
     const WireframeVisitor::Shown shown{ .meshes = shows(SHOW_MESH), .cameras = shows(SHOW_CAMERA),
-        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE) };
+        .lights = shows(SHOW_LIGHT), .controls = controls, .handles = controls && shows(SHOW_HANDLE), .through = looking_ };
     if (shown.meshes || shown.cameras || shown.lights) {
         WireframeVisitor wireframe(canvas, shown, &scene.components());
         scene.accept(&wireframe, scene::Scene::Showing::Views);

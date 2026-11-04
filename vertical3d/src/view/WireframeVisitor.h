@@ -16,6 +16,8 @@
 #include <vertical3d/src/scene/item/Mesh.h>
 #include <vertical3d/src/scene/Visitor.h>
 
+#include <cstdint>
+
 #include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -58,6 +60,11 @@ class WireframeVisitor final : public scene::Visitor {
          * handles as well.
          **/
         bool handles = false;
+        /**
+         * The document id of the scene camera the view looks through, which it does not draw,
+         * or 0 for none.
+         **/
+        std::int64_t through = 0;
     };
 
     /**

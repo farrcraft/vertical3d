@@ -120,7 +120,8 @@ void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Mesh>& item, c
 /**
  **/
 void WireframeVisitor::visit(const boost::shared_ptr<scene::item::Camera>& camera, const scene::Placed& placed, const scene::item::Camera::Lens& lens) {
-    if (canvas_ == nullptr || !camera || !shown_.cameras) {
+    // a view through a camera would see the camera's own glyph from inside
+    if (canvas_ == nullptr || !camera || !shown_.cameras || (shown_.through != 0 && camera->documentId() == shown_.through)) {
         return;
     }
     canvas_->push();

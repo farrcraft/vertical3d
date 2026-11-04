@@ -636,7 +636,8 @@ camera the view shows, and no fixed view.
   as an evaluation of the scene finds it, so a keyed camera plays in the view. The render's
   picture is framed by the largest box of its shape that fits the view, centred. The camera's
   lens covers the frame, so a view taller than the frame sees as much more above and below it.
-  The view dims what is outside the frame in the overlay look's `passepartout`, black at 45%.
+  The view dims what is outside the frame in the overlay look's `passepartout`, black at 45%, and
+  does not draw the glyph of the camera it looks through.
 - **The scene's camera.** A layout's viewport may name `scene-camera`. The view follows the first
   selected camera, else the first camera in the scene, else stays a free perspective view until
   a camera is made. The Animation workspace shows a free perspective view beside one.
