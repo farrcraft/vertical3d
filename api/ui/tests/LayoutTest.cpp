@@ -386,8 +386,9 @@ BOOST_AUTO_TEST_CASE(a_rounded_panel_is_bands_and_wedges_in_one_batch) {
     renderer.dressing().radius = 6.0F;
     canvas.clear();
     renderer.draw(&canvas, container);
-    // three quads and four six segment wedges
-    BOOST_CHECK_EQUAL(canvas.indices().size(), (3U * 6U) + (4U * 6U * 3U));
+    // three quads, and four corners: a six segment wedge, and the six segment band its edge
+    // fades across
+    BOOST_CHECK_EQUAL(canvas.indices().size(), (3U * 6U) + (4U * ((6U * 3U) + (6U * 6U))));
     BOOST_CHECK_EQUAL(canvas.batches().size(), 1U);
 }
 

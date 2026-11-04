@@ -179,7 +179,8 @@ BOOST_AUTO_TEST_CASE(a_bar_strip_is_drawn_at_its_opacity) {
 
 /**
  * A title with a drop mark is wider by the mark and the gap before it, and draws the mark as
- * two strokes after its label.
+ * two strokes after its label. Each stroke is smoothed along its sides, so it is four lines of
+ * two vertices.
  **/
 BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
     Fixture fixture;
@@ -191,7 +192,27 @@ BOOST_AUTO_TEST_CASE(a_drop_mark_follows_its_title) {
     fixture.bar->menu(0)->drop(true);
     fixture.draw();
     BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
-    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), drawn + std::size_t{8});
+    BOOST_CHECK_EQUAL(v3d::ui::typeset::shapeVertices(fixture.canvas).size(), drawn + std::size_t{16});
+}
+
+/**
+ * A title keeps one width whether it is set apart or not, so setting it apart moves nothing
+ * after it. Its emphasis here is written larger, so it is wider than the plain label.
+ **/
+BOOST_AUTO_TEST_CASE(emphasis_moves_nothing_after_a_title) {
+    Fixture fixture;
+    build(&fixture);
+    v3d::ui::paint::Emphasis sets;
+    sets.chosen.type = v3d::ui::paint::Type(v3d::ui::typeset::mono(&fixture.written), v3d::ui::typeset::monoSize * 1.5F);
+    fixture.renderer.emphasis(sets);
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    const float after = fixture.bar->bound(1).position().x;
+
+    fixture.bar->menu(0)->emphasis(true);
+    fixture.draw();
+    BOOST_CHECK_EQUAL(fixture.bar->bound(0).size().x, plain);
+    BOOST_CHECK_EQUAL(fixture.bar->bound(1).position().x, after);
 }
 
 /**

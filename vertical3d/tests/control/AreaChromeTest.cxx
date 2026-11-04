@@ -12,7 +12,6 @@
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
-#include <api/ui/component/Panel.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
 #include <api/ui/component/menu/Menu.h>
@@ -81,7 +80,7 @@ struct Chrome {
      **/
     void sync() {
         BOOST_REQUIRE(views->sync());
-        chrome.sync(*views, mask, 28.0F, active);
+        chrome.sync(*views, mask, 28.0F, active, 1.0F);
     }
 
     /**
@@ -173,17 +172,23 @@ BOOST_FIXTURE_TEST_CASE(each_area_has_a_header_before_the_editors_ui, Chrome) {
 }
 
 /**
- * The header runs across the top of where the editor draws, less the button at its right end.
+ * The header runs across the top of where the editor draws, less the button at its right end,
+ * and both sit inside the line around the area. The frame fills the header's band, which runs
+ * the area's whole width.
  **/
 BOOST_FIXTURE_TEST_CASE(the_header_sits_at_the_top_of_its_area, Chrome) {
     sync();
     draw();
     const boost::shared_ptr<v3d::ui::Component> header = container(1)->get("header");
     const boost::shared_ptr<v3d::ui::Component> maximise = container(1)->get("maximise");
-    BOOST_CHECK(header->position() == glm::vec2(401.0F, 3.0F));
-    BOOST_CHECK(header->size() == glm::vec2(368.0F, 28.0F));
-    BOOST_CHECK(maximise->position() == glm::vec2(769.0F, 3.0F));
-    BOOST_CHECK(maximise->size() == glm::vec2(28.0F, 28.0F));
+    BOOST_CHECK(header->position() == glm::vec2(402.0F, 4.0F));
+    BOOST_CHECK(header->size() == glm::vec2(366.0F, 27.0F));
+    BOOST_CHECK(maximise->position() == glm::vec2(768.0F, 4.0F));
+    BOOST_CHECK(maximise->size() == glm::vec2(28.0F, 27.0F));
+    const Area::Bands bands = Area::bands(layout.areas()[1], 28.0F);
+    BOOST_CHECK(!bands.strip);
+    BOOST_REQUIRE(bands.header);
+    BOOST_CHECK(*bands.header == glm::vec4(401.0F, 3.0F, 396.0F, 28.0F));
 
     // a dragged divider moves the header without building it again
     layout.grab(399.0F, 300.0F);
@@ -218,8 +223,8 @@ BOOST_FIXTURE_TEST_CASE(two_editors_have_tabs, Chrome) {
     BOOST_CHECK_EQUAL(second->event().str(), "area::tab::choose");
     BOOST_CHECK(number(second->event()) == static_cast<int>(*left));
 
-    // the tabs take the top strip, and the header sits under them
-    BOOST_CHECK_EQUAL(tabs->position().y, 3.0F);
+    // the tabs take the top strip, inside the area's line, and the header sits under them
+    BOOST_CHECK_EQUAL(tabs->position().y, 4.0F);
     BOOST_CHECK_EQUAL(container(0)->get("header")->position().y, 31.0F);
 
     const glm::vec2 middle = second->position() + (second->size() * 0.5F);
@@ -238,18 +243,19 @@ BOOST_FIXTURE_TEST_CASE(two_editors_have_tabs, Chrome) {
 }
 
 /**
- * A tabbed area's strip holds what acts on the area: a recess, the area's menu, the tabs with a
- * strip's look, a + whose menu adds a tab of each kind, and maximise. The header under it holds
- * only the view's menus.
+ * A tabbed area's strip holds what acts on the area: the area's menu, the tabs with a strip's
+ * look, a + whose menu adds a tab of each kind, and maximise. The frame fills the strip's band
+ * and the header's under it. The header holds only the view's menus.
  **/
 BOOST_FIXTURE_TEST_CASE(a_tabbed_area_holds_its_own_commands_on_its_strip, Chrome) {
     BOOST_REQUIRE(layout.add(0, boost::json::parse(R"({"kind": "viewport", "camera": "Left"})").as_object()));
     sync();
     draw();
 
-    const boost::shared_ptr<v3d::ui::component::Panel> recess = boost::dynamic_pointer_cast<v3d::ui::component::Panel>(container(0)->get("strip"));
-    BOOST_REQUIRE(recess);
-    BOOST_CHECK(recess->recess());
+    const Area::Bands bands = Area::bands(layout.areas()[0], 28.0F);
+    BOOST_REQUIRE(bands.strip && bands.header);
+    BOOST_CHECK(*bands.strip == glm::vec4(3.0F, 3.0F, 395.0F, 28.0F));
+    BOOST_CHECK_EQUAL(bands.header->y, 31.0F);
     const boost::shared_ptr<v3d::ui::component::menu::Bar> strip = areaMenu(0);
     BOOST_REQUIRE(strip && strip != header(0));
     BOOST_CHECK(strip->find("area::split::left"));
@@ -422,15 +428,16 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_the_mask, Chrome) {
 }
 
 /**
- * A viewport's header is drawn partly through over the view. Its editor menu shows the kind's
- * icon, every menu has a drop mark, and it ends with an Overlays menu that marks what the view
- * draws. The active view's camera menu is set apart, and moves with the active area.
+ * A viewport's header fills nothing of its own, since the frame fills its band. Its editor menu
+ * shows the kind's icon, every menu has a drop mark, and it ends with an Overlays menu that
+ * marks what the view draws. The active view's camera menu is set apart, and moves with the
+ * active area.
  **/
 BOOST_FIXTURE_TEST_CASE(a_viewports_header_is_dressed_as_menus, Chrome) {
     views->of(1)->show(ViewPort::SHOW_GRID, false);
     sync();
     const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(1);
-    BOOST_CHECK_CLOSE(bar->opacity(), static_cast<float>(Area::HEADER_OPACITY), 0.001F);
+    BOOST_CHECK_EQUAL(bar->opacity(), 0.0F);
     BOOST_CHECK_EQUAL(bar->menu(0)->icon(), "icon:editor-viewport");
     for (std::size_t index = 0; index < bar->count(); index++) {
         BOOST_CHECK_MESSAGE(bar->menu(index)->drop(), bar->label(index));

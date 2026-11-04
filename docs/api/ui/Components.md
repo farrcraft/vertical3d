@@ -80,11 +80,14 @@ Notes on individual components:
   same square mark as check items.
 - **A `menu::Bar`'s title** is its menu's label, or the menu's `icon` once that is resolved,
   tinted the colour the label would be, or the theme's accent with `accent`, as an app's mark
-  is. A title with `drop` is followed by a chevron pointing down. A title with `emphasis` is
-  written in the chosen item's weight, semibold where the
-  screen gives one, on a pill of the `widget` colour. An app sets it as the editor sets its
-  active view's name. A bar's `opacity` multiplies the strip's alpha, so a bar can lie over a
-  view and let it show through. The titles are drawn whole.
+  is. A title with `drop` is followed by a chevron pointing down, in the `secondaryText`
+  colour until the title is under the cursor. A label stands three quarters of the padding
+  from its chevron, and an icon a quarter. A title with `emphasis` is written in the chosen
+  item's weight, semibold where the screen gives one, on a pill of the `widget` colour. A
+  label is as wide as the wider of its plain and emphasised weights, so setting a title apart
+  moves nothing after it. An app sets it as the editor sets its active view's name. A bar's
+  `opacity` multiplies the strip's alpha, so a bar can lie over a view and let it show
+  through. The titles are drawn whole.
 - **A centred menu** is drawn one level at a time in the middle of the canvas's safe area. The
   safe area is 5% of the width in from each side and 4% of the height in from the top and the
   bottom. A level too large for the safe area keeps its top left corner inside it.

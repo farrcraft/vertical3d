@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <numbers>
 #include <optional>
+#include <span>
 
 #include "AreaLayout.h"
 
@@ -27,6 +28,9 @@ constexpr unsigned int CORNER_SIDES = 6;
 
 /** how far past the rounding a corner's cover reaches, which has to pass the corner itself **/
 constexpr float CORNER_REACH = 1.5F;
+
+/** how wide the fade is that smooths a corner's rounding, in pixels **/
+constexpr float SMOOTHING = 1.0F;
 
 /** the angles a corner's quarter turn starts at, from the side it starts on, turning clockwise **/
 constexpr float QUARTER = std::numbers::pi_v<float> / 2.0F;
@@ -45,8 +49,13 @@ constexpr float RIGHT = 0.0F;
  **/
 void cover(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, const glm::vec2& corner, float start,
     float radius, const glm::vec4& colour) {
+    // the cover fades in across a pixel centred on the rounding, so the curve reads as smooth
+    const float half = SMOOTHING * 0.5F;
+    const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);
     canvas->clip(glm::min(centre, corner), glm::max(centre, corner));
-    canvas->ring({ .centre = centre, .outer = radius * CORNER_REACH, .inner = radius, .sides = CORNER_SIDES,
+    canvas->ring({ .centre = centre, .outer = radius + half, .inner = radius - half, .sides = CORNER_SIDES,
+        .start = start, .sweep = QUARTER }, { .inner = clear, .outer = colour });
+    canvas->ring({ .centre = centre, .outer = std::max(radius * CORNER_REACH, radius + SMOOTHING), .inner = radius + half, .sides = CORNER_SIDES,
         .start = start, .sweep = QUARTER }, colour);
     canvas->unclip();
 }
@@ -56,10 +65,17 @@ void cover(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centr
 /**
  **/
 void drawFrame(v3d::render::realtime::canvas::Canvas* canvas, const AreaLayout& layout, const FrameLook& look,
-    std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit, const std::optional<glm::vec4>& landing) {
+    std::optional<std::size_t> active, const std::optional<AreaLayout::Divider>& lit, const std::optional<glm::vec4>& landing,
+    std::span<const Band> bands) {
     for (const glm::vec4& gap : layout.gaps()) {
         if (gap.z > 0.0F && gap.w > 0.0F) {
             canvas->rect(glm::vec2(gap.x, gap.y), glm::vec2(gap.x + gap.z, gap.y + gap.w), look.gap);
+        }
+    }
+    for (const Band& band : bands) {
+        const glm::vec4& box = band.box;
+        if (box.z > 0.0F && box.w > 0.0F) {
+            canvas->rect(glm::vec2(box.x, box.y), glm::vec2(box.x + box.z, box.y + box.w), band.colour);
         }
     }
 

@@ -317,11 +317,17 @@ class Canvas final {
      * Its long sides run parallel to the line from one point to the other, half the width
      * either side of it. Its ends are square and stop at the two points. A segment whose
      * points are the same, or whose width is not more than zero, draws nothing.
+     *
+     * A feather smooths the long sides. Each fades to nothing across the feather, which is
+     * centred on the side, so the band covers as much as a hard one of the same width. A line
+     * narrower than the feather has no solid core and fades from its middle. Its ends stay hard.
+     * A segment with a feather is three quads, across it.
      **/
     struct Segment {
         glm::vec2 from{0.0F};
         glm::vec2 to{0.0F};
         float width = 0.0F;
+        float feather = 0.0F;
     };
 
     void segment(const Segment& shape, const glm::vec4& colour);

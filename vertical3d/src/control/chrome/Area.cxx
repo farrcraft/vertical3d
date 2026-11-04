@@ -219,6 +219,25 @@ bool Area::headed(const view::AreaLayout::Area& area) {
 
 /**
  **/
+Area::Bands Area::bands(const view::AreaLayout::Area& area, float height) {
+    const glm::vec4& region = area.region;
+    const glm::vec4& content = area.content;
+    Bands made;
+    // as place() hides the container of an area too small for it
+    if (content.z <= height || content.w <= height) {
+        return made;
+    }
+    if (content.y > region.y) {
+        made.strip = glm::vec4(region.x, region.y, region.z, content.y - region.y);
+    }
+    if (headed(area)) {
+        made.header = glm::vec4(content.x, content.y, content.z, height);
+    }
+    return made;
+}
+
+/**
+ **/
 const std::vector<Area::FixedView>& Area::fixedViews() {
     static const std::vector<FixedView> views{
         { .command = "view::camera::front", .profile = "Front" },
@@ -384,9 +403,10 @@ boost::json::object Area::document(const view::AreaViews& views, selection::Sele
             menus.emplace_back(maskMenu(mask, id));
             menus.emplace_back(overlaysMenu(id));
         }
+        // the frame fills the header, under the line around the area
         if (!menus.empty()) {
             components.emplace_back(boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false },
-                { "opacity", HEADER_OPACITY }, { "menus", std::move(menus) } });
+                { "opacity", 0.0 }, { "menus", std::move(menus) } });
         }
         // a maximised area offers to restore the layout. place() writes the hint that says how
         const bool maximised = layout.maximised().has_value();
@@ -413,7 +433,6 @@ boost::json::array Area::strip(const view::AreaLayout::Area& area, boost::json::
         adds.emplace_back(item(kind.label, "tab::add::" + kind.kind, id));
     }
     return boost::json::array{
-        boost::json::object{ { "type", "panel" }, { "name", "strip" }, { "recess", true } },
         boost::json::object{ { "type", "menubar" }, { "name", "strip-menu" }, { "docked", false }, { "opacity", 0.0 },
             { "menus", boost::json::array{ std::move(areaMenu) } } },
         boost::json::object{ { "type", "hbox" }, { "name", "tabs" }, { "children", std::move(tabs) } },
@@ -424,7 +443,7 @@ boost::json::array Area::strip(const view::AreaLayout::Area& area, boost::json::
 
 /**
  **/
-void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active) {
+void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active, float line) {
     const view::AreaLayout& layout = *views.layout();
     const std::string now = signature(views, mask, cameras_);
     if (now != signature_) {
@@ -445,8 +464,8 @@ void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float 
         }
     }
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
-        place(layout.areas()[index], { .view = views.of(index).get(), .mask = mask, .height = height, .active = index == active,
-            .maximised = layout.maximised().has_value() });
+        place(layout.areas()[index], { .view = views.of(index).get(), .mask = mask, .height = height, .line = line,
+            .active = index == active, .maximised = layout.maximised().has_value() });
     }
 }
 
@@ -530,13 +549,13 @@ void Area::place(const view::AreaLayout::Area& area, const Placing& placing) con
         placeHeader(header.get(), area, placing, tabbed ? std::string() : hint);
     }
 
-    float maximiseLeft = content.x + content.z - height;
+    // maximise sits at the right end of the strip, or of the header, inside the area's line
+    const float line = placing.line;
     if (tabbed) {
-        maximiseLeft = region.x + region.z - height;
-        placeStrip(*container, area, height, hint);
+        placeStrip(*container, area, placing, hint);
     }
     if (const boost::shared_ptr<v3d::ui::Component> maximise = container->get("maximise")) {
-        box(maximise.get(), glm::vec4(maximiseLeft, tabbed ? region.y : content.y, height, tabbed ? strip : height));
+        box(maximise.get(), glm::vec4(region.x + region.z - line - height, region.y + line, height, (tabbed ? strip : height) - line));
     }
 }
 
@@ -546,8 +565,12 @@ void Area::placeHeader(v3d::ui::component::menu::Bar* bar, const view::AreaLayou
     const std::string& note) {
     const glm::vec4& content = area.content;
     const bool tabbed = content.y > area.region.y;
-    // a tabbed area's maximise is on its strip, so its header runs the area's width
-    box(bar, glm::vec4(content.x, content.y, content.z - (tabbed ? 0.0F : placing.height), placing.height));
+    // inside the area's line. A tabbed area's maximise is on its strip, so its header runs the
+    // area's width, and starts under the strip rather than under the line
+    const float line = placing.line;
+    const float top = tabbed ? 0.0F : line;
+    box(bar, glm::vec4(content.x + line, content.y + top, content.z - (line * 2.0F) - (tabbed ? 0.0F : placing.height),
+        placing.height - top));
     if (!tabbed) {
         check(bar, marks(area.editor()));
     }
@@ -567,27 +590,29 @@ void Area::placeHeader(v3d::ui::component::menu::Bar* bar, const view::AreaLayou
 
 /**
  **/
-void Area::placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, float height, const std::string& hint) {
-    const glm::vec4& region = area.region;
-    const float strip = area.content.y - region.y;
-    if (const boost::shared_ptr<v3d::ui::Component> recess = container.get("strip")) {
-        box(recess.get(), glm::vec4(region.x, region.y, region.z, strip));
-    }
+void Area::placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, const Placing& placing,
+    const std::string& hint) {
+    const float height = placing.height;
+    // inside the area's line, at the top, left and right
+    const float left = area.region.x + placing.line;
+    const float right = area.region.x + area.region.z - placing.line;
+    const float top = area.region.y + placing.line;
+    const float strip = area.content.y - top;
     // the menu's title ends where it was last drawn. Until then it is taken to be two headers wide
-    float menuEnd = region.x + (height * 2.0F);
+    float menuEnd = left + (height * 2.0F);
     const boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
         boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container.get("strip-menu"));
     if (menu) {
-        box(menu.get(), glm::vec4(region.x, region.y, height * 2.0F, strip));
+        box(menu.get(), glm::vec4(left, top, height * 2.0F, strip));
         check(menu.get(), marks(area.editor()));
-        if (menu->count() > 0 && ended(*menu) > region.x) {
+        if (menu->count() > 0 && ended(*menu) > left) {
             menuEnd = ended(*menu);
         }
     }
     // the tabs follow the menu and leave room for the + and maximise
     float tabsEnd = menuEnd;
     if (const boost::shared_ptr<v3d::ui::Component> tabs = container.get("tabs")) {
-        box(tabs.get(), glm::vec4(menuEnd, region.y, std::max(0.0F, region.x + region.z - menuEnd - (height * 2.0F)), strip));
+        box(tabs.get(), glm::vec4(menuEnd, top, std::max(0.0F, right - menuEnd - (height * 2.0F)), strip));
         for (std::size_t index = 0; index < area.editors.size(); index++) {
             const boost::shared_ptr<v3d::ui::component::Button> tab = boost::dynamic_pointer_cast<v3d::ui::component::Button>(
                 container.get("tab-" + std::to_string(area.editors[index].id)));
@@ -600,7 +625,7 @@ void Area::placeStrip(const v3d::ui::Container& container, const view::AreaLayou
     const boost::shared_ptr<v3d::ui::component::menu::Bar> add = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container.get("add"));
     if (add) {
         // the + takes what is left of the strip before maximise, which its note may run into
-        box(add.get(), glm::vec4(tabsEnd, region.y, std::max(height, region.x + region.z - height - tabsEnd), strip));
+        box(add.get(), glm::vec4(tabsEnd, top, std::max(height, right - height - tabsEnd), strip));
         add->note(hint);
     }
 }

@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <span>
 #include <vector>
 
@@ -301,15 +302,43 @@ void Canvas::segment(const Segment& shape, const glm::vec4& colour) {
     // the side the corners are offset to, half the width long. It is the line's direction
     // turned a quarter, so for a line drawn left to right it points down the canvas, and the
     // corners go in the order rect() puts them
-    const glm::vec2 side = glm::vec2(-along.y, along.x) * (shape.width * 0.5F / length);
+    const glm::vec2 across = glm::vec2(-along.y, along.x) / length;
     open(resource::TextureHandle());
 
     const uint32_t first = static_cast<uint32_t>(vertices_.size());
-    vertex({.position = shape.from - side, .uv = glm::vec2(0.0F, 0.0F), .colour = colour});
-    vertex({.position = shape.from + side, .uv = glm::vec2(0.0F, 1.0F), .colour = colour});
-    vertex({.position = shape.to + side, .uv = glm::vec2(1.0F, 1.0F), .colour = colour});
-    vertex({.position = shape.to - side, .uv = glm::vec2(1.0F, 0.0F), .colour = colour});
-    quad(first);
+    if (shape.feather <= 0.0F) {
+        const glm::vec2 side = across * (shape.width * 0.5F);
+        vertex({.position = shape.from - side, .uv = glm::vec2(0.0F, 0.0F), .colour = colour});
+        vertex({.position = shape.from + side, .uv = glm::vec2(0.0F, 1.0F), .colour = colour});
+        vertex({.position = shape.to + side, .uv = glm::vec2(1.0F, 1.0F), .colour = colour});
+        vertex({.position = shape.to - side, .uv = glm::vec2(1.0F, 0.0F), .colour = colour});
+        quad(first);
+        return;
+    }
+
+    // four lines along the segment, from one side to the other: the outer edge of a fade, the
+    // solid core's two edges, and the other fade's outer edge. Each is one vertex at each end
+    const float core = std::max(0.0F, (shape.width - shape.feather) * 0.5F);
+    const float reach = (shape.width + shape.feather) * 0.5F;
+    const glm::vec4 clear(colour.r, colour.g, colour.b, 0.0F);
+    const float offsets[] = { -reach, -core, core, reach };
+    const glm::vec4 colours[] = { clear, colour, colour, clear };
+    for (std::size_t line = 0; line < std::size(offsets); line++) {
+        const glm::vec2 side = across * offsets[line];
+        vertex({.position = shape.from + side, .uv = glm::vec2(0.5F, 0.5F), .colour = colours[line]});
+        vertex({.position = shape.to + side, .uv = glm::vec2(0.5F, 0.5F), .colour = colours[line]});
+    }
+    // a quad between each line and the next
+    for (uint32_t band = 0; band + 1 < static_cast<uint32_t>(std::size(offsets)); band++) {
+        const uint32_t edge = first + (band * 2);
+        indices_.push_back(edge);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 1);
+        indices_.push_back(edge + 2);
+        indices_.push_back(edge + 3);
+    }
+    batches_.back().indices += static_cast<uint32_t>(std::size(offsets) - 1) * QUAD_INDICES;
 }
 
 /**

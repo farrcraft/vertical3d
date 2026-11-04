@@ -362,10 +362,17 @@ the ui's scale. The gap is rounded to a whole pixel and is never less than one.
 **The frame.** The renderer draws a frame around the areas, over the views and under the ui:
 
 - the gaps, in the theme's `gap`
-- each area's corners, rounded by 4 pixels by covering what lies outside the rounding in `gap`
+- each area's strip of tabs, in the theme's `tab`, and its header, in `panel` at 80% over what
+  is beneath it, with a `border` rule along its bottom. `chrome::Area::bands()` says where each
+  is
+- each area's corners, rounded by 4 pixels by covering what lies outside the rounding in `gap`.
+  The cover fades in across a pixel centred on the rounding
 - a line just inside each area's edge, in `hairline`, or in the accent, the theme's `focus`, for
   the active area
 - the lit divider, filled with the accent
+
+The headers' and strips' bars and buttons fill nothing of their own, and sit inside the line, so
+nothing in them covers it. The line is a whole number of pixels, never less than one.
 
 The active area is the one the cursor was last in, between drags. The lit divider is the one
 held, or else the one a press would take, unless the ui has the cursor or a tool is dragging.
@@ -411,8 +418,8 @@ and a split inside one that runs the same way gives its children to that one.
 built as the editor runs and put before the editor's own container so its menus drop over them.
 
 - **The header** of an area showing one editor runs across the top of where the editor draws,
-  as tall as a menu bar. It is a menu bar that is not docked, drawn at 80% over what is beneath
-  it, and every menu on it has a drop mark. Its first menu, the area's menu, is named for the
+  as tall as a menu bar. It is a menu bar that is not docked, over the band the frame fills, and
+  every menu on it has a drop mark. Its first menu, the area's menu, is named for the
   kind of editor shown as the Editor menu names it, such as Viewport or Render View, and shows
   that kind's icon. A panel's area menu also writes the name after the icon, semibold. It holds
   Editor, which offers each kind of editor and marks the one shown. Then come Split, Join and
@@ -440,9 +447,10 @@ built as the editor runs and put before the editor's own container so its menus 
   commands and the Select menu's `select::mask::` commands, which `chrome::Area::marks()` reads
   for both.
 - **Tabs.** An area holding two or more editors has a strip across its top, as tall as a
-  header, holding what acts on the area. It is a recess holding the area's menu, a tab for each
-  editor, a + and the maximise button at its right end. Each tab is a toggle with a strip's look,
-  named for its editor, a viewport by its camera, and the chosen one is checked. The + is a menu
+  header, holding what acts on the area. It is a recess, which the frame fills, holding the
+  area's menu, a tab for each editor, a + and the maximise button at its right end. Each tab is
+  a toggle with a strip's look, named for its editor, a viewport by its camera, and the chosen
+  one is checked. The + is a menu
   of each kind of editor, which adds a tab of that kind. Under the strip only a viewport has a
   header, holding its view's menus, so a panel starts under the strip. `chrome::Area::headed()`
   says which areas have a header.

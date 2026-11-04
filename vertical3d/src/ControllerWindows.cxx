@@ -186,7 +186,7 @@ void Controller::syncOpened() {
             opened.pointer->resize(region);
         }
         opened.chrome->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));
-        opened.chrome->sync(*opened.views, context_.selectTool->mask(), renderer_->barHeight(), opened.pointer->activeArea());
+        opened.chrome->sync(*opened.views, context_.selectTool->mask(), renderer_->barHeight(), opened.pointer->activeArea(), renderer_->frameLine());
     }
 }
 

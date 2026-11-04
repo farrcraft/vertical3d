@@ -41,8 +41,8 @@ namespace v3d::editor::control::chrome {
  * and swaps the area, adds and closes tabs, and maximises it. A maximise button sits at the
  * header's right end. A panel's header names its editor after the menu's icon.
  *
- * An area holding two or more editors has a strip above its editor instead. The strip is a
- * recess holding what acts on the area. It holds the area's menu, a tab for each editor with a
+ * An area holding two or more editors has a strip above its editor instead. The strip holds
+ * what acts on the area. It holds the area's menu, a tab for each editor with a
  * strip's look, and a + whose menu adds a tab of each kind. Maximise is at its right end, and the
  * chosen tab is checked. Under the strip only a viewport has a header, holding its view's menus.
  * headed() says which areas have a header. An area's editor starts under its header, or under
@@ -50,6 +50,10 @@ namespace v3d::editor::control::chrome {
  *
  * While an area is maximised its button restores the layout, and a note after its header's
  * menus, or after its strip's +, names the key that does it.
+ *
+ * The containers fill nothing of their own. The frame around the areas fills each strip and
+ * header, from bands(), under the line around the area. The bars and buttons sit inside that
+ * line, so nothing they draw covers it.
  *
  * A viewport's header has three more menus. One is named for the camera the view shows. It
  * offers the fixed views, the scene's cameras and the projection switch. While the view looks
@@ -124,8 +128,9 @@ class Area final {
      * @param mask the select mask in force
      * @param height how tall a header and a tab are
      * @param active the index of the active area
+     * @param line how thick the line around each area is, which everything sits inside
      **/
-    void sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active);
+    void sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active, float line);
 
     /**
      * A camera in the scene, as a viewport's camera menu offers it: its document id and name.
@@ -171,6 +176,22 @@ class Area final {
      *         one editor, or a tabbed area showing a viewport
      **/
     static bool headed(const view::AreaLayout::Area& area);
+
+    /**
+     * The boxes across the top of an area that the frame fills: its strip of tabs and its
+     * header, each the area's full width. Either is empty where the area has none, and both are
+     * while the area is too small to show them.
+     **/
+    struct Bands final {
+        std::optional<glm::vec4> strip;   /**< x, y, width, height in pixels **/
+        std::optional<glm::vec4> header;  /**< x, y, width, height in pixels **/
+    };
+
+    /**
+     * @param height how tall a header and a tab are
+     * @return the boxes the frame fills across the top of an area
+     **/
+    static Bands bands(const view::AreaLayout::Area& area, float height);
 
     /**
      * @return what the Editor menu calls a kind of editor, or the kind with a capital for one it
@@ -352,6 +373,7 @@ class Area final {
         const view::ViewPort* view = nullptr;  /**< the view the area shows, or null for another kind of editor **/
         selection::SelectMask mask = selection::SelectMask::Object;
         float height = 0.0F;     /**< how tall a header and a tab are **/
+        float line = 0.0F;       /**< how thick the line around the area is **/
         bool active = false;     /**< whether it is the active area **/
         bool maximised = false;  /**< whether an area of the layout is maximised **/
     };
@@ -363,11 +385,12 @@ class Area final {
     void place(const view::AreaLayout::Area& area, const Placing& placing) const;
 
     /**
-     * Put a tabbed area's strip: its recess, the area's menu, the tabs and the +.
+     * Put a tabbed area's strip: the area's menu, the tabs and the +.
      *
      * @param hint what the + is followed by, which is empty unless an area is maximised
      **/
-    static void placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, float height, const std::string& hint);
+    static void placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, const Placing& placing,
+        const std::string& hint);
 
     /**
      * Put an area's header, mark what its view holds and the mask, set its camera name apart
@@ -377,7 +400,7 @@ class Area final {
         const std::string& note);
 
     /**
-     * @return a tabbed area's strip: its recess, the area's menu, the tabs and the +
+     * @return a tabbed area's strip: the area's menu, the tabs and the +
      **/
     static boost::json::array strip(const view::AreaLayout::Area& area, boost::json::object areaMenu);
 

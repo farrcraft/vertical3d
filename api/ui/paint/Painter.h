@@ -18,13 +18,17 @@ namespace v3d::ui::paint {
  *
  * A rounded box is three bands and four wedges, all of them batched on the 2D canvas, so a
  * corner radius costs no draw of its own.
+ *
+ * A curved or slanted edge is smoothed: it fades to nothing across a pixel centred on it, so a
+ * small radius still reads as round. A straight edge along an axis is left hard.
  **/
 
 /**
  * Fill a box, with its corners rounded by a radius. A radius of zero is one quad.
  *
  * A radius past half the shorter side is clamped to it, so it makes a fully rounded
- * end rather than a folded one.
+ * end rather than a folded one. A rounded corner reaches half a pixel past its curve as it
+ * fades.
  **/
 void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     float radius, const glm::vec4& colour);
@@ -34,7 +38,8 @@ void fillBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min
  *
  * Four straight runs and four bands turning between them, none of them covering anything
  * inside the outline. An outline thicker than the radius it turns squares its corners off
- * rather than folding them.
+ * rather than folding them. A turn's curved edges fade over half a pixel either side, so it
+ * reaches that far past the outline's bounds, inwards and outwards.
  *
  * @param canvas what the outline is drawn on, or null to draw nothing
  * @param min the box's top left corner, in canvas pixels
@@ -90,7 +95,8 @@ struct Shadow {
  * the same centre as the box's own, so the fade rounds even a square box's corners.
  *
  * Draw it before the box that casts it. Its inside is filled, so a box drawn over it with an
- * alpha shows the shadow through.
+ * alpha shows the shadow through. Its corners are not smoothed, since the fade already softens
+ * them.
  **/
 void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& min, const glm::vec2& max,
     const Shadow& shadow);
@@ -100,7 +106,8 @@ void shadowBox(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& m
  *
  * @param canvas what the mark is drawn on, or null to draw nothing
  * @param centre the middle of the mark, in canvas pixels
- * @param width how wide the mark is. Its strokes are a fifth of that, and never under a pixel
+ * @param width how wide the mark is. Its strokes are a quarter of that, never under a pixel, and
+ *        smoothed along their sides
  * @param colour what the mark is drawn in
  **/
 void dropMark(v3d::render::realtime::canvas::Canvas* canvas, const glm::vec2& centre, float width, const glm::vec4& colour);

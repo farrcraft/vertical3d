@@ -38,6 +38,10 @@ renderer_->quads()->submit(canvas, pass.get());
   width either side. Its ends are square. It is untextured, so it joins the open untextured
   batch. A segment with no length or no width draws nothing. The transform stack has no
   rotation, so a segment is the way to draw a connector or a route at an angle.
+- A segment given a `feather` smooths its long sides. Each side fades to nothing across the
+  feather, centred on the side, so the band covers as much as a hard one of the same width. A
+  line narrower than its feather has no solid core and fades from its middle. Its ends stay
+  hard. A feathered segment is three quads across it.
 - A rectangle given `Corners` takes one colour per corner and blends them. It is two
   triangles, so a blend along one axis is exact and four different colours show the diagonal
   where the triangles meet. A ring given a `Blend` blends from the inner radius to the outer,

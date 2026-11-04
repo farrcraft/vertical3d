@@ -139,7 +139,7 @@ Background: [ADR-0128](../../adr/0128-ui-theme-colours-derive-from-base-accent-a
 | `mark-size` | the side of the box, or the width of the disc, a mark sits in | retained |
 | `border-width` | how thick an outline is | both |
 | `focus-width` | how thick the focus ring is | retained |
-| `radius` | how far corners are rounded, 0 for square | both |
+| `radius` | how far corners are rounded, 0 for square. A rounded corner fades to nothing across a pixel centred on its curve, so a small radius still reads as round | both |
 | `indent` | how far a bullet pushes its text in | immediate |
 | `shadow-size` | how far past a menu's edge its shadow fades out. Defaults to 12 | retained |
 | `shadow-offset` | how far down a menu's shadow is moved. Defaults to 4 | retained |

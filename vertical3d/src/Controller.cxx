@@ -833,7 +833,8 @@ bool Controller::render() {
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
         chrome_->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));
-        chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight(), context_.pointer ? context_.pointer->activeArea() : 0);
+        chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight(), context_.pointer ? context_.pointer->activeArea() : 0,
+            renderer_->frameLine());
     }
     syncOpened();
     renderer_->status(status());

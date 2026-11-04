@@ -316,18 +316,26 @@ void MenuRenderer::panel(v3d::render::realtime::canvas::Canvas* canvas, const bo
 
 /**
  **/
+float MenuRenderer::gap(const component::menu::Menu& menu) {
+    return menu.image().valid() ? dropGapScale : labelDropGapScale;
+}
+
+/**
+ **/
 MenuRenderer::Title MenuRenderer::titled(const component::menu::Menu& menu, const std::string& label, float height) const {
     Title title;
     if (menu.image().valid()) {
         title.content = std::min(base().iconSize, height);
     } else {
-        const Type& measured = menu.emphasis() && emphasis_.chosen.type.set() ? emphasis_.chosen.type : type_;
-        title.content = measured.width(label);
+        title.content = type_.width(label);
+        if (emphasis_.chosen.type.set()) {
+            title.content = std::max(title.content, emphasis_.chosen.type.width(label));
+        }
     }
     title.extent = title.content + base().padding;
     if (menu.drop()) {
         title.mark = base().lineHeight * dropScale;
-        title.extent += title.mark + (base().padding * dropGapScale);
+        title.extent += title.mark + (base().padding * gap(menu));
     }
     if (menu.image().valid() && menu.named()) {
         title.name = type_.in(paint::weight(base().titleWeight)).width(label);
@@ -373,8 +381,9 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
         inked.draw(canvas, label, glm::vec2(left, at.y + (height * WIDGET_BASELINE)), ink);
     }
     if (menu->drop()) {
-        const float middle = left + room.content + (base().padding * dropGapScale) + (room.mark * 0.5F);
-        paint::dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, ink);
+        // the mark says less than the title it follows, until the title is under the cursor
+        const float middle = left + room.content + (base().padding * gap(*menu)) + (room.mark * 0.5F);
+        paint::dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, lit ? ink : base().secondaryText);
     }
     // a named icon's label follows its drop mark, semibold, as the name of what the menu is for
     if (room.name > 0.0F) {

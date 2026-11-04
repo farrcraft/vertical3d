@@ -31,6 +31,7 @@
 #include <vertical3d/src/manipulator/Target.h>
 #include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
+#include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/chrome/DividerHint.h>
 #include <vertical3d/src/control/IconSheet.h>
 #include <vertical3d/src/control/chrome/Notices.h>
@@ -160,10 +161,38 @@ void Renderer::drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d:
     const float factor = screen.factor();
     const view::FrameLook look{ .gap = dress.gap, .hairline = dress.hairline, .accent = dress.focus,
         .landing = glm::vec4(dress.focus.r, dress.focus.g, dress.focus.b, landingAlpha),
-        .radius = view::FrameLook::RADIUS * factor, .line = std::max(1.0F, std::floor(factor)) };
+        .radius = view::FrameLook::RADIUS * factor, .line = frameLine(factor) };
+
+    // each strip is the recess a set of tabs sits in. Each header is drawn partly through, over
+    // the view beneath it, with a rule along its bottom so it reads as over the scene
+    const glm::vec4 header(glm::vec3(dress.panel), dress.panel.a * static_cast<float>(control::chrome::Area::HEADER_OPACITY));
+    std::vector<view::Band> bands;
+    for (const view::AreaLayout::Area& area : layout.areas()) {
+        const control::chrome::Area::Bands each = control::chrome::Area::bands(area, dress.barHeight);
+        if (each.strip) {
+            bands.push_back({ .box = *each.strip, .colour = dress.tab });
+        }
+        if (each.header) {
+            const glm::vec4& box = *each.header;
+            bands.push_back({ .box = box, .colour = header });
+            bands.push_back({ .box = glm::vec4(box.x, box.y + box.w, box.z, look.line), .colour = dress.border });
+        }
+    }
     const std::optional<control::chrome::Pointer::Drop> landing = pointer.drop();
     drawFrame(canvas, layout, look, pointer.activeArea(), pointer.lit(),
-        landing ? std::optional<glm::vec4>(landing->region) : std::nullopt);
+        landing ? std::optional<glm::vec4>(landing->region) : std::nullopt, bands);
+}
+
+/**
+ **/
+float Renderer::frameLine(float factor) {
+    return std::max(1.0F, std::floor(factor));
+}
+
+/**
+ **/
+float Renderer::frameLine() const {
+    return frameLine(screen_->factor());
 }
 
 /**

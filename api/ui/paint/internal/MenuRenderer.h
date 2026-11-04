@@ -161,10 +161,12 @@ class MenuRenderer final {
     static constexpr std::string_view CAPTURE = "...";
     /**
      * How wide a menu bar title's drop mark is, as a fraction of a line, and the gap before it,
-     * as a fraction of the padding.
+     * as a fraction of the padding. A label stands further from its mark than an icon does,
+     * since an icon has room drawn into its own square.
      **/
     static constexpr float dropScale = 0.3F;
     static constexpr float dropGapScale = 0.25F;
+    static constexpr float labelDropGapScale = 0.75F;
 
     /**
      * How much room a menu bar title takes: its icon or its label, its drop mark, and the gap
@@ -179,10 +181,16 @@ class MenuRenderer final {
 
     /**
      * @return the room a menu bar title takes on a bar the height given. An icon is as large as
-     *         the dressing's icon size or the bar, whichever is smaller. A label set apart is
-     *         measured in the weight it is written in
+     *         the dressing's icon size or the bar, whichever is smaller. A label is as wide as
+     *         the wider of its plain and emphasised weights, so emphasis moves nothing after
+     *         it. A label set apart is measured in the weight it is written in
      **/
     Title titled(const component::menu::Menu& menu, const std::string& label, float height) const;
+
+    /**
+     * @return the gap before a title's drop mark, as a fraction of the padding
+     **/
+    static float gap(const component::menu::Menu& menu);
 
     /**
      * Draw one menu's title on a bar, from a corner, and tell the bar where it lies. The title

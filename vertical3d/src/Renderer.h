@@ -221,6 +221,11 @@ class Renderer final {
     float barHeight() const;
 
     /**
+     * @return how thick the line around each area is, at the scale the ui is drawn
+     **/
+    float frameLine() const;
+
+    /**
      * @return where each view's axis marker and gizmo sit, at the scale the ui is drawn and
      *         under a header
      **/
@@ -512,6 +517,12 @@ class Renderer final {
      **/
     static void drawAreaFrame(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen,
         const view::AreaLayout& layout, const control::chrome::Pointer& pointer);
+
+    /**
+     * @return how thick the line around each area is at a scale: a whole number of pixels, and
+     *         never less than one
+     **/
+    static float frameLine(float factor);
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     Panels panels_;
