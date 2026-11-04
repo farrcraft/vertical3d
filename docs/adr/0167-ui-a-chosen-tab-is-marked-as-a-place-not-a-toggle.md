@@ -1,6 +1,6 @@
 # ADR-0167: UI: a chosen tab is marked as a place, not a toggle
 
-**Status**: proposed
+**Status**: accepted
 **Date**: 2026-11-03
 **Documented in**: [docs/api/ui/Components.md](../api/ui/Components.md), [docs/api/ui/Themes.md](../api/ui/Themes.md), [docs/api/ui/ImmediateMode.md](../api/ui/ImmediateMode.md)
 

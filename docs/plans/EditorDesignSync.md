@@ -91,9 +91,9 @@ immediate tab bar is a recess across its row, shared evenly by its tabs from the
 is drawn. A `TabBar` and a toggle button with the `strip` look mark the chosen tab with the
 page's colour and the line. One with the `choice` look raises it to `chosen`. Each chosen tab is
 semibold. A combo draws its label at the left, its choice at the right and a chevron from the
-painter, which the menu bar's drop mark now shares. ADR-0167 records the rule, and is proposed
-until it is accepted. The area tabs keep the toggle look until step 3 draws the recess behind
-them. The Properties tabs and both combos were photographed in the editor.
+painter, which the menu bar's drop mark now shares. ADR-0167 records the rule. The area tabs
+keep the toggle look until step 3 draws the recess behind them. The Properties tabs and both
+combos were photographed in the editor.
 
 A chosen tab is drawn as a pressed widget. `Immediate::tab()` fills it with the pressed face,
 and the editor builds an area's tabs as toggle buttons. Both fill with the accent's highlight,
