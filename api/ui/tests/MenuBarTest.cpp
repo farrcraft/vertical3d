@@ -214,6 +214,49 @@ BOOST_AUTO_TEST_CASE(an_icon_title_draws_in_place_of_its_label) {
 }
 
 /**
+ * A named icon's title shows its label too, semibold, after the icon. The title is wider by the
+ * label and a gap.
+ **/
+BOOST_AUTO_TEST_CASE(a_named_icon_title_shows_its_label_after_the_icon) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.bar->menu(0)->image(v3d::ui::Image(v3d::render::realtime::resource::TextureHandle(3)));
+    fixture.draw();
+    const float plain = fixture.bar->bound(0).size().x;
+    BOOST_CHECK(std::ranges::none_of(fixture.written, [](const auto& line) { return line.text == "File"; }));
+
+    fixture.bar->menu(0)->named(true);
+    fixture.written.clear();
+    fixture.draw();
+    BOOST_CHECK_GT(fixture.bar->bound(0).size().x, plain);
+    const auto file = std::ranges::find_if(fixture.written, [](const auto& line) { return line.text == "File"; });
+    BOOST_REQUIRE(file != fixture.written.end());
+    BOOST_CHECK(file->weight == v3d::ui::paint::Weight::SemiBold);
+    BOOST_CHECK_GT(file->pen.x, fixture.bar->bound(0).position().x);
+}
+
+/**
+ * A bar's note is drawn after its last title in the secondary text colour, and an empty one
+ * draws nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_note_follows_the_last_title) {
+    Fixture fixture;
+    build(&fixture);
+    fixture.draw();
+    const std::size_t plain = fixture.written.size();
+
+    fixture.bar->note("Ctrl+Space restores the areas");
+    fixture.written.clear();
+    fixture.draw();
+    BOOST_REQUIRE_EQUAL(fixture.written.size(), plain + 1U);
+    const auto& note = fixture.written.back();
+    BOOST_CHECK_EQUAL(note.text, "Ctrl+Space restores the areas");
+    BOOST_CHECK(note.colour == fixture.renderer.dressing().secondaryText);
+    const v3d::type::geometry::Bound2D last = fixture.bar->bound(1);
+    BOOST_CHECK_GE(note.pen.x, last.position().x + last.size().x);
+}
+
+/**
  * A title's icon takes the label's colour, or the accent when the menu asks for it.
  **/
 BOOST_AUTO_TEST_CASE(an_icon_title_may_take_the_accent) {

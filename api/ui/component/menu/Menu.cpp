@@ -222,6 +222,14 @@ bool Menu::accent() const noexcept {
     return accent_;
 }
 
+void Menu::named(bool shown) noexcept {
+    named_ = shown;
+}
+
+bool Menu::named() const noexcept {
+    return named_;
+}
+
 size_t Menu::count() const {
     return items_.size();
 }

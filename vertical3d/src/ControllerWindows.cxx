@@ -9,6 +9,7 @@
 #include "Controller.h"
 
 #include <api/asset/Json.h>
+#include <api/event/Event.h>
 #include <api/event/kind/WindowClose.h>
 #include <api/render/realtime/canvas/Canvas.h>
 #include <api/ui/Component.h>
@@ -184,6 +185,7 @@ void Controller::syncOpened() {
         if (opened.layout->region() != region) {
             opened.pointer->resize(region);
         }
+        opened.chrome->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));
         opened.chrome->sync(*opened.views, context_.selectTool->mask(), renderer_->barHeight(), opened.pointer->activeArea());
     }
 }

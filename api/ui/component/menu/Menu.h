@@ -209,6 +209,13 @@ class Menu : public Component {
     void accent(bool tinted) noexcept;
     bool accent() const noexcept;
 
+    /**
+     * As a menu bar's menu with an icon, whether its title also names it: the label, semibold,
+     * after the icon and its drop mark. A menu without an icon shows its label either way.
+     **/
+    void named(bool shown) noexcept;
+    bool named() const noexcept;
+
  private:
     /**
      * Move the active item on past any separators, in the direction of a step of 1 or -1,
@@ -232,6 +239,7 @@ class Menu : public Component {
     bool drop_ = false;
     bool emphasis_ = false;
     bool accent_ = false;
+    bool named_ = false;
 };
 
 };  // namespace v3d::ui::component::menu

@@ -225,15 +225,21 @@ void MenuRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, const boo
     const float height = box.size().y;
     Arranger::place(*bar, {.position = corner, .size = box.size()});
 
-    // the strip may be drawn partly through, over a view beneath it, and its titles whole
-    canvas->rect(corner, corner + glm::vec2(width, height), glm::vec4(glm::vec3(base().panel), base().panel.a * bar->opacity()));
-    // a rule along the bottom edge, so the strip reads as something over the scene rather
-    // than as part of it
-    canvas->rect(corner + glm::vec2(0.0F, height), corner + glm::vec2(width, height + Arranger::ruleWidth), base().border);
+    // the strip may be drawn partly through, over a view beneath it, and its titles whole. A
+    // strip drawn not at all, over something that is its band, has no rule either
+    if (bar->opacity() > 0.0F) {
+        canvas->rect(corner, corner + glm::vec2(width, height), glm::vec4(glm::vec3(base().panel), base().panel.a * bar->opacity()));
+        // a rule along the bottom edge, so the strip reads as something over the scene rather
+        // than as part of it
+        canvas->rect(corner + glm::vec2(0.0F, height), corner + glm::vec2(width, height + Arranger::ruleWidth), base().border);
+    }
 
     float pen = corner.x + (base().padding * 0.5F);
     for (std::size_t index = 0; index < bar->count(); index++) {
         pen += title(canvas, *bar, index, glm::vec2(pen, corner.y), height);
+    }
+    if (!bar->note().empty()) {
+        type_.draw(canvas, bar->note(), glm::vec2(pen + (base().padding * 0.5F), corner.y + (height * WIDGET_BASELINE)), base().secondaryText);
     }
 
     // outermost first, so that a flyout is drawn over the panel it came out of
@@ -323,6 +329,10 @@ MenuRenderer::Title MenuRenderer::titled(const component::menu::Menu& menu, cons
         title.mark = base().lineHeight * dropScale;
         title.extent += title.mark + (base().padding * dropGapScale);
     }
+    if (menu.image().valid() && menu.named()) {
+        title.name = type_.in(paint::weight(base().titleWeight)).width(label);
+        title.extent += title.name + (base().padding * 0.5F);
+    }
     return title;
 }
 
@@ -365,6 +375,11 @@ float MenuRenderer::title(v3d::render::realtime::canvas::Canvas* canvas, compone
     if (menu->drop()) {
         const float middle = left + room.content + (base().padding * dropGapScale) + (room.mark * 0.5F);
         paint::dropMark(canvas, glm::vec2(middle, at.y + (height * 0.5F)), room.mark, ink);
+    }
+    // a named icon's label follows its drop mark, semibold, as the name of what the menu is for
+    if (room.name > 0.0F) {
+        const float start = far.x - (base().padding * 0.5F) - room.name;
+        type_.in(paint::weight(base().titleWeight)).draw(canvas, label, glm::vec2(start, at.y + (height * WIDGET_BASELINE)), ink);
     }
     return room.extent;
 }

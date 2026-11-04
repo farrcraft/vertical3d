@@ -103,10 +103,6 @@ menu's 97 commands has a handler. Each group below is a piece of work of its own
 no command sets an item's translation, rotation or scale to a value. A script that builds a scene
 leaves every item where its create command put it.
 
-[] **An area header names its editor by its internal kind.** The header's first menu shows the
-kind string with a capital first letter, such as "Render-view". The Editor submenu labels the
-same editor "Render View", so the two names differ. The header can use the submenu's label.
-
 [] **Shared meshes in a scene document.** Two mesh items may share one `BRep`, but the scene store
 writes each item's geometry in full, so they read back as two copies. Keeping them shared needs
 the geometry as a record of its own, which the mesh items refer to by id, and a new mesh version.

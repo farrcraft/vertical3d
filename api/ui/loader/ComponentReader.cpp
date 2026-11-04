@@ -439,6 +439,9 @@ boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost
     boost::shared_ptr<component::menu::Bar> bar = boost::make_shared<component::menu::Bar>();
     bar->docked(optionalFlag(*logger_, entry, "docked", true));
     bar->opacity(optionalNumber(*logger_, entry, "opacity").value_or(1.0F));
+    if (const std::optional<std::string> note = optionalString(*logger_, entry, "note")) {
+        bar->note(*note);
+    }
 
     const boost::json::array* menus = requiredArray(*logger_, entry, "menus", "A menu bar");
     if (menus == nullptr) {
@@ -467,6 +470,7 @@ boost::shared_ptr<component::menu::Bar> ComponentReader::readMenuBar(const boost
         menu->drop(optionalFlag(*logger_, *menuEntry, "drop", false));
         menu->emphasis(optionalFlag(*logger_, *menuEntry, "emphasis", false));
         menu->accent(optionalFlag(*logger_, *menuEntry, "accent", false));
+        menu->named(optionalFlag(*logger_, *menuEntry, "named", false));
         bar->add(*label, menu);
     }
     return bar;

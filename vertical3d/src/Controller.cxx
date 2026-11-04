@@ -512,27 +512,13 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
         input.wheel = held->wheel();
     }
     layer->begin(canvas, input);
-    // a panel starts under its area's header
+    // a panel starts under its area's header, which a tabbed area showing a panel has none of
     const float header = renderer_->barHeight();
-    // a graph moves its view by the camera move in force, as an orthographic view does
-    control::GraphEditor::Navigate navigate = control::GraphEditor::Navigate::None;
-    switch (context_.cameraTool->mode()) {
-        case tool::CameraControl::CAMERA_MODE_TRUCK:
-            navigate = control::GraphEditor::Navigate::Pan;
-            break;
-        case tool::CameraControl::CAMERA_MODE_ZOOM:
-        case tool::CameraControl::CAMERA_MODE_DOLLY:
-            navigate = control::GraphEditor::Navigate::Zoom;
-            break;
-        // turning the camera has no meaning in a graph, so a drag there moves a key
-        case tool::CameraControl::CAMERA_MODE_PAN:
-        case tool::CameraControl::CAMERA_MODE_PITCH:
-        case tool::CameraControl::CAMERA_MODE_NONE:
-            break;
-    }
+    const control::GraphEditor::Navigate navigate = graphNavigation();
     control::RenderView::Asked asked = control::RenderView::Asked::Nothing;
     for (const view::AreaLayout::Area& area : layout.areas()) {
-        const glm::vec4 region(area.content.x, area.content.y + header, area.content.z, area.content.w - header);
+        const float top = control::chrome::Area::headed(area) ? header : 0.0F;
+        const glm::vec4 region(area.content.x, area.content.y + top, area.content.z, area.content.w - top);
         const view::AreaLayout::Editor& editor = area.editor();
         if (region.z <= 0.0F || region.w <= 0.0F) {
             continue;
@@ -562,6 +548,25 @@ void Controller::drawAreas(v3d::ui::Immediate* layer, v3d::render::realtime::can
 
 /**
  **/
+control::GraphEditor::Navigate Controller::graphNavigation() const {
+    // a graph moves its view by the camera move in force, as an orthographic view does
+    switch (context_.cameraTool->mode()) {
+        case tool::CameraControl::CAMERA_MODE_TRUCK:
+            return control::GraphEditor::Navigate::Pan;
+        case tool::CameraControl::CAMERA_MODE_ZOOM:
+        case tool::CameraControl::CAMERA_MODE_DOLLY:
+            return control::GraphEditor::Navigate::Zoom;
+        // turning the camera has no meaning in a graph, so a drag there moves a key
+        case tool::CameraControl::CAMERA_MODE_PAN:
+        case tool::CameraControl::CAMERA_MODE_PITCH:
+        case tool::CameraControl::CAMERA_MODE_NONE:
+            break;
+    }
+    return control::GraphEditor::Navigate::None;
+}
+
+/**
+ **/
 control::chrome::TopBar::State Controller::topState() const {
     control::chrome::TopBar::State state{ .workspaces = {}, .shown = workspaces_.shown(),
         .project = context_.document->project()->directory().filename().string(), .dirty = context_.document->dirty() };
@@ -579,8 +584,13 @@ void Controller::openSearch() {
     const std::size_t active = context_.areaOf(v3d::event::Event());
     if (active < context_.layout->areas().size()) {
         const boost::shared_ptr<v3d::ui::Container> area = shell_.ui()->container(control::chrome::Area::name(context_.layout->areas()[active].id));
-        if (area) {
-            bars.push_back(boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get("header")));
+        // a tabbed area's own menu is on its strip, and its header holds only its view's
+        for (const char* holding : { "strip-menu", "header" }) {
+            const boost::shared_ptr<v3d::ui::component::menu::Bar> bar =
+                area ? boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(area->get(holding)) : nullptr;
+            if (bar) {
+                bars.push_back(bar);
+            }
         }
     }
     std::vector<control::CommandSearch::Entry> entries = control::CommandSearch::catalogue(bars);
@@ -719,6 +729,7 @@ bool Controller::render() {
     }
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
+        chrome_->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));
         chrome_->sync(*context_.views, context_.selectTool->mask(), renderer_->barHeight(), context_.pointer ? context_.pointer->activeArea() : 0);
     }
     syncOpened();

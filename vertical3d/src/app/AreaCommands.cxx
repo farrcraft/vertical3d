@@ -95,6 +95,19 @@ void AreaCommands::registerTabs(CommandTable* table) const {
     });
     for (const control::chrome::Area::Kind& kind : control::chrome::Area::kinds()) {
         const std::string named = kind.kind;
+        // the + on a tabbed area's strip adds a tab of each kind. A viewport starts from the
+        // perspective view
+        change(table, "area::tab::add::" + named, [&context, named](const v3d::event::Event& event) {
+            const Context::Placed at = context.placeOf(event);
+            if (at.area >= at.layout->areas().size()) {
+                return;
+            }
+            boost::json::object state{ { "kind", named } };
+            if (named == view::AreaViews::KIND) {
+                state["camera"] = "Perspective";
+            }
+            at.layout->add(at.area, state);
+        });
         change(table, "area::editor::" + named, [&context, named](const v3d::event::Event& event) {
             const Context::Placed at = context.placeOf(event);
             if (at.area >= at.layout->areas().size() || at.layout->areas()[at.area].editor().kind == named) {

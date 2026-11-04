@@ -23,7 +23,8 @@ Press Ctrl+Page Down or Ctrl+Page Up, or choose **Window > Next Workspace** or
 ## Use an area's header
 
 Each area has a header along its top. Its first menu is named for the editor the area shows,
-such as Viewport, and holds:
+such as Viewport, and a panel's header writes the name beside the menu's icon. In an area with
+tabs the menu is at the left of the strip of tabs instead. It holds:
 
 | Item | What it does |
 |---|---|
@@ -38,7 +39,9 @@ such as Viewport, and holds:
 A join works only with an area in the same row or column. An area too small to hold two areas
 is not split.
 
-The button at the right end of the header maximises the area too.
+The button at the right end of the header, or of the strip of tabs, maximises the area too.
+While an area is maximised the button restores the areas, and the header says which key does
+the same.
 
 ## Show an editor with a key
 
@@ -70,8 +73,10 @@ lists these actions.
 
 ## Use tabs
 
-An area holding two or more editors shows a strip of tabs along its top, one for each editor.
-Click a tab to show its editor.
+An area holding two or more editors shows a strip of tabs along its top, one for each editor,
+after the area's menu. Click a tab to show its editor. Click **+** after the tabs and choose an
+editor to add it as a new tab. Under the strip a viewport keeps its header of view menus, and
+any other editor starts straight under the tabs.
 
 Drag a tab to move its editor:
 

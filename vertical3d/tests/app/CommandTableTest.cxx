@@ -3,9 +3,11 @@
  * Copyright(c) 2026 Joshua Farr(josh@farrcraft.com)
  **/
 
+#include <api/asset/Json.h>
 #include <api/event/Commands.h>
 #include <api/event/Event.h>
 #include <api/log/Logger.h>
+#include <vertical3d/src/app/AreaCommands.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/app/EditCommands.h>
@@ -17,6 +19,7 @@
 #include <vertical3d/src/script/Journal.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/tool/Select.h>
+#include <vertical3d/src/view/AreaLayout.h>
 
 #include <optional>
 #include <string>
@@ -215,6 +218,35 @@ BOOST_FIXTURE_TEST_CASE(a_modelling_operation_takes_its_parts, Edits) {
     BOOST_CHECK_EQUAL(table.run("transform::poly::extrude_face", boost::json::parse(R"({"parts": ["Cube.f[99]"]})").as_object()).value_or(""),
         "extrude face: Cube has no part 99 of the kind Cube.f[99] names");
     BOOST_CHECK_EQUAL(table.journal()->entries().back().text, "extrude face: Cube has no part 99 of the kind Cube.f[99] names");
+}
+
+/**
+ * The + on a tabbed area's strip adds a tab of the kind chosen, which the area then shows. A
+ * viewport added so starts from the perspective view.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tab_of_a_kind_is_added_to_an_area, Table) {
+    const boost::shared_ptr<v3d::editor::view::AreaLayout> layout =
+        boost::make_shared<v3d::editor::view::AreaLayout>(boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(layout->load(boost::json::parse(R"({"root": {"editors": [{"kind": "timeline"}]}})").as_object()));
+    v3d::editor::app::Context context;
+    context.layout = layout;
+    int changes = 0;
+    context.areasChanged = [&changes]() { changes++; };
+    v3d::editor::app::AreaCommands(context).registerCommands(&table);
+
+    v3d::event::Event add("area::tab::add::graph");
+    add.data(static_cast<int>(layout->areas()[0].id));
+    BOOST_REQUIRE(commands.invoke(add));
+    const std::vector<v3d::editor::view::AreaLayout::Editor>& editors = layout->areas()[0].editors;
+    BOOST_REQUIRE_EQUAL(editors.size(), 2U);
+    BOOST_CHECK_EQUAL(editors[1].kind, "graph");
+    BOOST_CHECK_EQUAL(layout->areas()[0].chosen, 1U);
+    BOOST_CHECK_EQUAL(changes, 1);
+
+    v3d::event::Event view("area::tab::add::viewport");
+    view.data(static_cast<int>(layout->areas()[0].id));
+    BOOST_REQUIRE(commands.invoke(view));
+    BOOST_CHECK_EQUAL(v3d::asset::readString(layout->areas()[0].editor().state, "camera").value_or(""), "Perspective");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

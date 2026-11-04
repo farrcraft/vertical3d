@@ -13,6 +13,7 @@
 #include <api/ui/Layout.h>
 #include <api/ui/Length.h>
 #include <api/type/camera/Camera.h>
+#include <api/type/geometry/Bound2D.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
@@ -189,6 +190,20 @@ std::string Area::label(const view::AreaLayout::Editor& editor) {
 
 /**
  **/
+std::string Area::kindLabel(const std::string& kind) {
+    const std::vector<Kind>& each = kinds();
+    const auto found = std::ranges::find(each, kind, &Kind::kind);
+    return found == each.end() ? capital(kind) : found->label;
+}
+
+/**
+ **/
+bool Area::headed(const view::AreaLayout::Area& area) {
+    return area.editors.size() < 2 || area.editor().kind == view::AreaViews::KIND;
+}
+
+/**
+ **/
 const std::vector<Area::FixedView>& Area::fixedViews() {
     static const std::vector<FixedView> views{
         { .command = "view::camera::front", .profile = "Front" },
@@ -285,7 +300,7 @@ std::vector<std::pair<std::string, bool>> Area::marks(selection::SelectMask mask
  **/
 std::string Area::signature(const view::AreaViews& views, selection::SelectMask mask) {
     const view::AreaLayout& layout = *views.layout();
-    std::string made = std::string(selectMaskName(mask)) + ";";
+    std::string made = std::string(selectMaskName(mask)) + (layout.maximised() ? ";maximised;" : ";");
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
         const view::AreaLayout::Area& area = layout.areas()[index];
         made += std::to_string(area.id) + ":" + area.editor().kind + ":";
@@ -325,33 +340,65 @@ boost::json::object Area::document(const view::AreaViews& views, selection::Sele
             boost::json::object{ { "type", "separator" } },
             item("Maximise", "maximise", id),
         };
-        boost::json::array menus = { boost::json::object{ { "label", capital(area.editor().kind) },
-            { "icon", "icon:editor-" + area.editor().kind }, { "drop", true }, { "items", std::move(items) } } };
-        if (const boost::shared_ptr<view::ViewPort> view = views.of(index)) {
+        const bool tabbed = area.editors.size() >= 2;
+        const boost::shared_ptr<view::ViewPort> view = views.of(index);
+        // a panel's header names its editor after the menu's icon. A view's names its camera, and
+        // a tabbed area's tabs name its editors
+        boost::json::object areaMenu{ { "label", kindLabel(area.editor().kind) }, { "icon", "icon:editor-" + area.editor().kind },
+            { "drop", true }, { "named", !tabbed && !view }, { "items", std::move(items) } };
+
+        // a tabbed area's strip holds the area's menu, and the row under it holds only what acts
+        // on its editor. Otherwise the area's menu leads the header
+        boost::json::array components;
+        boost::json::array menus;
+        if (tabbed) {
+            components = strip(area, std::move(areaMenu));
+        } else {
+            menus.emplace_back(std::move(areaMenu));
+        }
+        if (view) {
             for (boost::json::value& menu : viewMenus(*view, id)) {
                 menus.emplace_back(std::move(menu));
             }
             menus.emplace_back(maskMenu(mask, id));
             menus.emplace_back(overlaysMenu(id));
         }
-        boost::json::array components = {
-            boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false }, { "opacity", HEADER_OPACITY },
-                { "menus", std::move(menus) } },
-            boost::json::object{ { "type", "button" }, { "name", "maximise" }, { "icon", "icon:maximise" },
-                { "tooltip", "Maximise" }, { "context", CONTEXT }, { "command", "maximise" }, { "data", static_cast<std::int64_t>(id) } },
-        };
-        if (area.editors.size() >= 2) {
-            boost::json::array tabs;
-            for (const view::AreaLayout::Editor& editor : area.editors) {
-                tabs.emplace_back(boost::json::object{ { "type", "button" }, { "name", "tab-" + std::to_string(editor.id) },
-                    { "label", label(editor) }, { "toggle", true }, { "context", CONTEXT }, { "command", "tab::choose" },
-                    { "data", static_cast<std::int64_t>(editor.id) } });
-            }
-            components.emplace_back(boost::json::object{ { "type", "hbox" }, { "name", "tabs" }, { "children", std::move(tabs) } });
+        if (!menus.empty()) {
+            components.emplace_back(boost::json::object{ { "type", "menubar" }, { "name", "header" }, { "docked", false },
+                { "opacity", HEADER_OPACITY }, { "menus", std::move(menus) } });
         }
+        // a maximised area offers to restore the layout. place() writes the hint that says how
+        const bool maximised = layout.maximised().has_value();
+        components.emplace_back(boost::json::object{ { "type", "button" }, { "name", "maximise" },
+            { "icon", maximised ? "icon:restore" : "icon:maximise" }, { "tooltip", maximised ? "Restore" : "Maximise" },
+            { "context", CONTEXT }, { "command", "maximise" }, { "data", static_cast<std::int64_t>(id) } });
         containers.emplace_back(boost::json::object{ { "name", name(id) }, { "visible", true }, { "components", std::move(components) } });
     }
     return boost::json::object{ { "containers", std::move(containers) } };
+}
+
+/**
+ **/
+boost::json::array Area::strip(const view::AreaLayout::Area& area, boost::json::object areaMenu) {
+    const std::size_t id = area.id;
+    boost::json::array tabs;
+    for (const view::AreaLayout::Editor& editor : area.editors) {
+        tabs.emplace_back(boost::json::object{ { "type", "button" }, { "name", "tab-" + std::to_string(editor.id) },
+            { "label", label(editor) }, { "toggle", true }, { "tab", "strip" }, { "context", CONTEXT },
+            { "command", "tab::choose" }, { "data", static_cast<std::int64_t>(editor.id) } });
+    }
+    boost::json::array adds;
+    for (const Kind& kind : Area::kinds()) {
+        adds.emplace_back(item(kind.label, "tab::add::" + kind.kind, id));
+    }
+    return boost::json::array{
+        boost::json::object{ { "type", "panel" }, { "name", "strip" }, { "recess", true } },
+        boost::json::object{ { "type", "menubar" }, { "name", "strip-menu" }, { "docked", false }, { "opacity", 0.0 },
+            { "menus", boost::json::array{ std::move(areaMenu) } } },
+        boost::json::object{ { "type", "hbox" }, { "name", "tabs" }, { "children", std::move(tabs) } },
+        boost::json::object{ { "type", "menubar" }, { "name", "add" }, { "docked", false }, { "opacity", 0.0 },
+            { "menus", boost::json::array{ boost::json::object{ { "label", "+" }, { "items", std::move(adds) } } } } },
+    };
 }
 
 /**
@@ -377,51 +424,122 @@ void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float 
         }
     }
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
-        place(layout.areas()[index], views.of(index).get(), mask, height, index == active);
+        place(layout.areas()[index], { .view = views.of(index).get(), .mask = mask, .height = height, .active = index == active,
+            .maximised = layout.maximised().has_value() });
     }
 }
 
 /**
  **/
-void Area::place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height, bool active) const {
+void Area::restoreKey(const std::string& key) {
+    restoreKey_ = key;
+}
+
+/**
+ **/
+void Area::place(const view::AreaLayout::Area& area, const Placing& placing) const {
     const boost::shared_ptr<v3d::ui::Container> container = ui_->container(name(area.id));
     if (!container) {
         return;
     }
+    const float height = placing.height;
+    const glm::vec4& region = area.region;
     const glm::vec4& content = area.content;
     const bool roomy = content.z > height && content.w > height;
     container->visible(roomy);
     if (!roomy) {
         return;
     }
-    if (const boost::shared_ptr<v3d::ui::Component> header = container->get("header")) {
-        box(header.get(), glm::vec4(content.x, content.y, content.z - height, height));
-        const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(header);
-        if (bar) {
-            check(bar.get(), marks(area.editor()));
-        }
-        if (bar && view != nullptr) {
-            check(bar.get(), marks(*view));
-            check(bar.get(), marks(mask));
-            // the camera's menu follows the editor's, and names the active view
-            if (bar->count() > 1 && bar->menu(1)) {
-                bar->menu(1)->emphasis(active);
-            }
-        }
+    const float strip = content.y - region.y;
+    const bool tabbed = strip > 0.0F;
+    // a maximised area's hint follows the titles of its header, or of its strip's +
+    const std::string hint = placing.maximised && !restoreKey_.empty() ? restoreKey_ + " restores the areas" : std::string();
+
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> header =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container->get("header"));
+    if (header) {
+        placeHeader(header.get(), area, placing, tabbed ? std::string() : hint);
+    }
+
+    float maximiseLeft = content.x + content.z - height;
+    if (tabbed) {
+        maximiseLeft = region.x + region.z - height;
+        placeStrip(*container, area, height, hint);
     }
     if (const boost::shared_ptr<v3d::ui::Component> maximise = container->get("maximise")) {
-        box(maximise.get(), glm::vec4(content.x + content.z - height, content.y, height, height));
+        box(maximise.get(), glm::vec4(maximiseLeft, tabbed ? region.y : content.y, height, tabbed ? strip : height));
     }
-    if (const boost::shared_ptr<v3d::ui::Component> tabs = container->get("tabs")) {
-        box(tabs.get(), glm::vec4(area.region.x, area.region.y, area.region.z, content.y - area.region.y));
+}
+
+/**
+ **/
+void Area::placeHeader(v3d::ui::component::menu::Bar* bar, const view::AreaLayout::Area& area, const Placing& placing,
+    const std::string& note) {
+    const glm::vec4& content = area.content;
+    const bool tabbed = content.y > area.region.y;
+    // a tabbed area's maximise is on its strip, so its header runs the area's width
+    box(bar, glm::vec4(content.x, content.y, content.z - (tabbed ? 0.0F : placing.height), placing.height));
+    if (!tabbed) {
+        check(bar, marks(area.editor()));
+    }
+    if (placing.view != nullptr) {
+        check(bar, marks(*placing.view));
+        check(bar, marks(placing.mask));
+        // the camera's menu names the active view. It follows the area's menu, which a tabbed
+        // area has on its strip instead
+        const std::size_t camera = tabbed ? 0 : 1;
+        if (bar->count() > camera && bar->menu(camera)) {
+            bar->menu(camera)->emphasis(placing.active);
+        }
+    }
+    bar->note(note);
+}
+
+/**
+ **/
+void Area::placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, float height, const std::string& hint) {
+    const glm::vec4& region = area.region;
+    const float strip = area.content.y - region.y;
+    if (const boost::shared_ptr<v3d::ui::Component> recess = container.get("strip")) {
+        box(recess.get(), glm::vec4(region.x, region.y, region.z, strip));
+    }
+    // the menu's title ends where it was last drawn. Until then it is taken to be two headers wide
+    float menuEnd = region.x + (height * 2.0F);
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> menu =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container.get("strip-menu"));
+    if (menu) {
+        box(menu.get(), glm::vec4(region.x, region.y, height * 2.0F, strip));
+        check(menu.get(), marks(area.editor()));
+        if (menu->count() > 0 && ended(*menu) > region.x) {
+            menuEnd = ended(*menu);
+        }
+    }
+    // the tabs follow the menu and leave room for the + and maximise
+    float tabsEnd = menuEnd;
+    if (const boost::shared_ptr<v3d::ui::Component> tabs = container.get("tabs")) {
+        box(tabs.get(), glm::vec4(menuEnd, region.y, std::max(0.0F, region.x + region.z - menuEnd - (height * 2.0F)), strip));
         for (std::size_t index = 0; index < area.editors.size(); index++) {
             const boost::shared_ptr<v3d::ui::component::Button> tab = boost::dynamic_pointer_cast<v3d::ui::component::Button>(
-                container->get("tab-" + std::to_string(area.editors[index].id)));
+                container.get("tab-" + std::to_string(area.editors[index].id)));
             if (tab) {
                 tab->checked(index == area.chosen);
+                tabsEnd = std::max(tabsEnd, tab->position().x + tab->size().x);
             }
         }
     }
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> add = boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container.get("add"));
+    if (add) {
+        // the + takes what is left of the strip before maximise, which its note may run into
+        box(add.get(), glm::vec4(tabsEnd, region.y, std::max(height, region.x + region.z - height - tabsEnd), strip));
+        add->note(hint);
+    }
+}
+
+/**
+ **/
+float Area::ended(const v3d::ui::component::menu::Bar& bar) {
+    const v3d::type::geometry::Bound2D title = bar.bound(bar.count() - 1);
+    return title.position().x + title.size().x;
 }
 
 /**

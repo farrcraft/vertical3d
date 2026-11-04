@@ -25,7 +25,7 @@ reads besides the common ones:
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
 | `toolbar` | `Toolbar` | a row or column of buttons at an edge, with a faint rule between groups | `edge` (`top` or `left`), `buttons` (array of button entries, and `{ "type": "separator" }` for a rule before the next button) | yes / no |
-| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false), `emphasis` (false) and `accent` (false); `docked` (true); `opacity` (1) | yes / no |
+| `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false), `emphasis` (false), `accent` (false) and `named` (false, a title that shows its label after its icon too); `docked` (true); `opacity` (1, and a bar at 0 draws no rule either); `note` (text after the titles, in the secondary text colour) | yes / no |
 | `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
 Notes on individual components:

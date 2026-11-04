@@ -12,8 +12,10 @@
 #include <api/ui/Container.h>
 #include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
+#include <api/ui/component/Panel.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/chrome/Area.h>
@@ -83,10 +85,18 @@ struct Chrome {
     }
 
     /**
-     * @return an area's header
+     * @return an area's header, or null for a tabbed area showing a panel
      **/
     boost::shared_ptr<v3d::ui::component::menu::Bar> header(std::size_t area) const {
         return boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container(area)->get("header"));
+    }
+
+    /**
+     * @return the menu bar holding an area's own menu: its header, or its strip once it has tabs
+     **/
+    boost::shared_ptr<v3d::ui::component::menu::Bar> areaMenu(std::size_t area) const {
+        const boost::shared_ptr<v3d::ui::Component> strip = container(area)->get("strip-menu");
+        return boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(strip ? strip : container(area)->get("header"));
     }
 
     boost::shared_ptr<v3d::ui::Container> container(std::size_t area) const {
@@ -216,14 +226,93 @@ BOOST_FIXTURE_TEST_CASE(two_editors_have_tabs, Chrome) {
     BOOST_CHECK(chrome.tabAt(middle) == *left);
     BOOST_CHECK(!chrome.tabAt(glm::vec2(600.0F, 300.0F)));
 
-    // the header names the camera shown, so choosing another view builds the area again
+    // the header names the camera shown, so choosing another view builds the area again. The
+    // area's own menu is on the strip, so the camera's is the header's first
     BOOST_REQUIRE(layout.choose(0, 0));
     sync();
     const std::vector<boost::shared_ptr<v3d::ui::Component>>& chosen = container(0)->get("tabs")->children();
     BOOST_REQUIRE_EQUAL(chosen.size(), 2U);
     BOOST_CHECK(boost::dynamic_pointer_cast<v3d::ui::component::Button>(chosen[0])->checked());
     BOOST_CHECK(!boost::dynamic_pointer_cast<v3d::ui::component::Button>(chosen[1])->checked());
-    BOOST_CHECK_EQUAL(header(0)->label(1), "Front");
+    BOOST_CHECK_EQUAL(header(0)->label(0), "Front");
+}
+
+/**
+ * A tabbed area's strip holds what acts on the area: a recess, the area's menu, the tabs with a
+ * strip's look, a + whose menu adds a tab of each kind, and maximise. The header under it holds
+ * only the view's menus.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tabbed_area_holds_its_own_commands_on_its_strip, Chrome) {
+    BOOST_REQUIRE(layout.add(0, boost::json::parse(R"({"kind": "viewport", "camera": "Left"})").as_object()));
+    sync();
+    draw();
+
+    const boost::shared_ptr<v3d::ui::component::Panel> recess = boost::dynamic_pointer_cast<v3d::ui::component::Panel>(container(0)->get("strip"));
+    BOOST_REQUIRE(recess);
+    BOOST_CHECK(recess->recess());
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> strip = areaMenu(0);
+    BOOST_REQUIRE(strip && strip != header(0));
+    BOOST_CHECK(strip->find("area::split::left"));
+    BOOST_CHECK(strip->find("area::tab::close"));
+    BOOST_CHECK(!header(0)->find("area::split::left"));
+    BOOST_CHECK(header(0)->find("view::camera::front"));
+
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> add =
+        boost::dynamic_pointer_cast<v3d::ui::component::menu::Bar>(container(0)->get("add"));
+    BOOST_REQUIRE(add);
+    BOOST_CHECK_EQUAL(add->label(0), "+");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> outliner = add->find("area::tab::add::outliner");
+    BOOST_REQUIRE(outliner);
+    BOOST_CHECK(number(outliner->event()) == static_cast<int>(layout.areas()[0].id));
+
+    const boost::shared_ptr<v3d::ui::component::Button> tab =
+        boost::dynamic_pointer_cast<v3d::ui::component::Button>(container(0)->get("tabs")->children()[0]);
+    BOOST_REQUIRE(tab);
+    BOOST_CHECK(tab->tab() == v3d::ui::component::Button::Tab::Strip);
+    // maximise is on the strip, at its right end
+    const boost::shared_ptr<v3d::ui::Component> maximise = container(0)->get("maximise");
+    BOOST_CHECK_EQUAL(maximise->position().y, tab->position().y);
+    BOOST_CHECK_GT(maximise->position().x, tab->position().x);
+}
+
+/**
+ * A tabbed area showing a panel has no header, so the panel starts under the strip. An area
+ * with one editor, and a tabbed area showing a viewport, each have one.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_tabbed_panel_has_no_header, Chrome) {
+    BOOST_CHECK(Area::headed(layout.areas()[0]));
+    BOOST_REQUIRE(layout.add(0, boost::json::parse(R"({"kind": "outliner"})").as_object()));
+    sync();
+    BOOST_CHECK(!container(0)->get("header"));
+    BOOST_CHECK(!Area::headed(layout.areas()[0]));
+    BOOST_REQUIRE(layout.choose(0, 0));
+    sync();
+    BOOST_CHECK(container(0)->get("header"));
+    BOOST_CHECK(Area::headed(layout.areas()[0]));
+}
+
+/**
+ * A maximised area's button restores the layout, and a note after its header's menus names the
+ * key that does it. Restoring the layout puts the maximise button back.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_maximised_area_offers_to_restore, Chrome) {
+    chrome.restoreKey("Ctrl+Space");
+    layout.maximise(0);
+    sync();
+    draw();
+    const boost::shared_ptr<v3d::ui::component::Button> button =
+        boost::dynamic_pointer_cast<v3d::ui::component::Button>(container(0)->get("maximise"));
+    BOOST_REQUIRE(button);
+    BOOST_CHECK_EQUAL(button->icon(), "icon:restore");
+    BOOST_CHECK_EQUAL(header(0)->note(), "Ctrl+Space restores the areas");
+
+    layout.maximise(0);
+    sync();
+    const boost::shared_ptr<v3d::ui::component::Button> restored =
+        boost::dynamic_pointer_cast<v3d::ui::component::Button>(container(0)->get("maximise"));
+    BOOST_REQUIRE(restored);
+    BOOST_CHECK_EQUAL(restored->icon(), "icon:maximise");
+    BOOST_CHECK(header(0)->note().empty());
 }
 
 /**
@@ -362,10 +451,23 @@ BOOST_AUTO_TEST_CASE(the_shading_menu_names_the_front_fill_or_the_shading) {
  * Another kind of editor has only the area's menu.
  **/
 BOOST_FIXTURE_TEST_CASE(another_editor_has_no_view_menus, Chrome) {
-    BOOST_REQUIRE(layout.add(0, boost::json::parse(R"({"kind": "outliner"})").as_object()));
+    BOOST_REQUIRE(layout.replace(0, boost::json::parse(R"({"kind": "outliner"})").as_object()));
     sync();
     BOOST_REQUIRE_EQUAL(header(0)->count(), 1U);
     BOOST_CHECK_EQUAL(header(0)->label(0), "Outliner");
+    // the header names the panel after the menu's icon, and a view's does not
+    BOOST_REQUIRE(header(0)->menu(0));
+    BOOST_CHECK(header(0)->menu(0)->named());
+    BOOST_CHECK(!header(1)->menu(0)->named());
+}
+
+/**
+ * The area's menu names its editor as the Editor menu does, not by the kind's own word.
+ **/
+BOOST_AUTO_TEST_CASE(the_area_menu_names_a_kind_as_the_editor_menu_does) {
+    BOOST_CHECK_EQUAL(Area::kindLabel("render-view"), "Render View");
+    BOOST_CHECK_EQUAL(Area::kindLabel("graph"), "Graph Editor");
+    BOOST_CHECK_EQUAL(Area::kindLabel("unknown"), "Unknown");
 }
 
 /**
@@ -375,19 +477,19 @@ BOOST_FIXTURE_TEST_CASE(another_editor_has_no_view_menus, Chrome) {
 BOOST_FIXTURE_TEST_CASE(the_area_menu_marks_the_kind_shown, Chrome) {
     BOOST_REQUIRE(layout.add(1, boost::json::parse(R"({"kind": "outliner"})").as_object()));
     sync();
-    const boost::shared_ptr<v3d::ui::component::menu::Item> viewport = header(0)->find("area::editor::viewport");
-    const boost::shared_ptr<v3d::ui::component::menu::Item> outliner = header(0)->find("area::editor::outliner");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> viewport = areaMenu(0)->find("area::editor::viewport");
+    const boost::shared_ptr<v3d::ui::component::menu::Item> outliner = areaMenu(0)->find("area::editor::outliner");
     BOOST_REQUIRE(viewport && outliner);
     BOOST_CHECK(viewport->checked());
     BOOST_CHECK(!outliner->checked());
     BOOST_CHECK(number(viewport->event()) == static_cast<int>(layout.areas()[0].id));
 
-    BOOST_CHECK(!header(1)->find("area::editor::viewport")->checked());
-    BOOST_CHECK(header(1)->find("area::editor::outliner")->checked());
+    BOOST_CHECK(!areaMenu(1)->find("area::editor::viewport")->checked());
+    BOOST_CHECK(areaMenu(1)->find("area::editor::outliner")->checked());
 
     // a timeline is one of the kinds offered
-    BOOST_CHECK(header(0)->find("area::editor::timeline"));
-    BOOST_CHECK(header(0)->find("area::editor::graph"));
+    BOOST_CHECK(areaMenu(0)->find("area::editor::timeline"));
+    BOOST_CHECK(areaMenu(0)->find("area::editor::graph"));
 }
 
 /**

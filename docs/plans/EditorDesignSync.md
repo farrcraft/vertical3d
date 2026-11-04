@@ -136,6 +136,16 @@ editor.
 
 ### Step 3 — Area headers and tab strips
 
+**Done.** A tabbed area's strip is a recess holding the area's menu, the tabs with a strip's look,
+a + whose menu adds a tab of each kind through the new `area::tab::add::` commands, and
+maximise. Under it only a viewport has a header, so the timeline, graph editor and console
+start straight under their tabs. A panel's area menu names its editor after the icon, through
+a menu's new `named` flag. Every area menu is named as the Editor menu names its kind, which
+closed the TODO entry about "Render-view". A maximised area shows the restore icon and a note,
+a menu bar's new `note`, saying "Ctrl+Space restores the areas". It says the areas rather than
+the quad, since a layout need not be one. A menu bar with no band draws no rule. The strip, a
+panel's header and a maximised view were photographed in the editor.
+
 - A panel header names its editor after the editor-type button: Outliner, Properties.
 - A maximised area shows the restore icon in place of the maximise icon, and the hint
   "Ctrl+Space restores the quad" in its header.

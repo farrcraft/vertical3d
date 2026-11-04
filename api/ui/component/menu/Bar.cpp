@@ -359,6 +359,18 @@ float Bar::opacity() const noexcept {
 
 /**
  **/
+void Bar::note(const std::string& text) {
+    note_ = text;
+}
+
+/**
+ **/
+const std::string& Bar::note() const noexcept {
+    return note_;
+}
+
+/**
+ **/
 void Bar::settle(float now) {
     if (!pending_) {
         return;

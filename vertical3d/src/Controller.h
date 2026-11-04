@@ -298,6 +298,11 @@ class Controller final : public v3d::engine::Engine {
     void drawOpened(v3d::ui::Immediate* layer, v3d::render::realtime::canvas::Canvas* canvas, std::uint32_t window);
 
     /**
+     * @return how a graph editor moves its view under a drag, from the camera move in force
+     **/
+    control::GraphEditor::Navigate graphNavigation() const;
+
+    /**
      * Draw the panel of each area of a layout that shows an editor other than a view, under its
      * header. The layer has the mouse while the pointer gives the panels the cursor in the
      * window it is in.

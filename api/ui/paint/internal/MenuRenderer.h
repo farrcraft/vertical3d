@@ -173,6 +173,7 @@ class MenuRenderer final {
     struct Title final {
         float content = 0.0F;  /**< the icon's side, or the label's width **/
         float mark = 0.0F;     /**< the drop mark's width, or none **/
+        float name = 0.0F;     /**< the width of the label a named icon's title shows after it, or none **/
         float extent = 0.0F;   /**< the whole title, padding and all **/
     };
 

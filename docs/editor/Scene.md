@@ -383,15 +383,16 @@ and a split inside one that runs the same way gives its children to that one.
 **Headers and tabs.** `chrome::Area` gives each area a ui container, `area-` and the area's id,
 built as the editor runs and put before the editor's own container so its menus drop over them.
 
-- **The header** runs across the top of where the area's editor draws, as tall as a menu bar.
-  It is a menu bar that is not docked, drawn at 80% over what is beneath it, and every menu on
-  it has a drop mark. Its first menu is the name of the kind of editor shown, with its first
-  letter made a capital, such as Viewport or Render-view. It shows that kind's icon. It holds
+- **The header** of an area showing one editor runs across the top of where the editor draws,
+  as tall as a menu bar. It is a menu bar that is not docked, drawn at 80% over what is beneath
+  it, and every menu on it has a drop mark. Its first menu, the area's menu, is named for the
+  kind of editor shown as the Editor menu names it, such as Viewport or Render View, and shows
+  that kind's icon. A panel's area menu also writes the name after the icon, semibold. It holds
   Editor, which offers each kind of editor and marks the one shown. Then come Split, Join and
   Swap, each with Left, Right and Top or Above and Bottom or Below, and then New Tab, Close Tab
-  and Maximise. A maximise button sits at the header's
-  right end. A key shows each kind of editor in the area under the cursor, as
-  [Bindings.md](../manual/editor/Bindings.md#keys) in the user manual lists.
+  and Maximise. A maximise button sits at the header's right end. A key shows each kind of
+  editor in the area under the cursor, as [Bindings.md](../manual/editor/Bindings.md#keys) in
+  the user manual lists.
 
 - **A viewport's header** has four more menus, drawn over the scene:
   - one named for the camera the view shows, such as Front. It holds the fixed views, Front,
@@ -410,13 +411,19 @@ built as the editor runs and put before the editor's own container so its menus 
   `view::camera::`, `view::shade::`, `view::rendermode::`, `view::cull::` and `view::show::`
   commands and the Select menu's `select::mask::` commands, which `chrome::Area::marks()` reads
   for both.
-- **Tabs.** An area holding two or more editors has a strip of tabs, as tall as the header,
-  across its top. The editor draws under the strip and the header sits at the top of the
-  editor. Each tab is a toggle button named for its editor, a viewport by its camera, and the
-  chosen one is checked.
-- The containers are built again when the areas, the kind of editor each shows, their editors,
-  or what a view's menus are named for change. Otherwise they are moved each frame to where
-  the areas are. A container whose area has no room is hidden.
+- **Tabs.** An area holding two or more editors has a strip across its top, as tall as a
+  header, holding what acts on the area. It is a recess holding the area's menu, a tab for each
+  editor, a + and the maximise button at its right end. Each tab is a toggle with a strip's look,
+  named for its editor, a viewport by its camera, and the chosen one is checked. The + is a menu
+  of each kind of editor, which adds a tab of that kind. Under the strip only a viewport has a
+  header, holding its view's menus, so a panel starts under the strip. `chrome::Area::headed()`
+  says which areas have a header.
+- **Maximised.** While an area is maximised its button shows the restore icon, and a note after
+  its header's menus, or after its strip's +, says the key that gives every area its place back.
+- The containers are built again when an area is maximised or restored, or when the areas, the
+  kind of editor each shows, their editors, or what a view's menus are named for change.
+  Otherwise they are moved each frame to where the areas are. A container whose area has no
+  room is hidden.
 
 The area menu's commands are in the `area` context, a viewport's camera and shading menus' in
 the `view` context, and its mask menu's in the `select` context. A header's command carries its
@@ -430,6 +437,7 @@ area.
 | `area::swap::left`, `right`, `top`, `bottom` | Swaps what the area holds with its neighbour on that edge |
 | `area::editor::viewport`, `outliner`, `properties` | Puts an editor of that kind in place of the one shown, in its place among the tabs. A viewport shows Perspective |
 | `area::tab::new` | Adds a viewport of the camera the area shows, or of Perspective |
+| `area::tab::add::viewport`, `outliner`, `properties` and each other kind | Adds a tab of that kind, which is shown. A viewport shows Perspective |
 | `area::tab::close` | Closes the editor shown, unless it is the only one |
 | `area::tab::choose` | Shows the editor whose id the tab carries |
 | `area::maximise` (Ctrl+Space) | Maximises the area, or gives every area its place back |

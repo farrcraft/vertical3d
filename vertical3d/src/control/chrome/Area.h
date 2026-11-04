@@ -32,12 +32,21 @@ namespace v3d::editor::control::chrome {
 /**
  * The header and the tabs of each area, built as ui containers while the editor runs.
  *
- * Each area has a container named "area-" and its id. Its header is a menu bar that is not
- * docked, across the top of where the area's editor draws, holding a menu named for the kind
- * of editor it shows. That menu changes the kind of editor shown, splits, joins and swaps the
- * area, adds and closes tabs, and maximises it. A maximise button sits at the header's right
- * end. An area holding two or more editors has a strip of tabs above its editor, one toggle
- * button for each, with the chosen one checked.
+ * Each area has a container named "area-" and its id. An area showing one editor has a header:
+ * a menu bar that is not docked, across the top of where its editor draws, holding a menu named
+ * for the kind of editor it shows. That menu changes the kind of editor shown, splits, joins
+ * and swaps the area, adds and closes tabs, and maximises it. A maximise button sits at the
+ * header's right end. A panel's header names its editor after the menu's icon.
+ *
+ * An area holding two or more editors has a strip above its editor instead. The strip is a
+ * recess holding what acts on the area. It holds the area's menu, a tab for each editor with a
+ * strip's look, and a + whose menu adds a tab of each kind. Maximise is at its right end, and the
+ * chosen tab is checked. Under the strip only a viewport has a header, holding its view's menus.
+ * headed() says which areas have a header. An area's editor starts under its header, or under
+ * its strip when it has none.
+ *
+ * While an area is maximised its button restores the layout, and a note after its header's
+ * menus, or after its strip's +, names the key that does it.
  *
  * A viewport's header has three more menus. One is named for the camera the view shows and
  * offers the fixed views and the projection switch. One is named for how the view shades the
@@ -107,6 +116,24 @@ class Area final {
      * @param active the index of the active area
      **/
     void sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active);
+
+    /**
+     * @param key what the key that maximises and restores an area is called, or empty for none.
+     *        A maximised area's hint names it
+     **/
+    void restoreKey(const std::string& key);
+
+    /**
+     * @return whether an area has a header under its strip, or in place of one: an area showing
+     *         one editor, or a tabbed area showing a viewport
+     **/
+    static bool headed(const view::AreaLayout::Area& area);
+
+    /**
+     * @return what the Editor menu calls a kind of editor, or the kind with a capital for one it
+     *         does not list
+     **/
+    static std::string kindLabel(const std::string& kind);
 
     /**
      * @return the id of the editor whose tab is at a point, or nothing when no tab is there
@@ -268,24 +295,59 @@ class Area final {
     static void box(v3d::ui::Component* component, const glm::vec4& region);
 
     /**
-     * @return what decides whether the containers have to be built again. That is each area's
-     *         id, the kind of editor it shows, its editors' ids and labels, and the names of its
-     *         view's menus and of the mask
+     * @return what decides whether the containers have to be built again. That is whether an
+     *         area is maximised, each area's id, the kind of editor it shows, its editors' ids and
+     *         labels, and the names of its view's menus and of the mask
      **/
     static std::string signature(const view::AreaViews& views, selection::SelectMask mask);
 
     /**
-     * Put one area's header, button and tabs where the area is, mark what its view holds and
-     * the mask, and set its camera name apart while it is active.
-     *
-     * @param view the view the area shows, or null when it shows another kind of editor
+     * What place() puts an area's header and strip by.
      **/
-    void place(const view::AreaLayout::Area& area, const view::ViewPort* view, selection::SelectMask mask, float height, bool active) const;
+    struct Placing final {
+        const view::ViewPort* view = nullptr;  /**< the view the area shows, or null for another kind of editor **/
+        selection::SelectMask mask = selection::SelectMask::Object;
+        float height = 0.0F;     /**< how tall a header and a tab are **/
+        bool active = false;     /**< whether it is the active area **/
+        bool maximised = false;  /**< whether an area of the layout is maximised **/
+    };
+
+    /**
+     * Put one area's header, strip, button and hint where the area is, mark what its view holds
+     * and the mask, and set its camera name apart while it is active.
+     **/
+    void place(const view::AreaLayout::Area& area, const Placing& placing) const;
+
+    /**
+     * Put a tabbed area's strip: its recess, the area's menu, the tabs and the +.
+     *
+     * @param hint what the + is followed by, which is empty unless an area is maximised
+     **/
+    static void placeStrip(const v3d::ui::Container& container, const view::AreaLayout::Area& area, float height, const std::string& hint);
+
+    /**
+     * Put an area's header, mark what its view holds and the mask, set its camera name apart
+     * while it is active, and write its note.
+     **/
+    static void placeHeader(v3d::ui::component::menu::Bar* bar, const view::AreaLayout::Area& area, const Placing& placing,
+        const std::string& note);
+
+    /**
+     * @return a tabbed area's strip: its recess, the area's menu, the tabs and the +
+     **/
+    static boost::json::array strip(const view::AreaLayout::Area& area, boost::json::object areaMenu);
+
+    /**
+     * @return where a menu bar's last title ends, as it was last drawn
+     **/
+    static float ended(const v3d::ui::component::menu::Bar& bar);
+
 
     boost::shared_ptr<v3d::ui::Interface> ui_;
     std::string before_;
     Resolve resolve_;
     std::string signature_;
+    std::string restoreKey_;
     // the containers sync() last added, by name
     std::vector<std::string> held_;
 };
