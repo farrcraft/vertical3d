@@ -307,7 +307,45 @@ nothing.
 
 ### Step 10 — The closing survey
 
+**Done.** The editor was photographed in the ten states, and each picture replaced the one on
+the canvas, with a note on what it matches. The survey found three faults and two differences.
+The top bar took no click, because the cursor picked the closed menu bar beneath it, and that
+was fixed in `api/ui`. The screenshot script sent keys without their scan codes, which the
+editor never read, and that was fixed. A view through a camera drew the camera's own glyph, and
+that was fixed. A clicked button keeping the focus ring, and a maximised orthographic view's
+grey x axis and missing selection outline, went to [TODO.md](../TODO.md). The Rendering board
+gained the render view's Render row, the viewport part kept its gizmo in a camera view, and
+Properties' numbers were redrawn as rows of three.
+
 The editor is built and photographed in the same ten states as the first survey, and in each
 state a step above changed. Each picture replaces the one on the canvas, beside its mockup. Any
 difference still found is fixed in this plan or recorded in [TODO.md](../TODO.md) before the
 plan closes.
+
+## Outcome
+
+Closed 2026-11-04. Each state of the editor matches its board on the canvas, and each board
+shows what the editor does, but for two differences that [TODO.md](../TODO.md) records.
+
+**Delivered:**
+
+- A chosen tab marked as a place, a labelled combo with a chevron, and the top bar's recess,
+  search and unsaved dot (ADR-0167).
+- Tab strips with the area menu, a + and maximise, panel headers with their names, and the
+  maximised view's restore icon and note.
+- The outliner's magnifier and eye, and Properties under folding headings with axis edges, a
+  Parent combo and a Shown in renders check.
+- Two visibility flags on every item, inherited, saved, read from glTF and USD, and honoured by
+  the views, picking and renders, with hide, show all and isolate (ADR-0168).
+- The timeline's icon transport with tooltips, its compact row, a rate menu, and playback keys.
+- A view through a scene camera, framed to the render, with a lock that moves the camera, and
+  the Animation workspace's camera view (ADR-0169).
+- The mockups redrawn where the editor chose, and boards for the command search, a divider,
+  Rendering and a tabbed viewport.
+
+**Turned out differently:** step 8 needed no code, since step 1's combo labelled the hider. The
+closing survey found that nothing beside the main menus took a click, which the plan did not
+expect.
+
+**Left open:** the focus ring after a click, and the maximised orthographic view's x axis and
+selection outline, both in [TODO.md](../TODO.md).

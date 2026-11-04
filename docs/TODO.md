@@ -99,6 +99,17 @@ diorama destroy their surface.
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
 menu's 97 commands has a handler. Each group below is a piece of work of its own, in any order.
 
+[] **A clicked button keeps the focus ring.** A press on a retained button gives it the focus, so
+a workspace tab or the search keeps the focus colour's outline after a click, until a press
+lands elsewhere. A ring is wanted when the keyboard moved the focus, and not after a click, as
+a browser's `:focus-visible` decides.
+
+[] **A maximised orthographic view loses its x axis colour and its selection outline.** Front,
+maximised with Ctrl+Space, draws the grid's x axis grey rather than red, and a selected cube's
+face without its amber edges. The same view in the quad draws both. The cause is not known: the
+grid's major lines at the larger size, or the depth bias between the shaded face and its edges,
+are where to start.
+
 [] **A script cannot place an item.** A script can create primitives, select, key and undo, but
 no command sets an item's translation, rotation or scale to a value. A script that builds a scene
 leaves every item where its create command put it.

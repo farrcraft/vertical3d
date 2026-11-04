@@ -284,7 +284,6 @@
     - [ADR-0083: Review: a changeset answers for what it introduces](adr/0083-review-a-changeset-answers-for-what-it-introduces.md)
 - [Plans](plans/README.md)
     - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)
-    - [Editor Design Sync — The Editor and Its Mockups Brought Into Agreement](plans/EditorDesignSync.md)
 - [Roadmaps](roadmap/README.md)
     - [Releases](roadmap/Releases.md)
 - [Audits and surveys](audits/README.md)
