@@ -496,11 +496,15 @@ areas never marks a project unsaved, and the project's files hold only content.
   Windows a workspace keeps at startup open once the ui is built. Saving, exporting and recording
   a workspace keep the windows open with it.
 
-**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace. A tab shows its
-workspace (`workspace::show`, carrying the workspace's name) and is checked while it is shown.
-After the tabs come the project's name, with ` *` after it while it has unsaved changes, and a
-Search button at the right end that opens the command search. They are a container listed after
-the editor's own, over the menu bar's band, which takes a press only on a label.
+**The top bar.** Beside the menus, `TopBar` puts a tab for each workspace, side by side in a
+recess. A tab shows its workspace (`workspace::show`, carrying the workspace's name) and is
+checked while it is shown, which raises it as a choice. After the tabs come the project's name,
+with an amber dot after it while it has unsaved changes, and the search at the right end. The
+search is a plate holding a magnifier, "Search commands" and the key bound to `search::open` on
+a cap, under a button that opens the command search. When the bar is too short for the words
+beside the tabs and the name, the search holds the magnifier and the key alone. The window's
+caption marks unsaved changes with ` *`. They are a container listed after the editor's own,
+over the menu bar's band, which takes a press only on a label.
 
 **Commands**, in the Window menu:
 

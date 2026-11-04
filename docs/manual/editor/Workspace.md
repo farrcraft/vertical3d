@@ -7,7 +7,7 @@ workspaces.
 ## Switch workspaces
 
 The bar at the top of the window has a tab for each workspace, after the menus. The tab of the
-workspace shown is checked. Click a tab to show its workspace.
+workspace shown is raised and in bold. Click a tab to show its workspace.
 
 Press Ctrl+Page Down or Ctrl+Page Up, or choose **Window > Next Workspace** or
 **Window > Previous Workspace**, to step through them in turn.

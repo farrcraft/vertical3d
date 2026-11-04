@@ -39,6 +39,7 @@
 #include <api/ui/paint/internal/Skin.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -510,6 +511,12 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
     }
     const Dressing& dress = styles_.resolve(style::Resolver::Class::Panel, panel->style());
     const glm::vec2 min = panel->position();
+    if (panel->recess()) {
+        // a recess sits below what is around it, and tabs are raised out of it, so it has no
+        // edge of its own
+        fillBox(canvas, min, min + panel->size(), dress.radius, dress.tab);
+        return;
+    }
     plateBox(canvas, min, min + panel->size(), dress.radius, dress.borderWidth, {.inside = dress.panel, .outline = dress.border});
 }
 
@@ -852,11 +859,28 @@ void ComponentRenderer::draw(v3d::render::realtime::canvas::Canvas* canvas, cons
             glm::vec2(corner.x + size.x + Arranger::ruleWidth, corner.y + size.y), base().border);
     }
 
+    // a rule is a faint line across the middle of the gap the layout left before a button,
+    // short of the strip's sides, so it sets the groups apart without boxing them
+    std::optional<glm::vec2> after;
     for (std::size_t index = 0; index < bar->count(); index++) {
         const boost::shared_ptr<component::Button> button = bar->button(index);
-        if (button && button->visible()) {
-            draw(canvas, button);
+        if (!button || !button->visible()) {
+            continue;
         }
+        if (after && bar->separated(index)) {
+            const glm::vec2 start = button->position();
+            if (row) {
+                const float middle = std::floor((after->x + start.x) * 0.5F);
+                const float inset = size.y * toolbarRuleInset;
+                canvas->rect(glm::vec2(middle, corner.y + inset), glm::vec2(middle + Arranger::ruleWidth, corner.y + size.y - inset), base().hairline);
+            } else {
+                const float middle = std::floor((after->y + start.y) * 0.5F);
+                const float inset = size.x * toolbarRuleInset;
+                canvas->rect(glm::vec2(corner.x + inset, middle), glm::vec2(corner.x + size.x - inset, middle + Arranger::ruleWidth), base().hairline);
+            }
+        }
+        draw(canvas, button);
+        after = button->position() + button->size();
     }
 }
 

@@ -13,8 +13,9 @@ an area acts on the area the cursor was last over.
 
 The menu bar runs along the top of the window. It holds the Vertical3D menu, then File, Edit,
 Create, Select, Modify, View, Animate, Render, Window and Help. After the menus come a tab for
-each workspace, the open project's name, and a **Search** button. The name ends in ` *` while
-the project has unsaved changes.
+each workspace, the open project's name, and the search. An amber dot follows the name while
+the project has unsaved changes. The search shows a magnifier, **Search commands** and its key,
+or only the magnifier and the key when the window is narrow.
 
 ### Vertical3D
 
@@ -169,7 +170,7 @@ The key items use the keys of the selected items, or of every item when nothing 
 ## The tool shelf
 
 The tool shelf runs down the left of the window. Each button shows a tooltip when the cursor
-rests on it.
+rests on it. A rule sets the manipulators apart from the modelling operations under them.
 
 | Button | Same as |
 |---|---|

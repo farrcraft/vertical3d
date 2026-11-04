@@ -379,6 +379,11 @@ class ComponentRenderer {
      * all to 1 for all the way.
      **/
     static constexpr float tabHoverLift = 0.5F;
+    /**
+     * How far a toolbar's rule stops short of each side of the strip, as a share of the strip's
+     * thickness.
+     **/
+    static constexpr float toolbarRuleInset = 0.225F;
 
     /**
      * Draw one component into the box the layout pass has just written onto it. This is

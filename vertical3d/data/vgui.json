@@ -274,6 +274,7 @@
             { "label": "Move", "tooltip": "Move", "icon": "icon:move", "toggle": true, "context": "transform", "command": "translate" },
             { "label": "Rotate", "tooltip": "Rotate", "icon": "icon:rotate", "toggle": true, "context": "transform", "command": "rotate" },
             { "label": "Scale", "tooltip": "Scale", "icon": "icon:scale", "toggle": true, "context": "transform", "command": "scale" },
+            { "type": "separator" },
             { "label": "Extrude Face", "tooltip": "Extrude Face", "icon": "icon:extrude", "context": "transform", "command": "poly::extrude_face" },
             { "label": "Inset Face", "tooltip": "Inset Face", "icon": "icon:inset", "context": "transform", "command": "poly::inset_face" },
             { "label": "Split Face", "tooltip": "Split Face", "icon": "icon:split-face", "context": "transform", "command": "poly::split_face" },

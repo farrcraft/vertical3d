@@ -1,7 +1,7 @@
 # The editor's sources, built once, so the executable and its suites link one copy of them
 # rather than each compiling their own.
 add_library("v3dlib_editor"
-	"src/Controller.h" "src/Controller.cxx"
+	"src/Controller.h" "src/Controller.cxx" "src/ControllerWindows.cxx"
 
 	"src/app/AreaCommands.h" "src/app/AreaCommands.cxx"
 	"src/app/CommandTable.h" "src/app/CommandTable.cxx"

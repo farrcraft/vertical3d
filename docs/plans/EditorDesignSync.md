@@ -116,6 +116,16 @@ unit shows "Metres" and a square, and the render settings' hider shows "Reyes" a
 
 ### Step 2 — The top bar and the tool shelf
 
+**Done.** The workspace tabs lie in a `panel` with the new `recess` flag, each a toggle with the
+`choice` look. The project's name is followed by an amber dot, an icon in the selection's amber,
+while it has unsaved changes, and the window's caption keeps ` *`. The search is a plate with a
+magnifier, "Search commands" and the key bound to `search::open` on a recessed cap, under a
+button that takes the press. On a bar too short for the words, as at 1024 pixels with five
+workspaces, it keeps the magnifier and the key. The top bar now resolves the images of what it
+adds, as an area does. A toolbar reads `{ "type": "separator" }` as a faint rule before the next
+button, and the tool shelf has one after Scale. The bar and the shelf were photographed in the
+editor.
+
 - The chosen workspace is in the control colour and semibold, on a filled pill, in place of
   the accent fill in an outlined box.
 - Search is a button with a magnifier, "Search commands" and an F3 chip. Today it is the word

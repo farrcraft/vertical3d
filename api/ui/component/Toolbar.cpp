@@ -10,6 +10,7 @@
 #include <api/ui/Component.h>
 #include <api/ui/input/Command.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 
@@ -52,6 +53,20 @@ void Toolbar::add(const boost::shared_ptr<Button>& button) {
         adopt(*button);
     }
     buttons_.push_back(button);
+}
+
+/**
+ **/
+void Toolbar::separate() {
+    if (rules_.empty() || rules_.back() != buttons_.size()) {
+        rules_.push_back(buttons_.size());
+    }
+}
+
+/**
+ **/
+bool Toolbar::separated(std::size_t index) const noexcept {
+    return std::find(rules_.begin(), rules_.end(), index) != rules_.end();
 }
 
 /**

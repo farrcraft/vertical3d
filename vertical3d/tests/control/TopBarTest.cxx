@@ -12,6 +12,7 @@
 #include <api/ui/Interface.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
 #include <api/ui/paint/ComponentRenderer.h>
 #include <api/ui/tests/Typeset.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
@@ -43,7 +44,7 @@ struct Bar {
         dispatcher(boost::make_shared<entt::dispatcher>()),
         ui(boost::make_shared<v3d::ui::Interface>(boost::make_shared<v3d::event::Router>(dispatcher), dispatcher,
             boost::make_shared<v3d::log::Logger>())),
-        bar(ui, "chooser", v3d::ui::typeset::body()),
+        bar(ui, "chooser", v3d::ui::typeset::body(), {}),
         renderer(v3d::ui::typeset::body()) {
         BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [
             { "name": "editor", "visible": true, "components": [] },
@@ -103,8 +104,9 @@ BOOST_FIXTURE_TEST_CASE(a_tab_for_each_workspace, Bar) {
 }
 
 /**
- * The search button sits at the right end of the band, with the project's name before it, which
- * carries a mark while there are unsaved changes. The tabs start at the band's left.
+ * The search sits at the right end of the band, a gap in from it, with the project's name
+ * before it. An amber dot follows the name while there are unsaved changes. The tabs start at
+ * the band's left.
  **/
 BOOST_FIXTURE_TEST_CASE(the_name_and_the_search_sit_at_the_right, Bar) {
     state.dirty = true;
@@ -112,12 +114,15 @@ BOOST_FIXTURE_TEST_CASE(the_name_and_the_search_sit_at_the_right, Bar) {
     const boost::shared_ptr<v3d::ui::component::Button> search = boost::dynamic_pointer_cast<v3d::ui::component::Button>(get("search"));
     BOOST_REQUIRE(search);
     BOOST_CHECK_EQUAL(search->event().str(), "search::open");
-    BOOST_CHECK_EQUAL(search->position().x + search->size().x, 800.0F);
+    BOOST_CHECK_CLOSE(search->position().x + search->size().x, 793.0F, 0.001F);
 
     const boost::shared_ptr<v3d::ui::component::Label> project = boost::dynamic_pointer_cast<v3d::ui::component::Label>(get("project"));
-    BOOST_REQUIRE(project);
-    BOOST_CHECK_EQUAL(project->text(), "house *");
-    BOOST_CHECK_EQUAL(project->position().x + project->size().x, search->position().x);
+    const boost::shared_ptr<v3d::ui::Component> dot = get("unsaved");
+    BOOST_REQUIRE(project && dot);
+    BOOST_CHECK_EQUAL(project->text(), "house");
+    BOOST_CHECK(dot->visible());
+    BOOST_CHECK_LT(project->position().x + project->size().x, dot->position().x);
+    BOOST_CHECK_LT(dot->position().x + dot->size().x, search->position().x);
     BOOST_CHECK_GE(get("workspaces")->position().x, 300.0F);
 
     // the tabs lie side by side on their plate
@@ -131,6 +136,69 @@ BOOST_FIXTURE_TEST_CASE(the_name_and_the_search_sit_at_the_right, Bar) {
     state.dirty = false;
     sync();
     BOOST_CHECK_EQUAL(project->text(), "house");
+    BOOST_CHECK(!dot->visible());
+}
+
+/**
+ * The search shows its magnifier, what it does and the key that opens it, all inside the
+ * button that takes the press. With no key bound there is no cap, and the button is narrower.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_search_shows_its_key, Bar) {
+    // a bar with room for the search to say what it does
+    state.searchKey = "F3";
+    band = glm::vec4(0.0F, 0.0F, 800.0F, 28.0F);
+    sync();
+    const boost::shared_ptr<v3d::ui::Component> search = get("search");
+    const boost::shared_ptr<v3d::ui::component::Label> key = boost::dynamic_pointer_cast<v3d::ui::component::Label>(get("search-key"));
+    BOOST_REQUIRE(search && key && get("search-icon") && get("search-label") && get("search-cap"));
+    BOOST_CHECK_EQUAL(key->text(), "F3");
+    BOOST_CHECK(key->visible() && get("search-cap")->visible());
+    for (const char* part : { "search-icon", "search-label", "search-cap", "search-key" }) {
+        BOOST_TEST_CONTEXT(part) {
+            BOOST_CHECK_GE(get(part)->position().x, search->position().x);
+            BOOST_CHECK_LE(get(part)->position().x + get(part)->size().x, search->position().x + search->size().x);
+        }
+    }
+    const float keyed = search->size().x;
+
+    state.searchKey.clear();
+    sync();
+    BOOST_CHECK(!key->visible() && !get("search-cap")->visible());
+    BOOST_CHECK_LT(search->size().x, keyed);
+}
+
+/**
+ * The search says what it does when the bar has room for it beside the tabs and the name. On a
+ * bar too short for that it keeps its magnifier and its key and leaves the words out, so it
+ * never runs over the name.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_short_bar_leaves_the_search_unlabelled, Bar) {
+    state.searchKey = "F3";
+    band = glm::vec4(300.0F, 0.0F, 900.0F, 28.0F);
+    sync();
+    BOOST_REQUIRE(get("search-label"));
+    BOOST_CHECK(get("search-label")->visible());
+    const float wide = get("search")->size().x;
+
+    band = glm::vec4(300.0F, 0.0F, 500.0F, 28.0F);
+    sync();
+    BOOST_CHECK(!get("search-label")->visible());
+    BOOST_CHECK_LT(get("search")->size().x, wide);
+    BOOST_CHECK(get("search-key")->visible());
+    const boost::shared_ptr<v3d::ui::Component> project = get("project");
+    BOOST_CHECK_GT(project->position().x, get("workspaces")->position().x + get("workspaces")->size().x);
+}
+
+/**
+ * The workspaces lie in a recess, each a choice that is raised while it is shown, so the one
+ * shown reads as a place and not as a setting that is on.
+ **/
+BOOST_FIXTURE_TEST_CASE(the_workspaces_are_choices_in_a_recess, Bar) {
+    sync();
+    const boost::shared_ptr<v3d::ui::component::Panel> plate = boost::dynamic_pointer_cast<v3d::ui::component::Panel>(get("workspaces"));
+    BOOST_REQUIRE(plate && tab(0));
+    BOOST_CHECK(plate->recess());
+    BOOST_CHECK(tab(0)->tab() == v3d::ui::component::Button::Tab::Choice);
 }
 
 /**
@@ -148,11 +216,6 @@ BOOST_FIXTURE_TEST_CASE(new_workspaces_build_the_bar_again, Bar) {
     BOOST_REQUIRE(tab(2));
     BOOST_CHECK_EQUAL(tab(2)->label(), "Animation");
     BOOST_CHECK_EQUAL(ui->containers().size(), 3U);
-}
-
-BOOST_AUTO_TEST_CASE(a_title_marks_unsaved_changes) {
-    BOOST_CHECK_EQUAL(TopBar::title("house", false), "house");
-    BOOST_CHECK_EQUAL(TopBar::title("house", true), "house *");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

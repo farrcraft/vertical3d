@@ -10,7 +10,7 @@ reads besides the common ones:
 
 | `type` | Class | Draws | Keys | Pickable / focusable |
 |---|---|---|---|---|
-| `panel` | `Panel` | a filled box with a border, optionally rounded | none | no / no |
+| `panel` | `Panel` | a filled box with a border, optionally rounded, or a recess in the `tab` colour with no border | `recess` (false) | no / no |
 | `label` | `Label` | its text, wrapped to the width it was given, or one line when the width is `Auto` | `label` | no / no |
 | `icon` | `Icon` | an image at the component's size, or nothing until it has one | `source`; with none, the app gives it an image with `Icon::image()` | no / no |
 | `bar` | `Bar` | a track and the filled fraction of it | `fraction` (0 to 1), `direction` (`vertical`, else horizontal) | no / no |
@@ -24,7 +24,7 @@ reads besides the common ones:
 | `tab` | `TabPage` | the components it holds | `label` | no / no |
 | `textbox` | `TextBox` | a plate, one line of text, a highlight behind the selection, and a caret while focused | `text`, `placeholder`, `limit` (bytes), `command`, `context` | yes / yes |
 | `hbox`, `vbox` | `HorizontalBox`, `VerticalBox` | nothing; they place their children | `spacing`, `stretch`, `wrap` | no / no |
-| `toolbar` | `Toolbar` | a row or column of buttons at an edge | `edge` (`top` or `left`), `buttons` (array of button entries) | yes / no |
+| `toolbar` | `Toolbar` | a row or column of buttons at an edge, with a faint rule between groups | `edge` (`top` or `left`), `buttons` (array of button entries, and `{ "type": "separator" }` for a rule before the next button) | yes / no |
 | `menubar` | `menu::Bar` | a strip of menu labels that drop panels | `menus`: array of `{ "label", "items" }`, each optionally with `icon`, `drop` (false), `emphasis` (false) and `accent` (false); `docked` (true); `opacity` (1) | yes / no |
 | `menu` | `menu::Menu` | a game menu, one level at a time, centred in the safe area under its title | `items`, `title` | no / no |
 
@@ -60,9 +60,9 @@ Notes on individual components:
   colour with a line in the `mark` colour under it, and its label is semibold. A toggle
   button given a `tab` look is drawn the same way while it is checked: `strip` as a
   `TabBar`'s tab, `choice` raised to the `chosen` colour, as one of a set of choices. The app
-  draws the recess behind a row of such buttons. A tab under the cursor is raised halfway.
-  Its label is measured semibold, so choosing it moves nothing. A plain toggle is filled with
-  the `highlight` while it is checked.
+  draws the recess behind a row of such buttons, such as a `panel` with `recess` set. A tab
+  under the cursor is raised halfway. Its label is measured semibold, so choosing it moves
+  nothing. A plain toggle is filled with the `highlight` while it is checked.
   Background: [ADR-0167](../../adr/0167-ui-a-chosen-tab-is-marked-as-a-place-not-a-toggle.md).
 - **A `Toolbar`** button entry reads every button key, plus `name`, `style`, `visible` and
   `enabled`. A `name` that is not a string is ignored, and the button has no name. A button

@@ -17,6 +17,7 @@
 #include <api/ui/paint/Dressing.h>
 #include <api/ui/tests/Typeset.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -426,6 +427,35 @@ BOOST_AUTO_TEST_CASE(a_toolbar_button_name_that_is_not_a_string_is_ignored) {
     BOOST_REQUIRE(bar);
     BOOST_TEST(bar->button(0)->name() == "select");
     BOOST_TEST(bar->button(1)->name().empty());
+}
+
+/**
+ * A separator in a document's buttons is a rule before the next button, not a button. In a
+ * column the button after it starts half a line further down, and a faint rule is drawn in the
+ * gap. A separator at the head of the strip takes no room.
+ **/
+BOOST_AUTO_TEST_CASE(a_separator_sets_apart_the_buttons_after_it) {
+    const boost::shared_ptr<entt::dispatcher> dispatcher = boost::make_shared<entt::dispatcher>();
+    const boost::shared_ptr<v3d::ui::Interface> ui = boost::make_shared<v3d::ui::Interface>(
+        boost::make_shared<v3d::event::Router>(dispatcher), dispatcher, boost::make_shared<v3d::log::Logger>());
+    BOOST_REQUIRE(ui->load(boost::json::parse(R"({ "themes": [], "containers": [ { "name": "editor", "visible": true,
+        "components": [ { "type": "toolbar", "name": "tools", "edge": "left", "buttons": [
+            { "type": "separator" }, { "label": "Move" }, { "type": "separator" }, { "label": "Cut" }
+        ] } ] } ] })").as_object()));
+    const boost::shared_ptr<v3d::ui::component::Toolbar> bar =
+        boost::dynamic_pointer_cast<v3d::ui::component::Toolbar>(ui->container("editor")->get("tools"));
+    BOOST_REQUIRE(bar);
+    BOOST_REQUIRE_EQUAL(bar->count(), 2U);
+    BOOST_TEST(bar->separated(0));
+    BOOST_TEST(bar->separated(1));
+
+    Fixture fixture;
+    const v3d::ui::paint::Dressing& style = fixture.renderer.dressing();
+    fixture.renderer.draw(&fixture.canvas, bar, glm::vec2(0.0F, 30.0F));
+    BOOST_TEST(bar->button(0)->position().y == 30.0F);
+    BOOST_TEST(bar->button(1)->position().y == 30.0F + (style.lineHeight * 1.5F));
+    const auto& vertices = fixture.canvas.vertices();
+    BOOST_TEST(std::any_of(vertices.begin(), vertices.end(), [&style](const auto& vertex) { return vertex.colour == style.hairline; }));
 }
 
 };  // namespace

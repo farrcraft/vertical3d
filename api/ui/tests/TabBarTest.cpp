@@ -12,6 +12,7 @@
 #include <api/ui/Length.h>
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Label.h>
+#include <api/ui/component/Panel.h>
 #include <api/ui/component/TabBar.h>
 #include <api/ui/component/TabPage.h>
 #include <api/ui/paint/ComponentRenderer.h>
@@ -327,6 +328,31 @@ BOOST_AUTO_TEST_CASE(the_loader_reads_a_buttons_tab_look) {
     BOOST_CHECK(look("choice") == Tab::Choice);
     BOOST_CHECK(look("plain") == Tab::None);
     BOOST_CHECK(look("odd") == Tab::None);
+}
+
+/**
+ * A panel that is a recess is filled with the tab colour and draws no outline, so the tabs
+ * raised out of it read as one set. A plain panel keeps its outline.
+ **/
+BOOST_AUTO_TEST_CASE(a_recess_is_filled_with_the_tab_colour_and_has_no_outline) {
+    for (const bool recess : {true, false}) {
+        std::vector<Written> written;
+        const v3d::ui::paint::ComponentRenderer renderer = build(&written);
+        v3d::render::realtime::canvas::Canvas canvas;
+        canvas.resize(glm::uvec2(400, 300));
+
+        const boost::shared_ptr<v3d::ui::component::Panel> panel = boost::make_shared<v3d::ui::component::Panel>();
+        panel->name("plate");
+        panel->recess(recess);
+        panel->layout().width = v3d::ui::Length(120.0F, v3d::ui::Length::Unit::Pixels);
+        panel->layout().height = v3d::ui::Length(24.0F, v3d::ui::Length::Unit::Pixels);
+        v3d::ui::Container container("hud", true);
+        container.add(panel);
+        renderer.draw(&canvas, container);
+
+        BOOST_CHECK_EQUAL(drawnIn(canvas, renderer.dressing().tab), recess);
+        BOOST_CHECK_EQUAL(drawnIn(canvas, renderer.dressing().border), !recess);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

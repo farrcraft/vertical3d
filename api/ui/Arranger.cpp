@@ -444,12 +444,19 @@ void Arranger::strip(component::Toolbar& bar, const glm::vec2& corner, const glm
     place(bar, {.position = corner, .size = size});
 
     glm::vec2 pen = corner;
+    bool placed = false;
     for (std::size_t index = 0; index < bar.count(); index++) {
         const boost::shared_ptr<component::Button> button = bar.button(index);
         // a hidden button takes no room, so the ones after it close up
         if (!button || !button->visible()) {
             continue;
         }
+        // a rule between two groups takes half a line, and one with no button before it none
+        if (placed && bar.separated(index)) {
+            const float gap = styles_.base().lineHeight * separatorShare;
+            pen += row ? glm::vec2(gap, 0.0F) : glm::vec2(0.0F, gap);
+        }
+        placed = true;
         // the strip decides how big a button in it is. A row's is as wide as its label and a
         // column's is as wide as the strip, and as tall when it shows an icon, so a shelf of
         // icons is a column of squares. The button is then drawn at that size, the same way a
