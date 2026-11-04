@@ -303,7 +303,8 @@ bool Bar::motion(const glm::vec2& cursor) {
             truncate(1);
         }
     }
-    return true;
+    // the rest of a closed bar is room for what an app puts beside the labels, as a press there is
+    return hover_ >= 0 || open_ >= 0;
 }
 
 /**

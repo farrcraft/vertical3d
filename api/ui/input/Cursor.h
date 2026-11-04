@@ -148,6 +148,13 @@ class Cursor final {
     void act(const boost::shared_ptr<Component>& component, const glm::vec2& point);
 
     /**
+     * @return what in a container is under a point, as the container picks it, or nothing.
+     *         A closed menu bar's strip beside its labels is nothing, so what a later container
+     *         sets there takes the cursor
+     **/
+    static boost::shared_ptr<Component> picked(const Container& container, const glm::vec2& point);
+
+    /**
      * Send a component's bound event, if it has one bound.
      **/
     void dispatch(const boost::shared_ptr<Component>& component) const;

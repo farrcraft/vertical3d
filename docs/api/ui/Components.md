@@ -132,7 +132,8 @@ Notes on individual components:
   from the first panel. A menu opened from the keys chooses its first item. Return and space act
   on the chosen item as a press would, and escape closes the deepest submenu, or the bar.
 - **A closed menu bar takes a press only on a label.** A press on the rest of its band is not
-  taken, so a container listed after the bar's can put buttons beside the labels.
+  taken, and neither is the cursor resting there. A container listed after the bar's can put
+  buttons beside the labels, which take their presses, their hover and their tooltips.
 
 ## Tooltips
 

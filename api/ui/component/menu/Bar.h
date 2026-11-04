@@ -122,7 +122,9 @@ class Bar : public Component {
     /**
      * The cursor moved.
      * @param cursor where it is, in the pixels the bar was drawn in
-     * @return whether it is over the bar or one of its open panels
+     * @return whether the bar took the cursor: it is over a label or an open panel, or anywhere
+     *         on the strip while a menu is open. The rest of a closed bar's strip is left to
+     *         what an app puts beside the labels
      **/
     bool motion(const glm::vec2& cursor);
 

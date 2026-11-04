@@ -97,7 +97,7 @@ bool Cursor::motion(const glm::vec2& point) {
             }
         }
         if (!taken) {
-            over = container->pick(point);
+            over = picked(*container, point);
             taken = static_cast<bool>(over);
         }
     }
@@ -158,7 +158,7 @@ bool Cursor::press(const boost::shared_ptr<Container>& container, const glm::vec
         }
     }
 
-    const boost::shared_ptr<Component> picked = container->pick(point);
+    const boost::shared_ptr<Component> picked = Cursor::picked(*container, point);
     if (!picked) {
         return false;
     }
@@ -314,6 +314,13 @@ void Cursor::place(const boost::shared_ptr<component::TextBox>& box, const glm::
         return;
     }
     box->place(point, type_, extend);
+}
+
+boost::shared_ptr<Component> Cursor::picked(const Container& container, const glm::vec2& point) {
+    // a closed menu bar that declined the point leaves the rest of its strip to what is set
+    // beside its labels, in this container or a later one
+    const boost::shared_ptr<Component> found = container.pick(point);
+    return found && found->type() == component::Type::MenuBar ? nullptr : found;
 }
 
 void Cursor::dispatch(const boost::shared_ptr<Component>& component) const {
