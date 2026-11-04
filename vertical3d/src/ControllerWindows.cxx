@@ -105,7 +105,7 @@ bool Controller::openWindow(const boost::json::object& layout, const glm::ivec2&
         if (!end) {
             return false;
         }
-        lookAlong(view->camera().get(), *end);
+        turn(*view, *end);
         syncUi();
         return true;
     });

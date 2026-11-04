@@ -469,7 +469,13 @@ class Renderer final {
     void drawViews(v3d::render::realtime::frame::Frame* frame, const std::vector<boost::shared_ptr<view::ViewPort>>& views, ViewCanvases* canvases);
 
     /**
-     * Draw each view's axis marker and gizmo into a window's ui canvas, at its screen's scale.
+     * Dim what a view through a scene camera shows outside the render's frame.
+     **/
+    static void drawPassepartout(v3d::render::realtime::canvas::Canvas* canvas, const view::ViewPort& view, const view::OverlayLook& look);
+
+    /**
+     * Draw each view's axis marker and gizmo into a window's ui canvas, at its screen's scale. A
+     * view through a scene camera is dimmed outside the render's frame first.
      **/
     void drawOverlays(v3d::render::realtime::canvas::Canvas* canvas, v3d::ui::shell::Screen& screen, const view::AreaViews& views,
         const control::chrome::Pointer& pointer) const;

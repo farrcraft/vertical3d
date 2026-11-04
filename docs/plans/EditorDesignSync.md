@@ -239,6 +239,16 @@ tooltip showing.
 
 ### Step 7 — A view through a scene camera, and the Animation workspace
 
+**Done but for a photograph.** A view holds what it looks through, a scene camera by its
+document id or the scene's camera, and whether it is locked. `view::follow()` sets the view from
+the camera each frame, framed to the render's picture, and the renderer dims what is outside the
+frame. The header's camera menu and the View menu list the scene's cameras, the View menu's
+through a new `Menu::removeFrom()`, with Lock Camera to View. Navigation frees a view, or with
+the lock moves the camera through `tool::CameraLock`, one change a drag. A layout's viewport may
+name `scene-camera`, and Animation shows a free view beside one. ADR-0169 records the choice. The
+editor restores the workspaces a user last saved over the shipped ones, so the new Animation
+layout and a view through a camera were not photographed.
+
 A viewport shows only the fixed views, Front to Perspective. Nothing shows what a scene camera
 frames until it renders.
 

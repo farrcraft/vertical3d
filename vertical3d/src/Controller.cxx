@@ -26,6 +26,8 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/Toolbar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
+#include <api/ui/component/menu/Type.h>
 #include <api/ui/input/Cursor.h>
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
@@ -55,12 +57,14 @@
 #include <vertical3d/src/scene/Timeline.h>
 #include <vertical3d/src/store/Project.h>
 #include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
 #include <vertical3d/src/tool/Select.h>
 #include <vertical3d/src/tool/Transform.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
+#include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -224,12 +228,17 @@ bool Controller::buildViews() {
  **/
 boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::Editor& editor) const {
     const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera");
-    if (!camera || !context_.profiles->has(*camera)) {
+    // a view that follows the scene's camera starts as a free perspective view
+    const bool follows = camera == view::SCENE_CAMERA;
+    const std::string profile = follows ? std::string(view::ViewPort::FREE_VIEW) : camera.value_or(std::string());
+    if (!context_.profiles->has(profile)) {
         logger()->get()->error("A viewport in the layout names no camera profile that exists");
         return nullptr;
     }
     // the name is the view's pass name, so the editor's id keeps two views of a profile apart
-    const boost::shared_ptr<view::ViewPort> made = boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
+    const boost::shared_ptr<view::ViewPort> made = boost::make_shared<view::ViewPort>(profile + " " + std::to_string(editor.id), context_.profiles->get(profile));
+    made->through({ .camera = v3d::asset::readInt(editor.state, "through").value_or(0), .scene = follows,
+        .locked = v3d::asset::readBool(editor.state, "locked").value_or(false) });
     // the view starts in the shading its state names, as the Shading workspace's view names smooth
     made->display().shading = view::shading(v3d::asset::readString(editor.state, "shading").value_or("")).value_or(view::Shading::Flat);
     return made;
@@ -240,6 +249,8 @@ boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::E
 void Controller::buildTools() {
     const boost::shared_ptr<scene::Scene>& scene = context_.document->scene();
     context_.cameraTool = boost::make_shared<tool::CameraControl>();
+    cameraLock_ = boost::make_shared<tool::CameraLock>(context_.document->history());
+    context_.cameraTool->watch([this](view::ViewPort& view, tool::CameraControl::Navigated what) { navigated(view, what); });
     context_.selectTool = boost::make_shared<tool::Select>(scene, logger());
     context_.transformTool = boost::make_shared<tool::Transform>(scene, logger());
     context_.transformTool->commands(context_.document->history());
@@ -336,10 +347,56 @@ void Controller::buildPointer(const boost::shared_ptr<v3d::ui::Interface>& vgui)
         if (!end) {
             return false;
         }
-        lookAlong(view->camera().get(), *end);
+        turn(*view, *end);
         syncUi();
         return true;
     });
+}
+
+/**
+ **/
+void Controller::turn(view::ViewPort& view, const view::AxisEnd& end) {
+    // a turn is navigation, which frees a view through a scene camera or moves a locked one
+    if (!view.free() && !view.through().locked) {
+        view.letGo();
+        navigated(view, tool::CameraControl::Navigated::Freed);
+    }
+    lookAlong(view.camera().get(), end);
+    if (!view.free()) {
+        navigated(view, tool::CameraControl::Navigated::Moved);
+        navigated(view, tool::CameraControl::Navigated::Ended);
+    }
+}
+
+/**
+ **/
+void Controller::navigated(view::ViewPort& view, tool::CameraControl::Navigated what) {
+    switch (what) {
+        case tool::CameraControl::Navigated::Freed: {
+            // the editor's state follows the view, so its tab and a saved layout show it free
+            const auto free = [&view](const boost::shared_ptr<view::AreaLayout>& layout, const boost::shared_ptr<view::AreaViews>& views) {
+                for (std::size_t area = 0; layout && views && area < layout->areas().size(); area++) {
+                    if (views->of(area).get() == &view) {
+                        const std::size_t editor = layout->areas()[area].editor().id;
+                        layout->set(editor, "camera", boost::json::string(view::ViewPort::FREE_VIEW));
+                        layout->set(editor, "through", 0);
+                        layout->set(editor, "locked", false);
+                    }
+                }
+            };
+            free(context_.layout, context_.views);
+            for (const Opened& opened : opened_) {
+                free(opened.layout, opened.views);
+            }
+            break;
+        }
+        case tool::CameraControl::Navigated::Moved:
+            cameraLock_->moved(context_.document->scene(), view);
+            break;
+        case tool::CameraControl::Navigated::Ended:
+            cameraLock_->ended();
+            break;
+    }
 }
 
 /**
@@ -381,6 +438,45 @@ void Controller::reportCommands() const {
         }
     }
     logger()->get()->info("{} commands registered, {} of them on a menu", commands().size(), named);
+}
+
+/**
+ **/
+void Controller::syncCameras() {
+    const control::chrome::Area::Cameras cameras = control::chrome::Area::of(*context_.document->scene());
+    if (chrome_) {
+        chrome_->cameras(cameras);
+    }
+    for (const Opened& opened : opened_) {
+        opened.chrome->cameras(cameras);
+    }
+    const boost::shared_ptr<v3d::ui::component::menu::Item> front = menu_ ? menu_->find("view::camera::front") : nullptr;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> owner = front ? front->menu().lock() : nullptr;
+    if (!owner) {
+        return;
+    }
+    if (viewCameras_ != cameras) {
+        if (!cameraItems_) {
+            cameraItems_ = owner->count();
+        }
+        owner->removeFrom(*cameraItems_);
+        if (!cameras.empty()) {
+            owner->addItem(boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Separator, std::string()));
+        }
+        // an item with no area acts on the active view
+        for (const control::chrome::Area::SceneCamera& camera : cameras) {
+            const boost::shared_ptr<v3d::ui::component::menu::Item> item =
+                boost::make_shared<v3d::ui::component::menu::Item>(v3d::ui::component::menu::ItemType::Radio, camera.name);
+            item->menu(owner);
+            v3d::event::Event event("camera::scene", front->event().context());
+            event.data(std::to_string(camera.id));
+            item->event(event);
+            owner->addItem(item);
+        }
+        viewCameras_ = cameras;
+    }
+    const boost::shared_ptr<view::ViewPort> active = context_.activeView();
+    control::chrome::Area::checkCamera(owner.get(), active ? active->looking() : 0);
 }
 
 /**
@@ -733,6 +829,7 @@ bool Controller::render() {
         top.searchKey = shell_.screen()->shortcut(v3d::event::Event("search::open"));
         topBar_->sync(top, glm::vec4(end, menu_->position().y, static_cast<float>(window()->width()) - end, renderer_->barHeight()));
     }
+    syncCameras();
     // between frames, so a header is never built again while a press on it is being handled
     if (chrome_) {
         chrome_->restoreKey(shell_.screen()->shortcut(v3d::event::Event("area::maximise")));

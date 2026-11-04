@@ -861,6 +861,30 @@ BOOST_AUTO_TEST_CASE(escape_backs_out_of_an_open_bar) {
     BOOST_CHECK(fixture.sent.empty());
 }
 
+/**
+ * Taking a menu's items from an index on leaves the ones before it, releases the ones taken, and
+ * clears the active item when it was taken. An index past the end takes nothing.
+ **/
+BOOST_AUTO_TEST_CASE(a_menu_takes_its_last_items_out) {
+    Fixture fixture;
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> menu = fixture.menu();
+    std::vector<boost::shared_ptr<v3d::ui::component::menu::Item>> items;
+    for (const char* label : { "Front", "Wide", "Close" }) {
+        items.push_back(fixture.item(v3d::ui::component::menu::ItemType::Radio, { .label = label, .name = std::string() }));
+        menu->addItem(items.back());
+    }
+    menu->active(2);
+    BOOST_CHECK(items[2]->parent() == menu.get());
+
+    menu->removeFrom(5);
+    BOOST_CHECK_EQUAL(menu->count(), 3U);
+    menu->removeFrom(1);
+    BOOST_REQUIRE_EQUAL(menu->count(), 1U);
+    BOOST_CHECK((*menu)[0] == items[0]);
+    BOOST_CHECK(!menu->active());
+    BOOST_CHECK(items[2]->parent() == nullptr);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 };  // namespace

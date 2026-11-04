@@ -263,6 +263,7 @@
     - [ADR-0154: Editor: the render view is an editor, in an area or a window](adr/0154-editor-the-render-view-is-an-editor-in-an-area-or-a-window.md)
     - [ADR-0157: Editor: item names are unique in their scene](adr/0157-editor-item-names-are-unique-in-their-scene.md)
     - [ADR-0168: Editor: an item is shown in views and renders by two flags](adr/0168-editor-an-item-is-shown-in-views-and-renders-by-two-flags.md)
+    - [ADR-0169: Editor: navigating a camera view frees it unless locked](adr/0169-editor-navigating-a-camera-view-frees-it-unless-locked.md)
     - [ADR-0007: CI: render tests on software Vulkan](adr/0007-ci-render-tests-on-software-vulkan.md)
     - [ADR-0027: Build: consume the api as source](adr/0027-build-consume-the-api-as-source.md)
     - [ADR-0033: Build: select api libraries through a manifest](adr/0033-build-select-api-libraries-through-a-manifest.md)

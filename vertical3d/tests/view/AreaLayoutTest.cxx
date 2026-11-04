@@ -661,7 +661,7 @@ BOOST_AUTO_TEST_CASE(the_shipped_workspaces_load) {
     using Areas = std::vector<std::vector<std::string>>;
     BOOST_CHECK(kinds.at("Modelling").size() == 6U);
     BOOST_CHECK(kinds.at("Perspective") == (Areas{ { "viewport" } }));
-    BOOST_CHECK(kinds.at("Animation") == (Areas{ { "viewport" }, { "outliner" }, { "properties" }, { "timeline", "graph", "console" } }));
+    BOOST_CHECK(kinds.at("Animation") == (Areas{ { "viewport" }, { "viewport" }, { "outliner" }, { "properties" }, { "timeline", "graph", "console" } }));
     BOOST_CHECK(kinds.at("Shading") == (Areas{ { "viewport" }, { "properties" } }));
     BOOST_CHECK(kinds.at("Rendering") == (Areas{ { "render-view" }, { "render-settings" } }));
 

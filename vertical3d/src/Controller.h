@@ -35,8 +35,14 @@
 #include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/chrome/StatusBar.h>
 #include <vertical3d/src/control/chrome/TopBar.h>
+#include <vertical3d/src/tool/CameraControl.h>
+#include <vertical3d/src/tool/CameraLock.h>
 #include <vertical3d/src/tool/Router.h>
+#include <vertical3d/src/view/ViewOverlay.h>
+#include <vertical3d/src/view/ViewPort.h>
 
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -317,6 +323,24 @@ class Controller final : public v3d::engine::Engine {
     void syncOpened();
 
     /**
+     * Hand the scene's cameras to the areas' camera menus, and list them at the end of the View
+     * menu's Camera submenu for the active view, with the one it looks through checked.
+     **/
+    void syncCameras();
+
+    /**
+     * Turn a view to look down an axis, as a press on its gizmo asks. A view through a scene
+     * camera is freed first, or moves the camera when it is locked to it.
+     **/
+    void turn(view::ViewPort& view, const view::AxisEnd& end);
+
+    /**
+     * Act on what navigation did to a view through a scene camera: keep a freed view's editor
+     * state, or move and record the camera a locked view is navigated with.
+     **/
+    void navigated(view::ViewPort& view, tool::CameraControl::Navigated what);
+
+    /**
      * Show a divider as the pointer over one window says it is lit.
      **/
     static void shapePointer(v3d::window::Window* window, const control::chrome::Pointer& pointer);
@@ -371,6 +395,11 @@ class Controller final : public v3d::engine::Engine {
 
     boost::shared_ptr<v3d::ui::shell::Keyboard> uiKeys_;
     boost::shared_ptr<v3d::ui::component::menu::Bar> menu_;
+    // how many items the View menu's Camera submenu has before the scene's cameras, and the
+    // cameras it lists
+    std::optional<std::size_t> cameraItems_;
+    boost::shared_ptr<tool::CameraLock> cameraLock_;
+    std::optional<control::chrome::Area::Cameras> viewCameras_;
     std::vector<boost::shared_ptr<v3d::ui::component::Toolbar>> toolbars_;
     // what the caption was last set to
     std::string caption_;

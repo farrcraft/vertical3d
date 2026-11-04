@@ -9,6 +9,7 @@
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 
 #include "Tool.h"
@@ -91,6 +92,24 @@ class CameraControl final : public Tool {
     boost::shared_ptr<view::ViewPort> view() const;
 
     /**
+     * What a drag did to a view that looked through a scene camera: freed the view before its
+     * first move, moved the view locked to the camera, or ended a drag that did.
+     **/
+    enum class Navigated : std::uint8_t { Freed, Moved, Ended };
+
+    /**
+     * What is told what a drag did to a view through a scene camera.
+     **/
+    using Watch = std::function<void(view::ViewPort& view, Navigated what)>;
+
+    /**
+     * Be told what each drag does to a view through a scene camera. A view that is not locked to
+     * its camera is freed before the drag moves it, so the drag moves the view and not the
+     * camera. A locked view is told of after each move, so the camera can follow it.
+     **/
+    void watch(const Watch& watch);
+
+    /**
      * @return which move a drag performs: the held move while there is one, and the latched
      *         move otherwise
      **/
@@ -144,6 +163,7 @@ class CameraControl final : public Tool {
     bool dragging_;
     boost::shared_ptr<view::ViewPort> view_;
     v3d::type::camera::ArcBall arcball_;
+    Watch watch_;
 };
 
 };  // namespace v3d::editor::tool

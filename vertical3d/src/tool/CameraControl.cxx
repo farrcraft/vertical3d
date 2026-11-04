@@ -124,9 +124,23 @@ glm::vec2 CameraControl::local(const glm::vec2& position) const {
 
 /**
  **/
+void CameraControl::watch(const Watch& watch) {
+    watch_ = watch;
+}
+
+/**
+ **/
 void CameraControl::motion(const glm::vec2& position) {
     const glm::vec2 point = local(position);
 
+    // a view through a scene camera is freed where it is, unless it is locked to the camera
+    const bool moving = dragging_ && view_ && mode() != CAMERA_MODE_NONE;
+    if (moving && !view_->free() && !view_->through().locked) {
+        view_->letGo();
+        if (watch_) {
+            watch_(*view_, Navigated::Freed);
+        }
+    }
     if (dragging_) {
         switch (mode()) {
             case CAMERA_MODE_ZOOM:
@@ -148,6 +162,9 @@ void CameraControl::motion(const glm::vec2& position) {
                 break;
         }
     }
+    if (moving && !view_->free() && watch_) {
+        watch_(*view_, Navigated::Moved);
+    }
     // after the move, not before: zoom() and truck() measure the move from last_, and a
     // last_ written first would make every move zero
     last_ = point;
@@ -161,6 +178,9 @@ void CameraControl::button(unsigned int button, bool pressed, const glm::vec2& p
         return;
     }
     last_ = local(position);
+    if (!pressed && dragging_ && view_ && !view_->free() && watch_) {
+        watch_(*view_, Navigated::Ended);
+    }
     dragging_ = pressed;
     if (pressed) {
         // the arcball drags from the point it was clicked at

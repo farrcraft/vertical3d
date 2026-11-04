@@ -10,6 +10,7 @@ v3d_add_test(vertical3d
 	"view/ViewOverlayTest.cxx"
 	"view/ConstructionPlaneTest.cxx"
 	"view/ViewPortTest.cxx"
+	"view/ThroughTest.cxx"
 
 	"scene/ItemTest.cxx"
 	"scene/ComponentsTest.cxx"
@@ -69,6 +70,7 @@ v3d_add_test(vertical3d
 	"render/BatchTest.cxx"
 
 	"tool/CameraControlTest.cxx"
+	"tool/CameraLockTest.cxx"
 	"tool/PickerTest.cxx"
 	"tool/SelectTest.cxx"
 	"tool/RouterTest.cxx"

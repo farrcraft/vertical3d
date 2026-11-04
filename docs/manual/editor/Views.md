@@ -1,8 +1,8 @@
 # Working in the viewports
 
-How to move a viewport's camera, show a fixed view, and change how a viewport draws the scene.
-A viewport's camera belongs to the view. It is not an item in the scene, and moving it changes
-nothing you save.
+How to move a viewport's camera, show a fixed view, look through a scene camera, and change how a
+viewport draws the scene. A viewport's camera belongs to the view. It is not an item in the
+scene, and moving it changes nothing you save, unless the view is locked to a scene camera.
 
 ## Which view a command acts on
 
@@ -46,6 +46,21 @@ camera the view shows.
 To switch a view between orthographic and perspective, press P, or choose
 **View > Camera > Orthographic**. The item is checked while the view is orthographic. The
 camera stays where it is.
+
+## Look through a scene camera
+
+Choose **View > Camera** and then a camera by its name, listed after the fixed views, or choose
+it from a viewport's own camera menu. The view shows what the camera sees, framed as the render
+frames it. What lies outside the render's frame is dimmed. A camera that is keyed moves in the
+view as the animation plays.
+
+Moving the view's camera, by dragging or with the navigation gizmo, leaves the scene camera where
+it is: the view becomes a free perspective view from the same place. To aim the scene camera by
+moving the view instead, check **Lock Camera to View** in the same menu. Each drag is then one
+step of the history.
+
+The Animation workspace has a view that follows the scene's camera: the selected camera, or else
+the first camera in the scene. Until the scene has a camera, it is a perspective view.
 
 ## Maximise a view
 

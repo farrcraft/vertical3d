@@ -43,6 +43,7 @@
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ConstructionPlane.h>
 #include <vertical3d/src/view/ShadedPass.h>
+#include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewOverlay.h>
 #include <vertical3d/src/view/ViewPort.h>
 
@@ -510,6 +511,8 @@ void Renderer::drawViews(v3d::render::realtime::frame::Frame* frame, const std::
         }
 
         view->grid().colours(grid);
+        // a view through a scene camera shows it as the scene stands this frame
+        view::follow(scene, view.get());
         view->draw(scene, &canvases->scenes[index], select_ ? select_->mask() : selection::SelectMask::Object);
         // the handles go to a canvas of their own because they are an overlay, drawn in a
         // second pass that does not depth test. On the scene's canvas a handle would be in
@@ -562,8 +565,27 @@ void Renderer::drawOverlays(v3d::render::realtime::canvas::Canvas* canvas, v3d::
     for (const boost::shared_ptr<view::ViewPort>& view : views.shown()) {
         const glm::vec4& region = view->region();
         const bool over = cursor.x >= region.x && cursor.x < region.x + region.z && cursor.y >= region.y && cursor.y < region.y + region.w;
+        drawPassepartout(canvas, *view, look);
         drawOverlay(canvas, *view, metrics, look, type, over ? std::optional<glm::vec2>(cursor) : std::nullopt);
     }
+}
+
+/**
+ **/
+void Renderer::drawPassepartout(v3d::render::realtime::canvas::Canvas* canvas, const view::ViewPort& view, const view::OverlayLook& look) {
+    if (!view.frame()) {
+        return;
+    }
+    // the four bands of the view around the frame: above, below, and either side of it
+    const glm::vec4& region = view.region();
+    const glm::vec2 min(region.x, region.y);
+    const glm::vec2 max = min + glm::vec2(region.z, region.w);
+    const glm::vec2 inner = min + glm::vec2(view.frame()->x, view.frame()->y);
+    const glm::vec2 outer = inner + glm::vec2(view.frame()->z, view.frame()->w);
+    canvas->rect(min, glm::vec2(max.x, inner.y), look.passepartout);
+    canvas->rect(glm::vec2(min.x, outer.y), max, look.passepartout);
+    canvas->rect(glm::vec2(min.x, inner.y), glm::vec2(inner.x, outer.y), look.passepartout);
+    canvas->rect(glm::vec2(outer.x, inner.y), glm::vec2(max.x, outer.y), look.passepartout);
 }
 
 /**

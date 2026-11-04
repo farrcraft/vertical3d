@@ -150,7 +150,8 @@
                     { "label": "Bottom", "type": "radio", "context": "view", "command": "camera::bottom" },
                     { "label": "Perspective", "type": "radio", "context": "view", "command": "camera::perspective" },
                     { "type": "separator" },
-                    { "label": "Orthographic", "type": "check", "context": "view", "command": "camera::orthographic" }
+                    { "label": "Orthographic", "type": "check", "context": "view", "command": "camera::orthographic" },
+                    { "label": "Lock Camera to View", "type": "check", "context": "view", "command": "camera::lock" }
                   ]
                 },
                 {

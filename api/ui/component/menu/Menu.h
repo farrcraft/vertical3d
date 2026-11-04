@@ -8,6 +8,7 @@
 #include <api/ui/Component.h>
 #include <api/ui/Image.h>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -138,6 +139,14 @@ class Menu : public Component {
     boost::shared_ptr<Item> find(std::string_view command) const;
 
     void addItem(const boost::shared_ptr<Item>& item);
+
+    /**
+     * Take every item from an index on out of the menu, for a menu whose end lists things that
+     * come and go, such as the scene's cameras. The active item is cleared if it was one of them.
+     *
+     * @param index the first item to take, which may be past the last, taking nothing
+     **/
+    void removeFrom(std::size_t index);
 
     /**
      * Get the currently active menu level.

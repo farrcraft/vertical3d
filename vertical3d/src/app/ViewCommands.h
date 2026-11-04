@@ -5,13 +5,17 @@
 
 #pragma once
 
+#include <api/event/Event.h>
 #include <vertical3d/src/app/CommandTable.h>
 #include <vertical3d/src/app/Context.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace v3d::editor::app {
 
@@ -47,6 +51,25 @@ class ViewCommands final {
      * Switch a view between perspective and orthographic.
      **/
     void toggleProjection(view::ViewPort* view) const;
+
+    /**
+     * Have an area's view look through a scene camera, from the next frame on, and keep it in the
+     * editor's state.
+     **/
+    void lookThrough(const Context::Placed& at, view::ViewPort* view, std::int64_t camera) const;
+
+    /**
+     * Lock or unlock a view's camera to the view: while it is locked, navigating the view moves
+     * the scene camera it looks through.
+     **/
+    static void toggleLock(const Context::Placed& at, view::ViewPort* view);
+
+    /**
+     * @return the scene camera and the area a command to look through a camera names, from its
+     *         data: the camera's document id, then "@" and the area's id for an area's own menu.
+     *         Nothing when the data names no camera
+     **/
+    static std::optional<std::pair<std::int64_t, std::optional<int>>> named(const v3d::event::Event& event);
 
     const Context& context_;
 };

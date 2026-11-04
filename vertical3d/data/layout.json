@@ -48,7 +48,8 @@
             "split": "horizontal",
             "share": 3,
             "children": [
-              { "editors": [{ "kind": "viewport", "camera": "Perspective" }], "share": 4 },
+              { "editors": [{ "kind": "viewport", "camera": "Perspective" }], "share": 2 },
+              { "editors": [{ "kind": "viewport", "camera": "scene-camera" }], "share": 2 },
               {
                 "split": "vertical",
                 "children": [

@@ -368,6 +368,40 @@ BOOST_FIXTURE_TEST_CASE(a_viewports_header_names_its_camera_and_shading, Chrome)
 }
 
 /**
+ * A viewport's camera menu offers the scene's cameras after the fixed views, each sending its
+ * camera's id and the area's. A view through a camera marks it and no fixed view, and offers the
+ * lock, which a free view does not. A change to the cameras builds the headers again.
+ **/
+BOOST_FIXTURE_TEST_CASE(a_camera_menu_offers_the_scenes_cameras, Chrome) {
+    sync();
+    BOOST_CHECK(!header(0)->find("view::camera::scene"));
+    BOOST_CHECK(!header(0)->find("view::camera::lock"));
+
+    chrome.cameras({ { .id = 7, .name = "Wide" }, { .id = 9, .name = "Close" } });
+    views->of(0)->through({ .camera = 9, .scene = false, .locked = true });
+    views->of(0)->looking(9);
+    sync();
+    const boost::shared_ptr<v3d::ui::component::menu::Bar> bar = header(0);
+    const boost::shared_ptr<v3d::ui::component::menu::Menu> cameras = bar->menu(1);
+    const std::string area = std::to_string(layout.areas()[0].id);
+    std::vector<std::string> sent;
+    for (std::size_t index = 0; index < cameras->count(); index++) {
+        const boost::shared_ptr<v3d::ui::component::menu::Item>& item = (*cameras)[index];
+        if (item && item->event().name() == "camera::scene") {
+            const boost::optional<v3d::event::EventData> data = item->event().data();
+            BOOST_REQUIRE(data && std::holds_alternative<std::string>(*data));
+            sent.push_back(std::get<std::string>(*data));
+            BOOST_CHECK_EQUAL(item->checked(), sent.back().starts_with("9@"));
+        }
+    }
+    BOOST_CHECK(sent == (std::vector<std::string>{ "7@" + area, "9@" + area }));
+    BOOST_REQUIRE(bar->find("view::camera::lock"));
+    BOOST_CHECK(bar->find("view::camera::lock")->checked());
+    BOOST_CHECK(!bar->find("view::camera::front")->checked());
+    BOOST_CHECK(!header(1)->find("view::camera::lock"));
+}
+
+/**
  * A viewport's header ends with a menu named for the select mask, whose items send each mask's
  * command with the area's id and mark the one in force. A new mask builds the header again.
  **/

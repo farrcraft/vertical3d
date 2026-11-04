@@ -17,6 +17,7 @@
 #include <api/ui/component/Button.h>
 #include <api/ui/component/menu/Bar.h>
 #include <api/ui/component/menu/Item.h>
+#include <api/ui/component/menu/Menu.h>
 #include <vertical3d/src/control/ConsoleEditor.h>
 #include <vertical3d/src/control/GraphEditor.h>
 #include <vertical3d/src/control/Outliner.h>
@@ -24,10 +25,13 @@
 #include <vertical3d/src/control/RenderSettingsEditor.h>
 #include <vertical3d/src/control/RenderView.h>
 #include <vertical3d/src/control/TimelineEditor.h>
+#include <vertical3d/src/scene/item/Item.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/Shading.h>
+#include <vertical3d/src/view/Through.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <algorithm>
@@ -43,6 +47,8 @@
 #include <vector>
 
 #include <boost/json.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
@@ -107,14 +113,23 @@ boost::json::object Area::maskMenu(selection::SelectMask mask, std::size_t area)
 
 /**
  **/
-boost::json::array Area::viewMenus(const view::ViewPort& view, std::size_t area) {
+boost::json::array Area::viewMenus(const view::ViewPort& view, std::size_t area, const Cameras& scene) {
     boost::json::array cameras;
     for (const FixedView& fixed : fixedViews()) {
         // an item names its command without its context
         cameras.emplace_back(mark(fixed.profile, "radio", fixed.command.substr(VIEW_CONTEXT.size() + 2), area));
     }
+    if (!scene.empty()) {
+        cameras.emplace_back(boost::json::object{ { "type", "separator" } });
+        for (const SceneCamera& camera : scene) {
+            cameras.emplace_back(cameraItem(camera, area));
+        }
+    }
     cameras.emplace_back(boost::json::object{ { "type", "separator" } });
     cameras.emplace_back(mark("Orthographic", "check", "camera::orthographic", area));
+    if (!view.free()) {
+        cameras.emplace_back(mark("Lock Camera to View", "check", "camera::lock", area));
+    }
 
     boost::json::array shading = {
         mark("Flat", "radio", "shade::flat", area),
@@ -183,7 +198,7 @@ std::string Area::name(std::size_t area) {
  **/
 std::string Area::label(const view::AreaLayout::Editor& editor) {
     if (const std::optional<std::string> camera = v3d::asset::readString(editor.state, "camera")) {
-        return *camera;
+        return *camera == view::SCENE_CAMERA ? std::string(SCENE_CAMERA_LABEL) : *camera;
     }
     return capital(editor.kind);
 }
@@ -251,12 +266,14 @@ std::vector<std::pair<std::string, bool>> Area::marks(const view::ViewPort& view
         made.emplace_back(std::string("view::rendermode::front::") + FILLS[index].command, shown.front == FILLED[index]);
         made.emplace_back(std::string("view::rendermode::back::") + FILLS[index].command, shown.back == FILLED[index]);
     }
-    // a view laid out from a profile no fixed view is, such as a second perspective, marks none
+    // a view laid out from a profile no fixed view is, such as a second perspective, marks none,
+    // and so does a view through a scene camera, whatever the camera is called
     const v3d::type::camera::Camera& camera = *view.camera();
     for (const FixedView& fixed : fixedViews()) {
-        made.emplace_back(fixed.command, camera.profile().name() == fixed.profile);
+        made.emplace_back(fixed.command, view.free() && camera.profile().name() == fixed.profile);
     }
     made.emplace_back("view::camera::orthographic", camera.orthographic());
+    made.emplace_back("view::camera::lock", view.through().locked);
     return made;
 }
 
@@ -298,9 +315,13 @@ std::vector<std::pair<std::string, bool>> Area::marks(selection::SelectMask mask
 
 /**
  **/
-std::string Area::signature(const view::AreaViews& views, selection::SelectMask mask) {
+std::string Area::signature(const view::AreaViews& views, selection::SelectMask mask, const Cameras& cameras) {
     const view::AreaLayout& layout = *views.layout();
     std::string made = std::string(selectMaskName(mask)) + (layout.maximised() ? ";maximised;" : ";");
+    for (const SceneCamera& camera : cameras) {
+        made += std::to_string(camera.id) + "=" + camera.name + ",";
+    }
+    made += ";";
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
         const view::AreaLayout::Area& area = layout.areas()[index];
         made += std::to_string(area.id) + ":" + area.editor().kind + ":";
@@ -308,7 +329,7 @@ std::string Area::signature(const view::AreaViews& views, selection::SelectMask 
             made += std::to_string(editor.id) + "=" + label(editor) + ",";
         }
         if (const boost::shared_ptr<view::ViewPort> view = views.of(index)) {
-            made += view->camera()->profile().name() + "/" + shading(view->display());
+            made += view->camera()->profile().name() + "/" + shading(view->display()) + (view->free() ? "/free" : "/through");
         }
         made += ";";
     }
@@ -317,7 +338,7 @@ std::string Area::signature(const view::AreaViews& views, selection::SelectMask 
 
 /**
  **/
-boost::json::object Area::document(const view::AreaViews& views, selection::SelectMask mask) {
+boost::json::object Area::document(const view::AreaViews& views, selection::SelectMask mask, const Cameras& cameras) {
     const view::AreaLayout& layout = *views.layout();
     boost::json::array containers;
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
@@ -357,7 +378,7 @@ boost::json::object Area::document(const view::AreaViews& views, selection::Sele
             menus.emplace_back(std::move(areaMenu));
         }
         if (view) {
-            for (boost::json::value& menu : viewMenus(*view, id)) {
+            for (boost::json::value& menu : viewMenus(*view, id, cameras)) {
                 menus.emplace_back(std::move(menu));
             }
             menus.emplace_back(maskMenu(mask, id));
@@ -405,14 +426,14 @@ boost::json::array Area::strip(const view::AreaLayout::Area& area, boost::json::
  **/
 void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active) {
     const view::AreaLayout& layout = *views.layout();
-    const std::string now = signature(views, mask);
+    const std::string now = signature(views, mask, cameras_);
     if (now != signature_) {
         for (const std::string& held : held_) {
             ui_->remove(held);
         }
         held_.clear();
         signature_ = now;
-        if (ui_->add(document(views, mask), before_)) {
+        if (ui_->add(document(views, mask, cameras_), before_)) {
             for (const view::AreaLayout::Area& area : layout.areas()) {
                 held_.push_back(name(area.id));
                 if (resolve_) {
@@ -426,6 +447,54 @@ void Area::sync(const view::AreaViews& views, selection::SelectMask mask, float 
     for (std::size_t index = 0; index < layout.areas().size(); index++) {
         place(layout.areas()[index], { .view = views.of(index).get(), .mask = mask, .height = height, .active = index == active,
             .maximised = layout.maximised().has_value() });
+    }
+}
+
+/**
+ **/
+Area::Cameras Area::of(const scene::Scene& scene) {
+    Cameras made;
+    for (const boost::shared_ptr<scene::item::Item>& item : scene.items()) {
+        if (item->kind() == scene::item::Item::Kind::Camera) {
+            made.push_back({ .id = item->documentId(), .name = item->name() });
+        }
+    }
+    return made;
+}
+
+/**
+ **/
+void Area::cameras(const Cameras& cameras) {
+    cameras_ = cameras;
+}
+
+/**
+ **/
+boost::json::object Area::cameraItem(const SceneCamera& camera, std::optional<std::size_t> area) {
+    std::string data = std::to_string(camera.id);
+    if (area) {
+        data += "@" + std::to_string(*area);
+    }
+    return boost::json::object{ { "label", camera.name }, { "type", "radio" }, { "context", VIEW_CONTEXT },
+        { "command", "camera::scene" }, { "data", data } };
+}
+
+/**
+ **/
+void Area::checkCamera(v3d::ui::component::menu::Menu* menu, std::int64_t shown) {
+    if (menu == nullptr) {
+        return;
+    }
+    const std::string id = std::to_string(shown);
+    for (std::size_t index = 0; index < menu->count(); index++) {
+        const boost::shared_ptr<v3d::ui::component::menu::Item>& item = (*menu)[index];
+        if (!item || item->event().name() != "camera::scene") {
+            continue;
+        }
+        // the data is the camera's id, followed by the area's after an "@" in an area's menu
+        const boost::optional<v3d::event::EventData> data = item->event().data();
+        const std::string named = data && std::holds_alternative<std::string>(*data) ? std::get<std::string>(*data) : std::string();
+        item->checked(shown != 0 && named.substr(0, named.find('@')) == id);
     }
 }
 
@@ -490,6 +559,7 @@ void Area::placeHeader(v3d::ui::component::menu::Bar* bar, const view::AreaLayou
         const std::size_t camera = tabbed ? 0 : 1;
         if (bar->count() > camera && bar->menu(camera)) {
             bar->menu(camera)->emphasis(placing.active);
+            checkCamera(bar->menu(camera).get(), placing.view->looking());
         }
     }
     bar->note(note);

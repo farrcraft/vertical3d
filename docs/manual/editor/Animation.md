@@ -3,9 +3,9 @@
 How to key an item's properties, edit the keys in the timeline and the graph editor, and play the
 animation. [Concepts.md](Concepts.md#frames-keys-and-curves) defines frames, keys and curves.
 
-The Animation workspace has a perspective view, the outliner and the properties editor, and a
-strip along the foot with the timeline, the graph editor and the console as tabs. Click its tab
-at the top of the window to use it.
+The Animation workspace has a perspective view and a view through the scene's camera side by
+side, with the outliner and the properties editor. A strip along the foot holds the timeline, the
+graph editor and the console as tabs. Click its tab at the top of the window to use it.
 
 ## What can be keyed
 

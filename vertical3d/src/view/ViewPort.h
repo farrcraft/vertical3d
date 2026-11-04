@@ -11,7 +11,9 @@
 #include <vertical3d/src/selection/SelectMask.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
 
 #include "ConstructionPlane.h"
 #include "Shading.h"
@@ -71,6 +73,23 @@ class ViewPort final {
     };
 
     /**
+     * The fixed view a view through a scene camera starts from, and is named for once it is
+     * freed.
+     **/
+    static constexpr std::string_view FREE_VIEW = "Perspective";
+
+    /**
+     * What the view looks through. A free view has a camera of its own, which navigation moves.
+     * Otherwise it looks through a scene camera: the one it names, or the scene's camera, which
+     * is the first selected camera, else the first in the scene.
+     **/
+    struct Through final {
+        std::int64_t camera = 0;  /**< the scene camera's document id, or 0 for none **/
+        bool scene = false;       /**< whether it follows the scene's camera rather than one it names **/
+        bool locked = false;      /**< whether navigation moves the scene camera, rather than freeing the view **/
+    };
+
+    /**
      * @param name what the view is called, which is also its pass name
      * @param profile the camera profile the view starts from
      **/
@@ -107,6 +126,40 @@ class ViewPort final {
      * @return the region of the window the view covers
      **/
     const glm::vec4& region() const noexcept;
+
+    /**
+     * What the view looks through. Setting it changes nothing shown until the view is next
+     * followed, which sets its camera from the scene's, except that a free view drops its frame.
+     **/
+    const Through& through() const noexcept;
+    void through(const Through& through) noexcept;
+
+    /**
+     * @return whether the view is free: it looks through no scene camera
+     **/
+    bool free() const noexcept;
+
+    /**
+     * The document id of the scene camera the view showed when it was last followed, or 0 for
+     * none. A view that follows the scene's camera shows a different one as the selection
+     * changes.
+     **/
+    std::int64_t looking() const noexcept;
+    void looking(std::int64_t camera) noexcept;
+
+    /**
+     * Stop looking through a scene camera, and show what it showed as a free view named
+     * Perspective. Navigation then moves the view's own camera.
+     **/
+    void letGo();
+
+    /**
+     * The part of the view the render's picture fills, as x, y, width and height from the view's
+     * top left corner, while the view looks through a scene camera. The view dims what is
+     * outside it. Nothing for a free view.
+     **/
+    const std::optional<glm::vec4>& frame() const noexcept;
+    void frame(const std::optional<glm::vec4>& frame) noexcept;
 
     /**
      * Which decorations the view draws.
@@ -165,6 +218,9 @@ class ViewPort final {
     glm::vec4 region_;
     unsigned int showFlags_;
     Display display_;
+    Through through_;
+    std::int64_t looking_ = 0;
+    std::optional<glm::vec4> frame_;
 };
 
 };  // namespace v3d::editor::view

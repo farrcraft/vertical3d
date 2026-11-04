@@ -8,12 +8,15 @@
 #include <api/ui/Component.h>
 #include <api/ui/Interface.h>
 #include <api/ui/component/menu/Bar.h>
+#include <api/ui/component/menu/Menu.h>
+#include <vertical3d/src/scene/Scene.h>
 #include <vertical3d/src/selection/SelectMask.h>
 #include <vertical3d/src/view/AreaLayout.h>
 #include <vertical3d/src/view/AreaViews.h>
 #include <vertical3d/src/view/ViewPort.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <span>
@@ -48,9 +51,11 @@ namespace v3d::editor::control::chrome {
  * While an area is maximised its button restores the layout, and a note after its header's
  * menus, or after its strip's +, names the key that does it.
  *
- * A viewport's header has three more menus. One is named for the camera the view shows and
- * offers the fixed views and the projection switch. One is named for how the view shades the
- * scene and offers the shading, the fill of each side and the cull. Each marks what its view
+ * A viewport's header has three more menus. One is named for the camera the view shows. It
+ * offers the fixed views, the scene's cameras and the projection switch. While the view looks
+ * through a scene camera it also offers the lock that makes navigation move that camera. One is
+ * named for how the view shades the scene and offers the shading, the fill of each side and the
+ * cull. Each marks what its view
  * holds. The last is named for the select mask, which every view shares, and offers each mask.
  *
  * The area menu's commands are in the "area" context, a viewport's camera and shading menus' in
@@ -63,6 +68,11 @@ namespace v3d::editor::control::chrome {
  **/
 class Area final {
  public:
+    /**
+     * What a tab calls a viewport that follows the scene's camera.
+     **/
+    static constexpr std::string_view SCENE_CAMERA_LABEL = "Scene Camera";
+
     /**
      * The command context every header and tab sends in.
      **/
@@ -118,6 +128,39 @@ class Area final {
     void sync(const view::AreaViews& views, selection::SelectMask mask, float height, std::size_t active);
 
     /**
+     * A camera in the scene, as a viewport's camera menu offers it: its document id and name.
+     **/
+    struct SceneCamera final {
+        std::int64_t id = 0;
+        std::string name;
+
+        bool operator==(const SceneCamera&) const = default;
+    };
+    using Cameras = std::vector<SceneCamera>;
+
+    /**
+     * @return the cameras a scene holds, in its order, as the camera menus offer them
+     **/
+    static Cameras of(const scene::Scene& scene);
+
+    /**
+     * The scene's cameras, which each viewport's camera menu offers after the fixed views. A
+     * change to them builds the containers again at the next sync().
+     **/
+    void cameras(const Cameras& cameras);
+
+    /**
+     * @return the menu item that has a view look through a scene camera. Its data is the
+     *         camera's document id, and "@" and the area's id after it when an area sends it
+     **/
+    static boost::json::object cameraItem(const SceneCamera& camera, std::optional<std::size_t> area);
+
+    /**
+     * Check the item of the scene camera a view shows among a menu's items, and uncheck the rest.
+     **/
+    static void checkCamera(v3d::ui::component::menu::Menu* menu, std::int64_t shown);
+
+    /**
      * @param key what the key that maximises and restores an area is called, or empty for none.
      *        A maximised area's hint names it
      **/
@@ -144,7 +187,7 @@ class Area final {
      * @return the containers the areas of the views' layout are drawn with, under a select mask,
      *         as Interface::add() reads them
      **/
-    static boost::json::object document(const view::AreaViews& views, selection::SelectMask mask);
+    static boost::json::object document(const view::AreaViews& views, selection::SelectMask mask, const Cameras& cameras = {});
 
     /**
      * @return the name of an area's container
@@ -277,7 +320,7 @@ class Area final {
     /**
      * @return a viewport's camera menu and its shading menu, named for what the view shows
      **/
-    static boost::json::array viewMenus(const view::ViewPort& view, std::size_t area);
+    static boost::json::array viewMenus(const view::ViewPort& view, std::size_t area, const Cameras& scene);
 
     /**
      * @return the submenu, its items sending the command for one area
@@ -295,11 +338,12 @@ class Area final {
     static void box(v3d::ui::Component* component, const glm::vec4& region);
 
     /**
-     * @return what decides whether the containers have to be built again. That is whether an
-     *         area is maximised, each area's id, the kind of editor it shows, its editors' ids and
-     *         labels, and the names of its view's menus and of the mask
+     * @return what decides whether the containers have to be built again: whether an area is
+     *         maximised, each area's id, and the kind of editor it shows. Its editors' ids and
+     *         labels count, as do the names of its view's menus and of the mask. Whether its view
+     *         is free counts too, and the scene's cameras
      **/
-    static std::string signature(const view::AreaViews& views, selection::SelectMask mask);
+    static std::string signature(const view::AreaViews& views, selection::SelectMask mask, const Cameras& cameras);
 
     /**
      * What place() puts an area's header and strip by.
@@ -348,6 +392,7 @@ class Area final {
     Resolve resolve_;
     std::string signature_;
     std::string restoreKey_;
+    Cameras cameras_;
     // the containers sync() last added, by name
     std::vector<std::string> held_;
 };

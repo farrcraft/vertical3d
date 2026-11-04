@@ -56,6 +56,18 @@ void Menu::addItem(const boost::shared_ptr<Item>& item) {
     items_.push_back(item);
 }
 
+void Menu::removeFrom(std::size_t index) {
+    while (items_.size() > index) {
+        if (items_.back()) {
+            disown(*items_.back());
+        }
+        items_.pop_back();
+    }
+    if (active_ >= 0 && static_cast<std::size_t>(active_) >= items_.size()) {
+        active_ = -1;
+    }
+}
+
 boost::shared_ptr<Item> Menu::active() const {
     if (active_ < 0 || static_cast<size_t>(active_) >= items_.size()) {
         return nullptr;

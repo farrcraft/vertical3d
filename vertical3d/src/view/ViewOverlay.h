@@ -67,6 +67,7 @@ struct OverlayLook final {
     static constexpr glm::vec4 LABEL{ 0.067F, 0.071F, 0.078F, 1.0F };
     static constexpr glm::vec4 REST{ 1.0F, 1.0F, 1.0F, 0.05F };
     static constexpr glm::vec4 HOVER{ 1.0F, 1.0F, 1.0F, 0.10F };
+    static constexpr glm::vec4 PASSEPARTOUT{ 0.0F, 0.0F, 0.0F, 0.45F };
     static constexpr float TEXT = 11.0F;
     static constexpr float LINE = 2.0F;
 
@@ -75,6 +76,7 @@ struct OverlayLook final {
     glm::vec4 rest = REST;                                    /**< the disc behind the gizmo **/
     glm::vec4 hover = HOVER;                                  /**< the disc behind the gizmo under the cursor **/
     glm::vec4 lit{ 1.0F };                                    /**< the ring around the ball under the cursor **/
+    glm::vec4 passepartout = PASSEPARTOUT;                    /**< laid over a camera's view outside the render's frame **/
     float text = TEXT;                                        /**< how large a letter is drawn, in pixels **/
     float line = LINE;                                        /**< how thick a line is, and a ring around a ball **/
 };
