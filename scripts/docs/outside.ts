@@ -12,9 +12,10 @@
  * spans and fenced blocks are left as they are.
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
+import { text } from 'node:stream/consumers';
 
 import { shouldRun } from '../lib/entry.ts';
 import { ROOT } from '../lib/tree.ts';
@@ -123,12 +124,14 @@ function diskKind(file: string): 'file' | 'directory' | null {
     return statSync(full).isDirectory() ? 'directory' : 'file';
 }
 
-function main(): void {
+async function main(): Promise<void> {
     if (process.argv[2] === 'supports') {
         process.exitCode = 0;
         return;
     }
-    const [context, book] = JSON.parse(readFileSync(0, 'utf8')) as [
+    // on Linux, standard input from mdBook is a non-blocking pipe, and a synchronous read of one
+    // fails with EAGAIN, so it is read as a stream
+    const [context, book] = JSON.parse(await text(process.stdin)) as [
         { config: { preprocessor: { outside: { repository: string; branch: string } } } },
         { items: unknown[] },
     ];
@@ -157,5 +160,5 @@ function main(): void {
 }
 
 if (shouldRun(import.meta.url)) {
-    main();
+    void main();
 }

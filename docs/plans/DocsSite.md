@@ -59,8 +59,13 @@ with no `@param` is off until step 5 turns it on.
 GitHub Pages on each push to `main`. Each action it uses is pinned to a commit, and `pinned.ts`
 passes.
 
-Open: the repository's Pages source has to be set to GitHub Actions before the first publish. The
-workflow has not run yet, so the build on Linux is unproven until it does.
+The repository's Pages source is GitHub Actions. `node scripts/docs.ts` builds the site and the
+reference on Linux, in the `node:24` image, from a clean copy of the tree. The first Linux build
+failed: mdBook gives the preprocessor a non-blocking pipe, and a synchronous read of standard
+input fails on one with EAGAIN. `outside.ts` now reads it as a stream.
+
+Open: the workflow itself has not run, because the branch has not reached GitHub. Its first pull
+request runs the build job, and the merge to `main` runs the first publish.
 
 ### Step 4 — The rules are written down
 
