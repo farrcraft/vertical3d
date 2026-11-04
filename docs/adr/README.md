@@ -212,6 +212,7 @@ content went. Numbers are never reused.
 | [0160](0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang | accepted |
 | [0161](0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted |
 | [0162](0162-docs-an-mdbook-site-with-a-doxygen-reference.md) | Docs: an mdBook site with a Doxygen reference | accepted |
+| [0164](0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit | accepted |
 
 ## Process
 

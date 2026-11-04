@@ -28,8 +28,10 @@ version:
 pip install cpplint==2.0.2
 ```
 
-CI installs the same version. This is the community fork of cpplint, which renames checks between
-releases. Do not upgrade it without checking the tree again.
+CI installs the same version, and the pre-commit hooks in [Gates.md](Gates.md#before-a-commit)
+run it on the staged files at that version. This is the community fork of cpplint, which renames
+checks between releases. Do not upgrade it without checking the tree again. An upgrade moves the
+pin in `cpplint.yml` and in `.pre-commit-config.yaml` together.
 
 Run it on the whole tree from the repository root:
 

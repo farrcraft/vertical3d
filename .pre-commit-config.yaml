@@ -1,0 +1,94 @@
+# The checks a commit runs locally, through pre-commit. CI runs the same checks on every pull
+# request and stays the final word; these find a problem in the commit that adds it.
+#
+# Install once per clone with "pre-commit install". docs/contributing/Gates.md says what runs
+# here and what runs only in CI.
+#
+# pre-commit sets unstaged changes aside while the hooks run, so each check reads what is being
+# committed. Untracked files stay on disk, and the gates that read added lines count them.
+minimum_pre_commit_version: '4.7.0'
+repos:
+# pinned to the commit tagged 2.0.2, the version CI installs: a newer cpplint can add checks
+- repo: https://github.com/cpplint/cpplint
+  rev: 350702a4d39395571bd118c9a3cff0a573488d61  # 2.0.2
+  hooks:
+  - id: cpplint
+    args: [--linelength=180]
+    exclude: ^(out|vendor|vcpkg_installed|demos/voxel/src/noise)/
+# Each gate reads the tree itself, so none is passed file names. A gate whose rule covers only
+# some files runs when one of them, or anything under scripts/, is staged. The rest always run,
+# because a rename anywhere can break what they check.
+- repo: local
+  hooks:
+  - id: linkrule
+    name: linkrule.ts
+    entry: node scripts/linkrule.ts
+    language: system
+    pass_filenames: false
+    files: (^|/)CMakeLists\.txt$|\.cmake$|\.(h|cpp|cxx)$|^scripts/
+  - id: librarytable
+    name: librarytable.ts
+    entry: node scripts/librarytable.ts
+    language: system
+    pass_filenames: false
+    files: ^(docs/api/README\.md|cmake/v3dApiLibraries\.cmake)$|^scripts/
+  - id: readmes
+    name: readmes.ts
+    entry: node scripts/readmes.ts
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: summary
+    name: summary.ts
+    entry: node scripts/summary.ts
+    language: system
+    pass_filenames: false
+    files: ^docs/|^scripts/
+  - id: filelocal
+    name: filelocal.ts
+    entry: node scripts/filelocal.ts
+    language: system
+    pass_filenames: false
+    files: \.(h|cpp|cxx)$|^scripts/
+  - id: filelength
+    name: filelength.ts
+    entry: node scripts/filelength.ts
+    language: system
+    pass_filenames: false
+    files: \.(h|cpp|cxx|ts)$
+  - id: dirsize
+    name: dirsize.ts
+    entry: node scripts/dirsize.ts
+    language: system
+    pass_filenames: false
+    files: \.h$|^scripts/
+  - id: namespaces
+    name: namespaces.ts
+    entry: node scripts/namespaces.ts
+    language: system
+    pass_filenames: false
+    files: \.(h|cpp|cxx)$|^scripts/
+  - id: pinned
+    name: pinned.ts
+    entry: node scripts/pinned.ts
+    language: system
+    pass_filenames: false
+    files: ^\.github/|^scripts/
+  - id: npm
+    name: npm.ts
+    entry: node scripts/npm.ts
+    language: system
+    pass_filenames: false
+    files: ^(package\.json|package-lock\.json|\.npmrc)$|\.ts$
+  - id: prose
+    name: prose.ts
+    entry: node scripts/prose.ts
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: boundary
+    name: boundary.ts
+    entry: node scripts/boundary.ts
+    language: system
+    pass_filenames: false
+    files: \.(h|cpp|cxx)$|^scripts/

@@ -275,6 +275,7 @@
     - [ADR-0161: Code: a field a caller may omit has a default](adr/0161-code-a-field-a-caller-may-omit-has-a-default.md)
     - [ADR-0162: Docs: an mdBook site with a Doxygen reference](adr/0162-docs-an-mdbook-site-with-a-doxygen-reference.md)
     - [ADR-0163: Apps: a picture is taken by the app from its command line](adr/0163-apps-a-picture-is-taken-by-the-app-from-its-command-line.md)
+    - [ADR-0164: Tooling: commits are checked locally through pre-commit](adr/0164-tooling-commits-are-checked-locally-through-pre-commit.md)
     - [ADR-0083: Review: a changeset answers for what it introduces](adr/0083-review-a-changeset-answers-for-what-it-introduces.md)
 - [Plans](plans/README.md)
     - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)

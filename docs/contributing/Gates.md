@@ -7,6 +7,7 @@ document for its subject, which the table links to.
 
 - [The gates](#the-gates)
 - [In CI](#in-ci)
+- [Before a commit](#before-a-commit)
 - [Running them](#running-them)
 - [What a gate prints](#what-a-gate-prints)
 - [The environment](#the-environment)
@@ -55,6 +56,40 @@ last step on each pull request. It needs the compiler, the packages and the soft
 driver, which that job already has. Its scratch directory is under `RUNNER_TEMP`, which the job
 excludes from Defender. A link that a scan broke would mark every new case as failing to build,
 and the gate would pass them.
+
+## Before a commit
+
+[.pre-commit-config.yaml](../../.pre-commit-config.yaml) runs cpplint and every gate but
+`failsfirst.ts` and `commentsonly.ts` before each commit, through
+[pre-commit](https://pre-commit.com/). Install it once, and turn it on in each clone:
+
+```
+pip install pre-commit
+pre-commit install
+```
+
+pre-commit sets unstaged changes aside while the hooks run, and puts them back after, so each
+check reads what is being committed. Untracked files stay on disk, and the gates that read added
+lines count them. A failing hook stops the commit, and its findings print under its name.
+
+A gate whose rule covers only some files runs when one of them is staged, or anything under
+`scripts/`: the C++ checks on a C++ file, `pinned.ts` on a change under `.github/`, and so on.
+`prose.ts` and `readmes.ts` run on every commit, because a rename anywhere can break what they
+check. cpplint reads only the staged C++ files, with the version and the options CI uses.
+
+The type check, the gates' own tests, `failsfirst.ts` and the documentation build stay in CI.
+They need `npm ci`, a build or a download. CI runs every check again whatever ran locally.
+
+`pre-commit run --all-files` runs every hook on the whole tree. `SKIP=prose git commit` skips
+one hook, for a commit that has to land in a state a gate rejects, such as one step of a
+refactor.
+
+**Agents sharing one working tree:** while the hooks run, every unstaged edit is off the disk. An
+agent that builds or edits in that time sees files without them, and an edit it makes is lost
+when pre-commit puts the set-aside changes back. Commit from one agent at a time, while no other
+is building or editing.
+
+Background: [ADR-0164](../adr/0164-tooling-commits-are-checked-locally-through-pre-commit.md)
 
 ## Running them
 
@@ -137,6 +172,7 @@ they use only Node's own modules when they run.
    does not. Break each rule by hand and check that a test fails. `gates.test.ts` starts every
    gate as a process without being told about a new one.
 5. **Add a step** to [review-gates.yml](../../.github/workflows/review-gates.yml), with
-   `if: ${{ !cancelled() }}`, and a row to the table above.
+   `if: ${{ !cancelled() }}`, a hook to
+   [.pre-commit-config.yaml](../../.pre-commit-config.yaml), and a row to the table above.
 6. **Run it on the tree.** The tree is clean at every gate, so a new gate starts clean too: fix
    what it finds in the same change, or list an exception in the gate with its reason.
