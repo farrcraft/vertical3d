@@ -63,9 +63,6 @@ takes logs an error, and the process still exits with 0, so a script that runs m
 is used. A scene's `Option "limits"` can still set the size, so the message names one case of
 two.
 
-[] **`--silent` still prints the RenderMan notice.** Every other line moya prints is turned off by
-it.
-
 ## Tests
 
 [Testing.md](contributing/Testing.md) describes what the suites cover.
@@ -91,12 +88,6 @@ heap reporting one 72 byte block. The other FMOD cases, each run alone, report n
 is allocated on the CRT heap, not FMOD's, so it is something `FmodEvents` or the case allocates
 around `start()` and `stop()`.
 
-[] **Validation: a resized editor draws one frame of views past the swapchain.** Maximising the
-editor from 1024 by 768 to 2560 by 1369 logs `vkCmdBeginRendering` errors whose render area,
-such as an offset of 712 and a height of 657, runs past the 1024 by 768 attachments. The views
-are laid out for the new window size while that frame still draws into the old swapchain
-images, which are recreated a moment later.
-
 [] **Validation: the editor and voxel leave a surface when they quit.** Closing either app, or
 ending it with `--capture`, prints `VUID-vkDestroyInstance-instance-00629` with one
 `VkSurfaceKHR` not destroyed. The layer writes it to standard output as the instance is
@@ -106,7 +97,7 @@ diorama destroy their surface.
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
-menu's 85 commands has a handler. Each group below is a piece of work of its own, in any order.
+menu's 97 commands has a handler. Each group below is a piece of work of its own, in any order.
 
 [] **A script cannot place an item.** A script can create primitives, select, key and undo, but
 no command sets an item's translation, rotation or scale to a value. A script that builds a scene
@@ -124,9 +115,9 @@ the geometry as a record of its own, which the mesh items refer to by id, and a 
 would be made by revolving, lofting or sweeping curves, and trimmed by curves on it. It needs an
 ADR on how it relates to meshes, and moya's `NuPatch` and `TrimCurve` have empty bodies.
 
-[] **A timeline and a graph editor.** Keys can be set and stepped through, and the current frame
-shows only in the caption. Nothing draws the keys on a time line, scrubs the frame, sets the rate
-or the range, or edits a key's interpolation or slopes, so every key is an automatic Bezier one.
+[] **A key's interpolation cannot be chosen.** The graph editor draws step, linear and Bezier
+keys, and turns a key's slopes, but no command sets a key's interpolation. A key made in the
+editor is always Bezier, and only an imported key can be step or linear.
 
 [] **Rotation order.** Every item turns about x, then y, then z, so an item that locks in that
 order cannot be keyed out of it. Each item needs an order of its own, saved and offered to
@@ -140,11 +131,10 @@ finishes would let `Delegate` hand over pictures as they improve.
 reads a scene once. Taking edits into a running render needs moya to keep its scene and update
 it, which the editor's interface already sends.
 
-[] **A console.** Nothing drives the editor but its menus and bindings. A console panel, and a
-headless mode that runs a script against a project, would call the same operations on
-`Document` that they do. Those operations take what they act on as arguments and return what
-to say. The
-console needs a way to name items and parts in text, and a parser from a line to a call.
+[] **A script cannot run without a window.** `--script` runs a TypeScript file once the editor
+has started, in its window. A headless mode would open the project, run the script against it
+and quit, with no window or device, so a script could batch edits or exports on a machine with
+no GPU.
 
 [] **A batch renders one frame at a time.** Its frames are independent files, and could run as
 several moya.exe processes at once.

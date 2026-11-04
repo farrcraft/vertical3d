@@ -23,6 +23,7 @@ Smaller, independent items go in [TODO.md](../TODO.md) instead.
 | Plan | Area | What it delivers |
 |---|---|---|
 | [DocsSite](DocsSite.md) | Documents, CI, editor, moya | A searchable site of the documents with a reference built from the headers, user manuals for the editor and moya, and pictures of the apps |
+| [EditorDesignSync](EditorDesignSync.md) | Editor, UI, design | The editor and its mockups in agreement: each difference fixed in the code or redrawn in the mockup |
 
 ## Completed plans
 
