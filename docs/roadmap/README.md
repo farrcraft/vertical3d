@@ -34,6 +34,7 @@ roadmap has none of these. It is not a schedule and it has no dates.
 
 | Roadmap | Area |
 |---|---|
+| [Releases.md](Releases.md) | Versioned releases of the apps: running from an install, a version in every app, install rules, a changelog and a release workflow, a Windows installer, the apps on Linux, and a Flatpak |
 
 ## Completed roadmaps
 

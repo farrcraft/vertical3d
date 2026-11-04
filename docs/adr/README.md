@@ -199,7 +199,7 @@ content went. Numbers are never reused.
 | ADR | Decision | Status |
 |---|---|---|
 | [0007](0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan | amended by 0054 |
-| [0027](0027-build-consume-the-api-as-source.md) | Build: consume the api as source | amended by 0048 |
+| [0027](0027-build-consume-the-api-as-source.md) | Build: consume the api as source | amended by 0048, 0165 |
 | [0033](0033-build-select-api-libraries-through-a-manifest.md) | Build: select api libraries through a manifest | accepted |
 | [0047](0047-code-exhaustive-enum-switches.md) | Code: exhaustive enum switches | accepted |
 | [0048](0048-includes-name-headers-from-the-repository-root.md) | Includes: name headers from the repository root | accepted |
@@ -213,6 +213,8 @@ content went. Numbers are never reused.
 | [0161](0161-code-a-field-a-caller-may-omit-has-a-default.md) | Code: a field a caller may omit has a default | accepted |
 | [0162](0162-docs-an-mdbook-site-with-a-doxygen-reference.md) | Docs: an mdBook site with a Doxygen reference | accepted |
 | [0164](0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit | accepted |
+| [0165](0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product | accepted |
+| [0166](0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux | accepted |
 
 ## Process
 

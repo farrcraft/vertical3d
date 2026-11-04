@@ -2,7 +2,7 @@
 
 **Status**: amended
 **Date**: 2026-09-05
-**Amended by**: [ADR-0048](0048-includes-name-headers-from-the-repository-root.md)
+**Amended by**: [ADR-0048](0048-includes-name-headers-from-the-repository-root.md), [ADR-0165](0165-releases-the-apps-ship-as-one-versioned-product.md)
 **Documented in**: [UsingTheApi.md](../api/UsingTheApi.md)
 
 ## Context
