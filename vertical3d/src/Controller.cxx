@@ -229,7 +229,7 @@ boost::shared_ptr<view::ViewPort> Controller::makeView(const view::AreaLayout::E
     }
     // the name is the view's pass name, so the editor's id keeps two views of a profile apart
     const boost::shared_ptr<view::ViewPort> made = boost::make_shared<view::ViewPort>(*camera + " " + std::to_string(editor.id), context_.profiles->get(*camera));
-    // a shading the state names, as the Shading workspace's view names smooth, is how the view starts
+    // the view starts in the shading its state names, as the Shading workspace's view names smooth
     made->display().shading = view::shading(v3d::asset::readString(editor.state, "shading").value_or("")).value_or(view::Shading::Flat);
     return made;
 }

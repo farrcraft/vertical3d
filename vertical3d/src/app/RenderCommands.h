@@ -11,9 +11,9 @@
 namespace v3d::editor::app {
 
 /**
- * The Render menu's commands: a render of the shot, which shows a render view, in a window of its
- * own when no area holds one, a stop, a batch of every frame, and the render settings, which
- * shows their editor.
+ * The Render menu's commands: a render of the shot, a stop, a batch of every frame, and the render
+ * settings. A render shows a render view, in a window of its own when no area holds one. The
+ * settings command shows their editor.
  **/
 class RenderCommands final {
  public:

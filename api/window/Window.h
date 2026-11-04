@@ -68,8 +68,8 @@ class Window final {
     SDL_Window* sdl() noexcept;
 
     /**
-     * @return the number the platform knows the window by, which every window event and mouse
-     *         event carries, or 0 before create() and after destroy()
+     * @return the platform's id for the window, which every window event and mouse event
+     *         carries, or 0 before create() and after destroy()
      **/
     std::uint32_t id() const noexcept;
 

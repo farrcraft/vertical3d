@@ -109,8 +109,8 @@ were dragged, what is folded and how far each list is scrolled.
 ### Another window
 
 Each window an app draws to has a retained `Interface` and a `Screen` of its own. The menus, the
-tooltip, the focus and the hover of one window stay in it, and nothing in the retained ui knows
-about windows.
+tooltip, the focus and the hover of one window stay in it. The retained ui itself has no notion
+of windows.
 
 - **The interface** is built as the first is, over the same router and dispatcher, so its
   commands reach the same handlers. `shareThemes(first)` gives it the first's themes and active

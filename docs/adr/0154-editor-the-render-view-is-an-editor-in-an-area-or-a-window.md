@@ -11,8 +11,8 @@ A render is watched while the scene is edited, often beside the view it comes fr
 second monitor where there is one. A Rendering workspace needs the render view and its settings in
 areas of their own. The render view and the render settings are floating panels over the editor's
 areas now, so neither can be part of a workspace. Houdini and Maya show a render in a pane that can
-be torn off into a window, 3ds Max and Cinema 4D in a floating window that can be docked, and
-Blender lets the user choose.
+be torn off into a window. 3ds Max and Cinema 4D show it in a floating window that can be docked,
+and Blender lets the user choose.
 
 ## Decision
 
@@ -39,5 +39,5 @@ That window is a second window of the platform's, and its area behaves as any ot
   the same editor in each place. Other editors can later move to a window by the same means.
 - **Costs**: the editor draws to two windows, each with a swapchain, and an area tree is kept for
   each. A workspace has to say which windows it has. The floating render panels go.
-- **Revisit when**: renders have to be compared against earlier ones, which wants a viewer of its
+- **Revisit when**: renders have to be compared against earlier ones. That needs a viewer of its
   own beside the render view, as Houdini keeps MPlay.

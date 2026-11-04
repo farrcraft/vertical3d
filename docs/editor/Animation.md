@@ -2,7 +2,8 @@
 
 The editor keys the properties of scene items on frames and plays them back. This page covers
 what can be keyed, how a curve behaves, how the scene is evaluated at a frame, the Animate menu,
-the timeline and graph editors, and auto key. [Files.md](Files.md#scene-documents) covers how curves are saved.
+the timeline and graph editors, and auto key.
+[Files.md](Files.md#scene-documents) covers how curves are saved.
 
 ## What is keyed
 

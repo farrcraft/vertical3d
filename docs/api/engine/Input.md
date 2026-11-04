@@ -29,9 +29,10 @@ Each polled SDL event is offered to three places, in this order:
 On a resize the engine updates the window's size and publishes
 `event::kind::WindowResize`, whose `window()` is the id of the window that changed. An app with
 windows of its own added acts only on its own window's resizes, and an added window's close
-arrives as `event::kind::WindowClose`, as [Window.md](Window.md#who-makes-it) describes. On a focus change it publishes `event::kind::WindowFocus`. A key
-released while the window is unfocused never arrives, so an app that tracks held keys itself
-should drop them when focus is lost. When the monitor's scale changes, or the window moves to a
+arrives as `event::kind::WindowClose`, as [Window.md](Window.md#who-makes-it) describes. On a
+focus change it publishes `event::kind::WindowFocus`. A key released while the window is
+unfocused never arrives, so an app that tracks held keys itself should drop them when focus is
+lost. When the monitor's scale changes, or the window moves to a
 monitor with another, it publishes `event::kind::DisplayScale` with `Window::displayScale()`,
 which the shell passes to its screen. `Window::refreshRate()` gives the rate in hertz of the
 monitor the window is on, or 0 when it cannot be read.

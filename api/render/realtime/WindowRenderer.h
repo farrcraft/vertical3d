@@ -33,8 +33,8 @@ namespace v3d::render::realtime {
  *
  * It can draw to other windows too, each opened with open(). Every window is drawn by the one
  * device, so anything uploaded can be drawn in any of them. Each window has a frame of its own,
- * recorded and presented in the same renderFrame() as the renderer's own window, and a depth
- * buffer of its own, made the first frame one of its passes tests depth.
+ * recorded and presented in the same renderFrame() as the renderer's own window. Each also has a
+ * depth buffer of its own, made the first frame one of its passes tests depth.
  **/
 class WindowRenderer final {
  public:
