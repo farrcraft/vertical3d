@@ -117,7 +117,11 @@ default for the same cost reason. The check
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 
-`.clang-tidy` enables whole check families and subtracts some checks by name. The tree is clean
+`.clang-tidy` enables whole check families and subtracts some checks by name. The families are
+`bugprone`, `clang-analyzer`, `performance`, `misc` and `readability`. `clang-analyzer` is the
+Clang Static Analyzer, which follows each path through a function. It finds a null dereference,
+a use after move or a leak that only one branch reaches, and overlaps `/analyze` only in part.
+The tree is clean
 at every check that remains. Each subtraction is settled, and the `.clang-tidy` comment says why.
 A new finding is fixed, never answered by widening an exclusion or an option.
 
