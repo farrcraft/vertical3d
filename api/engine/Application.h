@@ -90,6 +90,24 @@ std::string logPath(const Identity& identity);
 std::string documentsPath(const Identity& identity);
 
 /**
+ * Name the process to SDL: the app's name, and the tree's version. run() does this before the
+ * engine is built. The renderer reads them back to name the app to Vulkan.
+ *
+ * @param identity who the app is
+ **/
+void describe(const Identity& identity);
+
+/**
+ * Write the app's name and version on standard output, as `--version` asks.
+ *
+ * A windowed app on Windows has no console of its own. Started from a console with its output
+ * not redirected, it writes to that console.
+ *
+ * @param identity who the app is
+ **/
+void printVersion(const Identity& identity);
+
+/**
  * The body both forms of run() share. An app calls run().
  *
  * @tparam T the engine to run
@@ -103,6 +121,7 @@ int runLaunched(const Launch& launch, const Identity& identity, Args&&... args) 
     const std::string path = appPath();
     // a windowed app has no console, so the log is the only place its errors appear
     v3d::log::Logger::open(logPath(identity));
+    describe(identity);
     T engine(path, std::forward<Args>(args)...);
     engine.identity(identity);
     engine.launch(launch);
@@ -194,6 +213,10 @@ int run(int argc, char* argv[], const Identity& identity, Args&&... args) {
         const v3d::log::Logger logger;
         logger.get()->error("{} cannot start: {}", identity.application, error.what());
         return EXIT_FAILURE;
+    }
+    if (launch.version) {
+        printVersion(identity);
+        return EXIT_SUCCESS;
     }
     return runLaunched<T>(launch, identity, std::forward<Args>(args)...);
 }

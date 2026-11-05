@@ -10,10 +10,11 @@ target_link_libraries(moya
 	v3dlib_moya
 	v3dlib_log
 	v3dlib_render_offline
+	v3dlib_version
 	Boost::program_options
 )
 
-# The driver resolves --file against the working directory, so the demo scene has to sit
-# beside the executable to be reachable from the build tree.
+# The driver resolves --file against the working directory. The demo scenes are copied into
+# data/moya/ beside the executable, so they are reachable from the build tree.
 v3d_add_app_data(moya)
 v3d_add_app_icon(moya "icon.svg")

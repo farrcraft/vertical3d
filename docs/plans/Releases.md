@@ -92,14 +92,14 @@ by the owner before the step that builds it starts.
 | [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | done |
 | [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | done |
 | [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | done |
-| [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | open |
-| [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | open |
+| [6](#step-6--the-record-the-version-scheme) | The record: the version scheme | `docs/adr` | **0175** | done |
+| [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | done |
 | [8](#step-8--the-release-triplet-tried) | The release triplet, tried with the editor | build | — | open |
 | [9](#step-9--the-record-how-a-release-links-its-dependencies) | The record: how a release links its dependencies | `docs/adr` | **0176** | open |
 | [10](#step-10--the-editor-finds-moya-and-its-usd-plugins-from-the-install) | The editor finds moya and its USD plugins from the install | `vertical3d`, build | 0176 | open |
 | [11](#step-11--install-rules) | Install rules, and a CI job that runs each app from the install | build, CI | 0176 | open |
-| [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | open |
-| [13](#step-13--the-record-the-release-flow) | The record: the release flow | `docs/adr` | **0178** | open |
+| [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | done |
+| [13](#step-13--the-record-the-release-flow) | The record: the release flow | `docs/adr` | **0178** | done |
 | [14](#step-14--the-release-workflow) | The changelog, the release workflow and its document | CI, `docs` | 0177, 0178 | open |
 | [15](#step-15--the-record-the-windows-installer) | The record: the Windows installer | `docs/adr` | **0179** | open |
 | [16](#step-16--the-record-signing) | The record: signing | `docs/adr` | **0180** | open |
@@ -245,10 +245,27 @@ recorded in Demos.md, so they are covered by `LICENSE` rather than checked by th
 
 ### Step 6 — The record: the version scheme
 
+**Done.** ADR-0175 is accepted: semantic versions from 0.1.0, with the research of three
+engines and SemVer's own rule for 0.x.
+
 ADR-0175 decides what a version number promises and where it starts. The roadmap's research
 favoured SemVer from 0.1.0, because a 0.x version makes no compatibility promise.
 
 ### Step 7 — A version in every app
+
+**Done.** The root's `project()` holds 0.1.0. A new api library, `v3dlib_version`, gives
+`v3d::version::number()` and `text()`. `cmake/v3dVersion.cmake` writes its source at build time,
+and rewrites it only when the text changes. A build shows `0.1.0-dev+<git describe>` unless it
+is configured with `V3D_RELEASE=ON`. `--version` is a `Launch` option: `run()` prints the app's
+name and version and returns without building the engine, and a windowed app on Windows writes
+to the console it was started from. moya and imagetool print the same version, and voxel draws
+it. The editor has Help > About, which opens its prompt with the version. `run()` names the app
+and its version to SDL with `SDL_SetAppMetadata`, and the Vulkan instance reads them back for
+its application name and version. Every app answered `--version`, the editor and pong through a
+redirect.
+
+The Vulkan application info has no case of its own: the instance reads SDL's metadata, which an
+engine case checks `run()` sets.
 
 * **The top-level `project()` holds the version**, and a generated header carries it into the
   code.
@@ -294,10 +311,15 @@ imports from the install tree once step 11 lands.
 
 ### Step 12 — The record: the changelog
 
+**Done.** ADR-0177 is accepted: a hand-written `CHANGELOG.md` in the Keep a Changelog form.
+
 ADR-0177 decides how a release's changes are recorded. The roadmap's research favoured a
 hand-written `CHANGELOG.md` in the Keep a Changelog form, updated in the same change as the code.
 
 ### Step 13 — The record: the release flow
+
+**Done.** ADR-0178 is accepted: a tag on `main` starts a release, and a release branch is cut
+only when a fix needs one.
 
 ADR-0178 decides what starts a release and where a fix to a release goes. The roadmap's research
 favoured a pushed `vX.Y.Z` tag on `main`, with an optional `-rc.N` first, and a release branch

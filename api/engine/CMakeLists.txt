@@ -33,11 +33,11 @@ target_link_libraries(v3dlib_engine PUBLIC
 	Boost::json
 	glm::glm)
 
-# PRIVATE: initialize() registers the media loaders on the asset manager it builds, and
-# Launch::parse() takes the program's name from argv[0] with boost::filesystem.
-# No header here includes boost::filesystem, so an app that includes Application.h does not
-# need it.
-target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media v3dlib_image)
+# PRIVATE: initialize() registers the media loaders on the asset manager it builds,
+# Launch::parse() takes the program's name from argv[0] with boost::filesystem, and run() reads
+# the version for --version. No header here includes boost::filesystem or the version, so an app
+# that includes Application.h needs neither.
+target_link_libraries(v3dlib_engine PRIVATE Boost::filesystem v3dlib_asset_media v3dlib_image v3dlib_version)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

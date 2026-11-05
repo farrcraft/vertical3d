@@ -7,6 +7,10 @@
 
 #include "Result.h"
 
+#include <api/version/Version.h>
+
+#include <SDL3/SDL_init.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -63,12 +67,16 @@ Instance::Instance(const boost::shared_ptr<v3d::log::Logger>& logger, const std:
     warnings_(0) {
     requireExtensions(extensions);
 
+    // the app named itself to SDL as it started. A process that did not, such as a test, has
+    // the name SDL gives every app that does not name itself
+    const v3d::version::Number number = v3d::version::number();
+    const std::uint32_t version = VK_MAKE_API_VERSION(0, number.major, number.minor, number.patch);
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Vertical3D";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "Vertical3D Vulkan Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pApplicationName = SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING);
+    appInfo.applicationVersion = version;
+    appInfo.pEngineName = "Vertical3D";
+    appInfo.engineVersion = version;
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
     // the layer and the extension that carries its messages are both optional. A machine

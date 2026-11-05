@@ -68,6 +68,29 @@ makes it that game. Do not write your own version of these:
 
 Background: [ADR-0028](../../adr/engine/0028-apps-the-shared-app-shell-lives-in-the-api.md)
 
+## The version
+
+The tree has one version, which every app shows and every release carries.
+
+- **The root's `project()` holds the number**, as `major.minor.patch`. It is the release the
+  tree is building toward. While the major number is 0, a minor release may break the api and a
+  patch release never does.
+- **`v3d::version::number()` gives the three numbers, and `v3d::version::text()` the text a
+  user sees.** Both are in `v3dlib_version`, which names no package.
+- **A release build shows the bare number.** The release workflow configures with
+  `V3D_RELEASE=ON`. Any other build shows `<number>-dev+<git describe>`, such as
+  `0.1.0-dev+v0.1.0-4-g1a2b3c4d-dirty`, so a bug report names the commit. A tree that is not a
+  git checkout shows `<number>-dev`.
+- **The text is written at build time**, by `cmake/v3dVersion.cmake`, so a commit made since the
+  configure is still named. The file is rewritten only when the text changes.
+- **Every app answers `--version`**, as [Lifecycle.md](Lifecycle.md#the-command-line) says.
+  moya and imagetool, which do not run on the engine, take it too. The editor shows the version
+  under Help > About.
+- **`run<T>` names the app to SDL** with `SDL_SetAppMetadata`: the identity's application,
+  and the version. The renderer reads both back to name the app to Vulkan.
+
+Background: [ADR-0175](../../adr/project/0175-releases-semantic-versions-from-0-1-0.md)
+
 ## Logging
 
 There is one log per process, written by spdlog. `run<T>` opens it before anything logs, at

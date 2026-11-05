@@ -5,7 +5,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 cmake_minimum_required (VERSION 3.21)
 cmake_policy(SET CMP0079 NEW)
 
-project ("vertical3d")
+# The version of the release this tree is building toward. It is a semantic version, and while
+# its major number is 0 a minor release may break the api.
+project ("vertical3d" VERSION 0.1.0)
 
 # The root of this repository. Not CMAKE_SOURCE_DIR, which is the consumer's root once
 # another project adds this one with add_subdirectory. Everything naming a file in this
@@ -16,6 +18,10 @@ set(V3D_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "The root of the vertica
 # this repository and off for one that has nested it.
 option(V3D_BUILD_APPS "Build the applications as well as the api libraries" ${PROJECT_IS_TOP_LEVEL})
 option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest" ${PROJECT_IS_TOP_LEVEL})
+
+# A release build shows the bare version. Any other build adds the commit it was built from, so
+# a bug report names it.
+option(V3D_RELEASE "Build a release, whose version is the bare number" OFF)
 
 # Which api libraries to build. A consumer names the ones it links, and gets those and the
 # libraries they depend on. Nothing else is added, and no package outside that set is looked

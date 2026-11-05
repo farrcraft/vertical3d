@@ -97,7 +97,7 @@ diorama destroy their surface.
 ## Editor
 
 Open work on the editor app. [editor/](editor/README.md) describes the editor. Every one of the
-menu's 97 commands has a handler. Each group below is a piece of work of its own, in any order.
+menu's 98 commands has a handler. Each group below is a piece of work of its own, in any order.
 
 [] **A clicked button keeps the focus ring.** A press on a retained button gives it the focus, so
 a workspace tab or the search keeps the focus colour's outline after a click, until a press

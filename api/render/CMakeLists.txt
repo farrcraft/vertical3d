@@ -147,8 +147,8 @@ endif()
 
 # PRIVATE: the ecs components the lit renderer reads are named in its sources and in no header,
 # and so are the model and image assets DecodedModel loads. DecodedModel.cpp names a texture
-# beside its model with boost::filesystem.
-target_link_libraries(v3dlib_render PRIVATE v3dlib_ecs v3dlib_asset_media Boost::filesystem)
+# beside its model with boost::filesystem. The Vulkan instance tells the driver the version.
+target_link_libraries(v3dlib_render PRIVATE v3dlib_ecs v3dlib_asset_media v3dlib_version Boost::filesystem)
 
 if(V3D_BUILD_TESTS)
 	add_subdirectory("tests")

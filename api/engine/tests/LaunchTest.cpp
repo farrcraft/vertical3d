@@ -27,6 +27,12 @@ BOOST_AUTO_TEST_CASE(launch_names_the_program_from_argv0_test) {
     BOOST_CHECK_EQUAL(v3d::engine::Launch::parse(0, nullptr).program, "");
 }
 
+BOOST_AUTO_TEST_CASE(launch_reads_a_request_for_the_version_test) {
+    BOOST_TEST(parse({ "--version" }).version);
+    BOOST_TEST(!parse({}).version);
+    BOOST_TEST(parse({ "--version" }).rest.empty());
+}
+
 BOOST_AUTO_TEST_CASE(launch_with_no_options_captures_nothing_test) {
     const v3d::engine::Launch launch = parse({});
     BOOST_TEST(launch.capture.empty());

@@ -185,6 +185,7 @@ than an imported target, so it never appears in a link line.
 |---|---|---|
 | `V3D_BUILD_APPS` | top level | Everything outside `api/` |
 | `V3D_BUILD_TESTS` | top level | The Boost.Test suites and their ctest entries |
+| `V3D_RELEASE` | `OFF` | A release build, whose version is the bare number. See [api/engine/README.md](../api/engine/README.md#the-version) |
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy. See [Linting.md](Linting.md) |

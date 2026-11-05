@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-05
 **Tags**: releases
-**Documented in**: [Releases.md](../../roadmap/Releases.md), until a release process document states the rule
+**Documented in**: [api/engine/README.md](../../api/engine/README.md#the-version)
 
 ## Context
 

@@ -8,6 +8,9 @@
 #include <api/engine/Launch.h>
 #include <api/asset/Manager.h>
 #include <api/log/Logger.h>
+#include <api/version/Version.h>
+
+#include <SDL3/SDL_init.h>
 
 #include <cstdlib>
 #include <string>
@@ -291,6 +294,33 @@ BOOST_AUTO_TEST_CASE(run_names_the_engine_before_it_starts) {
     BOOST_CHECK_EQUAL(record.identity.organization, "vertical3d_tests");
     BOOST_CHECK_EQUAL(record.identity.application, "stub");
     BOOST_CHECK(record.namedFirst);
+}
+
+/**
+ * --version prints the version and nothing else: the engine is never built, so no window
+ * opens.
+ **/
+BOOST_AUTO_TEST_CASE(run_answers_the_version_without_starting_the_app) {
+    Built record;
+    const char* arguments[] = { "stub.exe", "--version" };
+
+    BOOST_TEST(v3d::engine::run<StubEngine>(2, const_cast<char**>(arguments), stub(), &record) == EXIT_SUCCESS);
+
+    BOOST_TEST(record.path.empty());
+}
+
+/**
+ * run<T> names the app and its version to SDL before the engine is built, so the renderer can
+ * name the app to Vulkan.
+ **/
+BOOST_AUTO_TEST_CASE(run_names_the_app_and_its_version_to_sdl) {
+    Built record;
+
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), &record) == EXIT_SUCCESS);
+
+    BOOST_CHECK_EQUAL(std::string(SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING)), "stub");
+    BOOST_CHECK_EQUAL(std::string(SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING)),
+                      std::string(v3d::version::text()));
 }
 
 /**

@@ -33,6 +33,7 @@
 #include <api/ui/shell/FileChooser.h>
 #include <api/ui/shell/Keyboard.h>
 #include <api/ui/shell/Prompt.h>
+#include <api/version/Version.h>
 #include <api/window/Window.h>
 #include <vertical3d/src/control/chrome/Area.h>
 #include <vertical3d/src/control/CommandSearch.h>
@@ -142,6 +143,10 @@ void Controller::registerCommands() {
 
     scripting_.bind();
     table_.press("search::open", [this]() { openSearch(); });
+    // the version names the build a bug report is about
+    table_.press("help::about", [this]() {
+        context_.prompt->open("Vertical|3D " + std::string(v3d::version::text()), { { "Close", {} } }, {});
+    });
     table_.press("search::run", [this]() { runSearch(); });
     table_.hold("view::drag", [this](const v3d::event::Event& event) {
         // the press goes to the pointer over the window the cursor is in

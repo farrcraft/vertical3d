@@ -23,6 +23,7 @@
 #include <api/ui/Immediate.h>
 #include <api/ui/shell/Screen.h>
 #include <api/ui/shell/StatisticsOverlay.h>
+#include <api/version/Version.h>
 #include <api/window/Window.h>
 #include <demos/voxel/src/engine/CameraController.h>
 #include <demos/voxel/src/engine/ChunkMeshBuilder.h>
@@ -47,7 +48,6 @@
 #include <vector>
 
 #include "Scene.h"
-#include "Version.h"
 
 #include <boost/make_shared.hpp>
 #include <glm/vec3.hpp>
@@ -269,7 +269,7 @@ void Renderer::drawDebug(const v3d::ui::shell::StatisticsOverlay::Sample& statis
     layer->begin(&screen_->canvas(), tools);
     const float tall = debugHeight + (debugLineHeight * static_cast<float>(statistics.spans.size()));
     if (layer->window(debugTitle, {.position = debugPosition, .size = glm::vec2(debugWidth, tall)}, debugAlpha)) {
-        layer->text(std::string("Voxel ") + VOXEL_VERSION);
+        layer->text(std::string("Voxel ") + std::string(v3d::version::text()));
         // statistics.mean is already the loop's rolling mean of the frame time
         layer->text(std::to_string(statistics.mean / NANOSECONDS_PER_MILLISECOND) + " ms");
         std::stringstream where;

@@ -42,6 +42,7 @@ is `v3d::type::camera`. Two libraries sit inside another library's directory: `a
 | [`shell`](../../api/shell/) | What every app builds around its own code: the ui and its document, the screen, the pause menu and the statistics overlay. See [engine/Shell.md](engine/Shell.md). |
 | [`type`](../../api/type/) | Value types and maths: cameras, geometry queries, transforms and random numbers. |
 | [`ui`](../../api/ui/) | The user interface: components, layout, themes, an immediate-mode layer, and the shell every game shares. |
+| [`version`](../../api/version/) | The tree's version: the numbers of the release it builds toward, and the text a user is shown. |
 | [`window`](../../api/window/) | The OS window and its platform calls: size, focus, full screen, text input and the mouse. It uses no graphics API. See [engine/Window.md](engine/Window.md). |
 
 ## How they depend on each other
@@ -54,6 +55,7 @@ Boost.
 | Library | Api libraries it links | Third-party packages |
 |---|---|---|
 | `log` | none | spdlog |
+| `version` | none | (Boost only) |
 | `type` | none | glm |
 | `animation` | none | glm |
 | `grid` | none | glm |
@@ -74,15 +76,15 @@ Boost.
 | `render_offline` | log, image, type | glm |
 | `script` | none | QuickJS-ng |
 | `window` | log | **SDL3**, glm |
-| `render` | log, animation, asset, asset_media, ecs, image, model, type, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
+| `render` | log, animation, asset, asset_media, ecs, image, model, type, version, window | **Vulkan**, VulkanMemoryAllocator, **SDL3**, glm, EnTT |
 | `ui` | log, render, asset, event, font, image, input, type, window | **SDL3**, glm, EnTT |
-| `engine` | log, asset, asset_media, ecs, event, input, type, window | **SDL3**, EnTT, glm |
+| `engine` | log, asset, asset_media, ecs, event, input, type, version, window | **SDL3**, EnTT, glm |
 | `shell` | engine, event, ui, asset, render, window | EnTT |
 
 The same picture as layers, lowest first. A library uses only libraries in the rows above it.
 
 ```
-log   type   animation   grid   database   curve   script   no device, no window
+log   type   animation   grid   database   curve   script   version   no device, no window
 image  asset  ecs  brep  model
 interchange
 interchange_usd                            OpenUSD

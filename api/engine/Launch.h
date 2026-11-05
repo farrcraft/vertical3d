@@ -15,15 +15,18 @@ namespace v3d::engine {
 /**
  * What an app's command line asks of the engine, and the arguments the engine leaves to the app.
  *
- * argv[0] gives the program's name. The engine reads two options. `--capture <file>` writes one
- * presented frame to a png file and then quits. `--capture-after <frames>` names that frame,
- * counted from 1 at the first frame the engine renders. Every other argument is kept in rest, in
- * order, for the app to read.
+ * argv[0] gives the program's name. The engine reads three options. `--version` prints the app's
+ * name and version, and the app does not start. `--capture <file>` writes one presented frame to
+ * a png file and then quits. `--capture-after <frames>` names that frame, counted from 1 at the
+ * first frame the engine renders. Every other argument is kept in rest, in order, for the app to
+ * read.
  **/
 struct Launch final {
     /** The frame written when the command line names none. **/
     static constexpr unsigned int CAPTURE_AFTER = 60;
 
+    /** Whether the command line asks only for the app's version. **/
+    bool version{ false };
     /** The png file a frame is written to, or empty when no capture is asked for. **/
     std::string capture{};
     /** The frame written to capture, counted from 1. **/

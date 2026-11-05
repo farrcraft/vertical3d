@@ -68,10 +68,11 @@ none may call it.
 
 ### The command line
 
-`run<T>` reads two options of its own, which every app built on the engine takes:
+`run<T>` reads three options of its own, which every app built on the engine takes:
 
 | Option | Effect |
 |---|---|
+| `--version` | Print the app's name and version, and exit without starting |
 | `--capture <file>` | Write one presented frame of the app's window to a png file, then quit |
 | `--capture-after <frames>` | The frame to write, counted from 1 at the first frame rendered. Default 60 |
 
@@ -83,6 +84,8 @@ none may call it.
 - **A capture nothing can take fails the loop**, and the app exits with `EXIT_FAILURE`. A
   command line that names no file after `--capture`, or a `--capture-after` that is not a whole
   number from 1 up, stops the app before it starts.
+- **`--version` writes to standard output.** A windowed app on Windows has none of its own, so
+  started from a console with its output not redirected, it writes to that console.
 - **Every other argument is the app's.** `Engine::launch().rest` holds them in order, and
   `Launch::option(name)` gives the value after one. The editor reads `--script` there.
 - The frame is a count, not a time, so a scene that moves shows the state its frame rate

@@ -7,6 +7,7 @@ target_link_libraries(imagetool PRIVATE
 		v3dlib_image
 		v3dlib_asset
 		v3dlib_asset_media
+		v3dlib_version
 		Boost::program_options
 )
 

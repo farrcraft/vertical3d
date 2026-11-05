@@ -22,7 +22,7 @@ add_executable(voxel
 	"src/Controller.h" "src/Controller.cxx"
 	"src/Renderer.h" "src/Renderer.cxx"
 	"src/Scene.h" "src/Scene.cxx"
-	"src/Version.h" "src/main.cxx")
+	"src/main.cxx")
 
 target_link_libraries(voxel PRIVATE
 	v3dlib_engine
@@ -33,6 +33,7 @@ target_link_libraries(voxel PRIVATE
 	v3dlib_type
 	v3dlib_shell
 	v3dlib_ui
+	v3dlib_version
 	v3dlib_window
 )
 

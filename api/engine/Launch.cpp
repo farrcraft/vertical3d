@@ -27,7 +27,9 @@ Launch Launch::parse(int argc, const char* const* argv) {
     for (int index = 1; index < argc; index++) {
         const std::string_view argument = argv[index];
         const bool last = index + 1 >= argc;
-        if (argument == "--capture") {
+        if (argument == "--version") {
+            launch.version = true;
+        } else if (argument == "--capture") {
             if (last || std::string_view(argv[index + 1]).empty()) {
                 throw std::invalid_argument("--capture needs the file to write");
             }

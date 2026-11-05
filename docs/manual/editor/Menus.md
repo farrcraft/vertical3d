@@ -169,6 +169,7 @@ The key items use the keys of the selected items, or of every item when nothing 
 | Item | Key | What it does |
 |---|---|---|
 | Search Commands | F3 | Opens the command search |
+| About Vertical|3D | | Shows the editor's version, which a bug report should name |
 
 ## The tool shelf
 
