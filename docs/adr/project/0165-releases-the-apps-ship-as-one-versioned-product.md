@@ -4,7 +4,7 @@
 **Date**: 2026-11-03
 **Tags**: releases
 **Amends**: [ADR-0027](0027-build-consume-the-api-as-source.md)
-**Documented in**: [Releases.md](../../roadmap/Releases.md), until a release process document states the rule
+**Documented in**: [Releasing.md](../../contributing/Releasing.md#what-a-release-is)
 
 ## Context
 

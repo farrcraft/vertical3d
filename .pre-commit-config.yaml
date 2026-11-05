@@ -98,3 +98,9 @@ repos:
     language: system
     pass_filenames: false
     files: \.(h|cpp|cxx)$|^scripts/
+  - id: changelog
+    name: changelog.ts
+    entry: node scripts/changelog.ts
+    language: system
+    pass_filenames: false
+    files: ^(api|vertical3d|moya|imagetool|demos|data)/|^CHANGELOG\.md$|^scripts/

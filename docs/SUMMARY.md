@@ -43,6 +43,7 @@
     - [Linting And Static Analysis](contributing/Linting.md)
     - [The Review Gates](contributing/Gates.md)
     - [Code review](contributing/Review.md)
+    - [Releasing](contributing/Releasing.md)
     - [Conventions](contributing/Conventions.md)
 
 # Writing an app against the api

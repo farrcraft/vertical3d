@@ -358,6 +358,23 @@ only when a fix has to ship after `main` has moved on.
 
 ### Step 14 — The release workflow
 
+**Built; open until the first release candidate runs it.** `CHANGELOG.md` has its Unreleased
+section, and `scripts/changelog.ts` fails a change to what a release ships that adds no entry.
+It runs in review-gates.yml and before each commit, and six cases test it. The prose gate's
+history rule exempts the changelog. `docs/contributing/Releasing.md` states the rules, and
+ADR-0165, 0166, 0177 and 0178 now name it. README.md, CONTRIBUTING.md and UsingTheApi.md say
+what a release is, and how to pin one.
+
+The release workflow is part of `ctest.yml` rather than a file of its own, so it reuses the
+Windows build's setup. A pushed `v*` tag checks that the tag names the version `project()`
+holds and that the changelog has its section. It configures with `V3D_RELEASE=ON`, and a new
+`V3D_PRERELEASE` puts `-rc.N` in a candidate's version. The Release build zips its install
+tree. A release job attests the zip, and publishes a GitHub release with the changelog's section
+as its notes, as a pre-release for a candidate. The workflow parses, its pins pass `pinned.ts`,
+and the notes extraction and the version texts were checked by hand. Its release path runs
+first on the owner's first candidate tag. Immutable releases are a repository setting the owner
+turns on.
+
 * **`CHANGELOG.md`** in the form step 12 decides, with a gate that a change touching an app or a
   library updates it.
 * **A release workflow** builds Release, installs, packages, attests each artifact and publishes

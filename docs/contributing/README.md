@@ -13,6 +13,7 @@ you work on their subject.
 | [Linting.md](Linting.md) | cpplint, warnings as errors, `/analyze` and clang-tidy |
 | [Gates.md](Gates.md) | The review gates in `scripts/`: what each checks, how they run, and writing one |
 | [Review.md](Review.md) | What counts as a review finding, what a reviewer reads, and what a fix has to do |
+| [Releasing.md](Releasing.md) | What a release is, its version and changelog, and how one is made |
 | [Conventions.md](Conventions.md) | Code style, and how to write comments and documents |
 
 [CONTRIBUTING.md](../../CONTRIBUTING.md) at the root says where an engine change is made when the

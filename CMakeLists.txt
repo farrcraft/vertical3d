@@ -22,6 +22,8 @@ option(V3D_BUILD_TESTS "Build the Boost.Test suites and register them with ctest
 # A release build shows the bare version. Any other build adds the commit it was built from, so
 # a bug report names it.
 option(V3D_RELEASE "Build a release, whose version is the bare number" OFF)
+# A release candidate's version adds its pre-release part, such as rc.1, after the number.
+set(V3D_PRERELEASE "" CACHE STRING "A release candidate's pre-release part, such as rc.1, or empty")
 
 # Which api libraries to build. A consumer names the ones it links, and gets those and the
 # libraries they depend on. Nothing else is added, and no package outside that set is looked

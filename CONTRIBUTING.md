@@ -79,6 +79,6 @@ A consumer should only ever commit a submodule commit that is reachable from thi
 ## After it merges
 
 The consumer moves its submodule pointer to the merged commit and commits that like any other
-change. The submodule commit is the only version pin: there are no releases and no
-compatibility checks. [docs/api/UsingTheApi.md](docs/api/UsingTheApi.md#keeping-up-with-the-tree)
+change. The submodule commit is the version pin. It can be a commit or a release's tag, and a
+release names what its version may break. [docs/api/UsingTheApi.md](docs/api/UsingTheApi.md#keeping-up-with-the-tree)
 covers keeping up with the tree.

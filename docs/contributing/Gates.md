@@ -30,6 +30,7 @@ document for its subject, which the table links to.
 | `pinned.ts` | Every action a workflow uses is pinned to a full commit sha | The tree | [Linting.md](Linting.md#ci) |
 | `npm.ts` | npm brings only pinned development tools, and no script imports a package | The tree | [Dependencies.md](Dependencies.md#typescript-tooling-from-npm) |
 | `notices.ts` | Every package that ships code has a copyright file, and every font has a licence. `--out` writes the notices file | A vcpkg install | [Dependencies.md](Dependencies.md#third-party-notices) |
+| `changelog.ts` | A change to what a release ships adds its entry to `CHANGELOG.md` | Changed files | [Releasing.md](Releasing.md#the-changelog) |
 | `prose.ts` | The writing rules | Added lines | [Conventions.md](Conventions.md#writing), [Linting.md](Linting.md#prose) |
 | `boundary.ts` | Boundary input converted without a check | Added lines | [Conventions.md](Conventions.md#boundary-input) |
 | `failsfirst.ts` | Each test case a change adds fails without the change | Added cases | [Testing.md](Testing.md#checking-that-a-new-test-fails-first) |

@@ -7,6 +7,7 @@
 # @param OUTPUT the source file to write
 # @param NUMBER the release's number, as major.minor.patch
 # @param RELEASE whether this is a release build, whose version is the bare number
+# @param PRERELEASE a release candidate's pre-release part, such as rc.1, or empty
 # @param GIT the git executable, or empty when there is none
 # @param ROOT the root of the tree, where git is asked which commit is checked out
 
@@ -19,6 +20,9 @@ list(GET parts 1 minor)
 list(GET parts 2 patch)
 
 set(text "${NUMBER}")
+if(RELEASE AND NOT PRERELEASE STREQUAL "")
+	set(text "${NUMBER}-${PRERELEASE}")
+endif()
 if(NOT RELEASE)
 	set(described "")
 	if(GIT)

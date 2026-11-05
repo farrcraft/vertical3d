@@ -33,9 +33,9 @@ std::string appPath();
 /**
  * The directories an app's assets are read from, searched in order.
  *
- * The app's own assets are in data/<program>/, and the assets every app shares are in data/.
- * The build and the install lay them out the same way, so this is the one place the layout is
- * written down.
+ * The app's own assets are in a directory of data/ named for the program, and the assets every
+ * app shares are in data/ itself. The build and the install lay them out the same way, so this is
+ * the one place the layout is written down.
  *
  * @param appPath the directory the executable is in, ending in a separator
  * @param launch the command line, whose program names the app's own directory. An engine with

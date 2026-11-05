@@ -8,6 +8,7 @@ add_custom_target(v3d_version_source
 		"-DOUTPUT=${v3d_version_source}"
 		"-DNUMBER=${vertical3d_VERSION}"
 		"-DRELEASE=${V3D_RELEASE}"
+		"-DPRERELEASE=${V3D_PRERELEASE}"
 		"-DGIT=${GIT_EXECUTABLE}"
 		"-DROOT=${V3D_ROOT}"
 		-P "${V3D_ROOT}/cmake/v3dVersion.cmake"
