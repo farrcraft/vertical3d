@@ -29,7 +29,8 @@ Every demo follows the same pattern:
 - `main` is one call to `v3d::engine::run<T>(argv[0], identity)`, and the demo is a subclass of
   `v3d::engine::Engine`. The identity names the directory a player's files are kept in.
 - Data is read from the `data/` directory beside the executable. The build copies the demo's
-  own `data/` there, and the shared fonts and game theme from the repository's root `data/`.
+  own `data/` into `data/<demo>/`, and the shared fonts and game theme from the repository's
+  root `data/` into `data/`.
 - `data/config.json` lists the demo's documents by kind. Each kind is one a library reads or
   one of the demo's own.
 - The log is where [api/engine/README.md](api/engine/README.md#logging) says.

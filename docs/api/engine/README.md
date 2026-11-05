@@ -70,8 +70,11 @@ Background: [ADR-0028](../../adr/engine/0028-apps-the-shared-app-shell-lives-in-
 
 ## Logging
 
-There is one log per process, written by spdlog. `run<T>` opens it as `v3d.log` beside the
-executable before anything logs. A test or a tool that never calls `log::Logger::open()` writes
+There is one log per process, written by spdlog. `run<T>` opens it before anything logs, at
+`engine::logPath()`: `v3d.log` in the app's user directory, which
+[Files.md](Files.md#settings-and-the-players-files) describes. An installed app's own directory
+may not be writable. An app with no identity, or on a platform with no user directory, writes
+`v3d.log` beside the executable. A test or a tool that never calls `log::Logger::open()` writes
 `v3d.log` in its working directory.
 
 The log is flushed after every line at `info` and above. A `debug` line waits in the buffer until

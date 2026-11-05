@@ -12,8 +12,8 @@ The **scene** is everything you model: the items, their keys, the render setting
 of length. A project holds one scene, and saving the project saves it.
 
 The editor always has one project open. When it starts, that project is a directory named
-`project` beside the program, and it starts empty. The window's caption names the open project,
-and ends in ` *` while it has changes you have not saved.
+`project` in a `Vertical3D` folder in your documents, and it starts empty. The window's caption
+names the open project, and ends in ` *` while it has changes you have not saved.
 
 ## Items
 

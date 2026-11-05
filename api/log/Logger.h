@@ -23,9 +23,8 @@ class Logger final {
  public:
         /**
          * Sets the file the log is written to. Call it before anything logs. engine::run()
-         * passes v3d.log in the executable's directory, so the log is beside the executable
-         * whatever the working directory. Without a call, the log is v3d.log in the working
-         * directory.
+         * passes v3d.log in the app's user directory, whatever the working directory. Without a
+         * call, the log is v3d.log in the working directory.
          *
          * Called after something has logged, it moves the log for every Logger constructed
          * afterwards. A Logger constructed before the call still writes to the old file.

@@ -20,6 +20,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/system/error_code.hpp>
 
 namespace {
 
@@ -194,6 +195,58 @@ BOOST_AUTO_TEST_CASE(a_user_path_is_per_app) {
     BOOST_REQUIRE(!one.empty());
     BOOST_REQUIRE(!other.empty());
     BOOST_TEST(one != other);
+}
+
+/**
+ * An installed app's directory may not be writable, so a named app logs to its user directory.
+ **/
+BOOST_AUTO_TEST_CASE(a_named_app_logs_to_its_user_directory) {
+    BOOST_CHECK_EQUAL(v3d::engine::logPath(stub()), v3d::engine::userPath("vertical3d_tests", "stub") + "v3d.log");
+}
+
+/**
+ * An app with no identity has no user directory, and logs beside the executable.
+ **/
+BOOST_AUTO_TEST_CASE(an_unnamed_app_logs_beside_the_executable) {
+    BOOST_CHECK_EQUAL(v3d::engine::logPath(v3d::engine::Identity()), v3d::engine::appPath() + "v3d.log");
+}
+
+/**
+ * run<T> opens the log before the engine is built, in the user directory.
+ **/
+BOOST_AUTO_TEST_CASE(run_writes_the_log_in_the_user_directory) {
+    Built record;
+
+    BOOST_TEST(v3d::engine::run<StubEngine>("stub.exe", stub(), &record) == EXIT_SUCCESS);
+
+    BOOST_TEST(boost::filesystem::exists(boost::filesystem::path(v3d::engine::logPath(stub()))));
+    v3d::log::Logger::open("v3d.log");
+}
+
+/**
+ * A user's documents go in a directory named for the organization, in their documents folder,
+ * which is made for them.
+ **/
+BOOST_AUTO_TEST_CASE(documents_go_in_a_directory_named_for_the_organization) {
+    const v3d::engine::Identity identity{ .organization = "vertical3d_tests_documents", .application = "stub" };
+
+    const std::string path = v3d::engine::documentsPath(identity);
+
+    BOOST_REQUIRE(!path.empty());
+    BOOST_TEST(boost::filesystem::path(path).is_absolute());
+    BOOST_TEST(boost::filesystem::is_directory(boost::filesystem::path(path)));
+    BOOST_CHECK_EQUAL(boost::filesystem::path(path).parent_path().filename().string(), "vertical3d_tests_documents");
+    BOOST_TEST(path != v3d::engine::appPath());
+
+    boost::system::error_code error;
+    boost::filesystem::remove(boost::filesystem::path(path), error);
+}
+
+/**
+ * An app with no identity has no documents directory, and the caller chooses where to go.
+ **/
+BOOST_AUTO_TEST_CASE(an_unnamed_app_has_no_documents_directory) {
+    BOOST_TEST(v3d::engine::documentsPath(v3d::engine::Identity()).empty());
 }
 
 /**

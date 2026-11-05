@@ -46,8 +46,10 @@
 #include <string>
 #include <vector>
 
+#include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/system/error_code.hpp>
 
 namespace v3d::editor::document {
 
@@ -449,6 +451,10 @@ void Document::close() {
 
 Outcome Document::exportRib(const boost::filesystem::path& file, const v3d::type::camera::Profile& from,
     const std::string& picture) {
+    // a project's directory is made when the project is first saved, so an export before then
+    // makes it
+    boost::system::error_code made;
+    boost::filesystem::create_directories(file.parent_path(), made);
     std::ofstream stream(file.string().c_str());
     if (!stream.is_open()) {
         return { .done = false, .message = "could not write " + file.string() };

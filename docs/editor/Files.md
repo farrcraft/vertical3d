@@ -193,7 +193,9 @@ Background: [ADR-0101](../adr/editor/0101-editor-a-scene-document-is-a-sqlite-da
 
 ## Open, Save and Save As
 
-- The current project starts as the directory `project` beside the executable. A save makes it.
+- The current project starts as the directory `Vertical3D/project` in the user's documents
+  folder, which `engine::documentsPath()` gives. A save makes it. An editor with no identity,
+  as in a test, starts it beside the executable instead.
 - **Open** (Ctrl+O, or File > Open) shows the file chooser in open mode, filtered to `.json`, to
   pick a project's manifest. A successful open makes that project current and clears the history.
 - **Save** (Ctrl+S, or File > Save) writes to the current project without asking.
@@ -283,7 +285,8 @@ Background: [ADR-0122](../adr/editor/0122-editor-import-gltf-and-usd-as-scenes-o
 ## RIB export
 
 File > Export > RIB (`project::export::rib`) writes the scene as RenderMan RIB to
-`export.rib` beside the executable, replacing any file already there. The export is one-way:
+`export.rib` in the current project's directory, replacing any file already there. The export
+makes the directory when the project has not been saved yet. The export is one-way:
 nothing reads it back into the editor. The scene document stays the editor's own format, and
 the offline renderer reads RIB.
 

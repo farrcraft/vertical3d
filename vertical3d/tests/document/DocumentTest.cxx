@@ -186,6 +186,23 @@ BOOST_AUTO_TEST_CASE(an_operation_that_cannot_run_says_why) {
 }
 
 /**
+ * A project that was never saved has no directory yet. Exporting it still writes the RIB file,
+ * into the project's directory.
+ **/
+BOOST_AUTO_TEST_CASE(an_export_before_the_first_save_makes_the_project_directory) {
+    const Scratch scratch("export");
+    v3d::editor::document::Document edited = document(scratch.path() / "project");
+    edited.createPrimitive(v3d::editor::document::Document::Primitive::Cube);
+    const boost::filesystem::path file = edited.project()->directory() / "export.rib";
+
+    const v3d::editor::document::Outcome exported =
+        edited.exportRib(file, v3d::type::camera::Profile("Perspective"), (edited.project()->directory() / "export.png").generic_string());
+
+    BOOST_CHECK(exported.done);
+    BOOST_CHECK(boost::filesystem::exists(file));
+}
+
+/**
  * The items an operation acts on are its arguments, not what is selected. Settings the
  * document already has are no change.
  **/

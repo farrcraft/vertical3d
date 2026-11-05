@@ -6,6 +6,7 @@
 #include "Controller.h"
 
 #include <api/asset/Json.h>
+#include <api/engine/Application.h>
 #include <api/engine/CameraProfiles.h>
 #include <api/engine/Engine.h>
 #include <api/event/Event.h>
@@ -206,7 +207,11 @@ bool Controller::start() {
 /**
  **/
 bool Controller::buildDocument() {
-    context_.document = boost::make_shared<document::Document>(logger(), boost::filesystem::path(context_.path) / "project");
+    // the user's documents hold the default project. An editor with no identity, as in a test,
+    // has none, and keeps it beside the executable
+    const std::string documents = v3d::engine::documentsPath(identity());
+    context_.document = boost::make_shared<document::Document>(logger(),
+        boost::filesystem::path(documents.empty() ? context_.path : documents) / "project");
     context_.playback = boost::make_shared<control::Playback>(context_.document);
     context_.profiles = boost::make_shared<v3d::engine::CameraProfiles>(logger());
     const boost::json::object* cameras = document(v3d::engine::CameraProfiles::DOCUMENT);

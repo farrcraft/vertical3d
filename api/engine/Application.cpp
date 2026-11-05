@@ -5,6 +5,7 @@
 
 #include "Application.h"
 
+#include <api/engine/Identity.h>
 #include <api/engine/Launch.h>
 #include <api/log/Logger.h>
 
@@ -38,6 +39,33 @@ std::vector<std::string> dataRoots(const std::string& appPath, const Launch& lau
         return { shared };
     }
     return { shared + launch.program + "/", shared };
+}
+
+/**
+ **/
+std::string logPath(const Identity& identity) {
+    const std::string user = identity.named() ? userPath(identity.organization, identity.application) : std::string();
+    return (user.empty() ? appPath() : user) + "v3d.log";
+}
+
+/**
+ **/
+std::string documentsPath(const Identity& identity) {
+    if (!identity.named()) {
+        return std::string();
+    }
+    const char* documents = SDL_GetUserFolder(SDL_FOLDER_DOCUMENTS);
+    if (documents == nullptr) {
+        return userPath(identity.organization, identity.application);
+    }
+    // SDL ends the folder with a separator
+    std::string directory = std::string(documents) + identity.organization + "/";
+    if (!SDL_CreateDirectory(directory.c_str())) {
+        const v3d::log::Logger logger;
+        logger.get()->error("cannot make {} - {}", directory, SDL_GetError());
+        return userPath(identity.organization, identity.application);
+    }
+    return directory;
 }
 
 /**

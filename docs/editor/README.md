@@ -25,7 +25,8 @@ notices over the same canvas.
 ## Running it
 
 Build the `vertical3d` target, then run `out/build/x64-Debug/vertical3d/vertical3d.exe`. The
-editor reads its data from the `data/` directory beside the executable, and its log is where
+editor reads its data from the `data/` directory beside the executable, as
+[Assets.md](../api/Assets.md#the-asset-manager) describes, and its log is where
 [api/engine/README.md](../api/engine/README.md#logging) says.
 [contributing/Build.md](../contributing/Build.md) covers the build.
 

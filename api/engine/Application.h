@@ -65,6 +65,31 @@ std::vector<std::string> dataRoots(const std::string& appPath, const Launch& lau
 std::string userPath(const std::string& org, const std::string& app);
 
 /**
+ * The file an app's log is written to.
+ *
+ * It is v3d.log in userPath(), because an installed app's own directory may not be writable. An
+ * app with no identity, or on a platform with no user directory, writes it beside the
+ * executable. Logger::open() sends the log to stderr when the file cannot be written.
+ *
+ * @param identity who the app is
+ * @return the log file's path
+ **/
+std::string logPath(const Identity& identity);
+
+/**
+ * The directory the documents a user makes with an app belong in, with a trailing separator.
+ *
+ * It is a directory named for the app's organization, in the user's documents folder, so the
+ * user finds their work where they keep the rest of it. It is created if it does not exist. On
+ * a platform with no documents folder it is userPath().
+ *
+ * @param identity who the app is
+ * @return the directory, ending in a separator, or an empty string for an app with no identity,
+ *         or when the platform has neither directory
+ **/
+std::string documentsPath(const Identity& identity);
+
+/**
  * The body both forms of run() share. An app calls run().
  *
  * @tparam T the engine to run
@@ -76,10 +101,8 @@ std::string userPath(const std::string& org, const std::string& app);
 template <typename T, typename... Args>
 int runLaunched(const Launch& launch, const Identity& identity, Args&&... args) {
     const std::string path = appPath();
-    // beside the executable, whatever directory it was started from: a windowed app has no
-    // console, so the log is the only place its errors appear. A directory that cannot be
-    // written to sends the log to stderr, and the app still runs
-    v3d::log::Logger::open(path + "v3d.log");
+    // a windowed app has no console, so the log is the only place its errors appear
+    v3d::log::Logger::open(logPath(identity));
     T engine(path, std::forward<Args>(args)...);
     engine.identity(identity);
     engine.launch(launch);
@@ -167,7 +190,7 @@ int run(int argc, char* argv[], const Identity& identity, Args&&... args) {
     try {
         launch = Launch::parse(argc, argv);
     } catch (const std::invalid_argument& error) {
-        v3d::log::Logger::open(appPath() + "v3d.log");
+        v3d::log::Logger::open(logPath(identity));
         const v3d::log::Logger logger;
         logger.get()->error("{} cannot start: {}", identity.application, error.what());
         return EXIT_FAILURE;

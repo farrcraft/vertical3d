@@ -32,8 +32,8 @@ tree holds.
   the engine reads `appPath + "data/"` (`api/engine/Engine.cpp:223`).
 * **`v3d.log` is opened beside the executable** (`api/engine/Application.h:100`).
 * **The editor's default project is `<exe>/project`** (`vertical3d/src/Controller.cxx:209`). RIB
-  export writes `export.rib` and `export.png` into the project's directory
-  (`vertical3d/src/app/ProjectFiles.cxx:136`).
+  export writes `export.rib` and `export.png` beside the executable
+  (`vertical3d/src/app/ProjectFiles.cxx:135`).
 * **The editor runs moya from its own directory.** The name is `moya.exe` on Windows
   (`vertical3d/src/Controller.h:158`), and `render/Process.cxx` already starts a process on both
   platforms.
@@ -88,7 +88,7 @@ by the owner before the step that builds it starts.
 | | What | Where | ADR | State |
 |---|---|---|---|---|
 | [1](#step-1--apps-find-their-data-from-the-install) | Apps find their data from the install | `api/engine`, apps | — | done |
-| [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | open |
+| [2](#step-2--apps-write-to-the-users-directories) | Apps write to the user's directories | `api/engine`, `vertical3d` | — | done |
 | [3](#step-3--a-release-build-in-ci) | A Release build of every app in CI | CI | — | open |
 | [4](#step-4--the-demo-assets) | The demo assets recorded or replaced | `demos` | — | open |
 | [5](#step-5--third-party-notices) | One generated notices file | `scripts` | — | open |
@@ -167,6 +167,17 @@ and the copy is shared only in the install, which step 11 builds.
 app runs with `--capture` from a directory other than its own.
 
 ### Step 2 — Apps write to the user's directories
+
+**Done.** `engine::logPath()` puts `v3d.log` in the app's user directory, and beside the
+executable for an app with no identity. `engine::documentsPath()` gives a directory named for
+the organization in the user's documents folder, and the editor's default project is
+`project` there. RIB export writes into the project's directory, and makes it when the project
+has not been saved. A search of every app's writes found nothing else beside an executable: the
+render batch, a workspace export and a capture each write where the user names. The editor and
+pong ran with `--capture`, and each wrote its log under `AppData/Roaming/Vertical3D/`.
+
+The survey said RIB export already wrote into the project's directory. It wrote beside the
+executable, as the roadmap said, and this step moved it.
 
 * **`v3d.log` goes to `userPath()`**, and still falls back to standard error.
 * **The editor's default project goes to the user's documents**, through

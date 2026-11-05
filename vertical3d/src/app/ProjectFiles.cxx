@@ -131,8 +131,9 @@ void ProjectFiles::importScene(const std::vector<std::string>& extensions) const
 void ProjectFiles::exportRib() const {
     const Context& context = context_;
     context.atView("a scene is exported", [&context](const v3d::type::camera::Profile&) {
-        // the picture is named beside the export, so rendering the file writes it there
-        const boost::filesystem::path directory(context.path);
+        // the export goes in the project's directory, and the picture is named beside it, so
+        // rendering the file writes it there
+        const boost::filesystem::path& directory = context.document->project()->directory();
         context.report(context.document->exportRib(directory / "export.rib", context.shot(), (directory / "export.png").generic_string()));
     });
 }
