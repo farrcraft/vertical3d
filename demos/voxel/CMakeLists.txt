@@ -42,7 +42,7 @@ v3d_add_shader(voxel "shaders/voxel.frag")
 
 v3d_add_app_data(voxel)
 v3d_add_app_icon(voxel "data/icon.svg")
-v3d_install_app(voxel)
+v3d_install_app(voxel "Voxel")
 v3d_add_shared_data(voxel)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

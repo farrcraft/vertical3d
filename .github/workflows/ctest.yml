@@ -543,8 +543,36 @@ jobs:
           Pop-Location
           if ($failed) { throw "from the install: $($failed -join '; ')" }
 
+      # The installer is built from the same install rules on every run, so a change that breaks
+      # it fails here rather than at a release. It installs silently, gives the editor a Start
+      # menu entry, and its uninstaller removes every app it installed. The uninstaller is run in
+      # place, so it is waited for, and it is left behind as the one file it cannot remove.
+      - name: The installer installs and uninstalls
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        run: |
+          Push-Location $env:BUILD_DIR
+          cpack -C Release
+          $packed = $LASTEXITCODE
+          Pop-Location
+          if ($packed -ne 0) { throw "cpack exited $packed" }
+          $setup = Get-ChildItem "$env:BUILD_DIR\package\*-setup.exe" | Select-Object -First 1
+          if (-not $setup) { throw "cpack wrote no installer" }
+          $target = "$env:RUNNER_TEMP\installed"
+          $process = Start-Process -FilePath $setup.FullName -ArgumentList '/S', "/D=$target" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "the installer exited $($process.ExitCode)" }
+          foreach ($file in 'vertical3d.exe', 'moya.exe', 'NOTICES.txt', 'data\fonts', 'usd\plugInfo.json') {
+            if (-not (Test-Path "$target\$file")) { throw "the installer did not install $file" }
+          }
+          $menus = @([Environment]::GetFolderPath('CommonPrograms'), [Environment]::GetFolderPath('Programs'))
+          if (-not ($menus | Where-Object { Test-Path "$_\Vertical3D\Vertical3D Editor.lnk" })) { throw "the installer made no Start menu entry for the editor" }
+          $process = Start-Process -FilePath "$target\Uninstall.exe" -ArgumentList '/S', "_?=$target" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "the uninstaller exited $($process.ExitCode)" }
+          $left = Get-ChildItem $target -Recurse -File | Where-Object { $_.Name -ne 'Uninstall.exe' }
+          if ($left) { throw "the uninstaller left $($left.Count) files, such as $($left[0].FullName)" }
+
       # A release's tag packages the install tree the step above ran every app from, for the
-      # release job to publish.
+      # release job to publish beside the installer.
       - name: Package the release
         if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
@@ -556,7 +584,9 @@ jobs:
         if: matrix.preset == 'ci-release' && startsWith(github.ref, 'refs/tags/v')
         with:
           name: release
-          path: ${{ runner.temp }}/vertical3d-*-windows-x64.zip
+          path: |
+            ${{ runner.temp }}/vertical3d-*-windows-x64.zip
+            ${{ env.BUILD_DIR }}/package/vertical3d-*-windows-x64-setup.exe
           if-no-files-found: error
 
       # Inside the tree, a target that does not declare its own include path and dependencies
@@ -627,7 +657,7 @@ jobs:
 
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/*.zip
+          subject-path: dist/*
 
       - name: Publish the release
         env:
@@ -644,4 +674,4 @@ jobs:
           fi
           prerelease=()
           case "$TAG" in *-rc.*) prerelease=(--prerelease) ;; esac
-          gh release create "$TAG" dist/*.zip --verify-tag --title "Vertical3D ${TAG#v}" --notes-file notes.md "${prerelease[@]}"
+          gh release create "$TAG" dist/* --verify-tag --title "Vertical3D ${TAG#v}" --notes-file notes.md "${prerelease[@]}"

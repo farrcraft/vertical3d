@@ -173,7 +173,7 @@ v3d_install_usd_plugins()
 v3d_add_shared_data(vertical3d)
 v3d_add_app_data(vertical3d)
 v3d_add_app_icon(vertical3d "data/icon.svg")
-v3d_install_app(vertical3d)
+v3d_install_app(vertical3d "Vertical3D Editor")
 
 # a windows subsystem executable, so no console opens beside the app's window. It starts in
 # the WinMain that SDL_main.h supplies, and WinMain calls main.

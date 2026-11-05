@@ -15,8 +15,9 @@ that section to its version, and the section becomes the release's notes.
 - The editor, the offline renderer moya, imagetool and five demos (pong, tetris, voxel, odyssey
   and diorama), released together under one version.
 - Every app answers `--version`, and the editor shows its version under Help > About.
-- An install tree for Windows, from `cmake --install`, with the notices of every library and
-  font the apps ship.
+- A Windows installer, with a Start menu entry for each windowed app and an uninstaller, and the
+  same install tree as a zip. Both hold the notices of every library and font the apps ship.
+- Each app's file properties on Windows show its name and version.
 
 ### Changed
 

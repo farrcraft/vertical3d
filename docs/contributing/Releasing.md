@@ -15,8 +15,9 @@ to reach one. It says what a release is, how its version and notes are kept, and
 A release is one version of every app: the editor, moya, imagetool and the five demos. They are
 built from one commit, and ship together.
 
-- **Windows** gets the install tree as a zip, which [Build.md](Build.md#the-install-tree)
-  describes. An installer is still to come.
+- **Windows** gets an installer, and the install tree as a zip.
+  [Build.md](Build.md#the-installer) describes both. They are unsigned until SignPath
+  Foundation accepts the project, and then signed through it.
 - **Linux** gets a Flatpak, which is still to come.
 - **macOS** is not a release platform.
 - **The api is not shipped as a binary.** A release's tag gives a project that uses the api a
@@ -24,7 +25,8 @@ built from one commit, and ship together.
   says.
 
 Background: [ADR-0165](../adr/project/0165-releases-the-apps-ship-as-one-versioned-product.md),
-[ADR-0166](../adr/project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md)
+[ADR-0166](../adr/project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md),
+[ADR-0180](../adr/project/0180-releases-signpath-foundation-signs-the-windows-release.md)
 
 ## The version
 
@@ -93,7 +95,8 @@ request, with these steps added:
 2. It configures both builds with `V3D_RELEASE=ON`, and a candidate's `V3D_PRERELEASE`, so the
    apps show the release's version.
 3. The Release build installs, runs every app from the install, and zips the install tree as
-   `vertical3d-<version>-windows-x64.zip`.
-4. Once every job has passed, the release job attests the zip, and publishes a GitHub release
+   `vertical3d-<version>-windows-x64.zip`. It builds the installer,
+   `vertical3d-<version>-windows-x64-setup.exe`, and checks it installs and uninstalls.
+4. Once every job has passed, the release job attests both files, and publishes a GitHub release
    from the tag. Its notes are the changelog's section, and a candidate is marked as a
    pre-release.

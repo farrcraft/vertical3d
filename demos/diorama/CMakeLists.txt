@@ -22,7 +22,7 @@ target_link_libraries(diorama PRIVATE
 
 v3d_add_app_data(diorama)
 v3d_add_app_icon(diorama "data/icon.svg")
-v3d_install_app(diorama)
+v3d_install_app(diorama "Diorama")
 v3d_add_shared_data(diorama)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

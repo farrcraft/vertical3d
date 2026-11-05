@@ -16,5 +16,5 @@ add_executable(appicon "appicon.cxx")
 target_link_libraries(appicon PRIVATE v3dlib_log v3dlib_image v3dlib_asset)
 
 v3d_add_app_icon(imagetool "icon.svg")
-v3d_install_app(imagetool)
+v3d_install_app(imagetool "imagetool")
 

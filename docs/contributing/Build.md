@@ -214,7 +214,7 @@ guard has to cover the whole file.
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
 | `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory into `data/` beside the executable |
 | `v3d_add_app_data(<target>)` | Copies `<app>/data` into `data/<executable>/` beside the executable, and installs it there. See [The install tree](#the-install-tree) |
-| `v3d_install_app(<target>)` | Installs an app's executable into the install root. See [The install tree](#the-install-tree) |
+| `v3d_install_app(<target> <name>)` | Installs an app's executable into the install root, gives it a version resource, and names its Start menu entry. See [The install tree](#the-install-tree) |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
@@ -287,9 +287,27 @@ The rules are in [cmake/v3dInstall.cmake](../../cmake/v3dInstall.cmake):
   app runs from the install as it does from the build. CI installs the Release build and runs
   every app from the install with `--capture`.
 
+### The installer
+
+`cpack -C Release` in the Release build directory writes the Windows installer into
+`package/`, as `vertical3d-<version>-windows-x64-setup.exe`. CPack's NSIS generator builds it from
+the same install rules, so it installs exactly the tree above. It needs
+[NSIS](https://nsis.sourceforge.io/) 3.03 or later.
+
+- **It installs into Program Files**, in a `Vertical3D` directory, and adds an uninstaller.
+- **Each windowed app gets a Start menu entry**, named by the second argument of its
+  `v3d_install_app`. moya and imagetool are run from a console, and get none.
+- **It registers no file types.**
+- **Each app carries a version resource**, which `v3d_install_app` writes and Windows shows in
+  the file's properties: its name, and the release's version as the configure knew it.
+
+CI builds the installer on every run, installs it silently, checks the editor's Start menu entry,
+and checks the uninstaller removes every app.
+
 Other platforms have no install rules yet.
 
-Background: [ADR-0176](../adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md)
+Background: [ADR-0176](../adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md),
+[ADR-0179](../adr/project/0179-releases-an-nsis-installer-built-by-cpack.md)
 
 ## Shaders
 

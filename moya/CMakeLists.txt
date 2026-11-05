@@ -18,4 +18,4 @@ target_link_libraries(moya
 # data/moya/ beside the executable, so they are reachable from the build tree.
 v3d_add_app_data(moya)
 v3d_add_app_icon(moya "icon.svg")
-v3d_install_app(moya)
+v3d_install_app(moya "moya")

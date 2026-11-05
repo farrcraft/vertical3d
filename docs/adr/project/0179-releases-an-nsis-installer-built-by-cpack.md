@@ -3,7 +3,7 @@
 **Status**: accepted
 **Date**: 2026-11-05
 **Tags**: releases, build
-**Documented in**: [Releasing.md](../../contributing/Releasing.md#what-a-release-is)
+**Documented in**: [Build.md](../../contributing/Build.md#the-installer)
 
 ## Context
 

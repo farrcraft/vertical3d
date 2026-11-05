@@ -406,6 +406,18 @@ application to it is the owner's.
 
 ### Step 17 — The Windows installer
 
+**Built; open until signing is wired and a candidate runs it.** `v3d_install_app` takes each
+app's name, writes its version resource and records it for the Start menu. CPack's NSIS
+generator builds the installer from the install rules, into `package/`. A configure was checked
+here: `pong.exe` reads back "Pong", "0.1.0-dev" and "Vertical3D" from its properties, and
+CPack's configuration lists the six windowed apps. NSIS is not installed on this machine, so
+the installer was not built here. CI's Release job builds it on every run, installs it
+silently, checks the editor's Start menu entry, and checks the uninstaller removes every app. On
+a tag it is attested and published beside the zip. The editor's entry is "Vertical3D Editor",
+because a shortcut's file name cannot hold the `|` of "Vertical|3D". Signing is added to the
+workflow once SignPath Foundation accepts the project, which needs its organisation and project
+names.
+
 * **Each app gets version resources** beside the icon it already embeds.
 * **The installer** adds Start menu entries and an uninstaller, and registers the files step 15
   decides.
