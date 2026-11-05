@@ -58,7 +58,7 @@ set(V3D_API_ecs_REQUIRES animation type)
 set(V3D_API_ecs_PACKAGES glm EnTT)
 
 set(V3D_API_engine_PATH "engine")
-set(V3D_API_engine_REQUIRES log asset asset_media ecs event input type window)
+set(V3D_API_engine_REQUIRES log asset asset_media ecs event image input type window)
 set(V3D_API_engine_PACKAGES SDL3 EnTT glm)
 
 set(V3D_API_event_PATH "event")

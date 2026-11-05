@@ -218,6 +218,7 @@ content went. Numbers are never reused.
 | [0164](0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit | accepted |
 | [0165](0165-releases-the-apps-ship-as-one-versioned-product.md) | Releases: the apps ship as one versioned product | accepted |
 | [0166](0166-releases-a-windows-installer-and-a-flatpak-on-linux.md) | Releases: a Windows installer and a Flatpak on Linux | accepted |
+| [0170](0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run | accepted |
 
 ## Process
 

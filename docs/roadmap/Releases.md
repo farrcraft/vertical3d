@@ -110,9 +110,9 @@ Needs steps 3 and 4.
 Needs step 5.
 
 - Needs a decision on the installer tool, among NSIS, WiX, Inno Setup and MSIX.
-- Each app gets an icon and version resources. The installer adds Start menu entries and an
-  uninstaller. Whether it registers the editor's documents or `.rib` files with their apps is
-  part of the same decision.
+- Each app gets version resources beside the icon it already embeds. The installer adds Start
+  menu entries and an uninstaller. Whether it registers the editor's documents or `.rib` files
+  with their apps is part of the same decision.
 - Needs a decision on signing. The research favoured SignPath Foundation, which signs at no cost
   for projects whose every component has an OSI licence. A build with FMOD would not qualify.
 
@@ -132,7 +132,8 @@ Needs steps 4, 5 and 7.
 - A Flatpak manifest builds the install tree on a Freedesktop runtime. Flathub builds with no
   network, so every source vcpkg downloads is listed in the manifest. Whether vcpkg builds inside
   the Flatpak at all, or the runtime's own libraries replace some packages, is a decision.
-- Each app gets a desktop entry, an AppStream metainfo file and an icon.
+- Each app gets a desktop entry and an AppStream metainfo file. Each installs its SVG icon as its
+  scalable icon.
 - The release workflow builds the Flatpak, and the manifest is submitted to Flathub.
 
 ## What blocks what

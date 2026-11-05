@@ -34,6 +34,7 @@ loads the Vulkan loader when it creates one, so a machine with no Vulkan driver 
 | `width()`, `height()` | The size the window was last given. The engine records each resize SDL reports |
 | `request(size)` | Asks for a size. The recorded size changes only when SDL reports the resize |
 | `caption(text)` | Sets the title |
+| `icon(sizes)` | Sets the icon the title bar and the taskbar show, from square RGBA pictures at several sizes. The platform picks the nearest to what it draws. The engine calls it with the icon the window config names |
 | `focused()` | Whether the window has keyboard focus |
 | `fullscreen(on)` | Fills the display the window is on, or goes back to a window |
 | `textInput(on)` | Starts or stops the platform composing text. `ui::shell::Keyboard` calls it as focus moves |

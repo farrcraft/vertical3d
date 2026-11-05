@@ -91,6 +91,21 @@ rather than decoded.
   one line saying what differed and where. Keep the tolerance for float rounding between
   compilers, not for "close enough".
 
+## Icons
+
+`image/Icon.h` makes an app's icon.
+
+- `drawIcon(svg, logger)` draws an SVG document at each side in `ICON_SIDES`, 16 to 256 pixels,
+  smallest first. It returns no images when the document cannot be read or gives itself no
+  size.
+- `encodeIcon(images, logger)` encodes a Windows `.ico` file. Each image is square, RGBA, from 1
+  to 256 pixels a side, and of a size no other image has. The 256 pixel image is stored as a
+  png, and each smaller one as a 32 bit bitmap with a mask of its clear pixels, which every
+  reader of the format takes. It returns nothing when an image breaks a rule.
+
+The engine draws a window's icon with `drawIcon`, and the build tool `appicon` writes each
+app's `.ico` with both.
+
 ## Texture atlas
 
 `image::TextureAtlas` ([api/image/TextureAtlas.h](../../api/image/TextureAtlas.h)) packs many

@@ -8,6 +8,7 @@
 #include <api/asset/Json.h>
 
 #include <optional>
+#include <string>
 
 namespace v3d::engine {
 
@@ -22,6 +23,14 @@ std::optional<glm::ivec2> windowSize(const boost::json::object& document) {
         return std::nullopt;
     }
     return glm::ivec2(*width, *height);
+}
+
+std::optional<std::string> windowIcon(const boost::json::object& document) {
+    const boost::json::object* window = v3d::asset::readObject(document, "window");
+    if (window == nullptr) {
+        return std::nullopt;
+    }
+    return v3d::asset::readString(*window, "icon");
 }
 
 };  // namespace v3d::engine

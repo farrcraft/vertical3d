@@ -5,6 +5,7 @@
 
 #include "Engine.h"
 
+#include <api/asset/File.h>
 #include <api/asset/Manager.h>
 #include <api/asset/Manifest.h>
 #include <api/asset/kind/Json.h>
@@ -17,6 +18,8 @@
 #include <api/event/kind/WindowClose.h>
 #include <api/event/kind/WindowFocus.h>
 #include <api/event/kind/WindowResize.h>
+#include <api/image/Icon.h>
+#include <api/image/Image.h>
 #include <api/input/DeviceType.h>
 #include <api/input/Devices.h>
 #include <api/input/KeyState.h>
@@ -24,13 +27,16 @@
 #include <api/input/Mouse.h>
 #include <api/input/MouseState.h>
 #include <api/log/Logger.h>
+#include <api/window/Window.h>
 
 #include <SDL3/SDL.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -300,6 +306,7 @@ bool Engine::openWindow() {
     // config, or none carrying dimensions, still gets a window
     int width = -1;
     int height = -1;
+    std::optional<std::string> icon;
     if (features_.has(Feature::Config)) {
         const boost::shared_ptr<v3d::asset::kind::Json> windowConfig = manifest_->get(WINDOW_DOCUMENT);
         if (windowConfig) {
@@ -313,9 +320,45 @@ bool Engine::openWindow() {
             }
             width = size->x;
             height = size->y;
+            icon = windowIcon(doc);
         }
     }
-    return window_->create(glm::ivec2(width, height));
+    if (!window_->create(glm::ivec2(width, height))) {
+        return false;
+    }
+    if (icon) {
+        loadIcon(*icon);
+        showIcon(window_.get());
+    }
+    return true;
+}
+
+/**
+ **/
+void Engine::loadIcon(const std::string& name) {
+    const std::optional<std::string> text = v3d::asset::readFile(assetManager_->path(name));
+    if (!text) {
+        logger_->get()->warn("The window's icon {} could not be read", name);
+        return;
+    }
+    icon_ = v3d::image::drawIcon(*text, logger_);
+    if (icon_.empty()) {
+        logger_->get()->warn("The window's icon {} is not an SVG with a size", name);
+    }
+}
+
+/**
+ **/
+void Engine::showIcon(v3d::window::Window* window) const {
+    if (icon_.empty()) {
+        return;
+    }
+    std::vector<v3d::window::Window::Picture> pictures;
+    for (const boost::shared_ptr<v3d::image::Image>& image : icon_) {
+        const std::size_t bytes = static_cast<std::size_t>(image->width()) * image->height() * 4;
+        pictures.push_back({ .side = image->width(), .rgba = std::span<const unsigned char>(image->data(), bytes) });
+    }
+    window->icon(pictures);
 }
 
 /**
@@ -541,6 +584,7 @@ boost::shared_ptr<v3d::window::Window> Engine::addWindow(const glm::ivec2& size)
     if (!made->create(size)) {
         return nullptr;
     }
+    showIcon(made.get());
     windows_.push_back(made);
     return made;
 }

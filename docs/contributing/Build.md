@@ -184,6 +184,7 @@ guard has to cover the whole file.
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
 | `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory beside the executable |
 | `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
+| `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` | Compiles a GLSL shader into the target. See [Shaders](#shaders) |
 
@@ -205,6 +206,22 @@ The two data helpers add a build rule whose inputs are the files in the source d
 
 These apps call `v3d_add_app_data`: pong, tetris, voxel, odyssey, diorama, moya and
 vertical3d. All of them but moya also call `v3d_add_shared_data`.
+
+### App icons
+
+Every app has an icon, drawn from one SVG. An app that opens a window keeps it at
+`<app>/data/icon.svg`, and its `window.json` names it, so the window shows it at run time. moya
+and imagetool open no window and keep theirs at `<app>/icon.svg`. Each app's CMakeLists calls
+`v3d_add_app_icon` with its SVG, so its executable carries the same icon on Windows.
+
+- The SVG is a square with a size of its own, 256 by 256 in the tree. It is drawn at 16 to 256
+  pixels, so it keeps its detail large enough to read at 16.
+- The build draws the icon again when the SVG changes. The `.ico` is a build output and is
+  not committed.
+- Only the subset of SVG NanoSVG draws is used. A gradient's position and radius are written
+  as percentages, since a bare fraction is read as pixels.
+
+Background: [ADR-0170](../adr/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
 
 ## Shaders
 

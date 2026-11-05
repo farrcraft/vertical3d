@@ -7,10 +7,13 @@
 
 #include <api/log/Logger.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace v3d::window {
 
@@ -109,6 +112,41 @@ void Window::request(const glm::ivec2& size) {
 void Window::caption(const std::string_view& cap) {
     caption_ = cap;
     SDL_SetWindowTitle(window_, caption_.c_str());
+}
+
+/**
+ **/
+bool Window::icon(std::span<const Picture> sizes) {
+    if (window_ == nullptr || sizes.empty()) {
+        return false;
+    }
+    std::vector<SDL_Surface*> surfaces;
+    for (const Picture& picture : sizes) {
+        const std::size_t pitch = static_cast<std::size_t>(picture.side) * 4;
+        if (picture.side == 0 || picture.rgba.size() != pitch * picture.side) {
+            surfaces.push_back(nullptr);
+            continue;
+        }
+        // SDL reads the pixels through a pointer that is not const, and setting the icon copies
+        // them, so nothing writes to them
+        surfaces.push_back(SDL_CreateSurfaceFrom(static_cast<int>(picture.side), static_cast<int>(picture.side), SDL_PIXELFORMAT_RGBA32,
+            const_cast<unsigned char*>(picture.rgba.data()), static_cast<int>(pitch)));
+    }
+    bool made = std::ranges::find(surfaces, nullptr) == surfaces.end();
+    if (made) {
+        // the first size is the icon, and the others are the sizes the platform may pick instead
+        for (std::size_t index = 1; index < surfaces.size(); index++) {
+            made = made && SDL_AddSurfaceAlternateImage(surfaces.front(), surfaces[index]);
+        }
+        made = made && SDL_SetWindowIcon(window_, surfaces.front());
+        if (!made) {
+            logger_->get()->warn("The window's icon was not set: {}", SDL_GetError());
+        }
+    }
+    for (SDL_Surface* surface : surfaces) {
+        SDL_DestroySurface(surface);
+    }
+    return made;
 }
 
 /**

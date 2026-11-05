@@ -281,6 +281,7 @@
     - [ADR-0164: Tooling: commits are checked locally through pre-commit](adr/0164-tooling-commits-are-checked-locally-through-pre-commit.md)
     - [ADR-0165: Releases: the apps ship as one versioned product](adr/0165-releases-the-apps-ship-as-one-versioned-product.md)
     - [ADR-0166: Releases: a Windows installer and a Flatpak on Linux](adr/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md)
+    - [ADR-0170: Build: an app's icon is one SVG, drawn at build and at run](adr/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
     - [ADR-0083: Review: a changeset answers for what it introduces](adr/0083-review-a-changeset-answers-for-what-it-introduces.md)
 - [Plans](plans/README.md)
     - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)

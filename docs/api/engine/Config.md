@@ -27,7 +27,7 @@ reads these:
 
 | Kind | Declared by, and read by | Document shape |
 |---|---|---|
-| `window` | `engine::WINDOW_DOCUMENT`. The engine, when it opens the window | `{"window": {"width": 1024, "height": 768}}`. Both must be whole numbers an `int` can hold, or startup fails. |
+| `window` | `engine::WINDOW_DOCUMENT`. The engine, when it opens the window | `{"window": {"width": 1024, "height": 768, "icon": "icon.svg"}}`. Both sizes must be whole numbers an `int` can hold, or startup fails. `icon` is optional: the SVG the window's icon is drawn from, which every window the app opens shows. An icon that cannot be read is logged, and the window keeps the platform's. |
 | `binding` | `event::Bindings::DOCUMENT`. The engine's bindings | See [Bindings](Input.md#bindings). |
 | `ui` | `ui::Interface::DOCUMENT`. `ui::Interface::load()`, from the shell | Themes and containers. See [ui/](../ui/README.md). |
 | `sound` | `audio::Player::DOCUMENT`. `audio::Player::load()` | See [Audio](Audio.md#audio). |

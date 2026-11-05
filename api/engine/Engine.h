@@ -32,6 +32,10 @@
 #include <boost/json.hpp>
 #include <entt/entt.hpp>
 
+namespace v3d::image {
+class Image;
+};  // namespace v3d::image
+
 namespace v3d::engine {
 
 /**
@@ -461,6 +465,17 @@ class Engine {
      void startInput();
      bool openWindow();
 
+     /**
+      * Draw the icon the window config names, at each size a window's icon is given. An icon
+      * that cannot be read is logged, and the window keeps the platform's.
+      **/
+     void loadIcon(const std::string& name);
+
+     /**
+      * Give a window the icon loadIcon() drew, if it drew one.
+      **/
+     void showIcon(v3d::window::Window* window) const;
+
      entt::registry registry_;
 
      // what interpolate() registered, run in order before each simulate()
@@ -490,6 +505,8 @@ class Engine {
      boost::shared_ptr<v3d::window::Window> window_;
      // the windows addWindow() opened, destroyed before the engine's own
      std::vector<boost::shared_ptr<v3d::window::Window>> windows_;
+     // the app's icon at each size, which every window it opens shows
+     std::vector<boost::shared_ptr<v3d::image::Image>> icon_;
      boost::shared_ptr<v3d::asset::Manager> assetManager_;
      boost::shared_ptr<entt::dispatcher> dispatcher_;
      boost::shared_ptr<v3d::event::Router> router_;

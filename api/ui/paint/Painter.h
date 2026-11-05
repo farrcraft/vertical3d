@@ -129,6 +129,8 @@ struct Chevron {
  * colour shows the overlap.
  *
  * @param canvas what the chevron is drawn on, or null to draw nothing
+ * @param shape its three points and its strokes' width
+ * @param colour what it is drawn in
  **/
 void chevron(v3d::render::realtime::canvas::Canvas* canvas, const Chevron& shape, const glm::vec4& colour);
 

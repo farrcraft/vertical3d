@@ -133,6 +133,32 @@ function(v3d_add_app_data target)
 	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data")
 endfunction()
 
+# An app's icon is an SVG. On Windows the build draws it into an .ico with appicon and embeds
+# that in the executable as its first icon resource, which Explorer, shortcuts and the taskbar
+# show. The window's own icon comes from the window config at run time, from the same SVG.
+#
+# The .ico and the resource script are written to the target's binary directory. The script
+# compiles again when the .ico changes, because the resource compiler does not track it.
+#
+# @param target the executable the icon is embedded in
+# @param svg the icon's SVG, relative to the calling directory
+function(v3d_add_app_icon target svg)
+	if(NOT WIN32)
+		return()
+	endif()
+	set(source "${CMAKE_CURRENT_SOURCE_DIR}/${svg}")
+	set(icon "${CMAKE_CURRENT_BINARY_DIR}/${target}.ico")
+	set(script "${CMAKE_CURRENT_BINARY_DIR}/${target}_icon.rc")
+	add_custom_command(OUTPUT "${icon}"
+		COMMAND appicon "${source}" "${icon}"
+		DEPENDS appicon "${source}"
+		COMMENT "Drawing ${target}'s icon"
+		VERBATIM)
+	file(GENERATE OUTPUT "${script}" CONTENT "1 ICON \"${icon}\"\n")
+	set_source_files_properties("${script}" PROPERTIES OBJECT_DEPENDS "${icon}")
+	target_sources(${target} PRIVATE "${script}" "${icon}")
+endfunction()
+
 # Tests live next to the library they cover, in api/<lib>/tests, and each directory builds
 # one Boost.Test binary. v3d_add_test wires up what every one of them needs: the framework,
 # /EHsc and /utf-8 under MSVC, and a working directory beside the executable. The framework's

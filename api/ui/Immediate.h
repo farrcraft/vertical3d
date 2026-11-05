@@ -274,6 +274,7 @@ class Immediate {
      * shows a tooltip at once.
      *
      * @param id the button's id within the scope
+     * @param look its icon, its tooltip and whether it is on
      * @return whether it was clicked this frame
      **/
     bool iconButton(const std::string& id, const IconLook& look);
@@ -315,6 +316,7 @@ class Immediate {
      * A semibold line that heads a group of rows. A heading given open folds the group: it
      * draws a tree row's mark before its label, and a click anywhere on it flips *open.
      *
+     * @param label the heading's text, and its id
      * @param open read and written - whether the group shows, or null for a heading that does
      *        not fold
      * @return whether to draw the group: *open, or true for a heading that does not fold

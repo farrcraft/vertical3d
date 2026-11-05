@@ -7,7 +7,8 @@ v3d_add_test(image
 	"TextureAtlasTest.cxx"
 	"CropTest.cxx"
 	"PackTest.cxx"
-	"SvgReaderTest.cxx")
+	"SvgReaderTest.cxx"
+	"IconTest.cxx")
 
 target_link_libraries(v3dtest_image PRIVATE v3dlib_image v3dlib_log ${Boost_LIBRARIES} ${PNG_LIBRARIES} JPEG::JPEG)
 
