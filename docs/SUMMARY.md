@@ -289,7 +289,7 @@
     - [ADR-0173: Testing: the suites also run under the sanitizers](adr/project/0173-testing-the-suites-also-run-under-the-sanitizers.md)
     - [ADR-0174: Testing: the hand-written parsers are fuzzed](adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 - [Plans](plans/README.md)
-    - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)
+    - [Releases — Installed Apps, a Version, a Release Workflow, an Installer and a Flatpak](plans/Releases.md)
 - [Roadmaps](roadmap/README.md)
     - [Releases](roadmap/Releases.md)
 - [Audits and surveys](audits/README.md)

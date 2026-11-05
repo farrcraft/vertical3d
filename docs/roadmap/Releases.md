@@ -7,7 +7,9 @@ source, and a release's tag gives a consumer a named commit to pin. Both choices
 [ADR-0166](../adr/project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md).
 
 Today nothing is installed, versioned or packaged. Every app runs from its build directory, and
-CI builds Debug on Windows only.
+CI builds the apps in Debug on Windows only.
+
+The [Releases plan](../plans/Releases.md) takes up every section below.
 
 ## What exists
 
