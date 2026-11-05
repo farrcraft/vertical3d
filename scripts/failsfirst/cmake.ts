@@ -98,9 +98,43 @@ export function unknownCommands(output: string): UnknownCall[] {
     return [...calls].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), command: m[3] ?? '' }));
 }
 
+// A link a failed configure reports to a target that no package defines: the file as the
+// configure printed it, the line its target_link_libraries call starts on, and the target.
+export type MissingLink = { file: string; line: number; target: string };
+
+export function missingLinks(output: string): MissingLink[] {
+    const links = output.matchAll(
+        /CMake Error at (\S[^\r\n]*?):(\d+) \(target_link_libraries\):\s*\r?\n\s*Target "[^"\r\n]+" links to:\s+(\S+)\s+but the target was not found/g);
+    return [...links].map((m) => ({ file: m[1] ?? '', line: Number(m[2]), target: m[3] ?? '' }));
+}
+
 // The text with the call to command that starts on the given line removed, up to its closing
 // parenthesis, or null when that line has no such call. CMake command names ignore case.
 export function dropCall(text: string, line: number, command: string): string | null {
+    const span = callSpan(text, line, command);
+    return span === null ? null : text.slice(0, span.start) + text.slice(span.end);
+}
+
+// The text with one item removed from the arguments of the call to command that starts on the
+// given line, or null when that call does not name the item.
+export function dropArgument(text: string, line: number, command: string, item: string): string | null {
+    const span = callSpan(text, line, command);
+    if (span === null) {
+        return null;
+    }
+    const call = text.slice(span.start, span.end);
+    // the whitespace before the item goes with it, so a call keeps its other items' layout
+    const found = new RegExp(`\\s+${escapeRegExp(item)}(?=[\\s)])`).exec(call);
+    if (!found) {
+        return null;
+    }
+    const at = span.start + found.index;
+    return text.slice(0, at) + text.slice(at + found[0].length);
+}
+
+// Where the call to command that starts on the given line begins, and the index just past its
+// closing parenthesis. Null when that line has no such call, or the call never closes.
+function callSpan(text: string, line: number, command: string): { start: number; end: number } | null {
     let start = 0;
     for (let n = 1; n < line; n++) {
         start = text.indexOf('\n', start) + 1;
@@ -128,7 +162,7 @@ export function dropCall(text: string, line: number, command: string): string | 
         } else if (c === '(') {
             depth++;
         } else if (c === ')' && --depth === 0) {
-            return text.slice(0, start + found.index) + text.slice(i + 1);
+            return { start: start + found.index, end: i + 1 };
         }
     }
     return null;

@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import { parseOptions } from '../failsfirst.ts';
 import { dropNote, failedSources } from '../failsfirst/build.ts';
 import { casesIn, inBase, namedCommit } from '../failsfirst/cases.ts';
-import { dropCall, dropSource, missingSources, sourceOf, unknownCommands } from '../failsfirst/cmake.ts';
+import { dropArgument, dropCall, dropSource, missingLinks, missingSources, sourceOf, unknownCommands } from '../failsfirst/cmake.ts';
 import { classify, describeExit, type Outcome } from '../failsfirst/run.ts';
 import { type Case, FAILS, NOT_RUN, PASSES, PASSES_COVERS, PASSES_STATED, SKIPPED } from '../failsfirst/types.ts';
 import { ROOT } from '../lib/tree.ts';
@@ -140,6 +140,42 @@ test('failsfirst drops a call that spans lines and holds parentheses', () => {
     assert.equal(dropCall(text, 2, 'V3D_HELPER'), 'a(x)\n\nb(y)\n');
     assert.equal(dropCall(text, 1, 'v3d_helper'), null);
     assert.equal(dropCall(text, 9, 'v3d_helper'), null);
+});
+
+test('failsfirst reads each link to a target a failed configure cannot find', () => {
+    const output = [
+        'CMake Error at api/font/tests/CMakeLists.txt:20 (target_link_libraries):',
+        '  Target "v3dtest_font" links to:',
+        '',
+        '    ICU::uc',
+        '',
+        '  but the target was not found.  Possible reasons include:',
+        '',
+        'CMake Error at api/font/tests/CMakeLists.txt:20 (target_link_libraries):',
+        '  Target "v3dtest_font" links to:',
+        '',
+        '    thorvg::thorvg',
+        '',
+        '  but the target was not found.  Possible reasons include:',
+        '',
+        'CMake Error at api/x/tests/CMakeLists.txt:3 (v3d_helper):',
+        '  Unknown CMake command "v3d_helper".',
+    ].join('\r\n');
+    assert.deepEqual(missingLinks(output), [
+        { file: 'api/font/tests/CMakeLists.txt', line: 20, target: 'ICU::uc' },
+        { file: 'api/font/tests/CMakeLists.txt', line: 20, target: 'thorvg::thorvg' },
+    ]);
+    assert.deepEqual(missingLinks('-- Configuring done'), []);
+});
+
+test('failsfirst drops one item from a call, and only a whole item', () => {
+    const text = 'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2 ICU::uc\n    ICU::data)\nb(ICU::uc)\n';
+    assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::uc'),
+        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2\n    ICU::data)\nb(ICU::uc)\n');
+    assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::data'),
+        'a(x)\ntarget_link_libraries(t PRIVATE ICU::uc2 ICU::uc)\nb(ICU::uc)\n');
+    assert.equal(dropArgument(text, 2, 'target_link_libraries', 'ICU::i18n'), null);
+    assert.equal(dropArgument(text, 1, 'target_link_libraries', 'ICU::uc'), null);
 });
 
 test('failsfirst resolves a list entry against its directory, and gives up on another variable', () => {

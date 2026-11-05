@@ -8,7 +8,7 @@ import * as path from 'node:path';
 
 import { GateError } from '../lib/git.ts';
 import { ROOT, isTestPath } from '../lib/tree.ts';
-import { dropCall, dropSource, listedSources, missingSources, sourceOf, unknownCommands } from './cmake.ts';
+import { dropArgument, dropCall, dropSource, listedSources, missingLinks, missingSources, sourceOf, unknownCommands } from './cmake.ts';
 import { runLogged, tail } from './environment.ts';
 import { type Case, type Drop, type Env, FAILS_TO_BUILD, NOT_RUN } from './types.ts';
 
@@ -77,6 +77,21 @@ export function configure(worktree: string, build: string, mainBuild: string, ca
             if (text !== null) {
                 fs.writeFileSync(full, text);
                 console.log(`dropped the call to ${name} from ${relative}: the base has no such command`);
+                progress = true;
+            }
+        }
+        // a head tests/CMakeLists.txt can link a package the change added, which the base does
+        // not find. The suite then fails to build against the base, if it needs the package
+        for (const { file, line, target } of missingLinks(output)) {
+            const relative = (path.isAbsolute(file) ? path.relative(worktree, file) : file).split(path.sep).join('/');
+            if (!isTestPath(relative)) {
+                continue;
+            }
+            const full = path.join(worktree, ...relative.split('/'));
+            const text = fs.existsSync(full) ? dropArgument(fs.readFileSync(full, 'utf8'), line, 'target_link_libraries', target) : null;
+            if (text !== null) {
+                fs.writeFileSync(full, text);
+                console.log(`dropped ${target} from the link in ${relative}: the base does not find it`);
                 progress = true;
             }
         }
