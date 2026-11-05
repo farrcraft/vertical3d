@@ -112,6 +112,8 @@ reported, so the table lists only tags in use.
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
 | [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 | [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs |
+| [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
+| [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 
 ### camera
 
@@ -340,6 +342,9 @@ reported, so the table lists only tags in use.
 | [0176](project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md) | Releases: the Windows release links its libraries as DLLs |
 | [0177](project/0177-releases-a-hand-written-changelog.md) | Releases: a hand-written changelog |
 | [0178](project/0178-releases-a-tag-on-main-starts-a-release.md) | Releases: a tag on main starts a release |
+| [0179](project/0179-releases-an-nsis-installer-built-by-cpack.md) | Releases: an NSIS installer built by CPack |
+| [0180](project/0180-releases-signpath-foundation-signs-the-windows-release.md) | Releases: SignPath Foundation signs the Windows release |
+| [0181](project/0181-build-linux-builds-with-clang-and-gcc.md) | Build: Linux builds with Clang and GCC |
 
 ### rendering
 

@@ -101,10 +101,10 @@ by the owner before the step that builds it starts.
 | [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | done |
 | [13](#step-13--the-record-the-release-flow) | The record: the release flow | `docs/adr` | **0178** | done |
 | [14](#step-14--the-release-workflow) | The changelog, the release workflow and its document | CI, `docs` | 0177, 0178 | open |
-| [15](#step-15--the-record-the-windows-installer) | The record: the Windows installer | `docs/adr` | **0179** | open |
-| [16](#step-16--the-record-signing) | The record: signing | `docs/adr` | **0180** | open |
+| [15](#step-15--the-record-the-windows-installer) | The record: the Windows installer | `docs/adr` | **0179** | done |
+| [16](#step-16--the-record-signing) | The record: signing | `docs/adr` | **0180** | done |
 | [17](#step-17--the-windows-installer) | The Windows installer, in the release workflow | apps, CI | 0179, 0180 | open |
-| [18](#step-18--the-record-the-compilers-on-linux) | The record: the compilers on Linux | `docs/adr` | **0181** | open |
+| [18](#step-18--the-record-the-compilers-on-linux) | The record: the compilers on Linux | `docs/adr` | **0181** | done |
 | [19](#step-19--the-whole-tree-on-linux) | The whole tree builds and its tests run on Linux | all of the tree, CI | 0181 | open |
 | [20](#step-20--the-record-the-flatpaks-dependencies) | The record: the Flatpak's dependencies | `docs/adr` | **0182** | open |
 | [21](#step-21--the-flatpak) | The Flatpak, in the release workflow and on Flathub | apps, CI | 0182 | open |
@@ -389,10 +389,16 @@ tree as a zip, its attestation and its notes.
 
 ### Step 15 — The record: the Windows installer
 
+**Done.** ADR-0179 is accepted: NSIS through CPack's generator, from the install rules, with a
+Start menu entry for each windowed app and an uninstaller. It registers no file types.
+
 ADR-0179 decides the installer tool, among NSIS, WiX, Inno Setup and MSIX, and whether it
 registers the editor's documents and `.rib` files with their apps.
 
 ### Step 16 — The record: signing
+
+**Done.** ADR-0180 is accepted: SignPath Foundation signs the release, with a maintainer
+approving each request. Releases ship unsigned until the owner's application is accepted.
 
 ADR-0180 decides how the Windows release is signed. The roadmap's research favoured SignPath
 Foundation, which signs at no cost for a project whose every component has an OSI licence. The
@@ -409,6 +415,9 @@ application to it is the owner's.
 and the uninstaller removes everything it installed.
 
 ### Step 18 — The record: the compilers on Linux
+
+**Done.** ADR-0181 is accepted: Linux builds the whole tree with Clang and with GCC, each in a CI
+job with warnings as errors, and the Flatpak builds with GCC.
 
 ADR-0181 decides whether the Linux build uses Clang alone, or GCC as well.
 
