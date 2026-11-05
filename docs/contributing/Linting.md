@@ -16,6 +16,7 @@ the linking rules. [Gates.md](Gates.md) lists them and says how they run.
 - [clang-tidy](#clang-tidy)
 - [Prose](#prose)
 - [Comments only](#comments-only)
+- [CodeQL](#codeql)
 - [CI](#ci)
 
 ## cpplint
@@ -241,6 +242,23 @@ lines, and reports:
 Other files are not read. It is not a CI gate, because most changes move code. A comment change
 can still break the build in a way the script does not see, so build and run the tests as well.
 
+## CodeQL
+
+[.github/workflows/codeql.yml](../../.github/workflows/codeql.yml) scans the C++, the TypeScript
+and the workflows with GitHub's CodeQL. It runs on each pull request, on each push to `main`
+and once a week, since CodeQL's queries change while the code does not. Its findings are the
+repository's code scanning alerts, and a pull request shows the ones it adds beside the lines.
+
+- **The C++ is read without a build.** CodeQL reads every source file, including the code only
+  Windows builds, and does not see a macro or an include exactly as the compiler does. A
+  finding that rests on what a macro expands to can therefore be wrong.
+- **Its queries are mostly about security**: input that reaches a buffer, a format string or a
+  path unchecked, and arithmetic on a size that can overflow. clang-tidy and `/analyze` cover
+  the rest.
+- **A finding is fixed in the code**, like any other check's. One that is wrong is dismissed in
+  the alert with the reason, not by changing the workflow's queries.
+- CodeQL does not run locally.
+
 ## CI
 
 [.github/workflows/cpplint.yml](../../.github/workflows/cpplint.yml) installs cpplint with pip on
@@ -252,6 +270,7 @@ tree on a Windows runner and runs the tests. cpplint needs only Python. The buil
 Vulkan SDK and a vcpkg install.
 
 Neither `/analyze` nor clang-tidy runs in CI, because of their cost. They are run locally.
+CodeQL runs only in CI, in a workflow of its own. See [CodeQL](#codeql).
 
 [.github/workflows/review-gates.yml](../../.github/workflows/review-gates.yml) runs the review
 gates on each pull request and on each push to `main`. [Gates.md](Gates.md#in-ci) says what it

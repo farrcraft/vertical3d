@@ -1,0 +1,51 @@
+# Scans the tree with CodeQL and reports what it finds to the repository's code scanning alerts,
+# and on a pull request as annotations on the change. It reads the C++, the TypeScript and the
+# workflows themselves.
+#
+# The C++ is read without a build. A traced build would need the Windows job's compiler, Vulkan
+# SDK and package install set up a second time, and covering the renderer and the apps needs
+# that Windows build rather than the Linux one. Without a build CodeQL reads every source file,
+# the Windows-only code included, and resolves less precisely what a macro or an include brings in.
+name: codeql
+
+# push is filtered to the default branch and pull_request is not, for the reason portable.yml
+# gives. The weekly run reads unchanged code with the queries CodeQL has added since.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [c-cpp, javascript-typescript, actions]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: /language:${{ matrix.language }}
