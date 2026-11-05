@@ -23,6 +23,7 @@ target_link_libraries(tetris PRIVATE
 
 v3d_add_app_data(tetris)
 v3d_add_app_icon(tetris "data/icon.svg")
+v3d_install_app(tetris)
 v3d_add_shared_data(tetris)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

@@ -96,8 +96,8 @@ by the owner before the step that builds it starts.
 | [7](#step-7--a-version-in-every-app) | A version in every app | `api/engine`, `api/render/realtime`, apps | 0175 | done |
 | [8](#step-8--the-release-triplet-tried) | The release triplet, tried with the editor | build | — | done |
 | [9](#step-9--the-record-how-a-release-links-its-dependencies) | The record: how a release links its dependencies | `docs/adr` | **0176** | done |
-| [10](#step-10--the-editor-finds-moya-and-its-usd-plugins-from-the-install) | The editor finds moya and its USD plugins from the install | `vertical3d`, build | 0176 | open |
-| [11](#step-11--install-rules) | Install rules, and a CI job that runs each app from the install | build, CI | 0176 | open |
+| [10](#step-10--the-editor-finds-moya-and-its-usd-plugins-from-the-install) | The editor finds moya and its USD plugins from the install | `vertical3d`, build | 0176 | done |
+| [11](#step-11--install-rules) | Install rules, and a CI job that runs each app from the install | build, CI | 0176 | done |
 | [12](#step-12--the-record-the-changelog) | The record: the changelog | `docs/adr` | **0177** | done |
 | [13](#step-13--the-record-the-release-flow) | The record: the release flow | `docs/adr` | **0178** | done |
 | [14](#step-14--the-release-workflow) | The changelog, the release workflow and its document | CI, `docs` | 0177, 0178 | open |
@@ -305,6 +305,14 @@ ADR-0176 decides the triplet a release builds with, from step 8's trial.
 
 ### Step 10 — The editor finds moya and its USD plugins from the install
 
+**Done, with no code.** The Windows install is one flat directory, so it lays the editor out as
+the build does. The editor names `moya.exe` or `moya` by platform already, and runs it from
+`appPath()`, which step 1 made `SDL_GetBasePath()`. OpenUSD reads `usd/plugInfo.json` beside its
+own DLLs, and step 11 installs `usd/` there. Nothing needed a path the editor registers. Neither
+a render batch nor a USD import can run without the file chooser, so neither was run from the
+install. The layout they rely on is the build's, which the USD suite and the editor use. The
+Linux layout is step 19's and step 21's.
+
 * **The editor finds moya** from the install's layout, with the platform's executable name.
 * **OpenUSD finds its plugins** wherever the install puts them, through the path the editor
   registers, not only beside the executable.
@@ -313,6 +321,17 @@ ADR-0176 decides the triplet a release builds with, from step 8's trial.
 imports from the install tree once step 11 lands.
 
 ### Step 11 — Install rules
+
+**Done.** `cmake/v3dInstall.cmake` holds the rules, for Windows only. Each app calls
+`v3d_install_app`, and `v3d_add_app_data` installs the app's data into `data/<executable>/`.
+The root installs the shared `data/`, the MSVC runtime, and `NOTICES.txt`, which `notices.ts`
+writes during the install. The DLLs are found from the installed apps by
+`cmake/v3dInstallDependencies.cmake`. A `RUNTIME_DEPENDENCY_SET` refused the build's DLLs,
+because vcpkg copies each one beside every app and the copies conflict. The system's DLLs and
+the Vulkan loader are left out. The Release install is 75 MB with the fonts: eight apps, 46
+DLLs, `data/`, `usd/` and the notices. Every app ran from it with `--capture`, from another
+working directory. `ctest.yml`'s Release job installs and runs every app the same way, and runs
+first on the branch's pull request.
 
 * **`install()` rules place each app, the shared data, moya, the USD plugins and the notices** in
   one install tree.

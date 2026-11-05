@@ -340,10 +340,9 @@ jobs:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ runner.os }}-${{ steps.msvc.outputs.toolset }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**') }}-${{ github.run_id }}-${{ matrix.preset }}
 
-      # Node runs the notices check and the fails-first harness directly, with no install, at the
-      # version the other gates run on in review-gates.yml.
+      # Node runs the notices check, the install's notices and the fails-first harness directly,
+      # with no install, at the version the other gates run on in review-gates.yml.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: matrix.preset == 'ci'
         with:
           node-version: 24
 
@@ -490,6 +489,33 @@ jobs:
           Pop-Location
           if ($exit -eq 77) { throw "the render window suite could not open a window to present to, and skipped" }
           if ($exit -ne 0) { throw "the render window suite exited $exit" }
+
+      # A release ships the install tree, so each app has to run from it, from a working directory
+      # of its own. An app that cannot find a DLL, a data file or its shaders there fails here.
+      # A windowed app returns at once when started from a shell, so each is waited for.
+      - name: Every app runs from the install
+        if: matrix.preset == 'ci-release'
+        shell: pwsh
+        env:
+          INSTALL_DIR: ${{ runner.temp }}\install
+        run: |
+          cmake --install "$env:BUILD_DIR" --prefix "$env:INSTALL_DIR"
+          if ($LASTEXITCODE -ne 0) { throw "the install exited $LASTEXITCODE" }
+          if (-not (Test-Path "$env:INSTALL_DIR\NOTICES.txt")) { throw "the install wrote no NOTICES.txt" }
+          $pictures = "$env:RUNNER_TEMP\from-install"
+          New-Item -ItemType Directory -Force -Path $pictures | Out-Null
+          Push-Location $pictures
+          $failed = @()
+          foreach ($app in 'pong', 'tetris', 'voxel', 'odyssey', 'diorama', 'vertical3d') {
+            $process = Start-Process -FilePath "$env:INSTALL_DIR\$app.exe" -ArgumentList '--capture', "$pictures\$app.png" -Wait -PassThru
+            if ($process.ExitCode -ne 0 -or -not (Test-Path "$pictures\$app.png")) { $failed += "$app exited $($process.ExitCode)" }
+          }
+          & "$env:INSTALL_DIR\moya.exe" --file "$env:INSTALL_DIR\data\moya\raytrace-scene.rib" --output "$pictures\moya.png" --silent
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$pictures\moya.png")) { $failed += "moya exited $LASTEXITCODE" }
+          & "$env:INSTALL_DIR\imagetool.exe" --version
+          if ($LASTEXITCODE -ne 0) { $failed += "imagetool exited $LASTEXITCODE" }
+          Pop-Location
+          if ($failed) { throw "from the install: $($failed -join '; ')" }
 
       # Inside the tree, a target that does not declare its own include path and dependencies
       # still builds, because the root and the apps supply them. Only a separate root project

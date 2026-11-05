@@ -10,6 +10,7 @@ another repository against the api is covered in [UsingTheApi.md](../api/UsingTh
 - [The CMake layout](#the-cmake-layout)
 - [The options](#the-options)
 - [The helper functions](#the-helper-functions)
+- [The install tree](#the-install-tree)
 - [Shaders](#shaders)
 - [Linking rules](#linking-rules)
 - [The starter example](#the-starter-example)
@@ -212,7 +213,8 @@ guard has to cover the whole file.
 |---|---|
 | `v3d_add_api_library(<name> <sources>)` | Declares `v3dlib_<name>` and its alias `v3d::<name>`. Adds the repository root as a PUBLIC include directory, gives it `/EHsc` and `/utf-8` PUBLIC under MSVC, and links `Boost::headers` PUBLIC |
 | `v3d_add_shared_data(<target>)` | Copies the root [data/](../../data) directory into `data/` beside the executable |
-| `v3d_add_app_data(<target>)` | Copies `<app>/data` into `data/<executable>/` beside the executable |
+| `v3d_add_app_data(<target>)` | Copies `<app>/data` into `data/<executable>/` beside the executable, and installs it there. See [The install tree](#the-install-tree) |
+| `v3d_install_app(<target>)` | Installs an app's executable into the install root. See [The install tree](#the-install-tree) |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
 | `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
@@ -257,6 +259,37 @@ and imagetool open no window and keep theirs at `<app>/icon.svg`. Each app's CMa
   as percentages, since a bare fraction is read as pixels.
 
 Background: [ADR-0170](../adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
+
+## The install tree
+
+A release ships the install tree. `cmake --install out/build/x64-Release` writes it to
+`out/install/x64-Release`, the preset's install directory. On Windows it is one flat directory:
+
+- every app's executable, which `v3d_install_app` installs;
+- `data/`, with the shared data and each app's own data in `data/<executable>/`, as the build
+  lays it out;
+- one copy of each DLL the apps load, and the MSVC runtime from `InstallRequiredSystemLibraries`;
+- OpenUSD's plugins in `usd/`, beside its DLLs, where it looks for them;
+- `NOTICES.txt`, which [scripts/notices.ts](../../scripts/notices.ts) writes as the tree is
+  installed. Installing needs Node on the `PATH` for it.
+
+The rules are in [cmake/v3dInstall.cmake](../../cmake/v3dInstall.cmake):
+
+- **An app is installed by its own CMakeLists.txt** calling `v3d_install_app`. A new app that
+  forgets it is missing from a release.
+- **The DLLs are found from the installed apps**, by
+  [cmake/v3dInstallDependencies.cmake](../../cmake/v3dInstallDependencies.cmake), once every app
+  is in place. In the build, vcpkg copies each DLL beside every app that loads it. Beside the
+  installed apps there is none, so each DLL resolves to vcpkg's own copy.
+- **The system's DLLs and the Vulkan loader are left out.** The loader comes with the GPU
+  driver. A DLL the apps load that vcpkg does not hold stops the install.
+- The engine finds `data/` beside its executable, and the editor finds moya beside itself, so an
+  app runs from the install as it does from the build. CI installs the Release build and runs
+  every app from the install with `--capture`.
+
+Other platforms have no install rules yet.
+
+Background: [ADR-0176](../adr/project/0176-releases-the-windows-release-links-its-libraries-as-dlls.md)
 
 ## Shaders
 

@@ -32,6 +32,7 @@ target_link_libraries(pong PRIVATE
 
 v3d_add_app_data(pong)
 v3d_add_app_icon(pong "data/icon.svg")
+v3d_install_app(pong)
 v3d_add_shared_data(pong)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

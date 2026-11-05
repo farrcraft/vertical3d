@@ -30,6 +30,7 @@ target_link_libraries(odyssey PRIVATE
 
 v3d_add_app_data(odyssey)
 v3d_add_app_icon(odyssey "data/icon.svg")
+v3d_install_app(odyssey)
 v3d_add_shared_data(odyssey)
 
 # build for the windows subsystem. A console subsystem executable opens a console beside the

@@ -160,6 +160,7 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dApiLibraries.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dDependencies.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dHelpers.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/v3dInstall.cmake")
 
 # The apps between them link every api library, directly or through another, so they need the
 # whole api. A consumer that narrows the selection and leaves the apps on has asked for two
@@ -195,4 +196,5 @@ if(V3D_BUILD_APPS)
 	add_subdirectory("demos")
 	add_subdirectory("vertical3d")
 	add_subdirectory("imagetool")
+	v3d_install_release()
 endif()

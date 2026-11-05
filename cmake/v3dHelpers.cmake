@@ -134,9 +134,12 @@ endfunction()
 
 # An app's own assets are committed under <app>/data, and are copied into data/<executable>/
 # beside the executable. The engine reads that directory first and the shared data/ after it,
-# which is the layout an install has too.
+# which is the layout an install has too, so the same directory is installed there.
 function(v3d_add_app_data target)
 	v3d_copy_data(${target} app "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_BASE_NAME:${target}>")
+	if(WIN32)
+		install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/" DESTINATION "data/$<TARGET_FILE_BASE_NAME:${target}>")
+	endif()
 endfunction()
 
 # An app's icon is an SVG. On Windows the build draws it into an .ico with appicon and embeds

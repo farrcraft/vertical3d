@@ -17,3 +17,6 @@ data_out/
 out/docs/
 out/tools/
 out/pictures/
+
+# the install tree a release ships, which cmake --install writes from a build
+out/install/
