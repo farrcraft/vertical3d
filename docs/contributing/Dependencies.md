@@ -44,7 +44,7 @@ builds TBB and OpenUSD from source, which takes a long time.
 | sdl3-mixer | `v3dlib_audio` plays sound through it. It needs SDL 3.4.0 or newer |
 | spdlog | |
 | sqlite3 | `v3dlib_database` reaches it, as the `unofficial::sqlite3::sqlite3` target of the `unofficial-sqlite3` config package. It is linked PRIVATE because no public header includes it. Its JSON functions are built in |
-| thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
+| thorvg | `v3dlib_font` reads the SVG glyphs of colour fonts through it. It comes from the tree's [overlay port](#the-thorvg-overlay-port), not vcpkg's own. The port installs pkg-config files and no CMake config, so `v3d_find_packages` finds its header and library by name and makes the `thorvg::thorvg` target, linked PRIVATE because no public header includes it. vcpkg builds it as a DLL |
 | usd | OpenUSD, without its imaging. `v3dlib_interchange_usd` reaches it through the `pxr` config package, as the `usd`, `usdGeom` and `usdLux` targets, linked PRIVATE because no public header includes it |
 | vulkan | |
 | vulkan-memory-allocator | Used by `memory::Allocator`, which suballocates unless an app asks for one allocation per resource. It is a single header. Its implementation is compiled once, in `api/render/realtime/vulkan/memory/VmaImpl.cxx`, and it is linked PRIVATE because no public header includes it |
@@ -76,6 +76,22 @@ tree therefore builds ICU through its own port, in [ports/icu/](../../ports/icu/
   includes it. Reading a new kind of ICU data, such as collation, means adding its category.
 - When the baseline moves ICU to a new version, copy the new port over `ports/icu/`, apply the
   change again, and update the data archive's SHA512 from the release's `SHASUM512.txt`.
+
+### The thorvg overlay port
+
+thorvg replaces the global `operator new` and the unsized `operator delete` with its own
+allocator. Where vcpkg links it statically, as on Linux, the replacement covers every program
+that links the font library. Clang calls the sized `operator delete`, which thorvg does not
+replace. AddressSanitizer then reports a mismatch on every allocation, and a replacement
+`operator new` that returns null, as thorvg's can, breaks the standard's rule that it throws.
+
+- The port in [ports/thorvg/](../../ports/thorvg/) is vcpkg's own, from the baseline commit,
+  with one patch. [no-global-operator-new.patch](../../ports/thorvg/no-global-operator-new.patch)
+  deletes the four replacements from thorvg's `tvgInitializer.cpp`. thorvg's allocator calls
+  `std::malloc` and `std::free`, so nothing it allocates changes where its memory comes from.
+- When the baseline moves thorvg to a new version, copy the new port over `ports/thorvg/`,
+  add the patch to its `PATCHES` again, and remake the patch if the file has moved. Drop the
+  port once thorvg no longer replaces the operators.
 
 Background: [ADR-0021](../adr/engine/0021-audio-use-sdl3-mixer.md),
 [ADR-0091](../adr/engine/0091-platform-sdl3-replaces-sdl2.md),

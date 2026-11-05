@@ -256,11 +256,7 @@ reads. A report ends the program with a failure, so a suite that triggers one fa
 tree is instrumented, not the vcpkg packages, so a fault inside a package goes unreported.
 
 - **CI** builds the Linux job's libraries with both sanitizers, and every suite there runs
-  under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are. The
-  job's image turns off AddressSanitizer's `alloc_dealloc_mismatch` check. thorvg, linked
-  statically there, replaces the global `operator new` but not the sized `operator delete`,
-  and the sanitizer reports that pairing on every allocation.
-  [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile) sets the options.
+  under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are.
 - **On Windows**, the `asan` preset builds the whole tree with MSVC's AddressSanitizer. MSVC has
   no undefined behaviour sanitizer. Run it before a change to code that only Windows builds,
   such as the renderer, the window or an app:
