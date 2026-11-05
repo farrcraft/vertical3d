@@ -27,9 +27,12 @@ configured with. Each preset builds into `out/build/<preset name>`:
 | `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
 | `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
 | `verify` | both | both analysers in one build |
+| `ci` | the vcpkg that `VCPKG_INSTALLATION_ROOT` names, and one link at a time | the Windows CI job |
 
-Every preset is Debug, uses the vcpkg in `vendor/vcpkg` with the `x64-windows` triplet, and
-generates for Ninja. Visual Studio and VS Code list the presets when they open the folder.
+Every preset is Debug, uses the `x64-windows` triplet, and generates for Ninja. Every one but
+`ci` uses the vcpkg in `vendor/vcpkg`. `ci` is listed only when `VCPKG_INSTALLATION_ROOT` is
+set, which the CI job does after it checks vcpkg out at the manifest's baseline. Visual Studio
+and VS Code list the presets when they open the folder.
 
 From a shell, enter a developer environment first (run `vcvars64.bat`), then configure and build:
 

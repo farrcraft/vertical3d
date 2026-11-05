@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 120
 
     env:
+      # The directory the ci preset in CMakePresets.json builds into
       BUILD_DIR: out/build/ci
       # The out of tree build of the starter example, which consumes the api as source. It is
       # a second build directory rather than a second workflow: it needs this job's toolchain,
@@ -270,22 +271,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vcpkg did not bootstrap" }
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLATION_ROOT=$root"
 
-      # The job pool holds linking to one edge at a time. A link edge does more than link:
-      # vcpkg's applocal deployment runs in the same edge, reopening the binary just linked and
-      # copying dlls out of the installed bin directory the other link edges are reading. Only
-      # linking is pooled, so compilation still uses the whole machine.
+      # The ci preset configures with the vcpkg checkout above, and with a job pool that holds
+      # linking to one edge at a time. A link edge does more than link: vcpkg's applocal
+      # deployment runs in the same edge, reopening the binary just linked and copying dlls out
+      # of the installed bin directory the other link edges are reading. Only linking is pooled,
+      # so compilation still uses the whole machine.
       - name: Configure
         shell: cmd
         run: |
           call "%RUNNER_TEMP%\vcvars.bat" >nul
           cmake --version || exit /b 1
           ninja --version || exit /b 1
-          cmake -S . -B "%BUILD_DIR%" -G Ninja ^
-            -DCMAKE_BUILD_TYPE=Debug ^
-            -DCMAKE_JOB_POOLS="link=1" ^
-            -DCMAKE_JOB_POOL_LINK=link ^
-            -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
-            -DVCPKG_TARGET_TRIPLET=x64-windows || exit /b 1
+          cmake --preset ci || exit /b 1
 
       # An archive is named by its package's ABI hash, and the install's status file lists the
       # hash of every package installed. An archive no installed package names is one the

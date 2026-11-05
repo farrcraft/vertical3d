@@ -44,6 +44,24 @@
       "description": "/analyze and clang-tidy together, for a last check before a change lands",
       "inherits": "windows",
       "cacheVariables": { "V3D_ANALYZE": "ON", "V3D_CLANG_TIDY": "ON" }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI",
+      "description": "The Windows CI job: its own vcpkg checkout, and one link at a time",
+      "inherits": "windows",
+      "toolchainFile": "$env{VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_JOB_POOLS": "link=1",
+        "CMAKE_JOB_POOL_LINK": "link"
+      },
+      "condition": {
+        "type": "allOf",
+        "conditions": [
+          { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+          { "type": "notEquals", "lhs": "$env{VCPKG_INSTALLATION_ROOT}", "rhs": "" }
+        ]
+      }
     }
   ],
   "buildPresets": [

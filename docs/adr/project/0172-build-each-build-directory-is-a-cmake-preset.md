@@ -16,9 +16,9 @@ written down cannot be recreated exactly once it is deleted.
 ## Decision
 
 A `CMakePresets.json` at the root names each Windows build directory and the options it is
-configured with: the everyday Debug build and the three analysis builds. Visual Studio, VS Code
-and a shell all configure from it, and the documented command is `cmake --preset <name>`. It
-replaces `CMakeSettings.json`.
+configured with: the everyday Debug build, the three analysis builds and the Windows CI build.
+Visual Studio, VS Code, a shell and CI all configure from it, and the documented command is
+`cmake --preset <name>`. It replaces `CMakeSettings.json`.
 
 ## Alternatives
 
@@ -45,10 +45,10 @@ replaces `CMakeSettings.json`.
 ## Consequences
 
 - **Gains**: every build directory can be recreated from the tree by its name. Visual Studio,
-  VS Code and a shell configure it with the same options.
+  VS Code, a shell and the Windows CI job configure with the same base options.
 - **Costs**: Visual Studio ignores `CMakeSettings.json` once a presets file exists, so moving to
-  presets is all or nothing. The presets are Windows only, so the portable Linux job keeps its
-  own configure in its script. CI also keeps its own configure command, because its vcpkg root
-  and its link pool differ from a developer's.
-- **Revisit when**: CI or the portable job can configure from a preset without overriding most
-  of what it sets.
+  presets is all or nothing. The CI preset reads its vcpkg root from the job's environment, so
+  it cannot be configured locally without setting that variable. The presets are Windows only,
+  so the portable Linux job keeps its own configure in its script.
+- **Revisit when**: the portable job can configure from a preset without overriding most of
+  what it sets.
