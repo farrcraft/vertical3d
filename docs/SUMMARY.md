@@ -285,6 +285,7 @@
     - [ADR-0166: Releases: a Windows installer and a Flatpak on Linux](adr/project/0166-releases-a-windows-installer-and-a-flatpak-on-linux.md)
     - [ADR-0170: Build: an app's icon is one SVG, drawn at build and at run](adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
     - [ADR-0171: Process: decision records are filed in folders by area](adr/project/0171-process-decision-records-are-filed-in-folders-by-area.md)
+    - [ADR-0172: Build: each build directory is a CMake preset](adr/project/0172-build-each-build-directory-is-a-cmake-preset.md)
 - [Plans](plans/README.md)
     - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)
 - [Roadmaps](roadmap/README.md)

@@ -17,23 +17,35 @@ another repository against the api is covered in [UsingTheApi.md](../api/UsingTh
 
 ## Configure and build
 
-The tree builds with MSVC on Windows, using CMake and Ninja. There is no `CMakePresets.json`.
-Visual Studio configures `out/build/x64-Debug` from [CMakeSettings.json](../../CMakeSettings.json)
-when it opens the folder.
+The tree builds with MSVC on Windows, using CMake and Ninja.
+[CMakePresets.json](../../CMakePresets.json) names every build directory and the options it is
+configured with. Each preset builds into `out/build/<preset name>`:
+
+| Preset | Configured with | For |
+|---|---|---|
+| `x64-Debug` | the defaults | everyday work, and the build every script and document uses |
+| `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
+| `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
+| `verify` | both | both analysers in one build |
+
+Every preset is Debug, uses the vcpkg in `vendor/vcpkg` with the `x64-windows` triplet, and
+generates for Ninja. Visual Studio and VS Code list the presets when they open the folder.
 
 From a shell, enter a developer environment first (run `vcvars64.bat`), then configure and build:
 
 ```
-cmake -S . -B out/build/x64-Debug -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_TOOLCHAIN_FILE=vendor/vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --preset x64-Debug                  # configure
 ninja -C out/build/x64-Debug              # everything
 ninja -C out/build/x64-Debug pong         # one target
+cmake --build --preset tidy               # build another preset's directory
 ```
 
-The first configure installs every vcpkg package into `out/build/x64-Debug/vcpkg_installed/`.
-See [Traps](#traps) for how long that takes and why that directory must be kept.
+Each build directory installs its own copy of every vcpkg package into
+`out/build/<preset name>/vcpkg_installed/` at its first configure. See [Traps](#traps) for how
+long that takes and why that directory must be kept.
+
+An option given on the command line after `--preset`, such as `-DV3D_WARNINGS_AS_ERRORS=OFF`,
+overrides the preset. It stays in that directory's cache until it is named again.
 
 `ninja`, `cmake` and `ctest` are on the PATH only inside a developer environment. Two scripts
 enter one for you:
@@ -52,6 +64,8 @@ scripts\test.cmd -R input                 # ctest, with any arguments passed thr
   edition). For any other install, set `V3D_VCVARS` to the full path of `vcvars64.bat`.
 
 Every target in the tree compiles and links.
+
+Background: [ADR-0172](../adr/project/0172-build-each-build-directory-is-a-cmake-preset.md)
 
 ## The CMake layout
 
@@ -371,8 +385,6 @@ to a temporary.
   program, in
   [api/interchange/CgltfImpl.cxx](../../api/interchange/CgltfImpl.cxx). That file is
   excluded from both static analysers.
-- **The `VCPKG_ROOT` value in CMakeSettings.json is wrong.** It has a doubled path segment and
-  points at nothing. vcpkg still works, because the build uses the toolchain file.
 - **A test fixture or reference image is copied only when its suite relinks.** See
   [Testing.md](Testing.md#traps).
 - **LNK1163 names a corrupt object file**, not a code problem. Delete the `.obj` it names and

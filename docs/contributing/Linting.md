@@ -94,7 +94,8 @@ Background: [ADR-0047](../adr/project/0047-code-exhaustive-enum-switches.md)
 
 ## MSVC /analyze
 
-Turn it on with `-DV3D_ANALYZE=ON`. It is off by default because it makes a build several times
+Turn it on with `-DV3D_ANALYZE=ON`, or build the `analyze` or `verify` preset, which turn it on
+in a build directory of their own. It is off by default because it makes a build several times
 slower. Its findings are the C6xxx and C26xxx warnings, and `/WX` turns them into errors like any
 other warning. The tree has no findings.
 
@@ -111,7 +112,8 @@ updated.
 
 ## clang-tidy
 
-Turn it on with `-DV3D_CLANG_TIDY=ON`. It is off by default for the same cost reason. The check
+Turn it on with `-DV3D_CLANG_TIDY=ON`, or build the `tidy` or `verify` preset. It is off by
+default for the same cost reason. The check
 list is in [.clang-tidy](../../.clang-tidy). The clang-tidy executable comes with the MSVC install,
 under `VC/Tools/Llvm/x64/bin`.
 

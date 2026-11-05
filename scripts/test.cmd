@@ -10,7 +10,7 @@ call "%~dp0vcvars.cmd" || exit /b 1
 rem ctest finds no tests in a tree that is not configured, and reports that as a success
 set "V3D_BUILD=%~dp0..\out\build\x64-Debug"
 if not exist "%V3D_BUILD%\build.ninja" (
-    echo %V3D_BUILD% is not configured. docs/contributing/Build.md has the cmake line.
+    echo %V3D_BUILD% is not configured. Run cmake --preset x64-Debug first.
     exit /b 1
 )
 

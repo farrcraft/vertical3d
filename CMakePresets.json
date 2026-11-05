@@ -1,0 +1,62 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "windows",
+      "hidden": true,
+      "description": "MSVC, Ninja and the vendored vcpkg, in a build directory named after the preset",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "toolchainFile": "${sourceDir}/vendor/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "toolset": { "value": "host=x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "x64-Debug",
+      "displayName": "Debug",
+      "description": "The everyday build: every library, app and test suite",
+      "inherits": "windows"
+    },
+    {
+      "name": "analyze",
+      "displayName": "Debug with /analyze",
+      "description": "MSVC's static analyser runs with the compiler",
+      "inherits": "windows",
+      "cacheVariables": { "V3D_ANALYZE": "ON" }
+    },
+    {
+      "name": "tidy",
+      "displayName": "Debug with clang-tidy",
+      "description": "clang-tidy runs over every source the compiler builds",
+      "inherits": "windows",
+      "cacheVariables": { "V3D_CLANG_TIDY": "ON" }
+    },
+    {
+      "name": "verify",
+      "displayName": "Debug with both analysers",
+      "description": "/analyze and clang-tidy together, for a last check before a change lands",
+      "inherits": "windows",
+      "cacheVariables": { "V3D_ANALYZE": "ON", "V3D_CLANG_TIDY": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "x64-Debug", "configurePreset": "x64-Debug" },
+    { "name": "analyze", "configurePreset": "analyze" },
+    { "name": "tidy", "configurePreset": "tidy" },
+    { "name": "verify", "configurePreset": "verify" }
+  ],
+  "testPresets": [
+    {
+      "name": "x64-Debug",
+      "configurePreset": "x64-Debug",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

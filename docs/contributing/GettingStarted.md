@@ -44,15 +44,19 @@ git clone https://github.com/Microsoft/vcpkg.git vendor/vcpkg
 .\vendor\vcpkg\bootstrap-vcpkg.bat
 ```
 
-If you will build from Visual Studio, also run `.\vendor\vcpkg\vcpkg.exe integrate install`.
-
 You do not install packages yourself. The first configure installs them.
 [Dependencies.md](Dependencies.md) lists the packages.
 
 ## 4. Configure
 
-Visual Studio configures the tree when you open the folder. From a developer environment, run
-the configure command in [Build.md](Build.md#configure-and-build).
+Visual Studio configures the tree when you open the folder, choosing the `x64-Debug` preset. From
+a developer environment, run:
+
+```
+cmake --preset x64-Debug
+```
+
+[Build.md](Build.md#configure-and-build) lists the other presets.
 
 **The first configure is slow**, because vcpkg builds every package from source. Read
 [Build.md](Build.md#traps) before you ever reset a build directory: it says which directory

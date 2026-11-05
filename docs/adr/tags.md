@@ -109,6 +109,7 @@ reported, so the table lists only tags in use.
 | [0159](project/0159-build-the-portable-job-runs-in-an-image-built-locally-too.md) | Build: the portable job runs in an image built locally too |
 | [0160](project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang |
 | [0170](project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run |
+| [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
 
 ### camera
 
@@ -417,6 +418,7 @@ reported, so the table lists only tags in use.
 | [0158](project/0158-tooling-typescript-is-type-checked-through-a-package-json.md) | Tooling: TypeScript is type-checked through a package.json |
 | [0164](project/0164-tooling-commits-are-checked-locally-through-pre-commit.md) | Tooling: commits are checked locally through pre-commit |
 | [0171](project/0171-process-decision-records-are-filed-in-folders-by-area.md) | Process: decision records are filed in folders by area |
+| [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
 
 ### ui
 
