@@ -286,6 +286,8 @@
     - [ADR-0170: Build: an app's icon is one SVG, drawn at build and at run](adr/project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md)
     - [ADR-0171: Process: decision records are filed in folders by area](adr/project/0171-process-decision-records-are-filed-in-folders-by-area.md)
     - [ADR-0172: Build: each build directory is a CMake preset](adr/project/0172-build-each-build-directory-is-a-cmake-preset.md)
+    - [ADR-0173: Testing: the suites also run under the sanitizers](adr/project/0173-testing-the-suites-also-run-under-the-sanitizers.md)
+    - [ADR-0174: Testing: the hand-written parsers are fuzzed](adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 - [Plans](plans/README.md)
     - [Docs Site — A Searchable Site, a Reference and User Manuals](plans/DocsSite.md)
 - [Roadmaps](roadmap/README.md)

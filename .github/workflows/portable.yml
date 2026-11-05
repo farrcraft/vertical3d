@@ -1,6 +1,7 @@
 # Builds and tests the api libraries that need neither a window nor a device with Clang on
-# Linux, so the api keeps building with a compiler other than MSVC. The rest of CI builds with
-# MSVC on Windows. The build runs in the image scripts/portable/Dockerfile defines, through
+# Linux, so the api keeps building with a compiler other than MSVC. The suites run under the
+# sanitizers, and each fuzz target is fuzzed after them. The rest of CI builds with MSVC on
+# Windows. The build runs in the image scripts/portable/Dockerfile defines, through
 # scripts/portable/build.sh, which name the compiler, the libraries and the configure. A local
 # run of scripts\portable.cmd builds in the same image with the same script.
 name: portable

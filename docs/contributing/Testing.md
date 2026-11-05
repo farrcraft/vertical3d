@@ -8,6 +8,8 @@ draw on a GPU.
 - [How the suites are organised](#how-the-suites-are-organised)
 - [Writing a test](#writing-a-test)
 - [Checking that a new test fails first](#checking-that-a-new-test-fails-first)
+- [Sanitizers](#sanitizers)
+- [Fuzz targets](#fuzz-targets)
 - [The render device suite](#the-render-device-suite)
 - [The render window suite](#the-render-window-suite)
 - [Reference images](#reference-images)
@@ -243,6 +245,86 @@ installs no packages. It reuses the packages that build installed, and its link 
 has one. The script's header lists its limits. A `render_device` case needs a Vulkan device, and
 a `render_window` case a window too. Without one the case is reported as skipped. A case that
 fails only because it reads a fixture the change added has to be read by hand.
+
+## Sanitizers
+
+`-DV3D_SANITIZE=ON` builds the tree with AddressSanitizer, which reports an out of bounds
+access, a use after free and a leak. With Clang or GCC it adds the undefined behaviour
+sanitizer, which reports signed overflow, a misaligned access, an invalid shift and a null
+dereference. Its `vptr` check is off, because thorvg is built without the type information it
+reads. A report ends the program with a failure, so a suite that triggers one fails. Only the
+tree is instrumented, not the vcpkg packages, so a fault inside a package goes unreported.
+
+- **CI** builds the Linux job's libraries with both sanitizers, and every suite there runs
+  under them. See [Build.md](Build.md#building-off-msvc) for which libraries those are. The
+  job's image turns off AddressSanitizer's `alloc_dealloc_mismatch` check. thorvg, linked
+  statically there, replaces the global `operator new` but not the sized `operator delete`,
+  and the sanitizer reports that pairing on every allocation.
+  [scripts/portable/Dockerfile](../../scripts/portable/Dockerfile) sets the options.
+- **On Windows**, the `asan` preset builds the whole tree with MSVC's AddressSanitizer. MSVC has
+  no undefined behaviour sanitizer. Run it before a change to code that only Windows builds,
+  such as the renderer, the window or an app:
+
+  ```
+  cmake --preset asan
+  cmake --build --preset asan
+  ctest --preset asan
+  ```
+
+  The program finds the sanitizer's runtime DLL through the developer environment's `PATH`, so
+  run a sanitized executable from one. `scripts\test.cmd` does not reach this build directory.
+
+  The build defines `_DISABLE_STRING_ANNOTATION` and `_DISABLE_VECTOR_ANNOTATION`. The vcpkg
+  DLLs are not instrumented, and a string one of them grows would otherwise be reported as a
+  container overflow. The build also drops `/RTC`, which fills the stack with a pattern in
+  every other Debug build. A suite that reads an uninitialised value can pass in those builds
+  and fail in this one.
+
+Background: [ADR-0173](../adr/project/0173-testing-the-suites-also-run-under-the-sanitizers.md)
+
+## Fuzz targets
+
+A fuzz target passes one input to one of the parsers this tree writes itself, through the
+`LLVMFuzzerTestOneInput` entry point that libFuzzer calls. Each one checks only that no input
+makes its parser misbehave. Whether the parser accepts the input does not matter.
+
+| Target | Parser | Corpus |
+|---|---|---|
+| `v3dfuzz_tga` | `image::reader::Tga` | [api/image/tests/data](../../api/image/tests/data) |
+| `v3dfuzz_bmp` | `image::reader::Bmp` | [api/image/tests/data](../../api/image/tests/data) |
+| `v3dfuzz_rib` | `render::offline::rib::Reader` and its lexer | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+| `v3dfuzz_sl` | the shading language parser and compiler | [api/render/offline/tests/data](../../api/render/offline/tests/data) |
+
+**Every build builds the targets, and ctest runs each over its corpus once**, as the ctest entry
+`fuzz_<name>`, labelled `fuzz`. Without libFuzzer, a target links a small main that passes each
+file it is given to the entry point. `ctest -L fuzz` runs only these entries.
+
+**`-DV3D_FUZZ=ON` links the targets with libFuzzer** and instruments the tree for it. It needs
+Clang, so it builds only off MSVC. Given a corpus directory and no `-runs`, a target then fuzzes
+until it finds a failure or is stopped. The first directory it is given is where it keeps the
+inputs that reach new code.
+
+**CI fuzzes each target for 60 seconds**, in the Linux job, under both sanitizers.
+[scripts/portable/build.sh](../../scripts/portable/build.sh) runs them after the suites. It keeps
+the inputs it finds under the job's work directory, and `FUZZ_SECONDS` changes the time.
+`scripts\portable.cmd` runs the same script locally and keeps its work in a Docker volume, so
+each local run carries on from the corpus of the last.
+
+**A failure prints the input that caused it.** libFuzzer writes it to a file named
+`crash-<hash>` and prints it in the log. Fix the parser, then add the input to the library's
+suite as a test case that fails without the fix.
+
+**A new parser of a file format gets a target.** Write `api/<lib>/tests/fuzz/<Format>Fuzzer.cxx`,
+and register it in the suite's `CMakeLists.txt`:
+
+```
+v3d_add_fuzzer(<name> "fuzz/<Format>Fuzzer.cxx" LIBRARIES <target>... CORPUS <directory>...)
+```
+
+The corpus is the suite's fixtures, which hold a valid file of the format and the malformed
+ones its tests already check.
+
+Background: [ADR-0174](../adr/project/0174-testing-the-hand-written-parsers-are-fuzzed.md)
 
 ## The render device suite
 

@@ -46,6 +46,13 @@
       "cacheVariables": { "V3D_ANALYZE": "ON", "V3D_CLANG_TIDY": "ON" }
     },
     {
+      "name": "asan",
+      "displayName": "Debug with AddressSanitizer",
+      "description": "Every library, app and test suite built with AddressSanitizer",
+      "inherits": "windows",
+      "cacheVariables": { "V3D_SANITIZE": "ON" }
+    },
+    {
       "name": "ci",
       "displayName": "CI",
       "description": "The Windows CI job: its own vcpkg checkout, and one link at a time",
@@ -68,12 +75,18 @@
     { "name": "x64-Debug", "configurePreset": "x64-Debug" },
     { "name": "analyze", "configurePreset": "analyze" },
     { "name": "tidy", "configurePreset": "tidy" },
-    { "name": "verify", "configurePreset": "verify" }
+    { "name": "verify", "configurePreset": "verify" },
+    { "name": "asan", "configurePreset": "asan" }
   ],
   "testPresets": [
     {
       "name": "x64-Debug",
       "configurePreset": "x64-Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
       "output": { "outputOnFailure": true }
     }
   ]

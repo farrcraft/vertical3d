@@ -181,6 +181,35 @@ function(v3d_add_test lib)
 	add_test(NAME ${lib} COMMAND ${target} --detect_memory_leaks=0 WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>)
 endfunction()
 
+# A fuzz target passes one input to a parser through LLVMFuzzerTestOneInput, the entry point
+# libFuzzer calls. Each one is a ctest entry that runs its CORPUS once, file by file, so an
+# input that once broke the parser keeps being checked by every build. With V3D_FUZZ the target
+# links libFuzzer, and run with a corpus directory and no -runs it fuzzes until it finds a
+# failure or is stopped. Without it the target links v3dFuzzMain.cxx, which only runs the files
+# it is given.
+#
+#   v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)
+#
+# The executable is v3dfuzz_<name>, and its ctest entry is fuzz_<name>, labelled fuzz.
+function(v3d_add_fuzzer name source)
+	cmake_parse_arguments(PARSE_ARGV 2 arg "" "" "LIBRARIES;CORPUS")
+	set(target "v3dfuzz_${name}")
+	add_executable(${target} ${source})
+	target_include_directories(${target} PRIVATE ${V3D_ROOT})
+	target_link_libraries(${target} PRIVATE ${arg_LIBRARIES})
+	if(V3D_FUZZ)
+		target_link_options(${target} PRIVATE "-fsanitize=fuzzer")
+	else()
+		target_sources(${target} PRIVATE "${V3D_ROOT}/cmake/v3dFuzzMain.cxx")
+		target_link_libraries(${target} PRIVATE Boost::filesystem)
+	endif()
+	if(MSVC)
+		target_compile_options(${target} PRIVATE /EHsc /utf-8)
+	endif()
+	add_test(NAME fuzz_${name} COMMAND ${target} -runs=0 ${arg_CORPUS})
+	set_tests_properties(fuzz_${name} PROPERTIES LABELS fuzz)
+endfunction()
+
 # Shaders are compiled to SPIR-V at build time and embedded in the library that draws with
 # them. They are not shipped as data files. They belong to the engine, not to any app, so no
 # app's data directory is the right place for them. glslc's -mfmt=c writes the module

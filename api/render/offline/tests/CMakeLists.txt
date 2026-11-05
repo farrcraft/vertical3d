@@ -44,3 +44,7 @@ add_custom_command(TARGET v3dtest_render_offline POST_BUILD
 		"$<TARGET_FILE_DIR:v3dtest_render_offline>/data"
 	COMMENT "Copying offline render test fixtures"
 	VERBATIM)
+
+# The fuzz targets for the two languages this library parses. The fixtures are their corpus.
+v3d_add_fuzzer(rib "fuzz/RibFuzzer.cxx" LIBRARIES v3dlib_render_offline v3dlib_log CORPUS "${CMAKE_CURRENT_SOURCE_DIR}/data")
+v3d_add_fuzzer(sl "fuzz/SlFuzzer.cxx" LIBRARIES v3dlib_render_offline CORPUS "${CMAKE_CURRENT_SOURCE_DIR}/data")

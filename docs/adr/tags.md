@@ -110,6 +110,7 @@ reported, so the table lists only tags in use.
 | [0160](project/0160-build-the-portable-job-uses-the-oldest-supported-clang.md) | Build: the portable job uses the oldest supported Clang |
 | [0170](project/0170-build-an-apps-icon-is-one-svg-drawn-at-build-and-run.md) | Build: an app's icon is one SVG, drawn at build and at run |
 | [0172](project/0172-build-each-build-directory-is-a-cmake-preset.md) | Build: each build directory is a CMake preset |
+| [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
 
 ### camera
 
@@ -123,6 +124,8 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0007](project/0007-ci-render-tests-on-software-vulkan.md) | CI: render tests on software Vulkan |
+| [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
+| [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
 
 ### code
 
@@ -299,6 +302,7 @@ reported, so the table lists only tags in use.
 | [0113](offline/0113-offline-ray-hits-are-shaded-in-batches-at-every-depth.md) | Offline: ray hits are shaded in batches at every depth |
 | [0114](offline/0114-offline-a-hits-neighbours-are-shaded-only-for-a-derivative.md) | Offline: a hit's neighbours are shaded only for a derivative |
 | [0125](offline/0125-offline-moya-renders-curves-as-ribbons.md) | Offline: moya renders curves as ribbons |
+| [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
 
 ### particles
 
@@ -388,6 +392,8 @@ reported, so the table lists only tags in use.
 | ADR | Decision |
 |---|---|
 | [0054](project/0054-testing-golden-images-hold-only-spec-exact-output.md) | Testing: golden images hold only spec-exact output |
+| [0173](project/0173-testing-the-suites-also-run-under-the-sanitizers.md) | Testing: the suites also run under the sanitizers |
+| [0174](project/0174-testing-the-hand-written-parsers-are-fuzzed.md) | Testing: the hand-written parsers are fuzzed |
 
 ### text
 

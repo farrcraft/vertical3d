@@ -27,6 +27,7 @@ configured with. Each preset builds into `out/build/<preset name>`:
 | `analyze` | `V3D_ANALYZE=ON` | MSVC's `/analyze` ([Linting.md](Linting.md#msvc-analyze)) |
 | `tidy` | `V3D_CLANG_TIDY=ON` | clang-tidy ([Linting.md](Linting.md#clang-tidy)) |
 | `verify` | both | both analysers in one build |
+| `asan` | `V3D_SANITIZE=ON` | AddressSanitizer ([Testing.md](Testing.md#sanitizers)) |
 | `ci` | the vcpkg that `VCPKG_INSTALLATION_ROOT` names, and one link at a time | the Windows CI job |
 
 Every preset is Debug, uses the `x64-windows` triplet, and generates for Ninja. Every one but
@@ -127,6 +128,9 @@ can therefore pass every gate on Windows and fail there.
   the tests in it, and holds the list above. It configures with
   `-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON`, which leaves out the manifest's `platform` and `usd`
   features, and with `V3D_LIBRARIES` naming the list.
+- **The job builds with `V3D_SANITIZE` and `V3D_FUZZ` on**, so its suites run under both
+  sanitizers, and it fuzzes each fuzz target after them. See
+  [Testing.md](Testing.md#sanitizers).
 - **The job builds with Clang 20, the oldest Clang the tree supports.** A newer Clang accepts
   code an older one rejects, so the oldest catches a feature that a consumer's compiler lacks.
   Apple's Clang trails the LLVM releases, and Clang 20 is the nearest to it. Clang 18 fails on
@@ -179,6 +183,8 @@ than an imported target, so it never appears in a link line.
 | `V3D_WARNINGS_AS_ERRORS` | top level | `/WX`, and whether an analyser finding stops the build |
 | `V3D_ANALYZE` | `OFF` | MSVC `/analyze`. See [Linting.md](Linting.md) |
 | `V3D_CLANG_TIDY` | `OFF` | clang-tidy. See [Linting.md](Linting.md) |
+| `V3D_SANITIZE` | `OFF` | AddressSanitizer, and the undefined behaviour sanitizer off MSVC. See [Testing.md](Testing.md#sanitizers) |
+| `V3D_FUZZ` | `OFF` | libFuzzer for the fuzz targets. Clang only. See [Testing.md](Testing.md#fuzz-targets) |
 | `V3D_LIBRARIES` | `all` | Which api libraries to build. See [UsingTheApi.md](../api/UsingTheApi.md#selecting-libraries) |
 | `V3D_FMOD_ROOT` | empty | An FMOD Studio API install to build the FMOD audio event backend against. See [Dependencies.md](Dependencies.md#fmod-studio) |
 
@@ -203,6 +209,7 @@ guard has to cover the whole file.
 | `v3d_add_app_data(<target>)` | Copies `<app>/data` beside the executable |
 | `v3d_add_app_icon(<target> <svg>)` | On Windows, draws the SVG into an `.ico` with `appicon` and embeds it as the executable's icon. See [App icons](#app-icons) |
 | `v3d_add_test(<lib> <sources>)` | Builds `v3dtest_<lib>` and registers it with ctest. See [Testing.md](Testing.md#writing-a-test) |
+| `v3d_add_fuzzer(<name> <source> LIBRARIES <target>... CORPUS <directory>...)` | Builds `v3dfuzz_<name>` and registers it with ctest to run its corpus once. See [Testing.md](Testing.md#fuzz-targets) |
 | `v3d_add_shader(<target> <source> [OUTPUT <name>] [DEFINES <define>...])` | Compiles a GLSL shader into the target. See [Shaders](#shaders) |
 
 ### Data directories
